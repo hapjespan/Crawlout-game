@@ -1,7 +1,9 @@
-// Buildings, scrap heaps and claim points: one instanced draw call per kind per LOD (buildings have two LODs).
-// Buildings cast real shadows (when the renderer enables them); scrap heaps get a blob shadow decal and claim points
-// a ring decal in the owner's color. Everything is read from the interpolated frame, by typeId (entities/typeIds.ts).
-import { ENTITY_FLAG } from '@crawlout/protocol';
+// Buildings, scrap heaps and claim points: one instanced draw call per kind per LOD (buildings have two LODs), plus
+// one for the scaffolds around building sites. Buildings cast real shadows (when the renderer enables them); scrap
+// heaps get a blob shadow decal and claim points a ring decal in the owner's color. Everything is read from the
+// interpolated frame, by typeId (entities/typeIds.ts). A site (anim build) grows with its progress in animT inside a
+// scaffold; a scrap heap shrinks with its remaining stock in hpPct (structureVisuals.ts).
+import { ANIM, ENTITY_FLAG } from '@crawlout/protocol';
 import { DynamicDrawUsage, Frustum, InstancedBufferAttribute, Matrix4, Mesh, Sphere, type BufferGeometry, type Camera, type MeshBasicNodeMaterial, type Scene } from 'three/webgpu';
 import { DECAL_COLOR, DECAL_SHAPE, type DecalLayer, type DecalStyle } from '../decals/decalLayer.js';
 import { buildingWallHeight, type FootprintTable } from '../entities/footprint.js';
@@ -9,7 +11,8 @@ import { buildingIdOf, classifyTypeId, ENTITY_KIND } from '../entities/typeIds.j
 import { NEUTRAL_TEAM, teamIndex } from '../palette.js';
 import type { PickShape } from '../picking/selection.js';
 import type { InterpolatedFrame } from '../snapshot/interpolate.js';
-import { createBuildingGeometry, createClaimGeometry, createScrapHeapGeometry, POLE_HEIGHT } from './structureGeometry.js';
+import { createBuildingGeometry, createClaimGeometry, createScaffoldGeometry, createScrapHeapGeometry, POLE_HEIGHT } from './structureGeometry.js';
+import { constructionHeight, constructionTint, SCAFFOLD_HEIGHT, SCAFFOLD_MARGIN, scrapHeapScale } from './structureVisuals.js';
 
 /** Wall color multipliers per building id, so the eight Dweller buildings read apart before real meshes exist. */
 const BUILDING_TINTS: readonly (readonly [number, number, number])[] = [
@@ -136,6 +139,7 @@ const WHITE: readonly [number, number, number] = [1, 1, 1];
 
 export class StructureLayer {
   private readonly buildings: [Batch, Batch];
+  private readonly scaffolds: Batch;
   private readonly scrap: Batch;
   private readonly claims: Batch;
   private readonly footprints: FootprintTable;
@@ -145,6 +149,8 @@ export class StructureLayer {
   private readonly projView = new Matrix4();
   private readonly sphere = new Sphere();
   private readonly materials: StructureMaterials;
+  private readonly siteTint: [number, number, number] = [1, 1, 1];
+  private readonly heap: [number, number] = [1, 1];
 
   constructor(scene: Scene, opts: StructureLayerOptions) {
     const cap = opts.capacity;
@@ -157,7 +163,8 @@ export class StructureLayer {
       new Batch(scene, createBuildingGeometry(0), m.building, cap, 'buildings-lod0'),
       new Batch(scene, createBuildingGeometry(1), m.building, cap, 'buildings-lod1'),
     ];
-    for (const b of this.buildings) b.mesh.castShadow = opts.castShadows ?? false;
+    this.scaffolds = new Batch(scene, createScaffoldGeometry(), m.building, cap, 'building-scaffolds');
+    for (const b of [...this.buildings, this.scaffolds]) b.mesh.castShadow = opts.castShadows ?? false;
     this.scrap = new Batch(scene, createScrapHeapGeometry(), m.scrap, cap, 'scrap-nodes');
     this.claims = new Batch(scene, createClaimGeometry(), m.claim, cap, 'claim-points');
   }
@@ -195,7 +202,7 @@ export class StructureLayer {
     this.frustum.setFromProjectionMatrix(this.projView);
     const cam = camera.position;
     const [lod0, lod1] = this.buildings;
-    lod0.count = lod1.count = this.scrap.count = this.claims.count = 0;
+    lod0.count = lod1.count = this.scaffolds.count = this.scrap.count = this.claims.count = 0;
     const center = this.sphere.center;
 
     for (let i = 0; i < frame.count; i++) {
@@ -222,7 +229,14 @@ export class StructureLayer {
         const dz = z - cam.z;
         const batch = dx * dx + dy * dy + dz * dz < this.lodDist2 ? lod0 : lod1;
         const tint = BUILDING_TINTS[buildingIdOf(typeId) % BUILDING_TINTS.length] ?? WHITE;
-        batch.push(x, y, z, 0, f.w, wall, f.h, team, tint);
+        if (frame.anim[i] === ANIM.build) {
+          const progress = frame.animT[i]!;
+          batch.push(x, y, z, 0, f.w, wall * constructionHeight(progress), f.h, team, constructionTint(progress, tint, this.siteTint));
+          const m = 2 * SCAFFOLD_MARGIN;
+          this.scaffolds.push(x, y, z, 0, f.w + m, wall * SCAFFOLD_HEIGHT, f.h + m, team, WHITE);
+        } else {
+          batch.push(x, y, z, 0, f.w, wall, f.h, team, tint);
+        }
         if ((flags & ENTITY_FLAG.selected) !== 0) decals.push(x, z, hx + 0.35, hz + 0.35, BUILDING_SELECTED);
         continue;
       }
@@ -233,11 +247,9 @@ export class StructureLayer {
       if (!this.frustum.intersectsSphere(this.sphere)) continue;
       const yaw = hash01(frame.id[i]!) * Math.PI * 2;
       if (kind === ENTITY_KIND.scrapNode) {
-        // hpPct as the remaining amount when the sim fills it; 0 reads as "not reported", full size.
-        const hp = frame.hpPct[i]!;
-        const s = hp > 0 ? 0.55 + (0.45 * Math.min(hp, 100)) / 100 : 1;
-        this.scrap.push(x, y - 0.05, z, yaw, s, s, s, team, WHITE);
-        decals.push(x, z, 1.7 * s, 1.7 * s, SCRAP_DECAL);
+        const [w, h] = scrapHeapScale(frame.hpPct[i]!, this.heap);
+        this.scrap.push(x, y - 0.05, z, yaw, w, h, w, team, WHITE);
+        decals.push(x, z, 1.7 * w, 1.7 * w, SCRAP_DECAL);
       } else {
         this.claims.push(x, y, z, yaw, 1, 1, 1, team, WHITE);
         decals.push(x, z, CLAIM_RADIUS, CLAIM_RADIUS, CLAIM_DECALS[team]!);
@@ -245,12 +257,13 @@ export class StructureLayer {
     }
     lod0.commit();
     lod1.commit();
+    this.scaffolds.commit();
     this.scrap.commit();
     this.claims.commit();
   }
 
   dispose(): void {
-    for (const b of [...this.buildings, this.scrap, this.claims]) b.dispose();
+    for (const b of [...this.buildings, this.scaffolds, this.scrap, this.claims]) b.dispose();
     this.materials.building.dispose();
     this.materials.scrap.dispose();
     this.materials.claim.dispose();
