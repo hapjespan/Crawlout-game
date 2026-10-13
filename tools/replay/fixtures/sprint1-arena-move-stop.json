@@ -8,20 +8,21 @@
    "name": "speler0",
    "faction": "dwellers",
    "ready": true,
-   "online": true
+   "online": true,
+   "ai": false
   },
   {
    "playerId": 1,
    "name": "speler1",
    "faction": "dwellers",
    "ready": true,
-   "online": true
+   "online": true,
+   "ai": false
   }
  ],
  "settings": {
   "mode": "skirmish",
-  "delayFrames": 4,
-  "dominanceMinutes": 0
+  "delayFrames": 4
  },
  "bundles": [
   {

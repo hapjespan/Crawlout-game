@@ -13,14 +13,14 @@ export interface FixtureDef {
 }
 
 const players = (n: number) =>
-  Array.from({ length: n }, (_, i) => ({ playerId: i, name: `speler${i}`, faction: 'dwellers', ready: true, online: true }));
+  Array.from({ length: n }, (_, i) => ({ playerId: i, name: `speler${i}`, faction: 'dwellers', ready: true, online: true, ai: false }));
 
 const base = (map: string, seed: number): Replay => ({
   dataVersion: TEST_SIM_CONFIG.dataVersion,
   seed,
   map,
   players: players(2),
-  settings: { mode: 'skirmish', delayFrames: DELAY_FRAMES_DEFAULT, dominanceMinutes: 0 },
+  settings: { mode: 'skirmish', delayFrames: DELAY_FRAMES_DEFAULT },
   bundles: [],
   hashes: [],
 });
