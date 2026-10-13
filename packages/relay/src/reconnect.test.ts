@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import type { ServerMessage } from '@crawlout/protocol';
 import { LoopbackRelay } from './loopback.js';
-import { startRelayServer, type RelayServer } from './server.js';
+import { readDataVersion, startRelayServer, type RelayServer } from './server.js';
 import { WsRelayClient } from './wsClient.js';
 
 let server: RelayServer | undefined;
@@ -68,5 +68,24 @@ describe('ws-relay reconnect', () => {
     await until(() => server?.rooms().has('lobby') === true);
     c.close();
     await until(() => server?.rooms().has('lobby') === false);
+  });
+});
+
+describe('dataVersion', () => {
+  it('de server geeft de ingestelde dataVersion door in start; readDataVersion leest data/VERSION', async () => {
+    const version = readDataVersion();
+    expect(version).toMatch(/^\d+\.\d+\.\d+$/);
+    server = await startRelayServer({ port: 0, tickMs: 0, dataVersion: version });
+    expect(server.dataVersion).toBe(version);
+    const c = new WsRelayClient(`ws://127.0.0.1:${server.port}`);
+    const box: ServerMessage[] = [];
+    c.onMessage((m) => box.push(m));
+    c.send({ kind: 'join', roomId: 'v', name: 'A' });
+    await until(() => box.some((m) => m.kind === 'lobby'));
+    c.send({ kind: 'addAi', faction: 'dwellers' });
+    c.send({ kind: 'ready', ready: true });
+    await until(() => box.some((m) => m.kind === 'start'));
+    expect(box.find((m) => m.kind === 'start')).toMatchObject({ dataVersion: version });
+    c.close();
   });
 });

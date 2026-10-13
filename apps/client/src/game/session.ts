@@ -26,6 +26,7 @@ import type { SimWorkerInbound, SimWorkerOutbound } from '@crawlout/sim';
 import SimWorker from '@crawlout/sim/worker?worker';
 import type { ClientMap } from './content.js';
 import { buildDesyncDump, saveDesyncDump } from '../net/desyncDump.js';
+import { dataVersionError } from '../net/dataVersion.js';
 import { getClientId, netOptionsFromSearch, type WsNetOptions } from '../net/params.js';
 import { ReconnectingTransport } from '../net/reconnectingTransport.js';
 import { BundleFeed, base64ToBuffer, bufferToBase64 } from '../net/resync.js';
@@ -33,8 +34,6 @@ import { BundleFeed, base64ToBuffer, bufferToBase64 } from '../net/resync.js';
 /** No bundle for this long while a match runs = the lockstep is waiting; shown through onStall. */
 const LOCAL_STALL_MS = 2000;
 const STALL_CHECK_MS = 500;
-/** A relay that reports this dataVersion has none configured (Room default), so it cannot be checked. */
-const UNCONFIGURED_DATA_VERSION = '0';
 
 export interface SessionEvents {
   onSnapshot(buf: ArrayBuffer): void;
@@ -176,8 +175,9 @@ export function startSession(data: GameData, map: ClientMap, events: SessionEven
           events.onError(`relay startte map ${msg.map}, maar de client laadde ${map.grid.id}`);
           return;
         }
-        if (msg.dataVersion !== UNCONFIGURED_DATA_VERSION && msg.dataVersion !== data.dataVersion) {
-          events.onError(`relay speelt dataVersion ${msg.dataVersion}, de client heeft ${data.dataVersion}`);
+        const versionError = dataVersionError(msg.dataVersion, data.dataVersion);
+        if (versionError !== null) {
+          events.onError(versionError);
           return;
         }
         you = msg.you;
