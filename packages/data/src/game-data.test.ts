@@ -112,7 +112,7 @@ describe('sprint 2: gather, maxRevives, dominance, effect-stats', () => {
   it('rekent dominance om naar ticks en valideert het MapDef-veld', () => {
     expect(convertDominance({ pointsRequired: 1000, minutes: 10 })).toEqual({ pointsRequired: 1000, ticks: 12000 });
     const map = JSON.parse(JSON.stringify({ id: 'm', size: { w: 8, h: 8 }, heightmap: 'h', passability: 'p', scrapNodes: [], claimPoints: [], spawns: [], creepCamps: [] }));
-    expect(MapDef.safeParse(map).success).toBe(true); // optioneel tot de map-agent het veld vult
+    expect(MapDef.safeParse(map).success).toBe(false); // dominance is verplicht
     expect(MapDef.safeParse({ ...map, dominance: { pointsRequired: 1000, minutes: 10 } }).success).toBe(true);
     expect(MapDef.safeParse({ ...map, dominance: { pointsRequired: 0, minutes: 10 } }).success).toBe(false);
     expect(MapDef.safeParse({ ...map, dominance: { pointsRequired: 1000, minutes: 10, x: 1 } }).success).toBe(false);

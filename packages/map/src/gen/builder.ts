@@ -52,14 +52,8 @@ export interface Dominance {
   minutes: number;
 }
 
-/**
- * MapDef plus dominance. Zodra het MapDef-schema in packages/data het veld kent (ws4-s2) is dit gelijk aan MapDef.
- * Verwijderen na merge ws4-s2: vervang `MapDefWithDominance` door `MapDef`.
- */
-export type MapDefWithDominance = MapDef & { dominance: Dominance };
-
 export interface GeneratedMap {
-  def: MapDefWithDominance;
+  def: MapDef;
   passabilityFile: string;
   heightmapFile: string;
   passable: Uint8Array;
@@ -143,7 +137,7 @@ export function generateMap(spec: MapSpec): GeneratedMap {
   const mirror = (f: Feature): Feature => ({ x: w - 1 - f.x, y: h - 1 - f.y });
   const both = <T extends Feature>(list: T[]): T[] => list.flatMap((f) => [f, { ...f, ...mirror(f) }]);
 
-  const def: MapDefWithDominance = {
+  const def: MapDef = {
     id: spec.id,
     size: { w, h },
     heightmap: `maps/${spec.id}.heightmap.json`,

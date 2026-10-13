@@ -132,8 +132,7 @@ export const MapDef = z
     claimPoints: z.array(z.object({ x: z.number().int(), y: z.number().int(), kind: z.enum(['scrap', 'settlement', 'powerArmor']) }).strict()),
     spawns: z.array(z.object({ x: z.number().int(), y: z.number().int() }).strict()),
     creepCamps: z.array(z.object({ x: z.number().int(), y: z.number().int(), tier: z.number().int() }).strict()),
-    // TODO(content): verplicht maken zodra data/maps (map-agent) dominance heeft; nu optioneel zodat de bestaande maps valideren.
-    dominance: z.object({ pointsRequired: z.number().int().positive(), minutes: z.number().positive() }).strict().optional(),
+    dominance: z.object({ pointsRequired: z.number().int().positive(), minutes: z.number().positive() }).strict(),
     _comment: comment,
   })
   .strict();

@@ -20,14 +20,8 @@ import {
 
 const dataDir = fileURLToPath(new URL('../../../data/', import.meta.url));
 const assets: MapAssets = { read: (ref) => readFileSync(dataDir + ref, 'utf8') };
-// Tijdelijk: ws4-s2 voegt `dominance` toe aan het MapDef-schema op een andere branch. Zolang het schema het veld
-// nog niet kent, strippen we het voor de strict-validatie. Verwijderen na merge ws4-s2.
-const readDef = (name: string): MapDef => {
-  const raw = JSON.parse(assets.read(`maps/${name}.json`)) as Record<string, unknown>;
-  if (!('dominance' in MapDef.shape)) delete raw['dominance'];
-  return MapDef.parse(raw);
-};
-const readDominance = (name: string): unknown => (JSON.parse(assets.read(`maps/${name}.json`)) as Record<string, unknown>)['dominance'];
+const readDef = (name: string): MapDef => MapDef.parse(JSON.parse(assets.read(`maps/${name}.json`)));
+const readDominance = (name: string): unknown => readDef(name).dominance;
 
 const generated: Array<[string, () => GeneratedMap]> = [
   ['rustbelt', generateRustbelt],
