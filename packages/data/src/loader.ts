@@ -1,5 +1,5 @@
 import { ZodError, type ZodTypeAny, type z } from 'zod';
-import { AiScript, ArmorType, Building, DamageMatrix, DamageType, Faction, Hero, Loadout, Perk, Role, SimTuning, Stat, Tech, BodyType, Provides, Archetype } from './schemas.js';
+import { AiScript, ArmorType, EffectStat, Building, DamageMatrix, DamageType, Faction, Hero, Loadout, Perk, Role, SimTuning, Stat, Tech, BodyType, Provides, Archetype } from './schemas.js';
 import { metersToUnits, mpsToUnitsPerTick, pctToPermille, secondsToTicks } from './units.js';
 
 // De loader: PUUR. Geen fs, geen IO, geen klok. Krijgt geparste JSON, valideert met de zod-schema's,
@@ -33,7 +33,7 @@ export const PROVIDES = Provides.options;
 export const STATS = Stat.options;
 
 export interface EffectData {
-  stat: string;
+  stat: EffectStat;
   /** String-id of vrij doel ('held', 'alle'); de sim lost dit zelf op. */
   target: string;
   /** Pct-stat: promille. M-stat: sim-eenheden. S-stat: ticks. Anders: ruw geheel getal. Zie convertDelta. */
@@ -71,6 +71,10 @@ export interface LoadoutData {
   cooldownTicks: number;
   scrapCost: number;
   craftTicks: number;
+  /** Scrap per verzamelronde (integer); 0 voor niet-verzamelaars. */
+  gatherAmount: number;
+  /** Ticks per verzamelronde; 0 voor niet-verzamelaars. */
+  gatherTicks: number;
   popCost: number;
   prereqTech: number[]; // tech-ids
   visuals: { meshSlots: Record<string, string> };
@@ -113,6 +117,8 @@ export interface HeroData {
   reviveScrap: number;
   reviveTicks: number;
   revivePenaltyPermille: number;
+  /** Aantal keer oplappen voordat de held leeg is. */
+  maxRevives: number;
 }
 
 export interface PerkData {
@@ -160,6 +166,18 @@ export interface GameData {
   sim: SimTuningData;
 }
 
+/** Dominantie-regel van een map in sim-eenheden (maps worden door packages/map geladen; deze omrekening is de enige plek). */
+export interface DominanceData {
+  pointsRequired: number;
+  /** Tijdslimiet in ticks. */
+  ticks: number;
+}
+
+/** Rekent MapDef.dominance om naar sim-eenheden. */
+export function convertDominance(d: { pointsRequired: number; minutes: number }): DominanceData {
+  return { pointsRequired: d.pointsRequired, ticks: secondsToTicks(d.minutes * 60) };
+}
+
 function parseWith<S extends ZodTypeAny>(file: string, schema: S, value: unknown): z.infer<S> {
   const result = schema.safeParse(value);
   if (result.success) return result.data as z.infer<S>;
@@ -201,14 +219,15 @@ function ref(index: IdIndex, what: string, where: string, key: string): number {
 }
 
 /** Omrekening van een effect-delta op basis van het stat-suffix: Pct naar promille, M naar eenheden, S naar ticks. */
-export function convertDelta(stat: string, delta: number): number {
+export function convertDelta(stat: EffectStat, delta: number): number {
+  if (stat.length === 1) return Math.trunc(delta); // SPECIAL-letter, geen suffix
   if (stat.endsWith('Pct')) return pctToPermille(delta);
   if (stat.endsWith('M')) return metersToUnits(delta);
   if (stat.endsWith('S')) return secondsToTicks(delta);
   return Math.trunc(delta);
 }
 
-const convertEffects = (effects: { stat: string; target: string; delta: number }[]): EffectData[] =>
+const convertEffects = (effects: { stat: EffectStat; target: string; delta: number }[]): EffectData[] =>
   effects.map((e) => ({ stat: e.stat, target: e.target, delta: convertDelta(e.stat, e.delta) }));
 
 function parseVersion(version: string): { text: string; packed: number } {
@@ -282,6 +301,8 @@ export function loadGameData(raw: RawGameData): GameData {
       cooldownTicks: secondsToTicks(l.cooldownS),
       scrapCost: Math.trunc(l.scrapCost),
       craftTicks: secondsToTicks(l.craftS),
+      gatherAmount: l.gatherAmount,
+      gatherTicks: secondsToTicks(l.gatherS),
       popCost: l.popCost,
       prereqTech: l.prereqTech.map((t) => ref(techIx, 'tech', where, t)),
       visuals: { meshSlots: { ...l.visuals.meshSlots } },
@@ -333,6 +354,7 @@ export function loadGameData(raw: RawGameData): GameData {
       reviveScrap: Math.trunc(h.reviveScrap),
       reviveTicks: secondsToTicks(h.reviveS),
       revivePenaltyPermille: pctToPermille(h.revivePenaltyPct),
+      maxRevives: h.maxRevives,
     };
   });
 

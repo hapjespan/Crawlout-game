@@ -46,6 +46,8 @@ export const Loadout = z
     cooldownS: nonneg,
     scrapCost: nonneg,
     craftS: nonneg,
+    gatherAmount: z.number().int().nonnegative(), // scrap per verzamelronde; 0 voor niet-verzamelaars
+    gatherS: nonneg, // seconden per verzamelronde; 0 voor niet-verzamelaars
     popCost: z.number().int().positive(),
     prereqTech: z.array(id),
     visuals: z.object({ meshSlots: z.record(z.string(), z.string()) }).strict(), // slot -> manifest-id
@@ -70,7 +72,25 @@ export const Building = z
   })
   .strict();
 
-export const Effect = z.object({ stat: z.string(), target: z.string(), delta: z.number() }).strict();
+// Effect-stats met de suffix-conventie: Pct = procenten (promille in GameData), M = meters (eenheden), S = seconden (ticks).
+// De losse SPECIAL-letters (S P E C I A L) zijn ruwe gehele getallen; die zijn bewust geen S-suffix.
+export const EffectStat = z.enum([
+  'hpPct',
+  'damagePct',
+  'speedPct',
+  'rangeM',
+  'gatherRatePct',
+  'buildTimePct',
+  'researchTimePct',
+  'S',
+  'P',
+  'E',
+  'C',
+  'I',
+  'A',
+  'L',
+]);
+export const Effect = z.object({ stat: EffectStat, target: z.string(), delta: z.number() }).strict();
 
 export const Tech = z
   .object({ id, faction: id, scrapCost: nonneg, researchS: nonneg, building: id, prereqTech: z.array(id), effects: z.array(Effect), _comment: comment })
@@ -89,6 +109,7 @@ export const Hero = z
     reviveScrap: nonneg,
     reviveS: nonneg,
     revivePenaltyPct: nonneg, // 20 volgens het Spelfundament
+    maxRevives: z.number().int().nonnegative(), // aantal keer oplappen voordat de held leeg is
     _comment: comment,
   })
   .strict();
@@ -111,6 +132,8 @@ export const MapDef = z
     claimPoints: z.array(z.object({ x: z.number().int(), y: z.number().int(), kind: z.enum(['scrap', 'settlement', 'powerArmor']) }).strict()),
     spawns: z.array(z.object({ x: z.number().int(), y: z.number().int() }).strict()),
     creepCamps: z.array(z.object({ x: z.number().int(), y: z.number().int(), tier: z.number().int() }).strict()),
+    // TODO(content): verplicht maken zodra data/maps (map-agent) dominance heeft; nu optioneel zodat de bestaande maps valideren.
+    dominance: z.object({ pointsRequired: z.number().int().positive(), minutes: z.number().positive() }).strict().optional(),
     _comment: comment,
   })
   .strict();
@@ -143,6 +166,7 @@ export type Loadout = z.infer<typeof Loadout>;
 export type Building = z.infer<typeof Building>;
 export type Tech = z.infer<typeof Tech>;
 export type Hero = z.infer<typeof Hero>;
+export type EffectStat = z.infer<typeof EffectStat>;
 export type Perk = z.infer<typeof Perk>;
 export type MapDef = z.infer<typeof MapDef>;
 export type AiScript = z.infer<typeof AiScript>;

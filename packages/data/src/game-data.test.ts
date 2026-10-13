@@ -1,6 +1,7 @@
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { loadGameData, type RawGameData } from './loader.js';
+import { convertDelta, convertDominance, loadGameData, type RawGameData } from './loader.js';
+import { MapDef } from './schemas.js';
 import { readDataDir } from './node.js';
 import { metersToUnits, secondsToTicks } from './units.js';
 
@@ -73,6 +74,48 @@ describe('omrekening naar sim-eenheden', () => {
     const patrol = data.loadouts.find((l) => l.key === 'patrol')!;
     expect(data.tech[patrol.prereqTech[0]!]!.key).toBe('geweerrek');
     expect(data.buildings[data.tech.find((t) => t.key === 'raffinage')!.buildingId]!.key).toBe('lab');
+  });
+});
+
+describe('sprint 2: gather, maxRevives, dominance, effect-stats', () => {
+  const data = loadGameData(raw());
+
+  it('rekent gather om: 10 scrap per 6 s wordt 120 ticks', () => {
+    const scavenger = data.loadouts.find((l) => l.key === 'scavenger')!;
+    expect(scavenger.gatherAmount).toBe(10);
+    expect(scavenger.gatherTicks).toBe(120);
+    for (const l of data.loadouts.filter((x) => x.key !== 'scavenger')) {
+      expect(l.gatherAmount).toBe(0);
+      expect(l.gatherTicks).toBe(0);
+    }
+  });
+
+  it('levert maxRevives als integer', () => {
+    expect(data.heroes[0]!.maxRevives).toBe(4);
+  });
+
+  it('weigert een niet-geheel gatherAmount en een onbekende effect-stat', () => {
+    const a = raw();
+    (a.loadouts as { gatherAmount: number }[])[0]!.gatherAmount = 2.5;
+    expect(() => loadGameData(a)).toThrow(/gatherAmount/);
+    const b = raw();
+    (b.perks as { effects: { stat: string }[] }[])[0]!.effects[0]!.stat = 'onzin';
+    expect(() => loadGameData(b)).toThrow(/stat/);
+  });
+
+  it('rekent effect-deltas om op suffix; SPECIAL-letters blijven ruw', () => {
+    expect(convertDelta('hpPct', 10)).toBe(100);
+    expect(convertDelta('rangeM', 1)).toBe(256);
+    expect(convertDelta('S', 2)).toBe(2);
+  });
+
+  it('rekent dominance om naar ticks en valideert het MapDef-veld', () => {
+    expect(convertDominance({ pointsRequired: 1000, minutes: 10 })).toEqual({ pointsRequired: 1000, ticks: 12000 });
+    const map = JSON.parse(JSON.stringify({ id: 'm', size: { w: 8, h: 8 }, heightmap: 'h', passability: 'p', scrapNodes: [], claimPoints: [], spawns: [], creepCamps: [] }));
+    expect(MapDef.safeParse(map).success).toBe(true); // optioneel tot de map-agent het veld vult
+    expect(MapDef.safeParse({ ...map, dominance: { pointsRequired: 1000, minutes: 10 } }).success).toBe(true);
+    expect(MapDef.safeParse({ ...map, dominance: { pointsRequired: 0, minutes: 10 } }).success).toBe(false);
+    expect(MapDef.safeParse({ ...map, dominance: { pointsRequired: 1000, minutes: 10, x: 1 } }).success).toBe(false);
   });
 });
 
