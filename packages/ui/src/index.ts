@@ -4,7 +4,26 @@ import { HUD_CSS } from './styles.js';
 import { Hud } from './view.js';
 import type { HudDeps, HudHandle } from './types.js';
 
-export type { HudDeps, HudHandle, NetworkState, SelectedEntity, TargetingKind, TargetPoint, TargetNode, TargetResult } from './types.js';
+export type {
+  AlertKind,
+  BuildOption,
+  HeroInfo,
+  HudAlert,
+  HudDeps,
+  HudHandle,
+  LobbyPlayerView,
+  LobbyView,
+  MinimapBlip,
+  MinimapClaim,
+  MinimapData,
+  NetworkState,
+  PerkOption,
+  SelectedEntity,
+  TargetingKind,
+  TargetPoint,
+  TargetNode,
+  TargetResult,
+} from './types.js';
 export { ACTIONS, HudController } from './controller.js';
 
 const STYLE_ID = 'co-hud-style';
@@ -26,6 +45,8 @@ export function mountHud(el: HTMLElement, deps: HudDeps): HudHandle {
   ctl.start();
   render(h(Hud, { ctl }), el);
   return {
+    completePlacement: (p) => ctl.completePlacement(p),
+    cancelPlacement: () => ctl.cancelPlacement(),
     completeTargeting: (t) => ctl.completeTargeting(t),
     cancelTargeting: () => ctl.cancelTargeting(),
     refresh: () => ctl.refresh(),

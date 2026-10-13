@@ -28,6 +28,81 @@ export interface TargetNode {
 }
 export type TargetResult = TargetPoint | TargetNode;
 
+/** Eén punt op de minimap, in sim-eenheden. */
+export interface MinimapBlip {
+  x: number;
+  y: number;
+  owner: number;
+  kind: 'unit' | 'building' | 'hero' | 'node';
+}
+/** Een claimpunt; owner null = niemand. */
+export interface MinimapClaim {
+  x: number;
+  y: number;
+  owner: number | null;
+}
+/** Minimap-invoer. Houd het object stabiel tussen lezingen als er niets verandert (de HUD leest elke refresh). */
+export interface MinimapData {
+  w: number;
+  h: number;
+  /** w*h cellen, 1 = begaanbaar. */
+  passable: Uint8Array;
+  /** Sim-eenheden per cel; standaard 256 (1 m). */
+  cellU?: number;
+  blips: readonly MinimapBlip[];
+  claims: readonly MinimapClaim[];
+  /** w*h cellen, 1 = zichtbaar. Ontbreekt: geen fog. Vijandelijke blips buiten het zicht worden verborgen. */
+  visible?: Uint8Array;
+}
+
+export interface BuildOption {
+  buildingId: number;
+  typeId: number;
+  naam: string;
+  scrapCost: number;
+  /** Footprint in cellen. */
+  footprint: { w: number; h: number };
+  affordable: boolean;
+}
+
+export interface HeroInfo {
+  heroId: number;
+  naam: string;
+  /** Absolute xp waarbij het volgende level begint. */
+  xpForNext: number;
+  /** Onbesteed aantal perk-keuzes (level-ups zonder gekozen perk). */
+  pendingPerks: number;
+}
+export interface PerkOption {
+  perkId: number;
+  naam: string;
+  beschrijving?: string;
+}
+
+export type AlertKind = 'attack' | 'settlerLost' | 'claimLost';
+export interface HudAlert {
+  kind: AlertKind;
+  /** Locatie in sim-eenheden. */
+  x: number;
+  y: number;
+}
+export interface ToastAlert extends HudAlert {
+  id: number;
+}
+
+export interface LobbyPlayerView {
+  playerId: number;
+  name: string;
+  ai: boolean;
+  ready: boolean;
+}
+export interface LobbyView {
+  players: readonly LobbyPlayerView[];
+  /** Host = laagste playerId. */
+  hostId: number;
+  you: number;
+}
+
 /** Alles wat de HUD van buiten nodig heeft. Frame, seq en playerId vult de netwerklaag in. */
 export interface HudDeps {
   /** Stuurt een commando; payload volgt COMMAND_PAYLOADS. */
@@ -46,9 +121,34 @@ export interface HudDeps {
   endTargeting?(): void;
   /** Meldt wijzigingen in status, selectie of netwerk. Zonder subscribe pollt de HUD elke 250 ms. */
   subscribe?(listener: () => void): () => void;
+
+  // Sprint 2 (allemaal optioneel: ontbreekt een dep, dan ontbreekt dat onderdeel).
+  /** Minimap-invoer; zonder deze dep geen minimap. */
+  getMinimap?(): MinimapData | null;
+  /** Camera naar een positie in sim-eenheden (minimap- en alert-klik). */
+  focusCamera?(x: number, y: number): void;
+  /** Bouwopties voor het bouwmenu. */
+  getBuildOptions?(): readonly BuildOption[];
+  /** HUD gaat in plaatsingsmodus: toon het voorbeeld en meld de klik via HudHandle.completePlacement. */
+  beginPlacement?(option: BuildOption): void;
+  /** De HUD stopt de plaatsing zelf (Escape, selectie zonder bouwers). */
+  endPlacement?(): void;
+  /** Held-id, xp-drempel en onbestede perks; samen met PlayerStatus.hero vormt dit het held-paneel. */
+  getHeroInfo?(): HeroInfo | null;
+  /** Te kiezen perks bij een level-up. */
+  getPerkOptions?(): readonly PerkOption[];
+  /** Waarschuwingen; geeft de afmelder terug. */
+  subscribeAlerts?(cb: (alert: HudAlert) => void): () => void;
+  /** Lobby-paneel (multiplayer). */
+  getLobby?(): LobbyView | null;
+  toggleReady?(): void;
+  openHostSettings?(): void;
 }
 
 export interface HudHandle {
+  /** De klik van de plaatsing: positie in sim-eenheden. Stuurt Build met de geselecteerde bouwers. False als er geen plaatsing actief is of er geen bouwer geselecteerd is. */
+  completePlacement(pos: TargetPoint): boolean;
+  cancelPlacement(): void;
   /** Een wereldklik die het doel van de actieve targeting is. Geeft false als er geen passende targeting actief is. */
   completeTargeting(target: TargetResult): boolean;
   cancelTargeting(): void;
