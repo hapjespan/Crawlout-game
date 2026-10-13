@@ -74,6 +74,14 @@ export interface SimBuildingType {
   /** Bitmasker over PROVIDES (packages/data): bit k = PROVIDES[k]. */
   readonly provides: number;
   readonly prereqTech: readonly number[];
+  /**
+   * Wapen van een turret (besluit 8, fase-0 sectie 14): damage > 0 geeft het voltooide gebouw Combat. Het kiest zelf
+   * een vijand binnen range (eenheden, vanaf het midden) en schiet elke cooldown ticks. 0 voor gebouwen zonder wapen.
+   */
+  readonly damage: number;
+  readonly damageType: number;
+  readonly range: number;
+  readonly cooldown: number;
 }
 
 /** Doel van een effect: alles van de speler, de held, of één unit- of gebouwtype (typeId). */
@@ -363,6 +371,8 @@ export function validateEnv(env: SimEnv): void {
     req(intIn(b.footprintW, 1, MAX_FOOTPRINT) && intIn(b.footprintH, 1, MAX_FOOTPRINT), `${at}: footprint`);
     req(intIn(b.provides, 0, 0xff) && intIn(b.factionId, 0, config.factions.length - 1), `${at}: provides of factionId`);
     for (const t of b.prereqTech) req(intIn(t, 0, U16), `${at}: prereqTech`);
+    req(intIn(b.damage, 0, I31) && intIn(b.damageType, 0, config.damageMatrix.length - 1), `${at}: damage of damageType`);
+    req(intIn(b.range, 0, MAX_MAP_CELLS_SIDE << 8) && intIn(b.cooldown, 0, I31), `${at}: range of cooldown`);
   }
   config.factions.forEach((f, k) => {
     const at = `factie ${k}`;
@@ -475,6 +485,7 @@ export function envHash(env: SimEnv): number {
   for (const b of c.buildingTypes) {
     h = hashInts(h, [b.typeId, b.buildingId, b.factionId, b.maxHp, b.armorType, b.scrapCost, b.buildTicks, b.footprintW, b.footprintH, b.beds, b.provides]);
     h = hashInts(h, b.prereqTech);
+    h = hashInts(h, [b.damage, b.damageType, b.range, b.cooldown]);
   }
   h = fnv1aInt(h, c.factions.length);
   for (const f of c.factions) {

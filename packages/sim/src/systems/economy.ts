@@ -1,6 +1,4 @@
-import { EVENT_TYPE } from '@crawlout/protocol';
 import {
-  BSTATE_DONE,
   BSTATE_SITE,
   C,
   ORDER_BUILD,
@@ -24,7 +22,7 @@ import {
   workRate,
 } from '../effects.js';
 import { heroSystem } from './hero.js';
-import { PROGRESS_ONE, applyUnitType, createUnit, siteHpAt, takeFromNode } from '../entities.js';
+import { PROGRESS_ONE, applyUnitType, completeBuilding, createUnit, siteHpAt, takeFromNode } from '../entities.js';
 import { imod } from '../math/int.js';
 import type { Census } from './census.js';
 import { takeCensus } from './census.js';
@@ -110,10 +108,7 @@ function buildWork(ctx: SimContext, i: number, reach: number): void {
   const p1 = p0 + rate < total ? p0 + rate : total;
   w.hp[b] = w.hp[b]! + siteHpAt(w.maxHp[b]!, total, p1) - siteHpAt(w.maxHp[b]!, total, p0);
   w.progress[b] = p1;
-  if (p1 >= total) {
-    w.bstate[b] = BSTATE_DONE;
-    ctx.events.push(EVENT_TYPE.buildingDone, w.idOf(b), bt.typeId, w.x[b]!, w.y[b]!);
-  }
+  if (p1 >= total) completeBuilding(ctx, b, bt);
 }
 
 function craftWork(ctx: SimContext, i: number): void {

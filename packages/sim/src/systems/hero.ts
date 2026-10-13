@@ -1,6 +1,6 @@
 import { ENTITY_NONE, EVENT_TYPE, MAX_ENTITIES } from '@crawlout/protocol';
 import type { CommandPayload, HeroState, HeroStatus } from '@crawlout/protocol';
-import { AURA_SIDE_ENEMY, AURA_TARGET_TURRETS, MAX_ABILITIES, SPECIAL_COUNT } from '../config.js';
+import { AURA_SIDE_ENEMY, AURA_TARGET_TURRETS, AURA_TARGET_UNITS, MAX_ABILITIES, SPECIAL_COUNT } from '../config.js';
 import { BSTATE_DONE, C } from '../ecs/world.js';
 import {
   HERO_ALIVE,
@@ -150,14 +150,18 @@ export function auraSystem(ctx: SimContext, auras: Auras): void {
       const zy = ps.zoneY[k]!;
       const r = ab.radiusU;
       for (let i = 0; i < w.highWater; i++) {
-        if (!w.has(i, C.unit | C.health)) continue;
+        if (!w.has(i, C.health)) continue;
+        // units, en turrets: voltooide gebouwen met Combat (besluit 8). Andere gebouwen hebben geen speed of damage.
+        const m = w.mask[i]!;
+        const turret = (m & (C.building | C.combat)) === (C.building | C.combat);
+        if (!turret && (m & C.unit) === 0) continue;
         const o = w.owner[i]!;
         if (o >= ctx.playerCount) continue;
         const dx = w.x[i]! - zx;
         const dy = w.y[i]! - zy;
         if (dx > r || -dx > r || dy > r || -dy > r || dx * dx + dy * dy > r * r) continue;
         for (const e of ab.effects) {
-          if (e.target === AURA_TARGET_TURRETS) continue; // units zijn geen turrets; turrets schieten nog niet in de sim
+          if (e.target === (turret ? AURA_TARGET_UNITS : AURA_TARGET_TURRETS)) continue;
           if ((e.side === AURA_SIDE_ENEMY) === (o === p)) continue;
           if (e.stat === STAT_SPEED) auras.speed[i] = auras.speed[i]! + e.delta;
           else if (e.stat === STAT_DAMAGE) auras.damage[i] = auras.damage[i]! + e.delta;
