@@ -27,14 +27,15 @@ export interface SessionEvents {
 }
 
 export interface Session {
+  /** This client's playerId from the relay's start message (`you`); -1 before the match starts. */
   readonly playerId: number;
+  /** Faction key of this player from the start message; null before the match starts. */
+  readonly faction: string | null;
   sendCommand<T extends CommandType>(type: T, payload: CommandPayload<T>): void;
   /** Asks the sim worker for this player's status (queryMessage, contract 1); the answer arrives in onStatus. */
   requestStatus(): void;
   dispose(): void;
 }
-
-const HUMAN = 0;
 
 export function startSession(data: GameData, map: ClientMap, events: SessionEvents): Session {
   const relay = new LoopbackRelay({ dataVersion: data.dataVersion, defaultMap: map.grid.id });
@@ -42,6 +43,8 @@ export function startSession(data: GameData, map: ClientMap, events: SessionEven
   const worker = new SimWorker();
   const post = (msg: SimWorkerInbound, transfer: Transferable[] = []): void => worker.postMessage(msg, transfer);
 
+  let you = -1;
+  let faction: string | null = null;
   let lastFrame = -1;
   let seq = 0;
   let started = false;
@@ -53,7 +56,7 @@ export function startSession(data: GameData, map: ClientMap, events: SessionEven
       const header = readSnapshotHeader(msg.buffer);
       lastFrame = header.tick;
       if (header.tick % HASH_INTERVAL_FRAMES === 0) {
-        human.send({ kind: 'hash', report: { frame: header.tick, playerId: HUMAN, hash: header.hash } });
+        human.send({ kind: 'hash', report: { frame: header.tick, playerId: you, hash: header.hash } });
       }
       events.onSnapshot(msg.buffer);
     } else if (msg.kind === 'status') {
@@ -66,6 +69,12 @@ export function startSession(data: GameData, map: ClientMap, events: SessionEven
   human.onMessage((msg) => {
     switch (msg.kind) {
       case 'start': {
+        if (msg.map !== map.grid.id) {
+          events.onError(`relay startte map ${msg.map}, maar de client laadde ${map.grid.id}`);
+          return;
+        }
+        you = msg.you;
+        faction = msg.players.find((p) => p.playerId === you)?.faction ?? null;
         const players = msg.players.map((p) => ({ playerId: p.playerId, faction: p.faction, ai: p.ai }));
         const dominance = convertDominance({
           pointsRequired: map.dominance.pointsRequired,
@@ -108,13 +117,18 @@ export function startSession(data: GameData, map: ClientMap, events: SessionEven
   }, TICK_MS);
 
   return {
-    playerId: HUMAN,
+    get playerId() {
+      return you;
+    },
+    get faction() {
+      return faction;
+    },
     sendCommand(type, payload) {
-      if (disposed) return;
-      human.send({ kind: 'command', command: { frame: lastFrame + 1, playerId: HUMAN, seq: seq++, type, payload } });
+      if (disposed || you < 0) return;
+      human.send({ kind: 'command', command: { frame: lastFrame + 1, playerId: you, seq: seq++, type, payload } });
     },
     requestStatus() {
-      if (started && !disposed) post({ kind: 'query', playerId: HUMAN });
+      if (started && !disposed) post({ kind: 'query', playerId: you });
     },
     dispose() {
       disposed = true;

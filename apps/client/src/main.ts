@@ -2,6 +2,7 @@
 // Local skirmish against the scripted AI on the slice map; the same session code drives the ws relay later.
 import {
   MAX_ENTITIES_PER_COMMAND,
+  OWNER_NEUTRAL,
   type CommandPayload,
   type CommandType,
   type DesyncEvent,
@@ -26,7 +27,6 @@ import { startSession } from './game/session.js';
 import { EVENT_TYPE, readSnapshot, type EntityRow } from './game/snapshot.js';
 
 const SLICE_MAP = 'rustbelt';
-const NEUTRAL_OWNER = 255;
 const STATUS_POLL_MS = 250;
 /** Under-attack alerts are rate limited so a long fight is one toast, not a flood. */
 const ATTACK_ALERT_COOLDOWN_MS = 8000;
@@ -141,7 +141,7 @@ async function main(): Promise<void> {
     const target = hit.entityId === null ? undefined : entities.get(hit.entityId);
     if (target) {
       const kind = kindOfTypeId(target.typeId).kind;
-      const hostile = target.owner !== session.playerId && target.owner !== NEUTRAL_OWNER;
+      const hostile = target.owner !== session.playerId && target.owner !== OWNER_NEUTRAL;
       if (hostile && (kind === 'unit' || kind === 'building')) return sendChunked('Attack', ids, { target: target.id });
       if (kind === 'scrapNode') {
         const scavengers = ids.filter((id) => loadoutOf(entities.get(id)!.typeId)?.role === roleIdx('scavenger'));
@@ -152,12 +152,13 @@ async function main(): Promise<void> {
     if (hit.ground) sendChunked('Move', ids, { x: Math.round(hit.ground.x), y: Math.round(hit.ground.y) });
   }
 
-  // Build menu: the faction's buildings that need no research yet (tech arrives later) and are not the HQ.
-  const faction = data.factions[0];
+  // Build menu: this player's faction buildings that need no research yet (tech arrives later) and are not the HQ.
   const hqProvides = PROVIDES.indexOf('hq');
-  const buildable = data.buildings.filter(
-    (b) => b.factionId === faction?.id && b.prereqTech.length === 0 && !b.provides.includes(hqProvides),
-  );
+  const buildable = (): BuildingData[] => {
+    const faction = data.factions.find((f) => f.key === session.faction);
+    if (!faction) return [];
+    return data.buildings.filter((b) => b.factionId === faction.id && b.prereqTech.length === 0 && !b.provides.includes(hqProvides));
+  };
   let placing: BuildOption | null = null;
 
   /** Footprint cells must be passable and free of other buildings; the sim validates again on Build. */
@@ -216,7 +217,7 @@ async function main(): Promise<void> {
       const claims: MinimapData['claims'][number][] = [];
       for (const e of entities.values()) {
         const kind = kindOfTypeId(e.typeId).kind;
-        if (kind === 'claimPoint') claims.push({ x: e.x, y: e.y, owner: e.owner === NEUTRAL_OWNER ? null : e.owner });
+        if (kind === 'claimPoint') claims.push({ x: e.x, y: e.y, owner: e.owner === OWNER_NEUTRAL ? null : e.owner });
         else if (kind === 'scrapNode') blips.push({ x: e.x, y: e.y, owner: e.owner, kind: 'node' });
         else blips.push({ x: e.x, y: e.y, owner: e.owner, kind: kind === 'building' ? 'building' : 'unit' });
       }
@@ -224,7 +225,7 @@ async function main(): Promise<void> {
     },
     focusCamera: (x, y) => renderer.focus(x, y),
     getBuildOptions: () =>
-      buildable.map((b) => ({
+      buildable().map((b) => ({
         buildingId: b.id,
         typeId: buildingTypeId(b.id),
         naam: b.key,
