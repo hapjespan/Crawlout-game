@@ -6,9 +6,18 @@
   "scripts": {
     "replay": "node --import tsx src/index.ts fixtures",
     "record": "node --import tsx src/record.ts fixtures",
-    "replay:browsers": "echo 'actief vanaf sprint 2 (Playwright)' && exit 0",
+    "replay:browsers": "node --import tsx src/browsers.ts fixtures",
     "test": "vitest run"
   },
-  "dependencies": { "@crawlout/protocol": "workspace:*", "@crawlout/data": "workspace:*", "@crawlout/map": "workspace:*", "@crawlout/sim": "workspace:*" },
-  "devDependencies": { "tsx": "^4.0.0" }
+  "dependencies": {
+    "@crawlout/data": "workspace:*",
+    "@crawlout/map": "workspace:*",
+    "@crawlout/protocol": "workspace:*",
+    "@crawlout/sim": "workspace:*"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.0",
+    "esbuild": "0.28.2",
+    "tsx": "^4.0.0"
+  }
 }

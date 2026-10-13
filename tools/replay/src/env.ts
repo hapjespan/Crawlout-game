@@ -1,13 +1,14 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { MapDef, convertDominance } from '@crawlout/data';
+import { MapDef } from '@crawlout/data';
 import type { GameData } from '@crawlout/data';
 import { loadGameDataFromDir } from '@crawlout/data/node';
 import { loadMap } from '@crawlout/map';
 import type { MapGrid } from '@crawlout/map';
 import type { LobbyPlayer, MatchSettings } from '@crawlout/protocol';
-import { simConfigFromGameData, simMapFromGrid, simPlayersFromLobby } from '@crawlout/sim';
+import { simConfigFromGameData } from '@crawlout/sim';
 import type { SimConfig, SimEnv } from '@crawlout/sim';
+import { envFrom } from './env-core.js';
 
 // Omgeving van een replay uit de echte bestanden: data/ via de data-loader, data/maps/<map>.json via packages/map,
 // en de spelers en instellingen uit de replay. Dit is dezelfde opbouw als de client (session.ts) moet doen.
@@ -46,6 +47,21 @@ export function mapGrid(id: string): { def: MapDef; grid: MapGrid } {
 export function buildEnv(mapId: string, players: readonly LobbyPlayer[], settings: MatchSettings): SimEnv {
   const { data, config } = gameData();
   const { def, grid } = mapGrid(mapId);
-  const dominance = convertDominance({ pointsRequired: def.dominance.pointsRequired, minutes: settings.dominanceMinutes ?? def.dominance.minutes });
-  return { players: simPlayersFromLobby(data, players), map: simMapFromGrid({ ...grid, dominance }), config };
+  return envFrom(data, config, def, grid, players, settings);
+}
+
+/**
+ * De ruwe bestanden van een map (mapdefinitie plus de bestanden waar hij naar verwijst), zoals de browser-bundel ze
+ * nodig heeft om dezelfde map te laden zonder bestandssysteem.
+ */
+export function mapSources(id: string): { def: unknown; files: Record<string, string> } {
+  const { def } = mapGrid(id);
+  const files: Record<string, string> = {};
+  loadMap(def, {
+    read: (ref) => {
+      files[ref] = readFileSync(`${DATA_DIR}/${ref}`, 'utf8');
+      return files[ref]!;
+    },
+  });
+  return { def: JSON.parse(readFileSync(`${DATA_DIR}/maps/${id}.json`, 'utf8')) as unknown, files };
 }
