@@ -1,0 +1,51 @@
+{
+  "id": "testmap",
+  "size": {
+    "w": 32,
+    "h": 32
+  },
+  "heightmap": "maps/testmap.heightmap.json",
+  "passability": "maps/testmap.passability.json",
+  "scrapNodes": [
+    {
+      "x": 8,
+      "y": 4,
+      "amount": 1000
+    },
+    {
+      "x": 23,
+      "y": 27,
+      "amount": 1000
+    }
+  ],
+  "claimPoints": [
+    {
+      "x": 16,
+      "y": 16,
+      "kind": "scrap"
+    }
+  ],
+  "spawns": [
+    {
+      "x": 5,
+      "y": 5
+    },
+    {
+      "x": 26,
+      "y": 26
+    }
+  ],
+  "creepCamps": [
+    {
+      "x": 10,
+      "y": 24,
+      "tier": 1
+    },
+    {
+      "x": 21,
+      "y": 7,
+      "tier": 1
+    }
+  ],
+  "_comment": "Testmap 32x32 voor unit-tests. Gegenereerd door packages/map/src/gen/testmap.ts; niet met de hand bewerken."
+}

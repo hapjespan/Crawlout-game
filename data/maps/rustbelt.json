@@ -1,0 +1,81 @@
+{
+  "id": "rustbelt",
+  "size": {
+    "w": 128,
+    "h": 128
+  },
+  "heightmap": "maps/rustbelt.heightmap.json",
+  "passability": "maps/rustbelt.passability.json",
+  "scrapNodes": [
+    {
+      "x": 28,
+      "y": 14,
+      "amount": 1500
+    },
+    {
+      "x": 99,
+      "y": 113,
+      "amount": 1500
+    },
+    {
+      "x": 12,
+      "y": 30,
+      "amount": 1500
+    },
+    {
+      "x": 115,
+      "y": 97,
+      "amount": 1500
+    },
+    {
+      "x": 40,
+      "y": 38,
+      "amount": 2500
+    },
+    {
+      "x": 87,
+      "y": 89,
+      "amount": 2500
+    }
+  ],
+  "claimPoints": [
+    {
+      "x": 46,
+      "y": 96,
+      "kind": "settlement"
+    },
+    {
+      "x": 81,
+      "y": 31,
+      "kind": "settlement"
+    },
+    {
+      "x": 64,
+      "y": 64,
+      "kind": "powerArmor"
+    }
+  ],
+  "spawns": [
+    {
+      "x": 20,
+      "y": 20
+    },
+    {
+      "x": 107,
+      "y": 107
+    }
+  ],
+  "creepCamps": [
+    {
+      "x": 28,
+      "y": 94,
+      "tier": 1
+    },
+    {
+      "x": 99,
+      "y": 33,
+      "tier": 1
+    }
+  ],
+  "_comment": "Slice-map Rustbelt. Gegenereerd door packages/map/src/gen/rustbelt.ts (pnpm --filter @crawlout/map gen); niet met de hand bewerken. Puntsymmetrisch voor eerlijk spel."
+}
