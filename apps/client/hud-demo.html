@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Crawlout HUD-demo</title>
+    <style>
+      html,body{margin:0;height:100%;background:#1b1e20;color:#ddd;font-family:system-ui}
+      #world{position:absolute;inset:0;cursor:crosshair}
+      #hud{position:absolute;inset:0;pointer-events:none}
+      #log{position:absolute;left:50%;top:8px;transform:translateX(-50%);font:12px monospace;color:#9aa0a6;pointer-events:none;max-width:60%}
+    </style>
+  </head>
+  <body>
+    <div id="world" aria-label="Wereld (demo): klik om een doel te kiezen"></div>
+    <div id="hud"></div>
+    <pre id="log"></pre>
+    <script type="module" src="/src/ui/demo.ts"></script>
+  </body>
+</html>
