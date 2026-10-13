@@ -5,8 +5,9 @@
 export const SNAPSHOT_HEADER_BYTES = 12; // tick u32, hash u32, entityCount u16, eventCount u16
 
 // Velden per entity (besluit sprint 2, zie fase-0 sectie 4):
-// - typeId volgt de typeId-ruimte uit packages/data/src/typeIds.ts: unit 1 + loadoutId (1..1023),
-//   gebouw 1024 + buildingId (1024..2047), scrap-node 2048, claimpunt 2049; 0 is geen type.
+// - typeId volgt de typeId-ruimte uit packages/data/src/typeIds.ts: unit 1 + loadoutId (1..999), held 1000 + heroId
+//   (1000..1023, besluit sprint 3: de held is een unit zonder loadout; `heroIdOfTypeId` herkent hem), gebouw
+//   1024 + buildingId (1024..2047), scrap-node 2048, claimpunt 2049; 0 is geen type.
 // - owner: speler 0..MAX_PLAYERS-1, of OWNER_NEUTRAL (constants.ts) voor scrap-nodes en onbezette claimpunten.
 // - hpPct: units en gebouwen hp in procenten; scrap-node resterende voorraad in procenten van de startvoorraad;
 //   claimpunt 100.
@@ -50,6 +51,10 @@ export const EVENT_TYPE = {
   claimTaken: 7, // a = claimpunt, b = nieuwe eigenaar (playerId)
   resourceDepleted: 8, // a = scrap-node, b = 0
   heroLevel: 9, // a = held, b = nieuw level
+  // Besluit sprint 3: een ability-zone (Lockdown) begint. a = held, b = abilityId (index in heroes.abilities), x, y =
+  // het midden van de zone (uitzondering op "x, y is de positie van a"). Straal en duur leest de renderer uit
+  // packages/data op de held (heroIdOfTypeId van het typeId van a); er is geen event voor het einde van de zone.
+  abilityZone: 10,
 } as const;
 export type EventType = keyof typeof EVENT_TYPE;
 
@@ -113,20 +118,35 @@ export function writeSnapshotHeader(buf: ArrayBuffer, h: SnapshotHeader): void {
 
 // Spelerstatus gaat apart, op verzoek van de UI (queryMessage), niet in elke snapshot.
 /**
- * Held van de speler (besluit sprint 2). heroId is de hero-id uit packages/data; naam en perk-teksten haalt de HUD
- * daar zelf. xpNext is de absolute xp waarbij het volgende level begint; pendingPerks het aantal level-ups zonder
- * gekozen perk; revivesLeft het aantal keren oplappen dat nog kan (heroes.maxRevives min gebruikt).
- * heroId, xpNext, pendingPerks en revivesLeft zijn optioneel tot de held in de sim zit (sprint 3); daarna verplicht.
+ * Toestand van de held (besluit sprint 3): alive = staat in de snapshot; dead = gesneuveld, oplappen kan (Recruit op
+ * het hoofdgebouw); reviving = oplappen loopt, reviveTicksLeft telt af; empty = na maxRevives keer oplappen, komt
+ * niet meer terug.
+ */
+export type HeroState = 'alive' | 'dead' | 'reviving' | 'empty';
+
+/**
+ * Held van de speler (besluit sprint 2). heroId is de hero-id uit packages/data; naam, abilities en perk-teksten
+ * haalt de HUD daar zelf. xpNext is de absolute xp waarbij het volgende level begint (op maxlevel de laatste
+ * drempel); pendingPerks het aantal level-ups zonder gekozen perk; revivesLeft het aantal keren oplappen dat nog kan
+ * (heroes.maxRevives min gebruikt). heroId, xpNext, pendingPerks en revivesLeft zijn verplicht sinds de held in de
+ * sim zit (sprint 3).
+ * Besluit sprint 3, verplicht zodra sim-core ze levert (sprint 4), tot dan optioneel: state, reviveTicksLeft (0
+ * buiten reviving), entityId (de entity van de levende held, ENTITY_NONE anders) en abilityCooldownTicks (per
+ * ability, in de volgorde van heroes.abilities; 0 = klaar). De HUD leidt dood-zijn dan niet meer af uit de snapshot.
  */
 export interface HeroStatus {
-  heroId?: number;
+  heroId: number;
   level: number;
   xp: number;
-  xpNext?: number;
+  xpNext: number;
   special: [number, number, number, number, number, number, number];
   perks: number[];
-  pendingPerks?: number;
-  revivesLeft?: number;
+  pendingPerks: number;
+  revivesLeft: number;
+  state?: HeroState;
+  reviveTicksLeft?: number;
+  entityId?: number;
+  abilityCooldownTicks?: number[];
 }
 
 export interface PlayerStatus {
@@ -136,6 +156,11 @@ export interface PlayerStatus {
   pop: number;
   popCap: number;
   beds: number;
-  /** null zolang de speler geen held heeft (sprint 2: altijd null). */
+  /** null zolang de speler geen held heeft (een factie zonder held). */
   hero: HeroStatus | null;
+  /**
+   * Onderzochte tech-ids, oplopend (besluit sprint 3), zodat de HUD het bouwmenu en de craft-opties op prereqTech
+   * filtert. Optioneel tot de HUD en de client hem lezen (sprint 4); de sim levert hem al.
+   */
+  techs?: number[];
 }

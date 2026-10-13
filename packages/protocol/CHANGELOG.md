@@ -1,3 +1,4 @@
 # @crawlout/protocol
 
 - 0.1.0: contract 1 (constanten, snapshot-layout), contract 2 (commando's, frames, lobby, replay) als zod-schema's en types. Eigenaar: architect.
+- 0.2.0 (architect, sprint 3): HeroStatus heroId, xpNext, pendingPerks en revivesLeft verplicht (de sim levert ze); nieuw en optioneel tot sprint 4: `HeroState` (alive, dead, reviving, empty), reviveTicksLeft, entityId, abilityCooldownTicks. PlayerStatus.techs (onderzochte tech-ids, optioneel tot de HUD hem leest). Event `abilityZone` = 10 (a = held, b = abilityId, x, y = midden van de zone). typeId-ruimte: held 1000 + heroId in de unit-ruimte, loadouts 1..999. Recruit = oplappen van de held op het hoofdgebouw (buildingId = entity-id van het hoofdgebouw); Research en HeroAbility beschreven zoals de sim ze uitvoert. Zie docs/CHANGELOG.md en fase-0 sectie 14.

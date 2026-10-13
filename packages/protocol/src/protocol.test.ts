@@ -6,6 +6,8 @@ import {
   CommandEnvelope,
   ENTITY_GEN_BITS,
   ENTITY_INDEX_BITS,
+  ENTITY_NONE,
+  EVENT_TYPE,
   LobbyPlayer,
   MAX_ENTITIES,
   MAX_PLAYERS,
@@ -19,6 +21,8 @@ import {
   readSnapshotHeader,
   snapshotLayout,
   writeSnapshotHeader,
+  type HeroStatus,
+  type PlayerStatus,
 } from './index.js';
 
 describe('besluiten sprint 1', () => {
@@ -57,6 +61,23 @@ describe('besluiten sprint 2', () => {
   it('Build draagt typeId en het midden van de footprint; Claim een pointId', () => {
     expect(CommandEnvelope.safeParse({ frame: 0, playerId: 0, seq: 0, type: 'Build', payload: { ids: [1], typeId: 1025, x: 5248, y: 5248 } }).success).toBe(true);
     expect(CommandEnvelope.safeParse({ frame: 0, playerId: 0, seq: 0, type: 'Claim', payload: { ids: [1], pointId: 7 } }).success).toBe(true);
+  });
+});
+
+describe('besluiten sprint 3', () => {
+  it('abilityZone is een event na heroLevel; de held zit in de unit-ruimte (1000 + heroId)', () => {
+    expect(EVENT_TYPE.abilityZone).toBe(EVENT_TYPE.heroLevel + 1);
+    expect(new Set(Object.values(EVENT_TYPE)).size).toBe(Object.keys(EVENT_TYPE).length);
+  });
+  it('HeroStatus: de velden van sprint 2 zijn verplicht, de toestand van sprint 3 nog optioneel', () => {
+    const hero: HeroStatus = { heroId: 0, level: 1, xp: 0, xpNext: 100, special: [6, 5, 6, 4, 4, 6, 3], perks: [], pendingPerks: 0, revivesLeft: 4 };
+    const full: HeroStatus = { ...hero, state: 'reviving', reviveTicksLeft: 800, entityId: ENTITY_NONE, abilityCooldownTicks: [0] };
+    const status: PlayerStatus = { playerId: 0, scrap: 0, settlers: 0, pop: 0, popCap: 0, beds: 0, hero: full, techs: [1] };
+    expect(status.hero?.state).toBe('reviving');
+  });
+  it('Recruit draagt alleen het gebouw (het hoofdgebouw bij oplappen), HeroAbility mag zonder doel', () => {
+    expect(CommandEnvelope.safeParse({ frame: 0, playerId: 0, seq: 0, type: 'Recruit', payload: { buildingId: 1048577 } }).success).toBe(true);
+    expect(CommandEnvelope.safeParse({ frame: 0, playerId: 0, seq: 0, type: 'HeroAbility', payload: { heroId: 0, abilityId: 0 } }).success).toBe(true);
   });
 });
 

@@ -18,8 +18,18 @@ export type Role = z.infer<typeof Role>;
 // - Cancel: ids zijn eigen bouwplaatsen (teruggave) en/of eigen units (stoppen; een betaalde omscholing wordt
 //   terugbetaald).
 // - Claim: ids zijn bouwers; de sim laat hen het claimgebouw (provides `claim`) van hun factie bouwen binnen
-//   claimRadiusM van het punt, als Build. Sprint 2 (interim, zie fase-0 sectie 13): ids staan claimS seconden
-//   ongestoord binnen claimRadiusM.
+//   claimRadiusM van het punt, als Build op de vrije plek het dichtst bij het punt (sinds sprint 3; het interim van
+//   sprint 2 met claimS is weg).
+// Besluiten sprint 3:
+// - Recruit (buildingId): in de slice het oplappen van de gesneuvelde held. buildingId is het entity-id van het eigen
+//   voltooide hoofdgebouw (provides `hq`); de sim rekent heroes.reviveScrap meteen af en de held staat reviveS later
+//   naast het hoofdgebouw (HeroStatus.state reviving, daarna alive). Cancel met het hoofdgebouw stopt het oplappen
+//   met teruggave. Later rekruteert hetzelfde commando op andere gebouwen (Garde-Initiate, zwervers); geen apart
+//   commando.
+// - Research (techId): de sim kiest zelf het eerste voltooide eigen gebouw van het type uit tech.building zonder
+//   lopend onderzoek; kosten meteen. Cancel met dat gebouw stopt het onderzoek met teruggave.
+// - HeroAbility: abilityId is de index in heroes.abilities van de held; zonder x, y en target geldt de positie van
+//   de held. Het begin van de zone komt als event abilityZone (snapshot.ts).
 export const COMMAND_PAYLOADS = {
   Move: z.object({ ids: EntityIds, ...Pos }).strict(),
   AttackMove: z.object({ ids: EntityIds, ...Pos }).strict(),
