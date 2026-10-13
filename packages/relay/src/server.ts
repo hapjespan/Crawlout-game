@@ -1,5 +1,6 @@
 import { ClientMessage, TICK_MS, type ServerMessage } from '@crawlout/protocol';
-import { pathToFileURL } from 'node:url';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { WebSocketServer, type WebSocket } from 'ws';
 import { Room, type RoomOptions } from './core/room.js';
 
@@ -15,10 +16,19 @@ export interface RelayServerOptions extends Partial<Omit<RoomOptions, 'send' | '
 
 export interface RelayServer {
   readonly port: number;
+  /** dataVersion the rooms report in `start`. */
+  readonly dataVersion: string;
   /** Eén tick voor alle rooms. */
   tick(): void;
   rooms(): ReadonlyMap<string, Room>;
   close(): Promise<void>;
+}
+
+/** data/VERSION of this checkout; `pnpm relay` hands it to the rooms as dataVersion so clients can verify it. */
+export function readDataVersion(path: string = fileURLToPath(new URL('../../../data/VERSION', import.meta.url))): string {
+  const version = readFileSync(path, 'utf8').trim();
+  if (version === '') throw new Error(`${path} is leeg`);
+  return version;
 }
 
 const MAX_PAYLOAD = 16 * 1024 * 1024;
@@ -106,6 +116,7 @@ export async function startRelayServer(options: RelayServerOptions = {}): Promis
 
   return {
     port: boundPort,
+    dataVersion: roomDefaults.dataVersion ?? '0',
     tick,
     rooms: () => rooms,
     close: async () => {
@@ -118,8 +129,8 @@ export async function startRelayServer(options: RelayServerOptions = {}): Promis
 
 // Direct gestart (`pnpm relay`): luister op RELAY_PORT.
 if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
-  const server = await startRelayServer();
-  console.log(`relay luistert op poort ${server.port}`);
+  const server = await startRelayServer({ dataVersion: readDataVersion() });
+  console.log(`relay luistert op poort ${server.port} (dataVersion ${server.dataVersion})`);
   const stop = (): void => {
     void server.close().then(() => process.exit(0));
   };
