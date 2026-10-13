@@ -1,2 +1,2 @@
-// Werkstroom relay bouwt hier: lobby, rooms, frame-bundeling, hash-vergelijking, resync. Berichten uit @crawlout/protocol lobby.ts.
-export {};
+// Standaardingang is browser-veilig. De Node-server staat apart: `@crawlout/relay/server`.
+export * from './browser.js';
