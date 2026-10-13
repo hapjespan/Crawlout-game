@@ -22,6 +22,7 @@ import { applyCommands, normalizeCommand } from './systems/commands.js';
 import type { SimContext } from './systems/common.js';
 import { GlobalState, NO_WINNER, PlayerState, Terrain, WIN_DOMINANCE, WIN_SURRENDER, inMap, setFlowField, walkableAt } from './systems/common.js';
 import { economySystem } from './systems/economy.js';
+import { Auras, auraSystem, heroStatus } from './systems/hero.js';
 import { MovementScratch, movementSystem } from './systems/movement.js';
 import { OrdersScratch, ordersSystem } from './systems/orders.js';
 
@@ -34,7 +35,7 @@ export interface SpawnUnitSpec {
 }
 
 /** Soort entity, voor tests, debug en de query-API. */
-export type EntityKind = 'unit' | 'corpse' | 'building' | 'scrapNode' | 'claimPoint';
+export type EntityKind = 'unit' | 'hero' | 'corpse' | 'building' | 'scrapNode' | 'claimPoint';
 
 /** Leesbare kijk op één entity, voor tests en debug. De renderer gebruikt snapshots, nooit dit. */
 export interface UnitView {
@@ -101,6 +102,7 @@ export class Sim implements SimContext {
   readonly globals = new GlobalState();
   /** Indices van de claimpunten (afgeleid; opgebouwd in start() en na deserialize). */
   readonly claimPoints: number[] = [];
+  readonly auras = new Auras();
 
   private tickNo = 0;
   private readonly envHashValue: number;
@@ -196,7 +198,8 @@ export class Sim implements SimContext {
     ordersSystem(this, this.ordersScratch);
     // 3 flow fields, gebudgetteerd
     this.flow.step(this.config.flowFieldBudget);
-    // 4 beweging plus separatie
+    // 4 beweging plus separatie (eerst de ability-zones van deze tick, ook voor gevecht)
+    auraSystem(this, this.auras);
     movementSystem(this, this.moveScratch);
     // 5 gevecht
     combatSystem(this);
@@ -240,7 +243,7 @@ export class Sim implements SimContext {
     return writeSnapshot(this.world, this.events, this.tickNo > 0 ? this.tickNo - 1 : 0, this.hash());
   }
 
-  /** Spelerstatus voor de HUD (queryMessage, contract 1). Held: null tot de held in de sim zit. */
+  /** Spelerstatus voor de HUD (queryMessage, contract 1). hero is null als de factie geen held heeft. */
   playerStatus(playerId: number): PlayerStatus {
     if (!isInt(playerId) || playerId < 0 || playerId >= this.playerCount) throw new Error(`onbekende speler ${playerId}`);
     takeCensus(this, this.census);
@@ -251,7 +254,7 @@ export class Sim implements SimContext {
       pop: this.census.pop[playerId]!,
       popCap: this.census.popCap(this, playerId),
       beds: this.census.beds[playerId]!,
-      hero: null,
+      hero: heroStatus(this, playerId),
     };
   }
 
@@ -342,7 +345,17 @@ export class Sim implements SimContext {
     if (i < 0) return null;
     const m = w.mask[i]!;
     const kind: EntityKind =
-      (m & C.corpse) !== 0 ? 'corpse' : (m & C.building) !== 0 ? 'building' : (m & C.resource) !== 0 ? 'scrapNode' : (m & C.claim) !== 0 ? 'claimPoint' : 'unit';
+      (m & C.corpse) !== 0
+        ? 'corpse'
+        : (m & C.building) !== 0
+          ? 'building'
+          : (m & C.resource) !== 0
+            ? 'scrapNode'
+            : (m & C.claim) !== 0
+              ? 'claimPoint'
+              : (m & C.hero) !== 0
+                ? 'hero'
+                : 'unit';
     const o = w.currentOrder(i);
     return {
       id,

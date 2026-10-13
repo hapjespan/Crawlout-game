@@ -180,6 +180,15 @@ export interface SimTuningData {
   corpseTicks: number;
   /** Teruggave bij Cancel in promille (1000 = volle prijs). */
   cancelRefundPermille: number;
+  /** SPECIAL van de held, per punt van de letter (sprint 3, ter review). */
+  specialStrengthDamagePermille: number;
+  specialPerceptionRangeU: number;
+  specialEnduranceHpPermille: number;
+  specialCharismaGrowthPermille: number;
+  specialIntelligenceResearchPermille: number;
+  specialAgilitySpeedPermille: number;
+  specialLuckCritPermille: number;
+  critDamagePermille: number;
 }
 
 export interface GameData {
@@ -463,6 +472,14 @@ export function loadGameData(raw: RawGameData): GameData {
       popCapMax: simRaw.popCapMax,
       corpseTicks: secondsToTicks(simRaw.corpseS),
       cancelRefundPermille: pctToPermille(simRaw.cancelRefundPct),
+      specialStrengthDamagePermille: pctToPermille(simRaw.specialStrengthDamagePct),
+      specialPerceptionRangeU: metersToUnits(simRaw.specialPerceptionRangeM),
+      specialEnduranceHpPermille: pctToPermille(simRaw.specialEnduranceHpPct),
+      specialCharismaGrowthPermille: pctToPermille(simRaw.specialCharismaGrowthPct),
+      specialIntelligenceResearchPermille: pctToPermille(simRaw.specialIntelligenceResearchPct),
+      specialAgilitySpeedPermille: pctToPermille(simRaw.specialAgilitySpeedPct),
+      specialLuckCritPermille: pctToPermille(simRaw.specialLuckCritPct),
+      critDamagePermille: pctToPermille(simRaw.critDamagePct),
     },
   };
 }

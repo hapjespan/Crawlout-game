@@ -1,7 +1,16 @@
-import { EffectStat, PROVIDES, ROLES, buildingTypeId, secondsToTicks, unitTypeId } from '@crawlout/data';
-import type { EffectData, GameData, LoadoutData } from '@crawlout/data';
-import type { SimConfig, SimEffect, SimFaction, SimMap, SimPlayer } from './config.js';
-import { EFFECT_TARGET_ALL, EFFECT_TARGET_HERO, EFFECT_TARGET_TYPE } from './config.js';
+import { EffectStat, PROVIDES, ROLES, buildingTypeId, heroTypeId, secondsToTicks, unitTypeId } from '@crawlout/data';
+import type { AbilityEffectData, EffectData, GameData, LoadoutData } from '@crawlout/data';
+import type { SimAuraEffect, SimConfig, SimEffect, SimFaction, SimHero, SimMap, SimPlayer } from './config.js';
+import {
+  AURA_SIDE_ALLY,
+  AURA_SIDE_ENEMY,
+  AURA_TARGET_ALL,
+  AURA_TARGET_TURRETS,
+  AURA_TARGET_UNITS,
+  EFFECT_TARGET_ALL,
+  EFFECT_TARGET_HERO,
+  EFFECT_TARGET_TYPE,
+} from './config.js';
 
 /** Volgorde van de effect-stats (EffectStat in packages/data); de index gaat de sim in (SimEffect.stat). */
 export const EFFECT_STATS = EffectStat.options;
@@ -11,6 +20,15 @@ export const statIndex = (name: EffectStatName): number => EFFECT_STATS.indexOf(
 /** Vrije doelen in effects[].target (contract 3); anders is het doel een loadout- of gebouw-id. */
 export const TARGET_ALL = 'alle';
 export const TARGET_HERO = 'held';
+
+/** Stats die een ability-zone kan zetten (de sim past ze per tick toe op units in de straal). */
+const AURA_STATS: readonly EffectStatName[] = ['speedPct', 'damagePct'];
+
+function simAuraEffect(e: AbilityEffectData, where: string): SimAuraEffect {
+  if (!AURA_STATS.includes(e.stat)) throw new Error(`${where}: ability-effect '${e.stat}' kan de sim (nog) niet toepassen; alleen ${AURA_STATS.join(', ')}`);
+  const target = e.target === 'units' ? AURA_TARGET_UNITS : e.target === 'turrets' ? AURA_TARGET_TURRETS : AURA_TARGET_ALL;
+  return { stat: statIndex(e.stat), side: e.side === 'enemy' ? AURA_SIDE_ENEMY : AURA_SIDE_ALLY, target, delta: e.delta };
+}
 
 /** Effect uit GameData naar SimEffect: het doel wordt alles, de held, of één unit- of gebouwtype. Gooit bij een onbekend doel. */
 function simEffect(data: GameData, e: EffectData, where: string): SimEffect {
@@ -79,6 +97,34 @@ export function simConfigFromGameData(data: GameData): SimConfig {
       roleTypeIds,
       aiScript,
       claimTypeId: claim === undefined ? 0 : buildingTypeId(claim.id),
+      // De eerste held van de factie (laagste id): de lobby kent nog geen heldkeuze.
+      heroId: data.heroes.findIndex((h) => h.factionId === f.id),
+    };
+  });
+  const heroes: SimHero[] = data.heroes.map((h) => {
+    const base = factions[h.factionId]!.roleTypeIds[ROLES.indexOf('militia')] ?? 0;
+    if (base === 0) throw new Error(`held ${h.key}: factie heeft geen militie-loadout als basis`);
+    return {
+      heroId: h.id,
+      typeId: heroTypeId(h.id),
+      factionId: h.factionId,
+      baseTypeId: base,
+      special: [...h.special],
+      xpThresholds: [...h.xpThresholds],
+      xpPerKill: h.xpPerKill,
+      xpPerDiscovery: h.xpPerDiscovery,
+      abilities: h.abilities.map((a) => ({
+        cooldownTicks: a.cooldownTicks,
+        rangeU: a.rangeU,
+        radiusU: a.radiusU,
+        durationTicks: a.durationTicks,
+        effects: a.effects.map((e) => simAuraEffect(e, `held ${h.key} ability ${a.id}`)),
+      })),
+      perkPool: [...h.perkPool],
+      reviveScrap: h.reviveScrap,
+      reviveTicks: h.reviveTicks,
+      revivePenaltyPermille: h.revivePenaltyPermille,
+      maxRevives: h.maxRevives,
     };
   });
   return {
@@ -133,6 +179,23 @@ export function simConfigFromGameData(data: GameData): SimConfig {
       prereqTech: [...t.prereqTech],
       effects: t.effects.map((e) => simEffect(data, e, `tech ${t.key}`)),
     })),
+    heroes,
+    perks: data.perks.map((pk) => ({
+      perkId: pk.id,
+      requiresStat: pk.requires.stat,
+      requiresMin: pk.requires.min,
+      effects: pk.effects.map((e) => simEffect(data, e, `perk ${pk.key}`)),
+    })),
+    special: {
+      strengthDamagePermille: t.specialStrengthDamagePermille,
+      perceptionRangeU: t.specialPerceptionRangeU,
+      enduranceHpPermille: t.specialEnduranceHpPermille,
+      charismaGrowthPermille: t.specialCharismaGrowthPermille,
+      intelligenceResearchPermille: t.specialIntelligenceResearchPermille,
+      agilitySpeedPermille: t.specialAgilitySpeedPermille,
+      luckCritPermille: t.specialLuckCritPermille,
+      critDamagePermille: t.critDamagePermille,
+    },
     damageMatrix: data.damageMatrix.map((row) => [...row]),
     ticksPerMinute: secondsToTicks(60),
     arriveRadius: t.arriveRadiusU,

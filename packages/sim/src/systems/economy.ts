@@ -11,7 +11,19 @@ import {
   PHASE_RETURN,
   PHASE_WORK,
 } from '../ecs/world.js';
-import { STAT_BUILD_TIME, STAT_RESEARCH_TIME, effectSum, gatherAmountOf, refreshPlayer, workRate } from '../effects.js';
+import {
+  SPECIAL_C,
+  SPECIAL_I,
+  STAT_BUILD_TIME,
+  STAT_RESEARCH_TIME,
+  effectSum,
+  gatherAmountOf,
+  liveHeroBonus,
+  refreshPlayer,
+  scalePermille,
+  workRate,
+} from '../effects.js';
+import { heroSystem } from './hero.js';
 import { PROGRESS_ONE, applyUnitType, createUnit, siteHpAt, takeFromNode } from '../entities.js';
 import { imod } from '../math/int.js';
 import type { Census } from './census.js';
@@ -41,6 +53,7 @@ export function economySystem(ctx: SimContext, census: Census): void {
   for (let i = 0; i < w.highWater; i++) if (w.research[i] !== 0 && w.has(i, C.building)) researchWork(ctx, i);
   takeCensus(ctx, census);
   for (let p = 0; p < ctx.playerCount; p++) growth(ctx, census, p);
+  heroSystem(ctx, census);
 }
 
 /** Onderzoek in gebouw i: werk per tick volgens researchTimePct; klaar zet de tech-bit en past de effecten toe. */
@@ -52,7 +65,8 @@ function researchWork(ctx: SimContext, i: number): void {
     w.research[i] = 0;
     return;
   }
-  w.work[i] = w.work[i]! + workRate(PROGRESS_ONE, effectSum(ctx, p, STAT_RESEARCH_TIME, w.typeId[i]!, false));
+  const intel = liveHeroBonus(ctx, p, SPECIAL_I, ctx.config.special.intelligenceResearchPermille);
+  w.work[i] = w.work[i]! + workRate(PROGRESS_ONE, effectSum(ctx, p, STAT_RESEARCH_TIME, w.typeId[i]!, false) + intel);
   if (w.work[i]! < t.researchTicks * PROGRESS_ONE) return;
   w.research[i] = 0;
   w.work[i] = 0;
@@ -132,8 +146,10 @@ function growth(ctx: SimContext, census: Census, p: number): void {
     ps.growth[p] = 0; // geen bed, geen groei (en niets opsparen)
     return;
   }
-  const tpm = ctx.config.ticksPerMinute;
-  ps.growth[p] = ps.growth[p]! + faction.housingGrowthPerMin;
+  // growth telt in duizendsten van een bewoner maal ticksPerMinute; Charisma van een levende held versnelt de groei.
+  const tpm = ctx.config.ticksPerMinute * 1000;
+  const charisma = liveHeroBonus(ctx, p, SPECIAL_C, ctx.config.special.charismaGrowthPermille);
+  ps.growth[p] = ps.growth[p]! + scalePermille(faction.housingGrowthPerMin * 1000, charisma);
   if (ps.growth[p]! < tpm) return;
   ps.growth[p] = ps.growth[p]! - tpm;
   const w = ctx.world;

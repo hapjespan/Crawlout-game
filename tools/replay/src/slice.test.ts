@@ -114,13 +114,23 @@ describe('slice: Rustbelt met echte data', () => {
     const env = buildEnv('rustbelt', lobby(true), settings);
     const sim = createSim({ seed: 42, ...env });
     const limit = 36_000; // 30 minuten speeltijd
+    const claims = [0, 0];
+    let lockdowns = 0;
     for (let f = 0; f < limit && sim.winner() === null; f++) {
       sim.applyBundle({ frame: f, commands: [] });
       sim.tick();
+      for (let k = 0; k < sim.events.count; k++) {
+        if (sim.events.type[k] === EVENT_TYPE.claimTaken && sim.events.b[k]! < 2) claims[sim.events.b[k]!]!++;
+      }
+      for (let p = 0; p < 2; p++) if (sim.ps.zoneTicks[p * 4] === env.config.heroes[0]!.abilities[0]!.durationTicks - 1) lockdowns++;
     }
     const w = sim.winner();
     expect(w).not.toBeNull();
     expect(w!.frame).toBeLessThan(limit);
+    // de AI bouwt claimpalen en zijn held gebruikt Lockdown
+    expect(claims[0]! > 0 && claims[1]! > 0).toBe(true);
+    expect(lockdowns).toBeGreaterThan(0);
+    for (let p = 0; p < 2; p++) expect(sim.playerStatus(p).hero).not.toBeNull();
     // de AI zit in de sim: een andere seed geeft dezelfde partij (de sim gebruikt nog geen toeval), andere hash
     const other = createSim({ seed: 43, ...env });
     expect(other.hash()).not.toBe(createSim({ seed: 42, ...env }).hash());

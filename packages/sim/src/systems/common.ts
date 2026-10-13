@@ -1,5 +1,6 @@
 import { MAX_PLAYERS, OWNER_NEUTRAL } from '@crawlout/protocol';
 import type { SimBuildingType, SimConfig, SimMap, SimPlayer, SimUnitType } from '../config.js';
+import { MAX_ABILITIES } from '../config.js';
 import type { World } from '../ecs/world.js';
 import { BSTATE_DONE, C, NO_FIELD, NO_GOAL } from '../ecs/world.js';
 import type { EventBuffer } from '../events.js';
@@ -7,6 +8,7 @@ import type { FlowFields } from '../flowfield.js';
 import { idiv } from '../math/int.js';
 import { atan2A } from '../math/trig.js';
 import type { Rng } from '../rng.js';
+import type { Auras } from './hero.js';
 
 /** Per-speler state (SoA op MAX_PLAYERS). Gaat de hash en de serialisatie in. */
 export class PlayerState {
@@ -24,6 +26,26 @@ export class PlayerState {
   readonly aiAttack = new Int32Array(MAX_PLAYERS);
   /** Onderzochte techs als bitset (bit k = techId k, MAX_TECHS). */
   readonly tech = new Uint32Array(MAX_PLAYERS);
+  // Held (één per speler; systems/hero.ts). De held-entity draagt C.hero; dit blijft bestaan als hij dood is.
+  /** HERO_NONE, HERO_ALIVE, HERO_DEAD, HERO_REVIVING of HERO_EMPTY. */
+  readonly heroState = new Uint8Array(MAX_PLAYERS);
+  /** Entity-id van de levende held, anders 0. */
+  readonly heroEnt = new Uint32Array(MAX_PLAYERS);
+  readonly heroLevel = new Int32Array(MAX_PLAYERS);
+  readonly heroXp = new Int32Array(MAX_PLAYERS);
+  /** Gekozen perks als bitset (bit k = perkId k, MAX_PERKS). */
+  readonly heroPerks = new Uint32Array(MAX_PLAYERS);
+  /** Level-ups zonder gekozen perk. */
+  readonly heroPending = new Int32Array(MAX_PLAYERS);
+  /** Aantal keer opgelapt. */
+  readonly heroRevives = new Int32Array(MAX_PLAYERS);
+  /** Ticks tot het oplappen klaar is (HERO_REVIVING). */
+  readonly heroTimer = new Int32Array(MAX_PLAYERS);
+  /** Per speler en ability-slot (MAX_ABILITIES): cooldown in ticks, en de zone (midden, resterende ticks). */
+  readonly abCooldown = new Int32Array(MAX_PLAYERS * MAX_ABILITIES);
+  readonly zoneX = new Int32Array(MAX_PLAYERS * MAX_ABILITIES);
+  readonly zoneY = new Int32Array(MAX_PLAYERS * MAX_ABILITIES);
+  readonly zoneTicks = new Int32Array(MAX_PLAYERS * MAX_ABILITIES);
 }
 
 export const NO_WINNER = OWNER_NEUTRAL;
@@ -103,6 +125,8 @@ export interface SimContext {
   readonly frame: number;
   /** Indices van de claimpunten, oplopend (afgeleid: ze ontstaan alleen in de startopstelling en verdwijnen nooit). */
   readonly claimPoints: readonly number[];
+  /** Ability-zones van deze tick (afgeleid, systems/hero.ts auraSystem). */
+  readonly auras: Auras;
   unitType(typeId: number): SimUnitType | undefined;
   buildingType(typeId: number): SimBuildingType | undefined;
 }

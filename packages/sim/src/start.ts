@@ -1,6 +1,7 @@
 import { createBuilding, createClaimPoint, createScrapNode, createUnit, footprintFree, footprintOrigin } from './entities.js';
 import type { SimContext } from './systems/common.js';
 import { cellCenterOf, face, nthFreeCellAround } from './systems/common.js';
+import { spawnStartHero } from './systems/hero.js';
 
 // Startopstelling (contract 2, besluit sprint 1): volgt deterministisch uit map, data en spelers, voor frame 0.
 // Entity-ids in deze volgorde:
@@ -8,7 +9,8 @@ import { cellCenterOf, face, nthFreeCellAround } from './systems/common.js';
 //  2. claimpunten in mapvolgorde (typeId CLAIM_POINT_TYPE_ID, eigenaar neutraal);
 //  3. per speler in playerId-volgorde: het hoofdgebouw van zijn factie, gecentreerd op spawns[playerId], daarna
 //     factions.startUnits in bestandsvolgorde, één unit per vrije cel rond het hoofdgebouw (ring voor ring,
-//     rij voor rij), kijkend naar het midden van de map.
+//     rij voor rij), kijkend naar het midden van de map; daarna zijn held (als de factie er een heeft) op de
+//     volgende vrije cel.
 // Elke speler krijgt startScrap.
 
 export function setupStart(ctx: SimContext): void {
@@ -36,6 +38,11 @@ export function setupStart(ctx: SimContext): void {
         if (i < 0) throw new Error('start: wereld vol');
         face(ctx.world, i, midX, midY);
       }
+    }
+    if (faction.heroId >= 0) {
+      const c = nthFreeCellAround(ctx, fx, fy, bt.footprintW, bt.footprintH, k++);
+      if (c < 0) throw new Error(`start: geen vrije cel voor de held van speler ${p}`);
+      spawnStartHero(ctx, p, c, midX, midY);
     }
   }
 }

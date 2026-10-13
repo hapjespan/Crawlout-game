@@ -189,6 +189,15 @@ export const SimTuning = z
     popCapMax: z.number().int().nonnegative(), // bovengrens pop-cap per speler, los van de bedden (Spelfundament 2.5)
     corpseS: nonneg, // seconden dat een gedode unit als lijk blijft staan (death-animatie)
     cancelRefundPct: z.number().min(0).max(100), // teruggave bij Cancel van een bouwplaats of betaalde omscholing (besluit sprint 2)
+    // Sprint 3 (sim-core, ter review): SPECIAL van de held, per punt van de letter (zie _comment in data/sim.json).
+    specialStrengthDamagePct: z.number(), // S: procent extra schade van de held per punt
+    specialPerceptionRangeM: z.number(), // P: meter extra wapenbereik van de held per punt
+    specialEnduranceHpPct: z.number(), // E: procent extra hp van de held per punt
+    specialCharismaGrowthPct: z.number(), // C: procent extra huisvestingsgroei per punt, zolang de held leeft
+    specialIntelligenceResearchPct: z.number(), // I: procent onderzoekstijd per punt (negatief = sneller), zolang de held leeft
+    specialAgilitySpeedPct: z.number(), // A: procent extra snelheid van de held per punt
+    specialLuckCritPct: z.number().min(0), // L: procent kans op een kritiek schot van de held per punt
+    critDamagePct: z.number().min(0), // extra schade van een kritiek schot, in procent
     _comment: comment,
   })
   .strict();

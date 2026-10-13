@@ -4,6 +4,7 @@ import { PROGRESS_ONE, makeCorpse, removeBuilding } from '../entities.js';
 import { clampI, idiv } from '../math/int.js';
 import type { SimContext } from './common.js';
 import { isEnemy } from './common.js';
+import { heroDied } from './hero.js';
 
 // Systeem 8: dood en opruimen, daarna de presentatie (anim, animT, flags) die de snapshot in gaat.
 // Een unit met hp <= 0 wordt een lijk (anim death, flag dead) tot corpseTicks op is; een gebouw verdwijnt meteen en
@@ -28,9 +29,11 @@ export function cleanupSystem(ctx: SimContext): void {
     }
     if ((m & C.health) === 0 || w.hp[i]! > 0) continue;
     ctx.events.push(EVENT_TYPE.death, w.idOf(i), w.typeId[i]!, w.x[i]!, w.y[i]!);
+    const owner = w.owner[i]!;
     if ((m & C.building) !== 0) removeBuilding(ctx, i);
     else if (corpseTicks > 0) makeCorpse(ctx, i);
     else w.free(i);
+    if ((m & C.hero) !== 0) heroDied(ctx, owner);
   }
   presentation(ctx);
 }

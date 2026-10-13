@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CLAIM_POINT_TYPE_ID, SCRAP_NODE_TYPE_ID, unitTypeId } from '@crawlout/data';
+import { CLAIM_POINT_TYPE_ID, SCRAP_NODE_TYPE_ID, heroTypeId, unitTypeId } from '@crawlout/data';
 import { ANIM, ENTITY_FLAG, EVENT_TYPE, OWNER_NEUTRAL, readSnapshotHeader, snapshotLayout } from '@crawlout/protocol';
 import type { CommandEnvelope } from '@crawlout/protocol';
 import { ORDER_CRAFT, ORDER_GATHER, createSim, createSimWorkerCore, deserialize } from '../src/index.js';
@@ -38,16 +38,18 @@ describe('startopstelling', () => {
     expect(views.slice(0, nodes).every((v) => v.typeId === SCRAP_NODE_TYPE_ID && v.owner === OWNER_NEUTRAL)).toBe(true);
     expect(views.slice(nodes, nodes + claims).every((v) => v.typeId === CLAIM_POINT_TYPE_ID && v.owner === OWNER_NEUTRAL)).toBe(true);
     const faction = DATA.factions[0]!;
-    const perPlayer = 1 + faction.startUnits.reduce((n, u) => n + u.count, 0);
+    const settlers = faction.startUnits.reduce((n, u) => n + u.count, 0);
+    const perPlayer = 2 + settlers; // hoofdgebouw, startunits, held
     for (let p = 0; p < 2; p++) {
       const block = views.slice(nodes + claims + p * perPlayer, nodes + claims + (p + 1) * perPlayer);
       expect(block[0]).toMatchObject({ kind: 'building', typeId: HQ, owner: p, buildState: 2 });
       const spawn = map.spawns[p]!;
       expect(block[0]!.x >> 8).toBe(spawn.x >> 8);
       const want = faction.startUnits.flatMap((u) => Array.from({ length: u.count }, () => unitTypeId(u.loadoutId)));
-      expect(block.slice(1).map((v) => v.typeId)).toEqual(want);
-      expect(block.slice(1).every((v) => v.kind === 'unit' && v.owner === p)).toBe(true);
-      expect(sim.playerStatus(p)).toMatchObject({ scrap: faction.startScrap, settlers: perPlayer - 1, beds: 6, popCap: 6 });
+      expect(block.slice(1, 1 + settlers).map((v) => v.typeId)).toEqual(want);
+      expect(block.slice(1, 1 + settlers).every((v) => v.kind === 'unit' && v.owner === p)).toBe(true);
+      expect(block[1 + settlers]).toMatchObject({ kind: 'hero', typeId: heroTypeId(DATA.heroes[0]!.id), owner: p });
+      expect(sim.playerStatus(p)).toMatchObject({ scrap: faction.startScrap, settlers, beds: 6, popCap: 6 });
     }
     // deterministisch: zelfde invoer, zelfde hash; andere spelers, andere hash
     expect(createSim(testInit(5)).hash()).toBe(sim.hash());
@@ -518,7 +520,15 @@ describe('state', () => {
     expect(st).toEqual({
       kind: 'status',
       frame: 0,
-      status: { playerId: 1, scrap: DATA.factions[0]!.startScrap, settlers: 6, pop: 6, popCap: 6, beds: 6, hero: null },
+      status: {
+        playerId: 1,
+        scrap: DATA.factions[0]!.startScrap,
+        settlers: 6,
+        pop: 6,
+        popCap: 6,
+        beds: 6,
+        hero: { heroId: 0, level: 1, xp: 0, xpNext: DATA.heroes[0]!.xpThresholds[0], special: DATA.heroes[0]!.special, perks: [], pendingPerks: 0, revivesLeft: 4 },
+      },
       winner: null,
     });
     core.receive({ kind: 'query', playerId: 7 });

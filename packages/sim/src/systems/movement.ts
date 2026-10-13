@@ -1,5 +1,7 @@
 import { MAX_ENTITIES } from '@crawlout/protocol';
+import { MAX_SPEED } from '../config.js';
 import { C, NO_FIELD, NO_GOAL } from '../ecs/world.js';
+import { scalePermille } from '../effects.js';
 import { clampI, idiv } from '../math/int.js';
 import { isqrt } from '../math/sqrt.js';
 import { SIN_TABLE, TRIG_BITS, atan2A } from '../math/trig.js';
@@ -107,7 +109,7 @@ export function movementSystem(ctx: SimContext, s: MovementScratch): void {
     const dx = ax - x;
     const dy = ay - y;
     const len = isqrt(dx * dx + dy * dy);
-    const sp = w.speed[i]!;
+    const sp = ctx.auras.any ? clampI(scalePermille(w.speed[i]!, ctx.auras.speed[i]!), 0, MAX_SPEED) : w.speed[i]!;
     if (len === 0) continue;
     if (snap && len <= sp) {
       s.vx[i] = dx;

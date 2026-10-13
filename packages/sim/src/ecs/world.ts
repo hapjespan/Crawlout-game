@@ -48,6 +48,8 @@ export const C = {
   resource: 1 << 8,
   claim: 1 << 9,
   corpse: 1 << 10,
+  /** De held van zijn speler (een unit met de stats uit SimHero; PlayerState houdt xp, level, perks en oplappen). */
+  hero: 1 << 11,
 } as const;
 
 if (MAX_ENTITIES > 1 << ENTITY_INDEX_BITS) throw new Error('MAX_ENTITIES past niet in de index-bits van de entity-id');
@@ -133,6 +135,8 @@ export class World {
   // wordt animT); systeem 7 zet ze elke tick.
   readonly claimBy = new Uint8Array(MAX_ENTITIES);
   readonly claimProgress = new Int32Array(MAX_ENTITIES);
+  /** Claimpunt: bitset van spelers die het ooit namen (ontdekking, xpPerDiscovery voor de held). */
+  readonly seenBy = new Uint8Array(MAX_ENTITIES);
   // Presentatie (gaat de snapshot in, is ook state zodat de hash de hele snapshot dekt)
   readonly anim = new Uint8Array(MAX_ENTITIES);
   readonly animT = new Uint16Array(MAX_ENTITIES);
@@ -305,6 +309,7 @@ export function entityStateArrays(w: World): readonly StateArray[] {
     one('amount', w.amount),
     one('claimBy', w.claimBy),
     one('claimProgress', w.claimProgress),
+    one('seenBy', w.seenBy),
     one('anim', w.anim),
     one('animT', w.animT),
     one('flags', w.flags),

@@ -4,6 +4,8 @@ import { PROVIDES_CLAIM } from '../fromData.js';
 import { clampI, idiv } from '../math/int.js';
 import type { Census } from './census.js';
 import { takeCensus } from './census.js';
+import { heroOf } from '../effects.js';
+import { grantXp } from './hero.js';
 import type { SimContext } from './common.js';
 import { NO_WINNER, WIN_DESTRUCTION, WIN_DOMINANCE, WIN_SURRENDER, distToRect2 } from './common.js';
 
@@ -80,6 +82,12 @@ export function updateClaimPoints(ctx: SimContext, s: ClaimScratch, quiet: boole
     if (next !== cur) {
       w.owner[pt] = next;
       if (!quiet) ctx.events.push(EVENT_TYPE.claimTaken, w.idOf(pt), next, w.x[pt]!, w.y[pt]!);
+      if (next < MAX_PLAYERS && (w.seenBy[pt]! & (1 << next)) === 0) {
+        // Ontdekking: de eerste keer dat een speler dit punt neemt, xpPerDiscovery voor zijn held (niet bij de start).
+        w.seenBy[pt] = w.seenBy[pt]! | (1 << next);
+        const h = quiet ? undefined : heroOf(ctx, next);
+        if (h !== undefined) grantXp(ctx, next, h.xpPerDiscovery);
+      }
     }
     w.claimBy[pt] = siteOwner === next ? OWNER_NEUTRAL : siteOwner;
     w.claimProgress[pt] = w.claimBy[pt] === OWNER_NEUTRAL ? 0 : siteProgress;

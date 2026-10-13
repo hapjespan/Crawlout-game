@@ -1,14 +1,26 @@
 import { EFFECT_TARGET_ALL, EFFECT_TARGET_HERO, MAX_SPEED } from './config.js';
-import type { SimEffect } from './config.js';
+import type { SimEffect, SimHero } from './config.js';
 import { C } from './ecs/world.js';
 import { statIndex } from './fromData.js';
 import { clampI, idiv } from './math/int.js';
 import type { SimContext } from './systems/common.js';
 
-// Effecten van onderzochte techs (tech.json effects[]) op de stats van de eigen units en gebouwen. Afgeleid: de bron is
-// de tech-bitset per speler (PlayerState.tech); de stats op de entities (maxHp, damage, speed, range) worden bij elke
-// wijziging opnieuw berekend (refreshPlayer) en bij het maken van een entity gezet. Pct-stats tellen op in promille
-// bovenop 1000 (100%), M-stats in eenheden bovenop het basisgetal (contract 3: "optelbaar bij het basisgetal").
+// Effecten van onderzochte techs (tech.json effects[]) en van de perks van een levende held (perks.json effects[]) op
+// de stats van de eigen units, gebouwen en de held. Afgeleid: de bron is de tech-bitset per speler (PlayerState.tech)
+// en de perk-bitset van de held; de stats op de entities (maxHp, damage, speed, range) worden bij elke wijziging
+// opnieuw berekend (refreshPlayer) en bij het maken van een entity gezet. Pct-stats tellen op in promille bovenop
+// 1000 (100%), M-stats in eenheden bovenop het basisgetal (contract 3: "optelbaar bij het basisgetal").
+//
+// Held (Spelfundament 5): "Dood: de perks vallen weg" — perk-effecten gelden alleen zolang de held leeft. "Elke oplap
+// kost 20% van perks en health" — na r keer oplappen werken perks op (1000 - r * revivePenaltyPermille) promille van
+// hun delta en is de maxHp van de held met dezelfde factor geschaald; na maxRevives keer is de held leeg.
+
+/** Toestand van de held van een speler (PlayerState.heroState). */
+export const HERO_NONE = 0;
+export const HERO_ALIVE = 1;
+export const HERO_DEAD = 2;
+export const HERO_REVIVING = 3;
+export const HERO_EMPTY = 4;
 
 export const STAT_HP = statIndex('hpPct');
 export const STAT_DAMAGE = statIndex('damagePct');
@@ -17,6 +29,28 @@ export const STAT_RANGE = statIndex('rangeM');
 export const STAT_GATHER = statIndex('gatherRatePct');
 export const STAT_BUILD_TIME = statIndex('buildTimePct');
 export const STAT_RESEARCH_TIME = statIndex('researchTimePct');
+
+/** Eerste SPECIAL-stat (S); P E C I A L volgen in die volgorde. */
+export const STAT_SPECIAL = statIndex('S');
+export const SPECIAL_S = 0;
+export const SPECIAL_P = 1;
+export const SPECIAL_E = 2;
+export const SPECIAL_C = 3;
+export const SPECIAL_I = 4;
+export const SPECIAL_A = 5;
+export const SPECIAL_L = 6;
+
+/** De held van de factie van speler p, of undefined. */
+export function heroOf(ctx: SimContext, p: number): SimHero | undefined {
+  const id = ctx.config.factions[ctx.players[p]!.factionId]!.heroId;
+  return id < 0 ? undefined : ctx.config.heroes[id];
+}
+
+/** Schaal van perks en health (promille) na `revives` keer oplappen. */
+export function reviveScale(h: SimHero, revives: number): number {
+  const v = 1000 - revives * h.revivePenaltyPermille;
+  return v < 0 ? 0 : v;
+}
 
 const matches = (e: SimEffect, stat: number, typeId: number, isHero: boolean): boolean =>
   e.stat === stat && (e.target === EFFECT_TARGET_ALL || (e.target === EFFECT_TARGET_HERO ? isHero : e.typeId === typeId));
@@ -38,7 +72,27 @@ export function effectSum(ctx: SimContext, p: number, stat: number, typeId: numb
       for (const e of t.effects) if (matches(e, stat, typeId, isHero)) sum += e.delta;
     }
   }
+  const perks = ctx.ps.heroPerks[p]!;
+  if (perks !== 0 && ctx.ps.heroState[p] === HERO_ALIVE) {
+    const h = heroOf(ctx, p);
+    const scale = h === undefined ? 0 : reviveScale(h, ctx.ps.heroRevives[p]!);
+    for (const pk of ctx.config.perks) {
+      if (((perks >>> pk.perkId) & 1) === 0) continue;
+      for (const e of pk.effects) if (matches(e, stat, typeId, isHero)) sum += idiv(e.delta * scale, 1000);
+    }
+  }
   return sum;
+}
+
+/** SPECIAL-letter k (SPECIAL_*) van de held van p: basis uit de data plus effecten op die letter. 0 zonder held. */
+export function heroSpecial(ctx: SimContext, p: number, k: number): number {
+  const h = heroOf(ctx, p);
+  return h === undefined ? 0 : h.special[k]! + effectSum(ctx, p, STAT_SPECIAL + k, h.typeId, true);
+}
+
+/** SPECIAL-bonus voor de hele speler (C, I): alleen zolang de held leeft. letter maal promille per punt, anders 0. */
+export function liveHeroBonus(ctx: SimContext, p: number, k: number, perPoint: number): number {
+  return ctx.ps.heroState[p] === HERO_ALIVE ? heroSpecial(ctx, p, k) * perPoint : 0;
 }
 
 /** Scrap per verzamelrit van unit i: gatherAmount van zijn type plus gatherRatePct van de eigenaar. */
@@ -70,7 +124,19 @@ export function applyStats(ctx: SimContext, i: number, grow: boolean): void {
   const p = w.owner[i]!;
   const typeId = w.typeId[i]!;
   const oldMax = w.maxHp[i]!;
-  if (w.has(i, C.building)) {
+  if (w.has(i, C.hero)) {
+    const h = heroOf(ctx, p);
+    const t = h === undefined ? undefined : ctx.unitType(h.baseTypeId);
+    if (h === undefined || t === undefined) return;
+    const sp = ctx.config.special;
+    const special = (k: number): number => heroSpecial(ctx, p, k);
+    const hp = scalePermille(t.maxHp, special(SPECIAL_E) * sp.enduranceHpPermille + effectSum(ctx, p, STAT_HP, h.typeId, true));
+    w.maxHp[i] = Math.max(1, idiv(hp * reviveScale(h, ctx.ps.heroRevives[p]!), 1000));
+    w.damage[i] = scalePermille(t.damage, special(SPECIAL_S) * sp.strengthDamagePermille + effectSum(ctx, p, STAT_DAMAGE, h.typeId, true));
+    const speed = scalePermille(t.speed, special(SPECIAL_A) * sp.agilitySpeedPermille + effectSum(ctx, p, STAT_SPEED, h.typeId, true));
+    w.speed[i] = clampI(speed, 0, MAX_SPEED);
+    w.range[i] = Math.max(0, t.range + special(SPECIAL_P) * sp.perceptionRangeU + effectSum(ctx, p, STAT_RANGE, h.typeId, true));
+  } else if (w.has(i, C.building)) {
     const bt = ctx.buildingType(typeId);
     if (bt === undefined) return;
     w.maxHp[i] = Math.max(1, scalePermille(bt.maxHp, effectSum(ctx, p, STAT_HP, typeId, false)));
@@ -87,7 +153,7 @@ export function applyStats(ctx: SimContext, i: number, grow: boolean): void {
   if (w.hp[i]! > newMax) w.hp[i] = newMax;
 }
 
-/** Na een wijziging in de effecten van speler p (onderzoek klaar): stats van al zijn units en gebouwen opnieuw. */
+/** Na een wijziging in de effecten van speler p (onderzoek, perk, held dood of terug): stats van al zijn units en gebouwen opnieuw. */
 export function refreshPlayer(ctx: SimContext, p: number): void {
   const w = ctx.world;
   for (let i = 0; i < w.highWater; i++) {

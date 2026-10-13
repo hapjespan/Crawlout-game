@@ -31,7 +31,8 @@ export function takeCensus(ctx: SimContext, c: Census): void {
     const o = w.owner[i]!;
     if (o >= MAX_PLAYERS) continue;
     const m = w.mask[i]!;
-    if ((m & (C.unit | C.health)) === (C.unit | C.health)) {
+    if ((m & (C.unit | C.health | C.hero)) === (C.unit | C.health)) {
+      // de held is geen bewoner: hij telt niet voor settlers en pop
       c.settlers[o] = c.settlers[o]! + 1;
       c.pop[o] = c.pop[o]! + (ctx.unitType(w.typeId[i]!)?.popCost ?? 0);
     } else if ((m & C.building) !== 0) {

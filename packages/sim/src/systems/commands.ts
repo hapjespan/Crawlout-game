@@ -1,6 +1,6 @@
 import { COMMAND_PAYLOADS, CommandEnvelope, OWNER_NEUTRAL } from '@crawlout/protocol';
 import type { CommandPayload, CommandType } from '@crawlout/protocol';
-import { ROLES, UNIT_TYPE_BASE, UNIT_TYPE_MAX, unitTypeId } from '@crawlout/data';
+import { HERO_TYPE_BASE, ROLES, UNIT_TYPE_BASE, unitTypeId } from '@crawlout/data';
 import {
   BSTATE_DONE,
   BSTATE_SITE,
@@ -18,6 +18,7 @@ import { hasTechs } from '../effects.js';
 import { createBuilding, footprintFree, footprintOrigin, removeBuilding } from '../entities.js';
 import { PROVIDES_CLAIM, PROVIDES_HQ } from '../fromData.js';
 import { inClaimRadius } from './claims.js';
+import { applyHeroAbility, applyPickPerk, applyRecruit, cancelRevive } from './hero.js';
 import { idiv, isInt } from '../math/int.js';
 import { isqrt } from '../math/sqrt.js';
 import type { SimContext } from './common.js';
@@ -83,12 +84,17 @@ export function applyCommand(ctx: SimContext, cmd: SimCommand): boolean {
       return applyClaim(ctx, p, cmd.payload);
     case 'Research':
       return applyResearch(ctx, p, cmd.payload.techId);
+    case 'Recruit':
+      return applyRecruit(ctx, p, cmd.payload);
+    case 'HeroAbility':
+      return applyHeroAbility(ctx, p, cmd.payload);
+    case 'PickPerk':
+      return applyPickPerk(ctx, p, cmd.payload);
     case 'Surrender':
       ctx.ps.defeated[p] = WIN_SURRENDER;
       ctx.ps.domTicks[p] = 0;
       return true;
     default:
-      // Recruit, HeroAbility, PickPerk: nog niet in de sim.
       return false;
   }
 }
@@ -234,8 +240,8 @@ function ownSiteAt(ctx: SimContext, p: number, typeId: number, fx: number, fy: n
 }
 
 /**
- * Cancel: een eigen bouwplaats verdwijnt met teruggave; een voltooid eigen gebouw stopt zijn onderzoek met teruggave;
- * een unit stopt (een betaalde omscholing wordt terugbetaald). Teruggave: cancelRefundPermille van de prijs.
+ * Cancel: een eigen bouwplaats verdwijnt met teruggave; een voltooid eigen gebouw stopt zijn onderzoek met teruggave,
+ * het hoofdgebouw ook het oplappen van de held; een unit stopt (een betaalde omscholing wordt terugbetaald). Teruggave: cancelRefundPermille van de prijs.
  */
 function applyCancel(ctx: SimContext, p: number, ids: readonly number[]): boolean {
   const w = ctx.world;
@@ -251,6 +257,8 @@ function applyCancel(ctx: SimContext, p: number, ids: readonly number[]): boolea
       if (t !== undefined) ctx.ps.scrap[p] = ctx.ps.scrap[p]! + refundOf(ctx, t.scrapCost);
       w.research[i] = 0;
       w.work[i] = 0;
+      any = true;
+    } else if (cancelRevive(ctx, p, i, (cost) => refundOf(ctx, cost))) {
       any = true;
     }
   }
@@ -286,6 +294,7 @@ function applyCraftTo(ctx: SimContext, p: number, ids: readonly number[], pick: 
   const roles = ctx.config.factions[ctx.players[p]!.factionId]!.roleTypeIds;
   let any = false;
   for (const i of ownedWith(ctx, ids, p, UNIT)) {
+    if (w.has(i, C.hero)) continue; // de held schoolt niet om
     const typeId = pick(i, roles);
     const t = typeId === 0 ? undefined : ctx.unitType(typeId);
     if (t === undefined || t.factionId !== ctx.players[p]!.factionId || !hasTechs(ctx, p, t.prereqTech)) continue;
@@ -298,7 +307,7 @@ function applyCraftTo(ctx: SimContext, p: number, ids: readonly number[], pick: 
 }
 
 function applyCraft(ctx: SimContext, p: number, pl: CommandPayload<'Craft'>): boolean {
-  if (!isInt(pl.loadoutId) || pl.loadoutId < 0 || pl.loadoutId > UNIT_TYPE_MAX - UNIT_TYPE_BASE) return false;
+  if (!isInt(pl.loadoutId) || pl.loadoutId < 0 || pl.loadoutId >= HERO_TYPE_BASE - UNIT_TYPE_BASE) return false;
   const typeId = unitTypeId(pl.loadoutId);
   return applyCraftTo(ctx, p, pl.ids, () => typeId);
 }

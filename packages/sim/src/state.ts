@@ -73,7 +73,10 @@ function bodyChunks(p: StateParts): Uint8Array[] {
   const out: Uint8Array[] = [bytesOf(w.freeStack, w.freeCount)];
   for (const s of w.stateArrays) out.push(bytesOf(s.array, w.highWater * s.perEntity));
   for (const a of [ff.active, ff.tx0, ff.ty0, ff.tw, ff.th, ff.processed]) out.push(bytesOf(a, MAX_FLOW_FIELDS));
-  for (const a of [ps.scrap, ps.growth, ps.domTicks, ps.defeated, ps.hadHq, ps.aiBuild, ps.aiAttack, ps.tech]) out.push(bytesOf(a, a.length));
+  const players = [ps.scrap, ps.growth, ps.domTicks, ps.defeated, ps.hadHq, ps.aiBuild, ps.aiAttack, ps.tech];
+  players.push(ps.heroState, ps.heroEnt, ps.heroLevel, ps.heroXp, ps.heroPerks, ps.heroPending, ps.heroRevives, ps.heroTimer);
+  players.push(ps.abCooldown, ps.zoneX, ps.zoneY, ps.zoneTicks);
+  for (const a of players) out.push(bytesOf(a, a.length));
   out.push(bytesOf(p.globals.words, p.globals.words.length));
   return out;
 }

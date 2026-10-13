@@ -133,6 +133,14 @@ describe('sim-tuning', () => {
       popCapMax: 50,
       corpseTicks: 40,
       cancelRefundPermille: 1000,
+      specialStrengthDamagePermille: 100,
+      specialPerceptionRangeU: 64,
+      specialEnduranceHpPermille: 250,
+      specialCharismaGrowthPermille: 50,
+      specialIntelligenceResearchPermille: -30,
+      specialAgilitySpeedPermille: 30,
+      specialLuckCritPermille: 20,
+      critDamagePermille: 1000,
     });
   });
 
