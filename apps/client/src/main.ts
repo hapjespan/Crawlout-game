@@ -92,7 +92,13 @@ async function main(): Promise<void> {
     const id = status?.hero?.heroId;
     return id === undefined ? undefined : data.heroes[id];
   };
-  const heroAlive = (): boolean => [...entities.values()].some((e) => e.owner === session.playerId && heroIdOfTypeId(e.typeId) >= 0);
+  /** Tech ids this player has researched (PlayerStatus.techs); prerequisites gate buildings, loadouts and techs. */
+  const unlocked = (prereq: readonly number[]): boolean => prereq.every((t) => status?.techs?.includes(t) ?? false);
+  const heroAlive = (): boolean => {
+    const state = status?.hero?.state;
+    if (state !== undefined) return state === 'alive';
+    return [...entities.values()].some((e) => e.owner === session.playerId && heroIdOfTypeId(e.typeId) >= 0);
+  };
   const hqProvidesIdx = PROVIDES.indexOf('hq');
   const myHq = (): EntityRow | undefined =>
     [...entities.values()].find((e) => e.owner === session.playerId && buildingOf(e.typeId)?.provides.includes(hqProvidesIdx));
@@ -186,7 +192,7 @@ async function main(): Promise<void> {
   const buildable = (): BuildingData[] => {
     const faction = data.factions.find((f) => f.key === session.faction);
     if (!faction) return [];
-    return data.buildings.filter((b) => b.factionId === faction.id && b.prereqTech.length === 0 && !b.provides.includes(hqProvidesIdx));
+    return data.buildings.filter((b) => b.factionId === faction.id && unlocked(b.prereqTech) && !b.provides.includes(hqProvidesIdx));
   };
   let placing: BuildOption | null = null;
 
@@ -274,15 +280,25 @@ async function main(): Promise<void> {
     // Hero panel from PlayerStatus.hero (HeroStatus) plus names, abilities and perks from packages/data.
     heroName: (heroId) => data.heroes[heroId]?.naam,
     getHeroAbilities: () =>
-      (myHero()?.abilities ?? []).map((a, i) => ({ abilityId: i, naam: a.naam, needsTarget: a.rangeU > 0, cooldownPct: 0 })),
-    isHeroDead: () => status?.hero != null && !heroAlive(),
+      (myHero()?.abilities ?? []).map((a, i) => {
+        const left = status?.hero?.abilityCooldownTicks?.[i] ?? 0;
+        const cooldownPct = a.cooldownTicks > 0 ? Math.min(100, Math.round((left * 100) / a.cooldownTicks)) : 0;
+        return { abilityId: i, naam: a.naam, needsTarget: a.rangeU > 0, cooldownPct };
+      }),
+    isHeroDead: () => status?.hero != null && status.hero.state !== 'reviving' && !heroAlive(),
     reviveHero: () => {
       const hq = myHq();
       if (hq) session.sendCommand('Recruit', { buildingId: hq.id });
     },
     getResearchOptions: (buildingIds) =>
       data.tech
-        .filter((t) => t.factionId === myFaction()?.id && buildingIds.includes(t.buildingId))
+        .filter(
+          (t) =>
+            t.factionId === myFaction()?.id &&
+            buildingIds.includes(t.buildingId) &&
+            !(status?.techs?.includes(t.id) ?? false) &&
+            unlocked(t.prereqTech),
+        )
         .map((t) => ({ techId: t.id, naam: t.key, scrapCost: t.scrapCost, affordable: (status?.scrap ?? 0) >= t.scrapCost })),
     getRecruitOptions: (buildingIds) => {
       const hero = myHero();
@@ -293,7 +309,7 @@ async function main(): Promise<void> {
     },
     getCraftOptions: () =>
       data.loadouts
-        .filter((l) => l.factionId === myFaction()?.id)
+        .filter((l) => l.factionId === myFaction()?.id && unlocked(l.prereqTech))
         .map((l) => ({ loadoutId: l.id, naam: l.key, scrapCost: l.scrapCost, affordable: (status?.scrap ?? 0) >= l.scrapCost })),
     getPerkOptions: () => {
       const h = status?.hero;
