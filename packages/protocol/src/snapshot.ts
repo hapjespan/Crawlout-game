@@ -28,7 +28,8 @@ export const ENTITY_FIELDS = {
 export type EntityField = keyof typeof ENTITY_FIELDS;
 
 // selected zet de client (selectie is geen sim-state; de client stempelt hem in de buffer voor de renderer die
-// leest); dead, carrying en inCombat zet de sim.
+// leest); dead, carrying en inCombat zet de sim. inCombat staat ook op een turret met doel (een voltooid gebouw
+// met Combat, besluit 8 in fase-0 sectie 14); dead en carrying komen alleen op units voor.
 export const ENTITY_FLAG = { selected: 1 << 0, dead: 1 << 1, carrying: 1 << 2, inCombat: 1 << 3 } as const;
 
 // Animatie-ids in het veld `anim` (besluit sprint 1). De volgorde is de clipvolgorde uit de artist-brief
