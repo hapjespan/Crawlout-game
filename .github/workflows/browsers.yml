@@ -17,6 +17,9 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - name: Replay-set in Chromium, Firefox en WebKit (actief vanaf sprint 2)
+      - name: Playwright-browsers installeren
+        run: pnpm --filter @crawlout/replay exec playwright install --with-deps chromium firefox webkit
+      - name: Replay-set in Chromium, Firefox en WebKit
         run: pnpm --filter @crawlout/replay run replay:browsers
-        continue-on-error: true
+        env:
+          REPLAY_BROWSERS_STRICT: "1"

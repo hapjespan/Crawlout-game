@@ -21,7 +21,7 @@ let status: PlayerStatus = {
   pop: 6,
   popCap: 10,
   beds: 8,
-  hero: { heroId: 99, level: 2, xp: 120, xpNext: 300, special: [6, 5, 6, 3, 4, 6, 3], perks: [], pendingPerks: 1, revivesLeft: 4 },
+  hero: { heroId: 99, level: 2, xp: 120, xpNext: 300, special: [6, 5, 6, 3, 4, 6, 3], perks: [], pendingPerks: 1, revivesLeft: 4, state: 'alive', reviveTicksLeft: 0, entityId: 0, abilityCooldownTicks: [0, 0] },
 };
 let heroDead = false;
 const abilities = [

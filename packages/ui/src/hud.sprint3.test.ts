@@ -5,7 +5,7 @@ import type { CommandType, HeroStatus, PlayerStatus } from '@crawlout/protocol';
 import { ACTIONS, mountHud } from './index.js';
 import type { CraftOption, HeroAbilityOption, HudDeps, HudHandle, PerkOption, RecruitOption, ResearchOption, SelectedEntity } from './index.js';
 
-const heroBase: HeroStatus = { heroId: 5, level: 4, xp: 200, xpNext: 400, special: [5, 5, 5, 5, 5, 5, 5], perks: [], pendingPerks: 0, revivesLeft: 3 };
+const heroBase: HeroStatus = { heroId: 5, level: 4, xp: 200, xpNext: 400, special: [5, 5, 5, 5, 5, 5, 5], perks: [], pendingPerks: 0, revivesLeft: 3, state: 'alive', reviveTicksLeft: 0, entityId: 0, abilityCooldownTicks: [0] };
 const status = (hero: HeroStatus | null): PlayerStatus => ({ playerId: 0, scrap: 100, settlers: 3, pop: 3, popCap: 8, beds: 4, hero });
 const unit = (id: number): SelectedEntity => ({ id, typeId: 3, loadoutName: 'Knuppel', hpPct: 80, role: 'scavenger' });
 const building = (id: number, buildingId: number): SelectedEntity => ({ id, typeId: 1024 + buildingId, loadoutName: null, hpPct: 100, role: null });

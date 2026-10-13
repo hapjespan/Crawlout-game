@@ -110,6 +110,10 @@ export function startSession(data: GameData, map: ClientMap, events: SessionEven
         link.send({ kind: 'hash', report: { frame: header.tick, playerId: you, hash: header.hash } });
       }
       events.onSnapshot(msg.buffer);
+    } else if (msg.kind === 'hashes') {
+      // Catch-up (resync, stall): the worker posts only the last snapshot of a beat and reports the hashes of the
+      // frames in between here; the relay expects one per HASH_INTERVAL_FRAMES frames.
+      for (const r of msg.reports) link.send({ kind: 'hash', report: { frame: r.frame, playerId: you, hash: r.hash } });
     } else if (msg.kind === 'state') {
       dumpWaiters.shift()?.(msg);
     } else if (msg.kind === 'status') {
