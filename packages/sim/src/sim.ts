@@ -183,6 +183,13 @@ export class Sim implements SimContext {
     return this.pending.has(frame);
   }
 
+  /** Aantal aaneengesloten bundels vanaf het volgende frame: zoveel ticks kan de sim nu achter elkaar doen. */
+  readyBundles(): number {
+    let n = 0;
+    while (this.pending.has(this.tickNo + n)) n++;
+    return n;
+  }
+
   /** Eén tick: systemen 1 tot en met 9 in vaste volgorde (contract 1). Geeft de state-hash na deze tick. */
   tick(): number {
     const f = this.tickNo;
