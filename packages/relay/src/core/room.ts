@@ -56,7 +56,8 @@ export class Room {
     this.defaultFaction = options.defaultFaction ?? 'dwellers';
     this.minPlayers = options.minPlayers ?? 2;
     const delay = Math.min(DELAY_FRAMES_MAX, Math.max(DELAY_FRAMES_MIN, options.settings?.delayFrames ?? DELAY_FRAMES_DEFAULT));
-    this.settings = { mode: 'skirmish', dominanceMinutes: 10, ...options.settings, delayFrames: delay };
+    // Geen spelregelgetallen hier: dominanceMinutes komt via setSettings of, als hij ontbreekt, uit de map.
+    this.settings = { mode: 'skirmish', ...options.settings, delayFrames: delay };
     this.map = options.defaultMap ?? 'rustbelt';
   }
 
@@ -161,7 +162,7 @@ export class Room {
     }
     if (playerId < 0) return this.error(connId, 'room is vol');
     this.conns.set(connId, playerId);
-    this.players.set(playerId, { playerId, name, faction: this.defaultFaction, ready: false, online: true });
+    this.players.set(playerId, { playerId, name, faction: this.defaultFaction, ready: false, online: true, ai: false });
     for (const p of this.players.values()) p.ready = false;
     this.broadcastLobby();
   }

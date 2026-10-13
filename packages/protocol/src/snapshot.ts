@@ -1,6 +1,7 @@
 // Contract 1: snapshot sim naar render. Eén transferable ArrayBuffer per tick.
 // Header, dan SoA-arrays per entity (gesorteerd op elementgrootte voor alignment), dan events.
 
+// tick = het laatst uitgevoerde frame; hash = de state-hash na dat frame (besluit sprint 1, zie frames.ts).
 export const SNAPSHOT_HEADER_BYTES = 12; // tick u32, hash u32, entityCount u16, eventCount u16
 
 export const ENTITY_FIELDS = {
@@ -18,6 +19,13 @@ export const ENTITY_FIELDS = {
 export type EntityField = keyof typeof ENTITY_FIELDS;
 
 export const ENTITY_FLAG = { selected: 1 << 0, dead: 1 << 1, carrying: 1 << 2, inCombat: 1 << 3 } as const;
+
+// Animatie-ids in het veld `anim` (besluit sprint 1). De volgorde is de clipvolgorde uit de artist-brief
+// (Spelfundament sectie 9); de asset-cli bakt clips in deze volgorde en de renderer indexeert ermee.
+export const ANIM = { idle: 0, walk: 1, run: 2, attack1: 3, attack2: 4, gather: 5, build: 6, death: 7 } as const;
+export type AnimName = keyof typeof ANIM;
+/** Clipnamen op index, voor manifest-validatie en bakken. */
+export const ANIM_NAMES: readonly AnimName[] = ['idle', 'walk', 'run', 'attack1', 'attack2', 'gather', 'build', 'death'];
 
 export const EVENT_TYPE = {
   spawn: 1,

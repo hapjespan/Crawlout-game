@@ -1,7 +1,7 @@
 // Fake snapshot source for the render demo and tests: units wandering over the map, no sim involved.
 // Output follows contract 1 exactly (snapshotLayout); positions in sim units, yaw 0..65535, animT 0..65535.
-// Yaw convention used here (open point for sim-core): 0 faces sim +y, increasing towards sim +x,
-// so a direction (dx, dy) has yaw atan2(dx, dy).
+// Yaw convention (protocol, YAW_PLUS_X / YAW_PLUS_Y): 0 faces sim +x, increasing towards sim +y,
+// so a direction (dx, dy) has yaw atan2(dy, dx).
 import { ANGLE_FULL, ENTITY_FLAG, EVENT_TYPE, TICK_MS, UNITS_PER_METER } from '@crawlout/protocol';
 import { CLIP, CLIPS } from '../units/rig.js';
 import { allocSnapshot } from './snapshotWriter.js';
@@ -167,7 +167,7 @@ export class FakeSnapshotSource {
         } else {
           this.x[i] = this.x[i]! + Math.round((dx / dist) * speed);
           this.y[i] = this.y[i]! + Math.round((dy / dist) * speed);
-          const a = Math.round((Math.atan2(dx, dy) / (Math.PI * 2)) * ANGLE_FULL);
+          const a = Math.round((Math.atan2(dy, dx) / (Math.PI * 2)) * ANGLE_FULL);
           this.yaw[i] = ((a % ANGLE_FULL) + ANGLE_FULL) % ANGLE_FULL;
         }
       } else {

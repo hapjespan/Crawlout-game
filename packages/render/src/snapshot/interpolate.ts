@@ -1,6 +1,6 @@
 // Interpolation between the last two snapshots. The renderer runs one tick behind the sim:
 // when snapshot N arrives at time t, we show N-1 at t and reach N at t + TICK_MS.
-import { ANGLE_FULL, MAX_ENTITIES, TICK_MS, UNITS_PER_METER } from '@crawlout/protocol';
+import { ANGLE_FULL, MAX_ENTITIES, TICK_MS, UNITS_PER_METER, YAW_PLUS_Y } from '@crawlout/protocol';
 import { parseSnapshot, type SnapshotView } from './parse.js';
 
 /** Render-side state for one frame, in world units: meters and radians. Preallocated, reused every frame. */
@@ -13,7 +13,10 @@ export interface InterpolatedFrame {
   y: Float32Array;
   /** World z in meters (sim y / 256). */
   z: Float32Array;
-  /** Heading in radians around +Y; 0 faces world +Z (sim +y). */
+  /**
+   * Heading in radians around +Y for a model that faces world +Z at 0 (rotY in unitMaterial.ts).
+   * Sim yaw (protocol): 0 = sim +x = world +x, 16384 = sim +y = world +z, so radians = PI/2 - yaw * 2PI/65536.
+   */
   yaw: Float32Array;
   /** Clip progress 0..1. */
   animT: Float32Array;
@@ -43,6 +46,8 @@ export function createInterpolatedFrame(capacity: number = MAX_ENTITIES): Interp
 
 const HALF_ANGLE = ANGLE_FULL / 2;
 const RAD_PER_ANGLE = (Math.PI * 2) / ANGLE_FULL;
+/** Model forward (+Z) at render yaw 0 corresponds to sim yaw YAW_PLUS_Y; sim angles grow from +x towards +y. */
+const MODEL_FORWARD_RAD = YAW_PLUS_Y * RAD_PER_ANGLE;
 const INV_UNITS = 1 / UNITS_PER_METER;
 /** Moves larger than this (sim units per tick) are teleports and snap instead of sliding. */
 export const TELEPORT_UNITS_PER_TICK = 16 * UNITS_PER_METER;
@@ -105,7 +110,7 @@ export function interpolateInto(
     out.x[i] = x * INV_UNITS;
     out.y[i] = 0;
     out.z[i] = y * INV_UNITS;
-    out.yaw[i] = yaw * RAD_PER_ANGLE;
+    out.yaw[i] = MODEL_FORWARD_RAD - yaw * RAD_PER_ANGLE;
     out.animT[i] = animT;
     out.anim[i] = cAnim;
     out.owner[i] = c.owner[i]!;

@@ -85,7 +85,7 @@ describe('SnapshotInterpolator', () => {
     si.push(snap(1, [{ id: 1, x: 0, y: 0, yaw: 65436, anim: 1, animT: 65036 }, { id: 2, x: 0, y: 0, anim: 1, animT: 1000 }]), 0);
     si.push(snap(2, [{ id: 1, x: 0, y: 0, yaw: 100, anim: 1, animT: 500 }, { id: 2, x: 0, y: 0, anim: 3, animT: 2000 }]), 0);
     si.sample(TICK_MS / 2, out);
-    expect(out.yaw[0]).toBeCloseTo(0, 5); // halfway between -100 and +100 on the circle
+    expect(out.yaw[0]).toBeCloseTo(Math.PI / 2, 5); // halfway between -100 and +100 on the circle = sim +x = render PI/2
     expect(out.animT[0]).toBeCloseTo(0, 5); // 65036 -> 500 wraps through 0
     expect(out.animT[1]).toBeCloseTo(2000 / 65536, 6);
     expect(out.anim[1]).toBe(3);
@@ -110,7 +110,7 @@ describe('SnapshotInterpolator', () => {
     si.sample(0, out);
     expect(out.x[0]).toBe(3);
     expect(out.z[0]).toBe(7);
-    expect(out.yaw[0]).toBeCloseTo(Math.PI / 2, 5);
+    expect(out.yaw[0]).toBeCloseTo(0, 5); // sim yaw 16384 = sim +y = world +z = model forward, render yaw 0
     expect([out.owner[0], out.flags[0], out.hpPct[0], out.typeId[0]]).toEqual([2, 1, 80, 9]);
   });
 });
