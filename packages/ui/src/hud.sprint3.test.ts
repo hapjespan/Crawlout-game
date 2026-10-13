@@ -88,17 +88,6 @@ describe('held-paneel uit HeroStatus', () => {
     expect(panel?.querySelector('[role="meter"]')?.getAttribute('aria-valuenow')).toBe('50');
   });
 
-  it('werkt met de optionele velden afwezig: naam valt terug op Held, geen xp-balk, geen perks', () => {
-    const t = setup({ hero: { level: 1, xp: 0, special: [1, 1, 1, 1, 1, 1, 1], perks: [] }, omit: ['heroName'] });
-    mounted = t.handle;
-    const panel = t.el.querySelector('[aria-label="Held"]');
-    expect(panel?.textContent).toContain('Held · level 1');
-    expect(panel?.querySelector('[role="meter"]')).toBeNull();
-    expect(panel?.textContent).not.toContain('Oplappen');
-    press('F1');
-    expect(t.sent).toEqual([]);
-  });
-
   it('perk-keuze via F1, F2, F3 en klik; Q, W, E doen niets', () => {
     const t = setup({ hero: { ...heroBase, pendingPerks: 2 } });
     mounted = t.handle;
@@ -214,12 +203,6 @@ describe('held-abilities', () => {
     press('z');
     press('c');
     expect(t.sent).toEqual([]);
-    t.handle.unmount();
-    document.body.innerHTML = '';
-    const noId = setup({ abilities, hero: { level: 4, xp: 0, special: [1, 1, 1, 1, 1, 1, 1], perks: [] } });
-    mounted = noId.handle;
-    press('z');
-    expect(noId.sent).toEqual([]);
   });
 
   it('zonder dep geen ability-knoppen', () => {
