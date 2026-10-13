@@ -1,0 +1,119 @@
+import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync, existsSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { NodeIO } from '@gltf-transform/core';
+import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
+import { MeshoptDecoder } from 'meshoptimizer';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { buildAssets } from '../src/build.js';
+import { manifestSchema } from '../src/manifest.js';
+import { validateAsset } from '../src/validate.js';
+import { createIO } from '../src/lods.js';
+import { makeHumanoid, makeProp } from './fixtures.js';
+
+let root: string;
+let src: string;
+let dist: string;
+
+beforeEach(() => {
+  root = mkdtempSync(join(tmpdir(), 'asset-cli-test-'));
+  src = join(root, 'src');
+  dist = join(root, 'dist');
+  mkdirSync(src);
+});
+afterEach(() => rmSync(root, { recursive: true, force: true }));
+
+async function violations(bytes: Uint8Array): Promise<string[]> {
+  return validateAsset(await new NodeIO().readBinary(bytes)).errors;
+}
+
+describe('validatie', () => {
+  it('laat een geldige humanoid door', async () => {
+    expect(await violations(await makeHumanoid({ withSockets: true }))).toEqual([]);
+  });
+  it('weigert te veel driehoeken', async () => {
+    const errors = await violations(await makeHumanoid({ segments: 60, rings: 40 }));
+    expect(errors.join('\n')).toMatch(/4800 driehoeken in LOD0, maximaal 4000/);
+  });
+  it('weigert meer dan 28 bones', async () => {
+    expect((await violations(await makeHumanoid({ extraBones: 10 }))).join('\n')).toMatch(/30 bones, maximaal 28/);
+  });
+  it('weigert niet-Mixamo botnamen', async () => {
+    const errors = await violations(await makeHumanoid({ boneNamePrefix: 'Bone_' }));
+    expect(errors.join('\n')).toMatch(/Mixamo/);
+  });
+  it('weigert een textuur boven 2048', async () => {
+    expect((await violations(await makeHumanoid({ hugeTexture: 4096 }))).join('\n')).toMatch(/4096x4096, maximaal 2048/);
+  });
+  it('weigert een tweede UV-set', async () => {
+    expect((await violations(await makeHumanoid({ secondUv: true }))).join('\n')).toMatch(/2 UV-sets/);
+  });
+  it('weigert verkeerde schaal en voeten niet op y=0', async () => {
+    const errors = (await violations(await makeHumanoid({ height: 180, footY: 1 }))).join('\n');
+    expect(errors).toMatch(/hoogte is/);
+    const feet = (await violations(await makeHumanoid({ footY: 0.5 }))).join('\n');
+    expect(feet).toMatch(/voeten staan op y=0.50/);
+  });
+});
+
+describe('buis', () => {
+  it('geeft groen met "geen assets" op een lege src en schrijft een lege manifest', async () => {
+    const result = await buildAssets({ srcDir: src, distDir: dist, toktx: null });
+    expect(result.ok).toBe(true);
+    expect(result.reports).toEqual([]);
+    expect(manifestSchema.parse(JSON.parse(readFileSync(join(dist, 'manifest.json'), 'utf8'))).assets).toEqual([]);
+  });
+
+  it('bouwt LODs, meshopt en manifest voor humanoid en prop', async () => {
+    writeFileSync(join(src, 'Hero Dummy.glb'), await makeHumanoid({ withSockets: true }));
+    writeFileSync(join(src, 'rock.glb'), await makeProp({ segments: 30, rings: 20 }));
+    const result = await buildAssets({ srcDir: src, distDir: dist, toktx: null });
+    expect(result.reports.flatMap((r) => r.errors)).toEqual([]);
+    expect(result.ok).toBe(true);
+
+    const manifest = manifestSchema.parse(JSON.parse(readFileSync(join(dist, 'manifest.json'), 'utf8')));
+    expect(manifest.assets.map((a) => a.id)).toEqual(['hero_dummy', 'rock']);
+    const hero = manifest.assets[0]!;
+    expect(hero.kind).toBe('character');
+    expect(hero.lods.map((l) => l.triangles).every((t, i) => t <= [4000, 1500, 600][i]!)).toBe(true);
+    expect(hero.lods[1].triangles).toBeLessThan(hero.lods[0].triangles);
+    expect(hero.lods[2].triangles).toBeLessThan(hero.lods[1].triangles);
+    expect(hero.sockets.hand).toBeDefined();
+    expect(hero.sockets.head).toBeDefined();
+    expect(hero.sockets.back).toBeDefined();
+    expect(hero.animations.map((a) => a.name)).toContain('idle');
+    expect(hero.animations[0]?.durationSeconds).toBe(2);
+    expect(hero.bounds.min[1]).toBeCloseTo(0, 1);
+    expect(hero.bounds.max[1]).toBeCloseTo(1.8, 1);
+    expect(hero.boneCount).toBeLessThanOrEqual(28);
+
+    const rock = manifest.assets[1]!;
+    expect(rock.kind).toBe('prop');
+    expect(rock.sockets).toEqual({});
+
+    for (const lod of hero.lods) {
+      const bytes = new Uint8Array(readFileSync(join(dist, lod.path)));
+      expect(existsSync(join(dist, lod.path))).toBe(true);
+      const doc = await new NodeIO().registerExtensions(ALL_EXTENSIONS).registerDependencies({ 'meshopt.decoder': MeshoptDecoder }).readBinary(bytes);
+      expect(doc.getRoot().listExtensionsUsed().map((e) => e.extensionName)).toContain('EXT_meshopt_compression');
+    }
+    // Leesbaar door onze eigen IO (zoals render het laadt).
+    await createIO().readBinary(new Uint8Array(readFileSync(join(dist, 'hero_dummy/lod2.glb'))));
+  });
+
+  it('faalt met leesbare reden, exit-status ok=false en schrijft niets', async () => {
+    writeFileSync(join(src, 'good.glb'), await makeHumanoid());
+    writeFileSync(join(src, 'zwaar.glb'), await makeHumanoid({ segments: 60, rings: 40, extraBones: 10 }));
+    const result = await buildAssets({ srcDir: src, distDir: dist, toktx: null });
+    expect(result.ok).toBe(false);
+    const bad = result.reports.find((r) => r.id === 'zwaar')!;
+    expect(bad.errors.length).toBeGreaterThanOrEqual(2);
+    expect(result.reports.find((r) => r.id === 'good')!.errors).toEqual([]);
+    expect(existsSync(join(dist, 'manifest.json'))).toBe(false);
+  });
+
+  it('meldt dat KTX2 ontbreekt als toktx niet beschikbaar is', async () => {
+    const result = await buildAssets({ srcDir: src, distDir: dist, toktx: null });
+    expect(result.notices.join('')).toMatch(/PNG/);
+  });
+});
