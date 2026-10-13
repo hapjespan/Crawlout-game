@@ -68,9 +68,20 @@ export const Building = z
     provides: z.array(Provides),
     prereqTech: z.array(id),
     visuals: z.object({ mesh: z.string() }).strict(),
+    // Alleen voor gebouwen met provides turret (besluit 8, sectie 14); verplicht daar, zie de refine.
+    damage: nonneg.optional(),
+    damageType: DamageType.optional(),
+    rangeM: nonneg.optional(),
+    cooldownS: nonneg.optional(),
     _comment: comment,
   })
-  .strict();
+  .strict()
+  .superRefine((b, ctx) => {
+    if (!b.provides.includes('turret')) return;
+    for (const field of ['damage', 'damageType', 'rangeM', 'cooldownS'] as const) {
+      if (b[field] === undefined) ctx.addIssue({ code: 'custom', path: [field], message: `verplicht voor een gebouw met provides turret` });
+    }
+  });
 
 // Effect-stats met de suffix-conventie: Pct = procenten (promille in GameData), M = meters (eenheden), S = seconden (ticks).
 // De losse SPECIAL-letters (S P E C I A L) zijn ruwe gehele getallen; die zijn bewust geen S-suffix.

@@ -273,3 +273,33 @@ describe('sprint 3: held, claims, cancel, militie', () => {
     for (const p of data.perks) for (const e of p.effects) expect(EffectStat.options, p.key).toContain(e.stat);
   });
 });
+
+describe('sprint 4: turrets in data (besluit 8)', () => {
+  const data = loadGameData(raw());
+  const turret = data.buildings.find((b) => b.key === 'turret')!;
+  const militie = data.loadouts.find((l) => l.key === 'militie')!;
+
+  it('rekent de turret-velden om en geeft niet-turrets 0 en 0', () => {
+    expect(turret.damage).toBe(12);
+    expect(turret.damageType).toBe(militie.damageType);
+    expect(turret.rangeU).toBe(metersToUnits(12));
+    expect(turret.cooldownTicks).toBe(secondsToTicks(1));
+    for (const b of data.buildings.filter((x) => x.key !== 'turret')) {
+      expect([b.damage, b.damageType, b.rangeU, b.cooldownTicks], b.key).toEqual([0, 0, 0, 0]);
+    }
+  });
+
+  it('is iets sterker dan militie per schot en heeft meer bereik', () => {
+    expect(turret.damage).toBeGreaterThan(militie.damage);
+    expect(turret.rangeU).toBeGreaterThan(militie.rangeU);
+  });
+
+  it('weigert een turret zonder wapenvelden', () => {
+    for (const field of ['damage', 'damageType', 'rangeM', 'cooldownS']) {
+      const r = clone(raw());
+      const t = (r.buildings as Record<string, unknown>[]).find((b) => b.id === 'turret')!;
+      delete t[field];
+      expect(() => loadGameData(r), field).toThrow();
+    }
+  });
+});
