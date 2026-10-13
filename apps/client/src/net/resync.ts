@@ -31,7 +31,8 @@ const KEEP_FRAMES = 1200;
 
 /**
  * Decides which bundles go to the sim worker, in order and exactly once.
- * - live: a pushed bundle is released at once if it is newer than everything released so far.
+ * - live: a pushed bundle is released at once if it directly follows the last released frame; a gap is never
+ *   skipped, later bundles wait in the store until the missing one arrives.
  * - paused (during a reconnect, before the state arrives): pushed bundles are only stored.
  * - resume(frame, bundles): the sim was replaced by a state at `frame` (Sim.frame). Everything from `frame` on is
  *   released again, merged from the resync bundles and the stored live bundles, without duplicates.
@@ -66,13 +67,24 @@ export class BundleFeed {
     return this.drain();
   }
 
+  /** Releases only the contiguous run starting at lastReleased + 1; a gap keeps everything behind it stored. */
   private drain(): FrameBundle[] {
     const out: FrameBundle[] = [];
-    for (const [frame, bundle] of this.store) if (frame > this.lastReleased) out.push(bundle);
-    out.sort((a, b) => a.frame - b.frame);
-    const last = out[out.length - 1];
-    if (last) this.lastReleased = last.frame;
+    for (let next = this.lastReleased + 1; ; next++) {
+      const bundle = this.store.get(next);
+      if (!bundle) break;
+      out.push(bundle);
+      this.lastReleased = next;
+    }
     for (const frame of this.store.keys()) if (frame < this.lastReleased - KEEP_FRAMES) this.store.delete(frame);
     return out;
+  }
+
+  /** First frame the feed waits for (undefined = nothing buffered behind a gap). Lets the UI show a stall. */
+  get gapAt(): number | undefined {
+    const next = this.lastReleased + 1;
+    if (this.store.has(next)) return undefined;
+    for (const f of this.store.keys()) if (f > next) return next;
+    return undefined;
   }
 }

@@ -28,6 +28,26 @@ describe('BundleFeed', () => {
     expect(feed.push(b(0))).toEqual([]);
   });
 
+  it('never skips a gap: later bundles wait until the missing frame arrives', () => {
+    const feed = new BundleFeed();
+    expect(frames(feed.push(b(0)))).toEqual([0]);
+    expect(feed.push(b(2))).toEqual([]);
+    expect(feed.push(b(3))).toEqual([]);
+    expect(feed.gapAt).toBe(1);
+    expect(feed.released).toBe(0);
+    expect(frames(feed.push(b(1)))).toEqual([1, 2, 3]);
+    expect(feed.gapAt).toBeUndefined();
+    expect(frames(feed.push(b(4)))).toEqual([4]);
+  });
+
+  it('keeps a gap after resume: only the contiguous part is released', () => {
+    const feed = new BundleFeed();
+    feed.pause();
+    feed.push(b(7));
+    expect(frames(feed.resume(3, [b(3), b(4), b(6)]))).toEqual([3, 4]);
+    expect(frames(feed.push(b(5)))).toEqual([5, 6, 7]);
+  });
+
   it('holds live bundles while paused and merges them with the resync bundles on resume', () => {
     const feed = new BundleFeed();
     feed.push(b(0));
