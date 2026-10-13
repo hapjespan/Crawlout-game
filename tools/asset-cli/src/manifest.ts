@@ -1,6 +1,7 @@
 // Manifest-formaat van de asset-cli. Dit bestand is het contract met packages/render:
 //   import { manifestSchema, type AssetManifest } from '@crawlout/asset-cli/manifest';
 // Alleen zod als runtime-afhankelijkheid; geen Node-imports, dus bruikbaar in de browser.
+import { ANIM_NAMES } from '@crawlout/protocol';
 import { z } from 'zod';
 
 export const MANIFEST_VERSION = 1 as const;
@@ -30,13 +31,44 @@ export const socketsSchema = z.object({
   head: vec3.optional(),
 });
 
-/** Stub voor sprint 2: animaties gebakken naar bone-matrix textures. Nog nooit gevuld. */
-export const bakedAnimationSchema = z.object({
-  texturePath: z.string().min(1),
-  fps: z.number().positive(),
-  boneCount: z.number().int().positive(),
-  clips: z.array(z.object({ name: z.string().min(1), firstFrame: z.number().int().nonnegative(), frameCount: z.number().int().positive() })),
+export const bakedClipSchema = z.object({
+  /** Canonieke naam uit ANIM_NAMES. */
+  name: z.string().min(1),
+  /** Eerste rij van het blok in de texture. */
+  startRow: z.number().int().nonnegative(),
+  /** Aantal rijen (frames) van de clip. */
+  frames: z.number().int().min(2),
+  /** Loop-clips bemonsteren [0, 1); one-shot clips (death) sluiten de laatste pose op 1 in. */
+  loop: z.boolean(),
+  durationSeconds: z.number().positive(),
 });
+
+/**
+ * Animaties gebakken naar een bone-matrix-texture (fase-0 sectie 12): RGBA float32 little-endian, rij na rij,
+ * `width` = boneCount * 4 texels, `height` = som van alle frames. Clips staan in de volgorde van ANIM_NAMES,
+ * elk een aaneengesloten blok rijen.
+ */
+export const bakedAnimationSchema = z
+  .object({
+    /** Pad relatief aan de map van manifest.json. */
+    path: z.string().min(1),
+    width: z.number().int().positive(),
+    height: z.number().int().positive(),
+    fps: z.number().positive(),
+    clips: z.array(bakedClipSchema),
+  })
+  .superRefine((baked, ctx) => {
+    const issue = (message: string): void => ctx.addIssue({ code: z.ZodIssueCode.custom, message });
+    if (baked.width % 4 !== 0) issue(`width ${baked.width} is geen veelvoud van 4`);
+    const names = baked.clips.map((c) => c.name);
+    if (names.join(',') !== ANIM_NAMES.join(',')) issue(`clips moeten ${ANIM_NAMES.join(', ')} zijn, in die volgorde; gevonden: ${names.join(', ') || 'geen'}`);
+    let row = 0;
+    for (const clip of baked.clips) {
+      if (clip.startRow !== row) issue(`clip "${clip.name}" begint op rij ${clip.startRow}, verwacht ${row} (aaneengesloten blokken)`);
+      row += clip.frames;
+    }
+    if (row !== baked.height) issue(`som van de frames is ${row}, maar height is ${baked.height}`);
+  });
 
 export const assetEntrySchema = z.object({
   id: z.string().min(1),
@@ -48,8 +80,12 @@ export const assetEntrySchema = z.object({
   animations: z.array(animationSchema),
   /** Aantal bones van het skelet; 0 voor props. */
   boneCount: z.number().int().nonnegative(),
-  /** Sprint 2; ontbreekt zolang het bakken niet bestaat. */
+  /** Aanwezig voor karakters met animaties; props en karakters zonder clips hebben geen baked. */
   baked: bakedAnimationSchema.optional(),
+}).superRefine((entry, ctx) => {
+  if (entry.baked && entry.baked.width !== entry.boneCount * 4) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: `baked.width ${entry.baked.width} komt niet overeen met boneCount ${entry.boneCount} * 4` });
+  }
 });
 
 export const manifestSchema = z.object({
@@ -62,6 +98,7 @@ export type AssetBounds = z.infer<typeof boundsSchema>;
 export type AssetLod = z.infer<typeof lodSchema>;
 export type AssetAnimation = z.infer<typeof animationSchema>;
 export type AssetSockets = z.infer<typeof socketsSchema>;
+export type BakedClip = z.infer<typeof bakedClipSchema>;
 export type BakedAnimation = z.infer<typeof bakedAnimationSchema>;
 export type AssetEntry = z.infer<typeof assetEntrySchema>;
 export type AssetManifest = z.infer<typeof manifestSchema>;

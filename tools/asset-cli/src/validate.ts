@@ -1,6 +1,7 @@
 import type { Document } from '@gltf-transform/core';
 import { BUDGETS } from './budgets.js';
 import { boneNames, computeBounds, countTriangles, findSockets, hasSkin, maxBoneCount, missingMixamoBones, textureSizes, uvSetCount, animationIndex } from './inspect.js';
+import { EMPTY_CLIPMAP, resolveClips, type Clipmap } from './clipmap.js';
 import type { AssetBounds } from './manifest.js';
 
 export type AssetKind = 'character' | 'prop';
@@ -16,7 +17,7 @@ export interface ValidationResult {
 }
 
 /** Valideert een bron-GLB tegen de technische brief (spelfundament sectie 9). */
-export function validateAsset(document: Document): ValidationResult {
+export function validateAsset(document: Document, options: { clipmap?: Clipmap; assetId?: string } = {}): ValidationResult {
   const errors: string[] = [];
   const warnings: string[] = [];
   const kind: AssetKind = hasSkin(document) ? 'character' : 'prop';
@@ -57,9 +58,27 @@ export function validateAsset(document: Document): ValidationResult {
     for (const name of ['hand', 'back', 'head'] as const) {
       if (!sockets[name]) warnings.push(`geen socket-bone voor "${name}" gevonden; weggelaten uit het manifest.`);
     }
-    const clips = new Set(animationIndex(document).map((a) => a.name.toLowerCase()));
-    const missingClips = BUDGETS.requiredClips.filter((c) => !clips.has(c));
-    if (missingClips.length > 0) warnings.push(`animatieclips ontbreken: ${missingClips.join(', ')}.`);
+    const skins = document.getRoot().listSkins();
+    if (skins.length > 1) errors.push(`${skins.length} skins gevonden; de bakker en render verwachten precies 1 skelet per karakter.`);
+    const jointCount = skins[0]?.listJoints().length ?? 0;
+    for (const prim of document.getRoot().listMeshes().flatMap((m) => m.listPrimitives())) {
+      const joints = prim.getAttribute('JOINTS_0');
+      if (!joints) continue;
+      let max = 0;
+      const el: number[] = [0, 0, 0, 0];
+      for (let i = 0; i < joints.getCount(); i++) for (const j of joints.getElement(i, el)) max = Math.max(max, j);
+      if (max >= jointCount) {
+        errors.push(`skinIndex ${max} wijst buiten de ${jointCount} joints van de skin; mesh en bone-volgorde zijn inconsistent.`);
+        break;
+      }
+    }
+
+    const animations = animationIndex(document);
+    if (animations.length === 0) {
+      warnings.push('geen animatieclips; er wordt geen bone-matrix-texture gebakken.');
+    } else {
+      errors.push(...resolveClips(animations.map((a) => a.name), options.clipmap ?? EMPTY_CLIPMAP, options.assetId).errors);
+    }
   }
 
   return { kind, triangles, bounds, errors, warnings };

@@ -1,6 +1,8 @@
-import { mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { basename, join, relative, sep } from 'node:path';
 import { BUDGETS } from './budgets.js';
+import { bakeAnimations } from './bake.js';
+import { EMPTY_CLIPMAP, parseClipmap, resolveClips, type Clipmap } from './clipmap.js';
 import { animationIndex, findSockets, maxBoneCount } from './inspect.js';
 import { buildLods, createIO, lodTargets } from './lods.js';
 import { detectToktx } from './ktx2.js';
@@ -12,6 +14,8 @@ export interface BuildOptions {
   distDir: string;
   /** Overschrijf de toktx-detectie (tests). `null` forceert PNG. */
   toktx?: string | null;
+  /** Pad naar de clipmap; standaard `<srcDir>/clipmap.json`. Een ontbrekend bestand betekent: geen koppelingen. */
+  clipmapPath?: string;
 }
 
 export interface AssetReport {
@@ -57,6 +61,17 @@ export async function buildAssets(options: BuildOptions): Promise<BuildResult> {
   const toktx = options.toktx === undefined ? detectToktx() : options.toktx;
   if (!toktx) notices.push('toktx niet gevonden op PATH: textures blijven PNG (geen KTX2). Installeer KTX-Software om KTX2 te krijgen.');
 
+  const clipmapSource = options.clipmapPath ?? join(srcDir, 'clipmap.json');
+  let clipmap: Clipmap = EMPTY_CLIPMAP;
+  if (existsSync(clipmapSource)) {
+    try {
+      clipmap = parseClipmap(JSON.parse(readFileSync(clipmapSource, 'utf8')));
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : String(error);
+      return { ok: false, reports: [{ id: 'clipmap', source: basename(clipmapSource), errors: [`ongeldige clipmap: ${reason}`], warnings: [] }], notices, manifest: null };
+    }
+  }
+
   const io = createIO();
   const reports: AssetReport[] = [];
   const seen = new Map<string, string>();
@@ -76,7 +91,7 @@ export async function buildAssets(options: BuildOptions): Promise<BuildResult> {
     const buffer = new Uint8Array(readFileSync(file));
     try {
       const document = await io.readBinary(buffer);
-      const result = validateAsset(document);
+      const result = validateAsset(document, { clipmap, assetId: id });
       report.errors.push(...result.errors);
       report.warnings.push(...result.warnings);
       if (result.errors.length === 0) validated.push({ id, file, buffer, kind: result.kind });
@@ -100,7 +115,20 @@ export async function buildAssets(options: BuildOptions): Promise<BuildResult> {
       continue;
     }
     for (const lod of lods) outputs.set(`${asset.id}/lod${lod.level}.glb`, lod.glb);
-    const validation = validateAsset(sourceDoc);
+    const validation = validateAsset(sourceDoc, { clipmap, assetId: asset.id });
+    let baked: AssetEntry['baked'];
+    if (asset.kind === 'character' && sourceDoc.getRoot().listAnimations().length > 0) {
+      const names = sourceDoc.getRoot().listAnimations().map((a, i) => a.getName() || `animation_${i}`);
+      const lod0Doc = await io.readBinary(lods[0]!.glb);
+      const jointNames = (doc: typeof sourceDoc): string => doc.getRoot().listSkins()[0]?.listJoints().map((j) => j.getName()).join('|') ?? '';
+      if (jointNames(lod0Doc) !== jointNames(sourceDoc)) {
+        report?.errors.push('bone-volgorde van LOD0 wijkt af van de bron-GLB; de texture zou niet bij de mesh passen.');
+        continue;
+      }
+      const result = bakeAnimations({ assetId: asset.id, document: sourceDoc, clips: resolveClips(names, clipmap, asset.id).found });
+      outputs.set(result.baked.path, result.data);
+      baked = result.baked;
+    }
     entries.push({
       id: asset.id,
       kind: asset.kind,
@@ -109,6 +137,7 @@ export async function buildAssets(options: BuildOptions): Promise<BuildResult> {
       sockets: asset.kind === 'character' ? findSockets(sourceDoc) : {},
       animations: animationIndex(sourceDoc),
       boneCount: maxBoneCount(sourceDoc),
+      ...(baked ? { baked } : {}),
     });
   }
 

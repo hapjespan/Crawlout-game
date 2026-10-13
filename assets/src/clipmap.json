@@ -1,0 +1,23 @@
+{
+  "_comment": "Koppelt clipnamen uit bron-GLB's aan de canonieke namen idle, walk, run, attack1, attack2, gather, build, death. Sleutels zijn hoofdletterongevoelig. Controleer de namen tegen de echte Quaternius-GLB's bij het toevoegen; de waarden hieronder zijn een eerste inschatting.",
+  "clips": {
+    "Idle": "idle",
+    "Idle_Loop": "idle",
+    "Walk": "walk",
+    "Walk_Loop": "walk",
+    "Run": "run",
+    "Jog_Fwd_Loop": "run",
+    "Sprint_Loop": "run",
+    "Sword_Attack": "attack1",
+    "Punch_Jab": "attack1",
+    "Punch_Cross": "attack2",
+    "Sword_Attack_Alt": "attack2",
+    "Interact": "gather",
+    "Pickup": "gather",
+    "Work": "build",
+    "Hammer": "build",
+    "Death": "death",
+    "Death01": "death"
+  },
+  "assets": {}
+}
