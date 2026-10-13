@@ -1,6 +1,8 @@
 // Procedural low-poly humanoid in bind pose, rigid-skinned to the placeholder rig.
 // Attributes match what an asset-cli GLB will carry: position, normal, skinIndex (vec4), skinWeight (vec4),
 // plus color: linear RGB albedo with the team mask (0..1) in alpha, standing in for the diffuse atlas and its alpha.
+// Hero parts (cap, collar, pauldrons) are in every placeholder unit but only drawn for a hero instance: their alpha is
+// HERO_PART_ALPHA plus the team mask, and the unit material collapses them for everyone else (unitMaterial.ts).
 import { BoxGeometry, BufferAttribute, BufferGeometry, Color, CylinderGeometry, IcosahedronGeometry, Matrix4 } from 'three/webgpu';
 import { BONE } from './rig.js';
 
@@ -18,7 +20,11 @@ interface Part {
   color: number; // sRGB hex
   team?: number; // 0..1
   minLod?: UnitLod; // part is dropped above this LOD
+  heroOnly?: boolean; // only drawn on a hero (typeId 1000 + heroId)
 }
+
+/** Added to the color alpha of hero-only parts; the material reads alpha >= 1.5 as "hero part", team mask = alpha - 2. */
+export const HERO_PART_ALPHA = 2;
 
 const SKIN = 0xd9a47a;
 const CLOTH = 0x8a8f9a; // tinted by team color through the mask
@@ -26,6 +32,7 @@ const PANTS = 0x4a4336;
 const BOOTS = 0x2b2420;
 const PACK = 0x6b5032;
 const HAIR = 0x3a2a1c;
+const HERO_TRIM = 0xe6dfcf; // light base, so the team tint reads strongly on the hero's cap, collar and pauldrons
 
 const PARTS: readonly Part[] = [
   { bone: BONE.hips, shape: 'box', size: [0.34, 0.2, 0.21], center: [0, 0.93, 0], color: PANTS },
@@ -45,6 +52,12 @@ const PARTS: readonly Part[] = [
   { bone: BONE.shinR, shape: 'limb', size: [0.07, 0.4, 0], center: [-0.1, 0.25, 0], color: PANTS },
   { bone: BONE.shinL, shape: 'box', size: [0.14, 0.1, 0.25], center: [0.1, 0.05, 0.04], color: BOOTS, minLod: 1 },
   { bone: BONE.shinR, shape: 'box', size: [0.14, 0.1, 0.25], center: [-0.1, 0.05, 0.04], color: BOOTS, minLod: 1 },
+  // Hero: an overseer's cap (the top-down camera sees it first), a collar and pauldrons, all in the team color.
+  { bone: BONE.head, shape: 'limb', size: [0.25, 0.035, 0], center: [0, 1.8, 0.02], color: HERO_TRIM, team: 1, heroOnly: true },
+  { bone: BONE.head, shape: 'limb', size: [0.17, 0.15, 0], center: [0, 1.89, -0.01], color: HERO_TRIM, team: 1, heroOnly: true },
+  { bone: BONE.chest, shape: 'limb', size: [0.2, 0.08, 0], center: [0, 1.48, 0], color: HERO_TRIM, team: 1, heroOnly: true, minLod: 1 },
+  { bone: BONE.upperArmL, shape: 'box', size: [0.17, 0.08, 0.22], center: [0.29, 1.43, 0], color: HERO_TRIM, team: 1, heroOnly: true, minLod: 1 },
+  { bone: BONE.upperArmR, shape: 'box', size: [0.17, 0.08, 0.22], center: [-0.29, 1.43, 0], color: HERO_TRIM, team: 1, heroOnly: true, minLod: 1 },
 ];
 
 function shapeGeometry(shape: Shape, size: readonly [number, number, number], lod: UnitLod): BufferGeometry {
@@ -77,7 +90,7 @@ export function createHumanoidGeometry(lod: UnitLod): BufferGeometry {
     for (let i = 0; i < p.count; i++) {
       pos.push(p.getX(i), p.getY(i), p.getZ(i));
       nrm.push(n.getX(i), n.getY(i), n.getZ(i));
-      col.push(c.r, c.g, c.b, part.team ?? 0);
+      col.push(c.r, c.g, c.b, (part.team ?? 0) + (part.heroOnly ? HERO_PART_ALPHA : 0));
       skinIndex.push(part.bone, 0, 0, 0);
       skinWeight.push(1, 0, 0, 0);
     }

@@ -1,7 +1,9 @@
 // Units on screen: one instanced draw call per rig per LOD. Blob shadows and selection rings go to the shared DecalLayer.
 // Only typeIds classified as units (or unknown) are drawn here; buildings, scrap nodes and claims have their own layer.
 // Rig 0 is the procedural placeholder (bake.ts, humanoidGeometry.ts); loaded assets add rigs (addRig) and take over
-// unit typeIds (assignRig) or every unit without its own rig (setDefaultRig).
+// unit typeIds (assignRig) or every unit without its own rig (setDefaultRig). A hero (typeId 1000 + heroId) uses the
+// default rig with a hero flag per instance: bigger, and on the placeholder with cap, collar and pauldrons.
+import { heroIdOfTypeId } from '@crawlout/data';
 import { ANIM, ENTITY_FLAG } from '@crawlout/protocol';
 import { DynamicDrawUsage, Frustum, InstancedBufferAttribute, Matrix4, Mesh, Sphere, Vector3, type BufferGeometry, type Camera, type MeshBasicNodeMaterial, type Scene, type Texture } from 'three/webgpu';
 import { DECAL_COLOR, DECAL_SHAPE, type DecalLayer, type DecalStyle } from '../decals/decalLayer.js';
@@ -11,7 +13,7 @@ import { teamIndex } from '../palette.js';
 import type { InterpolatedFrame } from '../snapshot/interpolate.js';
 import { bakeAnimations, type BakedAnimations } from './bake.js';
 import { createHumanoidGeometry, UNIT_LODS } from './humanoidGeometry.js';
-import { createUnitMaterial, type UnitAlbedo } from './unitMaterial.js';
+import { createUnitMaterial, HERO_INSTANCE_FLAG, HERO_SCALE, type UnitAlbedo } from './unitMaterial.js';
 
 export interface UnitLayerOptions {
   capacity: number;
@@ -205,10 +207,12 @@ export class UnitLayer {
       anim[k * 4] = clip < rig.anims.clips.length ? clip : ANIM.idle;
       anim[k * 4 + 1] = frame.animT[i]!;
       anim[k * 4 + 2] = teamIndex(frame.owner[i]!);
-      anim[k * 4 + 3] = flags;
+      const isHero = heroIdOfTypeId(typeId) >= 0;
+      anim[k * 4 + 3] = isHero ? flags + HERO_INSTANCE_FLAG : flags;
 
       const selected = (flags & SELECTED) !== 0 && (flags & DEAD) === 0;
-      decals.push(x, z, DECAL_HALF, DECAL_HALF, selected ? BLOB_SELECTED : BLOB);
+      const half = isHero ? DECAL_HALF * HERO_SCALE : DECAL_HALF;
+      decals.push(x, z, half, half, selected ? BLOB_SELECTED : BLOB);
     }
 
     for (const rig of this.rigs) {

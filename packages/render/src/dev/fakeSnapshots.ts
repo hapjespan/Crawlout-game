@@ -4,6 +4,9 @@
 // so a direction (dx, dy) has yaw atan2(dy, dx).
 // Optionally adds buildings, scrap nodes and claim points (typeIds per entities/typeIds.ts), and with `combat`
 // the events the VFX read: shots with targets and hits, deaths and respawns, buildings being (re)built, claims flipping.
+// With `heroes` the first unit of every player is a hero (typeId 1000 + heroId) that casts an ability zone now and
+// then; with `turrets` the finished buildings of those typeIds shoot at enemy units in range.
+import { heroTypeId } from '@crawlout/data';
 import { ANGLE_FULL, ANIM, ENTITY_FLAG, EVENT_TYPE, TICK_MS, UNITS_PER_METER } from '@crawlout/protocol';
 import type { Footprint } from '../entities/footprint.js';
 import { buildingTypeId, TYPE_ID_CLAIM, TYPE_ID_SCRAP_NODE } from '../entities/typeIds.js';
@@ -30,6 +33,10 @@ export interface FakeSnapshotOptions {
   claims?: number;
   /** Targeted shots with hits, deaths and respawns, building and claim events. Default false: only shotFired. */
   combat?: boolean;
+  /** The first unit of each player is this hero (typeId 1000 + heroId); with combat it casts abilityZone (ability 0). */
+  heroId?: number;
+  /** Building typeIds that shoot (turrets), with combat: shotFired a = building, b = target, then a hit. */
+  turrets?: readonly number[];
 }
 
 export const FAKE_UNIT_TYPE_ID = 1;
@@ -39,6 +46,12 @@ const WALK_UNITS_PER_TICK = Math.round((1.5 * UNITS_PER_METER * TICK_MS) / 1000)
 const RUN_UNITS_PER_TICK = Math.round((4.2 * UNITS_PER_METER * TICK_MS) / 1000);
 const TICKS_PER_SECOND = 1000 / TICK_MS;
 const SHOT_RANGE = 25 * UNITS_PER_METER;
+/** Fake turret range and rate: generous, so the demo shows turret fire across the team quadrants. */
+const TURRET_RANGE = 40 * UNITS_PER_METER;
+export const FAKE_TURRET_TICKS = 24;
+/** Ticks between two ability zones (the heroes take turns), and how far ahead of the hero the zone lands. */
+export const FAKE_ZONE_TICKS = 140;
+const ZONE_AHEAD = 6 * UNITS_PER_METER;
 
 type Mode = 'walk' | 'run' | 'idle' | 'gather' | 'build' | 'attack1' | 'attack2' | 'dead';
 
@@ -87,6 +100,9 @@ export class FakeSnapshotSource {
   private readonly size: number;
   private readonly players: number;
   private readonly combat: boolean;
+  private readonly typeIds: Uint16Array;
+  private readonly turrets: ReadonlySet<number>;
+  private nextZoneHero = 0;
   private readonly pending: { atTick: number; event: EventRecord }[] = [];
   private readonly demolished: { atTick: number; structure: FakeStructure }[] = [];
   private nextStructureId = 0;
@@ -96,6 +112,9 @@ export class FakeSnapshotSource {
     const n = (this.count = opts.count ?? 200);
     const players = (this.players = opts.players ?? 4);
     this.combat = opts.combat ?? false;
+    this.turrets = new Set(opts.turrets ?? []);
+    const heroType = opts.heroId === undefined ? FAKE_UNIT_TYPE_ID : heroTypeId(opts.heroId);
+    this.typeIds = new Uint16Array(n).map((_, i) => (i < players ? heroType : FAKE_UNIT_TYPE_ID));
     this.size = Math.round((opts.worldSize ?? 128) * UNITS_PER_METER);
     this.rng = (opts.seed ?? 0x2f6b3a1d) >>> 0 || 1;
     this.ids = new Uint32Array(n);
@@ -252,14 +271,24 @@ export class FakeSnapshotSource {
     this.yaw[i] = ((a % ANGLE_FULL) + ANGLE_FULL) % ANGLE_FULL;
   }
 
+  /** Unit typeId of unit index i: the hero typeId for the first unit of each player when heroes are on. */
+  typeIdOf(i: number): number {
+    return this.typeIds[i] ?? FAKE_UNIT_TYPE_ID;
+  }
+
   /** Nearest living unit of another owner within shot range, or -1. */
   private targetFor(i: number): number {
+    return this.nearestEnemy(this.x[i]!, this.y[i]!, this.owner[i]!, SHOT_RANGE);
+  }
+
+  /** Nearest living unit not owned by `owner` within `range` (sim units) of (x, y), or -1. */
+  private nearestEnemy(x: number, y: number, owner: number, range: number): number {
     let best = -1;
-    let bestD = SHOT_RANGE * SHOT_RANGE;
+    let bestD = range * range;
     for (let j = 0; j < this.count; j++) {
-      if (this.owner[j] === this.owner[i] || this.mode[j] === 'dead') continue;
-      const dx = this.x[j]! - this.x[i]!;
-      const dy = this.y[j]! - this.y[i]!;
+      if (this.owner[j] === owner || this.mode[j] === 'dead') continue;
+      const dx = this.x[j]! - x;
+      const dy = this.y[j]! - y;
       const d = dx * dx + dy * dy;
       if (d < bestD) {
         bestD = d;
@@ -290,13 +319,44 @@ export class FakeSnapshotSource {
     this.mode[i] = 'dead';
     this.setAnim(i, ANIM.death);
     this.timer[i] = 4 * TICKS_PER_SECOND;
-    events.push({ type: EVENT_TYPE.death, a: this.ids[i]!, b: FAKE_UNIT_TYPE_ID, x: this.x[i]!, y: this.y[i]! });
+    events.push({ type: EVENT_TYPE.death, a: this.ids[i]!, b: this.typeIdOf(i), x: this.x[i]!, y: this.y[i]! });
   }
 
   private respawn(i: number, events: EventRecord[]): void {
     this.placeInQuadrant(i);
     this.startLeg(i);
-    events.push({ type: EVENT_TYPE.spawn, a: this.ids[i]!, b: FAKE_UNIT_TYPE_ID, x: this.x[i]!, y: this.y[i]! });
+    events.push({ type: EVENT_TYPE.spawn, a: this.ids[i]!, b: this.typeIdOf(i), x: this.x[i]!, y: this.y[i]! });
+  }
+
+  /** Finished turrets fire at the nearest enemy unit in range; the hit follows a tick later. */
+  private turretFire(events: EventRecord[]): void {
+    if (this.turrets.size === 0) return;
+    for (const s of this.structures) {
+      if (!this.turrets.has(s.typeId) || s.site || (this.tick + s.id) % FAKE_TURRET_TICKS !== 0) continue;
+      const j = this.nearestEnemy(s.x, s.y, s.owner, TURRET_RANGE);
+      if (j < 0) continue;
+      const target = this.ids[j]!;
+      events.push({ type: EVENT_TYPE.shotFired, a: s.id, b: target, x: s.x, y: s.y });
+      if (this.rand() < 0.8) this.pending.push({ atTick: this.tick + 1, event: { type: EVENT_TYPE.hit, a: target, b: s.id, x: this.x[j]!, y: this.y[j]! } });
+    }
+  }
+
+  /** Every FAKE_ZONE_TICKS the next living hero casts ability 0 a few meters ahead of itself (x, y = zone center). */
+  private heroZones(events: EventRecord[]): void {
+    if (this.tick % FAKE_ZONE_TICKS !== 0) return;
+    const heroes = Math.min(this.players, this.count);
+    for (let k = 0; k < heroes; k++) {
+      const i = (this.nextZoneHero + k) % heroes;
+      if (this.typeIds[i] === FAKE_UNIT_TYPE_ID || this.mode[i] === 'dead') continue;
+      this.nextZoneHero = i + 1;
+      const a = (this.yaw[i]! / ANGLE_FULL) * Math.PI * 2;
+      const margin = 2 * UNITS_PER_METER;
+      const clamp = (v: number): number => Math.min(this.size - margin, Math.max(margin, Math.round(v)));
+      const x = clamp(this.x[i]! + Math.cos(a) * ZONE_AHEAD);
+      const y = clamp(this.y[i]! + Math.sin(a) * ZONE_AHEAD);
+      events.push({ type: EVENT_TYPE.abilityZone, a: this.ids[i]!, b: 0, x, y });
+      return;
+    }
   }
 
   /** Building and claim events at a slow cadence, so every effect shows up within a few seconds. */
@@ -391,7 +451,11 @@ export class FakeSnapshotSource {
         }
       }
     }
-    if (this.combat) this.worldEvents(events);
+    if (this.combat) {
+      this.worldEvents(events);
+      this.turretFire(events);
+      this.heroZones(events);
+    }
     this.advanceStructures(events);
     for (let k = this.pending.length - 1; k >= 0; k--) {
       if (this.pending[k]!.atTick > this.tick) continue;
@@ -408,7 +472,7 @@ export class FakeSnapshotSource {
       e.id[i] = id;
       e.x[i] = this.x[i]!;
       e.y[i] = this.y[i]!;
-      e.typeId[i] = FAKE_UNIT_TYPE_ID;
+      e.typeId[i] = this.typeIdOf(i);
       e.yaw[i] = this.yaw[i]!;
       e.animT[i] = Math.min(ANGLE_FULL - 1, Math.floor(this.animT[i]! * ANGLE_FULL));
       e.owner[i] = this.owner[i]!;

@@ -59,6 +59,14 @@ export function buildingWallHeight(f: Footprint): number {
   return 1.9 + 0.5 * Math.min(f.w, f.h);
 }
 
+/** Ridge of the placeholder roof, in units of the wall height (structureGeometry.ts: walls up to 1, roof above). */
+export const BUILDING_ROOF_TOP = 1.32;
+
+/** Height of a placeholder building's roof ridge above its ground, meters: where a turret's muzzle sits. */
+export function buildingRoofHeight(f: Footprint): number {
+  return BUILDING_ROOF_TOP * buildingWallHeight(f);
+}
+
 /**
  * Snaps a footprint center (sim units, 1 m = 256) to the cell grid: odd sizes center on a cell, even sizes on a
  * cell corner. For the HUD's placement cursor; the renderer draws previews where it is told.

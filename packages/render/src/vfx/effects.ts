@@ -1,12 +1,18 @@
-// The four snapshot-driven effects (render brief): muzzle flash (shotFired), impact (hit), death (death) and
-// building dust (buildingPlaced, buildingDone). Own GPU particles instead of NixieFX, which is not on npm.
+// The snapshot-driven effects (render brief): muzzle flash (shotFired), impact (hit), death (death), building dust
+// (buildingPlaced, buildingDone) and ability zones (abilityZone). Own GPU particles instead of NixieFX, which is not on
+// npm; zones are ground decals (abilityZones.ts).
 // Event fields (contract 1, decision sprint 2): type, a, b, x, y. a is always the entity the event is about, x/y its
 // position in sim units at that moment. b per type: death, spawn, buildingPlaced and buildingDone b = typeId (a
 // demolished building is no longer in the snapshot that carries its death); shotFired a = shooter, b = target;
 // hit a = target, b = shooter. Missing positions (0, 0) fall back to the entity in the latest snapshot.
+// Decision sprint 3: abilityZone a = hero, b = abilityId, x/y = the zone center (not the hero's position). A shooter
+// can be a building (turrets, decision 8): its muzzle flash and tracer start on the roof.
+import { heroIdOfTypeId } from '@crawlout/data';
 import { EVENT_TYPE, UNITS_PER_METER } from '@crawlout/protocol';
-import { DEFAULT_FOOTPRINT, type Footprint } from '../entities/footprint.js';
+import { buildingRoofHeight, DEFAULT_FOOTPRINT, type Footprint } from '../entities/footprint.js';
 import { classifyTypeId, ENTITY_KIND } from '../entities/typeIds.js';
+import { teamIndex, teamPalette } from '../palette.js';
+import type { AbilityShape, ZoneSink } from './abilityZones.js';
 import { createParticleSpec, PARTICLE_SHAPE, type ParticleSink, type ParticleSpec } from './particles.js';
 
 /** An entity from the latest snapshot, in world units. */
@@ -16,6 +22,7 @@ export interface EntityRef {
   /** Render yaw, radians: forward is (sin yaw, cos yaw) in world (x, z). */
   yaw: number;
   typeId: number;
+  owner: number;
 }
 
 export interface EffectContext {
@@ -23,23 +30,33 @@ export interface EffectContext {
   entity(id: number, out: EntityRef): boolean;
   heightAt(x: number, z: number): number;
   footprint(typeId: number): Footprint;
+  /** Zone radius and duration for (heroId, abilityId) from GameData; null or absent: no zone is drawn. */
+  ability?(heroId: number, abilityId: number): AbilityShape | null;
 }
 
 const INV_UNITS = 1 / UNITS_PER_METER;
 const MUZZLE_HEIGHT = 1.35;
+const MUZZLE_FORWARD = 0.6; // meters in front of a unit
+const ROOF_MUZZLE_LIFT = 0.15; // meters above a building's roof ridge
+const ROOF_MUZZLE_FORWARD = 0.3; // meters from the roof's center towards the target
 const HIT_HEIGHT = 1.0;
 const BUILDING_HIT_HEIGHT = 1.6;
 const UNTARGETED_RANGE = 12; // meters a tracer flies when the target is unknown
+const UNTARGETED_DROP = 0.3; // meters a tracer without a target sinks over its flight
+
+/** Linear rgb per team palette slot (teamIndex), for effects in the team color. */
+const TEAM_RGB = teamPalette();
 
 export class EffectSpawner {
   private readonly p: ParticleSpec = createParticleSpec();
-  private readonly e1: EntityRef = { x: 0, z: 0, yaw: 0, typeId: 0 };
-  private readonly e2: EntityRef = { x: 0, z: 0, yaw: 0, typeId: 0 };
+  private readonly e1: EntityRef = { x: 0, z: 0, yaw: 0, typeId: 0, owner: 0 };
+  private readonly e2: EntityRef = { x: 0, z: 0, yaw: 0, typeId: 0, owner: 0 };
 
   constructor(
     private readonly additive: ParticleSink,
     private readonly alpha: ParticleSink,
     private readonly rng: () => number = Math.random,
+    private readonly zones: ZoneSink | null = null,
   ) {}
 
   /** Spawns the effect for one snapshot event at time t0 (seconds, renderer clock). Unhandled types are ignored. */
@@ -57,6 +74,7 @@ export class EffectSpawner {
         let dx = Math.sin(this.e1.yaw);
         let dz = Math.cos(this.e1.yaw);
         let dist = UNTARGETED_RANGE;
+        let targetY = Number.NaN;
         if (b !== 0 && ctx.entity(b, this.e2)) {
           const tx = this.e2.x - x;
           const tz = this.e2.z - z;
@@ -66,11 +84,26 @@ export class EffectSpawner {
             dz = tz / d;
             dist = d;
           }
+          const targetIsBuilding = classifyTypeId(this.e2.typeId) === ENTITY_KIND.building;
+          targetY = ctx.heightAt(this.e2.x, this.e2.z) + (targetIsBuilding ? BUILDING_HIT_HEIGHT : HIT_HEIGHT);
         } else if (!shooter) {
           dx = 0;
           dz = 1;
         }
-        this.muzzleFlash(x, ctx.heightAt(x, z), z, dx, dz, dist, t0);
+        // A building (turret) fires from its roof, a unit from its hands.
+        const fromBuilding = shooter && classifyTypeId(this.e1.typeId) === ENTITY_KIND.building;
+        let my: number;
+        let forward: number;
+        if (fromBuilding) {
+          const f = ctx.footprint(this.e1.typeId);
+          my = groundUnder(ctx, x, z, f) + buildingRoofHeight(f) + ROOF_MUZZLE_LIFT;
+          forward = ROOF_MUZZLE_FORWARD;
+        } else {
+          my = ctx.heightAt(x, z) + MUZZLE_HEIGHT;
+          forward = MUZZLE_FORWARD;
+        }
+        const drop = Number.isNaN(targetY) ? -UNTARGETED_DROP : targetY - my;
+        this.muzzleFlash(x + dx * forward, my, z + dz * forward, dx, dz, Math.max(0, dist - forward), drop, t0);
         return;
       }
       case EVENT_TYPE.hit: {
@@ -113,6 +146,17 @@ export class EffectSpawner {
         this.buildDust(x, ctx.heightAt(x, z), z, f, t0, type === EVENT_TYPE.buildingDone);
         return;
       }
+      case EVENT_TYPE.abilityZone: {
+        // x, y is the zone center; radius and duration come from the hero's ability in GameData.
+        if (!this.zones || !ctx.ability || !hasPos || !ctx.entity(a, this.e1)) return;
+        const heroId = heroIdOfTypeId(this.e1.typeId);
+        const shape = heroId >= 0 ? ctx.ability(heroId, b) : null;
+        if (!shape) return;
+        const team = teamIndex(this.e1.owner);
+        this.zones.addZone(x, z, shape.radius, team, t0, shape.duration);
+        this.zoneBurst(x, ctx.heightAt(x, z), z, shape.radius, team, t0);
+        return;
+      }
       default:
         return;
     }
@@ -122,12 +166,12 @@ export class EffectSpawner {
     return (this.rng() * 2 - 1) * amount;
   }
 
-  /** Flash at the muzzle, a few sparks, a tracer towards the target and a wisp of smoke. */
-  muzzleFlash(x: number, ground: number, z: number, dx: number, dz: number, dist: number, t0: number): void {
+  /**
+   * Flash at the muzzle (mx, my, mz), a few sparks, a tracer flying `dist` meters along (dx, dz) and `drop` meters
+   * up or down to the target, and a wisp of smoke.
+   */
+  muzzleFlash(mx: number, my: number, mz: number, dx: number, dz: number, dist: number, drop: number, t0: number): void {
     const p = this.p;
-    const mx = x + dx * 0.6;
-    const my = ground + MUZZLE_HEIGHT;
-    const mz = z + dz * 0.6;
     set(p, mx, my, mz, t0, 0, 0, 0, 0.08, 0.95, 0.35, 0, PARTICLE_SHAPE.disc, 1.7, 1.1, 0.45, 1);
     this.additive.emit(p);
     for (let i = 0; i < 3; i++) {
@@ -136,11 +180,26 @@ export class EffectSpawner {
       this.additive.emit(p);
     }
     const flight = 0.09;
-    const travel = Math.max(0, dist - 0.6) / flight;
-    set(p, mx, my, mz, t0, dx * travel, -0.3 / flight, dz * travel, flight, 0.07, 0.07, 0, PARTICLE_SHAPE.streak, 1.3, 1.0, 0.6, 0.9);
+    const travel = dist / flight;
+    set(p, mx, my, mz, t0, dx * travel, drop / flight, dz * travel, flight, 0.07, 0.07, 0, PARTICLE_SHAPE.streak, 1.3, 1.0, 0.6, 0.9);
     this.additive.emit(p);
     set(p, mx, my, mz, t0 + 0.03, dx * 0.4, 0.7, dz * 0.4, 0.55, 0.2, 0.7, 0, PARTICLE_SHAPE.disc, 0.55, 0.53, 0.5, 0.3);
     this.alpha.emit(p);
+  }
+
+  /** Team-colored sparks rising from the rim of a fresh ability zone. */
+  zoneBurst(x: number, ground: number, z: number, radius: number, team: number, t0: number): void {
+    const p = this.p;
+    const c = TEAM_RGB[Math.min(team, TEAM_RGB.length - 1)]!;
+    const [r, g, b] = [c.x * 1.6 + 0.2, c.y * 1.6 + 0.2, c.z * 1.6 + 0.2];
+    const count = Math.min(48, Math.max(12, Math.round(radius * 5)));
+    for (let i = 0; i < count; i++) {
+      const a = (i / count) * Math.PI * 2 + this.jitter(0.08);
+      const ex = x + Math.cos(a) * radius;
+      const ez = z + Math.sin(a) * radius;
+      set(p, ex, ground + 0.15, ez, t0 + this.rng() * 0.15, Math.cos(a) * 0.4, 1.6 + this.rng() * 1.2, Math.sin(a) * 0.4, 0.6 + this.rng() * 0.4, 0.22, 0.06, 1.5, PARTICLE_SHAPE.streak, r, g, b, 0.9);
+      this.additive.emit(p);
+    }
   }
 
   /** Sparks and a small dust puff where a shot lands. */
@@ -211,6 +270,14 @@ export class EffectSpawner {
       }
     }
   }
+}
+
+/** Lowest terrain point under a footprint, the way the structure layer seats a building's foundation. */
+function groundUnder(ctx: EffectContext, x: number, z: number, f: Footprint): number {
+  const hx = f.w * 0.5;
+  const hz = f.h * 0.5;
+  const h = (px: number, pz: number): number => ctx.heightAt(px, pz);
+  return Math.min(h(x, z), h(x - hx, z - hz), h(x + hx, z - hz), h(x - hx, z + hz), h(x + hx, z + hz));
 }
 
 function set(

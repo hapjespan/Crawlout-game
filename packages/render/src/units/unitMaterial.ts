@@ -12,6 +12,9 @@
 // primitive without the atlas (reads white). Vertex skinning reads 4 influences, blends two adjacent frames, then
 // rotates by yaw.
 // Shading: 3-step toon ramp plus rimlight, team color through the team mask. No PBR.
+// Hero (typeId 1000 + heroId): the unit layer adds HERO_INSTANCE_FLAG to the flags in iAnim.w. A hero is drawn
+// HERO_SCALE times bigger, and only a hero shows the hero parts of the placeholder (color alpha >= HERO_PART_ALPHA,
+// humanoidGeometry.ts); for other instances those vertices collapse onto their bone and rasterize nothing.
 import { MeshBasicNodeMaterial, Vector3, type Node, type Texture } from 'three/webgpu';
 import {
   attribute,
@@ -42,6 +45,12 @@ import {
 import { createDataTexture, type DataTexturePrecision } from '../gpu/dataTextures.js';
 import { teamPalette } from '../palette.js';
 import type { BakedAnimations } from './bake.js';
+import { HERO_PART_ALPHA } from './humanoidGeometry.js';
+
+/** Added to the instance flags (iAnim.w) of a hero; above the uint8 snapshot flags. */
+export const HERO_INSTANCE_FLAG = 256;
+/** A hero stands this much taller and wider than a regular unit of the same rig. */
+export const HERO_SCALE = 1.15;
 
 export interface ToonLighting {
   /** Direction towards the light, world space. */
@@ -82,8 +91,12 @@ export function createUnitMaterial(
   const palette = uniformArray<'vec3'>(teamPalette(), 'vec3');
   const skinIndex = attribute('skinIndex', 'vec4');
   const skinWeight = attribute('skinWeight', 'vec4');
-  const position = attribute('position', 'vec3');
   const normal = attribute('normal', 'vec3');
+  const vertexColor = attribute('color', 'vec4');
+  const isHero = iAnim.w.greaterThanEqual(HERO_INSTANCE_FLAG);
+  const heroPart = vertexColor.w.greaterThan(HERO_PART_ALPHA - 0.5);
+  // Hero parts collapse to their bone's origin on regular units (zero-area triangles draw nothing).
+  const position = select(heroPart.and(isHero.not()), vec3(0, 0, 0), attribute('position', 'vec3'));
 
   // Frame lookup in the clip table.
   const clip = textureLoad(clipTex, ivec2(int(iAnim.x), int(0)));
@@ -119,14 +132,13 @@ export function createUnitMaterial(
   const ca = cos(iPose.w);
   const sa = sin(iPose.w);
   const rotY = (v: Node<'vec3'>): Node<'vec3'> => vec3(v.x.mul(ca).add(v.z.mul(sa)), v.y, v.z.mul(ca).sub(v.x.mul(sa)));
-  const worldPos = rotY(skinnedPos).add(iPose.xyz);
+  const worldPos = rotY(skinnedPos.mul(select(isHero, float(HERO_SCALE), float(1)))).add(iPose.xyz);
   const worldNrm = vertexStage(rotY(skinnedNrm));
   const vWorldPos = vertexStage(worldPos);
 
   // Fragment: albedo with team tint, toon ramp, rim.
-  const vertexColor = attribute('color', 'vec4');
   let base: Node<'vec3'> = vertexColor.xyz;
-  let mask: Node<'float'> = vertexColor.w;
+  let mask: Node<'float'> = select(heroPart, vertexColor.w.sub(HERO_PART_ALPHA), vertexColor.w);
   if (albedoSource.map) {
     const uv = attribute('uv', 'vec2');
     const plain = uv.x.lessThan(-0.5); // NO_UV: primitive without the atlas

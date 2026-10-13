@@ -24,6 +24,7 @@ import { bakeAnimations } from './units/bake.js';
 import { resolveManifestPath, UnitAssetLoader, createGltfIO } from './units/unitAssetLoader.js';
 import { UnitAssetRegistry, type UnitAssetConfig, type UnitAssetOptions, type UnitAssetStatus } from './units/unitAssets.js';
 import { DEFAULT_LIGHT_DIR, UnitLayer } from './units/unitLayer.js';
+import { abilitiesFromGameData, AbilityZones, type AbilityLookup } from './vfx/abilityZones.js';
 import { EffectSpawner, type EffectContext } from './vfx/effects.js';
 import { ParticlePool } from './vfx/particles.js';
 
@@ -80,8 +81,11 @@ export interface CrawloutRenderer {
   pushSnapshot(buf: ArrayBuffer): void;
   /** Replaces the terrain. Arrays are kept, not copied. */
   setTerrain(geometry: TerrainGeometry): void;
-  /** Game data for visuals: building footprints by typeId, and (with `assets`) the body asset per loadout. */
-  setGameData(data: Pick<GameData, 'buildings'> & Partial<Pick<GameData, 'loadouts'>>): void;
+  /**
+   * Game data for visuals: building footprints by typeId, the radius and duration of hero ability zones (event
+   * abilityZone), and (with `assets`) the body asset per loadout.
+   */
+  setGameData(data: Pick<GameData, 'buildings'> & Partial<Pick<GameData, 'loadouts' | 'heroes'>>): void;
   /**
    * Loads a character asset from an asset-cli manifest and draws the units whose loadout names it (meshSlots.body)
    * with it; `asDefault` also gives it to every unit without an asset of its own. Resolves with the status, never
@@ -140,7 +144,7 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
 
   const sun = shadowsOn ? new SunShadow(scene, DEFAULT_LIGHT_DIR) : null;
   const terrain = new TerrainLayer(scene, DEFAULT_LIGHT_DIR, { shadow: sun?.factor, precision });
-  const decals = new DecalLayer(scene, capacity + 16);
+  const decals = new DecalLayer(scene, capacity + 64);
   const units = new UnitLayer(scene, { capacity, lightDir: DEFAULT_LIGHT_DIR, precision, anims });
   const assetConfig = opts.assets;
   const loader = new UnitAssetLoader(createGltfIO(), (manifestUrl, path) =>
@@ -166,7 +170,9 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
   });
   const additive = new ParticlePool(scene, PARTICLES_PER_POOL, time, true);
   const smoke = new ParticlePool(scene, PARTICLES_PER_POOL, time, false);
-  const effects = new EffectSpawner(additive, smoke);
+  const zones = new AbilityZones();
+  const effects = new EffectSpawner(additive, smoke, Math.random, zones);
+  let abilities: AbilityLookup | null = null;
   const controls = new RtsCameraController(camera, canvas, { heightAt: (x, z) => terrain.heightAt(x, z), ...opts.camera });
 
   const setTerrain = (geometry: TerrainGeometry): void => {
@@ -195,10 +201,12 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
       out.z = e.y[i]! / UNITS_PER_METER;
       out.yaw = simYawToRender(e.yaw[i]!);
       out.typeId = e.typeId[i]!;
+      out.owner = e.owner[i]!;
       return true;
     },
     heightAt: (x, z) => terrain.heightAt(x, z),
     footprint: (typeId) => footprints.get(typeId),
+    ability: (heroId, abilityId) => abilities?.(heroId, abilityId) ?? null,
   };
 
   const overlay = createOverlay(opts.stats ?? true, canvas);
@@ -222,12 +230,14 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
     const now = performance.now();
     const dt = (now - last) / 1000;
     last = now;
-    time.value = clock(now);
+    const t = clock(now);
+    time.value = t;
     controls.update(dt);
     camera.updateMatrixWorld();
     interp.sample(now, frame);
     for (let i = 0; i < frame.count; i++) frame.y[i] = terrain.heightAt(frame.x[i]!, frame.z[i]!);
     decals.begin();
+    zones.draw(t, decals); // first, so blobs and selection rings draw over the zone
     units.update(frame, camera, decals);
     structures.update(frame, camera, decals);
     if (preview) {
@@ -268,6 +278,7 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
     setTerrain,
     setGameData(data) {
       footprints.setLookup(footprintsFromGameData(data));
+      abilities = data.heroes ? abilitiesFromGameData({ heroes: data.heroes }) : null;
       if (data.loadouts) void unitAssets.setLoadouts(data.loadouts);
     },
     loadUnitAsset: (manifestUrl, assetId, assetOpts) => unitAssets.load(manifestUrl, assetId, assetOpts),
@@ -309,6 +320,7 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
       sun?.dispose();
       terrain.dispose();
       interp.clear();
+      zones.clear();
       gpu.dispose();
     },
   };
