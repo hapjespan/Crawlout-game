@@ -52,6 +52,8 @@ export interface Session {
   readonly playerId: number;
   /** Faction key of this player from the start message; null before the match starts. */
   readonly faction: string | null;
+  /** Last executed frame seen in a snapshot (-1 before the first); for tests and debugging. */
+  readonly frame: number;
   /** Resolves when the first `start` arrived (immediately for the loopback); playerId and faction are valid then. */
   readonly started: Promise<void>;
   /** Display name of a player from the start message (AI players included). */
@@ -286,6 +288,9 @@ export function startSession(data: GameData, map: ClientMap, events: SessionEven
     },
     get faction() {
       return faction;
+    },
+    get frame() {
+      return lastFrame;
     },
     started: startedPromise,
     playerName(playerId) {
