@@ -156,6 +156,14 @@ export const SimTuning = z
     separationPct: z.number().min(0).max(100), // deel van de overlap dat separatie per tick oplost
     flowFieldBudgetCells: z.number().int().positive(), // max flow-field-cellen per tick, alle velden samen
     walkAnimStep: z.number().int().min(0).max(65535), // ruwe animT-stap per tick (0..65535 wrapt), geen menselijke eenheid
+    // Sprint 2 (sim-core, ter review door de architect en content):
+    aggroRangeM: nonneg, // militie en units op AttackMove kiezen zelf een doel binnen deze afstand
+    interactRangeM: nonneg, // reikwijdte voor verzamelen, afleveren, bouwen en omscholen (tot node of footprint)
+    claimRadiusM: nonneg, // straal rond een claimpunt waarbinnen units het nemen
+    claimS: z.number().positive(), // seconden ongestoord in de straal om een claimpunt te nemen
+    popCapMax: z.number().int().nonnegative(), // bovengrens pop-cap per speler, los van de bedden (Spelfundament 2.5)
+    corpseS: nonneg, // seconden dat een gedode unit als lijk blijft staan (death-animatie)
+    aiMilitiaPct: z.number().min(0).max(100), // scripted AI: deel van de bewoners dat militie wordt; hoort later in ai/*.json
     _comment: comment,
   })
   .strict();

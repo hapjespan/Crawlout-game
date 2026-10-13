@@ -121,7 +121,20 @@ describe('sprint 2: gather, maxRevives, dominance, effect-stats', () => {
 
 describe('sim-tuning', () => {
   it('rekent sim.json om naar integers', () => {
-    expect(loadGameData(raw()).sim).toEqual({ unitRadiusU: 96, arriveRadiusU: 64, separationPermille: 500, flowFieldBudget: 2048, walkAnimStep: 2048 });
+    expect(loadGameData(raw()).sim).toEqual({
+      unitRadiusU: 96,
+      arriveRadiusU: 64,
+      separationPermille: 500,
+      flowFieldBudget: 2048,
+      walkAnimStep: 2048,
+      aggroRangeU: 2560,
+      interactRangeU: 512,
+      claimRadiusU: 1536,
+      claimTicks: 400,
+      popCapMax: 50,
+      corpseTicks: 40,
+      aiMilitiaPermille: 500,
+    });
   });
 
   it('weigert een onbekend veld in sim.json', () => {

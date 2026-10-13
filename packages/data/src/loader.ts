@@ -146,6 +146,13 @@ export interface SimTuningData {
   separationPermille: number;
   flowFieldBudget: number;
   walkAnimStep: number;
+  aggroRangeU: number;
+  interactRangeU: number;
+  claimRadiusU: number;
+  claimTicks: number;
+  popCapMax: number;
+  corpseTicks: number;
+  aiMilitiaPermille: number;
 }
 
 export interface GameData {
@@ -399,6 +406,13 @@ export function loadGameData(raw: RawGameData): GameData {
       separationPermille: pctToPermille(simRaw.separationPct),
       flowFieldBudget: simRaw.flowFieldBudgetCells,
       walkAnimStep: simRaw.walkAnimStep,
+      aggroRangeU: metersToUnits(simRaw.aggroRangeM),
+      interactRangeU: metersToUnits(simRaw.interactRangeM),
+      claimRadiusU: metersToUnits(simRaw.claimRadiusM),
+      claimTicks: secondsToTicks(simRaw.claimS),
+      popCapMax: simRaw.popCapMax,
+      corpseTicks: secondsToTicks(simRaw.corpseS),
+      aiMilitiaPermille: pctToPermille(simRaw.aiMilitiaPct),
     },
   };
 }
