@@ -54,6 +54,41 @@ export function createBuildingGeometry(lod: 0 | 1): BufferGeometry {
   return b.build();
 }
 
+const TIMBER = 0x9a7a52;
+const POLE = 0x6e6a62;
+const TARP = 0xd8d2c4; // team-tinted site banner
+
+/**
+ * Scaffold around a building site, in the same footprint space as the building (x, z in [-0.5, 0.5], y in units of
+ * the scaffold height): corner and middle standards, three rings of ledgers, cross braces on the long sides, a
+ * plank deck on top and a team-colored banner on the front. Thin members, so it reads as a frame at any size.
+ */
+export function createScaffoldGeometry(): BufferGeometry {
+  const b = new MeshBuilder();
+  const t = 0.022; // member thickness in footprint space
+  for (const x of [-0.5, 0, 0.5]) {
+    for (const z of [-0.5, 0.5]) b.add(new BoxGeometry(t, 1, t), { color: POLE, position: [x, 0.5, z] });
+  }
+  b.add(new BoxGeometry(t, 1, t), { color: POLE, position: [-0.5, 0.5, 0] }).add(new BoxGeometry(t, 1, t), { color: POLE, position: [0.5, 0.5, 0] });
+  for (const y of [0.34, 0.67, 0.99]) {
+    b.add(new BoxGeometry(1 + t, t, t), { color: TIMBER, position: [0, y, 0.5] })
+      .add(new BoxGeometry(1 + t, t, t), { color: TIMBER, position: [0, y, -0.5] })
+      .add(new BoxGeometry(t, t, 1 + t), { color: TIMBER, position: [0.5, y, 0] })
+      .add(new BoxGeometry(t, t, 1 + t), { color: TIMBER, position: [-0.5, y, 0] });
+  }
+  const brace = Math.hypot(0.5, 0.33);
+  const angle = Math.atan2(0.33, 0.5);
+  for (const z of [-0.5, 0.5]) {
+    for (const [x, y, dir] of [[-0.25, 0.17, 1], [0.25, 0.5, -1], [-0.25, 0.83, 1]] as const) {
+      b.add(new BoxGeometry(brace, t * 0.8, t * 0.8), { color: TIMBER, position: [x, y, z], rotation: [0, 0, angle * dir] });
+    }
+  }
+  b.add(new BoxGeometry(1.04, t, 0.16), { color: TIMBER, position: [0, 1, 0.43] })
+    .add(new BoxGeometry(1.04, t, 0.16), { color: TIMBER, position: [0, 1, -0.43] })
+    .add(new BoxGeometry(0.42, 0.2, 0.01), { color: TARP, team: 1, position: [0.18, 0.78, 0.515] });
+  return b.build();
+}
+
 /** Deterministic pseudo-random sequence for the heap layout. */
 function seq(seed: number): () => number {
   let s = seed >>> 0 || 1;

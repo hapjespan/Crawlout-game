@@ -59,7 +59,14 @@ export interface FakeStructure {
   x: number;
   y: number;
   footprint: Footprint;
+  /** Building site: tick construction started and ticks it takes (anim build, animT = progress, contract 1). */
+  site?: { start: number; ticks: number } | undefined;
+  /** Scrap node: remaining stock in percent (hpPct, contract 1). */
+  stock?: number;
 }
+
+/** Ticks a fake building site takes, long enough to watch it grow. */
+export const FAKE_BUILD_TICKS = 8 * (1000 / TICK_MS);
 
 export class FakeSnapshotSource {
   tick = 0;
@@ -81,6 +88,8 @@ export class FakeSnapshotSource {
   private readonly players: number;
   private readonly combat: boolean;
   private readonly pending: { atTick: number; event: EventRecord }[] = [];
+  private readonly demolished: { atTick: number; structure: FakeStructure }[] = [];
+  private nextStructureId = 0;
   private rng: number;
 
   constructor(opts: FakeSnapshotOptions = {}) {
@@ -107,6 +116,7 @@ export class FakeSnapshotSource {
       this.startLeg(i);
       this.animT[i] = this.rand(); // desync the gaits
     }
+    this.nextStructureId = n + 1;
     this.placeStructures(opts);
   }
 
@@ -141,7 +151,9 @@ export class FakeSnapshotSource {
         const cx = Math.floor((x0 + this.rand() * span) / M) * M + (f.w % 2) * (M / 2);
         const cy = Math.floor((y0 + this.rand() * span) / M) * M + (f.h % 2) * (M / 2);
         if (!fits(cx, cy, f)) continue;
-        this.structures.push({ id: this.count + this.structures.length + 1, typeId, owner, x: cx, y: cy, footprint: f });
+        const s: FakeStructure = { id: this.nextStructureId++, typeId, owner, x: cx, y: cy, footprint: f };
+        if (typeId === TYPE_ID_SCRAP_NODE) s.stock = 40 + this.randInt(0, 61);
+        this.structures.push(s);
         return;
       }
     };
@@ -171,13 +183,19 @@ export class FakeSnapshotSource {
     );
   }
 
-  /** Mirrors a Build command: adds a building and reports buildingPlaced now and buildingDone two seconds later. */
+  /** Turns a building into a site: buildingPlaced next tick, anim build while it grows, buildingDone when finished. */
+  private startSite(s: FakeStructure): void {
+    s.site = { start: this.tick + 1, ticks: FAKE_BUILD_TICKS };
+    this.pending.push({ atTick: this.tick + 1, event: { type: EVENT_TYPE.buildingPlaced, a: s.id, b: s.typeId, x: s.x, y: s.y } });
+  }
+
+  /** Mirrors a Build command: adds a building site and reports buildingPlaced, later buildingDone. */
   placeBuilding(typeId: number, owner: number, x: number, y: number, f: Footprint): boolean {
     if (!this.fits(x, y, f)) return false;
-    const id = this.count + this.structures.length + 1;
-    this.structures.push({ id, typeId, owner, x, y, footprint: { w: f.w, h: f.h } });
-    this.pending.push({ atTick: this.tick + 1, event: { type: EVENT_TYPE.buildingPlaced, a: id, b: typeId, x, y } });
-    this.pending.push({ atTick: this.tick + 40, event: { type: EVENT_TYPE.buildingDone, a: id, b: typeId, x, y } });
+    const id = this.nextStructureId++;
+    const s: FakeStructure = { id, typeId, owner, x, y, footprint: { w: f.w, h: f.h } };
+    this.structures.push(s);
+    this.startSite(s);
     return true;
   }
 
@@ -265,14 +283,14 @@ export class FakeSnapshotSource {
     this.face(i, this.x[j]! - this.x[i]!, this.y[j]! - this.y[i]!);
     events.push({ type: EVENT_TYPE.shotFired, a: id, b: this.ids[j]!, x: this.x[i]!, y: this.y[i]! });
     // The hit lands two ticks later, the way a sim with travel time would report it.
-    if (this.rand() < 0.75) this.pending.push({ atTick: this.tick + 2, event: { type: EVENT_TYPE.hit, a: id, b: this.ids[j]!, x: this.x[j]!, y: this.y[j]! } });
+    if (this.rand() < 0.75) this.pending.push({ atTick: this.tick + 2, event: { type: EVENT_TYPE.hit, a: this.ids[j]!, b: id, x: this.x[j]!, y: this.y[j]! } });
   }
 
   private kill(i: number, events: EventRecord[]): void {
     this.mode[i] = 'dead';
     this.setAnim(i, ANIM.death);
     this.timer[i] = 4 * TICKS_PER_SECOND;
-    events.push({ type: EVENT_TYPE.death, a: this.ids[i]!, b: 0, x: this.x[i]!, y: this.y[i]! });
+    events.push({ type: EVENT_TYPE.death, a: this.ids[i]!, b: FAKE_UNIT_TYPE_ID, x: this.x[i]!, y: this.y[i]! });
   }
 
   private respawn(i: number, events: EventRecord[]): void {
@@ -289,15 +307,51 @@ export class FakeSnapshotSource {
     }
     const buildings = this.structures.filter((s) => s.typeId < TYPE_ID_SCRAP_NODE);
     if (this.tick % 50 === 0 && buildings.length > 0) {
+      // Every other time a building is demolished (death with b = typeId, gone from the snapshot) and rebuilt from
+      // scratch on the same spot two seconds later; otherwise it is rebuilt in place.
       const s = buildings[this.randInt(0, buildings.length)]!;
-      events.push({ type: EVENT_TYPE.buildingPlaced, a: s.id, b: s.typeId, x: s.x, y: s.y });
-      this.pending.push({ atTick: this.tick + 40, event: { type: EVENT_TYPE.buildingDone, a: s.id, b: s.typeId, x: s.x, y: s.y } });
+      if (s.site) {
+        // already a site: leave it be
+      } else if (this.rand() < 0.5) {
+        events.push({ type: EVENT_TYPE.death, a: s.id, b: s.typeId, x: s.x, y: s.y });
+        this.structures.splice(this.structures.indexOf(s), 1);
+        this.demolished.push({ atTick: this.tick + 40, structure: s });
+      } else {
+        this.startSite(s);
+      }
+    }
+    for (let k = this.demolished.length - 1; k >= 0; k--) {
+      const d = this.demolished[k]!;
+      if (d.atTick > this.tick) continue;
+      this.demolished.splice(k, 1);
+      if (!this.fits(d.structure.x, d.structure.y, d.structure.footprint)) continue;
+      // The sim hands out a fresh id for a new building.
+      const s = { ...d.structure, id: this.nextStructureId++ };
+      this.structures.push(s);
+      this.startSite(s);
     }
     const claims = this.structures.filter((s) => s.typeId === TYPE_ID_CLAIM);
     if (this.tick % 200 === 0 && claims.length > 0) {
       const s = claims[this.randInt(0, claims.length)]!;
       s.owner = s.owner >= this.players ? this.randInt(0, this.players) : FAKE_NEUTRAL_OWNER;
       events.push({ type: EVENT_TYPE.claimTaken, a: s.id, b: s.owner, x: s.x, y: s.y });
+    }
+  }
+
+  /** Finishes building sites and lets gatherers pick scrap nodes clean (they refill after resourceDepleted). */
+  private advanceStructures(events: EventRecord[]): void {
+    for (const s of this.structures) {
+      if (s.site && this.tick >= s.site.start + s.site.ticks) {
+        s.site = undefined;
+        events.push({ type: EVENT_TYPE.buildingDone, a: s.id, b: s.typeId, x: s.x, y: s.y });
+      }
+      if (s.stock !== undefined && this.tick % 10 === s.id % 10) {
+        s.stock -= 1;
+        if (s.stock <= 0) {
+          events.push({ type: EVENT_TYPE.resourceDepleted, a: s.id, b: 0, x: s.x, y: s.y });
+          s.stock = 100;
+        }
+      }
     }
   }
 
@@ -338,6 +392,7 @@ export class FakeSnapshotSource {
       }
     }
     if (this.combat) this.worldEvents(events);
+    this.advanceStructures(events);
     for (let k = this.pending.length - 1; k >= 0; k--) {
       if (this.pending[k]!.atTick > this.tick) continue;
       events.push(this.pending[k]!.event);
@@ -370,8 +425,11 @@ export class FakeSnapshotSource {
       e.y[i] = s.y;
       e.typeId[i] = s.typeId;
       e.owner[i] = s.owner;
-      e.anim[i] = ANIM.idle;
-      e.hpPct[i] = 100;
+      const site = s.site;
+      const progress = site ? Math.max(0, this.tick - site.start) / site.ticks : 0;
+      e.anim[i] = site ? ANIM.build : ANIM.idle;
+      e.animT[i] = site ? Math.min(ANGLE_FULL - 1, Math.floor(progress * ANGLE_FULL)) : 0;
+      e.hpPct[i] = s.stock ?? 100;
       e.flags[i] = this.selected.has(s.id) ? ENTITY_FLAG.selected : 0;
     });
     events.forEach((r, k) => {

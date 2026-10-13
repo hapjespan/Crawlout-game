@@ -18,9 +18,18 @@ export interface RtsCameraOptions {
   edgeMargin?: number;
   /** Listen to keyboard on window. Disable when the HUD owns the keys. */
   keyboard?: boolean;
+  /**
+   * Changes to the pan keys, by KeyboardEvent.code: a direction [right, forward] adds or remaps a key, null
+   * removes it. Example for a HUD that uses A and S as hotkeys: `{ KeyA: null, KeyS: null }` keeps W, D, the
+   * arrows and Q/E. Default: DEFAULT_PAN_KEYS unchanged.
+   */
+  panKeys?: Readonly<Record<string, PanDirection | null>>;
 }
 
-const PAN_KEYS: Record<string, readonly [number, number]> = {
+/** Pan direction of a key: [right, forward] on the ground, relative to the camera heading. */
+export type PanDirection = readonly [number, number];
+
+export const DEFAULT_PAN_KEYS: Readonly<Record<string, PanDirection>> = {
   KeyW: [0, 1],
   ArrowUp: [0, 1],
   KeyS: [0, -1],
@@ -44,6 +53,7 @@ export class RtsCameraController {
   private readonly maxDistance: number;
   private readonly edgeMargin: number;
   private readonly keys = new Set<string>();
+  private readonly panKeys = new Map<string, PanDirection>();
   private pointer: { x: number; y: number } | null = null;
   private rotating = false;
   private readonly heightAt: (x: number, z: number) => number;
@@ -58,6 +68,11 @@ export class RtsCameraController {
     this.maxDistance = opts.maxDistance ?? 140;
     this.edgeMargin = opts.edgeMargin ?? 14;
     this.heightAt = opts.heightAt ?? (() => 0);
+    for (const [code, dir] of Object.entries(DEFAULT_PAN_KEYS)) this.panKeys.set(code, dir);
+    for (const [code, dir] of Object.entries(opts.panKeys ?? {})) {
+      if (dir) this.panKeys.set(code, dir);
+      else this.panKeys.delete(code);
+    }
     this.listen(dom, 'wheel', this.onWheel, { passive: false });
     this.listen(dom, 'pointermove', this.onPointerMove);
     this.listen(dom, 'pointerleave', this.onPointerLeave);
@@ -117,7 +132,7 @@ export class RtsCameraController {
   private onKeyDown(e: KeyboardEvent): void {
     const t = e.target as HTMLElement | null;
     if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
-    if (e.code in PAN_KEYS || e.code === 'KeyQ' || e.code === 'KeyE') this.keys.add(e.code);
+    if (this.panKeys.has(e.code) || e.code === 'KeyQ' || e.code === 'KeyE') this.keys.add(e.code);
   }
 
   private onKeyUp(e: KeyboardEvent): void {
@@ -137,7 +152,7 @@ export class RtsCameraController {
     let px = 0;
     let pz = 0;
     for (const k of this.keys) {
-      const d = PAN_KEYS[k];
+      const d = this.panKeys.get(k);
       if (d) {
         px += d[0];
         pz += d[1];
