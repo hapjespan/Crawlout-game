@@ -24,6 +24,7 @@ import {
 import type { SimWinner } from '@crawlout/sim';
 import { loadClientGameData, loadClientMap } from './game/content.js';
 import { startSession } from './game/session.js';
+import { createStatusOverlay } from './net/statusOverlay.js';
 import { EVENT_TYPE, readSnapshot, type EntityRow } from './game/snapshot.js';
 
 const SLICE_MAP = 'rustbelt';
@@ -73,6 +74,7 @@ async function main(): Promise<void> {
     return k.kind === 'building' ? data.buildings[k.index] : undefined;
   };
 
+  const netStatus = createStatusOverlay();
   const session = startSession(data, map, {
     onSnapshot(buf) {
       const previous = entities;
@@ -109,6 +111,7 @@ async function main(): Promise<void> {
       network = { ...network, stall: notice };
       notify();
     },
+    onConnection: (text) => netStatus.set(text),
     onError: (message) => console.error(`sim: ${message}`),
   });
   const statusPoll = window.setInterval(() => session.requestStatus(), STATUS_POLL_MS);
@@ -203,7 +206,7 @@ async function main(): Promise<void> {
         return { id, typeId: e.typeId, loadoutName: name, hpPct: e.hpPct, role };
       }),
     getNetwork: () => network,
-    playerName: (id) => (id === session.playerId ? 'Jij' : 'AI'),
+    playerName: (id) => session.playerName(id),
     beginTargeting: (kind) => {
       targeting = kind;
       canvas.style.cursor = 'crosshair';
@@ -253,8 +256,11 @@ async function main(): Promise<void> {
   };
   const hud = mountHud(hudEl, deps);
 
-  const home = map.grid.spawns[session.playerId];
-  if (home) renderer.focus(home.ux, home.uy);
+  // Over ws the start message arrives later than the loopback's; playerId is valid once `started` resolves.
+  void session.started.then(() => {
+    const home = map.grid.spawns[session.playerId];
+    if (home) renderer.focus(home.ux, home.uy);
+  });
 
   // Pointer: left click/drag selects (shift adds); while placing or targeting a left click picks the spot.
   let drag: { x: number; y: number; moved: boolean } | null = null;
