@@ -1,0 +1,57 @@
+/// <reference types="vite/client" />
+// Browser side of the data pipeline: Vite bundles data/ at build time, the pure loaders validate and convert.
+// Node uses @crawlout/data/node instead; both end in the same loadGameData and loadMap.
+import { loadGameData, MapDef, type GameData, type RawGameData } from '@crawlout/data';
+import dataVersion from '../../../../data/VERSION?raw';
+import { greyboxMesh, loadHeightmap, loadMap, type MapGrid } from '@crawlout/map';
+
+const json = import.meta.glob('../../../../data/*.json', { eager: true, import: 'default' });
+const ai = import.meta.glob('../../../../data/ai/*.json', { eager: true, import: 'default' });
+const mapFiles = import.meta.glob('../../../../data/maps/*.json', { eager: true, query: '?raw', import: 'default' });
+
+const DATA_PREFIX = '../../../../data/';
+
+function file(name: string): unknown {
+  const value = json[`${DATA_PREFIX}${name}`];
+  if (value === undefined) throw new Error(`data/${name} ontbreekt in de bundel`);
+  return value;
+}
+
+export function loadClientGameData(): GameData {
+  const raw: RawGameData = {
+    version: dataVersion,
+    factions: file('factions.json'),
+    loadouts: file('loadouts.json'),
+    buildings: file('buildings.json'),
+    tech: file('tech.json'),
+    heroes: file('heroes.json'),
+    perks: file('perks.json'),
+    damageMatrix: file('damage-matrix.json'),
+    sim: file('sim.json'),
+    ai: Object.keys(ai)
+      .sort()
+      .map((k) => ai[k]),
+  };
+  return loadGameData(raw);
+}
+
+export interface ClientMap {
+  grid: MapGrid;
+  terrain: { positions: Float32Array; indices: Uint32Array; colors: Uint8Array };
+}
+
+export function loadClientMap(id: string): ClientMap {
+  const read = (ref: string): string => {
+    const text = mapFiles[`${DATA_PREFIX}${ref}`];
+    if (typeof text !== 'string') throw new Error(`mapbestand data/${ref} ontbreekt in de bundel`);
+    return text;
+  };
+  const def = MapDef.parse(JSON.parse(read(`maps/${id}.json`)));
+  const assets = { read };
+  const grid = loadMap(def, assets);
+  const mesh = greyboxMesh(grid, loadHeightmap(def, assets));
+  // The greybox is in sim units (Int32); the renderer wants meters as floats.
+  const positions = new Float32Array(mesh.positions.length);
+  for (let i = 0; i < positions.length; i++) positions[i] = mesh.positions[i]! / mesh.unitsPerMeter;
+  return { grid, terrain: { positions, indices: mesh.indices, colors: mesh.colors } };
+}

@@ -3,14 +3,23 @@
   "version": "0.0.1",
   "private": true,
   "type": "module",
-  "scripts": { "dev": "vite", "build": "vite build", "preview": "vite preview", "test": "vitest run" },
-  "dependencies": {
-    "@crawlout/protocol": "workspace:*",
-    "@crawlout/data": "workspace:*",
-    "@crawlout/sim": "workspace:*",
-    "@crawlout/render": "workspace:*",
-    "@crawlout/ui": "workspace:*",
-    "@crawlout/map": "workspace:*"
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest run"
   },
-  "devDependencies": { "vite": "^5.0.0" }
+  "dependencies": {
+    "@crawlout/data": "workspace:*",
+    "@crawlout/map": "workspace:*",
+    "@crawlout/protocol": "workspace:*",
+    "@crawlout/relay": "workspace:*",
+    "@crawlout/render": "workspace:*",
+    "@crawlout/sim": "workspace:*",
+    "@crawlout/ui": "workspace:*"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0",
+    "vitest": "^2.0.0"
+  }
 }

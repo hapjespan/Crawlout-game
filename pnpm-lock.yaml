@@ -41,6 +41,9 @@ importers:
       '@crawlout/protocol':
         specifier: workspace:*
         version: link:../../packages/protocol
+      '@crawlout/relay':
+        specifier: workspace:*
+        version: link:../../packages/relay
       '@crawlout/render':
         specifier: workspace:*
         version: link:../../packages/render
@@ -54,6 +57,9 @@ importers:
       vite:
         specifier: ^5.0.0
         version: 5.4.21(@types/node@22.20.5)
+      vitest:
+        specifier: ^2.0.0
+        version: 2.1.9(@types/node@22.20.5)(happy-dom@21.0.1)
 
   packages/data:
     dependencies:
