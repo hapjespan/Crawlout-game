@@ -4,11 +4,12 @@
 //   iPose: world x, y, z (meters) and yaw (radians)
 //   iAnim: clip index, clip progress 0..1, team index (palette below), flags
 // Everything else comes from two textures shared by all instances: the bone-matrix texture and the clip table
-// (layout in bake.ts), plus the team palette as a uniform array.
+// (layout in bake.ts), plus the team palette as a uniform array (palette.ts; slot MAX_PLAYERS is neutral).
+// The textures are float32, or half-float where the WebGL2 driver refuses float32 (gpu/dataTextures.ts).
 // Vertex buffers stay at 7 of WebGPU's limit of 8: position, normal, color (rgb + team mask in alpha),
 // skinIndex, skinWeight, iPose, iAnim. Real assets swap color for uv (diffuse atlas, mask in its alpha). Vertex skinning reads 4 influences, blends two adjacent frames, then rotates by yaw.
 // Shading: 3-step toon ramp plus rimlight, team color through the team mask. No PBR.
-import { Color, DataTexture, FloatType, MeshBasicNodeMaterial, NearestFilter, RGBAFormat, Vector3, type Node, type Texture } from 'three/webgpu';
+import { MeshBasicNodeMaterial, Vector3, type Node, type Texture } from 'three/webgpu';
 import {
   attribute,
   cameraPosition,
@@ -34,20 +35,13 @@ import {
   vec4,
   vertexStage,
 } from 'three/tsl';
+import { createDataTexture, type DataTexturePrecision } from '../gpu/dataTextures.js';
+import { teamPalette } from '../palette.js';
 import type { BakedAnimations } from './bake.js';
 
 export interface ToonLighting {
   /** Direction towards the light, world space. */
   lightDir: Vector3;
-}
-
-function floatTexture(data: Float32Array, width: number, height: number): DataTexture {
-  const tex = new DataTexture(data, width, height, RGBAFormat, FloatType);
-  tex.magFilter = NearestFilter;
-  tex.minFilter = NearestFilter;
-  tex.generateMipmaps = false;
-  tex.needsUpdate = true;
-  return tex;
 }
 
 export interface UnitMaterialBundle {
@@ -62,14 +56,14 @@ export function toonRamp(ndl: Node<'float'>): Node<'float'> {
   return float(0.52).add(step(0.42, h).mul(0.26)).add(step(0.7, h).mul(0.22));
 }
 
-export function createUnitMaterial(anims: BakedAnimations, lighting: ToonLighting, teamColors: readonly Color[]): UnitMaterialBundle {
-  const boneTex = floatTexture(anims.data, anims.width, anims.height);
-  const clipTex = floatTexture(anims.clipTable, anims.clips.length, 1);
+export function createUnitMaterial(anims: BakedAnimations, lighting: ToonLighting, precision: DataTexturePrecision = 'float'): UnitMaterialBundle {
+  const boneTex = createDataTexture(anims.data, anims.width, anims.height, precision);
+  const clipTex = createDataTexture(anims.clipTable, anims.clips.length, 1, precision);
   const lightDir = uniform(lighting.lightDir.clone().normalize());
 
   const iPose = attribute('iPose', 'vec4');
   const iAnim = attribute('iAnim', 'vec4');
-  const palette = uniformArray<'vec3'>(teamColors.map((c) => new Vector3(c.r, c.g, c.b)), 'vec3');
+  const palette = uniformArray<'vec3'>(teamPalette(), 'vec3');
   const skinIndex = attribute('skinIndex', 'vec4');
   const skinWeight = attribute('skinWeight', 'vec4');
   const position = attribute('position', 'vec3');

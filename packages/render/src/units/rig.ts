@@ -1,7 +1,7 @@
 // Procedural placeholder rig and clips. Stand-in for the Quaternius rig and the clips the asset-cli will bake.
 // Faces +Z, Y up, feet on y=0, 1.8 m tall (artist brief, spelfundament section 9). Left is +X.
-// Clip order follows the artist brief: idle, walk, run, attack1, attack2, gather, build, death.
-// The snapshot field `anim` is the index into this list.
+// Clip order is ANIM_NAMES from @crawlout/protocol (artist brief): the snapshot field `anim` indexes CLIPS.
+import { ANIM_NAMES, type AnimName } from '@crawlout/protocol';
 
 export const BONE = {
   hips: 0,
@@ -54,11 +54,8 @@ function setRot(pose: Pose, bone: number, x: number, y = 0, z = 0): void {
   pose.rot[bone * 3 + 2] = z;
 }
 
-export const CLIP = { idle: 0, walk: 1, run: 2, attack1: 3, attack2: 4, gather: 5, build: 6, death: 7 } as const;
-export type ClipName = keyof typeof CLIP;
-
 export interface ClipDef {
-  name: ClipName;
+  name: AnimName;
   /** Seconds for one pass at normal speed. The sim advances animT; this is what the placeholder clip is tuned for. */
   duration: number;
   loop: boolean;
@@ -92,8 +89,9 @@ const smooth = (t: number): number => {
   return c * c * (3 - 2 * c);
 };
 
-export const CLIPS: readonly ClipDef[] = [
-  {
+// Keyed by name, ordered by ANIM_NAMES below, so the order can never drift from the protocol.
+const CLIP_DEFS: Record<AnimName, ClipDef> = {
+  idle: {
     name: 'idle',
     duration: 2.4,
     loop: true,
@@ -110,9 +108,9 @@ export const CLIPS: readonly ClipDef[] = [
       setRot(pose, BONE.shinR, 0.04);
     },
   },
-  { name: 'walk', duration: 1.0, loop: true, sample: (p, pose) => gait(pose, p, 0.5, 0.75, 0.45, 0.06, 0.025) },
-  { name: 'run', duration: 0.6, loop: true, sample: (p, pose) => gait(pose, p, 0.85, 1.3, 0.9, 0.25, 0.05) },
-  {
+  walk: { name: 'walk', duration: 1.0, loop: true, sample: (p, pose) => gait(pose, p, 0.5, 0.75, 0.45, 0.06, 0.025) },
+  run: { name: 'run', duration: 0.6, loop: true, sample: (p, pose) => gait(pose, p, 0.85, 1.3, 0.9, 0.25, 0.05) },
+  attack1: {
     name: 'attack1',
     duration: 0.8,
     loop: true,
@@ -135,7 +133,7 @@ export const CLIPS: readonly ClipDef[] = [
       pose.root[1] = -0.04;
     },
   },
-  {
+  attack2: {
     name: 'attack2',
     duration: 0.5,
     loop: true,
@@ -154,7 +152,7 @@ export const CLIPS: readonly ClipDef[] = [
       setRot(pose, BONE.shinR, 0.15);
     },
   },
-  {
+  gather: {
     name: 'gather',
     duration: 1.4,
     loop: true,
@@ -173,7 +171,7 @@ export const CLIPS: readonly ClipDef[] = [
       setRot(pose, BONE.foreArmR, -0.4);
     },
   },
-  {
+  build: {
     name: 'build',
     duration: 0.7,
     loop: true,
@@ -192,7 +190,7 @@ export const CLIPS: readonly ClipDef[] = [
       setRot(pose, BONE.shinR, 0.4);
     },
   },
-  {
+  death: {
     name: 'death',
     duration: 1.2,
     loop: false,
@@ -215,4 +213,7 @@ export const CLIPS: readonly ClipDef[] = [
       setRot(pose, BONE.foreArmR, -0.5 * f);
     },
   },
-];
+};
+
+/** Placeholder clips in protocol order: CLIPS[ANIM.walk] is the walk clip. */
+export const CLIPS: readonly ClipDef[] = ANIM_NAMES.map((name) => CLIP_DEFS[name]);

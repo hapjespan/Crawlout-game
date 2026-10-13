@@ -2,9 +2,13 @@
 // Output follows contract 1 exactly (snapshotLayout); positions in sim units, yaw 0..65535, animT 0..65535.
 // Yaw convention (protocol, YAW_PLUS_X / YAW_PLUS_Y): 0 faces sim +x, increasing towards sim +y,
 // so a direction (dx, dy) has yaw atan2(dy, dx).
-import { ANGLE_FULL, ENTITY_FLAG, EVENT_TYPE, TICK_MS, UNITS_PER_METER } from '@crawlout/protocol';
-import { CLIP, CLIPS } from '../units/rig.js';
-import { allocSnapshot } from './snapshotWriter.js';
+// Optionally adds buildings, scrap nodes and claim points (typeIds per entities/typeIds.ts), and with `combat`
+// the events the VFX read: shots with targets and hits, deaths and respawns, buildings being (re)built, claims flipping.
+import { ANGLE_FULL, ANIM, ENTITY_FLAG, EVENT_TYPE, TICK_MS, UNITS_PER_METER } from '@crawlout/protocol';
+import type { Footprint } from '../entities/footprint.js';
+import { buildingTypeId, TYPE_ID_CLAIM, TYPE_ID_SCRAP_NODE } from '../entities/typeIds.js';
+import { CLIPS } from '../units/rig.js';
+import { allocSnapshot, type EventRecord } from './snapshotWriter.js';
 
 export interface FakeSnapshotOptions {
   /** Number of units. Default 200. */
@@ -14,14 +18,29 @@ export interface FakeSnapshotOptions {
   /** World edge length in meters. Default 128 (slice map Rustbelt). */
   worldSize?: number;
   seed?: number;
+  /** Buildings spread over the team quadrants. Default 0. */
+  buildings?: number;
+  /** Building ids to cycle through (typeId 1024 + id). Default 8. */
+  buildingTypes?: number;
+  /** Footprint per building typeId. Default 3x3. */
+  footprint?: (typeId: number) => Footprint | null;
+  /** Neutral scrap nodes. Default 0. */
+  scrapNodes?: number;
+  /** Claim points; some start neutral. Default 0. */
+  claims?: number;
+  /** Targeted shots with hits, deaths and respawns, building and claim events. Default false: only shotFired. */
+  combat?: boolean;
 }
 
 export const FAKE_UNIT_TYPE_ID = 1;
+/** Owner of unowned scrap nodes and claim points in the fake source (anything at or above MAX_PLAYERS is neutral). */
+export const FAKE_NEUTRAL_OWNER = 255;
 const WALK_UNITS_PER_TICK = Math.round((1.5 * UNITS_PER_METER * TICK_MS) / 1000);
 const RUN_UNITS_PER_TICK = Math.round((4.2 * UNITS_PER_METER * TICK_MS) / 1000);
 const TICKS_PER_SECOND = 1000 / TICK_MS;
+const SHOT_RANGE = 25 * UNITS_PER_METER;
 
-type Mode = 'walk' | 'run' | 'idle' | 'gather' | 'build' | 'attack1' | 'attack2';
+type Mode = 'walk' | 'run' | 'idle' | 'gather' | 'build' | 'attack1' | 'attack2' | 'dead';
 
 /** What a unit does on arrival: cumulative probability thresholds, the remainder is attack2. */
 const ARRIVAL_ACTIVITIES: readonly { upTo: number; mode: Mode }[] = [
@@ -32,10 +51,21 @@ const ARRIVAL_ACTIVITIES: readonly { upTo: number; mode: Mode }[] = [
   { upTo: 0.94, mode: 'attack1' },
 ];
 
+/** A static entity: building, scrap node or claim point. */
+export interface FakeStructure {
+  id: number;
+  typeId: number;
+  owner: number;
+  x: number;
+  y: number;
+  footprint: Footprint;
+}
+
 export class FakeSnapshotSource {
   tick = 0;
   readonly count: number;
   readonly ids: Uint32Array;
+  readonly structures: FakeStructure[] = [];
   private readonly x: Int32Array;
   private readonly y: Int32Array;
   private readonly tx: Int32Array;
@@ -48,11 +78,15 @@ export class FakeSnapshotSource {
   private readonly mode: Mode[];
   private readonly selected = new Set<number>();
   private readonly size: number;
+  private readonly players: number;
+  private readonly combat: boolean;
+  private readonly pending: { atTick: number; event: EventRecord }[] = [];
   private rng: number;
 
   constructor(opts: FakeSnapshotOptions = {}) {
     const n = (this.count = opts.count ?? 200);
-    const players = opts.players ?? 4;
+    const players = (this.players = opts.players ?? 4);
+    this.combat = opts.combat ?? false;
     this.size = Math.round((opts.worldSize ?? 128) * UNITS_PER_METER);
     this.rng = (opts.seed ?? 0x2f6b3a1d) >>> 0 || 1;
     this.ids = new Uint32Array(n);
@@ -69,15 +103,11 @@ export class FakeSnapshotSource {
     for (let i = 0; i < n; i++) {
       this.ids[i] = i + 1;
       this.owner[i] = i % players;
-      // Each team starts in its own quadrant so team colors read as groups.
-      const qx = (i % players) & 1;
-      const qy = ((i % players) >> 1) & 1;
-      const half = this.size >> 1;
-      this.x[i] = qx * half + this.randInt(half >> 3, half - (half >> 3));
-      this.y[i] = qy * half + this.randInt(half >> 3, half - (half >> 3));
+      this.placeInQuadrant(i);
       this.startLeg(i);
       this.animT[i] = this.rand(); // desync the gaits
     }
+    this.placeStructures(opts);
   }
 
   private rand(): number {
@@ -93,13 +123,71 @@ export class FakeSnapshotSource {
     return min + Math.floor(this.rand() * (max - min));
   }
 
+  /** Each team lives in its own quadrant so team colors read as groups. */
+  private placeInQuadrant(i: number): void {
+    const team = this.owner[i]! % 4;
+    const half = this.size >> 1;
+    this.x[i] = (team & 1) * half + this.randInt(half >> 3, half - (half >> 3));
+    this.y[i] = ((team >> 1) & 1) * half + this.randInt(half >> 3, half - (half >> 3));
+  }
+
+  private placeStructures(opts: FakeSnapshotOptions): void {
+    const M = UNITS_PER_METER;
+    const half = this.size >> 1;
+    const fits = (x: number, y: number, f: Footprint): boolean => this.fits(x, y, f, 2);
+    const place = (typeId: number, owner: number, f: Footprint, x0: number, y0: number, span: number): void => {
+      for (let attempt = 0; attempt < 80; attempt++) {
+        // Odd footprints center on a cell, even ones on a cell corner.
+        const cx = Math.floor((x0 + this.rand() * span) / M) * M + (f.w % 2) * (M / 2);
+        const cy = Math.floor((y0 + this.rand() * span) / M) * M + (f.h % 2) * (M / 2);
+        if (!fits(cx, cy, f)) continue;
+        this.structures.push({ id: this.count + this.structures.length + 1, typeId, owner, x: cx, y: cy, footprint: f });
+        return;
+      }
+    };
+    const types = Math.max(1, opts.buildingTypes ?? 8);
+    for (let k = 0; k < (opts.buildings ?? 0); k++) {
+      const typeId = buildingTypeId(k % types);
+      const found = opts.footprint?.(typeId);
+      const f = found && found.w > 0 && found.h > 0 ? found : { w: 3, h: 3 };
+      const team = k % this.players;
+      place(typeId, team, f, (team & 1) * half, ((team >> 1) & 1) * half, half);
+    }
+    for (let k = 0; k < (opts.scrapNodes ?? 0); k++) place(TYPE_ID_SCRAP_NODE, FAKE_NEUTRAL_OWNER, { w: 3, h: 3 }, 0, 0, this.size);
+    for (let k = 0; k < (opts.claims ?? 0); k++) {
+      place(TYPE_ID_CLAIM, k % 2 === 0 ? FAKE_NEUTRAL_OWNER : k % this.players, { w: 5, h: 5 }, 0, 0, this.size);
+    }
+  }
+
+  /** True when footprint f centered at (x, y) stays inside the world and `gap` meters away from every structure. */
+  fits(x: number, y: number, f: Footprint, gap = 0): boolean {
+    const M = UNITS_PER_METER;
+    const hx = (f.w * M) / 2 + gap * M;
+    const hy = (f.h * M) / 2 + gap * M;
+    if (x - hx < 0 || y - hy < 0 || x + hx > this.size || y + hy > this.size) return false;
+    const g2 = 2 * gap * M;
+    return this.structures.every(
+      (s) => Math.abs(s.x - x) * 2 >= (f.w + s.footprint.w) * M + g2 || Math.abs(s.y - y) * 2 >= (f.h + s.footprint.h) * M + g2,
+    );
+  }
+
+  /** Mirrors a Build command: adds a building and reports buildingPlaced now and buildingDone two seconds later. */
+  placeBuilding(typeId: number, owner: number, x: number, y: number, f: Footprint): boolean {
+    if (!this.fits(x, y, f)) return false;
+    const id = this.count + this.structures.length + 1;
+    this.structures.push({ id, typeId, owner, x, y, footprint: { w: f.w, h: f.h } });
+    this.pending.push({ atTick: this.tick + 1, event: { type: EVENT_TYPE.buildingPlaced, a: id, b: typeId, x, y } });
+    this.pending.push({ atTick: this.tick + 40, event: { type: EVENT_TYPE.buildingDone, a: id, b: typeId, x, y } });
+    return true;
+  }
+
   private startLeg(i: number, tx?: number, ty?: number): void {
     const margin = 4 * UNITS_PER_METER;
     const r = 24 * UNITS_PER_METER;
     this.tx[i] = tx ?? Math.min(this.size - margin, Math.max(margin, this.x[i]! + this.randInt(-r, r)));
     this.ty[i] = ty ?? Math.min(this.size - margin, Math.max(margin, this.y[i]! + this.randInt(-r, r)));
     this.mode[i] = this.rand() < 0.2 ? 'run' : 'walk';
-    this.setAnim(i, this.mode[i] === 'run' ? CLIP.run : CLIP.walk);
+    this.setAnim(i, this.mode[i] === 'run' ? ANIM.run : ANIM.walk);
   }
 
   private setAnim(i: number, clip: number): void {
@@ -116,7 +204,7 @@ export class FakeSnapshotSource {
     }
     this.mode[i] = pick;
     this.timer[i] = this.randInt(1 * TICKS_PER_SECOND, 4 * TICKS_PER_SECOND);
-    this.setAnim(i, CLIP[pick]);
+    this.setAnim(i, ANIM[pick as Exclude<Mode, 'dead'>]);
   }
 
   /** Mirrors a selection command: the sim would set the selected flag on these ids. */
@@ -130,14 +218,86 @@ export class FakeSnapshotSource {
     const want = new Set(ids);
     let k = 0;
     for (let i = 0; i < this.count; i++) {
-      if (!want.has(this.ids[i]!)) continue;
+      if (!want.has(this.ids[i]!) || this.mode[i] === 'dead') continue;
       // Spread the group on a small spiral so they don't stack on one point.
       const a = k * 2.4;
       const rr = Math.sqrt(k) * 0.9 * UNITS_PER_METER;
       this.startLeg(i, Math.round(x + Math.cos(a) * rr), Math.round(y + Math.sin(a) * rr));
       this.mode[i] = 'run';
-      this.setAnim(i, CLIP.run);
+      this.setAnim(i, ANIM.run);
       k++;
+    }
+  }
+
+  private face(i: number, dx: number, dy: number): void {
+    const a = Math.round((Math.atan2(dy, dx) / (Math.PI * 2)) * ANGLE_FULL);
+    this.yaw[i] = ((a % ANGLE_FULL) + ANGLE_FULL) % ANGLE_FULL;
+  }
+
+  /** Nearest living unit of another owner within shot range, or -1. */
+  private targetFor(i: number): number {
+    let best = -1;
+    let bestD = SHOT_RANGE * SHOT_RANGE;
+    for (let j = 0; j < this.count; j++) {
+      if (this.owner[j] === this.owner[i] || this.mode[j] === 'dead') continue;
+      const dx = this.x[j]! - this.x[i]!;
+      const dy = this.y[j]! - this.y[i]!;
+      const d = dx * dx + dy * dy;
+      if (d < bestD) {
+        bestD = d;
+        best = j;
+      }
+    }
+    return best;
+  }
+
+  private shoot(i: number, events: EventRecord[]): void {
+    const id = this.ids[i]!;
+    if (!this.combat) {
+      events.push({ type: EVENT_TYPE.shotFired, a: id, b: 0, x: this.x[i]!, y: this.y[i]! });
+      return;
+    }
+    const j = this.targetFor(i);
+    if (j < 0) {
+      events.push({ type: EVENT_TYPE.shotFired, a: id, b: 0, x: this.x[i]!, y: this.y[i]! });
+      return;
+    }
+    this.face(i, this.x[j]! - this.x[i]!, this.y[j]! - this.y[i]!);
+    events.push({ type: EVENT_TYPE.shotFired, a: id, b: this.ids[j]!, x: this.x[i]!, y: this.y[i]! });
+    // The hit lands two ticks later, the way a sim with travel time would report it.
+    if (this.rand() < 0.75) this.pending.push({ atTick: this.tick + 2, event: { type: EVENT_TYPE.hit, a: id, b: this.ids[j]!, x: this.x[j]!, y: this.y[j]! } });
+  }
+
+  private kill(i: number, events: EventRecord[]): void {
+    this.mode[i] = 'dead';
+    this.setAnim(i, ANIM.death);
+    this.timer[i] = 4 * TICKS_PER_SECOND;
+    events.push({ type: EVENT_TYPE.death, a: this.ids[i]!, b: 0, x: this.x[i]!, y: this.y[i]! });
+  }
+
+  private respawn(i: number, events: EventRecord[]): void {
+    this.placeInQuadrant(i);
+    this.startLeg(i);
+    events.push({ type: EVENT_TYPE.spawn, a: this.ids[i]!, b: FAKE_UNIT_TYPE_ID, x: this.x[i]!, y: this.y[i]! });
+  }
+
+  /** Building and claim events at a slow cadence, so every effect shows up within a few seconds. */
+  private worldEvents(events: EventRecord[]): void {
+    if (this.tick % 20 === 0 && this.count > 0) {
+      const i = this.randInt(0, this.count);
+      if (this.mode[i] !== 'dead') this.kill(i, events);
+    }
+    const buildings = this.structures.filter((s) => s.typeId < TYPE_ID_SCRAP_NODE);
+    if (this.tick % 50 === 0 && buildings.length > 0) {
+      const s = buildings[this.randInt(0, buildings.length)]!;
+      events.push({ type: EVENT_TYPE.buildingPlaced, a: s.id, b: s.typeId, x: s.x, y: s.y });
+      this.pending.push({ atTick: this.tick + 40, event: { type: EVENT_TYPE.buildingDone, a: s.id, b: s.typeId, x: s.x, y: s.y } });
+    }
+    const claims = this.structures.filter((s) => s.typeId === TYPE_ID_CLAIM);
+    if (this.tick % 200 === 0 && claims.length > 0) {
+      const s = claims[this.randInt(0, claims.length)]!;
+      s.owner = s.owner >= this.players ? this.randInt(0, this.players) : FAKE_NEUTRAL_OWNER;
+      events.push({ type: EVENT_TYPE.claimTaken, a: s.id, b: s.owner, x: s.x, y: s.y });
     }
   }
 
@@ -145,7 +305,7 @@ export class FakeSnapshotSource {
   next(): ArrayBuffer {
     this.tick++;
     const n = this.count;
-    const shots: number[] = [];
+    const events: EventRecord[] = [];
     for (let i = 0; i < n; i++) {
       const mode = this.mode[i]!;
       const clip = CLIPS[this.anim[i]!]!;
@@ -153,7 +313,7 @@ export class FakeSnapshotSource {
       let t = before + 1 / (clip.duration * TICKS_PER_SECOND);
       if (t >= 1) t = clip.loop ? t - 1 : 1;
       this.animT[i] = t;
-      if (mode === 'attack2' && t < before) shots.push(i);
+      if (mode === 'attack2' && t < before) this.shoot(i, events);
 
       if (mode === 'walk' || mode === 'run') {
         const dx = this.tx[i]! - this.x[i]!;
@@ -167,16 +327,26 @@ export class FakeSnapshotSource {
         } else {
           this.x[i] = this.x[i]! + Math.round((dx / dist) * speed);
           this.y[i] = this.y[i]! + Math.round((dy / dist) * speed);
-          const a = Math.round((Math.atan2(dy, dx) / (Math.PI * 2)) * ANGLE_FULL);
-          this.yaw[i] = ((a % ANGLE_FULL) + ANGLE_FULL) % ANGLE_FULL;
+          this.face(i, dx, dy);
         }
       } else {
         this.timer[i] = this.timer[i]! - 1;
-        if (this.timer[i]! <= 0) this.startLeg(i);
+        if (this.timer[i]! <= 0) {
+          if (mode === 'dead') this.respawn(i, events);
+          else this.startLeg(i);
+        }
       }
     }
+    if (this.combat) this.worldEvents(events);
+    for (let k = this.pending.length - 1; k >= 0; k--) {
+      if (this.pending[k]!.atTick > this.tick) continue;
+      events.push(this.pending[k]!.event);
+      this.pending.splice(k, 1);
+    }
 
-    const snap = allocSnapshot(this.tick, Math.imul(this.tick, 2654435761) >>> 0, n, shots.length);
+    const structures = this.structures;
+    const total = n + structures.length;
+    const snap = allocSnapshot(this.tick, Math.imul(this.tick, 2654435761) >>> 0, total, events.length);
     const e = snap.entities;
     for (let i = 0; i < n; i++) {
       const id = this.ids[i]!;
@@ -188,16 +358,28 @@ export class FakeSnapshotSource {
       e.animT[i] = Math.min(ANGLE_FULL - 1, Math.floor(this.animT[i]! * ANGLE_FULL));
       e.owner[i] = this.owner[i]!;
       e.anim[i] = this.anim[i]!;
-      e.hpPct[i] = 100;
+      const dead = this.mode[i] === 'dead';
+      e.hpPct[i] = dead ? 0 : 100;
       const isFighting = this.mode[i] === 'attack1' || this.mode[i] === 'attack2';
-      e.flags[i] = (this.selected.has(id) ? ENTITY_FLAG.selected : 0) | (isFighting ? ENTITY_FLAG.inCombat : 0);
+      e.flags[i] = (this.selected.has(id) ? ENTITY_FLAG.selected : 0) | (isFighting ? ENTITY_FLAG.inCombat : 0) | (dead ? ENTITY_FLAG.dead : 0);
     }
-    shots.forEach((i, k) => {
-      snap.events.type[k] = EVENT_TYPE.shotFired;
-      snap.events.a[k] = this.ids[i]!;
-      snap.events.b[k] = 0;
-      snap.events.x[k] = this.x[i]!;
-      snap.events.y[k] = this.y[i]!;
+    structures.forEach((s, k) => {
+      const i = n + k;
+      e.id[i] = s.id;
+      e.x[i] = s.x;
+      e.y[i] = s.y;
+      e.typeId[i] = s.typeId;
+      e.owner[i] = s.owner;
+      e.anim[i] = ANIM.idle;
+      e.hpPct[i] = 100;
+      e.flags[i] = this.selected.has(s.id) ? ENTITY_FLAG.selected : 0;
+    });
+    events.forEach((r, k) => {
+      snap.events.type[k] = r.type;
+      snap.events.a[k] = r.a ?? 0;
+      snap.events.b[k] = r.b ?? 0;
+      snap.events.x[k] = r.x ?? 0;
+      snap.events.y[k] = r.y ?? 0;
     });
     return snap.buffer;
   }
