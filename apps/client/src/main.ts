@@ -22,6 +22,7 @@ import {
   type TargetingKind,
 } from '@crawlout/ui';
 import type { SimWinner } from '@crawlout/sim';
+import { assetConfig } from './game/assets.js';
 import { loadClientGameData, loadClientMap } from './game/content.js';
 import { startSession } from './game/session.js';
 import { createStatusOverlay } from './net/statusOverlay.js';
@@ -50,7 +51,15 @@ async function main(): Promise<void> {
   const map = loadClientMap(SLICE_MAP);
   const params = new URLSearchParams(location.search);
   const perf = document.getElementById('perf') ?? true;
-  const renderer = await createRenderer({ canvas, forceWebGL: params.has('webgl'), stats: perf });
+  const assets = assetConfig(params);
+  const renderer = await createRenderer({
+    canvas,
+    forceWebGL: params.has('webgl'),
+    stats: perf,
+    // A and S are HUD hotkeys (attack-move, stop); W, D, arrows and Q/E keep moving the camera.
+    camera: { panKeys: { KeyA: null, KeyS: null } },
+    ...(assets ? { assets } : {}),
+  });
   renderer.setTerrain(map.terrain);
   renderer.setGameData(data);
 
