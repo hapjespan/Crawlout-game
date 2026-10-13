@@ -241,7 +241,8 @@ function ownSiteAt(ctx: SimContext, p: number, typeId: number, fx: number, fy: n
 
 /**
  * Cancel: een eigen bouwplaats verdwijnt met teruggave; een voltooid eigen gebouw stopt zijn onderzoek met teruggave,
- * het hoofdgebouw ook het oplappen van de held; een unit stopt (een betaalde omscholing wordt terugbetaald). Teruggave: cancelRefundPermille van de prijs.
+ * en het hoofdgebouw stopt daarnaast ook het oplappen van de held (allebei, in die volgorde, elk met teruggave); een
+ * unit stopt (een betaalde omscholing wordt terugbetaald). Teruggave: cancelRefundPermille van de prijs.
  */
 function applyCancel(ctx: SimContext, p: number, ids: readonly number[]): boolean {
   const w = ctx.world;
@@ -252,15 +253,16 @@ function applyCancel(ctx: SimContext, p: number, ids: readonly number[]): boolea
       if (bt !== undefined) ctx.ps.scrap[p] = ctx.ps.scrap[p]! + refundOf(ctx, bt.scrapCost);
       removeBuilding(ctx, i);
       any = true;
-    } else if (w.research[i] !== 0) {
+      continue;
+    }
+    if (w.research[i] !== 0) {
       const t = ctx.config.techs[w.research[i]! - 1];
       if (t !== undefined) ctx.ps.scrap[p] = ctx.ps.scrap[p]! + refundOf(ctx, t.scrapCost);
       w.research[i] = 0;
       w.work[i] = 0;
       any = true;
-    } else if (cancelRevive(ctx, p, i, (cost) => refundOf(ctx, cost))) {
-      any = true;
     }
+    if (cancelRevive(ctx, p, i, (cost) => refundOf(ctx, cost))) any = true;
   }
   return applyStop(ctx, p, ids) || any;
 }

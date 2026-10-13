@@ -2,10 +2,10 @@ import { MAX_ENTITIES_PER_COMMAND, OWNER_NEUTRAL } from '@crawlout/protocol';
 import { ROLES } from '@crawlout/data';
 import type { SimAiScript, SimBuildingType } from '../config.js';
 import { MAX_ABILITIES } from '../config.js';
-import { HERO_DEAD, heroOf } from '../effects.js';
+import { HERO_DEAD, hasTechs, heroOf } from '../effects.js';
 import { BSTATE_DONE, BSTATE_SITE, C, ORDER_CRAFT, ORDER_NONE } from '../ecs/world.js';
 import { footprintFree } from '../entities.js';
-import { PROVIDES_WORKSHOP } from '../fromData.js';
+import { PROVIDES_HQ, PROVIDES_WORKSHOP } from '../fromData.js';
 import { idiv } from '../math/int.js';
 import type { Census } from './census.js';
 import { takeCensus } from './census.js';
@@ -18,7 +18,12 @@ import { ROLE_MILITIA } from './orders.js';
 // Systeem 2 (AI-deel): de scripted tegenstander, voor elke speler met ai = true, in playerId-volgorde, voor de
 // unit-orders. Geen cheats: de AI geeft gewone commando's via applyCommand (dezelfde validatie als spelers) en
 // ziet alleen wat elke speler kan zien (eigen units, de map, de spawns). Gedrag:
-//  1. bouwvolgorde uit het script (atTick); een gebouw dat nooit kan (andere factie, tech, hoofdgebouw) slaat hij over;
+//  1. bouwvolgorde uit het script (atTick); een gebouw dat nooit kan (andere factie, hoofdgebouw) slaat hij over. Mist
+//     de volgende order een prereqTech (besluit 8, fase-0 sectie 14: geweerrek voor de turret), dan onderzoekt hij
+//     eerst de eerste ontbrekende tech in de keten waarvan de eigen prereqTech er al zijn (Research, zodra hij het kan
+//     betalen en een voltooid gebouw van het juiste type vrij is) en wacht hij met de order tot de tech er is. Heeft
+//     hij geen gebouw (af of in aanbouw) waarin die tech kan, of kan de tech nooit (andere factie), dan slaat hij de
+//     order over;
 //  2. bouwers zonder werk helpen bij een eigen bouwplaats; is er geen bouwplaats en is de bouwvolgorde af, dan claimt
 //     een vrije bouwer het neutrale claimpunt dat het dichtst bij het hoofdgebouw ligt (Claim-commando: het
 //     claimgebouw van de factie, zodra hij het kan betalen). Pas na de bouwvolgorde, zodat die de bouwer niet
@@ -168,9 +173,18 @@ function think(ctx: SimContext, census: Census, p: number, script: SimAiScript):
   while (hq >= 0 && bi < order.length && tick >= order[bi]!.atTick) {
     const typeId = order[bi]!.typeId;
     const bt = ctx.buildingType(typeId);
-    if (bt === undefined || !canPlaceType(ctx, p, typeId)) {
+    if (bt === undefined || bt.factionId !== ctx.players[p]!.factionId || (bt.provides & PROVIDES_HQ) !== 0) {
       bi++;
       continue;
+    }
+    if (!hasTechs(ctx, p, bt.prereqTech)) {
+      const r = researchFor(ctx, p, bt.prereqTech);
+      if (r === RESEARCH_IMPOSSIBLE) {
+        bi++;
+        continue;
+      }
+      if (r >= 0) applyCommand(ctx, { playerId: p, seq: 0, type: 'Research', payload: { techId: r } });
+      break;
     }
     if (ps.scrap[p]! < bt.scrapCost) break;
     const builder = idleBuilders.length > 0 ? idleBuilders[0]! : builders[0];
@@ -234,6 +248,46 @@ function think(ctx: SimContext, census: Census, p: number, script: SimAiScript):
     if (heroId >= 0 && w.orderType(hero) === ORDER_NONE) send.push(heroId);
   }
   for (const ids of chunks(send)) applyCommand(ctx, { playerId: p, seq: 0, type: 'AttackMove', payload: { ids, x: target.x, y: target.y } });
+}
+
+/** researchFor: er loopt al onderzoek in de keten, of het gebouw is bezet of nog niet af, of de scrap ontbreekt. */
+const RESEARCH_WAIT = -1;
+/** researchFor: de keten kan niet (andere factie, of geen eigen gebouw van het type, af of in aanbouw). */
+const RESEARCH_IMPOSSIBLE = -2;
+
+/**
+ * De tech die speler p nu moet onderzoeken voor `need` (diepte eerst in de prereqTech-keten, in lijstvolgorde): een
+ * techId als Research nu kan, anders RESEARCH_WAIT of RESEARCH_IMPOSSIBLE.
+ */
+function researchFor(ctx: SimContext, p: number, need: readonly number[]): number {
+  const w = ctx.world;
+  const seen: number[] = [];
+  const visit = (techId: number): number => {
+    if (seen.includes(techId)) return RESEARCH_IMPOSSIBLE; // kring in de prereqTech-keten
+    seen.push(techId);
+    const t = ctx.config.techs[techId];
+    if (t === undefined || t.factionId !== ctx.players[p]!.factionId) return RESEARCH_IMPOSSIBLE;
+    for (const q of t.prereqTech) {
+      if (hasTechs(ctx, p, [q])) continue;
+      return visit(q);
+    }
+    let exists = false;
+    let free = false;
+    for (let i = 0; i < w.highWater; i++) {
+      if (!w.has(i, C.building) || w.owner[i] !== p) continue;
+      if (w.research[i] === t.techId + 1) return RESEARCH_WAIT; // loopt al
+      if (w.typeId[i] !== t.buildingTypeId) continue;
+      exists = true;
+      if (w.bstate[i] === BSTATE_DONE && w.research[i] === 0) free = true;
+    }
+    if (!exists) return RESEARCH_IMPOSSIBLE;
+    return free && ctx.ps.scrap[p]! >= t.scrapCost ? t.techId : RESEARCH_WAIT;
+  };
+  for (const techId of need) {
+    if (hasTechs(ctx, p, [techId])) continue;
+    return visit(techId);
+  }
+  return RESEARCH_WAIT;
 }
 
 function heroThink(ctx: SimContext, p: number, hq: number): void {
