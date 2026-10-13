@@ -37,6 +37,8 @@ export function loadClientGameData(): GameData {
 
 export interface ClientMap {
   grid: MapGrid;
+  /** Dominance rule from maps/*.json (minutes); the session converts it with convertDominance. */
+  dominance: { pointsRequired: number; minutes: number };
   terrain: { positions: Float32Array; indices: Uint32Array; colors: Uint8Array };
 }
 
@@ -53,5 +55,5 @@ export function loadClientMap(id: string): ClientMap {
   // The greybox is in sim units (Int32); the renderer wants meters as floats.
   const positions = new Float32Array(mesh.positions.length);
   for (let i = 0; i < positions.length; i++) positions[i] = mesh.positions[i]! / mesh.unitsPerMeter;
-  return { grid, terrain: { positions, indices: mesh.indices, colors: mesh.colors } };
+  return { grid, dominance: def.dominance, terrain: { positions, indices: mesh.indices, colors: mesh.colors } };
 }

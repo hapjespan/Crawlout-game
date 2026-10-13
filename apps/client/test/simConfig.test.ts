@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { fileURLToPath } from 'node:url';
 import { loadGameDataFromDir } from '@crawlout/data/node';
 import { createSim, validateEnv } from '@crawlout/sim';
-import { createOpenMap } from '@crawlout/sim/testing';
+import { createOpenMap, testPlayers } from '@crawlout/sim/testing';
 import { toSimConfig, typeIdOfLoadout } from '../src/game/simConfig.js';
 
 const dataDir = fileURLToPath(new URL('../../../data', import.meta.url));
@@ -12,7 +12,7 @@ describe('toSimConfig', () => {
   const config = toSimConfig(data);
 
   it('produces a config the sim accepts', () => {
-    expect(() => validateEnv({ playerCount: 2, map: createOpenMap(), config })).not.toThrow();
+    expect(() => validateEnv({ players: testPlayers(2), map: createOpenMap(), config })).not.toThrow();
   });
 
   it('maps every loadout to a unit type with its converted stats', () => {
@@ -26,7 +26,7 @@ describe('toSimConfig', () => {
 
   it('spawns the faction start units deterministically', () => {
     const run = (): number => {
-      const sim = createSim({ seed: 7, playerCount: 2, map: createOpenMap(), config });
+      const sim = createSim({ seed: 7, players: testPlayers(2), map: createOpenMap(), config });
       for (const u of data.factions[0]!.startUnits) {
         for (let i = 0; i < u.count; i++) sim.spawnUnit({ typeId: typeIdOfLoadout(u.loadoutId), owner: 0, x: 4096 + i * 512, y: 4096 });
       }

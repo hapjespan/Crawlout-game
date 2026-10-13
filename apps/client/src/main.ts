@@ -1,30 +1,35 @@
 // Composition: sim worker (packages/sim) + renderer (packages/render) + HUD (packages/ui) + loopback relay.
-// Local skirmish on the slice map; the same session code drives the ws relay later.
+// Local skirmish against the scripted AI on the slice map; the same session code drives the ws relay later.
 import {
-  ENTITY_FLAG,
   MAX_ENTITIES_PER_COMMAND,
-  readSnapshotHeader,
-  snapshotLayout,
   type CommandPayload,
   type CommandType,
   type DesyncEvent,
   type PlayerStatus,
   type StallNotice,
 } from '@crawlout/protocol';
-import { ROLES } from '@crawlout/data';
-import { createRenderer } from '@crawlout/render';
-import { mountHud, type HudDeps, type NetworkState, type SelectedEntity, type TargetingKind } from '@crawlout/ui';
+import { PROVIDES, ROLES, buildingTypeId, kindOfTypeId, type BuildingData } from '@crawlout/data';
+import { createRenderer, snapFootprintCenter } from '@crawlout/render';
+import {
+  mountHud,
+  type BuildOption,
+  type HudAlert,
+  type HudDeps,
+  type MinimapData,
+  type NetworkState,
+  type SelectedEntity,
+  type TargetingKind,
+} from '@crawlout/ui';
+import type { SimWinner } from '@crawlout/sim';
 import { loadClientGameData, loadClientMap } from './game/content.js';
 import { startSession } from './game/session.js';
+import { EVENT_TYPE, readSnapshot, type EntityRow } from './game/snapshot.js';
 
 const SLICE_MAP = 'rustbelt';
-
-interface EntityRow {
-  id: number;
-  typeId: number;
-  owner: number;
-  hpPct: number;
-}
+const NEUTRAL_OWNER = 255;
+const STATUS_POLL_MS = 250;
+/** Under-attack alerts are rate limited so a long fight is one toast, not a flood. */
+const ATTACK_ALERT_COOLDOWN_MS = 8000;
 
 function showError(message: string): void {
   const el = document.getElementById('error');
@@ -37,7 +42,8 @@ async function main(): Promise<void> {
   const canvas = document.getElementById('view') as HTMLCanvasElement | null;
   const marquee = document.getElementById('marquee') as HTMLDivElement | null;
   const hudEl = document.getElementById('hud');
-  if (!canvas || !marquee || !hudEl) throw new Error('index.html mist #view, #marquee of #hud');
+  const endEl = document.getElementById('end');
+  if (!canvas || !marquee || !hudEl || !endEl) throw new Error('index.html mist #view, #marquee, #hud of #end');
 
   const data = loadClientGameData();
   const map = loadClientMap(SLICE_MAP);
@@ -45,39 +51,54 @@ async function main(): Promise<void> {
   const perf = document.getElementById('perf') ?? true;
   const renderer = await createRenderer({ canvas, forceWebGL: params.has('webgl'), stats: perf });
   renderer.setTerrain(map.terrain);
+  renderer.setGameData(data);
 
-  // Selection is local UI state, never sim state: the client stamps the selected flag into each snapshot.
+  // Selection is local UI state, never sim state: it is stamped into each snapshot's flags for the renderer.
   let selection = new Set<number>();
   let entities = new Map<number, EntityRow>();
+  let status: PlayerStatus | null = null;
   let network: NetworkState = { desync: null, stall: null };
   const listeners = new Set<() => void>();
   const notify = (): void => listeners.forEach((l) => l());
+  const alertListeners = new Set<(a: HudAlert) => void>();
+  const alert = (a: HudAlert): void => alertListeners.forEach((l) => l(a));
+  let lastAttackAlert = -Infinity;
 
-  const faction = data.factions[0];
-  const loadoutName = (typeId: number): string | null => data.loadouts[typeId - 1]?.key ?? null;
-  const roleOf = (typeId: number): SelectedEntity['role'] => {
-    const role = data.loadouts[typeId - 1]?.role;
-    return role === undefined ? null : (ROLES[role] ?? null);
+  const loadoutOf = (typeId: number) => {
+    const k = kindOfTypeId(typeId);
+    return k.kind === 'unit' ? data.loadouts[k.index] : undefined;
+  };
+  const buildingOf = (typeId: number): BuildingData | undefined => {
+    const k = kindOfTypeId(typeId);
+    return k.kind === 'building' ? data.buildings[k.index] : undefined;
   };
 
   const session = startSession(data, map, {
     onSnapshot(buf) {
-      const { entityCount, eventCount } = readSnapshotHeader(buf);
-      const layout = snapshotLayout(entityCount, eventCount);
-      const ids = new Uint32Array(buf, layout.entity.id, entityCount);
-      const typeIds = new Uint16Array(buf, layout.entity.typeId, entityCount);
-      const owners = new Uint8Array(buf, layout.entity.owner, entityCount);
-      const hp = new Uint8Array(buf, layout.entity.hpPct, entityCount);
-      const flags = new Uint8Array(buf, layout.entity.flags, entityCount);
-      const next = new Map<number, EntityRow>();
-      for (let i = 0; i < entityCount; i++) {
-        const id = ids[i]!;
-        if (selection.has(id)) flags[i] = flags[i]! | ENTITY_FLAG.selected;
-        if ((flags[i]! & ENTITY_FLAG.dead) === 0) next.set(id, { id, typeId: typeIds[i]!, owner: owners[i]!, hpPct: hp[i]! });
-      }
-      entities = next;
+      const previous = entities;
+      const snap = readSnapshot(buf, selection);
+      entities = snap.entities;
       for (const id of selection) if (!entities.has(id)) selection.delete(id);
       renderer.pushSnapshot(buf);
+      for (const ev of snap.events) {
+        if (ev.type === EVENT_TYPE.death) {
+          const was = previous.get(ev.a);
+          if (was?.owner === session.playerId && loadoutOf(was.typeId)) alert({ kind: 'settlerLost', x: ev.x, y: ev.y });
+        } else if (ev.type === EVENT_TYPE.claimTaken) {
+          if (previous.get(ev.a)?.owner === session.playerId && ev.b !== session.playerId) alert({ kind: 'claimLost', x: ev.x, y: ev.y });
+        } else if (ev.type === EVENT_TYPE.hit) {
+          const now = performance.now();
+          if (previous.get(ev.a)?.owner === session.playerId && now - lastAttackAlert > ATTACK_ALERT_COOLDOWN_MS) {
+            lastAttackAlert = now;
+            alert({ kind: 'attack', x: ev.x, y: ev.y });
+          }
+        }
+      }
+      notify();
+    },
+    onStatus(next, winner) {
+      status = next;
+      if (winner) showEnd(winner);
       notify();
     },
     onDesync(event: DesyncEvent) {
@@ -90,31 +111,95 @@ async function main(): Promise<void> {
     },
     onError: (message) => console.error(`sim: ${message}`),
   });
+  const statusPoll = window.setInterval(() => session.requestStatus(), STATUS_POLL_MS);
+
+  let ended = false;
+  function showEnd(winner: SimWinner): void {
+    if (ended) return;
+    ended = true;
+    const won = winner.playerId === session.playerId;
+    const how = { destruction: 'vernietiging', dominance: 'dominantie', surrender: 'opgave' }[winner.reason];
+    endEl!.textContent = `${won ? 'Gewonnen' : 'Verloren'} door ${how}. Herlaad de pagina voor een nieuw potje.`;
+    endEl!.style.display = 'grid';
+  }
 
   const mine = (ids: Iterable<number>): number[] => [...ids].filter((id) => entities.get(id)?.owner === session.playerId);
+  const roleIdx = (role: string): number => ROLES.indexOf(role as (typeof ROLES)[number]);
 
   /** Commands carry at most 64 entity ids; larger selections are split. */
-  function sendForSelection<T extends 'Move' | 'AttackMove'>(type: T, x: number, y: number): void {
-    const ids = mine(selection);
+  function sendChunked<T extends CommandType>(type: T, ids: number[], extra: Omit<CommandPayload<T>, 'ids'>): void {
     for (let i = 0; i < ids.length; i += MAX_ENTITIES_PER_COMMAND) {
-      const chunk = ids.slice(i, i + MAX_ENTITIES_PER_COMMAND);
-      session.sendCommand(type, { ids: chunk, x: Math.round(x), y: Math.round(y) } as CommandPayload<T>);
+      session.sendCommand(type, { ids: ids.slice(i, i + MAX_ENTITIES_PER_COMMAND), ...extra } as CommandPayload<T>);
     }
+  }
+
+  /** Right click: attack an enemy, gather from a scrap node, claim a point, otherwise move. */
+  function orderAt(px: number, py: number): void {
+    const ids = mine(selection).filter((id) => loadoutOf(entities.get(id)!.typeId));
+    if (ids.length === 0) return;
+    const hit = renderer.pickAt(px, py);
+    const target = hit.entityId === null ? undefined : entities.get(hit.entityId);
+    if (target) {
+      const kind = kindOfTypeId(target.typeId).kind;
+      const hostile = target.owner !== session.playerId && target.owner !== NEUTRAL_OWNER;
+      if (hostile && (kind === 'unit' || kind === 'building')) return sendChunked('Attack', ids, { target: target.id });
+      if (kind === 'scrapNode') {
+        const scavengers = ids.filter((id) => loadoutOf(entities.get(id)!.typeId)?.role === roleIdx('scavenger'));
+        if (scavengers.length > 0) return sendChunked('Gather', scavengers, { nodeId: target.id });
+      }
+      if (kind === 'claimPoint') return sendChunked('Claim', ids, { pointId: target.id });
+    }
+    if (hit.ground) sendChunked('Move', ids, { x: Math.round(hit.ground.x), y: Math.round(hit.ground.y) });
+  }
+
+  // Build menu: the faction's buildings that need no research yet (tech arrives later) and are not the HQ.
+  const faction = data.factions[0];
+  const hqProvides = PROVIDES.indexOf('hq');
+  const buildable = data.buildings.filter(
+    (b) => b.factionId === faction?.id && b.prereqTech.length === 0 && !b.provides.includes(hqProvides),
+  );
+  let placing: BuildOption | null = null;
+
+  /** Footprint cells must be passable and free of other buildings; the sim validates again on Build. */
+  function placementValid(option: BuildOption, cx: number, cy: number): boolean {
+    const { w, h } = option.footprint;
+    const x0 = (cx >> 8) - (w >> 1);
+    const y0 = (cy >> 8) - (h >> 1);
+    for (let y = y0; y < y0 + h; y++) {
+      for (let x = x0; x < x0 + w; x++) {
+        if (x < 0 || y < 0 || x >= map.grid.w || y >= map.grid.h || map.grid.passable[y * map.grid.w + x] !== 1) return false;
+      }
+    }
+    for (const e of entities.values()) {
+      const b = buildingOf(e.typeId);
+      if (!b) continue;
+      const bx0 = (e.x >> 8) - (b.footprint.w >> 1);
+      const by0 = (e.y >> 8) - (b.footprint.h >> 1);
+      if (x0 < bx0 + b.footprint.w && bx0 < x0 + w && y0 < by0 + b.footprint.h && by0 < y0 + h) return false;
+    }
+    return true;
+  }
+
+  function placementAt(px: number, py: number): { x: number; y: number; valid: boolean } | null {
+    if (!placing) return null;
+    const ground = renderer.pickAt(px, py).ground;
+    if (!ground) return null;
+    const at = snapFootprintCenter(ground.x, ground.y, placing.footprint);
+    return { x: Math.round(at.x), y: Math.round(at.y), valid: placementValid(placing, at.x, at.y) };
   }
 
   let targeting: TargetingKind | null = null;
 
   const deps: HudDeps = {
     sendCommand: <T extends CommandType>(type: T, payload: CommandPayload<T>) => session.sendCommand(type, payload),
-    getStatus: (): PlayerStatus => {
-      const own = mine(entities.keys()).length;
-      // No economy in sprint 1 yet: scrap is the faction's start value, pop cap follows the settlers.
-      return { playerId: session.playerId, scrap: faction?.startScrap ?? 0, settlers: own, pop: own, popCap: own, beds: 0, hero: null };
-    },
+    getStatus: () => status,
     getSelection: () =>
-      mine(selection).map((id) => {
+      mine(selection).map((id): SelectedEntity => {
         const e = entities.get(id)!;
-        return { id, typeId: e.typeId, loadoutName: loadoutName(e.typeId), hpPct: e.hpPct, role: roleOf(e.typeId) };
+        const l = loadoutOf(e.typeId);
+        const name = l?.key ?? buildingOf(e.typeId)?.key ?? null;
+        const role = l === undefined ? null : (ROLES[l.role] ?? null);
+        return { id, typeId: e.typeId, loadoutName: name, hpPct: e.hpPct, role };
       }),
     getNetwork: () => network,
     playerName: (id) => (id === session.playerId ? 'Jij' : 'AI'),
@@ -126,6 +211,40 @@ async function main(): Promise<void> {
       targeting = null;
       canvas.style.cursor = 'default';
     },
+    getMinimap: (): MinimapData => {
+      const blips: MinimapData['blips'][number][] = [];
+      const claims: MinimapData['claims'][number][] = [];
+      for (const e of entities.values()) {
+        const kind = kindOfTypeId(e.typeId).kind;
+        if (kind === 'claimPoint') claims.push({ x: e.x, y: e.y, owner: e.owner === NEUTRAL_OWNER ? null : e.owner });
+        else if (kind === 'scrapNode') blips.push({ x: e.x, y: e.y, owner: e.owner, kind: 'node' });
+        else blips.push({ x: e.x, y: e.y, owner: e.owner, kind: kind === 'building' ? 'building' : 'unit' });
+      }
+      return { w: map.grid.w, h: map.grid.h, passable: map.grid.passable, blips, claims };
+    },
+    focusCamera: (x, y) => renderer.focus(x, y),
+    getBuildOptions: () =>
+      buildable.map((b) => ({
+        buildingId: b.id,
+        typeId: buildingTypeId(b.id),
+        naam: b.key,
+        scrapCost: b.scrapCost,
+        footprint: b.footprint,
+        affordable: (status?.scrap ?? 0) >= b.scrapCost,
+      })),
+    beginPlacement: (option) => {
+      placing = option;
+      canvas.style.cursor = 'copy';
+    },
+    endPlacement: () => {
+      placing = null;
+      renderer.setPlacementPreview(null);
+      canvas.style.cursor = 'default';
+    },
+    subscribeAlerts: (cb) => {
+      alertListeners.add(cb);
+      return () => alertListeners.delete(cb);
+    },
     subscribe: (l) => {
       listeners.add(l);
       return () => listeners.delete(l);
@@ -136,7 +255,7 @@ async function main(): Promise<void> {
   const home = map.grid.spawns[session.playerId];
   if (home) renderer.focus(home.ux, home.uy);
 
-  // Pointer: left click/drag selects (shift adds), right click moves, a left click while targeting picks the target.
+  // Pointer: left click/drag selects (shift adds); while placing or targeting a left click picks the spot.
   let drag: { x: number; y: number; moved: boolean } | null = null;
   const local = (e: PointerEvent | MouseEvent) => {
     const r = canvas.getBoundingClientRect();
@@ -144,17 +263,34 @@ async function main(): Promise<void> {
   };
   canvas.addEventListener('pointerdown', (e) => {
     if (e.button !== 0) return;
+    const p = local(e);
+    if (placing) {
+      const at = placementAt(p.x, p.y);
+      if (at?.valid && hud.completePlacement({ x: at.x, y: at.y })) {
+        placing = null;
+        renderer.setPlacementPreview(null);
+        canvas.style.cursor = 'default';
+      }
+      return;
+    }
     if (targeting) {
-      const ground = renderer.pickAt(local(e).x, local(e).y).ground;
-      if (ground) hud.completeTargeting({ x: Math.round(ground.x), y: Math.round(ground.y) });
+      const hit = renderer.pickAt(p.x, p.y);
+      const node = hit.entityId === null ? undefined : entities.get(hit.entityId);
+      if (targeting === 'gather' && node && kindOfTypeId(node.typeId).kind === 'scrapNode') hud.completeTargeting({ nodeId: node.id });
+      else if (hit.ground) hud.completeTargeting({ x: Math.round(hit.ground.x), y: Math.round(hit.ground.y) });
       return;
     }
     canvas.setPointerCapture(e.pointerId);
-    drag = { ...local(e), moved: false };
+    drag = { ...p, moved: false };
   });
   canvas.addEventListener('pointermove', (e) => {
-    if (!drag) return;
     const p = local(e);
+    if (placing) {
+      const at = placementAt(p.x, p.y);
+      renderer.setPlacementPreview(at ? { typeId: placing.typeId, ...at } : null);
+      return;
+    }
+    if (!drag) return;
     if (!drag.moved && Math.hypot(p.x - drag.x, p.y - drag.y) < 4) return;
     drag.moved = true;
     marquee.style.display = 'block';
@@ -180,20 +316,19 @@ async function main(): Promise<void> {
   });
   canvas.addEventListener('contextmenu', (e) => {
     e.preventDefault();
-    if (targeting) {
-      hud.cancelTargeting();
-      return;
-    }
-    const ground = renderer.pickAt(local(e).x, local(e).y).ground;
-    if (ground && selection.size > 0) sendForSelection('Move', ground.x, ground.y);
+    if (placing) return hud.cancelPlacement();
+    if (targeting) return hud.cancelTargeting();
+    const p = local(e);
+    orderAt(p.x, p.y);
   });
 
   window.addEventListener('beforeunload', () => {
+    window.clearInterval(statusPoll);
     session.dispose();
     hud.unmount();
     renderer.dispose();
   });
-  (window as unknown as { crawlout: unknown }).crawlout = { renderer, session, entities: () => entities };
+  (window as unknown as { crawlout: unknown }).crawlout = { renderer, session, entities: () => entities, status: () => status };
 }
 
 main().catch((err: unknown) => {

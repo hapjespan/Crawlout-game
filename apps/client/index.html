@@ -45,6 +45,16 @@
         inset: 0;
         pointer-events: none;
       }
+      #end {
+        position: absolute;
+        inset: 0;
+        display: none;
+        place-items: center;
+        padding: 24px;
+        text-align: center;
+        font-size: 28px;
+        background: rgba(10, 10, 12, 0.6);
+      }
       #error {
         position: absolute;
         inset: 0;
@@ -61,6 +71,7 @@
       <div id="marquee"></div>
       <div id="hud"></div>
       <div id="perf"></div>
+      <div id="end" role="status"></div>
       <div id="error" role="alert"></div>
     </div>
     <script type="module" src="/src/main.ts"></script>
