@@ -255,6 +255,7 @@ export class Sim implements SimContext {
       popCap: this.census.popCap(this, playerId),
       beds: this.census.beds[playerId]!,
       hero: heroStatus(this, playerId),
+      techs: this.researched(playerId), // besluit sprint 3 (architect): de HUD filtert bouwmenu en craft-opties op prereqTech
     };
   }
 

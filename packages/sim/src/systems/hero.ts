@@ -214,6 +214,7 @@ export function applyHeroAbility(ctx: SimContext, p: number, pl: CommandPayload<
   ps.zoneY[k] = y;
   ps.zoneTicks[k] = ab.durationTicks;
   ps.abCooldown[k] = ab.cooldownTicks;
+  ctx.events.push(EVENT_TYPE.abilityZone, w.idOf(i), pl.abilityId, x, y); // besluit sprint 3 (architect): de renderer toont de zone
   return true;
 }
 

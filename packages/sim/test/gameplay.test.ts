@@ -528,6 +528,7 @@ describe('state', () => {
         popCap: 6,
         beds: 6,
         hero: { heroId: 0, level: 1, xp: 0, xpNext: DATA.heroes[0]!.xpThresholds[0], special: DATA.heroes[0]!.special, perks: [], pendingPerks: 0, revivesLeft: 4 },
+        techs: [],
       },
       winner: null,
     });
