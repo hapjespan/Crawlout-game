@@ -35,7 +35,7 @@ const simDeterminism = {
 };
 
 export default tseslint.config(
-  { ignores: ['**/dist/**', '**/node_modules/**', 'assets/**', 'docs/**'] },
+  { ignores: ['**/dist/**', '**/node_modules/**', 'assets/**', 'docs/**', '.claude/**'] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   simDeterminism,
