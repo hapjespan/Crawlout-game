@@ -35,7 +35,7 @@ Eén pnpm-monorepo in TypeScript strict. De simulatie is een pure package zonder
 | packages/map | Terreintegels, passability-bitmap, scrap-nodes, claimpunten, de slice-map | protocol, data | 7 |
 | apps/client | Vite-app die sim-worker, render, ui en een loopback- of ws-relay samenbrengt | alles | 2 en 5 samen |
 | tools/asset-cli | GLB in, meshopt plus KTX2 plus 3 LODs plus animatietextures plus manifest uit | niets | 3 |
-| tools/replay | Headless replay-runner: speelt een command-log af en vergelijkt hashes | sim, protocol, data | 1 |
+| tools/replay | Headless replay-runner: speelt een command-log af en vergelijkt hashes | sim, protocol, data, map (besluit sprint 2: de omgeving van een replay komt uit data/ en data/maps) | 1 |
 
 Stack en afspraken:
 
@@ -76,9 +76,16 @@ De sim is een pure functie van (seed, data, commando's per tick) naar state. Twe
 
 1. Na elke tick post de worker één transferable ArrayBuffer. Header: tick (uint32), hash (uint32), entityCount (uint16), eventCount (uint16). tick is het laatst uitgevoerde frame; hash is de state-hash na dat frame (besluit sprint 1).
 2. Per entity, SoA: id uint32, typeId uint16, owner uint8, x int32, y int32, yaw uint16, anim uint8, animT uint16 (0 tot 65535 is 0 tot 100% van de clip), hpPct uint8, flags uint8 (selected, dead, carrying, inCombat). anim-ids (besluit sprint 1, `ANIM` in protocol) volgen de clipvolgorde van de artist-brief: idle 0, walk 1, run 2, attack1 3, attack2 4, gather 5, build 6, death 7. Sim en render gebruiken deze constanten, nooit eigen getallen.
+   Besluiten sprint 2:
+   - typeId-ruimte (code in packages/data/src/typeIds.ts, omdat de indices uit de data-loader komen): unit = 1 + loadoutId (1 tot 1023), gebouw = 1024 + buildingId (1024 tot 2047), scrap-node 2048, claimpunt 2049, 0 is geen type. Sim, render, HUD en client lezen de soort via `kindOfTypeId`, nooit met eigen grenzen.
+   - owner: speler 0 tot MAX\_PLAYERS − 1, of `OWNER_NEUTRAL` = 255 voor scrap-nodes en onbezette claimpunten. De waarden daartussen zijn gereserveerd.
+   - hpPct: units en gebouwen hp in procenten; scrap-node resterende voorraad in procenten van de startvoorraad; claimpunt 100.
+   - anim en animT buiten units: gebouw in aanbouw build met animT = bouwvoortgang, daarna idle; claimpunt animT = claimvoortgang; lijk death met animT = verstreken deel van corpseS.
+   - flags.selected zet de client, niet de sim: selectie is geen sim-state. De client stempelt hem in de snapshotbuffer voordat de renderer leest. dead, carrying en inCombat komen uit de sim.
 3. Events voor VFX en audio: type uint8, a uint32, b uint32, x int32, y int32. Types: spawn, death, shotFired (a is schutter, b is doel), hit, buildingPlaced, buildingDone, claimTaken, resourceDepleted, heroLevel.
+   Besluit sprint 2: a is altijd de entity waar het om gaat, x en y zijn haar positie op dat moment. b per type: spawn, death, buildingPlaced en buildingDone b = typeId; shotFired a = schutter, b = doel; hit a = doel, b = schutter; claimTaken a = claimpunt, b = nieuwe eigenaar; resourceDepleted b = 0; heroLevel b = nieuw level. Een entity die dezelfde tick verdwijnt (gesloopt gebouw, lege node) staat niet meer in de snapshot; de renderer leest typeId dan uit b.
 4. De renderer interpoleert tussen de laatste twee snapshots en loopt één tick achter. De renderer leest nooit sim-state direct.
-5. Spelerstatus (scrap, bewoners, pop, selectie-details, held-stats) gaat apart via een queryMessage op verzoek van de UI, niet in elke snapshot.
+5. Spelerstatus (scrap, bewoners, pop, selectie-details, held-stats) gaat apart via een queryMessage op verzoek van de UI, niet in elke snapshot. PlayerStatus = { playerId, scrap, settlers, pop, popCap, beds, hero }. Besluit sprint 2: hero = null zonder held, anders HeroStatus { heroId, level, xp, xpNext, special\[7\], perks\[\], pendingPerks, revivesLeft }; naam en perk-teksten haalt de HUD uit packages/data op heroId. heroId, xpNext, pendingPerks en revivesLeft zijn optioneel tot de held in de sim zit (sprint 3), daarna verplicht; de eigen HeroInfo van de HUD verdwijnt dan.
 
 **AI in de slice**
 
@@ -93,14 +100,20 @@ De relay simuleert niets. Hij ordent commando's in frames, verspreidt ze naar al
 
 1. Vorm: { frame, playerId, seq, type, payload }. Alle velden integers of korte strings, zod-schema in packages/protocol. JSON in fase 1, binair pas als het meetbaar nodig is.
 2. Types in de slice: Move, AttackMove, Attack, Stop, Gather, Build (typeId, x, y), Cancel, SetRole (scavenger, builder, militia), Craft (loadoutId), Research (techId), Recruit, Claim, HeroAbility (abilityId, x, y, target), PickPerk (perkId), Surrender.
-3. Elk commando bevat de entity-ids waarop het werkt, maximaal 64 per commando. De sim valideert elk commando (eigenaar, kosten, bereik) en negeert ongeldige stilzwijgend.
+   Besluiten sprint 2:
+   - Build: typeId is de gebouw-typeId (contract 1); x, y is het midden van de footprint in sim-eenheden. De oorsprong (cel linksboven) is cel(x, y) − (w >> 1, h >> 1) met cel(v) = v >> 8. De HUD snapt het midden op de celgrens (even maten op een celhoek, oneven op een celmidden); de sim valideert factie, kosten en vrije cellen. Alleen bouwers; wijst x, y naar een eigen bouwplaats van dit type, dan helpen ze daar zonder kosten.
+   - Cancel: ids zijn eigen bouwplaatsen (verdwijnen met teruggave) en/of eigen units (stoppen; een betaalde omscholing wordt terugbetaald).
+   - Claim (ids, pointId): ids zijn bouwers; de sim laat hen het claimgebouw (provides claim) van hun factie bouwen binnen claimRadiusM van het punt, als Build op de dichtstbijzijnde vrije plek. Sectie 13 beschrijft het interim van sprint 2.
+3. Elk commando bevat de entity-ids waarop het werkt, maximaal 64 per commando. De sim valideert elk commando (eigenaar, kosten, bereik) en negeert ongeldige stilzwijgend. Besluit sprint 2: de zod-validatie gebeurt één keer bij binnenkomst van de bundel (buiten de tick); de tick doet alleen integer- en spelregelchecks.
 
 **Lockstep**
 
 1. Frame = één tick. Een commando dat de speler geeft in frame f, voert de sim uit in frame f + DELAY. DELAY = 4 frames (200 ms) bij de start, later adaptief tussen 2 en 8 op basis van gemeten latency.
+   Besluit sprint 2: de relay past DELAY zelf aan uit het verschil tussen het frame dat hij uitgeeft en envelope.frame (of HashReport.frame + 1) van de traagste online speler, omhoog direct en omlaag met hysterese; er is geen bericht voor nodig. MatchSettings.delayFrames is alleen de startwaarde. Een client kent DELAY niet: hij stuurt envelope.frame = zijn eerstvolgende frame en de relay plant. Per speler zijn uitvoerframes monotoon, zodat seq-volgorde blijft als DELAY tussendoor verandert.
 2. De relay bundelt per frame: { frame, commands: \[...\] } en stuurt de bundel naar alle spelers, ook een lege. Een client voert frame f pas uit als de bundel voor f binnen is.
    Frame-semantiek (besluit sprint 1): bundle.frame is het uitvoerframe; envelope.frame is het frame waarin de speler het commando gaf. De relay plant een commando op max(envelope.frame + DELAY, eerstvolgende bundel): een te laat commando schuift naar de eerstvolgende bundel en wordt nooit verworpen. De sim leest alleen bundle.frame. Sim.frame is het volgende uit te voeren frame; in de state-serialisatie staat tick = aantal uitgevoerde ticks.
 3. Ontbreekt een bundel langer dan 2 seconden, dan pauzeert de sim en toont de UI wie er wacht. De relay stuurt bundels in volgorde, nooit met een gat.
+   Besluit sprint 2: twee kanten. De client pauzeert zelf zodra zijn eerstvolgende bundel ontbreekt (de worker tikt alleen met bundel). De relay blijft bundels uitgeven en stuurt `stall` { waitingFor } zodra een online menselijke speler zijn hash voor het oudste openstaande frame langer dan STALL\_TIMEOUT\_MS schuldig blijft nadat een ander al meldde; alleen bij wijziging, een lege waitingFor wist de melding. Hashes zijn dus de hartslag.
 
 **Hash en desync**
 
@@ -111,7 +124,9 @@ De relay simuleert niets. Hij ordent commando's in frames, verspreidt ze naar al
 **Reconnect en resync**
 
 1. Een terugkerende client vraagt resync. De relay wijst een peer aan (de speler met de laagste playerId die online is), die zijn volledige state-serialisatie van frame f stuurt plus alle bundels sinds f.
+   Besluit sprint 2: ResyncResponse.frame = Sim.frame van de meegestuurde state, dus het eerstvolgende uit te voeren frame (state na frame − 1). bundles zijn alle bundels vanaf frame, aansluitend; de peer stuurt wat hij heeft en de relay vult aan uit zijn eigen geschiedenis (de laatste 1200 frames). Een state ouder dan die geschiedenis wijst de relay af en hij vraagt de volgende peer; een peer die niet binnen 5 s antwoordt ook. De peer is de laagste online menselijke playerId met een state (niet het doel, niet al geprobeerd).
 2. De client laadt de state, speelt de bundels versneld af tot hij bij is, en meldt zich weer. Resync in de slice alleen voor lokaal testen; de echte test komt in fase 2 met survival.
+   Besluit sprint 2: na een reconnect (lobby 5) start de relay de resync zelf; een resyncRequest van de client blijft toegestaan en is een no-op zolang er een loopt. De teruggekeerde speler meldt hashes vanaf ResyncResponse.frame; de relay verwacht er geen van hem voor eerdere frames.
 
 **Lobby**
 
@@ -119,7 +134,7 @@ De relay simuleert niets. Hij ordent commando's in frames, verspreidt ze naar al
 2. Rooms zijn in het geheugen van de relay. Geen accounts, geen matchmaking in de slice.
 3. Start (besluit sprint 1): er is geen client-bericht start. De relay start zodra elke menselijke speler ready is en het minimum aantal spelers (mens plus AI) is gehaald. Een AI-speler komt via addAi in de lobby, staat als LobbyPlayer met ai = true in start en heeft geen verbinding.
 4. Instellingen (besluit sprint 1): de relay kent geen spelregels. MatchSettings = { mode, delayFrames, dominanceMinutes? }. De host (laagste playerId) zet ze met setSettings; de relay vult ze in lobby en start door. Ontbreekt dominanceMinutes, dan geldt de waarde uit de map (maps/\*.json, dominance). Geen defaultgetallen in relay-code.
-5. Reconnect (besluit sprint 1): clientId is een willekeurige string die de client zelf kiest en in sessionStorage bewaart. Joint een verbinding na start met een bekend clientId, dan koppelt de relay haar aan dezelfde playerId, zet online op true en de client vraagt resync. Zonder clientId weigert de relay een join na start.
+5. Reconnect (besluit sprint 1): clientId is een willekeurige string die de client zelf kiest en in sessionStorage bewaart. Joint een verbinding na start met een bekend clientId, dan koppelt de relay haar aan dezelfde playerId, zet online op true en de client vraagt resync. Zonder clientId weigert de relay een join na start. Aanscherping sprint 2: de relay stuurt de teruggekeerde verbinding opnieuw `start` (zelfde seed, map, spelers en settings), zodat de client een verse sim kan maken, en start daarna zelf de resync (contract 2, resync). Een gestarte room zonder verbindingen blijft 60 s bestaan voor reconnect.
 6. Desync (besluit sprint 1): na een desyncEvent geeft de relay geen bundels meer uit; het potje stopt. Dit blijft zo tot de automatische resync (na de slice).
 
 **Replay**
@@ -142,7 +157,8 @@ Alle spelregels die getallen zijn, staan in JSON onder data/ en nergens in code.
 | perks.json | Perk | id, naam, flavourText, requires { stat, min }, effects\[\] |
 | damage-matrix.json | Matrix | strict object: \_comment plus per damageType (ballistic, energy, melee, fire) een rij armorType (none, light, medium, heavy, robot) naar multiplier in procenten |
 | maps/\*.json | Map | id, size { w, h } in cellen van 1 m, heightmap-ref, passability-ref, scrapNodes\[\] { x, y, amount }, claimPoints\[\] { x, y, kind }, spawns\[\], creepCamps\[\], dominance { pointsRequired, minutes } |
-| ai/\*.json | AI-script | bouwvolgorde, aanvalstimers, rallypunten |
+| ai/\*.json | AI-script | id, faction, buildOrder\[\] { atS, buildingId }, attackTimersS\[\], rallyPoint, militiaPct (besluit sprint 2: verhuist uit sim.json) |
+| sim.json | Sim-tuning (één record, besluit sprint 2) | unitRadiusM, arriveRadiusM, separationPct, flowFieldBudgetCells, walkAnimStep, aggroRangeM, interactRangeM, claimRadiusM, popCapMax, corpseS, cancelRefundPct; de loader levert U, Permille en Ticks. Geen factie- of mapregels: die staan in factions en maps |
 
 Regels:
 
@@ -152,6 +168,7 @@ Regels:
 4. Verzamelen (besluit sprint 1): gatherAmount (scrap per rit) en gatherS (seconden per rit) staan op de loadout; 0 en 0 voor loadouts die niet verzamelen. Held: maxRevives is het aantal keren oplappen voordat de held leeg is (Spelfundament: 4). Dominantie: pointsRequired en minutes staan per map; MatchSettings.dominanceMinutes is alleen een lobby-override.
 5. Startwaarden voor de Dwellers-slice komen van werkstroom 4 in sprint 1, gemarkeerd als startwaarde, geen balans. Richtlijn: bewoner 60 hp, pipe pistol 8 schade per 1,0 s op 8 m, scavenger haalt 10 scrap per 6 s, woning 4 bedden voor 60 scrap, werkplaats 120 scrap. Alles verandert zodra de testgroep speelt.
 6. Visuals in de data verwijzen naar manifest-ids uit assets/dist, nooit naar bestandspaden. De asset-cli (werkstroom 3) genereert het manifest.
+7. Sim-tuning (besluit sprint 2): getallen die bij geen factie, loadout, gebouw of map horen staan in sim.json. aggroRangeM (militie en AttackMove kiezen zelf een doel), interactRangeM (reikwijdte tot node of footprint), claimRadiusM (straal waarbinnen een claimgebouw het punt neemt), popCapMax (Spelfundament 2.5: 50), corpseS (lijk voor de death-clip), cancelRefundPct (teruggave bij Cancel; sprint 2 gedraagt zich als 100). aiMilitiaPct hoort bij het AI-script (ai/\*.json, militiaPct); claimS vervalt zodra claimen via het claimgebouw loopt (sectie 13).
 
 ## 7. Determinisme-regels
 
@@ -294,8 +311,8 @@ De asset-cli levert per karakter-asset een bone-matrix-texture plus manifest-vel
 
 1. Texture: RGBA float32, little-endian, rij-voor-rij, in een los binair bestand (`<id>.anim.f32`) naast de GLB's; breedte = boneCount · 4 texels, hoogte = som van de frames van alle clips. Texel (bone · 4 + c, row) is kolom c van de skin-matrix van die bone in dat frame, column-major zoals three.js Matrix4.elements. Skin-matrix = geanimeerde joint-wereldmatrix · inverse bind-matrix, in modelruimte (meters, +y omhoog, voeten op y = 0, model kijkt naar +z).
 2. Bone-volgorde = de joint-volgorde van de skin in de GLB, dezelfde die het skinIndex-attribuut van de mesh gebruikt. De asset-cli garandeert dat mesh en texture uit dezelfde GLB komen.
-3. Clips: precies de acht uit `ANIM_NAMES`, in die volgorde, elk een aaneengesloten blok rijen; 30 fps; loopende clips bemonsteren \[0, 1), one-shot clips (death) sluiten de laatste pose op 1 in. Manifest per clip: name, firstFrame, frameCount, loop, durationSeconds. Manifest per asset: texturePath, width, height, fps, boneCount.
-4. Render bouwt hieruit zijn clip-tabel (startRow, frameCount, loop, duration) en DataTexture; de procedurele placeholder-rig in render verdwijnt zodra de eerste Quaternius-asset door de buis is.
+3. Clips: precies de acht uit `ANIM_NAMES`, in die volgorde, elk een aaneengesloten blok rijen; 30 fps; loopende clips bemonsteren \[0, 1), one-shot clips (death) sluiten de laatste pose op 1 in. Manifest (besluit sprint 2, de code van `tools/asset-cli/src/manifest.ts` is leidend): per asset `boneCount` en, voor karakters met clips, `baked { path, width, height, fps, clips[] }`; per clip `{ name, startRow, frames, loop, durationSeconds }`. path is relatief aan manifest.json (`<id>/<id>.anim.f32`), width = boneCount · 4, height = som van frames, frames = max(2, round(duur · fps)). Het zod-schema controleert clipvolgorde, aaneengesloten blokken, height en width.
+4. Render bouwt hieruit zijn clip-tabel (startRow, frames, loop, durationSeconds) en DataTexture, in float32 of half-float waar WebGL2 float32 weigert (besluit sprint 2: render kiest de precisie, het manifest blijft float32); de procedurele placeholder-rig in render verdwijnt zodra de eerste Quaternius-asset door de buis is.
 5. Eigenaar: manifest-schema is van asset-cli (werkstroom 3); de interpretatie van de texture is van render (werkstroom 2). Een wijziging gaat via beide briefs en deze sectie.
 
 **Wat sprint 2 per werkstroom hieruit volgt**
@@ -306,3 +323,34 @@ De asset-cli levert per karakter-asset een bone-matrix-texture plus manifest-vel
 4. content: schema's uitbreiden met gatherAmount, gatherS, maxRevives, maps.dominance en een stat-enum voor effects; data/VERSION omhoog.
 5. relay: setSettings, addAi, removeAi, clientId-reconnect, settings in lobby; geen defaultgetallen; loopback aansluiten in apps/client.
 6. hud en map: ai-vlag en settings in de lobby-UI; dominance in maps/\*.json.
+
+## 13. Contractbesluiten na sprint 2
+
+Genomen op 14 oktober 2026 bij de architect-review van sprint 2, verwerkt in de secties hierboven (besluiten sprint 2), in packages/protocol en in docs/CHANGELOG.md. Hier staat wat niet in één contractregel past: de spelregels die sim-core zonder data heeft ingevuld, en wat sprint 3 daaruit volgt.
+
+**Spelregels uit sprint 2, per regel**
+
+1. Omscholen alleen bij een werkplaats: akkoord. Spelfundament 2.1 zegt het letterlijk ("wisselen kost looptijd naar de werkplaats"). Regel, geen getal. SetRole en Craft sturen de unit naar de dichtstbijzijnde eigen werkplaats; zonder werkplaats wacht hij. Het doel-loadout van SetRole is per factie het goedkoopste loadout van die rol zonder prereqTech (laagste id bij gelijke prijs).
+2. Het hoofdgebouw is niet bouwbaar: akkoord als regel. Eén per speler, uit de startopstelling (provides hq); verlies ervan is winroute A. Het bouwmenu toont het niet.
+3. Cancel geeft de volle scrap terug: akkoord voor de slice, maar het is een getal. Nieuw veld sim.json cancelRefundPct (content), de sim leest het (sim-core, sprint 3). Tot dan gedraagt de sim zich als 100. Geldt voor bouwplaatsen en voor een betaalde omscholing.
+4. Claimen vraagt een Claim-order en een vijand pauzeert het: terug naar het ontwerp. Spelfundament 3.1: "claimen is een outpost bouwen in de radius; een geclaimde node is exclusief voor de eigenaar", en de data heeft dat gebouw al (claimpaal, provides claim). Regel vanaf sprint 3: een claimpunt is van speler p zolang een voltooid gebouw van p met provides claim binnen claimRadiusM van het punt staat (het hoofdgebouw telt mee, dus het punt bij de spawn is meteen van de speler); staat er geen, dan is het punt neutraal; staan er van meerdere spelers, dan houdt de huidige eigenaar het tot zijn gebouw weg is, daarna de laagste playerId. Een scrap-node binnen claimRadiusM van een bezet punt is exclusief: alleen scavengers van de eigenaar verzamelen er. Het Claim-commando wordt een Build van het claimgebouw bij het punt (contract 2). claimS vervalt; claimRadiusM blijft. Sprint 2 houdt het interim (Claim-order, claimS ongestoord in de straal, vijand pauzeert) voor de eerste testsessie; sim-core neemt de fixtures opnieuw op bij de omslag.
+5. Groei levert scavengers: akkoord. Elke bewoner begint als scavenger (Spelfundament 2.1); de nieuwe bewoner is het SetRole-loadout van de rol scavenger. De nieuwe bewoner verschijnt op een vrije cel rond het hoofdgebouw.
+6. Groei spaart niet op: akkoord. Spelfundament 2.3: geen bed, geen groei. Zonder vrij bed (of zonder voltooid hoofdgebouw) gaat de teller op nul; housingGrowthPerMin telt alleen op zolang er plek is.
+
+**Overig, bevestigd in sprint 2**
+
+1. De scripted AI geeft gewone commando's via dezelfde validatie als spelers, in playerId-volgorde, voor de unit-orders. Geen cheats; hij ziet de map, de spawns en zijn eigen units. Zijn militie-aandeel is een scriptwaarde (ai/\*.json militiaPct), niet een sim-getal.
+2. Alleen militie kiest zelf een doel binnen aggroRangeM; scavengers en bouwers vechten niet terug zonder order. Akkoord voor de slice; de testgroep beslist of bewoners moeten vluchten of terugslaan.
+3. Dood: een unit blijft corpseS seconden als lijk staan (anim death, flag dead, zonder Health); een gebouw verdwijnt meteen. Een lijk telt niet mee voor pop, dominantie of claims.
+4. Winnaar staat vast in de state (globals: winnaar, reden, frame); de sim tikt daarna door, de client toont het einde uit de query.
+5. Flow fields krijgen een rechthoek als doel (cel of footprint) en beginnen allemaal opnieuw bij elke wijziging van de begaanbaarheid; dat is derived state en zit niet in de hash.
+
+**Wat sprint 3 per werkstroom hieruit volgt (richting gate 1)**
+
+1. sim-core: `OWNER_NEUTRAL` uit protocol gebruiken; hpPct van een scrap-node = resterend deel van de startvoorraad; claimen via het claimgebouw, exclusieve nodes, claimS weg (fixtures opnieuw opnemen); cancelRefundPct en militiaPct uit de data; de held (HeroStatus, PickPerk, heroLevel-event, oplappen); Research en Recruit; `replay:browsers` via Playwright.
+2. render-pipeline: bij death het typeId uit event.b gebruiken voor de footprint van een gesloopt gebouw, bij hit eerst a (doel) als positie; bone-matrix-loader voor `baked` uit het manifest en de eerste Quaternius-asset in plaats van de placeholder-rig; scrap-schaal uit hpPct werkt zodra de sim het levert.
+3. asset-cli: Quaternius-placeholders en 10 Gobkit-props door de buis, clipmap tegen de echte GLB's controleren.
+4. content: sim.json cancelRefundPct erbij, aiMilitiaPct naar ai/\*.json als militiaPct, claimS weg zodra sim-core omschakelt; held-xp-tabel (xp per level) in heroes.json voor xpNext; data/VERSION omhoog.
+5. hud: HeroInfo vervangen door HeroStatus plus naam uit packages/data; `OWNER_NEUTRAL` en `kindOfTypeId` in de client in plaats van eigen constanten; desync-dump naar IndexedDB; lobby-paneel op de ws-relay; de client gebruikt start.you en start.map in plaats van vaste waarden.
+6. relay: ws-transport en reconnect in apps/client (start opnieuw, state laden in de worker, bundels versneld afspelen), latency-simulatie, de test met twee browsers op één machine; defaultFaction alleen via RoomOptions.
+7. map: creep-kampen en props via Three Scatter; controleren dat elke scrap-node die exclusief moet zijn binnen claimRadiusM van een claimpunt ligt.
