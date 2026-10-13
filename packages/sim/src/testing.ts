@@ -1,11 +1,29 @@
-import type { SimConfig, SimInit, SimMap } from './config.js';
+import type { SimMap, SimPlayer } from './config.js';
 
-// Testhulpen voor sprint 1: een programmatische testmap en een testconfig in sim-eenheden.
-// Dit zijn GEEN spelregels: de echte waarden komen via de data-loader (adapter volgt bij de integratie).
+// Testhulpen: programmatische testmaps in sim-eenheden. GEEN spelregels: de config komt in tests uit de echte data
+// (simConfigFromGameData), de maps voor replays uit data/maps via packages/map. Dominantie en voorraden hier zijn
+// alleen testgetallen voor deze kunstmaps.
+
+const cc = (cx: number, cy: number): { x: number; y: number } => ({ x: (cx << 8) + 128, y: (cy << 8) + 128 });
+
+/** Positie in eenheden van het midden van cel (cx, cy). */
+export const cellCenter = cc;
+
+function features(w: number, h: number): Pick<SimMap, 'spawns' | 'scrapNodes' | 'claimPoints' | 'dominance'> {
+  return {
+    spawns: [cc(8, 8), cc(w - 9, h - 9)],
+    scrapNodes: [
+      { ...cc(16, 6), amount: 500 },
+      { ...cc(w - 17, h - 7), amount: 500 },
+    ],
+    claimPoints: [{ ...cc(w >> 1, h >> 1), kind: 1 }],
+    dominance: { pointsRequired: 1, ticks: 600 },
+  };
+}
 
 /**
  * Testarena van w bij h cellen: een rand van muur, een verticale muur door het midden met een opening van
- * 4 cellen in het midden, en een blok van 4 bij 4 cellen in het rechterdeel. Deterministisch.
+ * 4 cellen in het midden, en een blok van 4 bij 4 cellen in het rechterdeel. Spawns linksboven en rechtsonder.
  */
 export function createTestMap(w = 64, h = 64): SimMap {
   const passable = new Uint8Array(w * h);
@@ -21,7 +39,7 @@ export function createTestMap(w = 64, h = 64): SimMap {
       passable[y * w + x] = border || wall || block ? 0 : 1;
     }
   }
-  return { w, h, passable };
+  return { w, h, passable, ...features(w, h), claimPoints: [{ ...cc(midX - 4, h >> 1), kind: 1 }] };
 }
 
 /** Een open map zonder muren (alleen de rand), voor benchmark en eenvoudige tests. */
@@ -30,24 +48,10 @@ export function createOpenMap(w = 128, h = 128): SimMap {
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) passable[y * w + x] = x === 0 || y === 0 || x === w - 1 || y === h - 1 ? 0 : 1;
   }
-  return { w, h, passable };
+  return { w, h, passable, ...features(w, h) };
 }
 
-/** Testconfig (startwaarde, geen balans): bewoner 60 hp, ongeveer 3,2 m/s, straal 0,375 m. */
-export const TEST_SIM_CONFIG: SimConfig = {
-  dataVersion: 'test-sprint1',
-  unitTypes: [{ typeId: 1, maxHp: 60, speed: 41, radius: 96, armorType: 0, bodyType: 0, loadoutId: 0, role: 0 }],
-  arriveRadius: 64,
-  separationPermille: 500,
-  flowFieldBudget: 2048,
-  walkAnimStep: 2048,
-};
-
-export const TEST_UNIT_TYPE = 1;
-
-export function testInit(seed = 1, map: SimMap = createTestMap(), playerCount = 2): SimInit {
-  return { seed, playerCount, map, config: TEST_SIM_CONFIG };
+/** n spelers van factie 0. */
+export function testPlayers(n = 2, ai = false): SimPlayer[] {
+  return Array.from({ length: n }, () => ({ factionId: 0, ai }));
 }
-
-/** Positie in eenheden van het midden van cel (cx, cy). */
-export const cellCenter = (cx: number, cy: number): { x: number; y: number } => ({ x: (cx << 8) + 128, y: (cy << 8) + 128 });

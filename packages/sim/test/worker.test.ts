@@ -2,8 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { readSnapshotHeader } from '@crawlout/protocol';
 import { createSim, createSimWorkerCore } from '../src/index.js';
 import type { SimWorkerOutbound } from '../src/index.js';
-import { testInit } from '../src/testing.js';
-import { bundle } from './helpers.js';
+import { bundle, envOf, testInit } from './helpers.js';
 
 function harness() {
   const out: { msg: SimWorkerOutbound; transfer: ArrayBuffer[] }[] = [];
@@ -46,8 +45,7 @@ describe('worker-schil', () => {
     core.receive({ kind: 'dump' });
     const st = out.find((o) => o.msg.kind === 'state')!.msg;
     if (st.kind !== 'state') throw new Error();
-    const init = testInit(3);
-    const env = { playerCount: init.playerCount, map: init.map, config: init.config };
+    const env = envOf(testInit(3));
     const b = harness();
     b.core.receive({ kind: 'load', state: st.buffer, env });
     const ready = b.out[0]!.msg;

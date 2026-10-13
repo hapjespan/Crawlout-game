@@ -1,7 +1,9 @@
+import { YAW_PLUS_X, YAW_PLUS_Y } from '@crawlout/protocol';
 import { bdiv } from './int.js';
 
 // Sinus en cosinus uit een tabel van 1024 integers, opgebouwd bij module-load uit integers (BigInt-Taylorreeks).
-// Hoeken in de sim zijn uint16: 0..65535 = 0..360 graden; 0 is de +x-as, 16384 de +y-as.
+// Hoeken in de sim zijn uint16: 0..65535 = 0..360 graden; yaw-conventie uit protocol: YAW_PLUS_X (0) is de +x-as,
+// YAW_PLUS_Y (16384) de +y-as, yaw = atan2(dy, dx).
 export const TRIG_BITS = 16;
 export const TRIG_ONE = 1 << TRIG_BITS; // sin(90 graden) = 65536
 export const TRIG_STEPS = 1024;
@@ -51,7 +53,7 @@ export const SIN_TABLE: Int32Array = buildTable();
 /** Sinus van een uint16-hoek, schaal TRIG_ONE. Rondt af naar de dichtstbijzijnde tabelstap. */
 export const sinA = (angle: number): number => SIN_TABLE[((angle + 32) >> STEP_SHIFT) & (TRIG_STEPS - 1)]!;
 /** Cosinus van een uint16-hoek, schaal TRIG_ONE. */
-export const cosA = (angle: number): number => SIN_TABLE[((angle + 32 + 16384) >> STEP_SHIFT) & (TRIG_STEPS - 1)]!;
+export const cosA = (angle: number): number => SIN_TABLE[((angle + 32 + YAW_PLUS_Y) >> STEP_SHIFT) & (TRIG_STEPS - 1)]!;
 
 /**
  * Hoek van de vector (dx, dy) als uint16, zonder Math.atan2: octant-reductie plus binair zoeken in de tabel.
@@ -82,8 +84,8 @@ export function atan2A(dy: number, dx: number): number {
     const errHi = SIN_TABLE[lo + 1]! * ax - ay * SIN_TABLE[lo + 1 + QUARTER]!;
     if (errHi < errLo) lo++;
   }
-  let a = lo << STEP_SHIFT; // 0..8192
-  if (swap) a = 16384 - a;
+  let a = YAW_PLUS_X + (lo << STEP_SHIFT); // 0..8192
+  if (swap) a = YAW_PLUS_Y - a;
   if (dx < 0) a = 32768 - a;
   if (dy < 0) a = 65536 - a;
   return a & 0xffff;

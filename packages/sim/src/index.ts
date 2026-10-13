@@ -5,13 +5,43 @@ export { SIN_TABLE, TRIG_ONE, TRIG_BITS, sinA, cosA, atan2A } from './math/trig.
 export { isqrt } from './math/sqrt.js';
 export { FNV_OFFSET, FNV_PRIME, fnv1a } from './math/fnv.js';
 export { Rng } from './rng.js';
-export type { SimConfig, SimEnv, SimInit, SimMap, SimUnitType } from './config.js';
+export type {
+  SimAiScript,
+  SimBuildingType,
+  SimClaimPoint,
+  SimConfig,
+  SimEnv,
+  SimFaction,
+  SimInit,
+  SimMap,
+  SimPlayer,
+  SimPoint,
+  SimScrapNode,
+  SimUnitType,
+} from './config.js';
 export { MAX_RADIUS, MAX_SPEED, envHash, validateEnv } from './config.js';
-export { NO_ENTITY, NO_FIELD, indexOf, genOf, makeId } from './ecs/world.js';
+export type { ClaimKind, SimMapSource } from './fromData.js';
+export { CLAIM_KINDS, PROVIDES_HQ, PROVIDES_WORKSHOP, simConfigFromGameData, simMapFromGrid, simPlayersFromLobby } from './fromData.js';
+export {
+  NEUTRAL,
+  NO_ENTITY,
+  NO_FIELD,
+  ORDER_ATTACK,
+  ORDER_ATTACK_MOVE,
+  ORDER_BUILD,
+  ORDER_CLAIM,
+  ORDER_CRAFT,
+  ORDER_GATHER,
+  ORDER_MOVE,
+  ORDER_NONE,
+  indexOf,
+  genOf,
+  makeId,
+} from './ecs/world.js';
 export { MAX_FLOW_FIELDS } from './flowfield.js';
-export { ANIM_IDLE, ANIM_WALK } from './systems/movement.js';
 export { STATE_FORMAT_VERSION } from './state.js';
-export type { SpawnUnitSpec, UnitView } from './sim.js';
+export type { SimCommand } from './systems/commands.js';
+export type { CreateSimOptions, EntityKind, SimWinner, SpawnUnitSpec, UnitView, WinReason } from './sim.js';
 export { Sim, createSim, deserialize } from './sim.js';
 export type { SimWorkerCore, SimWorkerInbound, SimWorkerOutbound, SimWorkerPort } from './worker.js';
 export { createSimWorkerCore } from './worker.js';
