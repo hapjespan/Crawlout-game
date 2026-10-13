@@ -179,6 +179,9 @@ importers:
       '@crawlout/data':
         specifier: workspace:*
         version: link:../../packages/data
+      '@crawlout/map':
+        specifier: workspace:*
+        version: link:../../packages/map
       '@crawlout/protocol':
         specifier: workspace:*
         version: link:../../packages/protocol

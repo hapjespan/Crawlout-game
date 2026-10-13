@@ -1,0 +1,123 @@
+import { EVENT_TYPE } from '@crawlout/protocol';
+import {
+  BSTATE_DONE,
+  BSTATE_SITE,
+  C,
+  ORDER_BUILD,
+  ORDER_CRAFT,
+  ORDER_GATHER,
+  PHASE_CRAFT,
+  PHASE_GO,
+  PHASE_RETURN,
+  PHASE_WORK,
+} from '../ecs/world.js';
+import { applyUnitType, createUnit, siteHpStep, takeFromNode } from '../entities.js';
+import { imod } from '../math/int.js';
+import type { Census } from './census.js';
+import { takeCensus } from './census.js';
+import type { SimContext } from './common.js';
+import { cellCenterOf, nearestOwnBuilding, nthFreeCellAround, withinReach } from './common.js';
+import { DEPOT_MASK } from './orders.js';
+
+// Systeem 6: economie. Verzamelen (een rit duurt gatherTicks en levert gatherAmount), afleveren bij een depot,
+// bouwen (elke bouwer in bereik telt één tick voortgang), omscholen in de werkplaats (betalen, dan craftTicks
+// wachten) en huisvestingsgroei. Units in oplopende id-volgorde; dat bepaalt wie eerst betaalt.
+
+/** Geometrie: een nieuwe bewoner komt op een van de eerste zoveel vrije cellen rond het hoofdgebouw (roteert per tick). */
+const SPAWN_SPREAD = 8;
+
+export function economySystem(ctx: SimContext, census: Census): void {
+  const w = ctx.world;
+  const reach = ctx.config.interactRange;
+  const need = C.unit | C.orders;
+  for (let i = 0; i < w.highWater; i++) {
+    if (!w.has(i, need)) continue;
+    const type = w.orderType(i);
+    if (type === ORDER_GATHER) gatherWork(ctx, i, reach);
+    else if (type === ORDER_BUILD) buildWork(ctx, i, reach);
+    else if (type === ORDER_CRAFT) craftWork(ctx, i);
+  }
+  takeCensus(ctx, census);
+  for (let p = 0; p < ctx.playerCount; p++) growth(ctx, census, p);
+}
+
+function gatherWork(ctx: SimContext, i: number, reach: number): void {
+  const w = ctx.world;
+  const t = ctx.unitType(w.typeId[i]!);
+  if (t === undefined) return;
+  if (w.phase[i] === PHASE_WORK) {
+    const node = w.resolve(w.ordT[w.currentOrder(i)]!);
+    if (node < 0 || !w.has(node, C.resource) || !withinReach(w, i, node, reach)) return;
+    w.work[i] = w.work[i]! + 1;
+    if (w.work[i]! < t.gatherTicks) return;
+    w.carry[i] = w.carry[i]! + takeFromNode(ctx, node, t.gatherAmount - w.carry[i]!);
+    w.work[i] = 0;
+    w.phase[i] = PHASE_RETURN;
+  } else if (w.phase[i] === PHASE_RETURN) {
+    const dep = nearestOwnBuilding(ctx, w.owner[i]!, w.x[i]!, w.y[i]!, DEPOT_MASK);
+    if (dep < 0 || !withinReach(w, i, dep, reach)) return;
+    const p = w.owner[i]!;
+    ctx.ps.scrap[p] = ctx.ps.scrap[p]! + w.carry[i]!;
+    w.carry[i] = 0;
+    w.phase[i] = PHASE_GO;
+  }
+}
+
+function buildWork(ctx: SimContext, i: number, reach: number): void {
+  const w = ctx.world;
+  if (w.phase[i] !== PHASE_WORK) return;
+  const b = w.resolve(w.ordT[w.currentOrder(i)]!);
+  if (b < 0 || !w.has(b, C.building) || w.bstate[b] !== BSTATE_SITE || !withinReach(w, i, b, reach)) return;
+  const bt = ctx.buildingType(w.typeId[b]!);
+  if (bt === undefined) return;
+  const p = w.progress[b]!;
+  w.hp[b] = w.hp[b]! + siteHpStep(bt.maxHp, bt.buildTicks, p);
+  w.progress[b] = p + 1;
+  if (p + 1 >= bt.buildTicks) {
+    w.bstate[b] = BSTATE_DONE;
+    ctx.events.push(EVENT_TYPE.buildingDone, w.idOf(b), bt.typeId, w.x[b]!, w.y[b]!);
+  }
+}
+
+function craftWork(ctx: SimContext, i: number): void {
+  const w = ctx.world;
+  const t = ctx.unitType(w.ordX[w.currentOrder(i)]!);
+  if (t === undefined) {
+    w.popOrder(i);
+    return;
+  }
+  const p = w.owner[i]!;
+  if (w.phase[i] === PHASE_WORK) {
+    if (ctx.ps.scrap[p]! < t.scrapCost) return; // wachten op scrap
+    ctx.ps.scrap[p] = ctx.ps.scrap[p]! - t.scrapCost;
+    w.phase[i] = PHASE_CRAFT;
+    w.work[i] = 0;
+  } else if (w.phase[i] === PHASE_CRAFT) {
+    w.work[i] = w.work[i]! + 1;
+  } else return;
+  if (w.work[i]! < t.craftTicks) return;
+  applyUnitType(ctx, i, t);
+  w.popOrder(i);
+}
+
+function growth(ctx: SimContext, census: Census, p: number): void {
+  const ps = ctx.ps;
+  const hq = census.hq[p]!;
+  const faction = ctx.config.factions[ctx.players[p]!.factionId]!;
+  const settler = faction.settlerTypeId === 0 ? undefined : ctx.unitType(faction.settlerTypeId);
+  if (ps.defeated[p] !== 0 || hq < 0 || settler === undefined || census.pop[p]! + settler.popCost > census.popCap(ctx, p)) {
+    ps.growth[p] = 0; // geen bed, geen groei (en niets opsparen)
+    return;
+  }
+  const tpm = ctx.config.ticksPerMinute;
+  ps.growth[p] = ps.growth[p]! + faction.housingGrowthPerMin;
+  if (ps.growth[p]! < tpm) return;
+  ps.growth[p] = ps.growth[p]! - tpm;
+  const w = ctx.world;
+  const c = nthFreeCellAround(ctx, w.fx[hq]!, w.fy[hq]!, w.fw[hq]!, w.fh[hq]!, imod(ctx.frame, SPAWN_SPREAD));
+  if (c < 0) return;
+  const at = cellCenterOf(ctx.map, c);
+  createUnit(ctx, settler, p, at.x, at.y, 0);
+  census.settlers[p] = census.settlers[p]! + 1;
+  census.pop[p] = census.pop[p]! + settler.popCost;
+}

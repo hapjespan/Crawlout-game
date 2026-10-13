@@ -2,11 +2,14 @@ import { describe, expect, it } from 'vitest';
 import { ENTITY_FIELDS, EVENT_TYPE, readSnapshotHeader, snapshotLayout } from '@crawlout/protocol';
 import { FNV_OFFSET, NO_ENTITY, createSim, deserialize, fnv1a, genOf, indexOf } from '../src/index.js';
 import type { Sim } from '../src/index.js';
-import { TEST_SIM_CONFIG, TEST_UNIT_TYPE, cellCenter, createTestMap, testInit } from '../src/testing.js';
-import { bundle, cmd, runFrames, scriptedBundles, spawnBlock } from './helpers.js';
+import { cellCenter, createTestMap } from '../src/testing.js';
+import { CONFIG, SCAV, bundle, cmd, emptySim, runFrames, scriptedBundles, spawnBlock, testInit } from './helpers.js';
+
+const TEST_UNIT_TYPE = SCAV;
+const TEST_SIM_CONFIG = CONFIG;
 
 function setup(seed = 7): { sim: Sim; a: number[]; b: number[] } {
-  const sim = createSim(testInit(seed));
+  const sim = emptySim(seed);
   const a = spawnBlock(sim, 0, 4, 4, 20);
   const b = spawnBlock(sim, 1, 40, 50, 20);
   return { sim, a, b };
@@ -14,7 +17,7 @@ function setup(seed = 7): { sim: Sim; a: number[]; b: number[] } {
 
 describe('ECS en entity-ids', () => {
   it('ids dragen generatie-bits en hergebruiken indices via de vrije lijst', () => {
-    const sim = createSim(testInit());
+    const sim = emptySim();
     const p = cellCenter(5, 5);
     const id1 = sim.spawnUnit({ typeId: TEST_UNIT_TYPE, owner: 0, ...p });
     const id2 = sim.spawnUnit({ typeId: TEST_UNIT_TYPE, owner: 0, ...p });
@@ -35,7 +38,7 @@ describe('ECS en entity-ids', () => {
   });
 
   it('weigert spawns op muur, buiten de map, met onbekend type of ongeldige eigenaar', () => {
-    const sim = createSim(testInit());
+    const sim = emptySim();
     expect(sim.spawnUnit({ typeId: TEST_UNIT_TYPE, owner: 0, ...cellCenter(0, 0) })).toBe(NO_ENTITY);
     expect(sim.spawnUnit({ typeId: TEST_UNIT_TYPE, owner: 0, x: -1, y: 300 })).toBe(NO_ENTITY);
     expect(sim.spawnUnit({ typeId: 99, owner: 0, ...cellCenter(5, 5) })).toBe(NO_ENTITY);
@@ -43,7 +46,7 @@ describe('ECS en entity-ids', () => {
   });
 
   it('valideert de invoer', () => {
-    const bad = { ...testInit(), map: { w: 4, h: 4, passable: new Uint8Array(3) } };
+    const bad = { ...testInit(), map: { ...createTestMap(), w: 4, h: 4, passable: new Uint8Array(3) } };
     expect(() => createSim(bad)).toThrow();
     expect(() => createSim({ ...testInit(), seed: -1 })).toThrow();
     const fast = { ...TEST_SIM_CONFIG, unitTypes: [{ ...TEST_SIM_CONFIG.unitTypes[0]!, speed: 1000 }] };
@@ -156,7 +159,7 @@ describe('commando’s', () => {
         cmd(0, 0, 'Move', { ids: a, target: 3 }), // payload past niet
         cmd(0, 0, 'Move', { ids: [123456789], x: t.x, y: t.y }), // onbekende id
         cmd(0, 0, 'Stop', { ids: b }), // niet van speler 0
-        cmd(0, 0, 'Surrender', {}), // nog no-op
+        cmd(0, 0, 'Research', { techId: 0 }), // nog no-op
       ]),
     );
     const ref = deserialize(before, testInit());
@@ -190,7 +193,7 @@ describe('commando’s', () => {
 
 describe('beweging', () => {
   it('units overlappen niet blijvend (separatie)', () => {
-    const sim = createSim(testInit());
+    const sim = emptySim();
     const c = cellCenter(10, 10);
     const ids: number[] = [];
     for (let k = 0; k < 10; k++) ids.push(sim.spawnUnit({ typeId: TEST_UNIT_TYPE, owner: 0, ...c }));
@@ -219,7 +222,7 @@ describe('beweging', () => {
 
 describe('snapshot', () => {
   it('volgt contract 1: header, SoA-arrays op de layout uit protocol, spawn-events', () => {
-    const sim = createSim(testInit());
+    const sim = emptySim();
     const ids = spawnBlock(sim, 1, 4, 4, 3);
     const t = cellCenter(20, 20);
     sim.applyBundle(bundle(0, [cmd(0, 1, 'Move', { ids, x: t.x, y: t.y })]));

@@ -1,8 +1,8 @@
 import { HASH_INTERVAL_FRAMES, Replay } from '@crawlout/protocol';
 import type { FrameBundle } from '@crawlout/protocol';
 import { createSim, deserialize } from '@crawlout/sim';
-import type { Sim } from '@crawlout/sim';
-import { scenarioFor } from './scenarios.js';
+import type { Sim, SimEnv } from '@crawlout/sim';
+import { buildEnv, gameData } from './env.js';
 
 export interface FrameHash {
   frame: number;
@@ -40,14 +40,16 @@ function lastFrameOf(r: Replay): number {
   return last;
 }
 
-/** Maakt de sim voor een replay: omgeving en startopstelling uit het scenario van de map. */
+/** Omgeving van een replay; gooit als de replay voor andere data is of de map niet bestaat. */
+export function replayEnv(r: Replay): SimEnv {
+  const { data } = gameData();
+  if (data.dataVersion !== r.dataVersion) throw new Error(`replay is voor data ${r.dataVersion}, data/VERSION is ${data.dataVersion}`);
+  return buildEnv(r.map, r.players, r.settings);
+}
+
+/** Maakt de sim voor een replay: omgeving uit data/ en data/maps, startopstelling in createSim. */
 export function createReplaySim(r: Replay): Sim {
-  const sc = scenarioFor(r.map);
-  const env = sc.env(r.players.length);
-  if (env.config.dataVersion !== r.dataVersion) throw new Error(`replay is voor data ${r.dataVersion}, scenario heeft ${env.config.dataVersion}`);
-  const sim = createSim({ seed: r.seed, ...env });
-  sc.setup(sim);
-  return sim;
+  return createSim({ seed: r.seed, ...replayEnv(r) });
 }
 
 /** Speelt een replay af en geeft de hash na elk frame. Ontbrekende bundels gelden als leeg. */
@@ -64,8 +66,7 @@ export function runReplay(r: Replay, opts: RunOptions = {}): ReplayRun {
     sim.applyBundle(byFrame.get(f) ?? { frame: f, commands: [] });
     hashes.push(sim.tick());
     if (opts.reloadAfterFrame === f) {
-      const sc = scenarioFor(r.map);
-      const copy = deserialize(sim.serialize(), sc.env(r.players.length));
+      const copy = deserialize(sim.serialize(), replayEnv(r));
       if (copy.hash() !== sim.hash()) throw new Error(`hash na deserialize wijkt af op frame ${f}`);
       sim = copy;
     }

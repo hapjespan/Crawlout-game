@@ -1,24 +1,24 @@
 import { MAX_ENTITIES } from '@crawlout/protocol';
-import { C, NO_FIELD, NO_GOAL, ORDER_MOVE } from '../ecs/world.js';
+import { C, NO_FIELD, NO_GOAL } from '../ecs/world.js';
 import { clampI, idiv } from '../math/int.js';
 import { isqrt } from '../math/sqrt.js';
 import { SIN_TABLE, TRIG_BITS, atan2A } from '../math/trig.js';
 import type { SimContext } from './common.js';
-import { cellAt, passableAt, setFlowField } from './common.js';
+import { cellAt, setFlowField, walkableAt } from './common.js';
 
 // Systeem 4: beweging plus separatie.
-//  a) gewenste snelheid per unit uit zijn Move-order: flow field naar de volgende cel, vlak bij het doel recht erop af;
+//  a) gewenste snelheid per unit met mvOn: flow field naar de volgende cel, vlak bij het doel recht erop af;
+//     binnen goalR van het doel is de unit er (mvOn = 0, veld los; goalX/goalY blijven voor de contactregel);
 //  b) separatie: overlappende units duwen elkaar uit elkaar (integer-sommen, dus volgorde-onafhankelijk);
-//     een bewegende unit die een al gearriveerde unit met hetzelfde doel raakt, is ook klaar;
+//     een groeps-Move (groupR > 0) die een al gearriveerde unit met hetzelfde doel raakt, is ook klaar;
 //  c) toepassen met botsing tegen geblokkeerde cellen (eerst diagonaal, dan per as glijden).
-// Alles leest de posities van het begin van de stap en schrijft pas in c).
+// Alles leest de posities van het begin van de stap en schrijft pas in c). Welke kant op een unit wil, bepaalt
+// systeem 2 (orders en AI) met steerTo; dit systeem voert alleen uit.
 
-const BUCKET_SHIFT = 9; // buckets van 512 eenheden = 2 m, >= twee keer de maximale straal
-const MAX_STEP = 255; // maximale verplaatsing per as per tick, kleiner dan een cel
-
-/** Animatie-ids in de snapshot (voorstel, nog niet in contract 1 vastgelegd). */
-export const ANIM_IDLE = 0;
-export const ANIM_WALK = 1;
+/** Geometrie: separatie-buckets van 2^9 = 512 eenheden (2 m), minstens twee keer de maximale straal. */
+const BUCKET_SHIFT = 9;
+/** Geometrie: maximale verplaatsing per as per tick, kleiner dan een cel (256), zodat niemand door een muur tunnelt. */
+const MAX_STEP = 255;
 
 export class MovementScratch {
   readonly gridW: number;
@@ -39,9 +39,9 @@ export class MovementScratch {
   }
 }
 
-/** Order klaar: van de ring af en het flow field loslaten. goalX/goalY blijven staan voor de contactregel. */
+/** Aangekomen: niet meer lopen, veld los. goalX/goalY blijven staan voor de contactregel van groeps-Moves. */
 function arrive(ctx: SimContext, i: number): void {
-  ctx.world.popOrder(i);
+  ctx.world.mvOn[i] = 0;
   setFlowField(ctx, i, NO_FIELD);
 }
 
@@ -64,28 +64,27 @@ export function movementSystem(ctx: SimContext, s: MovementScratch): void {
   }
 
   // a) gewenste snelheid
-  const arrive2 = cfg.arriveRadius * cfg.arriveRadius;
   for (let i = 0; i < n; i++) {
     s.vx[i] = 0;
     s.vy[i] = 0;
     s.moving[i] = 0;
     s.contact[i] = 0;
-    if (w.alive[i] !== 1 || (w.mask[i]! & need) !== need) continue;
-    const o = w.currentOrder(i);
-    if (o < 0 || w.ordType[o] !== ORDER_MOVE) continue;
+    if (w.alive[i] !== 1 || (w.mask[i]! & need) !== need || w.mvOn[i] !== 1) continue;
     const x = w.x[i]!;
     const y = w.y[i]!;
-    const gx = w.ordX[o]!;
-    const gy = w.ordY[o]!;
+    const gx = w.goalX[i]!;
+    const gy = w.goalY[i]!;
     const gdx = gx - x;
     const gdy = gy - y;
-    if (gdx * gdx + gdy * gdy <= arrive2) {
+    const gr = w.goalR[i]!;
+    if (gdx * gdx + gdy * gdy <= gr * gr) {
       arrive(ctx, i);
       continue;
     }
     s.moving[i] = 1;
     let ax = gx;
     let ay = gy;
+    let snap = true; // bij het eindpunt (doel of eigen celmidden) niet voorbij schieten
     const slot = w.flowField[i]!;
     const cx = x >> 8;
     const cy = y >> 8;
@@ -97,6 +96,11 @@ export function movementSystem(ctx: SimContext, s: MovementScratch): void {
         const ny = idiv(nb, map.w);
         ax = ((nb - ny * map.w) << 8) + 128;
         ay = (ny << 8) + 128;
+        snap = false;
+      } else if (nb === cell) {
+        // Rand van de doelrechthoek bereikt (bijvoorbeeld naast een gebouw): naar het midden van de eigen cel.
+        ax = (cx << 8) + 128;
+        ay = (cy << 8) + 128;
       }
       // nb < 0: het veld kent deze cel (nog) niet; dan recht op het doel af, de botsing laat langs muren glijden.
     }
@@ -105,7 +109,7 @@ export function movementSystem(ctx: SimContext, s: MovementScratch): void {
     const len = isqrt(dx * dx + dy * dy);
     const sp = w.speed[i]!;
     if (len === 0) continue;
-    if (ax === gx && ay === gy && len <= sp) {
+    if (snap && len <= sp) {
       s.vx[i] = dx;
       s.vy[i] = dy;
     } else {
@@ -127,12 +131,12 @@ export function movementSystem(ctx: SimContext, s: MovementScratch): void {
     const y = w.y[i]!;
     const bx = x >> BUCKET_SHIFT;
     const by = y >> BUCKET_SHIFT;
-    // Contactregel alleen binnen de groepsstraal rond het doel; verder weg loopt een unit door en duwt de groep in.
+    // Contactregel alleen voor groeps-Moves binnen de groepsstraal rond het doel; verder weg loopt een unit door.
     let movingWithGoal = false;
-    if (s.moving[i] === 1 && w.goalX[i] !== NO_GOAL) {
+    const gr = w.groupR[i]!;
+    if (s.moving[i] === 1 && gr > 0 && w.goalX[i] !== NO_GOAL) {
       const gdx = w.goalX[i]! - x;
       const gdy = w.goalY[i]! - y;
-      const gr = w.groupR[i]!;
       movingWithGoal = gdx * gdx + gdy * gdy <= gr * gr;
     }
     let sx = 0;
@@ -151,13 +155,7 @@ export function movementSystem(ctx: SimContext, s: MovementScratch): void {
           const reach = rr + slack;
           if (dx >= reach || -dx >= reach || dy >= reach || -dy >= reach) continue;
           const d2 = dx * dx + dy * dy;
-          if (
-            movingWithGoal &&
-            d2 < reach * reach &&
-            w.ordCount[j] === 0 &&
-            w.goalX[j] === w.goalX[i] &&
-            w.goalY[j] === w.goalY[i]
-          ) {
+          if (movingWithGoal && d2 < reach * reach && w.mvOn[j] === 0 && w.goalX[j] === w.goalX[i] && w.goalY[j] === w.goalY[i]) {
             s.contact[i] = 1;
           }
           if (d2 >= rr * rr || perm === 0) continue;
@@ -184,14 +182,12 @@ export function movementSystem(ctx: SimContext, s: MovementScratch): void {
   }
 
   // c) toepassen
-  const animStep = cfg.walkAnimStep;
   for (let i = 0; i < n; i++) {
     if (w.alive[i] !== 1 || (w.mask[i]! & need) !== need) continue;
     let vx = s.vx[i]!;
     let vy = s.vy[i]!;
     if (s.contact[i] === 1) {
       arrive(ctx, i);
-      s.moving[i] = 0;
       vx = 0;
       vy = 0;
     }
@@ -203,16 +199,14 @@ export function movementSystem(ctx: SimContext, s: MovementScratch): void {
       const y = w.y[i]!;
       const nx = clampI(x + mx, 0, maxX);
       const ny = clampI(y + my, 0, maxY);
-      if (passableAt(map, nx, ny)) {
+      if (walkableAt(ctx, nx, ny)) {
         w.x[i] = nx;
         w.y[i] = ny;
-      } else if (passableAt(map, nx, y)) {
+      } else if (walkableAt(ctx, nx, y)) {
         w.x[i] = nx;
-      } else if (passableAt(map, x, ny)) {
+      } else if (walkableAt(ctx, x, ny)) {
         w.y[i] = ny;
       }
     }
-    w.anim[i] = s.moving[i] === 1 ? ANIM_WALK : ANIM_IDLE;
-    w.animT[i] = (w.animT[i]! + animStep) & 0xffff;
   }
 }

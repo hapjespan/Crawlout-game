@@ -1,22 +1,29 @@
-import type { FrameBundle } from '@crawlout/protocol';
+import type { FrameBundle, PlayerStatus } from '@crawlout/protocol';
 import type { SimEnv, SimInit } from './config.js';
-import type { Sim } from './sim.js';
+import type { Sim, SimWinner } from './sim.js';
 import { createSim, deserialize } from './sim.js';
 
 // Worker-schil zonder klok: berichten in, tick() als de bundel er is, snapshot uit als transferable.
 // De timer die step() aanroept staat buiten de sim (packages/sim/host/worker-entry.ts) en valt buiten de
 // determinisme-lint. Deze module raakt geen globals aan; de host geeft een port mee.
+// Commando's in een bundel worden in Sim.applyBundle met zod gevalideerd, dus buiten de tick.
 
 export type SimWorkerInbound =
+  /** Nieuwe sim met startopstelling (map-features, hoofdgebouwen, startunits) uit init. */
   | { readonly kind: 'init'; readonly init: SimInit }
+  /** Geserialiseerde state laden (resync, desync-dump terugzetten). */
   | { readonly kind: 'load'; readonly state: ArrayBuffer; readonly env: SimEnv }
   | { readonly kind: 'bundle'; readonly bundle: FrameBundle }
-  | { readonly kind: 'dump' };
+  | { readonly kind: 'dump' }
+  /** queryMessage (contract 1): spelerstatus voor de HUD, op verzoek. */
+  | { readonly kind: 'query'; readonly playerId: number };
 
 export type SimWorkerOutbound =
   | { readonly kind: 'ready'; readonly frame: number; readonly hash: number }
   | { readonly kind: 'snapshot'; readonly buffer: ArrayBuffer }
   | { readonly kind: 'state'; readonly frame: number; readonly hash: number; readonly buffer: ArrayBuffer }
+  /** Antwoord op query: status na het laatst uitgevoerde frame (frame = aantal uitgevoerde ticks). */
+  | { readonly kind: 'status'; readonly frame: number; readonly status: PlayerStatus; readonly winner: SimWinner | null }
   | { readonly kind: 'error'; readonly message: string };
 
 export interface SimWorkerPort {
@@ -66,6 +73,10 @@ export function createSimWorkerCore(port: SimWorkerPort): SimWorkerCore {
             port.post({ kind: 'state', frame: sim.frame, hash: sim.hash(), buffer }, [buffer]);
             return;
           }
+          case 'query':
+            if (sim === null) throw new Error('query voor init');
+            port.post({ kind: 'status', frame: sim.frame, status: sim.playerStatus(msg.playerId), winner: sim.winner() }, []);
+            return;
         }
       } catch (e) {
         fail(e);

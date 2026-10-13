@@ -10,7 +10,7 @@
     "./testing": "./src/testing.ts",
     "./worker": "./host/worker-entry.ts"
   },
-  "scripts": { "test": "vitest run", "bench": "node --import tsx src/bench.ts" },
+  "scripts": { "test": "vitest run", "bench": "node --import tsx bench/bench.ts" },
   "dependencies": { "@crawlout/protocol": "workspace:*", "@crawlout/data": "workspace:*" },
   "devDependencies": { "tsx": "^4.0.0" }
 }
