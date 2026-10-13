@@ -106,7 +106,7 @@ export class World {
   readonly ordCount = new Uint8Array(MAX_ENTITIES);
   /** Fase binnen de huidige order (PHASE_*). */
   readonly phase = new Uint8Array(MAX_ENTITIES);
-  /** Teller van de huidige fase in ticks (verzamelen, omscholen) of de lijk-timer. */
+  /** Teller van de huidige fase in ticks (verzamelen, omscholen), de lijk-timer, of de onderzoeksvoortgang van een gebouw. */
   readonly work = new Int32Array(MAX_ENTITIES);
   // Target en Combat
   readonly target = new Uint32Array(MAX_ENTITIES);
@@ -124,6 +124,8 @@ export class World {
   readonly fh = new Uint8Array(MAX_ENTITIES);
   readonly bstate = new Uint8Array(MAX_ENTITIES);
   readonly progress = new Int32Array(MAX_ENTITIES);
+  /** Onderzoek in een voltooid gebouw: techId + 1, 0 = geen; de voortgang staat in `work` (duizendsten van een tick). */
+  readonly research = new Uint16Array(MAX_ENTITIES);
   // ResourceNode
   readonly amount = new Int32Array(MAX_ENTITIES);
   // Claim: de eigenaar staat in `owner` (OWNER_NEUTRAL als onbezet). claimBy en claimProgress tonen de voortgang van
@@ -299,6 +301,7 @@ export function entityStateArrays(w: World): readonly StateArray[] {
     one('fh', w.fh),
     one('bstate', w.bstate),
     one('progress', w.progress),
+    one('research', w.research),
     one('amount', w.amount),
     one('claimBy', w.claimBy),
     one('claimProgress', w.claimProgress),

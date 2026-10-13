@@ -11,6 +11,7 @@ import {
   PHASE_RETURN,
   PHASE_WORK,
 } from '../ecs/world.js';
+import { STAT_BUILD_TIME, STAT_RESEARCH_TIME, effectSum, gatherAmountOf, refreshPlayer, workRate } from '../effects.js';
 import { PROGRESS_ONE, applyUnitType, createUnit, siteHpAt, takeFromNode } from '../entities.js';
 import { imod } from '../math/int.js';
 import type { Census } from './census.js';
@@ -37,8 +38,26 @@ export function economySystem(ctx: SimContext, census: Census): void {
     else if (type === ORDER_BUILD) buildWork(ctx, i, reach);
     else if (type === ORDER_CRAFT) craftWork(ctx, i);
   }
+  for (let i = 0; i < w.highWater; i++) if (w.research[i] !== 0 && w.has(i, C.building)) researchWork(ctx, i);
   takeCensus(ctx, census);
   for (let p = 0; p < ctx.playerCount; p++) growth(ctx, census, p);
+}
+
+/** Onderzoek in gebouw i: werk per tick volgens researchTimePct; klaar zet de tech-bit en past de effecten toe. */
+function researchWork(ctx: SimContext, i: number): void {
+  const w = ctx.world;
+  const t = ctx.config.techs[w.research[i]! - 1];
+  const p = w.owner[i]!;
+  if (t === undefined) {
+    w.research[i] = 0;
+    return;
+  }
+  w.work[i] = w.work[i]! + workRate(PROGRESS_ONE, effectSum(ctx, p, STAT_RESEARCH_TIME, w.typeId[i]!, false));
+  if (w.work[i]! < t.researchTicks * PROGRESS_ONE) return;
+  w.research[i] = 0;
+  w.work[i] = 0;
+  ctx.ps.tech[p] = (ctx.ps.tech[p]! | (1 << t.techId)) >>> 0;
+  refreshPlayer(ctx, p);
 }
 
 function gatherWork(ctx: SimContext, i: number, reach: number): void {
@@ -50,7 +69,8 @@ function gatherWork(ctx: SimContext, i: number, reach: number): void {
     if (node < 0 || !w.has(node, C.resource) || !withinReach(w, i, node, reach) || !nodeAllowed(ctx, node, w.owner[i]!)) return;
     w.work[i] = w.work[i]! + 1;
     if (w.work[i]! < t.gatherTicks) return;
-    w.carry[i] = w.carry[i]! + takeFromNode(ctx, node, t.gatherAmount - w.carry[i]!);
+    const want = gatherAmountOf(ctx, i) - w.carry[i]!;
+    w.carry[i] = w.carry[i]! + takeFromNode(ctx, node, want > 0 ? want : 0);
     w.work[i] = 0;
     w.phase[i] = PHASE_RETURN;
   } else if (w.phase[i] === PHASE_RETURN) {
@@ -72,7 +92,8 @@ function buildWork(ctx: SimContext, i: number, reach: number): void {
   if (bt === undefined) return;
   const total = bt.buildTicks * PROGRESS_ONE;
   const p0 = w.progress[b]!;
-  const p1 = p0 + PROGRESS_ONE < total ? p0 + PROGRESS_ONE : total;
+  const rate = workRate(PROGRESS_ONE, effectSum(ctx, w.owner[i]!, STAT_BUILD_TIME, w.typeId[i]!, false));
+  const p1 = p0 + rate < total ? p0 + rate : total;
   w.hp[b] = w.hp[b]! + siteHpAt(w.maxHp[b]!, total, p1) - siteHpAt(w.maxHp[b]!, total, p0);
   w.progress[b] = p1;
   if (p1 >= total) {

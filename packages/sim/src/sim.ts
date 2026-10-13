@@ -268,6 +268,14 @@ export class Sim implements SimContext {
     return playerId >= 0 && playerId < MAX_PLAYERS && this.ps.defeated[playerId] !== 0;
   }
 
+  /** Onderzochte tech-ids van een speler, oplopend (debug, tests; de HUD heeft hiervoor nog geen contractveld). */
+  researched(playerId: number): number[] {
+    const bits = this.ps.tech[playerId] ?? 0;
+    const out: number[] = [];
+    for (const t of this.config.techs) if (((bits >>> t.techId) & 1) !== 0) out.push(t.techId);
+    return out;
+  }
+
   /** Ticks dat een speler aaneengesloten genoeg claimpunten houdt (winroute B). */
   dominanceTicks(playerId: number): number {
     return this.ps.domTicks[playerId] ?? 0;

@@ -15,6 +15,7 @@ import {
   PHASE_RETURN,
   PHASE_WORK,
 } from '../ecs/world.js';
+import { gatherAmountOf } from '../effects.js';
 import { PROVIDES_HQ, PROVIDES_WORKSHOP } from '../fromData.js';
 import type { SimContext } from './common.js';
 import {
@@ -179,7 +180,7 @@ function gather(ctx: SimContext, i: number, o: number): void {
   if (node >= 0 && (!w.has(node, C.resource) || !nodeAllowed(ctx, node, w.owner[i]!))) node = -1;
   const reach = ctx.config.interactRange;
   if (w.phase[i] === PHASE_WORK && (node < 0 || !withinReach(w, i, node, reach))) w.phase[i] = PHASE_GO;
-  if (w.phase[i] === PHASE_GO && w.carry[i]! >= type.gatherAmount) w.phase[i] = PHASE_RETURN;
+  if (w.phase[i] === PHASE_GO && w.carry[i]! >= gatherAmountOf(ctx, i)) w.phase[i] = PHASE_RETURN;
   if (w.phase[i] === PHASE_GO) {
     if (node < 0) {
       node = nearestNode(ctx, w.owner[i]!, w.x[i]!, w.y[i]!);

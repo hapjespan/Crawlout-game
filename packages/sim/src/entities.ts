@@ -2,6 +2,7 @@ import { EVENT_TYPE, OWNER_NEUTRAL } from '@crawlout/protocol';
 import { CLAIM_POINT_TYPE_ID, SCRAP_NODE_TYPE_ID } from '@crawlout/data';
 import type { SimBuildingType, SimUnitType } from './config.js';
 import { BSTATE_DONE, BSTATE_SITE, C, NO_ENTITY, NO_FIELD, NO_GOAL } from './ecs/world.js';
+import { applyStats } from './effects.js';
 import { PROVIDES_HQ } from './fromData.js';
 import { idiv } from './math/int.js';
 import type { SimContext } from './systems/common.js';
@@ -9,7 +10,10 @@ import { nearestFreeCellAround, placeOnCell, setFlowField } from './systems/comm
 
 // Aanmaken, ombouwen en opruimen van entities. Alle paden lopen hierlangs, ook de startopstelling en de commando's.
 
-/** Zet de unit-componenten van type t op index i (spawn en omscholen). Houdt hp, positie en orders. */
+/**
+ * Zet de unit-componenten van type t op index i (spawn en omscholen). Houdt hp (nooit boven de nieuwe maxHp), positie
+ * en orders. maxHp, damage, speed en range komen uit t plus de effecten van de eigenaar (effects.ts).
+ */
 export function applyUnitType(ctx: SimContext, i: number, t: SimUnitType): void {
   const w = ctx.world;
   w.typeId[i] = t.typeId;
@@ -17,16 +21,12 @@ export function applyUnitType(ctx: SimContext, i: number, t: SimUnitType): void 
   w.bodyType[i] = t.bodyType;
   w.role[i] = t.role;
   w.armorType[i] = t.armorType;
-  w.speed[i] = t.speed;
   w.radius[i] = t.radius;
-  w.maxHp[i] = t.maxHp;
-  if (w.hp[i]! > t.maxHp) w.hp[i] = t.maxHp;
-  w.damage[i] = t.damage;
   w.damageType[i] = t.damageType;
-  w.range[i] = t.range;
   w.cooldownMax[i] = t.cooldown;
   if (w.cooldown[i]! > t.cooldown) w.cooldown[i] = t.cooldown;
   w.carry[i] = 0;
+  applyStats(ctx, i, false);
 }
 
 /** Nieuwe unit op (x, y); geen controle op begaanbaarheid. Geeft de index of -1 als de wereld vol is. */
@@ -39,8 +39,8 @@ export function createUnit(ctx: SimContext, t: SimUnitType, owner: number, x: nu
   w.y[i] = y;
   w.yaw[i] = yaw & 0xffff;
   w.owner[i] = owner;
-  w.hp[i] = t.maxHp;
   applyUnitType(ctx, i, t);
+  w.hp[i] = w.maxHp[i]!;
   ctx.events.push(EVENT_TYPE.spawn, w.idOf(i), t.typeId, x, y);
   return i;
 }
@@ -79,11 +79,11 @@ export function createBuilding(ctx: SimContext, bt: SimBuildingType, owner: numb
   w.owner[i] = owner;
   w.typeId[i] = bt.typeId;
   w.armorType[i] = bt.armorType;
-  w.maxHp[i] = bt.maxHp;
+  applyStats(ctx, i, false);
   const instant = done || bt.buildTicks === 0;
   w.bstate[i] = instant ? BSTATE_DONE : BSTATE_SITE;
   w.progress[i] = instant ? bt.buildTicks * PROGRESS_ONE : 0;
-  w.hp[i] = instant ? bt.maxHp : 1;
+  w.hp[i] = instant ? w.maxHp[i]! : 1;
   if ((bt.provides & PROVIDES_HQ) !== 0) ctx.ps.hadHq[owner] = 1;
   ctx.terrain.setRect(i, fx, fy, bt.footprintW, bt.footprintH, true);
   displaceUnits(ctx, fx, fy, bt.footprintW, bt.footprintH);

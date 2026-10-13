@@ -22,6 +22,8 @@ export class PlayerState {
   /** Scripted AI: index van de volgende bouworder en de volgende aanvalsgolf. */
   readonly aiBuild = new Int32Array(MAX_PLAYERS);
   readonly aiAttack = new Int32Array(MAX_PLAYERS);
+  /** Onderzochte techs als bitset (bit k = techId k, MAX_TECHS). */
+  readonly tech = new Uint32Array(MAX_PLAYERS);
 }
 
 export const NO_WINNER = OWNER_NEUTRAL;

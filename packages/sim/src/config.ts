@@ -55,7 +55,7 @@ export interface SimUnitType {
   readonly scrapCost: number; // kosten van omscholen in de werkplaats
   readonly craftTicks: number;
   readonly popCost: number;
-  /** Tech-ids die nodig zijn. Onderzoek bestaat nog niet in de sim: een type met prereqTech is nog niet beschikbaar. */
+  /** Tech-ids die de speler onderzocht moet hebben voor Craft of SetRole naar dit type. */
   readonly prereqTech: readonly number[];
 }
 
@@ -74,6 +74,36 @@ export interface SimBuildingType {
   /** Bitmasker over PROVIDES (packages/data): bit k = PROVIDES[k]. */
   readonly provides: number;
   readonly prereqTech: readonly number[];
+}
+
+/** Doel van een effect: alles van de speler, de held, of één unit- of gebouwtype (typeId). */
+export const EFFECT_TARGET_ALL = 0;
+export const EFFECT_TARGET_HERO = 1;
+export const EFFECT_TARGET_TYPE = 2;
+
+/**
+ * Eén effect van een tech of perk (contract 3, effects[]). stat is de index in EFFECT_STATS (EffectStat in packages/data);
+ * delta in sim-eenheden: Pct-stats promille, M-stats eenheden, S-stats ticks, SPECIAL-letters ruw.
+ */
+export interface SimEffect {
+  readonly stat: number;
+  /** EFFECT_TARGET_*. */
+  readonly target: number;
+  /** Unit- of gebouw-typeId bij EFFECT_TARGET_TYPE, anders 0. */
+  readonly typeId: number;
+  readonly delta: number;
+}
+
+/** Eén tech (tech.json). Op techId: techs[k].techId === k. */
+export interface SimTech {
+  readonly techId: number;
+  readonly factionId: number;
+  readonly scrapCost: number;
+  readonly researchTicks: number;
+  /** Gebouwtype waarin de tech onderzocht wordt (lab, werkplaats). */
+  readonly buildingTypeId: number;
+  readonly prereqTech: readonly number[];
+  readonly effects: readonly SimEffect[];
 }
 
 export interface SimFaction {
@@ -110,6 +140,8 @@ export interface SimConfig {
   /** Op factionId: factions[k].factionId === k. */
   readonly factions: readonly SimFaction[];
   readonly aiScripts: readonly SimAiScript[];
+  /** Op techId; hoogstens MAX_TECHS (bitset per speler). */
+  readonly techs: readonly SimTech[];
   /** damageMatrix[damageType][armorType] in promille (1000 = normale schade). */
   readonly damageMatrix: readonly (readonly number[])[];
   /** Ticks in een minuut, voor housingGrowthPerMin (omgerekend door de adapter, niet door de sim). */
@@ -164,6 +196,10 @@ export const MAX_SPEED = UNITS_PER_METER >> 1;
 export const MAX_RADIUS = UNITS_PER_METER;
 /** Geometrie: grootste footprint-zijde in cellen (past in Uint8 en in de ringzoeker rond gebouwen). */
 export const MAX_FOOTPRINT = 16;
+/** Geometrie van de state: onderzochte techs staan per speler in een uint32-bitset. */
+export const MAX_TECHS = 32;
+/** Aantal effect-stats (EffectStat in packages/data): hpPct .. researchTimePct en de zeven SPECIAL-letters. */
+export const EFFECT_STAT_COUNT = 14;
 /** Grens voor bouw- en onderzoekstijd in ticks: voortgang telt in duizendsten van een tick (PROGRESS_ONE) in een int32. */
 export const MAX_WORK_TICKS = 2_000_000;
 const U16 = 0xffff;
@@ -257,6 +293,23 @@ export function validateEnv(env: SimEnv): void {
     req(intIn(f.aiScript, -1, config.aiScripts.length - 1), `${at}: aiScript`);
     req(f.claimTypeId === 0 || buildingIds.has(f.claimTypeId), `${at}: claimTypeId`);
   });
+  const checkEffects = (effects: readonly SimEffect[], at: string): void => {
+    for (const e of effects) {
+      req(intIn(e.stat, 0, EFFECT_STAT_COUNT - 1) && intIn(e.delta, -I31, I31), `${at}: effect stat of delta`);
+      req(intIn(e.target, EFFECT_TARGET_ALL, EFFECT_TARGET_TYPE), `${at}: effect-doel`);
+      req(e.target === EFFECT_TARGET_TYPE ? unitIds.has(e.typeId) || buildingIds.has(e.typeId) : e.typeId === 0, `${at}: effect-typeId`);
+    }
+  };
+  req(config.techs.length <= MAX_TECHS, `meer dan ${MAX_TECHS} techs`);
+  config.techs.forEach((t, k) => {
+    const at = `tech ${k}`;
+    req(t.techId === k && intIn(t.factionId, 0, config.factions.length - 1), `${at}: techId of factionId`);
+    req(intIn(t.scrapCost, 0, I31) && intIn(t.researchTicks, 0, MAX_WORK_TICKS) && buildingIds.has(t.buildingTypeId), `${at}: kosten, tijd of gebouw`);
+    for (const q of t.prereqTech) req(intIn(q, 0, config.techs.length - 1), `${at}: prereqTech`);
+    checkEffects(t.effects, at);
+  });
+  for (const u of config.unitTypes) for (const t of u.prereqTech) req(intIn(t, 0, config.techs.length - 1), `unittype ${u.typeId}: prereqTech`);
+  for (const b of config.buildingTypes) for (const t of b.prereqTech) req(intIn(t, 0, config.techs.length - 1), `gebouwtype ${b.typeId}: prereqTech`);
   for (const s of config.aiScripts) {
     for (const o of s.buildOrder) req(intIn(o.atTick, 0, I31) && buildingIds.has(o.typeId), 'aiScript buildOrder');
     for (const t of s.attackTimersTicks) req(intIn(t, 0, I31), 'aiScript attackTimersTicks');
@@ -271,6 +324,12 @@ export function validateEnv(env: SimEnv): void {
 const hashInts = (h: number, vs: readonly number[]): number => {
   let x = fnv1aInt(h, vs.length);
   for (const v of vs) x = fnv1aInt(x, v);
+  return x;
+};
+
+const hashEffects = (h: number, effects: readonly SimEffect[]): number => {
+  let x = fnv1aInt(h, effects.length);
+  for (const e of effects) x = hashInts(x, [e.stat, e.target, e.typeId, e.delta]);
   return x;
 };
 
@@ -318,6 +377,12 @@ export function envHash(env: SimEnv): number {
     for (const o of s.buildOrder) h = hashInts(h, [o.atTick, o.typeId]);
     h = hashInts(h, s.attackTimersTicks);
     h = fnv1aInt(h, s.militiaPermille);
+  }
+  h = fnv1aInt(h, c.techs.length);
+  for (const t of c.techs) {
+    h = hashInts(h, [t.techId, t.factionId, t.scrapCost, t.researchTicks, t.buildingTypeId]);
+    h = hashInts(h, t.prereqTech);
+    h = hashEffects(h, t.effects);
   }
   h = fnv1aInt(h, c.damageMatrix.length);
   for (const row of c.damageMatrix) h = hashInts(h, row);

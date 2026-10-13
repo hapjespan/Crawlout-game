@@ -121,7 +121,7 @@ export const FIXTURES: readonly FixtureDef[] = [
         .add(302, 0, 'Move', { ids: a.slice(2, 4), ...cell(12, 26) }, 101)
         .add(302, 0, 'Move', { ids: a.slice(2, 4), ...cell(20, 26) }, 100)
         .move(400, 1, b, 16, 16)
-        .add(450, 1, 'Research', { techId: 0 }); // nog no-op
+        .add(450, 1, 'Research', { techId: 0 }); // ongeldig: geen lab en prereqTech ontbreekt
       r.bundles = s.bundles();
       r.hashes = [{ frame: 599, hash: 0 }]; // lengte; record vult de echte hashes in
       return r;

@@ -16,12 +16,15 @@ export type {
   SimMap,
   SimPlayer,
   SimPoint,
+  SimEffect,
   SimScrapNode,
+  SimTech,
   SimUnitType,
 } from './config.js';
+export { EFFECT_TARGET_ALL, EFFECT_TARGET_HERO, EFFECT_TARGET_TYPE, MAX_TECHS } from './config.js';
 export { MAX_RADIUS, MAX_SPEED, envHash, validateEnv } from './config.js';
 export type { ClaimKind, SimMapSource } from './fromData.js';
-export { CLAIM_KINDS, PROVIDES_CLAIM, PROVIDES_HQ, PROVIDES_WORKSHOP, simConfigFromGameData, simMapFromGrid, simPlayersFromLobby } from './fromData.js';
+export { CLAIM_KINDS, EFFECT_STATS, PROVIDES_CLAIM, PROVIDES_HQ, PROVIDES_WORKSHOP, simConfigFromGameData, simMapFromGrid, simPlayersFromLobby } from './fromData.js';
 export {
   NO_ENTITY,
   NO_FIELD,

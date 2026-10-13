@@ -222,6 +222,74 @@ describe('economie', () => {
   });
 });
 
+describe('onderzoek en craft', () => {
+  const techByKey = (key: string) => CONFIG.techs[DATA.tech.find((t) => t.key === key)!.id]!;
+  const GEWEERREK = techByKey('geweerrek');
+  const PANTSER = techByKey('composiet_pantser');
+  const PATROL_LOADOUT = DATA.loadouts.find((l) => l.key === 'patrol')!.id;
+  const TURRET = typeByKey('turret');
+
+  it('Research: kosten meteen, researchTicks in de werkplaats, daarna ontgrendelt prereqTech loadouts en gebouwen', () => {
+    const sim = createSim(testInit(30));
+    sim.setScrap(0, 1000);
+    const builder = sim.entityIds().find((id) => sim.getUnit(id)!.typeId === BUILDER && sim.getUnit(id)!.owner === 0)!;
+    const scav = sim.entityIds().find((id) => sim.getUnit(id)!.typeId === SCAV && sim.getUnit(id)!.owner === 0)!;
+    const t = cellCenter(16, 14);
+    // zonder tech: geen turret en geen patrol; zonder werkplaats: geen onderzoek
+    let ev = play(sim, 1, at(0, cmd(0, 0, 'Build', { ids: [builder], typeId: TURRET, ...t }), cmd(0, 0, 'Research', { techId: GEWEERREK.techId })));
+    expect(ev.some((e) => e.type === EVENT_TYPE.buildingPlaced)).toBe(false);
+    expect(sim.playerStatus(0).scrap).toBe(1000);
+    const ws = sim.spawnBuilding(WERKPLAATS, 0, 14, 4);
+    play(sim, 1, at(sim.frame, cmd(sim.frame, 0, 'Craft', { ids: [scav], loadoutId: PATROL_LOADOUT })));
+    expect(sim.getUnit(scav)!.order).toBe(0);
+    // een tech met een onvervulde prereqTech kan niet
+    play(sim, 1, at(sim.frame, cmd(sim.frame, 0, 'Research', { techId: PANTSER.techId })));
+    expect(sim.playerStatus(0).scrap).toBe(1000);
+    play(sim, 1, at(sim.frame, cmd(sim.frame, 0, 'Research', { techId: GEWEERREK.techId }), cmd(sim.frame, 0, 'Research', { techId: GEWEERREK.techId })));
+    expect(sim.playerStatus(0).scrap).toBe(1000 - GEWEERREK.scrapCost);
+    expect(sim.researched(0)).toEqual([]);
+    play(sim, GEWEERREK.researchTicks - 1);
+    expect(sim.researched(0)).toEqual([GEWEERREK.techId]);
+    expect(sim.getUnit(ws)!.buildState).toBe(2);
+    ev = play(sim, 1, at(sim.frame, cmd(sim.frame, 0, 'Build', { ids: [builder], typeId: TURRET, ...t })));
+    expect(ev.some((e) => e.type === EVENT_TYPE.buildingPlaced && e.b === TURRET)).toBe(true);
+    play(sim, 1, at(sim.frame, cmd(sim.frame, 0, 'Craft', { ids: [scav], loadoutId: PATROL_LOADOUT })));
+    expect(sim.getUnit(scav)!.order).toBe(ORDER_CRAFT);
+    // speler 1 heeft de tech niet
+    expect(sim.researched(1)).toEqual([]);
+  });
+
+  it('tech-effecten: hpPct op militie verhoogt maxHp en hp van bestaande en nieuwe units; Cancel stopt onderzoek met teruggave', () => {
+    const sim = emptySim(31);
+    sim.spawnBuilding(WERKPLAATS, 0, 14, 4);
+    sim.setScrap(0, 1000);
+    const m = sim.spawnUnit({ typeId: MILITIA, owner: 0, ...cellCenter(10, 20) });
+    const enemy = sim.spawnUnit({ typeId: MILITIA, owner: 1, ...cellCenter(50, 50) });
+    play(sim, 1, at(0, cmd(0, 0, 'Research', { techId: GEWEERREK.techId })));
+    play(sim, GEWEERREK.researchTicks);
+    // Cancel halverwege: teruggave volgens cancelRefundPermille, geen tech
+    const ws = kindOf(sim, 'building')[0]!;
+    play(sim, 1, at(sim.frame, cmd(sim.frame, 0, 'Research', { techId: PANTSER.techId })));
+    play(sim, 10);
+    const before = sim.playerStatus(0).scrap;
+    play(sim, 1, at(sim.frame, cmd(sim.frame, 0, 'Cancel', { ids: [ws] })));
+    expect(sim.playerStatus(0).scrap).toBe(before + idivTest(PANTSER.scrapCost * CONFIG.cancelRefundPermille, 1000));
+    play(sim, PANTSER.researchTicks + 10);
+    expect(sim.researched(0)).toEqual([GEWEERREK.techId]);
+    // opnieuw, nu tot het eind
+    play(sim, 1, at(sim.frame, cmd(sim.frame, 0, 'Research', { techId: PANTSER.techId })));
+    play(sim, PANTSER.researchTicks);
+    expect(sim.researched(0)).toEqual([PANTSER.techId, GEWEERREK.techId].sort((a, b) => a - b));
+    const boosted = idivTest(milType.maxHp * (1000 + PANTSER.effects[0]!.delta), 1000);
+    expect(sim.getUnit(m)).toMatchObject({ maxHp: boosted, hp: boosted });
+    expect(sim.getUnit(enemy)).toMatchObject({ maxHp: milType.maxHp });
+    const fresh = sim.spawnUnit({ typeId: MILITIA, owner: 0, ...cellCenter(11, 20) });
+    expect(sim.getUnit(fresh)).toMatchObject({ maxHp: boosted, hp: boosted });
+  });
+});
+
+const idivTest = (a: number, b: number): number => Math.trunc(a / b);
+
 describe('gevecht', () => {
   it('Attack: schade maal de damage-matrix, cooldown, dood wordt een lijk en verdwijnt; events shotFired, hit, death', () => {
     const sim = emptySim(5, createOpenMap(64, 64));

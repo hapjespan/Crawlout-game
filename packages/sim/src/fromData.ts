@@ -1,6 +1,28 @@
-import { PROVIDES, ROLES, buildingTypeId, secondsToTicks, unitTypeId } from '@crawlout/data';
-import type { GameData, LoadoutData } from '@crawlout/data';
-import type { SimConfig, SimFaction, SimMap, SimPlayer } from './config.js';
+import { EffectStat, PROVIDES, ROLES, buildingTypeId, secondsToTicks, unitTypeId } from '@crawlout/data';
+import type { EffectData, GameData, LoadoutData } from '@crawlout/data';
+import type { SimConfig, SimEffect, SimFaction, SimMap, SimPlayer } from './config.js';
+import { EFFECT_TARGET_ALL, EFFECT_TARGET_HERO, EFFECT_TARGET_TYPE } from './config.js';
+
+/** Volgorde van de effect-stats (EffectStat in packages/data); de index gaat de sim in (SimEffect.stat). */
+export const EFFECT_STATS = EffectStat.options;
+export type EffectStatName = (typeof EFFECT_STATS)[number];
+export const statIndex = (name: EffectStatName): number => EFFECT_STATS.indexOf(name);
+
+/** Vrije doelen in effects[].target (contract 3); anders is het doel een loadout- of gebouw-id. */
+export const TARGET_ALL = 'alle';
+export const TARGET_HERO = 'held';
+
+/** Effect uit GameData naar SimEffect: het doel wordt alles, de held, of één unit- of gebouwtype. Gooit bij een onbekend doel. */
+function simEffect(data: GameData, e: EffectData, where: string): SimEffect {
+  const stat = statIndex(e.stat);
+  if (e.target === TARGET_ALL) return { stat, target: EFFECT_TARGET_ALL, typeId: 0, delta: e.delta };
+  if (e.target === TARGET_HERO) return { stat, target: EFFECT_TARGET_HERO, typeId: 0, delta: e.delta };
+  const l = data.loadouts.find((x) => x.key === e.target);
+  if (l !== undefined) return { stat, target: EFFECT_TARGET_TYPE, typeId: unitTypeId(l.id), delta: e.delta };
+  const b = data.buildings.find((x) => x.key === e.target);
+  if (b !== undefined) return { stat, target: EFFECT_TARGET_TYPE, typeId: buildingTypeId(b.id), delta: e.delta };
+  throw new Error(`${where}: onbekend effect-doel '${e.target}'`);
+}
 
 // De enige adapter van de data-loader (GameData, al in sim-eenheden) en de map-loader (MapGrid) naar de grens van de sim.
 // Client en replay gebruiken allebei deze functies, zodat er één afspraak is over typeIds, rollen en startopstelling.
@@ -101,6 +123,15 @@ export function simConfigFromGameData(data: GameData): SimConfig {
       buildOrder: a.buildOrder.map((o) => ({ atTick: o.atTick, typeId: buildingTypeId(o.buildingId) })),
       attackTimersTicks: [...a.attackTimersTicks],
       militiaPermille: a.militiaPermille,
+    })),
+    techs: data.tech.map((t) => ({
+      techId: t.id,
+      factionId: t.factionId,
+      scrapCost: t.scrapCost,
+      researchTicks: t.researchTicks,
+      buildingTypeId: buildingTypeId(t.buildingId),
+      prereqTech: [...t.prereqTech],
+      effects: t.effects.map((e) => simEffect(data, e, `tech ${t.key}`)),
     })),
     damageMatrix: data.damageMatrix.map((row) => [...row]),
     ticksPerMinute: secondsToTicks(60),
