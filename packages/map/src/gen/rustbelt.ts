@@ -33,9 +33,11 @@ export const RUSTBELT_SPEC: MapSpec = {
     { x: 12, y: 30, amount: 1500 },
     { x: 40, y: 38, amount: 2500 }, // contested, richting het midden
   ],
-  claimPoints: [{ x: 46, y: 96, kind: 'settlement' }],
+  // Besluit 9: 4 m van de 2500-node (40,38), binnen claimRadiusM (6 m): de node wordt exclusief zodra de claimpaal staat.
+  claimPoints: [{ x: 40, y: 34, kind: 'settlement' }],
   centerClaims: [{ x: 64, y: 64, kind: 'powerArmor' }],
-  creepCamps: [{ x: 28, y: 94, tier: 1 }],
+  // Op de route basis -> midden, om de kliffenwand (x 44..47) heen, tussen het contested punt en het midden.
+  creepCamps: [{ x: 52, y: 56, tier: 1 }],
 };
 
 export function generateRustbelt(): GeneratedMap {

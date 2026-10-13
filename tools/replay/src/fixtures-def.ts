@@ -1,9 +1,11 @@
-import { DELAY_FRAMES_DEFAULT } from '@crawlout/protocol';
+import { DELAY_FRAMES_DEFAULT, EVENT_TYPE } from '@crawlout/protocol';
 import type { CommandEnvelope, FrameBundle, LobbyPlayer, Replay } from '@crawlout/protocol';
 import { ROLES, buildingTypeId } from '@crawlout/data';
 import type { Sim } from '@crawlout/sim';
 import { gameData } from './env.js';
 import { createReplaySim } from './run.js';
+import type { BotPlan, PlannedBuilding } from './bot.js';
+import { recordControlled, settlementBot } from './bot.js';
 
 // Definities van de replay-fixtures in tools/replay/fixtures. `pnpm --filter @crawlout/replay record` draait ze
 // en schrijft de JSON met verwachte hashes. Een fixture opnieuw opnemen mag alleen bij een bewuste
@@ -106,7 +108,7 @@ class Script {
   }
 }
 
-export const FIXTURES: readonly FixtureDef[] = [
+const FIXTURES_UP_TO_S3: FixtureDef[] = [
   {
     // Beweging en commando-validatie op de kleine testmap: Move, Stop, seq-volgorde, ongeldige commando's.
     name: 's2-testmap-move-stop',
@@ -184,7 +186,8 @@ export const FIXTURES: readonly FixtureDef[] = [
       const s = new Script();
       const spawns = [cell(20, 20), cell(107, 107)];
       const centre = nearest(sim, st.claims, cell(64, 64).x, cell(64, 64).y);
-      const own = [nearest(sim, st.claims, cell(81, 31).x, cell(81, 31).y), nearest(sim, st.claims, cell(46, 96).x, cell(46, 96).y)];
+      // het settlement-punt aan de eigen kant (sinds data 0.7.0 bij de 2500-node, besluit 9)
+      const own = spawns.map((s) => nearest(sim, st.claims.filter((id) => id !== centre), s.x, s.y));
       const hero = data.heroes[0]!.id;
       for (let p = 0; p < 2; p++) {
         const node = nearest(sim, st.nodes, spawns[p]!.x, spawns[p]!.y);
@@ -254,6 +257,60 @@ export const FIXTURES: readonly FixtureDef[] = [
     },
   },
 ];
+
+/** Woningen voor speler 0 (midden van de 2 bij 2 footprint, in cellen) in een blok links boven het hoofdgebouw. */
+const HOUSES: PlannedBuilding[] = [6, 9, 12].flatMap((cy) => [6, 9, 12, 15].map((cx) => ({ key: 'woning', cx, cy })));
+
+const FIXTURES_S4: FixtureDef[] = [
+  {
+    // Turrets en onderzoek op Rustbelt, mens tegen AI. Speler 0 (een bot die gewone commando's geeft): werkplaats,
+    // geweerrek, een turret voor zijn basis, lab, raffinage en lasergeleiding (turret +20% schade, +1 m), daarna een
+    // kleine aanval met held op de AI. De AI (speler 1) onderzoekt geweerrek voor zijn turret (besluit 8) en valt aan
+    // op zijn timers. Beide turrets schieten; Lockdown, dood en oplappen komen voor.
+    name: 's4-rustbelt-turrets',
+    build() {
+      const r = base('rustbelt', 404, [false, true]);
+      const plan: BotPlan = {
+        builds: [{ key: 'werkplaats', cx: 26, cy: 20 }, HOUSES[0]!, { key: 'turret', cx: 28, cy: 27 }, { key: 'lab', cx: 14, cy: 26 }, HOUSES[1]!],
+        research: ['geweerrek', 'raffinage', 'lasergeleiding'],
+        builders: 1,
+        militiaAtSettlers: 99,
+        militiaFrame: 2500,
+        militiaCount: 4,
+        attackWithMilitia: 4,
+        attackFrame: 6400,
+      };
+      recordControlled(r, 11000, [settlementBot(0, plan)]);
+      return r;
+    },
+  },
+  {
+    // Brief-eindcriterium sim-core (fase-0 sectie 9): 50 bewoners per kant verzamelen, bouwen, wisselen van rol en
+    // vechten op de slice-map. Twee bots, gespiegeld: werkplaats en elf woningen (6 + 44 bedden = pop-cap 50), drie
+    // bouwers, alle scavengers verzamelen; de bewoners groeien uit huisvesting tot 50 per kant. Dan worden 20 van hen
+    // militie en vallen ze elkaars basis aan, tot er 40 doden zijn. Geen spawns buiten de regels om.
+    name: 's4-rustbelt-fifty',
+    build() {
+      const r = base('rustbelt', 50, [false, false]);
+      const plan: BotPlan = {
+        builds: [{ key: 'werkplaats', cx: 26, cy: 20 }, ...HOUSES.slice(0, 11)],
+        research: [],
+        builders: 3,
+        militiaAtSettlers: 50,
+        militiaCount: 20,
+        attackWithMilitia: 20,
+      };
+      let deaths = 0;
+      recordControlled(r, 30000, [settlementBot(0, plan), settlementBot(1, plan)], (sim) => {
+        for (let k = 0; k < sim.events.count; k++) if (sim.events.type[k] === EVENT_TYPE.death) deaths++;
+        return deaths >= 40;
+      });
+      return r;
+    },
+  },
+];
+
+export const FIXTURES: readonly FixtureDef[] = [...FIXTURES_UP_TO_S3, ...FIXTURES_S4];
 
 /** De sim na het uitvoeren van de frames 0 tot `frame` (exclusief) met de bundels die de replay tot dan heeft. */
 function stateAt(r: Replay, frame: number): Sim {

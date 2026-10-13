@@ -63,4 +63,4 @@ export type { SimCommand } from './systems/commands.js';
 export type { CreateSimOptions, EntityKind, SimWinner, SpawnUnitSpec, UnitView, WinReason } from './sim.js';
 export { Sim, createSim, deserialize } from './sim.js';
 export type { SimWorkerCore, SimWorkerInbound, SimWorkerOutbound, SimWorkerPort } from './worker.js';
-export { createSimWorkerCore } from './worker.js';
+export { CATCH_UP_BACKLOG, createSimWorkerCore } from './worker.js';

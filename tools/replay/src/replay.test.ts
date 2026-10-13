@@ -15,23 +15,15 @@ describe('replay-fixtures', () => {
     for (const def of FIXTURES) expect(files).toContain(`${def.name}.json`);
   });
 
+  // Eén test per fixture met drie runs: de opgenomen hashes zijn wat een verse run nu geeft (dus ook wat record zou
+  // schrijven, en twee runs zijn gelijk), en dat blijft zo na serialize/deserialize op frame 137 en halverwege.
   for (const f of files) {
-    it(`${f}: hashes kloppen, ook na serialize/deserialize halverwege`, () => {
+    it(`${f}: hashes kloppen, ook na serialize/deserialize op frame 137 en halverwege`, { timeout: 120_000 }, () => {
       const r = load(f);
-      expect(checkReplay(r).ok).toBe(true);
+      expect(recordedHashes(runReplay(r))).toEqual(r.hashes);
       expect(checkReplay(r, { reloadAfterFrame: 137 }).ok).toBe(true);
       const last = Math.max(...r.hashes.map((h) => h.frame));
       expect(checkReplay(r, { reloadAfterFrame: Math.floor(last / 2) }).ok).toBe(true);
-    });
-
-    it(`${f}: twee runs geven dezelfde hash op elk frame`, () => {
-      const r = load(f);
-      expect(runReplay(r).hashes).toEqual(runReplay(r).hashes);
-    });
-
-    it(`${f}: de opgenomen hashes zijn wat record nu zou schrijven`, () => {
-      const r = load(f);
-      expect(recordedHashes(runReplay(r))).toEqual(r.hashes);
     });
   }
 

@@ -1,0 +1,8247 @@
+{
+ "dataVersion": "0.7.0",
+ "seed": 404,
+ "map": "rustbelt",
+ "players": [
+  {
+   "playerId": 0,
+   "name": "speler0",
+   "faction": "dwellers",
+   "ready": true,
+   "online": true,
+   "ai": false
+  },
+  {
+   "playerId": 1,
+   "name": "ai1",
+   "faction": "dwellers",
+   "ready": true,
+   "online": false,
+   "ai": true
+  }
+ ],
+ "settings": {
+  "mode": "skirmish",
+  "delayFrames": 4
+ },
+ "bundles": [
+  {
+   "frame": 0,
+   "commands": [
+    {
+     "frame": 0,
+     "playerId": 0,
+     "seq": 0,
+     "type": "Gather",
+     "payload": {
+      "ids": [
+       10485761,
+       11534337,
+       12582913,
+       13631489
+      ],
+      "nodeId": 1
+     }
+    },
+    {
+     "frame": 0,
+     "playerId": 0,
+     "seq": 1,
+     "type": "Build",
+     "payload": {
+      "ids": [
+       14680065
+      ],
+      "typeId": 1030,
+      "x": 6784,
+      "y": 5248
+     }
+    },
+    {
+     "frame": 0,
+     "playerId": 0,
+     "seq": 2,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 10,
+   "commands": [
+    {
+     "frame": 6,
+     "playerId": 0,
+     "seq": 3,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 20,
+   "commands": [
+    {
+     "frame": 16,
+     "playerId": 0,
+     "seq": 4,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 30,
+   "commands": [
+    {
+     "frame": 26,
+     "playerId": 0,
+     "seq": 5,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 40,
+   "commands": [
+    {
+     "frame": 36,
+     "playerId": 0,
+     "seq": 6,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 50,
+   "commands": [
+    {
+     "frame": 46,
+     "playerId": 0,
+     "seq": 7,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 60,
+   "commands": [
+    {
+     "frame": 56,
+     "playerId": 0,
+     "seq": 8,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 70,
+   "commands": [
+    {
+     "frame": 66,
+     "playerId": 0,
+     "seq": 9,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 80,
+   "commands": [
+    {
+     "frame": 76,
+     "playerId": 0,
+     "seq": 10,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 90,
+   "commands": [
+    {
+     "frame": 86,
+     "playerId": 0,
+     "seq": 11,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 100,
+   "commands": [
+    {
+     "frame": 96,
+     "playerId": 0,
+     "seq": 12,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 110,
+   "commands": [
+    {
+     "frame": 106,
+     "playerId": 0,
+     "seq": 13,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 120,
+   "commands": [
+    {
+     "frame": 116,
+     "playerId": 0,
+     "seq": 14,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 130,
+   "commands": [
+    {
+     "frame": 126,
+     "playerId": 0,
+     "seq": 15,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 140,
+   "commands": [
+    {
+     "frame": 136,
+     "playerId": 0,
+     "seq": 16,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 150,
+   "commands": [
+    {
+     "frame": 146,
+     "playerId": 0,
+     "seq": 17,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 160,
+   "commands": [
+    {
+     "frame": 156,
+     "playerId": 0,
+     "seq": 18,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 170,
+   "commands": [
+    {
+     "frame": 166,
+     "playerId": 0,
+     "seq": 19,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 180,
+   "commands": [
+    {
+     "frame": 176,
+     "playerId": 0,
+     "seq": 20,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 190,
+   "commands": [
+    {
+     "frame": 186,
+     "playerId": 0,
+     "seq": 21,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 200,
+   "commands": [
+    {
+     "frame": 196,
+     "playerId": 0,
+     "seq": 22,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 210,
+   "commands": [
+    {
+     "frame": 206,
+     "playerId": 0,
+     "seq": 23,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 220,
+   "commands": [
+    {
+     "frame": 216,
+     "playerId": 0,
+     "seq": 24,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 230,
+   "commands": [
+    {
+     "frame": 226,
+     "playerId": 0,
+     "seq": 25,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 240,
+   "commands": [
+    {
+     "frame": 236,
+     "playerId": 0,
+     "seq": 26,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 250,
+   "commands": [
+    {
+     "frame": 246,
+     "playerId": 0,
+     "seq": 27,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 260,
+   "commands": [
+    {
+     "frame": 256,
+     "playerId": 0,
+     "seq": 28,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 270,
+   "commands": [
+    {
+     "frame": 266,
+     "playerId": 0,
+     "seq": 29,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 280,
+   "commands": [
+    {
+     "frame": 276,
+     "playerId": 0,
+     "seq": 30,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 290,
+   "commands": [
+    {
+     "frame": 286,
+     "playerId": 0,
+     "seq": 31,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 300,
+   "commands": [
+    {
+     "frame": 296,
+     "playerId": 0,
+     "seq": 32,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 310,
+   "commands": [
+    {
+     "frame": 306,
+     "playerId": 0,
+     "seq": 33,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 320,
+   "commands": [
+    {
+     "frame": 316,
+     "playerId": 0,
+     "seq": 34,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 330,
+   "commands": [
+    {
+     "frame": 326,
+     "playerId": 0,
+     "seq": 35,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 340,
+   "commands": [
+    {
+     "frame": 336,
+     "playerId": 0,
+     "seq": 36,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 350,
+   "commands": [
+    {
+     "frame": 346,
+     "playerId": 0,
+     "seq": 37,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 360,
+   "commands": [
+    {
+     "frame": 356,
+     "playerId": 0,
+     "seq": 38,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 370,
+   "commands": [
+    {
+     "frame": 366,
+     "playerId": 0,
+     "seq": 39,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 380,
+   "commands": [
+    {
+     "frame": 376,
+     "playerId": 0,
+     "seq": 40,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 390,
+   "commands": [
+    {
+     "frame": 386,
+     "playerId": 0,
+     "seq": 41,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 400,
+   "commands": [
+    {
+     "frame": 396,
+     "playerId": 0,
+     "seq": 42,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 410,
+   "commands": [
+    {
+     "frame": 406,
+     "playerId": 0,
+     "seq": 43,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 420,
+   "commands": [
+    {
+     "frame": 416,
+     "playerId": 0,
+     "seq": 44,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 430,
+   "commands": [
+    {
+     "frame": 426,
+     "playerId": 0,
+     "seq": 45,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 440,
+   "commands": [
+    {
+     "frame": 436,
+     "playerId": 0,
+     "seq": 46,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 450,
+   "commands": [
+    {
+     "frame": 446,
+     "playerId": 0,
+     "seq": 47,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 460,
+   "commands": [
+    {
+     "frame": 456,
+     "playerId": 0,
+     "seq": 48,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 470,
+   "commands": [
+    {
+     "frame": 466,
+     "playerId": 0,
+     "seq": 49,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 480,
+   "commands": [
+    {
+     "frame": 476,
+     "playerId": 0,
+     "seq": 50,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 490,
+   "commands": [
+    {
+     "frame": 486,
+     "playerId": 0,
+     "seq": 51,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 500,
+   "commands": [
+    {
+     "frame": 496,
+     "playerId": 0,
+     "seq": 52,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 510,
+   "commands": [
+    {
+     "frame": 506,
+     "playerId": 0,
+     "seq": 53,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 520,
+   "commands": [
+    {
+     "frame": 516,
+     "playerId": 0,
+     "seq": 54,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 530,
+   "commands": [
+    {
+     "frame": 526,
+     "playerId": 0,
+     "seq": 55,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 540,
+   "commands": [
+    {
+     "frame": 536,
+     "playerId": 0,
+     "seq": 56,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 550,
+   "commands": [
+    {
+     "frame": 546,
+     "playerId": 0,
+     "seq": 57,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 560,
+   "commands": [
+    {
+     "frame": 556,
+     "playerId": 0,
+     "seq": 58,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 570,
+   "commands": [
+    {
+     "frame": 566,
+     "playerId": 0,
+     "seq": 59,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 580,
+   "commands": [
+    {
+     "frame": 576,
+     "playerId": 0,
+     "seq": 60,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 590,
+   "commands": [
+    {
+     "frame": 586,
+     "playerId": 0,
+     "seq": 61,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 600,
+   "commands": [
+    {
+     "frame": 596,
+     "playerId": 0,
+     "seq": 62,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 610,
+   "commands": [
+    {
+     "frame": 606,
+     "playerId": 0,
+     "seq": 63,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 620,
+   "commands": [
+    {
+     "frame": 616,
+     "playerId": 0,
+     "seq": 64,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 630,
+   "commands": [
+    {
+     "frame": 626,
+     "playerId": 0,
+     "seq": 65,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 640,
+   "commands": [
+    {
+     "frame": 636,
+     "playerId": 0,
+     "seq": 66,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 650,
+   "commands": [
+    {
+     "frame": 646,
+     "playerId": 0,
+     "seq": 67,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 660,
+   "commands": [
+    {
+     "frame": 656,
+     "playerId": 0,
+     "seq": 68,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 670,
+   "commands": [
+    {
+     "frame": 666,
+     "playerId": 0,
+     "seq": 69,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 680,
+   "commands": [
+    {
+     "frame": 676,
+     "playerId": 0,
+     "seq": 70,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 690,
+   "commands": [
+    {
+     "frame": 686,
+     "playerId": 0,
+     "seq": 71,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 700,
+   "commands": [
+    {
+     "frame": 696,
+     "playerId": 0,
+     "seq": 72,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 710,
+   "commands": [
+    {
+     "frame": 706,
+     "playerId": 0,
+     "seq": 73,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 720,
+   "commands": [
+    {
+     "frame": 716,
+     "playerId": 0,
+     "seq": 74,
+     "type": "Build",
+     "payload": {
+      "ids": [
+       14680065
+      ],
+      "typeId": 1031,
+      "x": 1664,
+      "y": 1664
+     }
+    },
+    {
+     "frame": 716,
+     "playerId": 0,
+     "seq": 75,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 730,
+   "commands": [
+    {
+     "frame": 726,
+     "playerId": 0,
+     "seq": 76,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 740,
+   "commands": [
+    {
+     "frame": 736,
+     "playerId": 0,
+     "seq": 77,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 750,
+   "commands": [
+    {
+     "frame": 746,
+     "playerId": 0,
+     "seq": 78,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 760,
+   "commands": [
+    {
+     "frame": 756,
+     "playerId": 0,
+     "seq": 79,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 770,
+   "commands": [
+    {
+     "frame": 766,
+     "playerId": 0,
+     "seq": 80,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 780,
+   "commands": [
+    {
+     "frame": 776,
+     "playerId": 0,
+     "seq": 81,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 790,
+   "commands": [
+    {
+     "frame": 786,
+     "playerId": 0,
+     "seq": 82,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 800,
+   "commands": [
+    {
+     "frame": 796,
+     "playerId": 0,
+     "seq": 83,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 810,
+   "commands": [
+    {
+     "frame": 806,
+     "playerId": 0,
+     "seq": 84,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 820,
+   "commands": [
+    {
+     "frame": 816,
+     "playerId": 0,
+     "seq": 85,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 830,
+   "commands": [
+    {
+     "frame": 826,
+     "playerId": 0,
+     "seq": 86,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 840,
+   "commands": [
+    {
+     "frame": 836,
+     "playerId": 0,
+     "seq": 87,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 850,
+   "commands": [
+    {
+     "frame": 846,
+     "playerId": 0,
+     "seq": 88,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 860,
+   "commands": [
+    {
+     "frame": 856,
+     "playerId": 0,
+     "seq": 89,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 870,
+   "commands": [
+    {
+     "frame": 866,
+     "playerId": 0,
+     "seq": 90,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 880,
+   "commands": [
+    {
+     "frame": 876,
+     "playerId": 0,
+     "seq": 91,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 890,
+   "commands": [
+    {
+     "frame": 886,
+     "playerId": 0,
+     "seq": 92,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 900,
+   "commands": [
+    {
+     "frame": 896,
+     "playerId": 0,
+     "seq": 93,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 910,
+   "commands": [
+    {
+     "frame": 906,
+     "playerId": 0,
+     "seq": 94,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 920,
+   "commands": [
+    {
+     "frame": 916,
+     "playerId": 0,
+     "seq": 95,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 930,
+   "commands": [
+    {
+     "frame": 926,
+     "playerId": 0,
+     "seq": 96,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 940,
+   "commands": [
+    {
+     "frame": 936,
+     "playerId": 0,
+     "seq": 97,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 950,
+   "commands": [
+    {
+     "frame": 946,
+     "playerId": 0,
+     "seq": 98,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 960,
+   "commands": [
+    {
+     "frame": 956,
+     "playerId": 0,
+     "seq": 99,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 970,
+   "commands": [
+    {
+     "frame": 966,
+     "playerId": 0,
+     "seq": 100,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 980,
+   "commands": [
+    {
+     "frame": 976,
+     "playerId": 0,
+     "seq": 101,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 990,
+   "commands": [
+    {
+     "frame": 986,
+     "playerId": 0,
+     "seq": 102,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1000,
+   "commands": [
+    {
+     "frame": 996,
+     "playerId": 0,
+     "seq": 103,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1010,
+   "commands": [
+    {
+     "frame": 1006,
+     "playerId": 0,
+     "seq": 104,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1020,
+   "commands": [
+    {
+     "frame": 1016,
+     "playerId": 0,
+     "seq": 105,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1030,
+   "commands": [
+    {
+     "frame": 1026,
+     "playerId": 0,
+     "seq": 106,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1040,
+   "commands": [
+    {
+     "frame": 1036,
+     "playerId": 0,
+     "seq": 107,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1050,
+   "commands": [
+    {
+     "frame": 1046,
+     "playerId": 0,
+     "seq": 108,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1060,
+   "commands": [
+    {
+     "frame": 1056,
+     "playerId": 0,
+     "seq": 109,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1070,
+   "commands": [
+    {
+     "frame": 1066,
+     "playerId": 0,
+     "seq": 110,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1080,
+   "commands": [
+    {
+     "frame": 1076,
+     "playerId": 0,
+     "seq": 111,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1090,
+   "commands": [
+    {
+     "frame": 1086,
+     "playerId": 0,
+     "seq": 112,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1100,
+   "commands": [
+    {
+     "frame": 1096,
+     "playerId": 0,
+     "seq": 113,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1110,
+   "commands": [
+    {
+     "frame": 1106,
+     "playerId": 0,
+     "seq": 114,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1120,
+   "commands": [
+    {
+     "frame": 1116,
+     "playerId": 0,
+     "seq": 115,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1130,
+   "commands": [
+    {
+     "frame": 1126,
+     "playerId": 0,
+     "seq": 116,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1140,
+   "commands": [
+    {
+     "frame": 1136,
+     "playerId": 0,
+     "seq": 117,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1150,
+   "commands": [
+    {
+     "frame": 1146,
+     "playerId": 0,
+     "seq": 118,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1160,
+   "commands": [
+    {
+     "frame": 1156,
+     "playerId": 0,
+     "seq": 119,
+     "type": "Research",
+     "payload": {
+      "techId": 2
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1170,
+   "commands": [
+    {
+     "frame": 1166,
+     "playerId": 0,
+     "seq": 120,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1180,
+   "commands": [
+    {
+     "frame": 1176,
+     "playerId": 0,
+     "seq": 121,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1190,
+   "commands": [
+    {
+     "frame": 1186,
+     "playerId": 0,
+     "seq": 122,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1200,
+   "commands": [
+    {
+     "frame": 1196,
+     "playerId": 0,
+     "seq": 123,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1210,
+   "commands": [
+    {
+     "frame": 1206,
+     "playerId": 0,
+     "seq": 124,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1220,
+   "commands": [
+    {
+     "frame": 1216,
+     "playerId": 0,
+     "seq": 125,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1230,
+   "commands": [
+    {
+     "frame": 1226,
+     "playerId": 0,
+     "seq": 126,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1240,
+   "commands": [
+    {
+     "frame": 1236,
+     "playerId": 0,
+     "seq": 127,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1250,
+   "commands": [
+    {
+     "frame": 1246,
+     "playerId": 0,
+     "seq": 128,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1260,
+   "commands": [
+    {
+     "frame": 1256,
+     "playerId": 0,
+     "seq": 129,
+     "type": "Build",
+     "payload": {
+      "ids": [
+       14680065
+      ],
+      "typeId": 1029,
+      "x": 7296,
+      "y": 7040
+     }
+    },
+    {
+     "frame": 1256,
+     "playerId": 0,
+     "seq": 130,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1270,
+   "commands": [
+    {
+     "frame": 1266,
+     "playerId": 0,
+     "seq": 131,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1280,
+   "commands": [
+    {
+     "frame": 1276,
+     "playerId": 0,
+     "seq": 132,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1290,
+   "commands": [
+    {
+     "frame": 1286,
+     "playerId": 0,
+     "seq": 133,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1300,
+   "commands": [
+    {
+     "frame": 1296,
+     "playerId": 0,
+     "seq": 134,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1310,
+   "commands": [
+    {
+     "frame": 1306,
+     "playerId": 0,
+     "seq": 135,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1320,
+   "commands": [
+    {
+     "frame": 1316,
+     "playerId": 0,
+     "seq": 136,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1330,
+   "commands": [
+    {
+     "frame": 1326,
+     "playerId": 0,
+     "seq": 137,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1340,
+   "commands": [
+    {
+     "frame": 1336,
+     "playerId": 0,
+     "seq": 138,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1350,
+   "commands": [
+    {
+     "frame": 1346,
+     "playerId": 0,
+     "seq": 139,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1360,
+   "commands": [
+    {
+     "frame": 1356,
+     "playerId": 0,
+     "seq": 140,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1370,
+   "commands": [
+    {
+     "frame": 1366,
+     "playerId": 0,
+     "seq": 141,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1380,
+   "commands": [
+    {
+     "frame": 1376,
+     "playerId": 0,
+     "seq": 142,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1390,
+   "commands": [
+    {
+     "frame": 1386,
+     "playerId": 0,
+     "seq": 143,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1400,
+   "commands": [
+    {
+     "frame": 1396,
+     "playerId": 0,
+     "seq": 144,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1410,
+   "commands": [
+    {
+     "frame": 1406,
+     "playerId": 0,
+     "seq": 145,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1420,
+   "commands": [
+    {
+     "frame": 1416,
+     "playerId": 0,
+     "seq": 146,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1430,
+   "commands": [
+    {
+     "frame": 1426,
+     "playerId": 0,
+     "seq": 147,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1440,
+   "commands": [
+    {
+     "frame": 1436,
+     "playerId": 0,
+     "seq": 148,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1450,
+   "commands": [
+    {
+     "frame": 1446,
+     "playerId": 0,
+     "seq": 149,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1460,
+   "commands": [
+    {
+     "frame": 1456,
+     "playerId": 0,
+     "seq": 150,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1470,
+   "commands": [
+    {
+     "frame": 1466,
+     "playerId": 0,
+     "seq": 151,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1480,
+   "commands": [
+    {
+     "frame": 1476,
+     "playerId": 0,
+     "seq": 152,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1490,
+   "commands": [
+    {
+     "frame": 1486,
+     "playerId": 0,
+     "seq": 153,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1500,
+   "commands": [
+    {
+     "frame": 1496,
+     "playerId": 0,
+     "seq": 154,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1510,
+   "commands": [
+    {
+     "frame": 1506,
+     "playerId": 0,
+     "seq": 155,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1520,
+   "commands": [
+    {
+     "frame": 1516,
+     "playerId": 0,
+     "seq": 156,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1530,
+   "commands": [
+    {
+     "frame": 1526,
+     "playerId": 0,
+     "seq": 157,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1540,
+   "commands": [
+    {
+     "frame": 1536,
+     "playerId": 0,
+     "seq": 158,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1550,
+   "commands": [
+    {
+     "frame": 1546,
+     "playerId": 0,
+     "seq": 159,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1560,
+   "commands": [
+    {
+     "frame": 1556,
+     "playerId": 0,
+     "seq": 160,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1570,
+   "commands": [
+    {
+     "frame": 1566,
+     "playerId": 0,
+     "seq": 161,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1580,
+   "commands": [
+    {
+     "frame": 1576,
+     "playerId": 0,
+     "seq": 162,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1590,
+   "commands": [
+    {
+     "frame": 1586,
+     "playerId": 0,
+     "seq": 163,
+     "type": "Gather",
+     "payload": {
+      "ids": [
+       33554433
+      ],
+      "nodeId": 1
+     }
+    },
+    {
+     "frame": 1586,
+     "playerId": 0,
+     "seq": 164,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1600,
+   "commands": [
+    {
+     "frame": 1596,
+     "playerId": 0,
+     "seq": 165,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1610,
+   "commands": [
+    {
+     "frame": 1606,
+     "playerId": 0,
+     "seq": 166,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1620,
+   "commands": [
+    {
+     "frame": 1616,
+     "playerId": 0,
+     "seq": 167,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1630,
+   "commands": [
+    {
+     "frame": 1626,
+     "playerId": 0,
+     "seq": 168,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1640,
+   "commands": [
+    {
+     "frame": 1636,
+     "playerId": 0,
+     "seq": 169,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1650,
+   "commands": [
+    {
+     "frame": 1646,
+     "playerId": 0,
+     "seq": 170,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1660,
+   "commands": [
+    {
+     "frame": 1656,
+     "playerId": 0,
+     "seq": 171,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1670,
+   "commands": [
+    {
+     "frame": 1666,
+     "playerId": 0,
+     "seq": 172,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1680,
+   "commands": [
+    {
+     "frame": 1676,
+     "playerId": 0,
+     "seq": 173,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1690,
+   "commands": [
+    {
+     "frame": 1686,
+     "playerId": 0,
+     "seq": 174,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1700,
+   "commands": [
+    {
+     "frame": 1696,
+     "playerId": 0,
+     "seq": 175,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1710,
+   "commands": [
+    {
+     "frame": 1706,
+     "playerId": 0,
+     "seq": 176,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1720,
+   "commands": [
+    {
+     "frame": 1716,
+     "playerId": 0,
+     "seq": 177,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1730,
+   "commands": [
+    {
+     "frame": 1726,
+     "playerId": 0,
+     "seq": 178,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1740,
+   "commands": [
+    {
+     "frame": 1736,
+     "playerId": 0,
+     "seq": 179,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1750,
+   "commands": [
+    {
+     "frame": 1746,
+     "playerId": 0,
+     "seq": 180,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1760,
+   "commands": [
+    {
+     "frame": 1756,
+     "playerId": 0,
+     "seq": 181,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1770,
+   "commands": [
+    {
+     "frame": 1766,
+     "playerId": 0,
+     "seq": 182,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1780,
+   "commands": [
+    {
+     "frame": 1776,
+     "playerId": 0,
+     "seq": 183,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1790,
+   "commands": [
+    {
+     "frame": 1786,
+     "playerId": 0,
+     "seq": 184,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1800,
+   "commands": [
+    {
+     "frame": 1796,
+     "playerId": 0,
+     "seq": 185,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1810,
+   "commands": [
+    {
+     "frame": 1806,
+     "playerId": 0,
+     "seq": 186,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1820,
+   "commands": [
+    {
+     "frame": 1816,
+     "playerId": 0,
+     "seq": 187,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1830,
+   "commands": [
+    {
+     "frame": 1826,
+     "playerId": 0,
+     "seq": 188,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1840,
+   "commands": [
+    {
+     "frame": 1836,
+     "playerId": 0,
+     "seq": 189,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1850,
+   "commands": [
+    {
+     "frame": 1846,
+     "playerId": 0,
+     "seq": 190,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1860,
+   "commands": [
+    {
+     "frame": 1856,
+     "playerId": 0,
+     "seq": 191,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1870,
+   "commands": [
+    {
+     "frame": 1866,
+     "playerId": 0,
+     "seq": 192,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1880,
+   "commands": [
+    {
+     "frame": 1876,
+     "playerId": 0,
+     "seq": 193,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1890,
+   "commands": [
+    {
+     "frame": 1886,
+     "playerId": 0,
+     "seq": 194,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1900,
+   "commands": [
+    {
+     "frame": 1896,
+     "playerId": 0,
+     "seq": 195,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1910,
+   "commands": [
+    {
+     "frame": 1906,
+     "playerId": 0,
+     "seq": 196,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1920,
+   "commands": [
+    {
+     "frame": 1916,
+     "playerId": 0,
+     "seq": 197,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1930,
+   "commands": [
+    {
+     "frame": 1926,
+     "playerId": 0,
+     "seq": 198,
+     "type": "Gather",
+     "payload": {
+      "ids": [
+       36700161
+      ],
+      "nodeId": 1
+     }
+    },
+    {
+     "frame": 1926,
+     "playerId": 0,
+     "seq": 199,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1940,
+   "commands": [
+    {
+     "frame": 1936,
+     "playerId": 0,
+     "seq": 200,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1950,
+   "commands": [
+    {
+     "frame": 1946,
+     "playerId": 0,
+     "seq": 201,
+     "type": "Build",
+     "payload": {
+      "ids": [
+       14680065
+      ],
+      "typeId": 1026,
+      "x": 3712,
+      "y": 6784
+     }
+    },
+    {
+     "frame": 1946,
+     "playerId": 0,
+     "seq": 202,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1960,
+   "commands": [
+    {
+     "frame": 1956,
+     "playerId": 0,
+     "seq": 203,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1970,
+   "commands": [
+    {
+     "frame": 1966,
+     "playerId": 0,
+     "seq": 204,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1980,
+   "commands": [
+    {
+     "frame": 1976,
+     "playerId": 0,
+     "seq": 205,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 1990,
+   "commands": [
+    {
+     "frame": 1986,
+     "playerId": 0,
+     "seq": 206,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2000,
+   "commands": [
+    {
+     "frame": 1996,
+     "playerId": 0,
+     "seq": 207,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2010,
+   "commands": [
+    {
+     "frame": 2006,
+     "playerId": 0,
+     "seq": 208,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2020,
+   "commands": [
+    {
+     "frame": 2016,
+     "playerId": 0,
+     "seq": 209,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2030,
+   "commands": [
+    {
+     "frame": 2026,
+     "playerId": 0,
+     "seq": 210,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2040,
+   "commands": [
+    {
+     "frame": 2036,
+     "playerId": 0,
+     "seq": 211,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2050,
+   "commands": [
+    {
+     "frame": 2046,
+     "playerId": 0,
+     "seq": 212,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2060,
+   "commands": [
+    {
+     "frame": 2056,
+     "playerId": 0,
+     "seq": 213,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2070,
+   "commands": [
+    {
+     "frame": 2066,
+     "playerId": 0,
+     "seq": 214,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2080,
+   "commands": [
+    {
+     "frame": 2076,
+     "playerId": 0,
+     "seq": 215,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2090,
+   "commands": [
+    {
+     "frame": 2086,
+     "playerId": 0,
+     "seq": 216,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2100,
+   "commands": [
+    {
+     "frame": 2096,
+     "playerId": 0,
+     "seq": 217,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2110,
+   "commands": [
+    {
+     "frame": 2106,
+     "playerId": 0,
+     "seq": 218,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2120,
+   "commands": [
+    {
+     "frame": 2116,
+     "playerId": 0,
+     "seq": 219,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2130,
+   "commands": [
+    {
+     "frame": 2126,
+     "playerId": 0,
+     "seq": 220,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2140,
+   "commands": [
+    {
+     "frame": 2136,
+     "playerId": 0,
+     "seq": 221,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2150,
+   "commands": [
+    {
+     "frame": 2146,
+     "playerId": 0,
+     "seq": 222,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2160,
+   "commands": [
+    {
+     "frame": 2156,
+     "playerId": 0,
+     "seq": 223,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2170,
+   "commands": [
+    {
+     "frame": 2166,
+     "playerId": 0,
+     "seq": 224,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2180,
+   "commands": [
+    {
+     "frame": 2176,
+     "playerId": 0,
+     "seq": 225,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2190,
+   "commands": [
+    {
+     "frame": 2186,
+     "playerId": 0,
+     "seq": 226,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2200,
+   "commands": [
+    {
+     "frame": 2196,
+     "playerId": 0,
+     "seq": 227,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2210,
+   "commands": [
+    {
+     "frame": 2206,
+     "playerId": 0,
+     "seq": 228,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2220,
+   "commands": [
+    {
+     "frame": 2216,
+     "playerId": 0,
+     "seq": 229,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2230,
+   "commands": [
+    {
+     "frame": 2226,
+     "playerId": 0,
+     "seq": 230,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2240,
+   "commands": [
+    {
+     "frame": 2236,
+     "playerId": 0,
+     "seq": 231,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2250,
+   "commands": [
+    {
+     "frame": 2246,
+     "playerId": 0,
+     "seq": 232,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2260,
+   "commands": [
+    {
+     "frame": 2256,
+     "playerId": 0,
+     "seq": 233,
+     "type": "Gather",
+     "payload": {
+      "ids": [
+       39845889
+      ],
+      "nodeId": 1
+     }
+    },
+    {
+     "frame": 2256,
+     "playerId": 0,
+     "seq": 234,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2270,
+   "commands": [
+    {
+     "frame": 2266,
+     "playerId": 0,
+     "seq": 235,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2280,
+   "commands": [
+    {
+     "frame": 2276,
+     "playerId": 0,
+     "seq": 236,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2290,
+   "commands": [
+    {
+     "frame": 2286,
+     "playerId": 0,
+     "seq": 237,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2300,
+   "commands": [
+    {
+     "frame": 2296,
+     "playerId": 0,
+     "seq": 238,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2310,
+   "commands": [
+    {
+     "frame": 2306,
+     "playerId": 0,
+     "seq": 239,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2320,
+   "commands": [
+    {
+     "frame": 2316,
+     "playerId": 0,
+     "seq": 240,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2330,
+   "commands": [
+    {
+     "frame": 2326,
+     "playerId": 0,
+     "seq": 241,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2340,
+   "commands": [
+    {
+     "frame": 2336,
+     "playerId": 0,
+     "seq": 242,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2350,
+   "commands": [
+    {
+     "frame": 2346,
+     "playerId": 0,
+     "seq": 243,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2360,
+   "commands": [
+    {
+     "frame": 2356,
+     "playerId": 0,
+     "seq": 244,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2370,
+   "commands": [
+    {
+     "frame": 2366,
+     "playerId": 0,
+     "seq": 245,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2380,
+   "commands": [
+    {
+     "frame": 2376,
+     "playerId": 0,
+     "seq": 246,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2390,
+   "commands": [
+    {
+     "frame": 2386,
+     "playerId": 0,
+     "seq": 247,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2400,
+   "commands": [
+    {
+     "frame": 2396,
+     "playerId": 0,
+     "seq": 248,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2410,
+   "commands": [
+    {
+     "frame": 2406,
+     "playerId": 0,
+     "seq": 249,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2420,
+   "commands": [
+    {
+     "frame": 2416,
+     "playerId": 0,
+     "seq": 250,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2430,
+   "commands": [
+    {
+     "frame": 2426,
+     "playerId": 0,
+     "seq": 251,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2440,
+   "commands": [
+    {
+     "frame": 2436,
+     "playerId": 0,
+     "seq": 252,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2450,
+   "commands": [
+    {
+     "frame": 2446,
+     "playerId": 0,
+     "seq": 253,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2460,
+   "commands": [
+    {
+     "frame": 2456,
+     "playerId": 0,
+     "seq": 254,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2470,
+   "commands": [
+    {
+     "frame": 2466,
+     "playerId": 0,
+     "seq": 255,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2480,
+   "commands": [
+    {
+     "frame": 2476,
+     "playerId": 0,
+     "seq": 256,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2490,
+   "commands": [
+    {
+     "frame": 2486,
+     "playerId": 0,
+     "seq": 257,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2500,
+   "commands": [
+    {
+     "frame": 2496,
+     "playerId": 0,
+     "seq": 258,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    },
+    {
+     "frame": 2496,
+     "playerId": 0,
+     "seq": 259,
+     "type": "SetRole",
+     "payload": {
+      "ids": [
+       10485761,
+       11534337,
+       12582913,
+       13631489
+      ],
+      "role": "militia"
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2510,
+   "commands": [
+    {
+     "frame": 2506,
+     "playerId": 0,
+     "seq": 260,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2520,
+   "commands": [
+    {
+     "frame": 2516,
+     "playerId": 0,
+     "seq": 261,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2530,
+   "commands": [
+    {
+     "frame": 2526,
+     "playerId": 0,
+     "seq": 262,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2540,
+   "commands": [
+    {
+     "frame": 2536,
+     "playerId": 0,
+     "seq": 263,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2550,
+   "commands": [
+    {
+     "frame": 2546,
+     "playerId": 0,
+     "seq": 264,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2560,
+   "commands": [
+    {
+     "frame": 2556,
+     "playerId": 0,
+     "seq": 265,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2570,
+   "commands": [
+    {
+     "frame": 2566,
+     "playerId": 0,
+     "seq": 266,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2580,
+   "commands": [
+    {
+     "frame": 2576,
+     "playerId": 0,
+     "seq": 267,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2590,
+   "commands": [
+    {
+     "frame": 2586,
+     "playerId": 0,
+     "seq": 268,
+     "type": "Gather",
+     "payload": {
+      "ids": [
+       41943041
+      ],
+      "nodeId": 1
+     }
+    },
+    {
+     "frame": 2586,
+     "playerId": 0,
+     "seq": 269,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2600,
+   "commands": [
+    {
+     "frame": 2596,
+     "playerId": 0,
+     "seq": 270,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2610,
+   "commands": [
+    {
+     "frame": 2606,
+     "playerId": 0,
+     "seq": 271,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2620,
+   "commands": [
+    {
+     "frame": 2616,
+     "playerId": 0,
+     "seq": 272,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2630,
+   "commands": [
+    {
+     "frame": 2626,
+     "playerId": 0,
+     "seq": 273,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2640,
+   "commands": [
+    {
+     "frame": 2636,
+     "playerId": 0,
+     "seq": 274,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2650,
+   "commands": [
+    {
+     "frame": 2646,
+     "playerId": 0,
+     "seq": 275,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2660,
+   "commands": [
+    {
+     "frame": 2656,
+     "playerId": 0,
+     "seq": 276,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2670,
+   "commands": [
+    {
+     "frame": 2666,
+     "playerId": 0,
+     "seq": 277,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2680,
+   "commands": [
+    {
+     "frame": 2676,
+     "playerId": 0,
+     "seq": 278,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2690,
+   "commands": [
+    {
+     "frame": 2686,
+     "playerId": 0,
+     "seq": 279,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2700,
+   "commands": [
+    {
+     "frame": 2696,
+     "playerId": 0,
+     "seq": 280,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2710,
+   "commands": [
+    {
+     "frame": 2706,
+     "playerId": 0,
+     "seq": 281,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2720,
+   "commands": [
+    {
+     "frame": 2716,
+     "playerId": 0,
+     "seq": 282,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2730,
+   "commands": [
+    {
+     "frame": 2726,
+     "playerId": 0,
+     "seq": 283,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2740,
+   "commands": [
+    {
+     "frame": 2736,
+     "playerId": 0,
+     "seq": 284,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2750,
+   "commands": [
+    {
+     "frame": 2746,
+     "playerId": 0,
+     "seq": 285,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2760,
+   "commands": [
+    {
+     "frame": 2756,
+     "playerId": 0,
+     "seq": 286,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2770,
+   "commands": [
+    {
+     "frame": 2766,
+     "playerId": 0,
+     "seq": 287,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2780,
+   "commands": [
+    {
+     "frame": 2776,
+     "playerId": 0,
+     "seq": 288,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2790,
+   "commands": [
+    {
+     "frame": 2786,
+     "playerId": 0,
+     "seq": 289,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2800,
+   "commands": [
+    {
+     "frame": 2796,
+     "playerId": 0,
+     "seq": 290,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2810,
+   "commands": [
+    {
+     "frame": 2806,
+     "playerId": 0,
+     "seq": 291,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2820,
+   "commands": [
+    {
+     "frame": 2816,
+     "playerId": 0,
+     "seq": 292,
+     "type": "Build",
+     "payload": {
+      "ids": [
+       14680065
+      ],
+      "typeId": 1031,
+      "x": 2432,
+      "y": 1664
+     }
+    },
+    {
+     "frame": 2816,
+     "playerId": 0,
+     "seq": 293,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2830,
+   "commands": [
+    {
+     "frame": 2826,
+     "playerId": 0,
+     "seq": 294,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2840,
+   "commands": [
+    {
+     "frame": 2836,
+     "playerId": 0,
+     "seq": 295,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2850,
+   "commands": [
+    {
+     "frame": 2846,
+     "playerId": 0,
+     "seq": 296,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2860,
+   "commands": [
+    {
+     "frame": 2856,
+     "playerId": 0,
+     "seq": 297,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2870,
+   "commands": [
+    {
+     "frame": 2866,
+     "playerId": 0,
+     "seq": 298,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2880,
+   "commands": [
+    {
+     "frame": 2876,
+     "playerId": 0,
+     "seq": 299,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2890,
+   "commands": [
+    {
+     "frame": 2886,
+     "playerId": 0,
+     "seq": 300,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2900,
+   "commands": [
+    {
+     "frame": 2896,
+     "playerId": 0,
+     "seq": 301,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2910,
+   "commands": [
+    {
+     "frame": 2906,
+     "playerId": 0,
+     "seq": 302,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2920,
+   "commands": [
+    {
+     "frame": 2916,
+     "playerId": 0,
+     "seq": 303,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2930,
+   "commands": [
+    {
+     "frame": 2926,
+     "playerId": 0,
+     "seq": 304,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2940,
+   "commands": [
+    {
+     "frame": 2936,
+     "playerId": 0,
+     "seq": 305,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2950,
+   "commands": [
+    {
+     "frame": 2946,
+     "playerId": 0,
+     "seq": 306,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2960,
+   "commands": [
+    {
+     "frame": 2956,
+     "playerId": 0,
+     "seq": 307,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2970,
+   "commands": [
+    {
+     "frame": 2966,
+     "playerId": 0,
+     "seq": 308,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2980,
+   "commands": [
+    {
+     "frame": 2976,
+     "playerId": 0,
+     "seq": 309,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 2990,
+   "commands": [
+    {
+     "frame": 2986,
+     "playerId": 0,
+     "seq": 310,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3000,
+   "commands": [
+    {
+     "frame": 2996,
+     "playerId": 0,
+     "seq": 311,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3010,
+   "commands": [
+    {
+     "frame": 3006,
+     "playerId": 0,
+     "seq": 312,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3020,
+   "commands": [
+    {
+     "frame": 3016,
+     "playerId": 0,
+     "seq": 313,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3030,
+   "commands": [
+    {
+     "frame": 3026,
+     "playerId": 0,
+     "seq": 314,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3040,
+   "commands": [
+    {
+     "frame": 3036,
+     "playerId": 0,
+     "seq": 315,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3050,
+   "commands": [
+    {
+     "frame": 3046,
+     "playerId": 0,
+     "seq": 316,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3060,
+   "commands": [
+    {
+     "frame": 3056,
+     "playerId": 0,
+     "seq": 317,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3070,
+   "commands": [
+    {
+     "frame": 3066,
+     "playerId": 0,
+     "seq": 318,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3080,
+   "commands": [
+    {
+     "frame": 3076,
+     "playerId": 0,
+     "seq": 319,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3090,
+   "commands": [
+    {
+     "frame": 3086,
+     "playerId": 0,
+     "seq": 320,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3100,
+   "commands": [
+    {
+     "frame": 3096,
+     "playerId": 0,
+     "seq": 321,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3110,
+   "commands": [
+    {
+     "frame": 3106,
+     "playerId": 0,
+     "seq": 322,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3120,
+   "commands": [
+    {
+     "frame": 3116,
+     "playerId": 0,
+     "seq": 323,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3130,
+   "commands": [
+    {
+     "frame": 3126,
+     "playerId": 0,
+     "seq": 324,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3140,
+   "commands": [
+    {
+     "frame": 3136,
+     "playerId": 0,
+     "seq": 325,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3150,
+   "commands": [
+    {
+     "frame": 3146,
+     "playerId": 0,
+     "seq": 326,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3160,
+   "commands": [
+    {
+     "frame": 3156,
+     "playerId": 0,
+     "seq": 327,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3170,
+   "commands": [
+    {
+     "frame": 3166,
+     "playerId": 0,
+     "seq": 328,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3180,
+   "commands": [
+    {
+     "frame": 3176,
+     "playerId": 0,
+     "seq": 329,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3190,
+   "commands": [
+    {
+     "frame": 3186,
+     "playerId": 0,
+     "seq": 330,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3200,
+   "commands": [
+    {
+     "frame": 3196,
+     "playerId": 0,
+     "seq": 331,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3210,
+   "commands": [
+    {
+     "frame": 3206,
+     "playerId": 0,
+     "seq": 332,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3220,
+   "commands": [
+    {
+     "frame": 3216,
+     "playerId": 0,
+     "seq": 333,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3230,
+   "commands": [
+    {
+     "frame": 3226,
+     "playerId": 0,
+     "seq": 334,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3240,
+   "commands": [
+    {
+     "frame": 3236,
+     "playerId": 0,
+     "seq": 335,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3250,
+   "commands": [
+    {
+     "frame": 3246,
+     "playerId": 0,
+     "seq": 336,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3260,
+   "commands": [
+    {
+     "frame": 3256,
+     "playerId": 0,
+     "seq": 337,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3270,
+   "commands": [
+    {
+     "frame": 3266,
+     "playerId": 0,
+     "seq": 338,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3280,
+   "commands": [
+    {
+     "frame": 3276,
+     "playerId": 0,
+     "seq": 339,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3290,
+   "commands": [
+    {
+     "frame": 3286,
+     "playerId": 0,
+     "seq": 340,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3300,
+   "commands": [
+    {
+     "frame": 3296,
+     "playerId": 0,
+     "seq": 341,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3310,
+   "commands": [
+    {
+     "frame": 3306,
+     "playerId": 0,
+     "seq": 342,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3320,
+   "commands": [
+    {
+     "frame": 3316,
+     "playerId": 0,
+     "seq": 343,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3330,
+   "commands": [
+    {
+     "frame": 3326,
+     "playerId": 0,
+     "seq": 344,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3340,
+   "commands": [
+    {
+     "frame": 3336,
+     "playerId": 0,
+     "seq": 345,
+     "type": "Research",
+     "payload": {
+      "techId": 4
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3350,
+   "commands": [
+    {
+     "frame": 3346,
+     "playerId": 0,
+     "seq": 346,
+     "type": "Research",
+     "payload": {
+      "techId": 3
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3360,
+   "commands": [
+    {
+     "frame": 3356,
+     "playerId": 0,
+     "seq": 347,
+     "type": "Research",
+     "payload": {
+      "techId": 3
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3370,
+   "commands": [
+    {
+     "frame": 3366,
+     "playerId": 0,
+     "seq": 348,
+     "type": "Research",
+     "payload": {
+      "techId": 3
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3380,
+   "commands": [
+    {
+     "frame": 3376,
+     "playerId": 0,
+     "seq": 349,
+     "type": "Research",
+     "payload": {
+      "techId": 3
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3390,
+   "commands": [
+    {
+     "frame": 3386,
+     "playerId": 0,
+     "seq": 350,
+     "type": "Research",
+     "payload": {
+      "techId": 3
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3400,
+   "commands": [
+    {
+     "frame": 3396,
+     "playerId": 0,
+     "seq": 351,
+     "type": "Research",
+     "payload": {
+      "techId": 3
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3410,
+   "commands": [
+    {
+     "frame": 3406,
+     "playerId": 0,
+     "seq": 352,
+     "type": "Research",
+     "payload": {
+      "techId": 3
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3420,
+   "commands": [
+    {
+     "frame": 3416,
+     "playerId": 0,
+     "seq": 353,
+     "type": "Research",
+     "payload": {
+      "techId": 3
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3430,
+   "commands": [
+    {
+     "frame": 3426,
+     "playerId": 0,
+     "seq": 354,
+     "type": "Research",
+     "payload": {
+      "techId": 3
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3440,
+   "commands": [
+    {
+     "frame": 3436,
+     "playerId": 0,
+     "seq": 355,
+     "type": "Research",
+     "payload": {
+      "techId": 3
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3450,
+   "commands": [
+    {
+     "frame": 3446,
+     "playerId": 0,
+     "seq": 356,
+     "type": "Research",
+     "payload": {
+      "techId": 3
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3460,
+   "commands": [
+    {
+     "frame": 3456,
+     "playerId": 0,
+     "seq": 357,
+     "type": "Research",
+     "payload": {
+      "techId": 3
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3470,
+   "commands": [
+    {
+     "frame": 3466,
+     "playerId": 0,
+     "seq": 358,
+     "type": "Research",
+     "payload": {
+      "techId": 3
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3480,
+   "commands": [
+    {
+     "frame": 3476,
+     "playerId": 0,
+     "seq": 359,
+     "type": "Research",
+     "payload": {
+      "techId": 3
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3490,
+   "commands": [
+    {
+     "frame": 3486,
+     "playerId": 0,
+     "seq": 360,
+     "type": "Research",
+     "payload": {
+      "techId": 3
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3500,
+   "commands": [
+    {
+     "frame": 3496,
+     "playerId": 0,
+     "seq": 361,
+     "type": "Research",
+     "payload": {
+      "techId": 3
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3510,
+   "commands": [
+    {
+     "frame": 3506,
+     "playerId": 0,
+     "seq": 362,
+     "type": "Research",
+     "payload": {
+      "techId": 3
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3520,
+   "commands": [
+    {
+     "frame": 3516,
+     "playerId": 0,
+     "seq": 363,
+     "type": "Research",
+     "payload": {
+      "techId": 3
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3530,
+   "commands": [
+    {
+     "frame": 3526,
+     "playerId": 0,
+     "seq": 364,
+     "type": "Research",
+     "payload": {
+      "techId": 3
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3540,
+   "commands": [
+    {
+     "frame": 3536,
+     "playerId": 0,
+     "seq": 365,
+     "type": "Research",
+     "payload": {
+      "techId": 3
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3550,
+   "commands": [
+    {
+     "frame": 3546,
+     "playerId": 0,
+     "seq": 366,
+     "type": "Research",
+     "payload": {
+      "techId": 3
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3560,
+   "commands": [
+    {
+     "frame": 3556,
+     "playerId": 0,
+     "seq": 367,
+     "type": "Research",
+     "payload": {
+      "techId": 3
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3570,
+   "commands": [
+    {
+     "frame": 3566,
+     "playerId": 0,
+     "seq": 368,
+     "type": "Research",
+     "payload": {
+      "techId": 3
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3580,
+   "commands": [
+    {
+     "frame": 3576,
+     "playerId": 0,
+     "seq": 369,
+     "type": "Research",
+     "payload": {
+      "techId": 3
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3590,
+   "commands": [
+    {
+     "frame": 3586,
+     "playerId": 0,
+     "seq": 370,
+     "type": "Research",
+     "payload": {
+      "techId": 3
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3600,
+   "commands": [
+    {
+     "frame": 3596,
+     "playerId": 0,
+     "seq": 371,
+     "type": "Research",
+     "payload": {
+      "techId": 3
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3610,
+   "commands": [
+    {
+     "frame": 3606,
+     "playerId": 0,
+     "seq": 372,
+     "type": "Research",
+     "payload": {
+      "techId": 3
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3620,
+   "commands": [
+    {
+     "frame": 3616,
+     "playerId": 0,
+     "seq": 373,
+     "type": "Research",
+     "payload": {
+      "techId": 3
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3630,
+   "commands": [
+    {
+     "frame": 3626,
+     "playerId": 0,
+     "seq": 374,
+     "type": "Research",
+     "payload": {
+      "techId": 3
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3640,
+   "commands": [
+    {
+     "frame": 3636,
+     "playerId": 0,
+     "seq": 375,
+     "type": "Research",
+     "payload": {
+      "techId": 3
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3650,
+   "commands": [
+    {
+     "frame": 3646,
+     "playerId": 0,
+     "seq": 376,
+     "type": "Research",
+     "payload": {
+      "techId": 3
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3660,
+   "commands": [
+    {
+     "frame": 3656,
+     "playerId": 0,
+     "seq": 377,
+     "type": "Research",
+     "payload": {
+      "techId": 3
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3670,
+   "commands": [
+    {
+     "frame": 3666,
+     "playerId": 0,
+     "seq": 378,
+     "type": "Research",
+     "payload": {
+      "techId": 3
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3680,
+   "commands": [
+    {
+     "frame": 3676,
+     "playerId": 0,
+     "seq": 379,
+     "type": "Research",
+     "payload": {
+      "techId": 3
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3690,
+   "commands": [
+    {
+     "frame": 3686,
+     "playerId": 0,
+     "seq": 380,
+     "type": "Research",
+     "payload": {
+      "techId": 3
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3700,
+   "commands": [
+    {
+     "frame": 3696,
+     "playerId": 0,
+     "seq": 381,
+     "type": "Gather",
+     "payload": {
+      "ids": [
+       48234497
+      ],
+      "nodeId": 1
+     }
+    },
+    {
+     "frame": 3696,
+     "playerId": 0,
+     "seq": 382,
+     "type": "Research",
+     "payload": {
+      "techId": 3
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3710,
+   "commands": [
+    {
+     "frame": 3706,
+     "playerId": 0,
+     "seq": 383,
+     "type": "Research",
+     "payload": {
+      "techId": 3
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3720,
+   "commands": [
+    {
+     "frame": 3716,
+     "playerId": 0,
+     "seq": 384,
+     "type": "Research",
+     "payload": {
+      "techId": 3
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3730,
+   "commands": [
+    {
+     "frame": 3726,
+     "playerId": 0,
+     "seq": 385,
+     "type": "Research",
+     "payload": {
+      "techId": 3
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3740,
+   "commands": [
+    {
+     "frame": 3736,
+     "playerId": 0,
+     "seq": 386,
+     "type": "Research",
+     "payload": {
+      "techId": 3
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3750,
+   "commands": [
+    {
+     "frame": 3746,
+     "playerId": 0,
+     "seq": 387,
+     "type": "Research",
+     "payload": {
+      "techId": 3
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3760,
+   "commands": [
+    {
+     "frame": 3756,
+     "playerId": 0,
+     "seq": 388,
+     "type": "Research",
+     "payload": {
+      "techId": 3
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3770,
+   "commands": [
+    {
+     "frame": 3766,
+     "playerId": 0,
+     "seq": 389,
+     "type": "Research",
+     "payload": {
+      "techId": 3
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3780,
+   "commands": [
+    {
+     "frame": 3776,
+     "playerId": 0,
+     "seq": 390,
+     "type": "Research",
+     "payload": {
+      "techId": 3
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3790,
+   "commands": [
+    {
+     "frame": 3786,
+     "playerId": 0,
+     "seq": 391,
+     "type": "Research",
+     "payload": {
+      "techId": 3
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3800,
+   "commands": [
+    {
+     "frame": 3796,
+     "playerId": 0,
+     "seq": 392,
+     "type": "Research",
+     "payload": {
+      "techId": 3
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3810,
+   "commands": [
+    {
+     "frame": 3806,
+     "playerId": 0,
+     "seq": 393,
+     "type": "Research",
+     "payload": {
+      "techId": 3
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3820,
+   "commands": [
+    {
+     "frame": 3816,
+     "playerId": 0,
+     "seq": 394,
+     "type": "Research",
+     "payload": {
+      "techId": 3
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3830,
+   "commands": [
+    {
+     "frame": 3826,
+     "playerId": 0,
+     "seq": 395,
+     "type": "Research",
+     "payload": {
+      "techId": 3
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3840,
+   "commands": [
+    {
+     "frame": 3836,
+     "playerId": 0,
+     "seq": 396,
+     "type": "Research",
+     "payload": {
+      "techId": 3
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3850,
+   "commands": [
+    {
+     "frame": 3846,
+     "playerId": 0,
+     "seq": 397,
+     "type": "Research",
+     "payload": {
+      "techId": 3
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3860,
+   "commands": [
+    {
+     "frame": 3856,
+     "playerId": 0,
+     "seq": 398,
+     "type": "Research",
+     "payload": {
+      "techId": 3
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3870,
+   "commands": [
+    {
+     "frame": 3866,
+     "playerId": 0,
+     "seq": 399,
+     "type": "Research",
+     "payload": {
+      "techId": 3
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3880,
+   "commands": [
+    {
+     "frame": 3876,
+     "playerId": 0,
+     "seq": 400,
+     "type": "Research",
+     "payload": {
+      "techId": 3
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3890,
+   "commands": [
+    {
+     "frame": 3886,
+     "playerId": 0,
+     "seq": 401,
+     "type": "Research",
+     "payload": {
+      "techId": 3
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3900,
+   "commands": [
+    {
+     "frame": 3896,
+     "playerId": 0,
+     "seq": 402,
+     "type": "Research",
+     "payload": {
+      "techId": 3
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3910,
+   "commands": [
+    {
+     "frame": 3906,
+     "playerId": 0,
+     "seq": 403,
+     "type": "Research",
+     "payload": {
+      "techId": 3
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3920,
+   "commands": [
+    {
+     "frame": 3916,
+     "playerId": 0,
+     "seq": 404,
+     "type": "Research",
+     "payload": {
+      "techId": 3
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3930,
+   "commands": [
+    {
+     "frame": 3926,
+     "playerId": 0,
+     "seq": 405,
+     "type": "Research",
+     "payload": {
+      "techId": 3
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3940,
+   "commands": [
+    {
+     "frame": 3936,
+     "playerId": 0,
+     "seq": 406,
+     "type": "Research",
+     "payload": {
+      "techId": 3
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3950,
+   "commands": [
+    {
+     "frame": 3946,
+     "playerId": 0,
+     "seq": 407,
+     "type": "Research",
+     "payload": {
+      "techId": 3
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3960,
+   "commands": [
+    {
+     "frame": 3956,
+     "playerId": 0,
+     "seq": 408,
+     "type": "Research",
+     "payload": {
+      "techId": 3
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3970,
+   "commands": [
+    {
+     "frame": 3966,
+     "playerId": 0,
+     "seq": 409,
+     "type": "Research",
+     "payload": {
+      "techId": 3
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3980,
+   "commands": [
+    {
+     "frame": 3976,
+     "playerId": 0,
+     "seq": 410,
+     "type": "Research",
+     "payload": {
+      "techId": 3
+     }
+    }
+   ]
+  },
+  {
+   "frame": 3990,
+   "commands": [
+    {
+     "frame": 3986,
+     "playerId": 0,
+     "seq": 411,
+     "type": "Research",
+     "payload": {
+      "techId": 3
+     }
+    }
+   ]
+  },
+  {
+   "frame": 4000,
+   "commands": [
+    {
+     "frame": 3996,
+     "playerId": 0,
+     "seq": 412,
+     "type": "Research",
+     "payload": {
+      "techId": 3
+     }
+    }
+   ]
+  },
+  {
+   "frame": 4010,
+   "commands": [
+    {
+     "frame": 4006,
+     "playerId": 0,
+     "seq": 413,
+     "type": "Research",
+     "payload": {
+      "techId": 3
+     }
+    }
+   ]
+  },
+  {
+   "frame": 4020,
+   "commands": [
+    {
+     "frame": 4016,
+     "playerId": 0,
+     "seq": 414,
+     "type": "Research",
+     "payload": {
+      "techId": 3
+     }
+    }
+   ]
+  },
+  {
+   "frame": 4030,
+   "commands": [
+    {
+     "frame": 4026,
+     "playerId": 0,
+     "seq": 415,
+     "type": "Gather",
+     "payload": {
+      "ids": [
+       49283073
+      ],
+      "nodeId": 1
+     }
+    },
+    {
+     "frame": 4026,
+     "playerId": 0,
+     "seq": 416,
+     "type": "Research",
+     "payload": {
+      "techId": 3
+     }
+    }
+   ]
+  },
+  {
+   "frame": 4040,
+   "commands": [
+    {
+     "frame": 4036,
+     "playerId": 0,
+     "seq": 417,
+     "type": "Research",
+     "payload": {
+      "techId": 3
+     }
+    }
+   ]
+  },
+  {
+   "frame": 4050,
+   "commands": [
+    {
+     "frame": 4046,
+     "playerId": 0,
+     "seq": 418,
+     "type": "Research",
+     "payload": {
+      "techId": 3
+     }
+    }
+   ]
+  },
+  {
+   "frame": 4360,
+   "commands": [
+    {
+     "frame": 4356,
+     "playerId": 0,
+     "seq": 419,
+     "type": "Gather",
+     "payload": {
+      "ids": [
+       50331649
+      ],
+      "nodeId": 1
+     }
+    }
+   ]
+  },
+  {
+   "frame": 4700,
+   "commands": [
+    {
+     "frame": 4696,
+     "playerId": 0,
+     "seq": 420,
+     "type": "Gather",
+     "payload": {
+      "ids": [
+       51380225
+      ],
+      "nodeId": 1
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6400,
+   "commands": [
+    {
+     "frame": 6396,
+     "playerId": 0,
+     "seq": 421,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       10485761,
+       11534337,
+       12582913,
+       13631489,
+       15728641,
+       16777217
+      ],
+      "x": 27520,
+      "y": 27520
+     }
+    }
+   ]
+  },
+  {
+   "frame": 7680,
+   "commands": [
+    {
+     "frame": 7676,
+     "playerId": 0,
+     "seq": 422,
+     "type": "Gather",
+     "payload": {
+      "ids": [
+       10485762
+      ],
+      "nodeId": 2097153
+     }
+    }
+   ]
+  },
+  {
+   "frame": 8010,
+   "commands": [
+    {
+     "frame": 8006,
+     "playerId": 0,
+     "seq": 423,
+     "type": "Recruit",
+     "payload": {
+      "buildingId": 9437185
+     }
+    }
+   ]
+  },
+  {
+   "frame": 8020,
+   "commands": [
+    {
+     "frame": 8016,
+     "playerId": 0,
+     "seq": 424,
+     "type": "Gather",
+     "payload": {
+      "ids": [
+       15728642
+      ],
+      "nodeId": 2097153
+     }
+    }
+   ]
+  },
+  {
+   "frame": 8420,
+   "commands": [
+    {
+     "frame": 8416,
+     "playerId": 0,
+     "seq": 425,
+     "type": "Gather",
+     "payload": {
+      "ids": [
+       11534338
+      ],
+      "nodeId": 2097153
+     }
+    }
+   ]
+  },
+  {
+   "frame": 8820,
+   "commands": [
+    {
+     "frame": 8816,
+     "playerId": 0,
+     "seq": 426,
+     "type": "Gather",
+     "payload": {
+      "ids": [
+       53477381
+      ],
+      "nodeId": 2097153
+     }
+    }
+   ]
+  },
+  {
+   "frame": 9150,
+   "commands": [
+    {
+     "frame": 9146,
+     "playerId": 0,
+     "seq": 427,
+     "type": "Gather",
+     "payload": {
+      "ids": [
+       54525953
+      ],
+      "nodeId": 2097153
+     }
+    }
+   ]
+  }
+ ],
+ "hashes": [
+  {
+   "frame": 0,
+   "hash": 1878246679
+  },
+  {
+   "frame": 20,
+   "hash": 1419303724
+  },
+  {
+   "frame": 40,
+   "hash": 1910332998
+  },
+  {
+   "frame": 60,
+   "hash": 4022750268
+  },
+  {
+   "frame": 80,
+   "hash": 4271758940
+  },
+  {
+   "frame": 100,
+   "hash": 3310038527
+  },
+  {
+   "frame": 120,
+   "hash": 4007943960
+  },
+  {
+   "frame": 140,
+   "hash": 2728342226
+  },
+  {
+   "frame": 160,
+   "hash": 60447903
+  },
+  {
+   "frame": 180,
+   "hash": 247751064
+  },
+  {
+   "frame": 200,
+   "hash": 3872857055
+  },
+  {
+   "frame": 220,
+   "hash": 3831046288
+  },
+  {
+   "frame": 240,
+   "hash": 2840102194
+  },
+  {
+   "frame": 260,
+   "hash": 2314055218
+  },
+  {
+   "frame": 280,
+   "hash": 1894156708
+  },
+  {
+   "frame": 300,
+   "hash": 77267601
+  },
+  {
+   "frame": 320,
+   "hash": 2358549964
+  },
+  {
+   "frame": 340,
+   "hash": 3132695092
+  },
+  {
+   "frame": 360,
+   "hash": 2553287111
+  },
+  {
+   "frame": 380,
+   "hash": 3387863650
+  },
+  {
+   "frame": 400,
+   "hash": 4072894379
+  },
+  {
+   "frame": 420,
+   "hash": 3884762379
+  },
+  {
+   "frame": 440,
+   "hash": 2102276586
+  },
+  {
+   "frame": 460,
+   "hash": 631442358
+  },
+  {
+   "frame": 480,
+   "hash": 1198503843
+  },
+  {
+   "frame": 500,
+   "hash": 1776215163
+  },
+  {
+   "frame": 520,
+   "hash": 2922467327
+  },
+  {
+   "frame": 540,
+   "hash": 2306779182
+  },
+  {
+   "frame": 560,
+   "hash": 3640758409
+  },
+  {
+   "frame": 580,
+   "hash": 2588822219
+  },
+  {
+   "frame": 600,
+   "hash": 1082829257
+  },
+  {
+   "frame": 620,
+   "hash": 3016224927
+  },
+  {
+   "frame": 640,
+   "hash": 1487418307
+  },
+  {
+   "frame": 660,
+   "hash": 3499833120
+  },
+  {
+   "frame": 680,
+   "hash": 713508520
+  },
+  {
+   "frame": 700,
+   "hash": 3891461076
+  },
+  {
+   "frame": 720,
+   "hash": 799157304
+  },
+  {
+   "frame": 740,
+   "hash": 2260214141
+  },
+  {
+   "frame": 760,
+   "hash": 2368563124
+  },
+  {
+   "frame": 780,
+   "hash": 3170486031
+  },
+  {
+   "frame": 800,
+   "hash": 2050176048
+  },
+  {
+   "frame": 820,
+   "hash": 3496980933
+  },
+  {
+   "frame": 840,
+   "hash": 3337299261
+  },
+  {
+   "frame": 860,
+   "hash": 1487811511
+  },
+  {
+   "frame": 880,
+   "hash": 3301045027
+  },
+  {
+   "frame": 900,
+   "hash": 1396852317
+  },
+  {
+   "frame": 920,
+   "hash": 2571955758
+  },
+  {
+   "frame": 940,
+   "hash": 605017954
+  },
+  {
+   "frame": 960,
+   "hash": 2219079414
+  },
+  {
+   "frame": 980,
+   "hash": 3901103767
+  },
+  {
+   "frame": 1000,
+   "hash": 99649906
+  },
+  {
+   "frame": 1020,
+   "hash": 4256775876
+  },
+  {
+   "frame": 1040,
+   "hash": 4045480187
+  },
+  {
+   "frame": 1060,
+   "hash": 1941606724
+  },
+  {
+   "frame": 1080,
+   "hash": 3318122159
+  },
+  {
+   "frame": 1100,
+   "hash": 543132124
+  },
+  {
+   "frame": 1120,
+   "hash": 1279547547
+  },
+  {
+   "frame": 1140,
+   "hash": 618161275
+  },
+  {
+   "frame": 1160,
+   "hash": 1938031435
+  },
+  {
+   "frame": 1180,
+   "hash": 1500903029
+  },
+  {
+   "frame": 1200,
+   "hash": 3394596512
+  },
+  {
+   "frame": 1220,
+   "hash": 2024488738
+  },
+  {
+   "frame": 1240,
+   "hash": 769287815
+  },
+  {
+   "frame": 1260,
+   "hash": 1846588813
+  },
+  {
+   "frame": 1280,
+   "hash": 1821780983
+  },
+  {
+   "frame": 1300,
+   "hash": 110147877
+  },
+  {
+   "frame": 1320,
+   "hash": 3355584289
+  },
+  {
+   "frame": 1340,
+   "hash": 721284145
+  },
+  {
+   "frame": 1360,
+   "hash": 2931643712
+  },
+  {
+   "frame": 1380,
+   "hash": 1557460899
+  },
+  {
+   "frame": 1400,
+   "hash": 3241177318
+  },
+  {
+   "frame": 1420,
+   "hash": 129933802
+  },
+  {
+   "frame": 1440,
+   "hash": 2891115517
+  },
+  {
+   "frame": 1460,
+   "hash": 3162590595
+  },
+  {
+   "frame": 1480,
+   "hash": 3091673366
+  },
+  {
+   "frame": 1500,
+   "hash": 1108342039
+  },
+  {
+   "frame": 1520,
+   "hash": 989536110
+  },
+  {
+   "frame": 1540,
+   "hash": 4114744721
+  },
+  {
+   "frame": 1560,
+   "hash": 2083609465
+  },
+  {
+   "frame": 1580,
+   "hash": 676978861
+  },
+  {
+   "frame": 1600,
+   "hash": 2252905581
+  },
+  {
+   "frame": 1620,
+   "hash": 271128709
+  },
+  {
+   "frame": 1640,
+   "hash": 4083493259
+  },
+  {
+   "frame": 1660,
+   "hash": 1913850190
+  },
+  {
+   "frame": 1680,
+   "hash": 4031617956
+  },
+  {
+   "frame": 1700,
+   "hash": 2281232879
+  },
+  {
+   "frame": 1720,
+   "hash": 1012330470
+  },
+  {
+   "frame": 1740,
+   "hash": 4220507135
+  },
+  {
+   "frame": 1760,
+   "hash": 550589599
+  },
+  {
+   "frame": 1780,
+   "hash": 3851387107
+  },
+  {
+   "frame": 1800,
+   "hash": 1319748126
+  },
+  {
+   "frame": 1820,
+   "hash": 196015703
+  },
+  {
+   "frame": 1840,
+   "hash": 1687795428
+  },
+  {
+   "frame": 1860,
+   "hash": 153552212
+  },
+  {
+   "frame": 1880,
+   "hash": 732789552
+  },
+  {
+   "frame": 1900,
+   "hash": 909620122
+  },
+  {
+   "frame": 1920,
+   "hash": 3570227574
+  },
+  {
+   "frame": 1940,
+   "hash": 2066853895
+  },
+  {
+   "frame": 1960,
+   "hash": 361417770
+  },
+  {
+   "frame": 1980,
+   "hash": 247274191
+  },
+  {
+   "frame": 2000,
+   "hash": 1061845082
+  },
+  {
+   "frame": 2020,
+   "hash": 3806349984
+  },
+  {
+   "frame": 2040,
+   "hash": 2391156820
+  },
+  {
+   "frame": 2060,
+   "hash": 664342662
+  },
+  {
+   "frame": 2080,
+   "hash": 2339970622
+  },
+  {
+   "frame": 2100,
+   "hash": 3979035233
+  },
+  {
+   "frame": 2120,
+   "hash": 3227917851
+  },
+  {
+   "frame": 2140,
+   "hash": 1878404250
+  },
+  {
+   "frame": 2160,
+   "hash": 2968724003
+  },
+  {
+   "frame": 2180,
+   "hash": 3328829231
+  },
+  {
+   "frame": 2200,
+   "hash": 2086181181
+  },
+  {
+   "frame": 2220,
+   "hash": 2114780896
+  },
+  {
+   "frame": 2240,
+   "hash": 3984803335
+  },
+  {
+   "frame": 2260,
+   "hash": 712408356
+  },
+  {
+   "frame": 2280,
+   "hash": 775703444
+  },
+  {
+   "frame": 2300,
+   "hash": 2588381545
+  },
+  {
+   "frame": 2320,
+   "hash": 2348710287
+  },
+  {
+   "frame": 2340,
+   "hash": 3544902969
+  },
+  {
+   "frame": 2360,
+   "hash": 2410474058
+  },
+  {
+   "frame": 2380,
+   "hash": 2990857904
+  },
+  {
+   "frame": 2400,
+   "hash": 3176518029
+  },
+  {
+   "frame": 2420,
+   "hash": 721008179
+  },
+  {
+   "frame": 2440,
+   "hash": 1877912151
+  },
+  {
+   "frame": 2460,
+   "hash": 328782668
+  },
+  {
+   "frame": 2480,
+   "hash": 1527140528
+  },
+  {
+   "frame": 2500,
+   "hash": 2116456566
+  },
+  {
+   "frame": 2520,
+   "hash": 125939103
+  },
+  {
+   "frame": 2540,
+   "hash": 3894728080
+  },
+  {
+   "frame": 2560,
+   "hash": 3392488598
+  },
+  {
+   "frame": 2580,
+   "hash": 3120439432
+  },
+  {
+   "frame": 2600,
+   "hash": 3144240120
+  },
+  {
+   "frame": 2620,
+   "hash": 1706747194
+  },
+  {
+   "frame": 2640,
+   "hash": 1794451908
+  },
+  {
+   "frame": 2660,
+   "hash": 3392512696
+  },
+  {
+   "frame": 2680,
+   "hash": 2848388704
+  },
+  {
+   "frame": 2700,
+   "hash": 3608451799
+  },
+  {
+   "frame": 2720,
+   "hash": 327188224
+  },
+  {
+   "frame": 2740,
+   "hash": 3326799166
+  },
+  {
+   "frame": 2760,
+   "hash": 1153059562
+  },
+  {
+   "frame": 2780,
+   "hash": 2403520073
+  },
+  {
+   "frame": 2800,
+   "hash": 2971908707
+  },
+  {
+   "frame": 2820,
+   "hash": 794563373
+  },
+  {
+   "frame": 2840,
+   "hash": 135195477
+  },
+  {
+   "frame": 2860,
+   "hash": 1034967412
+  },
+  {
+   "frame": 2880,
+   "hash": 1841843947
+  },
+  {
+   "frame": 2900,
+   "hash": 2607871992
+  },
+  {
+   "frame": 2920,
+   "hash": 207670563
+  },
+  {
+   "frame": 2940,
+   "hash": 1893839711
+  },
+  {
+   "frame": 2960,
+   "hash": 242678407
+  },
+  {
+   "frame": 2980,
+   "hash": 2504376445
+  },
+  {
+   "frame": 3000,
+   "hash": 1357549946
+  },
+  {
+   "frame": 3020,
+   "hash": 3668381637
+  },
+  {
+   "frame": 3040,
+   "hash": 1845065951
+  },
+  {
+   "frame": 3060,
+   "hash": 3759188961
+  },
+  {
+   "frame": 3080,
+   "hash": 1904431874
+  },
+  {
+   "frame": 3100,
+   "hash": 4273763230
+  },
+  {
+   "frame": 3120,
+   "hash": 1254896948
+  },
+  {
+   "frame": 3140,
+   "hash": 156750751
+  },
+  {
+   "frame": 3160,
+   "hash": 2733353379
+  },
+  {
+   "frame": 3180,
+   "hash": 1561124962
+  },
+  {
+   "frame": 3200,
+   "hash": 503403926
+  },
+  {
+   "frame": 3220,
+   "hash": 2720395348
+  },
+  {
+   "frame": 3240,
+   "hash": 33584536
+  },
+  {
+   "frame": 3260,
+   "hash": 913951419
+  },
+  {
+   "frame": 3280,
+   "hash": 3448824937
+  },
+  {
+   "frame": 3300,
+   "hash": 933451493
+  },
+  {
+   "frame": 3320,
+   "hash": 2303915854
+  },
+  {
+   "frame": 3340,
+   "hash": 3297506507
+  },
+  {
+   "frame": 3360,
+   "hash": 2006071421
+  },
+  {
+   "frame": 3380,
+   "hash": 3283416494
+  },
+  {
+   "frame": 3400,
+   "hash": 1434702736
+  },
+  {
+   "frame": 3420,
+   "hash": 4198086686
+  },
+  {
+   "frame": 3440,
+   "hash": 2044067772
+  },
+  {
+   "frame": 3460,
+   "hash": 389789752
+  },
+  {
+   "frame": 3480,
+   "hash": 2317783688
+  },
+  {
+   "frame": 3500,
+   "hash": 4097041184
+  },
+  {
+   "frame": 3520,
+   "hash": 44413084
+  },
+  {
+   "frame": 3540,
+   "hash": 3210991832
+  },
+  {
+   "frame": 3560,
+   "hash": 511897456
+  },
+  {
+   "frame": 3580,
+   "hash": 1685416917
+  },
+  {
+   "frame": 3600,
+   "hash": 2721022814
+  },
+  {
+   "frame": 3620,
+   "hash": 3410973
+  },
+  {
+   "frame": 3640,
+   "hash": 2168714269
+  },
+  {
+   "frame": 3660,
+   "hash": 1376112223
+  },
+  {
+   "frame": 3680,
+   "hash": 2112296172
+  },
+  {
+   "frame": 3700,
+   "hash": 402447552
+  },
+  {
+   "frame": 3720,
+   "hash": 3344996056
+  },
+  {
+   "frame": 3740,
+   "hash": 2980180312
+  },
+  {
+   "frame": 3760,
+   "hash": 1860906463
+  },
+  {
+   "frame": 3780,
+   "hash": 4229426106
+  },
+  {
+   "frame": 3800,
+   "hash": 496286137
+  },
+  {
+   "frame": 3820,
+   "hash": 2941902326
+  },
+  {
+   "frame": 3840,
+   "hash": 1933142422
+  },
+  {
+   "frame": 3860,
+   "hash": 3385600846
+  },
+  {
+   "frame": 3880,
+   "hash": 664165249
+  },
+  {
+   "frame": 3900,
+   "hash": 3613006288
+  },
+  {
+   "frame": 3920,
+   "hash": 3250583034
+  },
+  {
+   "frame": 3940,
+   "hash": 4047247942
+  },
+  {
+   "frame": 3960,
+   "hash": 553185874
+  },
+  {
+   "frame": 3980,
+   "hash": 1431212937
+  },
+  {
+   "frame": 4000,
+   "hash": 1002639502
+  },
+  {
+   "frame": 4020,
+   "hash": 2846877947
+  },
+  {
+   "frame": 4040,
+   "hash": 1279228571
+  },
+  {
+   "frame": 4060,
+   "hash": 2873720653
+  },
+  {
+   "frame": 4080,
+   "hash": 487771173
+  },
+  {
+   "frame": 4100,
+   "hash": 1131661323
+  },
+  {
+   "frame": 4120,
+   "hash": 2490236367
+  },
+  {
+   "frame": 4140,
+   "hash": 3819626757
+  },
+  {
+   "frame": 4160,
+   "hash": 2874885836
+  },
+  {
+   "frame": 4180,
+   "hash": 2409203266
+  },
+  {
+   "frame": 4200,
+   "hash": 2967901979
+  },
+  {
+   "frame": 4220,
+   "hash": 2299547742
+  },
+  {
+   "frame": 4240,
+   "hash": 3338556117
+  },
+  {
+   "frame": 4260,
+   "hash": 207760397
+  },
+  {
+   "frame": 4280,
+   "hash": 3385251051
+  },
+  {
+   "frame": 4300,
+   "hash": 1371991093
+  },
+  {
+   "frame": 4320,
+   "hash": 3734480786
+  },
+  {
+   "frame": 4340,
+   "hash": 955665752
+  },
+  {
+   "frame": 4360,
+   "hash": 2442005148
+  },
+  {
+   "frame": 4380,
+   "hash": 191504981
+  },
+  {
+   "frame": 4400,
+   "hash": 2340898958
+  },
+  {
+   "frame": 4420,
+   "hash": 3828116552
+  },
+  {
+   "frame": 4440,
+   "hash": 4171343420
+  },
+  {
+   "frame": 4460,
+   "hash": 654325453
+  },
+  {
+   "frame": 4480,
+   "hash": 1238181909
+  },
+  {
+   "frame": 4500,
+   "hash": 2652234444
+  },
+  {
+   "frame": 4520,
+   "hash": 3051821626
+  },
+  {
+   "frame": 4540,
+   "hash": 141173696
+  },
+  {
+   "frame": 4560,
+   "hash": 551379273
+  },
+  {
+   "frame": 4580,
+   "hash": 2140761644
+  },
+  {
+   "frame": 4600,
+   "hash": 2118750939
+  },
+  {
+   "frame": 4620,
+   "hash": 1646068600
+  },
+  {
+   "frame": 4640,
+   "hash": 1555607659
+  },
+  {
+   "frame": 4660,
+   "hash": 3542313608
+  },
+  {
+   "frame": 4680,
+   "hash": 2461307768
+  },
+  {
+   "frame": 4700,
+   "hash": 1518551354
+  },
+  {
+   "frame": 4720,
+   "hash": 913786620
+  },
+  {
+   "frame": 4740,
+   "hash": 12451297
+  },
+  {
+   "frame": 4760,
+   "hash": 2304384251
+  },
+  {
+   "frame": 4780,
+   "hash": 2515132103
+  },
+  {
+   "frame": 4800,
+   "hash": 4156089728
+  },
+  {
+   "frame": 4820,
+   "hash": 2280842717
+  },
+  {
+   "frame": 4840,
+   "hash": 3886610430
+  },
+  {
+   "frame": 4860,
+   "hash": 1485162782
+  },
+  {
+   "frame": 4880,
+   "hash": 428892283
+  },
+  {
+   "frame": 4900,
+   "hash": 2353371308
+  },
+  {
+   "frame": 4920,
+   "hash": 1022428442
+  },
+  {
+   "frame": 4940,
+   "hash": 1915721651
+  },
+  {
+   "frame": 4960,
+   "hash": 313039496
+  },
+  {
+   "frame": 4980,
+   "hash": 3992152987
+  },
+  {
+   "frame": 5000,
+   "hash": 4132507936
+  },
+  {
+   "frame": 5020,
+   "hash": 2483851738
+  },
+  {
+   "frame": 5040,
+   "hash": 2089702801
+  },
+  {
+   "frame": 5060,
+   "hash": 4090624518
+  },
+  {
+   "frame": 5080,
+   "hash": 777856433
+  },
+  {
+   "frame": 5100,
+   "hash": 2702602613
+  },
+  {
+   "frame": 5120,
+   "hash": 867727387
+  },
+  {
+   "frame": 5140,
+   "hash": 278995926
+  },
+  {
+   "frame": 5160,
+   "hash": 774049029
+  },
+  {
+   "frame": 5180,
+   "hash": 4213229166
+  },
+  {
+   "frame": 5200,
+   "hash": 4076015248
+  },
+  {
+   "frame": 5220,
+   "hash": 1442603433
+  },
+  {
+   "frame": 5240,
+   "hash": 2818821860
+  },
+  {
+   "frame": 5260,
+   "hash": 3157946498
+  },
+  {
+   "frame": 5280,
+   "hash": 1163645903
+  },
+  {
+   "frame": 5300,
+   "hash": 2540223331
+  },
+  {
+   "frame": 5320,
+   "hash": 3983289203
+  },
+  {
+   "frame": 5340,
+   "hash": 2321852557
+  },
+  {
+   "frame": 5360,
+   "hash": 3115949522
+  },
+  {
+   "frame": 5380,
+   "hash": 4171679177
+  },
+  {
+   "frame": 5400,
+   "hash": 3102333860
+  },
+  {
+   "frame": 5420,
+   "hash": 411646349
+  },
+  {
+   "frame": 5440,
+   "hash": 606657021
+  },
+  {
+   "frame": 5460,
+   "hash": 3029639618
+  },
+  {
+   "frame": 5480,
+   "hash": 1239056630
+  },
+  {
+   "frame": 5500,
+   "hash": 1620156956
+  },
+  {
+   "frame": 5520,
+   "hash": 1916988457
+  },
+  {
+   "frame": 5540,
+   "hash": 1431977294
+  },
+  {
+   "frame": 5560,
+   "hash": 2495190247
+  },
+  {
+   "frame": 5580,
+   "hash": 3022554404
+  },
+  {
+   "frame": 5600,
+   "hash": 543054842
+  },
+  {
+   "frame": 5620,
+   "hash": 1179754471
+  },
+  {
+   "frame": 5640,
+   "hash": 3542851037
+  },
+  {
+   "frame": 5660,
+   "hash": 2613937323
+  },
+  {
+   "frame": 5680,
+   "hash": 699726883
+  },
+  {
+   "frame": 5700,
+   "hash": 895851725
+  },
+  {
+   "frame": 5720,
+   "hash": 1867806193
+  },
+  {
+   "frame": 5740,
+   "hash": 4125783561
+  },
+  {
+   "frame": 5760,
+   "hash": 1241644098
+  },
+  {
+   "frame": 5780,
+   "hash": 3628549002
+  },
+  {
+   "frame": 5800,
+   "hash": 1196951789
+  },
+  {
+   "frame": 5820,
+   "hash": 781996559
+  },
+  {
+   "frame": 5840,
+   "hash": 3514341434
+  },
+  {
+   "frame": 5860,
+   "hash": 1679342642
+  },
+  {
+   "frame": 5880,
+   "hash": 1544923179
+  },
+  {
+   "frame": 5900,
+   "hash": 1716298352
+  },
+  {
+   "frame": 5920,
+   "hash": 1320714194
+  },
+  {
+   "frame": 5940,
+   "hash": 1306469991
+  },
+  {
+   "frame": 5960,
+   "hash": 67242386
+  },
+  {
+   "frame": 5980,
+   "hash": 617098575
+  },
+  {
+   "frame": 6000,
+   "hash": 688387212
+  },
+  {
+   "frame": 6020,
+   "hash": 428780879
+  },
+  {
+   "frame": 6040,
+   "hash": 2084567605
+  },
+  {
+   "frame": 6060,
+   "hash": 2306324820
+  },
+  {
+   "frame": 6080,
+   "hash": 1790912636
+  },
+  {
+   "frame": 6100,
+   "hash": 2174740437
+  },
+  {
+   "frame": 6120,
+   "hash": 615812789
+  },
+  {
+   "frame": 6140,
+   "hash": 1810833716
+  },
+  {
+   "frame": 6160,
+   "hash": 3354734733
+  },
+  {
+   "frame": 6180,
+   "hash": 3491273071
+  },
+  {
+   "frame": 6200,
+   "hash": 2338806823
+  },
+  {
+   "frame": 6220,
+   "hash": 2569097633
+  },
+  {
+   "frame": 6240,
+   "hash": 3432106227
+  },
+  {
+   "frame": 6260,
+   "hash": 3393063326
+  },
+  {
+   "frame": 6280,
+   "hash": 320703241
+  },
+  {
+   "frame": 6300,
+   "hash": 4175210279
+  },
+  {
+   "frame": 6320,
+   "hash": 1416340541
+  },
+  {
+   "frame": 6340,
+   "hash": 2679331420
+  },
+  {
+   "frame": 6360,
+   "hash": 3533727054
+  },
+  {
+   "frame": 6380,
+   "hash": 1804179895
+  },
+  {
+   "frame": 6400,
+   "hash": 1358966214
+  },
+  {
+   "frame": 6420,
+   "hash": 4102693866
+  },
+  {
+   "frame": 6440,
+   "hash": 3959555010
+  },
+  {
+   "frame": 6460,
+   "hash": 780526437
+  },
+  {
+   "frame": 6480,
+   "hash": 2445321791
+  },
+  {
+   "frame": 6500,
+   "hash": 1219313886
+  },
+  {
+   "frame": 6520,
+   "hash": 1632557184
+  },
+  {
+   "frame": 6540,
+   "hash": 1906469203
+  },
+  {
+   "frame": 6560,
+   "hash": 3131350496
+  },
+  {
+   "frame": 6580,
+   "hash": 4187082718
+  },
+  {
+   "frame": 6600,
+   "hash": 1720678170
+  },
+  {
+   "frame": 6620,
+   "hash": 1926057069
+  },
+  {
+   "frame": 6640,
+   "hash": 3087261632
+  },
+  {
+   "frame": 6660,
+   "hash": 1399335114
+  },
+  {
+   "frame": 6680,
+   "hash": 4195132632
+  },
+  {
+   "frame": 6700,
+   "hash": 480952916
+  },
+  {
+   "frame": 6720,
+   "hash": 3746672791
+  },
+  {
+   "frame": 6740,
+   "hash": 1041713449
+  },
+  {
+   "frame": 6760,
+   "hash": 1937013656
+  },
+  {
+   "frame": 6780,
+   "hash": 92403093
+  },
+  {
+   "frame": 6800,
+   "hash": 3270903043
+  },
+  {
+   "frame": 6820,
+   "hash": 2241702513
+  },
+  {
+   "frame": 6840,
+   "hash": 3689728288
+  },
+  {
+   "frame": 6860,
+   "hash": 408016646
+  },
+  {
+   "frame": 6880,
+   "hash": 3213483239
+  },
+  {
+   "frame": 6900,
+   "hash": 395504418
+  },
+  {
+   "frame": 6920,
+   "hash": 4016646149
+  },
+  {
+   "frame": 6940,
+   "hash": 2425784172
+  },
+  {
+   "frame": 6960,
+   "hash": 3129310418
+  },
+  {
+   "frame": 6980,
+   "hash": 2412813369
+  },
+  {
+   "frame": 7000,
+   "hash": 188418436
+  },
+  {
+   "frame": 7020,
+   "hash": 1218009108
+  },
+  {
+   "frame": 7040,
+   "hash": 362333365
+  },
+  {
+   "frame": 7060,
+   "hash": 4128398416
+  },
+  {
+   "frame": 7080,
+   "hash": 2752055834
+  },
+  {
+   "frame": 7100,
+   "hash": 2722044228
+  },
+  {
+   "frame": 7120,
+   "hash": 3084000733
+  },
+  {
+   "frame": 7140,
+   "hash": 665570585
+  },
+  {
+   "frame": 7160,
+   "hash": 2178974893
+  },
+  {
+   "frame": 7180,
+   "hash": 391269478
+  },
+  {
+   "frame": 7200,
+   "hash": 2515182137
+  },
+  {
+   "frame": 7220,
+   "hash": 1235276180
+  },
+  {
+   "frame": 7240,
+   "hash": 687751561
+  },
+  {
+   "frame": 7260,
+   "hash": 3901663810
+  },
+  {
+   "frame": 7280,
+   "hash": 1766090299
+  },
+  {
+   "frame": 7300,
+   "hash": 3429276915
+  },
+  {
+   "frame": 7320,
+   "hash": 3109483380
+  },
+  {
+   "frame": 7340,
+   "hash": 2812831003
+  },
+  {
+   "frame": 7360,
+   "hash": 3065753717
+  },
+  {
+   "frame": 7380,
+   "hash": 2646521616
+  },
+  {
+   "frame": 7400,
+   "hash": 1528771637
+  },
+  {
+   "frame": 7420,
+   "hash": 1441388443
+  },
+  {
+   "frame": 7440,
+   "hash": 420346173
+  },
+  {
+   "frame": 7460,
+   "hash": 770147049
+  },
+  {
+   "frame": 7480,
+   "hash": 356952260
+  },
+  {
+   "frame": 7500,
+   "hash": 681163283
+  },
+  {
+   "frame": 7520,
+   "hash": 3357655748
+  },
+  {
+   "frame": 7540,
+   "hash": 2989793753
+  },
+  {
+   "frame": 7560,
+   "hash": 1359333264
+  },
+  {
+   "frame": 7580,
+   "hash": 1096489049
+  },
+  {
+   "frame": 7600,
+   "hash": 135108486
+  },
+  {
+   "frame": 7620,
+   "hash": 234792578
+  },
+  {
+   "frame": 7640,
+   "hash": 3953525879
+  },
+  {
+   "frame": 7660,
+   "hash": 3772297375
+  },
+  {
+   "frame": 7680,
+   "hash": 2246203099
+  },
+  {
+   "frame": 7700,
+   "hash": 1932153389
+  },
+  {
+   "frame": 7720,
+   "hash": 3050213023
+  },
+  {
+   "frame": 7740,
+   "hash": 630116721
+  },
+  {
+   "frame": 7760,
+   "hash": 3822363778
+  },
+  {
+   "frame": 7780,
+   "hash": 2207724892
+  },
+  {
+   "frame": 7800,
+   "hash": 3155709788
+  },
+  {
+   "frame": 7820,
+   "hash": 186269165
+  },
+  {
+   "frame": 7840,
+   "hash": 273595633
+  },
+  {
+   "frame": 7860,
+   "hash": 514290017
+  },
+  {
+   "frame": 7880,
+   "hash": 2346750996
+  },
+  {
+   "frame": 7900,
+   "hash": 4173085600
+  },
+  {
+   "frame": 7920,
+   "hash": 1048903918
+  },
+  {
+   "frame": 7940,
+   "hash": 2798088614
+  },
+  {
+   "frame": 7960,
+   "hash": 3513247449
+  },
+  {
+   "frame": 7980,
+   "hash": 4195893472
+  },
+  {
+   "frame": 8000,
+   "hash": 255015302
+  },
+  {
+   "frame": 8020,
+   "hash": 3023468277
+  },
+  {
+   "frame": 8040,
+   "hash": 23784024
+  },
+  {
+   "frame": 8060,
+   "hash": 2397132120
+  },
+  {
+   "frame": 8080,
+   "hash": 3440838479
+  },
+  {
+   "frame": 8100,
+   "hash": 2478155931
+  },
+  {
+   "frame": 8120,
+   "hash": 3320803253
+  },
+  {
+   "frame": 8140,
+   "hash": 1271202992
+  },
+  {
+   "frame": 8160,
+   "hash": 3088397665
+  },
+  {
+   "frame": 8180,
+   "hash": 459801510
+  },
+  {
+   "frame": 8200,
+   "hash": 2034488118
+  },
+  {
+   "frame": 8220,
+   "hash": 1625687405
+  },
+  {
+   "frame": 8240,
+   "hash": 2857543255
+  },
+  {
+   "frame": 8260,
+   "hash": 2611713651
+  },
+  {
+   "frame": 8280,
+   "hash": 430898613
+  },
+  {
+   "frame": 8300,
+   "hash": 1129177300
+  },
+  {
+   "frame": 8320,
+   "hash": 1211985509
+  },
+  {
+   "frame": 8340,
+   "hash": 1145457366
+  },
+  {
+   "frame": 8360,
+   "hash": 2871456059
+  },
+  {
+   "frame": 8380,
+   "hash": 338451444
+  },
+  {
+   "frame": 8400,
+   "hash": 1863184835
+  },
+  {
+   "frame": 8420,
+   "hash": 2997729384
+  },
+  {
+   "frame": 8440,
+   "hash": 2602723877
+  },
+  {
+   "frame": 8460,
+   "hash": 3628449766
+  },
+  {
+   "frame": 8480,
+   "hash": 2022718671
+  },
+  {
+   "frame": 8500,
+   "hash": 343289377
+  },
+  {
+   "frame": 8520,
+   "hash": 4169469243
+  },
+  {
+   "frame": 8540,
+   "hash": 2745281118
+  },
+  {
+   "frame": 8560,
+   "hash": 3400879698
+  },
+  {
+   "frame": 8580,
+   "hash": 4120912709
+  },
+  {
+   "frame": 8600,
+   "hash": 4218286655
+  },
+  {
+   "frame": 8620,
+   "hash": 383878615
+  },
+  {
+   "frame": 8640,
+   "hash": 634003489
+  },
+  {
+   "frame": 8660,
+   "hash": 2283983198
+  },
+  {
+   "frame": 8680,
+   "hash": 2865626797
+  },
+  {
+   "frame": 8700,
+   "hash": 3225035762
+  },
+  {
+   "frame": 8720,
+   "hash": 3809492556
+  },
+  {
+   "frame": 8740,
+   "hash": 3202469661
+  },
+  {
+   "frame": 8760,
+   "hash": 2087837523
+  },
+  {
+   "frame": 8780,
+   "hash": 1403743516
+  },
+  {
+   "frame": 8800,
+   "hash": 2117242238
+  },
+  {
+   "frame": 8820,
+   "hash": 2957227448
+  },
+  {
+   "frame": 8840,
+   "hash": 2907836016
+  },
+  {
+   "frame": 8860,
+   "hash": 98422107
+  },
+  {
+   "frame": 8880,
+   "hash": 3541659735
+  },
+  {
+   "frame": 8900,
+   "hash": 36910447
+  },
+  {
+   "frame": 8920,
+   "hash": 2226270123
+  },
+  {
+   "frame": 8940,
+   "hash": 626557046
+  },
+  {
+   "frame": 8960,
+   "hash": 1572848265
+  },
+  {
+   "frame": 8980,
+   "hash": 3559372337
+  },
+  {
+   "frame": 9000,
+   "hash": 3435976095
+  },
+  {
+   "frame": 9020,
+   "hash": 2333887000
+  },
+  {
+   "frame": 9040,
+   "hash": 3109284302
+  },
+  {
+   "frame": 9060,
+   "hash": 4246168126
+  },
+  {
+   "frame": 9080,
+   "hash": 3563892232
+  },
+  {
+   "frame": 9100,
+   "hash": 4094872157
+  },
+  {
+   "frame": 9120,
+   "hash": 355781198
+  },
+  {
+   "frame": 9140,
+   "hash": 2376862348
+  },
+  {
+   "frame": 9160,
+   "hash": 1237367981
+  },
+  {
+   "frame": 9180,
+   "hash": 1729107823
+  },
+  {
+   "frame": 9200,
+   "hash": 3935729661
+  },
+  {
+   "frame": 9220,
+   "hash": 142062670
+  },
+  {
+   "frame": 9240,
+   "hash": 2058943958
+  },
+  {
+   "frame": 9260,
+   "hash": 2205079639
+  },
+  {
+   "frame": 9280,
+   "hash": 1275394541
+  },
+  {
+   "frame": 9300,
+   "hash": 2922017663
+  },
+  {
+   "frame": 9320,
+   "hash": 3134494522
+  },
+  {
+   "frame": 9340,
+   "hash": 3519947994
+  },
+  {
+   "frame": 9360,
+   "hash": 2250827990
+  },
+  {
+   "frame": 9380,
+   "hash": 2161376401
+  },
+  {
+   "frame": 9400,
+   "hash": 3020288630
+  },
+  {
+   "frame": 9420,
+   "hash": 1530720982
+  },
+  {
+   "frame": 9440,
+   "hash": 3771409770
+  },
+  {
+   "frame": 9460,
+   "hash": 1610790871
+  },
+  {
+   "frame": 9480,
+   "hash": 2326064106
+  },
+  {
+   "frame": 9500,
+   "hash": 2532872903
+  },
+  {
+   "frame": 9520,
+   "hash": 3838294862
+  },
+  {
+   "frame": 9540,
+   "hash": 923328992
+  },
+  {
+   "frame": 9560,
+   "hash": 3290214067
+  },
+  {
+   "frame": 9580,
+   "hash": 3119766069
+  },
+  {
+   "frame": 9600,
+   "hash": 1996375201
+  },
+  {
+   "frame": 9620,
+   "hash": 2606938379
+  },
+  {
+   "frame": 9640,
+   "hash": 426506995
+  },
+  {
+   "frame": 9660,
+   "hash": 935629641
+  },
+  {
+   "frame": 9680,
+   "hash": 995289031
+  },
+  {
+   "frame": 9700,
+   "hash": 1635288321
+  },
+  {
+   "frame": 9720,
+   "hash": 583164493
+  },
+  {
+   "frame": 9740,
+   "hash": 3738460921
+  },
+  {
+   "frame": 9760,
+   "hash": 376877019
+  },
+  {
+   "frame": 9780,
+   "hash": 551517200
+  },
+  {
+   "frame": 9800,
+   "hash": 1979985272
+  },
+  {
+   "frame": 9820,
+   "hash": 882797127
+  },
+  {
+   "frame": 9840,
+   "hash": 2351362858
+  },
+  {
+   "frame": 9860,
+   "hash": 1213076161
+  },
+  {
+   "frame": 9880,
+   "hash": 2756377735
+  },
+  {
+   "frame": 9900,
+   "hash": 1711006672
+  },
+  {
+   "frame": 9920,
+   "hash": 3490878196
+  },
+  {
+   "frame": 9940,
+   "hash": 1226417617
+  },
+  {
+   "frame": 9960,
+   "hash": 2261743272
+  },
+  {
+   "frame": 9980,
+   "hash": 411965289
+  },
+  {
+   "frame": 10000,
+   "hash": 915154764
+  },
+  {
+   "frame": 10020,
+   "hash": 2562337649
+  },
+  {
+   "frame": 10040,
+   "hash": 1502051389
+  },
+  {
+   "frame": 10060,
+   "hash": 3428105525
+  },
+  {
+   "frame": 10080,
+   "hash": 2583078517
+  },
+  {
+   "frame": 10100,
+   "hash": 4188079220
+  },
+  {
+   "frame": 10120,
+   "hash": 2090417897
+  },
+  {
+   "frame": 10140,
+   "hash": 257672870
+  },
+  {
+   "frame": 10160,
+   "hash": 2243236212
+  },
+  {
+   "frame": 10180,
+   "hash": 3788318448
+  },
+  {
+   "frame": 10200,
+   "hash": 1257288509
+  },
+  {
+   "frame": 10220,
+   "hash": 2908073320
+  },
+  {
+   "frame": 10240,
+   "hash": 1483850285
+  },
+  {
+   "frame": 10260,
+   "hash": 655938919
+  },
+  {
+   "frame": 10280,
+   "hash": 1808341168
+  },
+  {
+   "frame": 10300,
+   "hash": 1931065423
+  },
+  {
+   "frame": 10320,
+   "hash": 3038193464
+  },
+  {
+   "frame": 10340,
+   "hash": 4201809961
+  },
+  {
+   "frame": 10360,
+   "hash": 2532818943
+  },
+  {
+   "frame": 10380,
+   "hash": 246204687
+  },
+  {
+   "frame": 10400,
+   "hash": 630500149
+  },
+  {
+   "frame": 10420,
+   "hash": 1571947080
+  },
+  {
+   "frame": 10440,
+   "hash": 1868692592
+  },
+  {
+   "frame": 10460,
+   "hash": 3728585529
+  },
+  {
+   "frame": 10480,
+   "hash": 300475456
+  },
+  {
+   "frame": 10500,
+   "hash": 3501207393
+  },
+  {
+   "frame": 10520,
+   "hash": 968687479
+  },
+  {
+   "frame": 10540,
+   "hash": 3219451988
+  },
+  {
+   "frame": 10560,
+   "hash": 377681908
+  },
+  {
+   "frame": 10580,
+   "hash": 3307647103
+  },
+  {
+   "frame": 10600,
+   "hash": 3868355202
+  },
+  {
+   "frame": 10620,
+   "hash": 3372757018
+  },
+  {
+   "frame": 10640,
+   "hash": 7144469
+  },
+  {
+   "frame": 10660,
+   "hash": 3536575083
+  },
+  {
+   "frame": 10680,
+   "hash": 317946233
+  },
+  {
+   "frame": 10700,
+   "hash": 3880904327
+  },
+  {
+   "frame": 10720,
+   "hash": 3189293934
+  },
+  {
+   "frame": 10740,
+   "hash": 3733950613
+  },
+  {
+   "frame": 10760,
+   "hash": 3597988781
+  },
+  {
+   "frame": 10780,
+   "hash": 3954999200
+  },
+  {
+   "frame": 10800,
+   "hash": 182518167
+  },
+  {
+   "frame": 10820,
+   "hash": 546168474
+  },
+  {
+   "frame": 10840,
+   "hash": 2120104637
+  },
+  {
+   "frame": 10860,
+   "hash": 3980366332
+  },
+  {
+   "frame": 10880,
+   "hash": 1629265394
+  },
+  {
+   "frame": 10900,
+   "hash": 1020786224
+  },
+  {
+   "frame": 10920,
+   "hash": 1230219315
+  },
+  {
+   "frame": 10940,
+   "hash": 1605442375
+  },
+  {
+   "frame": 10960,
+   "hash": 145497863
+  },
+  {
+   "frame": 10980,
+   "hash": 749898138
+  },
+  {
+   "frame": 10999,
+   "hash": 2676491875
+  }
+ ]
+}

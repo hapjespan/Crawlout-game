@@ -79,19 +79,34 @@ export function createBuilding(ctx: SimContext, bt: SimBuildingType, owner: numb
   w.owner[i] = owner;
   w.typeId[i] = bt.typeId;
   w.armorType[i] = bt.armorType;
+  w.damageType[i] = bt.damageType;
   applyStats(ctx, i, false);
   const instant = done || bt.buildTicks === 0;
-  w.bstate[i] = instant ? BSTATE_DONE : BSTATE_SITE;
+  w.bstate[i] = BSTATE_SITE;
   w.progress[i] = instant ? bt.buildTicks * PROGRESS_ONE : 0;
   w.hp[i] = instant ? w.maxHp[i]! : 1;
   if ((bt.provides & PROVIDES_HQ) !== 0) ctx.ps.hadHq[owner] = 1;
   ctx.terrain.setRect(i, fx, fy, bt.footprintW, bt.footprintH, true);
   displaceUnits(ctx, fx, fy, bt.footprintW, bt.footprintH);
   ctx.flow.invalidateAll();
-  const id = w.idOf(i);
-  ctx.events.push(EVENT_TYPE.buildingPlaced, id, bt.typeId, w.x[i]!, w.y[i]!);
-  if (instant) ctx.events.push(EVENT_TYPE.buildingDone, id, bt.typeId, w.x[i]!, w.y[i]!);
+  ctx.events.push(EVENT_TYPE.buildingPlaced, w.idOf(i), bt.typeId, w.x[i]!, w.y[i]!);
+  if (instant) completeBuilding(ctx, i, bt);
   return i;
+}
+
+/**
+ * Een gebouw is af: bouwstatus, event buildingDone, en een gebouw met een wapen (turret, besluit 8) krijgt Combat
+ * (systeem 5 kiest zelf een doel). Pas vanaf hier telt het als voltooid voor claims, bedden, depots en onderzoek.
+ */
+export function completeBuilding(ctx: SimContext, i: number, bt: SimBuildingType): void {
+  const w = ctx.world;
+  w.bstate[i] = BSTATE_DONE;
+  if (bt.damage > 0) {
+    w.mask[i] = w.mask[i]! | C.combat;
+    w.target[i] = NO_ENTITY;
+    w.cooldown[i] = 0;
+  }
+  ctx.events.push(EVENT_TYPE.buildingDone, w.idOf(i), bt.typeId, w.x[i]!, w.y[i]!);
 }
 
 /** Zet units die in een (nu geblokkeerde) rechthoek staan op de dichtstbijzijnde vrije cel ernaast. */

@@ -130,9 +130,9 @@ export type HeroState = 'alive' | 'dead' | 'reviving' | 'empty';
  * drempel); pendingPerks het aantal level-ups zonder gekozen perk; revivesLeft het aantal keren oplappen dat nog kan
  * (heroes.maxRevives min gebruikt). heroId, xpNext, pendingPerks en revivesLeft zijn verplicht sinds de held in de
  * sim zit (sprint 3).
- * Besluit sprint 3, verplicht zodra sim-core ze levert (sprint 4), tot dan optioneel: state, reviveTicksLeft (0
- * buiten reviving), entityId (de entity van de levende held, ENTITY_NONE anders) en abilityCooldownTicks (per
- * ability, in de volgorde van heroes.abilities; 0 = klaar). De HUD leidt dood-zijn dan niet meer af uit de snapshot.
+ * Besluit sprint 3, verplicht sinds sim-core ze levert (sprint 4): state, reviveTicksLeft (0 buiten reviving),
+ * entityId (de entity van de levende held, ENTITY_NONE anders) en abilityCooldownTicks (per ability, in de volgorde
+ * van heroes.abilities; 0 = klaar). De HUD leidt dood-zijn niet meer af uit de snapshot.
  */
 export interface HeroStatus {
   heroId: number;
@@ -143,10 +143,10 @@ export interface HeroStatus {
   perks: number[];
   pendingPerks: number;
   revivesLeft: number;
-  state?: HeroState;
-  reviveTicksLeft?: number;
-  entityId?: number;
-  abilityCooldownTicks?: number[];
+  state: HeroState;
+  reviveTicksLeft: number;
+  entityId: number;
+  abilityCooldownTicks: number[];
 }
 
 export interface PlayerStatus {

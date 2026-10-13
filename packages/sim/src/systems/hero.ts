@@ -1,6 +1,6 @@
-import { EVENT_TYPE, MAX_ENTITIES } from '@crawlout/protocol';
-import type { CommandPayload, HeroStatus } from '@crawlout/protocol';
-import { AURA_SIDE_ENEMY, AURA_TARGET_TURRETS, MAX_ABILITIES, SPECIAL_COUNT } from '../config.js';
+import { ENTITY_NONE, EVENT_TYPE, MAX_ENTITIES } from '@crawlout/protocol';
+import type { CommandPayload, HeroState, HeroStatus } from '@crawlout/protocol';
+import { AURA_SIDE_ENEMY, AURA_TARGET_TURRETS, AURA_TARGET_UNITS, MAX_ABILITIES, SPECIAL_COUNT } from '../config.js';
 import { BSTATE_DONE, C } from '../ecs/world.js';
 import {
   HERO_ALIVE,
@@ -150,14 +150,18 @@ export function auraSystem(ctx: SimContext, auras: Auras): void {
       const zy = ps.zoneY[k]!;
       const r = ab.radiusU;
       for (let i = 0; i < w.highWater; i++) {
-        if (!w.has(i, C.unit | C.health)) continue;
+        if (!w.has(i, C.health)) continue;
+        // units, en turrets: voltooide gebouwen met Combat (besluit 8). Andere gebouwen hebben geen speed of damage.
+        const m = w.mask[i]!;
+        const turret = (m & (C.building | C.combat)) === (C.building | C.combat);
+        if (!turret && (m & C.unit) === 0) continue;
         const o = w.owner[i]!;
         if (o >= ctx.playerCount) continue;
         const dx = w.x[i]! - zx;
         const dy = w.y[i]! - zy;
         if (dx > r || -dx > r || dy > r || -dy > r || dx * dx + dy * dy > r * r) continue;
         for (const e of ab.effects) {
-          if (e.target === AURA_TARGET_TURRETS) continue; // units zijn geen turrets; turrets schieten nog niet in de sim
+          if (e.target === (turret ? AURA_TARGET_UNITS : AURA_TARGET_TURRETS)) continue;
           if ((e.side === AURA_SIDE_ENEMY) === (o === p)) continue;
           if (e.stat === STAT_SPEED) auras.speed[i] = auras.speed[i]! + e.delta;
           else if (e.stat === STAT_DAMAGE) auras.damage[i] = auras.damage[i]! + e.delta;
@@ -262,6 +266,9 @@ export function heroStatus(ctx: SimContext, p: number): HeroStatus | null {
   for (const pk of ctx.config.perks) if (((ps.heroPerks[p]! >>> pk.perkId) & 1) !== 0) perks.push(pk.perkId);
   // Op maxlevel is er geen volgende drempel: xpNext is dan de laatste drempel (die al gehaald is).
   const xpNext = level - 1 < h.xpThresholds.length ? h.xpThresholds[level - 1]! : (h.xpThresholds[h.xpThresholds.length - 1] ?? xp);
+  const st = ps.heroState[p]!;
+  const abilityCooldownTicks: number[] = [];
+  for (let a = 0; a < h.abilities.length; a++) abilityCooldownTicks.push(ps.abCooldown[p * MAX_ABILITIES + a]!);
   return {
     heroId: h.heroId,
     level,
@@ -270,6 +277,16 @@ export function heroStatus(ctx: SimContext, p: number): HeroStatus | null {
     special: special as HeroStatus['special'],
     perks,
     pendingPerks: ps.heroPending[p]!,
-    revivesLeft: ps.heroState[p] === HERO_EMPTY ? 0 : h.maxRevives - ps.heroRevives[p]!,
+    revivesLeft: st === HERO_EMPTY ? 0 : h.maxRevives - ps.heroRevives[p]!,
+    state: heroStateName(st),
+    // Oplappen wacht na de timer nog op een voltooid hoofdgebouw en een vrije cel; dan blijft het 0 tot hij er staat.
+    reviveTicksLeft: st === HERO_REVIVING ? ps.heroTimer[p]! : 0,
+    entityId: st === HERO_ALIVE ? ps.heroEnt[p]! : ENTITY_NONE,
+    abilityCooldownTicks,
   };
+}
+
+/** PlayerState.heroState naar HeroStatus.state (contract 1, besluit sprint 3). HERO_NONE komt hier niet (hero is dan null). */
+function heroStateName(st: number): HeroState {
+  return st === HERO_DEAD ? 'dead' : st === HERO_REVIVING ? 'reviving' : st === HERO_EMPTY ? 'empty' : 'alive';
 }

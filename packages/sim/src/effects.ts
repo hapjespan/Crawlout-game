@@ -140,6 +140,12 @@ export function applyStats(ctx: SimContext, i: number, grow: boolean): void {
     const bt = ctx.buildingType(typeId);
     if (bt === undefined) return;
     w.maxHp[i] = Math.max(1, scalePermille(bt.maxHp, effectSum(ctx, p, STAT_HP, typeId, false)));
+    if (bt.damage > 0) {
+      // turret (besluit 8): tech- en perk-effecten op het gebouwtype gelden net als op een unit
+      w.damage[i] = scalePermille(bt.damage, effectSum(ctx, p, STAT_DAMAGE, typeId, false));
+      w.range[i] = Math.max(0, bt.range + effectSum(ctx, p, STAT_RANGE, typeId, false));
+      w.cooldownMax[i] = bt.cooldown;
+    }
   } else if (w.has(i, C.unit | C.health)) {
     const t = ctx.unitType(typeId);
     if (t === undefined) return;

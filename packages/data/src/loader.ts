@@ -93,6 +93,11 @@ export interface BuildingData {
   provides: number[]; // indices in PROVIDES
   prereqTech: number[];
   visuals: { mesh: string };
+  /** Alleen turrets; 0 voor de rest. */
+  damage: number;
+  damageType: number; // index in DAMAGE_TYPES
+  rangeU: number;
+  cooldownTicks: number;
 }
 
 export interface TechData {
@@ -378,6 +383,10 @@ export function loadGameData(raw: RawGameData): GameData {
       provides: b.provides.map((p) => idx(PROVIDES, p)),
       prereqTech: b.prereqTech.map((t) => ref(techIx, 'tech', where, t)),
       visuals: { mesh: b.visuals.mesh },
+      damage: Math.trunc(b.damage ?? 0),
+      damageType: b.damageType === undefined ? 0 : idx(DAMAGE_TYPES, b.damageType),
+      rangeU: metersToUnits(b.rangeM ?? 0),
+      cooldownTicks: secondsToTicks(b.cooldownS ?? 0),
     };
   });
 

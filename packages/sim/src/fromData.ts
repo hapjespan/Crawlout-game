@@ -163,6 +163,10 @@ export function simConfigFromGameData(data: GameData): SimConfig {
       beds: b.beds,
       provides: b.provides.reduce((m, p) => m | (1 << p), 0),
       prereqTech: [...b.prereqTech],
+      damage: b.damage,
+      damageType: b.damageType,
+      range: b.rangeU,
+      cooldown: b.cooldownTicks,
     })),
     factions,
     aiScripts: data.aiScripts.map((a) => ({

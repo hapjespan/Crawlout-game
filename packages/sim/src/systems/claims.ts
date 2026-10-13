@@ -1,5 +1,6 @@
 import { EVENT_TYPE, MAX_ENTITIES, MAX_PLAYERS, OWNER_NEUTRAL } from '@crawlout/protocol';
 import { BSTATE_DONE, BSTATE_SITE, C } from '../ecs/world.js';
+import { PROGRESS_ONE } from '../entities.js';
 import { PROVIDES_CLAIM } from '../fromData.js';
 import { clampI, idiv } from '../math/int.js';
 import type { Census } from './census.js';
@@ -68,7 +69,7 @@ export function updateClaimPoints(ctx: SimContext, s: ClaimScratch, quiet: boole
       if (w.bstate[b] === BSTATE_DONE) holders |= 1 << o;
       else if (w.bstate[b] === BSTATE_SITE && o !== cur) {
         const bt = ctx.buildingType(w.typeId[b]!)!;
-        const total = bt.buildTicks * 1000;
+        const total = bt.buildTicks * PROGRESS_ONE;
         const prog = total <= 0 ? ANIM_FULL : clampI(idiv(w.progress[b]! * ANIM_FULL, total), 0, ANIM_FULL);
         if (prog > siteProgress) {
           siteProgress = prog;
