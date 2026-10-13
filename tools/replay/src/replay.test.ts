@@ -20,6 +20,8 @@ describe('replay-fixtures', () => {
       const r = load(f);
       expect(checkReplay(r).ok).toBe(true);
       expect(checkReplay(r, { reloadAfterFrame: 137 }).ok).toBe(true);
+      const last = Math.max(...r.hashes.map((h) => h.frame));
+      expect(checkReplay(r, { reloadAfterFrame: Math.floor(last / 2) }).ok).toBe(true);
     });
 
     it(`${f}: twee runs geven dezelfde hash op elk frame`, () => {
@@ -34,7 +36,7 @@ describe('replay-fixtures', () => {
   }
 
   it('een gewijzigd commando valt op als afwijkende hash', () => {
-    const r = load(files[0]!);
+    const r = load(files.find((f) => load(f).bundles.some((b) => b.commands.some((c) => c.type === 'Move')))!);
     const b = r.bundles.find((x) => x.commands.some((c) => c.type === 'Move'))!;
     const c = b.commands.find((x) => x.type === 'Move')!;
     const p = c.payload as { ids: number[]; x: number; y: number };
@@ -53,6 +55,7 @@ describe('replay-fixtures', () => {
   it('weigert een replay voor andere data of een onbekende map', () => {
     const r = load(files[0]!);
     expect(() => runReplay({ ...r, dataVersion: '9.9.9' })).toThrow(/data/);
-    expect(() => runReplay({ ...r, map: 'rustbelt' })).toThrow(/map/);
+    expect(() => runReplay({ ...r, map: 'bestaat-niet' })).toThrow(/map/);
+    expect(() => runReplay({ ...r, map: '../VERSION' })).toThrow(/map/);
   });
 });
