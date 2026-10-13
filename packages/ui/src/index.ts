@@ -7,7 +7,10 @@ import type { HudDeps, HudHandle } from './types.js';
 export type {
   AlertKind,
   BuildOption,
-  HeroInfo,
+  CraftOption,
+  HeroAbilityOption,
+  RecruitOption,
+  ResearchOption,
   HudAlert,
   HudDeps,
   HudHandle,

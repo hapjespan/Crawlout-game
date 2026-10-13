@@ -1,8 +1,10 @@
 import { MAX_ENTITIES_PER_COMMAND } from '@crawlout/protocol';
 import type { PlayerStatus, Role } from '@crawlout/protocol';
+import { kindOfTypeId } from '@crawlout/data';
 import type {
   BuildOption,
-  HeroInfo,
+  CraftOption,
+  HeroAbilityOption,
   HudAlert,
   HudDeps,
   HudHandle,
@@ -10,6 +12,8 @@ import type {
   MinimapData,
   NetworkState,
   PerkOption,
+  RecruitOption,
+  ResearchOption,
   SelectedEntity,
   TargetPoint,
   TargetResult,
@@ -27,6 +31,8 @@ export type ActionId =
   | 'roleMilitia'
   | 'build'
   | 'hero'
+  | 'revive'
+  | 'craft'
   | 'minimap'
   | 'lastAlert'
   | 'lobby';
@@ -34,8 +40,10 @@ export type ActionId =
 /** Zo lang blijft een toast staan en zoveel staan er maximaal tegelijk. */
 export const TOAST_MS = 6000;
 export const MAX_TOASTS = 4;
-/** Perk-keuzes via Q, W, E (de eerste drie opties). */
-export const PERK_KEYS = ['q', 'w', 'e'] as const;
+/** Perk-keuzes via F1, F2, F3 (de eerste drie opties); Q, W, E en A, S, D zijn van de camera. */
+export const PERK_KEYS = ['f1', 'f2', 'f3'] as const;
+/** Held-abilities in volgorde van getHeroAbilities(). */
+export const ABILITY_KEYS = ['z', 'x', 'c'] as const;
 
 export interface ActionDef {
   id: ActionId;
@@ -44,7 +52,7 @@ export interface ActionDef {
   key: string;
   needsSelection: boolean;
   /** Alleen zichtbaar als de bijbehorende dep of data er is. */
-  requires?: 'hero' | 'minimap' | 'alert' | 'lobby';
+  requires?: 'hero' | 'revive' | 'craft' | 'minimap' | 'alert' | 'lobby';
 }
 
 /** Commandokaart: volgorde is de volgorde op het scherm. */
@@ -58,6 +66,8 @@ export const ACTIONS: readonly ActionDef[] = [
   { id: 'roleMilitia', label: 'Militie', key: '3', needsSelection: true },
   { id: 'build', label: 'Bouw', key: 'b', needsSelection: false },
   { id: 'hero', label: 'Held', key: 'h', needsSelection: false, requires: 'hero' },
+  { id: 'revive', label: 'Oplappen', key: 'v', needsSelection: false, requires: 'revive' },
+  { id: 'craft', label: 'Craft', key: 'k', needsSelection: true, requires: 'craft' },
   { id: 'minimap', label: 'Minimap', key: 'n', needsSelection: false, requires: 'minimap' },
   { id: 'lastAlert', label: 'Alarm', key: ' ', needsSelection: false, requires: 'alert' },
   { id: 'lobby', label: 'Lobby', key: 'l', needsSelection: false, requires: 'lobby' },
@@ -65,6 +75,9 @@ export const ACTIONS: readonly ActionDef[] = [
 
 /** Sneltoets als label. */
 export const keyLabel = (key: string): string => (key === ' ' ? 'Spatie' : key.toUpperCase());
+
+/** Een regel in het gebouwpaneel: research of rekruteren, genummerd 1..n. */
+export type BuildingEntry = ({ kind: 'research' } & ResearchOption) | ({ kind: 'recruit' } & RecruitOption);
 
 export const ROLE_LABEL: Record<Role, string> = { scavenger: 'Plunderaar', builder: 'Bouwer', militia: 'Militie' };
 const ACTION_ROLE: Partial<Record<ActionId, Role>> = { roleScavenger: 'scavenger', roleBuilder: 'builder', roleMilitia: 'militia' };
@@ -81,8 +94,15 @@ export interface HudState {
   buildOptions: readonly BuildOption[];
   /** Gekozen bouwoptie in plaatsingsmodus. */
   placement: BuildOption | null;
-  heroInfo: HeroInfo | null;
   perkOptions: readonly PerkOption[];
+  heroAbilities: readonly HeroAbilityOption[];
+  heroDead: boolean;
+  /** Ability die op een positie wacht (targeting 'heroAbility'). */
+  pendingAbility: HeroAbilityOption | null;
+  researchOptions: readonly ResearchOption[];
+  recruitOptions: readonly RecruitOption[];
+  craftOptions: readonly CraftOption[];
+  craftMenuOpen: boolean;
   toasts: readonly ToastAlert[];
   lobby: LobbyView | null;
   showMinimap: boolean;
@@ -119,8 +139,14 @@ export class HudController implements HudHandle {
       minimap: null,
       buildOptions: [],
       placement: null,
-      heroInfo: null,
       perkOptions: [],
+      heroAbilities: [],
+      heroDead: false,
+      pendingAbility: null,
+      researchOptions: [],
+      recruitOptions: [],
+      craftOptions: [],
+      craftMenuOpen: false,
       toasts: [],
       lobby: null,
       showMinimap: true,
@@ -163,6 +189,10 @@ export class HudController implements HudHandle {
     this.emit();
   }
 
+  heroName(heroId: number): string | undefined {
+    return this.deps.heroName?.(heroId);
+  }
+
   playerName(playerId: number): string {
     return this.deps.playerName?.(playerId) ?? `speler ${playerId + 1}`;
   }
@@ -176,6 +206,10 @@ export class HudController implements HudHandle {
     switch (action.requires) {
       case 'hero':
         return this.hasHero();
+      case 'revive':
+        return this.canRevive();
+      case 'craft':
+        return this.state.craftOptions.length > 0;
       case 'minimap':
         return this.deps.getMinimap !== undefined;
       case 'alert':
@@ -188,7 +222,76 @@ export class HudController implements HudHandle {
   }
 
   hasHero(): boolean {
-    return this.state.status?.hero != null && this.state.heroInfo !== null;
+    return this.state.status?.hero != null;
+  }
+
+  /** Onbestede perk-keuzes van de held (0 zolang de sim het veld niet levert). */
+  pendingPerks(): number {
+    return this.state.status?.hero?.pendingPerks ?? 0;
+  }
+
+  /** Dode held met nog minstens een oplap-beurt (onbekend aantal telt als mogelijk). */
+  canRevive(): boolean {
+    const hero = this.state.status?.hero;
+    return hero != null && this.state.heroDead && this.deps.reviveHero !== undefined && (hero.revivesLeft ?? 1) > 0;
+  }
+
+  /** Is een ability nu bruikbaar (held leeft, heeft id, cooldown klaar)? */
+  canUseAbility(a: HeroAbilityOption): boolean {
+    const hero = this.state.status?.hero;
+    return hero?.heroId !== undefined && !this.state.heroDead && a.cooldownPct <= 0;
+  }
+
+  /** Research gevolgd door rekruteren: de genummerde regels van het gebouwpaneel. */
+  buildingEntries(): BuildingEntry[] {
+    return [
+      ...this.state.researchOptions.map((o) => ({ kind: 'research' as const, ...o })),
+      ...this.state.recruitOptions.map((o) => ({ kind: 'recruit' as const, ...o })),
+    ];
+  }
+
+  /** Cijfers 1..n gaan naar het gebouwpaneel zodra alleen gebouwen geselecteerd zijn. */
+  buildingPanelActive(): boolean {
+    return this.state.selection.length > 0 && this.state.selection.every((s) => kindOfTypeId(s.typeId).kind === 'building') && this.buildingEntries().length > 0;
+  }
+
+  chooseBuildingEntry(index: number): boolean {
+    const e = this.buildingEntries()[index];
+    if (!e || !e.affordable) return false;
+    if (e.kind === 'research') this.deps.sendCommand('Research', { techId: e.techId });
+    else this.deps.sendCommand('Recruit', { buildingId: e.buildingId });
+    return true;
+  }
+
+  chooseCraft(loadoutId: number): boolean {
+    const o = this.state.craftOptions.find((c) => c.loadoutId === loadoutId);
+    const ids = this.selectedIds(false);
+    if (!o || !o.affordable || ids.length === 0) return false;
+    this.deps.sendCommand('Craft', { ids, loadoutId });
+    this.set({ craftMenuOpen: false });
+    return true;
+  }
+
+  /** Gebruikt een ability: direct, of via targeting als ze een positie vraagt. */
+  useAbility(abilityId: number): boolean {
+    const a = this.state.heroAbilities.find((x) => x.abilityId === abilityId);
+    const heroId = this.state.status?.hero?.heroId;
+    if (!a || heroId === undefined || !this.canUseAbility(a) || this.state.confirmSurrender) return false;
+    if (a.needsTarget) {
+      this.stopTargeting();
+      this.set({ targeting: 'heroAbility', pendingAbility: a, buildMenuOpen: false, craftMenuOpen: false });
+      this.deps.beginTargeting('heroAbility');
+    } else {
+      this.stopTargeting();
+      this.deps.sendCommand('HeroAbility', { heroId, abilityId });
+    }
+    return true;
+  }
+
+  revive(): boolean {
+    if (!this.canRevive()) return false;
+    this.deps.reviveHero?.();
+    return true;
   }
 
   /** Bouwers uit de selectie: alleen units met rol builder bouwen. */
@@ -220,9 +323,15 @@ export class HudController implements HudHandle {
     } else if (id === 'build') {
       this.stopTargeting();
       this.stopPlacement();
-      this.set({ buildMenuOpen: !this.state.buildMenuOpen });
+      this.set({ buildMenuOpen: !this.state.buildMenuOpen, craftMenuOpen: false });
       this.read();
       this.emit();
+    } else if (id === 'revive') {
+      this.revive();
+    } else if (id === 'craft') {
+      this.stopTargeting();
+      this.stopPlacement();
+      this.set({ craftMenuOpen: !this.state.craftMenuOpen, buildMenuOpen: false });
     } else if (id === 'hero') {
       this.set({ showHero: !this.state.showHero });
     } else if (id === 'minimap') {
@@ -265,9 +374,9 @@ export class HudController implements HudHandle {
   }
 
   pickPerk(perkId: number): boolean {
-    const info = this.state.heroInfo;
-    if (!info || info.pendingPerks <= 0 || !this.state.perkOptions.some((p) => p.perkId === perkId)) return false;
-    this.deps.sendCommand('PickPerk', { heroId: info.heroId, perkId });
+    const heroId = this.state.status?.hero?.heroId;
+    if (heroId === undefined || this.pendingPerks() <= 0 || !this.state.perkOptions.some((p) => p.perkId === perkId)) return false;
+    this.deps.sendCommand('PickPerk', { heroId, perkId });
     return true;
   }
 
@@ -316,6 +425,18 @@ export class HudController implements HudHandle {
   completeTargeting(target: TargetResult): boolean {
     const kind = this.state.targeting;
     if (!kind) return false;
+    if (kind === 'heroAbility') {
+      const a = this.state.pendingAbility;
+      const heroId = this.state.status?.hero?.heroId;
+      if (!('x' in target)) return false;
+      if (!a || heroId === undefined) {
+        this.cancelTargeting();
+        return false;
+      }
+      this.deps.sendCommand('HeroAbility', { heroId, abilityId: a.abilityId, x: Math.round(target.x), y: Math.round(target.y) });
+      this.set({ targeting: null, pendingAbility: null });
+      return true;
+    }
     const ids = this.selectedIds();
     if (ids.length === 0) {
       this.cancelTargeting();
@@ -340,7 +461,7 @@ export class HudController implements HudHandle {
   requestSurrender(): void {
     this.stopTargeting();
     this.stopPlacement();
-    this.set({ confirmSurrender: true, buildMenuOpen: false });
+    this.set({ confirmSurrender: true, buildMenuOpen: false, craftMenuOpen: false });
   }
 
   cancelSurrender(): void {
@@ -366,6 +487,7 @@ export class HudController implements HudHandle {
       else if (this.state.targeting) this.cancelTargeting();
       else if (this.state.placement) this.cancelPlacement();
       else if (this.state.buildMenuOpen) this.closeBuildMenu();
+      else if (this.state.craftMenuOpen) this.set({ craftMenuOpen: false });
       else return false;
       return true;
     }
@@ -375,11 +497,23 @@ export class HudController implements HudHandle {
       const option = this.state.buildOptions[Number(key) - 1];
       return option ? this.chooseBuild(option.buildingId) || true : true;
     }
-    // Perk-keuze bij een level-up: Q, W, E.
+    if (this.state.craftMenuOpen && /^[1-9]$/.test(key)) {
+      const option = this.state.craftOptions[Number(key) - 1];
+      return option ? this.chooseCraft(option.loadoutId) || true : true;
+    }
+    // Gebouwpaneel (alleen gebouwen geselecteerd): cijfers kiezen research of rekruteren.
+    if (/^[1-9]$/.test(key) && this.buildingPanelActive()) return this.chooseBuildingEntry(Number(key) - 1) || true;
+    // Perk-keuze bij een level-up: F1, F2, F3 (browser-hulp op F1 wordt onderdrukt).
     const perkIdx = PERK_KEYS.indexOf(key as (typeof PERK_KEYS)[number]);
-    if (perkIdx >= 0 && this.state.heroInfo && this.state.heroInfo.pendingPerks > 0) {
-      const perk = this.state.perkOptions[perkIdx];
-      if (perk) return this.pickPerk(perk.perkId) || true;
+    if (perkIdx >= 0) {
+      const perk = this.pendingPerks() > 0 ? this.state.perkOptions[perkIdx] : undefined;
+      return perk ? this.pickPerk(perk.perkId) || true : this.hasHero();
+    }
+    // Abilities: Z, X, C.
+    const abilityIdx = ABILITY_KEYS.indexOf(key as (typeof ABILITY_KEYS)[number]);
+    if (abilityIdx >= 0) {
+      const ability = this.state.heroAbilities[abilityIdx];
+      return ability ? this.useAbility(ability.abilityId) || true : false;
     }
     if (key === 'r' && this.state.showLobby && this.deps.toggleReady) {
       this.toggleReady();
@@ -410,13 +544,14 @@ export class HudController implements HudHandle {
     return l !== null && l.hostId === l.you;
   }
 
-  private selectedIds(): number[] {
-    return this.state.selection.slice(0, MAX_ENTITIES_PER_COMMAND).map((s) => s.id);
+  private selectedIds(includeBuildings = true): number[] {
+    const sel = includeBuildings ? this.state.selection : this.state.selection.filter((s) => kindOfTypeId(s.typeId).kind !== 'building');
+    return sel.slice(0, MAX_ENTITIES_PER_COMMAND).map((s) => s.id);
   }
 
   private stopTargeting(): void {
     if (!this.state.targeting) return;
-    this.set({ targeting: null });
+    this.set({ targeting: null, pendingAbility: null });
     this.deps.endTargeting?.();
   }
 
@@ -430,8 +565,11 @@ export class HudController implements HudHandle {
     const selection = [...this.deps.getSelection()];
     const d = this.deps;
     const status = d.getStatus();
-    const heroInfo = status?.hero ? (d.getHeroInfo?.() ?? null) : null;
-    const pendingPerks = heroInfo !== null && heroInfo.pendingPerks > 0;
+    const hero = status?.hero ?? null;
+    const pendingPerks = hero !== null && (hero.pendingPerks ?? 0) > 0;
+    const buildingIds = [...new Set(selection.flatMap((s) => (kindOfTypeId(s.typeId).kind === 'building' ? [kindOfTypeId(s.typeId).index] : [])))];
+    const units = selection.some((s) => kindOfTypeId(s.typeId).kind !== 'building');
+    const craftOptions = units ? (d.getCraftOptions?.() ?? []) : [];
     const placement = selection.some((s) => s.role === 'builder') ? this.state.placement : null;
     if (this.state.placement && !placement) d.endPlacement?.();
     this.state = {
@@ -441,12 +579,17 @@ export class HudController implements HudHandle {
       minimap: d.getMinimap?.() ?? null,
       buildOptions: this.state.buildMenuOpen ? (d.getBuildOptions?.() ?? []) : [],
       placement,
-      heroInfo,
-      perkOptions: pendingPerks ? (d.getPerkOptions?.() ?? []).filter((p) => !status?.hero?.perks.includes(p.perkId)) : [],
+      perkOptions: pendingPerks ? (d.getPerkOptions?.() ?? []).filter((p) => !hero?.perks.includes(p.perkId)) : [],
+      heroAbilities: hero ? (d.getHeroAbilities?.() ?? []) : [],
+      heroDead: hero !== null && (d.isHeroDead?.() ?? false),
+      researchOptions: buildingIds.length > 0 ? (d.getResearchOptions?.(buildingIds) ?? []) : [],
+      recruitOptions: buildingIds.length > 0 ? (d.getRecruitOptions?.(buildingIds) ?? []) : [],
+      craftOptions,
+      craftMenuOpen: craftOptions.length > 0 ? this.state.craftMenuOpen : false,
       lobby: this.state.showLobby ? (d.getLobby?.() ?? null) : null,
       network: this.deps.getNetwork?.() ?? NO_NETWORK,
       // Targeting zonder selectie heeft geen zin meer.
-      targeting: selection.length === 0 ? null : this.state.targeting,
+      targeting: selection.length === 0 && this.state.targeting !== 'heroAbility' ? null : this.state.targeting,
     };
   }
 

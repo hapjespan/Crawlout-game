@@ -2,7 +2,7 @@ import { h } from 'preact';
 import type { ComponentChild } from 'preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import type { PlayerStatus } from '@crawlout/protocol';
-import { ACTIONS, PERK_KEYS, ROLE_LABEL, keyLabel } from './controller.js';
+import { ABILITY_KEYS, ACTIONS, PERK_KEYS, ROLE_LABEL, keyLabel } from './controller.js';
 import type { HudController, HudState } from './controller.js';
 import { drawMinimap } from './minimap.js';
 import type { AlertKind, SelectedEntity, TargetingKind } from './types.js';
@@ -11,6 +11,7 @@ const TARGETING_TEXT: Record<TargetingKind, string> = {
   move: 'Kies een bestemming op de kaart (Esc om te annuleren)',
   attackMove: 'Kies een aanvalsdoel op de kaart (Esc om te annuleren)',
   gather: 'Kies een grondstofbron op de kaart (Esc om te annuleren)',
+  heroAbility: 'Kies een doelpositie voor de ability (Esc om te annuleren)',
 };
 
 const fmt = (n: number | undefined): string => (n === undefined ? '–' : String(n));
@@ -91,7 +92,7 @@ function CommandCard(props: { ctl: HudController; state: HudState }): ComponentC
       { class: 'co-buttons' },
       ACTIONS.filter((a) => ctl.isAvailable(a) || a.requires === undefined).map((a) => {
         const pressed =
-          a.id === 'build' ? state.buildMenuOpen || state.placement !== null : a.id === 'hero' ? state.showHero : a.id === 'minimap' ? state.showMinimap : a.id === 'lobby' ? state.showLobby : state.targeting === a.id;
+          a.id === 'build' ? state.buildMenuOpen || state.placement !== null : a.id === 'hero' ? state.showHero : a.id === 'craft' ? state.craftMenuOpen : a.id === 'minimap' ? state.showMinimap : a.id === 'lobby' ? state.showLobby : state.targeting === a.id;
         return h(
           'button',
           {
@@ -111,6 +112,7 @@ function CommandCard(props: { ctl: HudController; state: HudState }): ComponentC
       }),
     ),
     state.buildMenuOpen ? h(BuildMenu, { ctl, state }) : null,
+    h(CraftMenu, { ctl, state }),
   );
 }
 
@@ -161,31 +163,73 @@ function PlacementBar(props: { ctl: HudController; state: HudState }): Component
 
 const SPECIAL_NAMES = ['Kracht', 'Perceptie', 'Uithoudingsvermogen', 'Charisma', 'Intelligentie', 'Behendigheid', 'Geluk'] as const;
 
+function HeroAbilities(props: { ctl: HudController; state: HudState }): ComponentChild {
+  const { ctl, state } = props;
+  if (state.heroAbilities.length === 0) return null;
+  return h(
+    'div',
+    { class: 'co-abilities', role: 'group', 'aria-label': 'Abilities' },
+    state.heroAbilities.map((a, i) => {
+      const key = ABILITY_KEYS[i];
+      const cooling = a.cooldownPct > 0;
+      return h(
+        'button',
+        {
+          key: a.abilityId,
+          type: 'button',
+          class: 'co-btn co-ability',
+          disabled: !ctl.canUseAbility(a),
+          'aria-pressed': state.pendingAbility?.abilityId === a.abilityId,
+          'data-ability': a.abilityId,
+          'aria-label': `${a.naam}${a.needsTarget ? ', kies een doel' : ''}${cooling ? `, cooldown ${Math.round(a.cooldownPct)}%` : ''}${key ? ` (sneltoets ${key.toUpperCase()})` : ''}`,
+          onClick: () => ctl.useAbility(a.abilityId),
+        },
+        h('span', null, a.naam),
+        key ? h('span', { class: 'co-key', 'aria-hidden': 'true' }, key.toUpperCase()) : null,
+        cooling ? h('span', { class: 'co-cooldown', style: { width: `${Math.min(100, a.cooldownPct)}%` } }) : null,
+      );
+    }),
+  );
+}
+
 function HeroPanel(props: { ctl: HudController; state: HudState }): ComponentChild {
   const { ctl, state } = props;
   const hero = state.status?.hero;
-  const info = state.heroInfo;
-  if (!hero || !info || !state.showHero) return null;
-  const pct = info.xpForNext > 0 ? Math.max(0, Math.min(100, Math.round((hero.xp / info.xpForNext) * 100))) : 100;
+  if (!hero || !state.showHero) return null;
+  const naam = (hero.heroId !== undefined ? ctl.heroName(hero.heroId) : undefined) ?? 'Held';
+  const pct = hero.xpNext !== undefined && hero.xpNext > 0 ? Math.max(0, Math.min(100, Math.round((hero.xp / hero.xpNext) * 100))) : null;
+  const pending = ctl.pendingPerks();
   return h(
     'section',
     { class: 'co-panel co-hero', 'aria-label': 'Held' },
-    h('h2', null, `${info.naam} · level ${hero.level}`),
-    h(
-      'div',
-      { class: 'co-xp', role: 'meter', 'aria-label': 'Ervaring', 'aria-valuemin': 0, 'aria-valuemax': 100, 'aria-valuenow': pct, title: `${hero.xp} / ${info.xpForNext} xp` },
-      h('span', { style: { width: `${pct}%` } }),
-    ),
+    h('h2', null, `${naam} · level ${hero.level}${state.heroDead ? ' · gevallen' : ''}`),
+    pct !== null
+      ? h(
+          'div',
+          { class: 'co-xp', role: 'meter', 'aria-label': 'Ervaring', 'aria-valuemin': 0, 'aria-valuemax': 100, 'aria-valuenow': pct, title: `${hero.xp} / ${hero.xpNext} xp` },
+          h('span', { style: { width: `${pct}%` } }),
+        )
+      : null,
     h(
       'ul',
       { class: 'co-special', 'aria-label': 'SPECIAL' },
       hero.special.map((v, i) => h('li', { key: i, title: SPECIAL_NAMES[i], 'aria-label': `${SPECIAL_NAMES[i]} ${v}` }, h('b', null, 'SPECIAL'[i]), h('span', null, String(v)))),
     ),
-    info.pendingPerks > 0
+    hero.revivesLeft !== undefined ? h('p', { class: 'co-revives' }, `Oplappen: nog ${hero.revivesLeft}x`) : null,
+    state.heroDead && ctl.canRevive()
+      ? h(
+          'button',
+          { type: 'button', class: 'co-btn co-revive', 'data-action': 'revive', 'aria-label': 'Held oplappen (sneltoets V)', onClick: () => ctl.revive() },
+          h('span', null, 'Oplappen'),
+          h('span', { class: 'co-key', 'aria-hidden': 'true' }, 'V'),
+        )
+      : null,
+    h(HeroAbilities, { ctl, state }),
+    pending > 0
       ? h(
           'div',
           { class: 'co-perks', role: 'group', 'aria-label': 'Kies een perk' },
-          h('p', { class: 'co-perk-title' }, `Level-up: kies een perk (${info.pendingPerks})`),
+          h('p', { class: 'co-perk-title' }, `Level-up: kies een perk (${pending})`),
           state.perkOptions.map((p, i) =>
             h(
               'button',
@@ -204,6 +248,76 @@ function HeroPanel(props: { ctl: HudController; state: HudState }): ComponentChi
           ),
         )
       : null,
+  );
+}
+
+function BuildingPanel(props: { ctl: HudController; state: HudState }): ComponentChild {
+  const { ctl } = props;
+  const entries = ctl.buildingEntries();
+  if (entries.length === 0) return null;
+  const digitsActive = ctl.buildingPanelActive();
+  return h(
+    'section',
+    { class: 'co-panel co-building', 'aria-label': 'Gebouw' },
+    h('h2', null, 'Gebouw'),
+    h(
+      'ul',
+      { class: 'co-build-list' },
+      entries.map((e, i) =>
+        h(
+          'li',
+          { key: `${e.kind}${e.kind === 'research' ? e.techId : e.buildingId}` },
+          h(
+            'button',
+            {
+              type: 'button',
+              class: 'co-btn co-build-option',
+              disabled: !e.affordable,
+              'data-research': e.kind === 'research' ? e.techId : undefined,
+              'data-recruit': e.kind === 'recruit' ? e.buildingId : undefined,
+              'aria-label': `${e.kind === 'research' ? 'Onderzoek' : 'Rekruteer'} ${e.naam}, ${e.scrapCost} scrap${e.affordable ? '' : ', te duur'}${digitsActive && i < 9 ? ` (sneltoets ${i + 1})` : ''}`,
+              onClick: () => ctl.chooseBuildingEntry(i),
+            },
+            h('span', null, `${e.kind === 'research' ? 'Onderzoek' : 'Rekruteer'} ${e.naam}`),
+            h('span', { class: e.affordable ? 'co-cost' : 'co-cost co-full' }, String(e.scrapCost)),
+            digitsActive && i < 9 ? h('span', { class: 'co-key', 'aria-hidden': 'true' }, String(i + 1)) : null,
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+function CraftMenu(props: { ctl: HudController; state: HudState }): ComponentChild {
+  const { ctl, state } = props;
+  if (!state.craftMenuOpen) return null;
+  return h(
+    'div',
+    { class: 'co-menu', role: 'group', 'aria-label': 'Craftmenu' },
+    h(
+      'ul',
+      { class: 'co-build-list' },
+      state.craftOptions.map((o, i) =>
+        h(
+          'li',
+          { key: o.loadoutId },
+          h(
+            'button',
+            {
+              type: 'button',
+              class: 'co-btn co-build-option',
+              disabled: !o.affordable,
+              'data-craft': o.loadoutId,
+              'aria-label': `Craft ${o.naam}, ${o.scrapCost} scrap${o.affordable ? '' : ', te duur'} (sneltoets ${i + 1})`,
+              onClick: () => ctl.chooseCraft(o.loadoutId),
+            },
+            h('span', null, o.naam),
+            h('span', { class: o.affordable ? 'co-cost' : 'co-cost co-full' }, String(o.scrapCost)),
+            h('span', { class: 'co-key', 'aria-hidden': 'true' }, String(i + 1)),
+          ),
+        ),
+      ),
+    ),
   );
 }
 
@@ -332,6 +446,7 @@ export function Hud(props: { ctl: HudController }): ComponentChild {
     h(HeroPanel, { ctl, state }),
     h(Toasts, { ctl, state }),
     h(LobbyPanel, { ctl, state }),
+    h(BuildingPanel, { ctl, state }),
     h(SelectionPanel, { selection: state.selection }),
     h(CommandCard, { ctl, state }),
     state.confirmSurrender ? h(SurrenderDialog, { ctl }) : null,

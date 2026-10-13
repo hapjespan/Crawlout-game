@@ -5,7 +5,7 @@ import type { CommandType, PlayerStatus } from '@crawlout/protocol';
 import { mountHud } from './index.js';
 import type { BuildOption, HudAlert, HudDeps, HudHandle, LobbyView, MinimapData, PerkOption, SelectedEntity } from './types.js';
 
-const hero = { level: 3, xp: 150, special: [5, 4, 6, 3, 7, 5, 2] as [number, number, number, number, number, number, number], perks: [10] };
+const hero = { heroId: 77, level: 3, xp: 150, xpNext: 300, pendingPerks: 0, revivesLeft: 4, special: [5, 4, 6, 3, 7, 5, 2] as [number, number, number, number, number, number, number], perks: [10] };
 const baseStatus: PlayerStatus = { playerId: 0, scrap: 120, settlers: 7, pop: 9, popCap: 12, beds: 10, hero: null };
 const unit = (id: number, role: SelectedEntity['role'] = 'builder'): SelectedEntity => ({ id, typeId: 3, loadoutName: 'Knuppel', hpPct: 80, role });
 const options: BuildOption[] = [
@@ -35,7 +35,8 @@ function setup(over: Partial<HudDeps> = {}, opts: { selection?: SelectedEntity[]
   const sent: Sent[] = [];
   const calls = { focus: [] as [number, number][], placement: [] as BuildOption[], endPlacement: 0, targeting: [] as string[] };
   const alertCbs = new Set<(a: HudAlert) => void>();
-  const state = { selection: opts.selection ?? [unit(5), unit(6)], status: opts.status ?? baseStatus, pendingPerks: opts.pendingPerks ?? 0 };
+  const base = opts.status ?? baseStatus;
+  const state = { selection: opts.selection ?? [unit(5), unit(6)], status: base.hero ? { ...base, hero: { ...base.hero, pendingPerks: opts.pendingPerks ?? 0 } } : base };
   const deps: HudDeps = {
     sendCommand: (type, payload) => void sent.push({ type, payload }),
     getStatus: () => state.status,
@@ -46,7 +47,7 @@ function setup(over: Partial<HudDeps> = {}, opts: { selection?: SelectedEntity[]
     getBuildOptions: () => options,
     beginPlacement: (o) => void calls.placement.push(o),
     endPlacement: () => void calls.endPlacement++,
-    getHeroInfo: () => ({ heroId: 77, naam: 'Krijger', xpForNext: 300, pendingPerks: state.pendingPerks }),
+    heroName: () => 'Krijger',
     getPerkOptions: () => perks,
     subscribeAlerts: (cb) => {
       alertCbs.add(cb);
@@ -186,17 +187,17 @@ describe('held-paneel en perks', () => {
     t.sent.forEach(expectValid);
   });
 
-  it('Q kiest de eerste perk', () => {
+  it('F1 kiest de eerste perk', () => {
     const t = setup({}, { status: heroStatus, pendingPerks: 1 });
     mounted = t.handle;
-    press('q');
+    press('F1');
     expect(t.sent).toEqual([{ type: 'PickPerk', payload: { heroId: 77, perkId: 11 } }]);
   });
 
-  it('H verbergt het paneel; zonder pending perks stuurt Q niets', () => {
+  it('H verbergt het paneel; zonder pending perks stuurt F1 niets', () => {
     const t = setup({}, { status: heroStatus });
     mounted = t.handle;
-    press('q');
+    press('F1');
     expect(t.sent).toEqual([]);
     press('h');
     expect(t.el.querySelector('[aria-label="Held"]')).toBeNull();

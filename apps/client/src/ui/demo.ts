@@ -9,6 +9,7 @@ const logEl = document.getElementById('log');
 if (!hudEl || !worldEl || !logEl) throw new Error('hud-demo.html mist #hud, #world of #log');
 
 const ALL: SelectedEntity[] = [
+  { id: 9, typeId: 1024 + 1, loadoutName: null, hpPct: 100, role: null },
   { id: 1, typeId: 2, loadoutName: 'Pijp', hpPct: 90, role: 'scavenger' },
   { id: 2, typeId: 2, loadoutName: 'Knuppel', hpPct: 40, role: 'militia' },
   { id: 3, typeId: 2, loadoutName: null, hpPct: 15, role: 'builder' },
@@ -20,9 +21,13 @@ let status: PlayerStatus = {
   pop: 6,
   popCap: 10,
   beds: 8,
-  hero: { level: 2, xp: 120, special: [6, 5, 6, 3, 4, 6, 3], perks: [] },
+  hero: { heroId: 99, level: 2, xp: 120, xpNext: 300, special: [6, 5, 6, 3, 4, 6, 3], perks: [], pendingPerks: 1, revivesLeft: 4 },
 };
-let pendingPerks = 1;
+let heroDead = false;
+const abilities = [
+  { abilityId: 1, naam: 'Schreeuw', needsTarget: false, readyAt: 0 },
+  { abilityId: 2, naam: 'Vuurbal', needsTarget: true, readyAt: 0 },
+];
 
 // Mock-kaart 48x48 cellen (1 m): ring van muren met een paar blokken.
 const MAP_W = 48;
@@ -72,7 +77,13 @@ const log = (line: string): void => {
 };
 
 const deps: HudDeps = {
-  sendCommand: (type, payload) => log(`${type} ${JSON.stringify(payload)}`),
+  sendCommand: (type, payload) => {
+    log(`${type} ${JSON.stringify(payload)}`);
+    if (type === 'HeroAbility') {
+      const a = abilities.find((x) => x.abilityId === (payload as { abilityId: number }).abilityId);
+      if (a) a.readyAt = Date.now() + 5000;
+    }
+  },
   getStatus: () => status,
   getSelection: () => selection,
   getNetwork: () => network,
@@ -84,7 +95,16 @@ const deps: HudDeps = {
   getBuildOptions: () => buildOptions.map((o) => ({ ...o, affordable: status.scrap >= o.scrapCost })),
   beginPlacement: (o) => log(`plaatsing: ${o.naam} ${o.footprint.w}x${o.footprint.h}`),
   endPlacement: () => log('plaatsing gestopt'),
-  getHeroInfo: () => ({ heroId: 99, naam: 'Krijger', xpForNext: 300, pendingPerks }),
+  heroName: () => 'Krijger',
+  getHeroAbilities: () => abilities.map((a) => ({ ...a, cooldownPct: Math.max(0, Math.round((a.readyAt - Date.now()) / 50)) })),
+  isHeroDead: () => heroDead,
+  reviveHero: () => {
+    heroDead = false;
+    log('held opgelapt');
+  },
+  getResearchOptions: (ids) => (ids.length > 0 ? [{ techId: 1, naam: 'Pantser', scrapCost: 100, affordable: status.scrap >= 100 }] : []),
+  getRecruitOptions: (ids) => (ids.length > 0 ? [{ buildingId: ids[0] ?? 0, naam: 'Strijder', scrapCost: 60, affordable: status.scrap >= 60 }] : []),
+  getCraftOptions: () => [{ loadoutId: 2, naam: 'Knuppel', scrapCost: 20, affordable: status.scrap >= 20 }],
   getPerkOptions: () => [
     { perkId: 1, naam: 'Taai', beschrijving: '+10% hp' },
     { perkId: 2, naam: 'Snel', beschrijving: '+10% tempo' },
@@ -111,7 +131,7 @@ worldEl.addEventListener('click', (e) => {
   if (!hud.completeTargeting({ x, y })) hud.completeTargeting({ nodeId: 7 });
 });
 
-// Mock-gedrag: scrap loopt op; D = desync, W = stall, X = selectie wisselen (3, 1, 0).
+// Mock-gedrag: scrap loopt op; D = desync, W = stall, Y = selectie wisselen.
 setInterval(() => {
   status = { ...status, scrap: status.scrap + 3 };
   notify();
@@ -119,10 +139,11 @@ setInterval(() => {
 window.addEventListener('keydown', (e) => {
   if (e.key === 'd') network = { ...network, desync: network.desync ? null : { frame: 1240, hashes: { '0': 1, '1': 2 } } };
   else if (e.key === 'w') network = { ...network, stall: network.stall ? null : { waitingFor: [1] } };
-  else if (e.key === 'k') emitAlert({ kind: (['attack', 'settlerLost', 'claimLost'] as const)[Math.floor(Math.random() * 3)]!, x: Math.round(Math.random() * MAP_W) * U, y: Math.round(Math.random() * MAP_W) * U });
-  else if (e.key === 'u') pendingPerks = pendingPerks > 0 ? 0 : 1;
-  else if (e.key === 'x') selection = selection.length === 3 ? ALL.slice(0, 1) : selection.length === 1 ? [] : ALL;
+  else if (e.key === 'j') emitAlert({ kind: (['attack', 'settlerLost', 'claimLost'] as const)[Math.floor(Math.random() * 3)]!, x: Math.round(Math.random() * MAP_W) * U, y: Math.round(Math.random() * MAP_W) * U });
+  else if (e.key === 'u') status = { ...status, hero: status.hero ? { ...status.hero, pendingPerks: status.hero.pendingPerks ? 0 : 1 } : null };
+  else if (e.key === 'o') heroDead = !heroDead;
+  else if (e.key === 'y') selection = selection.length === ALL.length ? ALL.slice(1, 2) : selection.length === 1 ? [] : ALL;
   else return;
   notify();
 });
-log('Demo: D = desync, W = stall, X = selectie, K = alert, U = level-up; B = bouwen, cijfer kiest gebouw, klik plaatst');
+log('Demo: D = desync, W = stall, Y = selectie (gebouw komt mee in de eerste stand), J = alert, U = level-up, O = held dood/levend; B = bouwen, cijfer kiest gebouw, klik plaatst');
