@@ -1,7 +1,9 @@
 // The four snapshot-driven effects (render brief): muzzle flash (shotFired), impact (hit), death (death) and
 // building dust (buildingPlaced, buildingDone). Own GPU particles instead of NixieFX, which is not on npm.
-// Event fields (contract 1): type, a, b, x, y. shotFired: a = shooter, b = target. Other events: a = the entity,
-// x/y its position in sim units. Missing positions (0, 0) fall back to the entity in the latest snapshot.
+// Event fields (contract 1, decision sprint 2): type, a, b, x, y. a is always the entity the event is about, x/y its
+// position in sim units at that moment. b per type: death, spawn, buildingPlaced and buildingDone b = typeId (a
+// demolished building is no longer in the snapshot that carries its death); shotFired a = shooter, b = target;
+// hit a = target, b = shooter. Missing positions (0, 0) fall back to the entity in the latest snapshot.
 import { EVENT_TYPE, UNITS_PER_METER } from '@crawlout/protocol';
 import { DEFAULT_FOOTPRINT, type Footprint } from '../entities/footprint.js';
 import { classifyTypeId, ENTITY_KIND } from '../entities/typeIds.js';
@@ -26,6 +28,7 @@ export interface EffectContext {
 const INV_UNITS = 1 / UNITS_PER_METER;
 const MUZZLE_HEIGHT = 1.35;
 const HIT_HEIGHT = 1.0;
+const BUILDING_HIT_HEIGHT = 1.6;
 const UNTARGETED_RANGE = 12; // meters a tracer flies when the target is unknown
 
 export class EffectSpawner {
@@ -71,14 +74,15 @@ export class EffectSpawner {
         return;
       }
       case EVENT_TYPE.hit: {
-        let height = HIT_HEIGHT;
+        // a = target, b = shooter: the target is where the shot lands, the shooter only when the target is gone.
+        const target = ctx.entity(a, this.e1);
+        const found = target || (b !== 0 && ctx.entity(b, this.e1));
         if (!hasPos) {
-          const found = (b !== 0 && ctx.entity(b, this.e1)) || ctx.entity(a, this.e1);
           if (!found) return;
           x = this.e1.x;
           z = this.e1.z;
-          if (classifyTypeId(this.e1.typeId) === ENTITY_KIND.building) height = 1.6;
         }
+        const height = target && classifyTypeId(this.e1.typeId) === ENTITY_KIND.building ? BUILDING_HIT_HEIGHT : HIT_HEIGHT;
         this.impact(x, ctx.heightAt(x, z) + height, z, t0);
         return;
       }
@@ -89,8 +93,9 @@ export class EffectSpawner {
           x = this.e1.x;
           z = this.e1.z;
         }
-        const isBuilding = found && classifyTypeId(this.e1.typeId) === ENTITY_KIND.building;
-        const footprint = isBuilding ? ctx.footprint(this.e1.typeId) : null;
+        // The typeId comes from b: a demolished building has already left the snapshot carrying this event.
+        const typeId = b !== 0 ? b : found ? this.e1.typeId : 0;
+        const footprint = classifyTypeId(typeId) === ENTITY_KIND.building ? ctx.footprint(typeId) : null;
         const size = footprint ? Math.max(footprint.w, footprint.h) : 1;
         this.death(x, ctx.heightAt(x, z), z, size, t0);
         return;
@@ -103,7 +108,8 @@ export class EffectSpawner {
           x = this.e1.x;
           z = this.e1.z;
         }
-        const f = found ? ctx.footprint(this.e1.typeId) : DEFAULT_FOOTPRINT;
+        const typeId = b !== 0 ? b : found ? this.e1.typeId : 0;
+        const f = typeId !== 0 ? ctx.footprint(typeId) : DEFAULT_FOOTPRINT;
         this.buildDust(x, ctx.heightAt(x, z), z, f, t0, type === EVENT_TYPE.buildingDone);
         return;
       }

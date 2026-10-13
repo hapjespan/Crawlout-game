@@ -57,31 +57,58 @@ describe('EffectSpawner', () => {
     expect(tracer.z + tracer.vz * tracer.life).toBeCloseTo(20, 0);
   });
 
-  it('puts impacts at the event position, or at the target when the event has none', () => {
+  it('puts impacts at the event position, or at the target (a) when the event has none', () => {
     const add = new Collect();
     const fx = new EffectSpawner(add, new Collect(), seeded());
-    fx.handle(EVENT_TYPE.hit, 1, 2, 40 * M, 50 * M, 0, ctx);
+    fx.handle(EVENT_TYPE.hit, 2, 1, 40 * M, 50 * M, 0, ctx);
     expect(add.items[0]!.x).toBeCloseTo(40);
     expect(add.items[0]!.z).toBeCloseTo(50);
     add.items.length = 0;
-    fx.handle(EVENT_TYPE.hit, 1, 3, 0, 0, 0, ctx);
+    fx.handle(EVENT_TYPE.hit, 3, 1, 0, 0, 0, ctx); // a = target (building 3), b = shooter (unit 1)
     expect(add.items[0]!.x).toBeCloseTo(30);
     expect(add.items[0]!.y).toBeGreaterThan(3); // building hit sits higher
+  });
+
+  it('falls back to the shooter (b) when the target of a hit without position is gone', () => {
+    const add = new Collect();
+    new EffectSpawner(add, new Collect(), seeded()).handle(EVENT_TYPE.hit, 99, 2, 0, 0, 0, ctx);
+    expect(add.items[0]!.x).toBeCloseTo(10);
+    expect(add.items[0]!.z).toBeCloseTo(20);
+    expect(add.items[0]!.y).toBeCloseTo(3); // terrain 2 + unit hit height 1
   });
 
   it('makes a bigger death cloud for buildings than for units', () => {
     const unit = new Collect();
     const building = new Collect();
-    new EffectSpawner(new Collect(), unit, seeded()).handle(EVENT_TYPE.death, 1, 0, 10 * M, 10 * M, 0, ctx);
-    new EffectSpawner(new Collect(), building, seeded()).handle(EVENT_TYPE.death, 3, 0, 30 * M, 30 * M, 0, ctx);
+    new EffectSpawner(new Collect(), unit, seeded()).handle(EVENT_TYPE.death, 1, 1, 10 * M, 10 * M, 0, ctx);
+    new EffectSpawner(new Collect(), building, seeded()).handle(EVENT_TYPE.death, 3, buildingTypeId(0), 30 * M, 30 * M, 0, ctx);
     expect(unit.items.length).toBeGreaterThan(0);
+    expect(building.items.length).toBeGreaterThan(unit.items.length);
+  });
+
+  it('sizes the death of a demolished building from event.b, although it left the snapshot', () => {
+    const gone = context({}); // the building is no longer in the snapshot carrying its death event
+    const fromB = new Collect();
+    new EffectSpawner(new Collect(), fromB, seeded()).handle(EVENT_TYPE.death, 77, buildingTypeId(0), 30 * M, 30 * M, 0, gone);
+    const asUnit = new Collect();
+    new EffectSpawner(new Collect(), asUnit, seeded()).handle(EVENT_TYPE.death, 77, 1, 30 * M, 30 * M, 0, gone);
+    expect(fromB.items.length).toBeGreaterThan(asUnit.items.length);
+    const spread = (items: ParticleSpec[]) => Math.max(...items.map((p) => p.size1));
+    expect(spread(fromB.items)).toBeGreaterThan(spread(asUnit.items)); // a 5x5 footprint makes a wider cloud
+  });
+
+  it('still reads the typeId from the snapshot when b is 0', () => {
+    const building = new Collect();
+    const unit = new Collect();
+    new EffectSpawner(new Collect(), building, seeded()).handle(EVENT_TYPE.death, 3, 0, 30 * M, 30 * M, 0, ctx);
+    new EffectSpawner(new Collect(), unit, seeded()).handle(EVENT_TYPE.death, 1, 0, 10 * M, 10 * M, 0, ctx);
     expect(building.items.length).toBeGreaterThan(unit.items.length);
   });
 
   it('rings a building footprint with dust on placement and adds sparks when done', () => {
     const placedAlpha = new Collect();
     const placedAdd = new Collect();
-    new EffectSpawner(placedAdd, placedAlpha, seeded()).handle(EVENT_TYPE.buildingPlaced, 3, 0, 30 * M, 30 * M, 1, ctx);
+    new EffectSpawner(placedAdd, placedAlpha, seeded()).handle(EVENT_TYPE.buildingPlaced, 3, buildingTypeId(0), 30 * M, 30 * M, 1, ctx);
     expect(placedAlpha.items.length).toBeGreaterThan(20);
     expect(placedAdd.items.length).toBe(0);
     for (const p of placedAlpha.items) {
@@ -89,7 +116,7 @@ describe('EffectSpawner', () => {
       expect(edge).toBeCloseTo(2.5, 5); // on the 5x5 footprint edge
     }
     const doneAdd = new Collect();
-    new EffectSpawner(doneAdd, new Collect(), seeded()).handle(EVENT_TYPE.buildingDone, 3, 0, 0, 0, 1, ctx);
+    new EffectSpawner(doneAdd, new Collect(), seeded()).handle(EVENT_TYPE.buildingDone, 3, buildingTypeId(0), 0, 0, 1, ctx);
     expect(doneAdd.items.length).toBeGreaterThan(0);
   });
 

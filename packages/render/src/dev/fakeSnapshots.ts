@@ -265,14 +265,14 @@ export class FakeSnapshotSource {
     this.face(i, this.x[j]! - this.x[i]!, this.y[j]! - this.y[i]!);
     events.push({ type: EVENT_TYPE.shotFired, a: id, b: this.ids[j]!, x: this.x[i]!, y: this.y[i]! });
     // The hit lands two ticks later, the way a sim with travel time would report it.
-    if (this.rand() < 0.75) this.pending.push({ atTick: this.tick + 2, event: { type: EVENT_TYPE.hit, a: id, b: this.ids[j]!, x: this.x[j]!, y: this.y[j]! } });
+    if (this.rand() < 0.75) this.pending.push({ atTick: this.tick + 2, event: { type: EVENT_TYPE.hit, a: this.ids[j]!, b: id, x: this.x[j]!, y: this.y[j]! } });
   }
 
   private kill(i: number, events: EventRecord[]): void {
     this.mode[i] = 'dead';
     this.setAnim(i, ANIM.death);
     this.timer[i] = 4 * TICKS_PER_SECOND;
-    events.push({ type: EVENT_TYPE.death, a: this.ids[i]!, b: 0, x: this.x[i]!, y: this.y[i]! });
+    events.push({ type: EVENT_TYPE.death, a: this.ids[i]!, b: FAKE_UNIT_TYPE_ID, x: this.x[i]!, y: this.y[i]! });
   }
 
   private respawn(i: number, events: EventRecord[]): void {
