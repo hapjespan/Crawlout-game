@@ -5,7 +5,10 @@ import type { RelayTransport } from './transport.js';
 export type LoopbackOptions = Partial<Omit<RoomOptions, 'send'>>;
 
 export interface LoopbackConnectOptions {
-  /** false voor een AI-speler die zelf geen hashes meldt; hij telt dan niet mee in de hash-vergelijking. Standaard true. */
+  /**
+   * false voor een spectator of debugverbinding die geen hashes meldt; zij telt dan niet mee in de vergelijking.
+   * Een AI-speler heeft geen verbinding en gebruikt dit niet: gebruik `addAi()`. Standaard true.
+   */
   reportsHashes?: boolean;
 }
 
@@ -47,6 +50,11 @@ export class LoopbackRelay {
         this.listeners.delete(connId);
       },
     };
+  }
+
+  /** AI-speler in de lobby (zonder host-controle). Geeft zijn playerId, of null als de room vol is of al gestart. */
+  addAi(faction = 'dwellers'): number | null {
+    return this.room.addAi(faction);
   }
 
   /** Eén tick: geeft de volgende bundel uit (null voor start of na desync). */

@@ -16,6 +16,8 @@ export class FrameScheduler {
   private readonly pending = new Map<number, Pending[]>();
   private arrival = 0;
   private next = 0;
+  /** Laatste uitvoerframe per speler: houdt de volgorde van seq gelijk als DELAY tussendoor verandert. */
+  private readonly lastExec = new Map<number, number>();
 
   constructor(public delayFrames: number) {}
 
@@ -26,8 +28,9 @@ export class FrameScheduler {
 
   /** Geeft het uitvoerframe terug, of null als het commando te ver vooruit ligt. */
   submit(cmd: CommandEnvelope): number | null {
-    const exec = Math.max(cmd.frame + this.delayFrames, this.next);
+    const exec = Math.max(cmd.frame + this.delayFrames, this.next, this.lastExec.get(cmd.playerId) ?? 0);
     if (exec > this.next + MAX_SCHEDULE_AHEAD) return null;
+    this.lastExec.set(cmd.playerId, exec);
     let list = this.pending.get(exec);
     if (!list) this.pending.set(exec, (list = []));
     list.push({ cmd, arrival: this.arrival++ });
