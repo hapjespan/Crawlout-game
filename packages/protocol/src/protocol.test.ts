@@ -69,9 +69,21 @@ describe('besluiten sprint 3', () => {
     expect(EVENT_TYPE.abilityZone).toBe(EVENT_TYPE.heroLevel + 1);
     expect(new Set(Object.values(EVENT_TYPE)).size).toBe(Object.keys(EVENT_TYPE).length);
   });
-  it('HeroStatus: de velden van sprint 2 zijn verplicht, de toestand van sprint 3 nog optioneel', () => {
-    const hero: HeroStatus = { heroId: 0, level: 1, xp: 0, xpNext: 100, special: [6, 5, 6, 4, 4, 6, 3], perks: [], pendingPerks: 0, revivesLeft: 4 };
-    const full: HeroStatus = { ...hero, state: 'reviving', reviveTicksLeft: 800, entityId: ENTITY_NONE, abilityCooldownTicks: [0] };
+  it('HeroStatus: de velden van sprint 2 en de toestand van sprint 3 zijn verplicht (sim-core levert ze sinds sprint 4)', () => {
+    const full: HeroStatus = {
+      heroId: 0,
+      level: 1,
+      xp: 0,
+      xpNext: 100,
+      special: [6, 5, 6, 4, 4, 6, 3],
+      perks: [],
+      pendingPerks: 0,
+      revivesLeft: 4,
+      state: 'reviving',
+      reviveTicksLeft: 800,
+      entityId: ENTITY_NONE,
+      abilityCooldownTicks: [0],
+    };
     const status: PlayerStatus = { playerId: 0, scrap: 0, settlers: 0, pop: 0, popCap: 0, beds: 0, hero: full, techs: [1] };
     expect(status.hero?.state).toBe('reviving');
   });

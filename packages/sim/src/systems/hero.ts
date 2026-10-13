@@ -1,5 +1,5 @@
-import { EVENT_TYPE, MAX_ENTITIES } from '@crawlout/protocol';
-import type { CommandPayload, HeroStatus } from '@crawlout/protocol';
+import { ENTITY_NONE, EVENT_TYPE, MAX_ENTITIES } from '@crawlout/protocol';
+import type { CommandPayload, HeroState, HeroStatus } from '@crawlout/protocol';
 import { AURA_SIDE_ENEMY, AURA_TARGET_TURRETS, MAX_ABILITIES, SPECIAL_COUNT } from '../config.js';
 import { BSTATE_DONE, C } from '../ecs/world.js';
 import {
@@ -262,6 +262,9 @@ export function heroStatus(ctx: SimContext, p: number): HeroStatus | null {
   for (const pk of ctx.config.perks) if (((ps.heroPerks[p]! >>> pk.perkId) & 1) !== 0) perks.push(pk.perkId);
   // Op maxlevel is er geen volgende drempel: xpNext is dan de laatste drempel (die al gehaald is).
   const xpNext = level - 1 < h.xpThresholds.length ? h.xpThresholds[level - 1]! : (h.xpThresholds[h.xpThresholds.length - 1] ?? xp);
+  const st = ps.heroState[p]!;
+  const abilityCooldownTicks: number[] = [];
+  for (let a = 0; a < h.abilities.length; a++) abilityCooldownTicks.push(ps.abCooldown[p * MAX_ABILITIES + a]!);
   return {
     heroId: h.heroId,
     level,
@@ -270,6 +273,16 @@ export function heroStatus(ctx: SimContext, p: number): HeroStatus | null {
     special: special as HeroStatus['special'],
     perks,
     pendingPerks: ps.heroPending[p]!,
-    revivesLeft: ps.heroState[p] === HERO_EMPTY ? 0 : h.maxRevives - ps.heroRevives[p]!,
+    revivesLeft: st === HERO_EMPTY ? 0 : h.maxRevives - ps.heroRevives[p]!,
+    state: heroStateName(st),
+    // Oplappen wacht na de timer nog op een voltooid hoofdgebouw en een vrije cel; dan blijft het 0 tot hij er staat.
+    reviveTicksLeft: st === HERO_REVIVING ? ps.heroTimer[p]! : 0,
+    entityId: st === HERO_ALIVE ? ps.heroEnt[p]! : ENTITY_NONE,
+    abilityCooldownTicks,
   };
+}
+
+/** PlayerState.heroState naar HeroStatus.state (contract 1, besluit sprint 3). HERO_NONE komt hier niet (hero is dan null). */
+function heroStateName(st: number): HeroState {
+  return st === HERO_DEAD ? 'dead' : st === HERO_REVIVING ? 'reviving' : st === HERO_EMPTY ? 'empty' : 'alive';
 }

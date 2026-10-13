@@ -176,6 +176,28 @@ describe('held', () => {
     expect(sim.playerStatus(0).scrap).toBe(1000);
   });
 
+  it('HeroStatus: state, reviveTicksLeft, entityId en abilityCooldownTicks volgen de held (besluit 1, sprint 4)', () => {
+    const sim = open(48);
+    const ab = HERO.abilities[0]!;
+    expect(sim.playerStatus(0).hero).toMatchObject({ state: 'alive', entityId: heroOf(sim, 0), reviveTicksLeft: 0, abilityCooldownTicks: [0] });
+    play(sim, 1, at(sim.frame, cmd(sim.frame, 0, 'HeroAbility', { heroId: HERO.heroId, abilityId: 0 })));
+    play(sim, 10);
+    expect(sim.playerStatus(0).hero!.abilityCooldownTicks).toEqual([ab.cooldownTicks - 11]);
+    killHero(sim, 0);
+    expect(sim.playerStatus(0).hero).toMatchObject({ state: 'dead', entityId: 0, reviveTicksLeft: 0 });
+    sim.setScrap(0, HERO.reviveScrap);
+    play(sim, 1, at(sim.frame, cmd(sim.frame, 0, 'Recruit', { buildingId: hqOf(sim, 0) })));
+    play(sim, 5);
+    expect(sim.playerStatus(0).hero).toMatchObject({ state: 'reviving', entityId: 0, reviveTicksLeft: HERO.reviveTicks - 6 }); // de Recruit-tick telt al mee
+    play(sim, HERO.reviveTicks);
+    const back = heroOf(sim, 0);
+    expect(back).not.toBe(0);
+    expect(sim.playerStatus(0).hero).toMatchObject({ state: 'alive', entityId: back, reviveTicksLeft: 0 });
+    sim.ps.heroRevives[0] = HERO.maxRevives;
+    killHero(sim, 0);
+    expect(sim.playerStatus(0).hero).toMatchObject({ state: 'empty', entityId: 0, revivesLeft: 0 });
+  });
+
   it('serialize/deserialize midden in een Lockdown en een oplap-timer: zelfde hash, zelfde vervolg', () => {
     const init = testInit(47, createOpenMap(64, 64));
     const sim = createSim(init);
