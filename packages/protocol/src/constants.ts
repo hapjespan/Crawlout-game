@@ -6,6 +6,9 @@ export const FRAC_BITS = 8;
 export const ANGLE_FULL = 65536; // yaw: 0..65535 = 0..360 graden
 export const MAX_ENTITIES = 4096;
 export const MAX_PLAYERS = 8;
+// Eigenaar (besluit sprint 2): owner is een uint8; 0..MAX_PLAYERS-1 zijn spelers, OWNER_NEUTRAL is de eigenaar
+// van neutrale entities (scrap-nodes, onbezette claimpunten). Waarden daartussen zijn gereserveerd.
+export const OWNER_NEUTRAL = 255;
 
 // Yaw-conventie (besluit sprint 1): hoeken lopen van sim +x naar sim +y, dus yaw = atan2(dy, dx) geschaald
 // naar 0..65535. De renderer zet sim (x, y) op wereld (x, z); een model dat bij hoek 0 naar wereld +z kijkt

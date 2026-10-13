@@ -4,6 +4,14 @@
 // tick = het laatst uitgevoerde frame; hash = de state-hash na dat frame (besluit sprint 1, zie frames.ts).
 export const SNAPSHOT_HEADER_BYTES = 12; // tick u32, hash u32, entityCount u16, eventCount u16
 
+// Velden per entity (besluit sprint 2, zie fase-0 sectie 4):
+// - typeId volgt de typeId-ruimte uit packages/data/src/typeIds.ts: unit 1 + loadoutId (1..1023),
+//   gebouw 1024 + buildingId (1024..2047), scrap-node 2048, claimpunt 2049; 0 is geen type.
+// - owner: speler 0..MAX_PLAYERS-1, of OWNER_NEUTRAL (constants.ts) voor scrap-nodes en onbezette claimpunten.
+// - hpPct: units en gebouwen hp in procenten; scrap-node resterende voorraad in procenten van de startvoorraad;
+//   claimpunt 100.
+// - anim/animT: unit volgens ANIM; gebouw in aanbouw ANIM.build met animT = bouwvoortgang, daarna ANIM.idle;
+//   claimpunt animT = claimvoortgang (0..65535); lijk ANIM.death met animT = verstreken deel van corpseS.
 export const ENTITY_FIELDS = {
   id: { bytes: 4, ctor: Uint32Array },
   x: { bytes: 4, ctor: Int32Array },
@@ -18,6 +26,8 @@ export const ENTITY_FIELDS = {
 } as const;
 export type EntityField = keyof typeof ENTITY_FIELDS;
 
+// selected zet de client (selectie is geen sim-state; de client stempelt hem in de buffer voor de renderer die
+// leest); dead, carrying en inCombat zet de sim.
 export const ENTITY_FLAG = { selected: 1 << 0, dead: 1 << 1, carrying: 1 << 2, inCombat: 1 << 3 } as const;
 
 // Animatie-ids in het veld `anim` (besluit sprint 1). De volgorde is de clipvolgorde uit de artist-brief
@@ -27,16 +37,19 @@ export type AnimName = keyof typeof ANIM;
 /** Clipnamen op index, voor manifest-validatie en bakken. */
 export const ANIM_NAMES: readonly AnimName[] = ['idle', 'walk', 'run', 'attack1', 'attack2', 'gather', 'build', 'death'];
 
+// Events (besluit sprint 2): x, y is de positie van de entity in `a` op het moment van het event, in sim-eenheden.
+// `a` is altijd de entity waar het om gaat; `b` staat per type hieronder. Een entity die dezelfde tick verdwijnt
+// (gebouw gesloopt, lege node) staat niet meer in de snapshot: lees typeId dan uit `b`.
 export const EVENT_TYPE = {
-  spawn: 1,
-  death: 2,
+  spawn: 1, // a = entity, b = typeId
+  death: 2, // a = entity, b = typeId
   shotFired: 3, // a = schutter, b = doel
-  hit: 4,
-  buildingPlaced: 5,
-  buildingDone: 6,
-  claimTaken: 7,
-  resourceDepleted: 8,
-  heroLevel: 9,
+  hit: 4, // a = doel, b = schutter
+  buildingPlaced: 5, // a = gebouw, b = typeId
+  buildingDone: 6, // a = gebouw, b = typeId
+  claimTaken: 7, // a = claimpunt, b = nieuwe eigenaar (playerId)
+  resourceDepleted: 8, // a = scrap-node, b = 0
+  heroLevel: 9, // a = held, b = nieuw level
 } as const;
 export type EventType = keyof typeof EVENT_TYPE;
 
@@ -99,6 +112,23 @@ export function writeSnapshotHeader(buf: ArrayBuffer, h: SnapshotHeader): void {
 }
 
 // Spelerstatus gaat apart, op verzoek van de UI (queryMessage), niet in elke snapshot.
+/**
+ * Held van de speler (besluit sprint 2). heroId is de hero-id uit packages/data; naam en perk-teksten haalt de HUD
+ * daar zelf. xpNext is de absolute xp waarbij het volgende level begint; pendingPerks het aantal level-ups zonder
+ * gekozen perk; revivesLeft het aantal keren oplappen dat nog kan (heroes.maxRevives min gebruikt).
+ * heroId, xpNext, pendingPerks en revivesLeft zijn optioneel tot de held in de sim zit (sprint 3); daarna verplicht.
+ */
+export interface HeroStatus {
+  heroId?: number;
+  level: number;
+  xp: number;
+  xpNext?: number;
+  special: [number, number, number, number, number, number, number];
+  perks: number[];
+  pendingPerks?: number;
+  revivesLeft?: number;
+}
+
 export interface PlayerStatus {
   playerId: number;
   scrap: number;
@@ -106,5 +136,6 @@ export interface PlayerStatus {
   pop: number;
   popCap: number;
   beds: number;
-  hero: { level: number; xp: number; special: [number, number, number, number, number, number, number]; perks: number[] } | null;
+  /** null zolang de speler geen held heeft (sprint 2: altijd null). */
+  hero: HeroStatus | null;
 }
