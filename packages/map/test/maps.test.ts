@@ -18,7 +18,14 @@ import {
 
 const dataDir = fileURLToPath(new URL('../../../data/', import.meta.url));
 const assets: MapAssets = { read: (ref) => readFileSync(dataDir + ref, 'utf8') };
-const readDef = (name: string): MapDef => MapDef.parse(JSON.parse(assets.read(`maps/${name}.json`)));
+// Tijdelijk: ws4-s2 voegt `dominance` toe aan het MapDef-schema op een andere branch. Zolang het schema het veld
+// nog niet kent, strippen we het voor de strict-validatie. Verwijderen na merge ws4-s2.
+const readDef = (name: string): MapDef => {
+  const raw = JSON.parse(assets.read(`maps/${name}.json`)) as Record<string, unknown>;
+  if (!('dominance' in MapDef.shape)) delete raw['dominance'];
+  return MapDef.parse(raw);
+};
+const readDominance = (name: string): unknown => (JSON.parse(assets.read(`maps/${name}.json`)) as Record<string, unknown>)['dominance'];
 
 const generated: Array<[string, () => GeneratedMap]> = [
   ['rustbelt', generateRustbelt],
@@ -92,6 +99,18 @@ describe('rustbelt', () => {
     expect(mirrored(map.creepCamps)).toBe(true);
   });
 
+  it('heeft precies 2 spawns, in playerId-volgorde (spawn i is van speler i)', () => {
+    expect(map.spawns).toHaveLength(2);
+    // A-helft (linksboven) eerst, gespiegelde B-helft (rechtsonder) tweede.
+    expect(map.spawns[0]!.x).toBeLessThan(64);
+    expect(map.spawns[1]!.x).toBeGreaterThanOrEqual(64);
+  });
+
+  it('heeft dominance als startwaarde (2 van 3 punten, 3 minuten)', () => {
+    expect(readDominance('rustbelt')).toEqual({ pointsRequired: 2, minutes: 3 });
+    expect(2).toBeLessThanOrEqual(def.claimPoints.length);
+  });
+
   it('geeft posities in sim-eenheden als celmiddelpunt', () => {
     const s = map.spawns[0]!;
     expect(s.ux).toBe(s.x * 256 + 128);
@@ -106,6 +125,7 @@ describe('een tweede map is alleen data', () => {
     expect(map.w).toBe(32);
     expect(map.h).toBe(32);
     expect(map.spawns).toHaveLength(2);
+    expect(readDominance('testmap')).toEqual({ pointsRequired: 1, minutes: 1 });
     expect(allConnected(map, [...map.spawns, ...map.scrapNodes, ...map.claimPoints, ...map.creepCamps])).toBe(true);
   });
 

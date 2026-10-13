@@ -25,6 +25,12 @@ export interface MapGrid {
   passable: Uint8Array;
   scrapNodes: ScrapNode[];
   claimPoints: ClaimPoint[];
+  /**
+   * Startposities in playerId-volgorde: spawns[i] hoort bij playerId i (spelers 0 en 1 op Rustbelt).
+   * De volgorde komt uit de generator (A-helft eerst, dan de gespiegelde B-helft) en is deel van het mapcontract.
+   * Dominantie (pointsRequired, minutes) leest de data-loader uit MapDef en rekent hij om naar ticks (secondsToTicks);
+   * MapGrid bevat bewust geen spelregelgetallen.
+   */
   spawns: MapPoint[];
   creepCamps: CreepCamp[];
 }

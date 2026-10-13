@@ -47,5 +47,9 @@
       "tier": 1
     }
   ],
-  "_comment": "Testmap 32x32 voor unit-tests. Gegenereerd door packages/map/src/gen/testmap.ts; niet met de hand bewerken."
+  "dominance": {
+    "pointsRequired": 1,
+    "minutes": 1
+  },
+  "_comment": "Testmap 32x32 voor unit-tests. Gegenereerd door packages/map/src/gen/testmap.ts; niet met de hand bewerken. dominance (1 punt, 1 minuut) is een startwaarde voor tests, geen balans."
 }

@@ -24,6 +24,7 @@ export interface MapSpec {
   h: number;
   seed: number;
   comment: string;
+  dominance: Dominance;
   /** Randstrook onbegaanbaar (kliffen), in cellen. */
   border: number;
   /** Ruines (laag, onbegaanbaar), alleen de helft die gespiegeld wordt. */
@@ -45,8 +46,20 @@ export interface MapSpec {
   groundAmplitude: number; // 0..255 ruis wordt hiermee geschaald (>> 8)
 }
 
+/** Dominantie per map (menselijke eenheden; de data-loader rekent om naar ticks). */
+export interface Dominance {
+  pointsRequired: number;
+  minutes: number;
+}
+
+/**
+ * MapDef plus dominance. Zodra het MapDef-schema in packages/data het veld kent (ws4-s2) is dit gelijk aan MapDef.
+ * Verwijderen na merge ws4-s2: vervang `MapDefWithDominance` door `MapDef`.
+ */
+export type MapDefWithDominance = MapDef & { dominance: Dominance };
+
 export interface GeneratedMap {
-  def: MapDef;
+  def: MapDefWithDominance;
   passabilityFile: string;
   heightmapFile: string;
   passable: Uint8Array;
@@ -130,7 +143,7 @@ export function generateMap(spec: MapSpec): GeneratedMap {
   const mirror = (f: Feature): Feature => ({ x: w - 1 - f.x, y: h - 1 - f.y });
   const both = <T extends Feature>(list: T[]): T[] => list.flatMap((f) => [f, { ...f, ...mirror(f) }]);
 
-  const def: MapDef = {
+  const def: MapDefWithDominance = {
     id: spec.id,
     size: { w, h },
     heightmap: `maps/${spec.id}.heightmap.json`,
@@ -139,6 +152,7 @@ export function generateMap(spec: MapSpec): GeneratedMap {
     claimPoints: [...both(spec.claimPoints), ...spec.centerClaims],
     spawns: both(spec.spawns),
     creepCamps: both(spec.creepCamps),
+    dominance: spec.dominance,
     _comment: spec.comment,
   };
 
