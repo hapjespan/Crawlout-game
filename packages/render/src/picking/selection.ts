@@ -2,6 +2,7 @@
 // The renderer only reports which entity ids are under the cursor or inside a rectangle;
 // turning that into a selection is a command for the sim (contract 2), the snapshot echoes it in flags.
 import { ENTITY_FLAG } from '@crawlout/protocol';
+import { drawsAsUnit } from '../entities/typeIds.js';
 import type { InterpolatedFrame } from '../snapshot/interpolate.js';
 
 /** Height of a unit's pick center above its feet, and the pick radius around it, meters. */
@@ -20,7 +21,18 @@ export interface BoxSelectOptions {
   owner?: number;
   /** Include entities flagged dead. Default false. */
   includeDead?: boolean;
+  /** Also select buildings, scrap nodes and claim points. Default false: a box drag selects units. */
+  includeStructures?: boolean;
 }
+
+/** Pick sphere of one entity, meters: radius and center height above its ground point. */
+export interface PickShape {
+  radius: number;
+  height: number;
+}
+
+/** Writes the pick sphere of frame entity `index` into `out` and returns it, or null for the unit default. */
+export type PickShapeFn = (index: number, out: PickShape) => PickShape | null;
 
 /**
  * Ids of entities whose pick center projects inside `rect` (canvas CSS pixels, any corner order).
@@ -43,6 +55,7 @@ export function selectInRect(
   for (let i = 0; i < frame.count; i++) {
     if (opts.owner !== undefined && frame.owner[i] !== opts.owner) continue;
     if (!opts.includeDead && (frame.flags[i]! & ENTITY_FLAG.dead) !== 0) continue;
+    if (!opts.includeStructures && !drawsAsUnit(frame.typeId[i]!)) continue;
     const x = frame.x[i]!;
     const y = frame.y[i]! + PICK_CENTER_HEIGHT;
     const z = frame.z[i]!;
@@ -59,7 +72,8 @@ export function selectInRect(
 
 /**
  * Index of the nearest entity hit by the ray (origin o, normalized direction d), or -1.
- * Units are spheres of PICK_RADIUS around their pick center; dead entities are skipped.
+ * Units are spheres of PICK_RADIUS around their pick center; `shape` gives other entities their own sphere.
+ * Dead entities are skipped.
  */
 export function pickEntity(
   frame: InterpolatedFrame,
@@ -69,14 +83,18 @@ export function pickEntity(
   dx: number,
   dy: number,
   dz: number,
+  shape?: PickShapeFn,
 ): number {
   let best = -1;
   let bestT = Infinity;
-  const r2 = PICK_RADIUS * PICK_RADIUS;
+  const scratch: PickShape = { radius: PICK_RADIUS, height: PICK_CENTER_HEIGHT };
   for (let i = 0; i < frame.count; i++) {
     if ((frame.flags[i]! & ENTITY_FLAG.dead) !== 0) continue;
+    const s = shape?.(i, scratch);
+    const radius = s ? s.radius : PICK_RADIUS;
+    const r2 = radius * radius;
     const cx = frame.x[i]! - ox;
-    const cy = frame.y[i]! + PICK_CENTER_HEIGHT - oy;
+    const cy = frame.y[i]! + (s ? s.height : PICK_CENTER_HEIGHT) - oy;
     const cz = frame.z[i]! - oz;
     const t = cx * dx + cy * dy + cz * dz;
     if (t <= 0) continue;

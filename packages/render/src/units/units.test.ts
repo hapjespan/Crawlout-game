@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { Matrix4, Vector3 } from 'three/webgpu';
 import { bakeAnimations } from './bake.js';
 import { createHumanoidGeometry, UNIT_LODS } from './humanoidGeometry.js';
-import { BONES, CLIP, CLIPS } from './rig.js';
+import { ANIM, ANIM_NAMES } from '@crawlout/protocol';
+import { BONES, CLIPS } from './rig.js';
 
 describe('bakeAnimations', () => {
   const baked = bakeAnimations();
@@ -13,6 +14,8 @@ describe('bakeAnimations', () => {
     expect(baked.width).toBe(BONES.length * 4);
     expect(baked.data.length).toBe(baked.width * baked.height * 4);
     expect(baked.clips.map((c) => c.name)).toEqual(CLIPS.map((c) => c.name));
+    expect(CLIPS.map((c) => c.name)).toEqual(ANIM_NAMES); // protocol clip order
+    for (const name of ANIM_NAMES) expect(CLIPS[ANIM[name]]!.name).toBe(name);
     let row = 0;
     for (const c of baked.clips) {
       expect(c.startRow).toBe(row);
@@ -20,8 +23,8 @@ describe('bakeAnimations', () => {
     }
     expect(row).toBe(baked.height);
     expect(baked.clipTable.length).toBe(baked.clips.length * 4);
-    expect(baked.clipTable[CLIP.death * 4 + 2]).toBe(0); // death does not loop
-    expect(baked.clipTable[CLIP.walk * 4 + 2]).toBe(1);
+    expect(baked.clipTable[ANIM.death * 4 + 2]).toBe(0); // death does not loop
+    expect(baked.clipTable[ANIM.walk * 4 + 2]).toBe(1);
   });
 
   it('only holds finite numbers', () => {
@@ -37,15 +40,15 @@ describe('bakeAnimations', () => {
       return new Matrix4().fromArray(baked.data, o);
     };
     const ankle = new Vector3(0.1, 0.05, 0);
-    const walk = baked.clips[CLIP.walk]!;
+    const walk = baked.clips[ANIM.walk]!;
     let minY = Infinity;
-    for (let f = 0; f < walk.frameCount; f++) minY = Math.min(minY, ankle.clone().applyMatrix4(skinAt(CLIP.walk, f, shinL)).y);
+    for (let f = 0; f < walk.frameCount; f++) minY = Math.min(minY, ankle.clone().applyMatrix4(skinAt(ANIM.walk, f, shinL)).y);
     expect(minY).toBeGreaterThan(-0.1);
     expect(minY).toBeLessThan(0.2);
 
-    const death = baked.clips[CLIP.death]!;
+    const death = baked.clips[ANIM.death]!;
     const headTop = new Vector3(0, 1.8, 0);
-    const lying = headTop.applyMatrix4(skinAt(CLIP.death, death.frameCount - 1, head));
+    const lying = headTop.applyMatrix4(skinAt(ANIM.death, death.frameCount - 1, head));
     expect(lying.y).toBeLessThan(0.6);
   });
 });

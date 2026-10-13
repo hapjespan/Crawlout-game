@@ -52,6 +52,11 @@ const INV_UNITS = 1 / UNITS_PER_METER;
 /** Moves larger than this (sim units per tick) are teleports and snap instead of sliding. */
 export const TELEPORT_UNITS_PER_TICK = 16 * UNITS_PER_METER;
 
+/** Sim yaw (uint16, protocol convention) to render radians for a model facing +Z at 0. */
+export function simYawToRender(yaw: number): number {
+  return MODEL_FORWARD_RAD - yaw * RAD_PER_ANGLE;
+}
+
 /** Shortest-arc interpolation of two uint16 angles. Returns an angle in [0, 65536). */
 export function lerpAngle(a: number, b: number, t: number): number {
   let d = (b - a) % ANGLE_FULL;
@@ -110,7 +115,7 @@ export function interpolateInto(
     out.x[i] = x * INV_UNITS;
     out.y[i] = 0;
     out.z[i] = y * INV_UNITS;
-    out.yaw[i] = MODEL_FORWARD_RAD - yaw * RAD_PER_ANGLE;
+    out.yaw[i] = simYawToRender(yaw);
     out.animT[i] = animT;
     out.anim[i] = cAnim;
     out.owner[i] = c.owner[i]!;
@@ -167,6 +172,11 @@ export class SnapshotInterpolator {
     }
     interpolateInto(out, this.prev?.view ?? null, this.prev?.index ?? null, this.curr.view, this.alpha(now));
     return true;
+  }
+
+  /** Index of entity `id` in the latest snapshot, or -1. */
+  latestIndex(id: number): number {
+    return this.curr?.index.get(id) ?? -1;
   }
 
   get latest(): SnapshotView | null {

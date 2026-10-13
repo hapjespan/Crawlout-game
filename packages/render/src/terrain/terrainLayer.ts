@@ -1,8 +1,17 @@
 // Terrain mesh from flat typed arrays (the map agent's greybox export), toon-shaded with vertex colors.
-import { BufferAttribute, BufferGeometry, Color, Mesh, MeshBasicNodeMaterial, type Scene, type Vector3 } from 'three/webgpu';
-import { attribute, dot, normalWorld, uniform, vec4 } from 'three/tsl';
+// Receives building shadows when a shadow factor is given, and keeps a height texture for terrain-hugging decals.
+import { BufferAttribute, BufferGeometry, Color, Mesh, MeshBasicNodeMaterial, type Scene, type Vector3, type Node } from 'three/webgpu';
+import { attribute, dot, float, mix, normalWorld, uniform, vec4 } from 'three/tsl';
+import type { DataTexturePrecision } from '../gpu/dataTextures.js';
 import { toonRamp } from '../units/unitMaterial.js';
 import { TerrainHeightField, type TerrainGeometry } from './heightField.js';
+import { createHeightTexture, type HeightTexture } from './heightTexture.js';
+
+export interface TerrainLayerOptions {
+  /** Shadow factor node, 1 lit and 0 shadowed (shadows/sunShadow.ts). */
+  shadow?: Node<'float'> | undefined;
+  precision?: DataTexturePrecision;
+}
 
 function linearColors(src: Float32Array | Uint8Array | undefined, vertexCount: number): Float32Array {
   const out = new Float32Array(vertexCount * 3);
@@ -22,14 +31,20 @@ export class TerrainLayer {
   private mesh: Mesh | null = null;
   private readonly material: MeshBasicNodeMaterial;
   heightField: TerrainHeightField | null = null;
+  heightTexture: HeightTexture | null = null;
+  private readonly precision: DataTexturePrecision;
 
   constructor(
     private readonly scene: Scene,
     lightDir: Vector3,
+    opts: TerrainLayerOptions = {},
   ) {
+    this.precision = opts.precision ?? 'float';
     const light = uniform(lightDir.clone().normalize());
     const m = new MeshBasicNodeMaterial();
-    m.colorNode = vec4(attribute('color', 'vec3').mul(toonRamp(dot(normalWorld, light))), 1);
+    let shade = toonRamp(dot(normalWorld, light));
+    if (opts.shadow) shade = mix(float(0.52), shade, opts.shadow);
+    m.colorNode = vec4(attribute('color', 'vec3').mul(shade), 1);
     m.name = 'crawlout-terrain-toon';
     this.material = m;
   }
@@ -53,6 +68,7 @@ export class TerrainLayer {
     this.mesh.name = 'terrain';
     this.scene.add(this.mesh);
     this.heightField = new TerrainHeightField(positions, indices);
+    this.heightTexture = createHeightTexture(this.heightField, this.precision);
   }
 
   get object(): Mesh | null {
@@ -69,6 +85,8 @@ export class TerrainLayer {
     this.mesh.geometry.dispose();
     this.mesh = null;
     this.heightField = null;
+    this.heightTexture?.texture.dispose();
+    this.heightTexture = null;
   }
 
   dispose(): void {

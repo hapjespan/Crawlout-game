@@ -1,10 +1,13 @@
-// Render demo without a sim: fake snapshots at 20 Hz into the renderer, plus selection and move orders
-// that the fake source mirrors the way the sim would. Open /render-demo.html on the vite dev server.
-import { MAX_ENTITIES, TICK_MS } from '@crawlout/protocol';
-import { createRenderer } from '@crawlout/render';
+// Render demo without a sim: fake snapshots at 20 Hz into the renderer, plus selection, move orders and building
+// placement that the fake source mirrors the way the sim would. Open /render-demo.html on the vite dev server.
+// Defaults: 200 units, 40 buildings, 8 scrap nodes, 3 claim points, combat events for the VFX.
+import { MAX_ENTITIES, TICK_MS, UNITS_PER_METER } from '@crawlout/protocol';
+import { buildingTypeId, createRenderer, snapFootprintCenter, type PlacementPreview } from '@crawlout/render';
 import { createGridTerrain, FakeSnapshotSource } from '@crawlout/render/dev';
+import { loadClientGameData } from '../game/content.js';
 
 const WORLD = 128;
+const PLAYER = 0;
 
 function wastelandHeight(x: number, z: number): number {
   return (
@@ -30,23 +33,85 @@ function showError(message: string): void {
   el.style.display = 'grid';
 }
 
+function intParam(params: URLSearchParams, name: string, fallback: number, max: number): number {
+  const raw = params.get(name);
+  const v = raw === null ? fallback : Number(raw);
+  return Number.isFinite(v) ? Math.max(0, Math.min(max, Math.round(v))) : fallback;
+}
+
 async function main(): Promise<void> {
   const canvas = document.getElementById('view') as HTMLCanvasElement | null;
   const marquee = document.getElementById('marquee') as HTMLDivElement | null;
   if (!canvas || !marquee) return;
   const params = new URLSearchParams(location.search);
-  const count = Math.max(1, Math.min(MAX_ENTITIES, Number(params.get('n')) || 200));
+  const count = Math.max(1, intParam(params, 'n', 200, MAX_ENTITIES));
+  const data = loadClientGameData();
+  const footprint = (typeId: number) => data.buildings[typeId - buildingTypeId(0)]?.footprint ?? null;
 
-  const renderer = await createRenderer({ canvas, forceWebGL: params.has('webgl') });
+  const renderer = await createRenderer({
+    canvas,
+    forceWebGL: params.has('webgl'),
+    shadows: !params.has('noshadow'),
+    dataTextures: params.has('half') ? 'half' : 'auto',
+  });
+  renderer.setGameData(data);
   const backendEl = document.getElementById('backend');
-  if (backendEl) backendEl.textContent = renderer.backend === 'webgpu' ? 'WebGPU' : 'WebGL2-fallback';
+  if (backendEl) {
+    const precision = renderer.dataTexturePrecision === 'half' ? ', half-float' : '';
+    backendEl.textContent = (renderer.backend === 'webgpu' ? 'WebGPU' : 'WebGL2-fallback') + precision;
+  }
   renderer.setTerrain(createGridTerrain(WORLD, WORLD, 1, wastelandHeight, wastelandColor));
 
-  const source = new FakeSnapshotSource({ count, players: 4, worldSize: WORLD });
+  const source = new FakeSnapshotSource({
+    count,
+    players: 4,
+    worldSize: WORLD,
+    buildings: intParam(params, 'b', 40, 400),
+    buildingTypes: data.buildings.length,
+    footprint,
+    scrapNodes: intParam(params, 'nodes', 8, 64),
+    claims: intParam(params, 'claims', 3, 32),
+    combat: params.get('combat') !== '0',
+  });
   renderer.pushSnapshot(source.next());
   const pump = window.setInterval(() => renderer.pushSnapshot(source.next()), TICK_MS);
 
-  // Selection: click picks one unit, drag draws a marquee. Shift adds to the selection.
+  // Build mode (B): a ghost footprint follows the cursor, digits pick the building, a left click places it.
+  let buildId: number | null = null;
+  let cursor: { x: number; y: number } | null = null;
+  const buildEl = document.getElementById('build');
+  const updatePreview = (): PlacementPreview | null => {
+    if (buildId === null || !cursor) {
+      renderer.setPlacementPreview(null);
+      return null;
+    }
+    const typeId = buildingTypeId(buildId);
+    const f = footprint(typeId) ?? { w: 2, h: 2 };
+    const ground = renderer.pickAt(cursor.x, cursor.y).ground;
+    if (!ground) {
+      renderer.setPlacementPreview(null);
+      return null;
+    }
+    const at = snapFootprintCenter(ground.x, ground.y, f, UNITS_PER_METER);
+    const preview = { typeId, x: at.x, y: at.y, valid: source.fits(at.x, at.y, f) };
+    renderer.setPlacementPreview(preview);
+    return preview;
+  };
+  const setBuild = (id: number | null): void => {
+    buildId = id;
+    if (buildEl) buildEl.textContent = id === null ? 'uit' : `${data.buildings[id]?.key ?? id} (${id + 1})`;
+    updatePreview();
+  };
+  window.addEventListener('keydown', (e) => {
+    if (e.code === 'KeyB') setBuild(buildId === null ? 0 : null);
+    else if (e.code === 'Escape') setBuild(null);
+    else if (buildId !== null && /^Digit[1-9]$/.test(e.code)) {
+      const id = Number(e.code.slice(5)) - 1;
+      if (id < data.buildings.length) setBuild(id);
+    }
+  });
+
+  // Selection: click picks one entity, drag draws a marquee (units only). Shift adds to the selection.
   let selection = new Set<number>();
   let drag: { x: number; y: number; moved: boolean } | null = null;
   const local = (e: PointerEvent | MouseEvent) => {
@@ -56,12 +121,24 @@ async function main(): Promise<void> {
 
   canvas.addEventListener('pointerdown', (e) => {
     if (e.button !== 0) return;
+    if (buildId !== null) {
+      cursor = local(e);
+      const p = updatePreview();
+      if (p?.valid) {
+        const f = footprint(p.typeId) ?? { w: 2, h: 2 };
+        source.placeBuilding(p.typeId, PLAYER, p.x, p.y, f);
+        if (!e.shiftKey) setBuild(null);
+      }
+      return;
+    }
     canvas.setPointerCapture(e.pointerId);
     drag = { ...local(e), moved: false };
   });
   canvas.addEventListener('pointermove', (e) => {
+    cursor = local(e);
+    if (buildId !== null) updatePreview();
     if (!drag) return;
-    const p = local(e);
+    const p = cursor;
     if (!drag.moved && Math.hypot(p.x - drag.x, p.y - drag.y) < 4) return;
     drag.moved = true;
     marquee.style.display = 'block';
@@ -87,6 +164,10 @@ async function main(): Promise<void> {
   });
   canvas.addEventListener('contextmenu', (e) => {
     e.preventDefault();
+    if (buildId !== null) {
+      setBuild(null);
+      return;
+    }
     const ground = renderer.pickAt(local(e).x, local(e).y).ground;
     if (ground && selection.size > 0) source.moveTo(selection, ground.x, ground.y);
   });
@@ -95,8 +176,8 @@ async function main(): Promise<void> {
     window.clearInterval(pump);
     renderer.dispose();
   });
-  // Handy in the console: window.crawloutRender.stats()
-  (window as unknown as { crawloutRender: typeof renderer }).crawloutRender = renderer;
+  // Handy in the console: window.crawloutRender.stats(), window.crawloutSource.structures
+  Object.assign(window as object, { crawloutRender: renderer, crawloutSource: source });
 }
 
 main().catch((err: unknown) => {

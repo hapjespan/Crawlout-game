@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { ENTITY_FLAG, EVENT_TYPE, MAX_PLAYERS, TICK_MS, UNITS_PER_METER, readSnapshotHeader, snapshotLayout } from '@crawlout/protocol';
+import { ANIM, ENTITY_FLAG, EVENT_TYPE, MAX_PLAYERS, TICK_MS, UNITS_PER_METER, readSnapshotHeader, snapshotLayout } from '@crawlout/protocol';
 import { parseSnapshot } from '../snapshot/parse.js';
-import { CLIP, CLIPS } from '../units/rig.js';
+import { CLIPS } from '../units/rig.js';
+import { classifyTypeId, ENTITY_KIND } from '../entities/typeIds.js';
 import { FakeSnapshotSource, FAKE_UNIT_TYPE_ID } from './fakeSnapshots.js';
 
 describe('FakeSnapshotSource', () => {
@@ -40,7 +41,7 @@ describe('FakeSnapshotSource', () => {
     const b = parseSnapshot(src.next());
     let moving = 0;
     for (let i = 0; i < a.entityCount; i++) {
-      expect([CLIP.walk, CLIP.run]).toContain(a.entities.anim[i]);
+      expect([ANIM.walk, ANIM.run]).toContain(a.entities.anim[i]);
       const d = Math.hypot(b.entities.x[i]! - a.entities.x[i]!, b.entities.y[i]! - a.entities.y[i]!);
       if (d > 0) moving++;
       // At most run speed (4.2 m/s) per tick, with rounding slack.
@@ -103,5 +104,49 @@ describe('FakeSnapshotSource', () => {
       }
     }
     expect(shots).toBeGreaterThan(0);
+  });
+
+  it('adds non-overlapping buildings, scrap nodes and claim points after the units', () => {
+    const footprint = (typeId: number) => ({ w: 2 + (typeId % 4), h: 2 + (typeId % 3) });
+    const src = new FakeSnapshotSource({ count: 50, buildings: 40, scrapNodes: 6, claims: 3, footprint });
+    const s = parseSnapshot(src.next());
+    expect(s.entityCount).toBe(50 + src.structures.length);
+    const kinds = [...s.entities.typeId].map(classifyTypeId);
+    expect(kinds.filter((k) => k === ENTITY_KIND.building)).toHaveLength(40);
+    expect(kinds.filter((k) => k === ENTITY_KIND.scrapNode)).toHaveLength(6);
+    expect(kinds.filter((k) => k === ENTITY_KIND.claim)).toHaveLength(3);
+    expect(new Set(s.entities.id).size).toBe(s.entityCount);
+    const b = src.structures.filter((x) => classifyTypeId(x.typeId) === ENTITY_KIND.building);
+    for (let i = 0; i < b.length; i++) {
+      for (let j = i + 1; j < b.length; j++) {
+        const p = b[i]!;
+        const q = b[j]!;
+        const apartX = Math.abs(p.x - q.x) * 2 >= (p.footprint.w + q.footprint.w) * UNITS_PER_METER;
+        const apartY = Math.abs(p.y - q.y) * 2 >= (p.footprint.h + q.footprint.h) * UNITS_PER_METER;
+        expect(apartX || apartY).toBe(true);
+      }
+    }
+  });
+
+  it('emits targeted shots, hits, deaths, respawns and building events in combat mode', () => {
+    const src = new FakeSnapshotSource({ count: 200, buildings: 10, claims: 2, combat: true });
+    const seen = new Set<number>();
+    let targeted = 0;
+    for (let t = 0; t < 20 * 20; t++) {
+      const s = parseSnapshot(src.next());
+      for (let k = 0; k < s.eventCount; k++) {
+        seen.add(s.events.type[k]!);
+        if (s.events.type[k] === EVENT_TYPE.shotFired && s.events.b[k] !== 0) targeted++;
+        if (s.events.type[k] === EVENT_TYPE.death) {
+          const i = s.entities.id.indexOf(s.events.a[k]!);
+          expect(s.entities.flags[i]! & ENTITY_FLAG.dead).not.toBe(0);
+          expect(s.entities.anim[i]).toBe(ANIM.death);
+        }
+      }
+    }
+    expect(targeted).toBeGreaterThan(0);
+    for (const type of [EVENT_TYPE.shotFired, EVENT_TYPE.hit, EVENT_TYPE.death, EVENT_TYPE.spawn, EVENT_TYPE.buildingPlaced, EVENT_TYPE.buildingDone, EVENT_TYPE.claimTaken]) {
+      expect(seen.has(type)).toBe(true);
+    }
   });
 });
