@@ -2,6 +2,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { MapDef } from '@crawlout/data';
+import { readDataDir } from '@crawlout/data/node';
 import {
   allConnected,
   decodeGrid,
@@ -22,6 +23,13 @@ const dataDir = fileURLToPath(new URL('../../../data/', import.meta.url));
 const assets: MapAssets = { read: (ref) => readFileSync(dataDir + ref, 'utf8') };
 const readDef = (name: string): MapDef => MapDef.parse(JSON.parse(assets.read(`maps/${name}.json`)));
 const readDominance = (name: string): unknown => readDef(name).dominance;
+
+const claimRadiusM = (): number => (readDataDir(dataDir).sim as { claimRadiusM: number }).claimRadiusM;
+const claimFootprint = (): { w: number; h: number } => {
+  const b = (readDataDir(dataDir).buildings as Array<{ id: string; footprint: { w: number; h: number } }>).find((x) => x.id === 'claimpaal');
+  if (b === undefined) throw new Error('claimpaal ontbreekt in data/buildings.json');
+  return b.footprint;
+};
 
 const generated: Array<[string, () => GeneratedMap]> = [
   ['rustbelt', generateRustbelt],
@@ -93,6 +101,75 @@ describe('rustbelt', () => {
     expect(mirrored(map.scrapNodes)).toBe(true);
     expect(mirrored(map.claimPoints)).toBe(true);
     expect(mirrored(map.creepCamps)).toBe(true);
+  });
+
+  it('elk settlement-claimpunt heeft een scrap-node binnen claimRadiusM (besluit 9)', () => {
+    const radius = claimRadiusM();
+    const settlements = map.claimPoints.filter((c) => c.kind === 'settlement');
+    expect(settlements.length).toBeGreaterThanOrEqual(2);
+    for (const c of settlements) {
+      const near = map.scrapNodes.filter((n) => Math.hypot(n.x - c.x, n.y - c.y) <= radius);
+      expect(near.length, `claimpunt (${c.x},${c.y})`).toBeGreaterThanOrEqual(1);
+    }
+  });
+
+  it('naast elk claimpunt past een claimgebouw, op open cellen binnen claimRadiusM en niet op een node of claimpunt', () => {
+    const radius = claimRadiusM();
+    const { w: fw, h: fh } = claimFootprint();
+    const occupied = new Set([...map.scrapNodes, ...map.claimPoints].map((p) => p.y * map.w + p.x));
+    for (const c of map.claimPoints) {
+      let found = false;
+      for (let fy = c.y - 8; fy <= c.y + 8 && !found; fy++) {
+        for (let fx = c.x - 8; fx <= c.x + 8 && !found; fx++) {
+          let ok = true;
+          for (let y = fy; y < fy + fh; y++) {
+            for (let x = fx; x < fx + fw; x++) if (!isPassable(map, x, y) || occupied.has(y * map.w + x)) ok = false;
+          }
+          // Afstand van het punt tot de footprint (dichtstbijzijnde cel), zoals de sim het rekent.
+          const dx = Math.max(fx - c.x, 0, c.x - (fx + fw - 1));
+          const dy = Math.max(fy - c.y, 0, c.y - (fy + fh - 1));
+          if (ok && Math.hypot(dx, dy) <= radius) found = true;
+        }
+      }
+      expect(found, `claimpunt (${c.x},${c.y})`).toBe(true);
+    }
+  });
+
+  it('claimpunten en nodes liggen op een cel met begaanbare buren (geen ingesloten punt)', () => {
+    for (const p of [...map.claimPoints, ...map.scrapNodes]) {
+      const open = [[1, 0], [-1, 0], [0, 1], [0, -1]].filter(([dx, dy]) => isPassable(map, p.x + dx!, p.y + dy!)).length;
+      expect(open).toBeGreaterThanOrEqual(2);
+    }
+  });
+
+  it('creep-kampen liggen op de route tussen een basis en het middenpunt (omweg hooguit 8 m)', () => {
+    const center = map.claimPoints.find((c) => c.kind === 'powerArmor')!;
+    const spawnOf = (camp: { x: number }): { x: number; y: number } => (camp.x < 64 ? map.spawns[0]! : map.spawns[1]!);
+    const distFrom = (sx: number, sy: number): Int32Array => {
+      const d = new Int32Array(map.w * map.h).fill(-1);
+      const q = [sy * map.w + sx];
+      d[q[0]!] = 0;
+      for (let h = 0; h < q.length; h++) {
+        const i = q[h]!;
+        const x = i % map.w;
+        const y = (i - x) / map.w;
+        for (const [dx, dy] of [[1, 0], [0, 1], [-1, 0], [0, -1]] as const) {
+          if (!isPassable(map, x + dx, y + dy)) continue;
+          const j = (y + dy) * map.w + x + dx;
+          if (d[j] !== -1) continue;
+          d[j] = d[i]! + 1;
+          q.push(j);
+        }
+      }
+      return d;
+    };
+    for (const camp of map.creepCamps) {
+      const s = spawnOf(camp);
+      const fromSpawn = distFrom(s.x, s.y);
+      const fromCenter = distFrom(center.x, center.y);
+      const i = camp.y * map.w + camp.x;
+      expect(fromSpawn[i]! + fromCenter[i]!).toBeLessThanOrEqual(fromSpawn[center.y * map.w + center.x]! + 8);
+    }
   });
 
   it('heeft precies 2 spawns, in playerId-volgorde (spawn i is van speler i)', () => {
