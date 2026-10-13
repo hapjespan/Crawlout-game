@@ -1,90 +1,103 @@
-import { EVENT_TYPE, MAX_PLAYERS } from '@crawlout/protocol';
-import { C, NEUTRAL, ORDER_CLAIM } from '../ecs/world.js';
+import { EVENT_TYPE, MAX_ENTITIES, MAX_PLAYERS, OWNER_NEUTRAL } from '@crawlout/protocol';
+import { BSTATE_DONE, BSTATE_SITE, C } from '../ecs/world.js';
+import { PROVIDES_CLAIM } from '../fromData.js';
+import { clampI, idiv } from '../math/int.js';
 import type { Census } from './census.js';
 import { takeCensus } from './census.js';
+import { heroOf } from '../effects.js';
+import { grantXp } from './hero.js';
 import type { SimContext } from './common.js';
-import { NO_WINNER, WIN_DESTRUCTION, WIN_DOMINANCE, WIN_SURRENDER, dist2 } from './common.js';
+import { NO_WINNER, WIN_DESTRUCTION, WIN_DOMINANCE, WIN_SURRENDER, distToRect2 } from './common.js';
 
 // Systeem 7: claims en winroutes.
-// Claim: units met een Claim-order op dit punt die binnen claimRadius staan, nemen het na claimTicks, zolang geen
-// unit van een andere speler in de straal staat (dan pauzeert de voortgang). Zonder claimers valt de voortgang terug.
-// Een genomen punt blijft van de eigenaar tot een ander het neemt.
+// Claim (besluit sprint 2, fase-0 sectie 13; Spelfundament 3.1): een claimpunt is van speler p zolang een voltooid
+// gebouw van p met provides claim (claimpaal, hoofdgebouw) met zijn footprint binnen claimRadius van het punt staat.
+// Staat er geen, dan is het punt neutraal; staan er van meerdere spelers, dan houdt de huidige eigenaar het tot zijn
+// gebouw weg is, daarna de laagste playerId. Een speler die af is houdt niets. Elke wissel geeft claimTaken
+// (b = nieuwe eigenaar, OWNER_NEUTRAL als het punt terugvalt).
+// Presentatie: claimBy/claimProgress volgen het verst gevorderde claimgebouw in aanbouw van een andere speler dan de
+// eigenaar binnen de straal (animT van het claimpunt).
 // Winroutes: A, vernietiging (een speler die een hoofdgebouw had en er geen meer heeft, is af); B, dominantie
 // (pointsRequired claimpunten gedurende dominance.ticks aaneengesloten); opgeven (Surrender). Is er nog één speler
 // over, dan wint die. De winnaar staat vast; de sim tikt daarna gewoon door.
 
+const ANIM_FULL = 0xffff;
+
 export class ClaimScratch {
-  readonly claimers = new Int32Array(MAX_PLAYERS);
-  readonly present = new Int32Array(MAX_PLAYERS);
   readonly owned = new Int32Array(MAX_PLAYERS);
+  /** Indices van gebouwen met provides claim (af of in aanbouw), oplopend. */
+  readonly sources = new Int32Array(MAX_ENTITIES);
+  sourceCount = 0;
+}
+
+/** Of de footprint van gebouw b binnen de claimstraal van punt pt ligt. */
+export function inClaimRadius(ctx: SimContext, b: number, pt: number): boolean {
+  const w = ctx.world;
+  const r = ctx.config.claimRadius;
+  return distToRect2(w.x[pt]!, w.y[pt]!, w.fx[b]!, w.fy[b]!, w.fw[b]!, w.fh[b]!) <= r * r;
+}
+
+function collectSources(ctx: SimContext, s: ClaimScratch): void {
+  const w = ctx.world;
+  let k = 0;
+  for (let i = 0; i < w.highWater; i++) {
+    if (!w.has(i, C.building)) continue;
+    const bt = ctx.buildingType(w.typeId[i]!);
+    if (bt !== undefined && (bt.provides & PROVIDES_CLAIM) !== 0) s.sources[k++] = i;
+  }
+  s.sourceCount = k;
+}
+
+/**
+ * Eigenaar en voortgang van alle claimpunten bijwerken. quiet = true (startopstelling): geen events en geen
+ * ontdekking. Geeft per speler het aantal punten in s.owned.
+ */
+export function updateClaimPoints(ctx: SimContext, s: ClaimScratch, quiet: boolean): void {
+  const w = ctx.world;
+  collectSources(ctx, s);
+  s.owned.fill(0);
+  for (const pt of ctx.claimPoints) {
+    let holders = 0;
+    let siteOwner = OWNER_NEUTRAL;
+    let siteProgress = -1;
+    const cur = w.owner[pt]!;
+    for (let k = 0; k < s.sourceCount; k++) {
+      const b = s.sources[k]!;
+      const o = w.owner[b]!;
+      if (o >= ctx.playerCount || ctx.ps.defeated[o] !== 0 || !inClaimRadius(ctx, b, pt)) continue;
+      if (w.bstate[b] === BSTATE_DONE) holders |= 1 << o;
+      else if (w.bstate[b] === BSTATE_SITE && o !== cur) {
+        const bt = ctx.buildingType(w.typeId[b]!)!;
+        const total = bt.buildTicks * 1000;
+        const prog = total <= 0 ? ANIM_FULL : clampI(idiv(w.progress[b]! * ANIM_FULL, total), 0, ANIM_FULL);
+        if (prog > siteProgress) {
+          siteProgress = prog;
+          siteOwner = o;
+        }
+      }
+    }
+    let next = OWNER_NEUTRAL;
+    if (cur !== OWNER_NEUTRAL && (holders & (1 << cur)) !== 0) next = cur;
+    else if (holders !== 0) next = 31 - Math.clz32(holders & -holders); // laagste playerId
+    if (next !== cur) {
+      w.owner[pt] = next;
+      if (!quiet) ctx.events.push(EVENT_TYPE.claimTaken, w.idOf(pt), next, w.x[pt]!, w.y[pt]!);
+      if (next < MAX_PLAYERS && (w.seenBy[pt]! & (1 << next)) === 0) {
+        // Ontdekking: de eerste keer dat een speler dit punt neemt, xpPerDiscovery voor zijn held (niet bij de start).
+        w.seenBy[pt] = w.seenBy[pt]! | (1 << next);
+        const h = quiet ? undefined : heroOf(ctx, next);
+        if (h !== undefined) grantXp(ctx, next, h.xpPerDiscovery);
+      }
+    }
+    w.claimBy[pt] = siteOwner === next ? OWNER_NEUTRAL : siteOwner;
+    w.claimProgress[pt] = w.claimBy[pt] === OWNER_NEUTRAL ? 0 : siteProgress;
+    if (next < MAX_PLAYERS) s.owned[next] = s.owned[next]! + 1;
+  }
 }
 
 export function claimsSystem(ctx: SimContext, s: ClaimScratch, census: Census): void {
-  const w = ctx.world;
-  const r = ctx.config.claimRadius;
-  const r2 = r * r;
-  s.owned.fill(0);
-  for (let pt = 0; pt < w.highWater; pt++) {
-    if (!w.has(pt, C.claim)) continue;
-    const ptId = w.idOf(pt);
-    s.claimers.fill(0);
-    s.present.fill(0);
-    for (let i = 0; i < w.highWater; i++) {
-      if (!w.has(i, C.unit | C.health)) continue;
-      const dx = w.x[i]! - w.x[pt]!;
-      const dy = w.y[i]! - w.y[pt]!;
-      if (dx > r || -dx > r || dy > r || -dy > r || dist2(w, i, pt) > r2) continue;
-      const o = w.owner[i]!;
-      s.present[o] = s.present[o]! + 1;
-      const ord = w.currentOrder(i);
-      if (ord >= 0 && w.ordType[ord] === ORDER_CLAIM && w.ordT[ord] === ptId) s.claimers[o] = s.claimers[o]! + 1;
-    }
-    let claimant = -1;
-    let anyClaimers = false;
-    for (let p = 0; p < ctx.playerCount; p++) {
-      if (s.claimers[p]! === 0) continue;
-      anyClaimers = true;
-      let contested = false;
-      for (let q = 0; q < ctx.playerCount; q++) if (q !== p && s.present[q]! > 0) contested = true;
-      if (!contested) claimant = p;
-    }
-    if (claimant < 0) {
-      if (!anyClaimers) {
-        w.claimBy[pt] = NEUTRAL;
-        w.claimProgress[pt] = 0;
-      }
-    } else if (w.owner[pt] === claimant) {
-      w.claimBy[pt] = NEUTRAL;
-      w.claimProgress[pt] = 0;
-      finishClaimOrders(ctx, ptId, claimant);
-    } else {
-      if (w.claimBy[pt] !== claimant) {
-        w.claimBy[pt] = claimant;
-        w.claimProgress[pt] = 0;
-      }
-      w.claimProgress[pt] = w.claimProgress[pt]! + 1;
-      if (w.claimProgress[pt]! >= ctx.config.claimTicks) {
-        w.owner[pt] = claimant;
-        w.claimBy[pt] = NEUTRAL;
-        w.claimProgress[pt] = 0;
-        ctx.events.push(EVENT_TYPE.claimTaken, ptId, claimant, w.x[pt]!, w.y[pt]!);
-        finishClaimOrders(ctx, ptId, claimant);
-      }
-    }
-    const o = w.owner[pt]!;
-    if (o < MAX_PLAYERS) s.owned[o] = s.owned[o]! + 1;
-  }
+  updateClaimPoints(ctx, s, false);
   winRoutes(ctx, s, census);
-}
-
-/** Units van de nieuwe eigenaar met een Claim-order op dit punt zijn klaar. */
-function finishClaimOrders(ctx: SimContext, ptId: number, p: number): void {
-  const w = ctx.world;
-  for (let i = 0; i < w.highWater; i++) {
-    if (!w.has(i, C.unit | C.orders) || w.owner[i] !== p) continue;
-    const ord = w.currentOrder(i);
-    if (ord >= 0 && w.ordType[ord] === ORDER_CLAIM && w.ordT[ord] === ptId) w.popOrder(i);
-  }
 }
 
 function winRoutes(ctx: SimContext, s: ClaimScratch, census: Census): void {

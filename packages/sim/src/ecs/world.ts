@@ -1,4 +1,4 @@
-import { ENTITY_GEN_BITS, ENTITY_INDEX_BITS, ENTITY_NONE, MAX_ENTITIES } from '@crawlout/protocol';
+import { ENTITY_GEN_BITS, ENTITY_INDEX_BITS, ENTITY_NONE, MAX_ENTITIES, OWNER_NEUTRAL } from '@crawlout/protocol';
 
 // ECS op typed arrays (SoA), vooraf gealloceerd op MAX_ENTITIES. Geen floats.
 //
@@ -17,7 +17,7 @@ export const ORDER_ATTACK_MOVE = 2;
 export const ORDER_ATTACK = 3;
 export const ORDER_GATHER = 4;
 export const ORDER_BUILD = 5;
-export const ORDER_CLAIM = 6;
+// 6 was ORDER_CLAIM (sprint-2-interim); claimen is sinds sprint 3 een Build van het claimgebouw.
 export const ORDER_CRAFT = 7;
 
 /** Fasen binnen een order (veld `phase`). */
@@ -34,8 +34,6 @@ export const BSTATE_DONE = 2;
 export const NO_FIELD = 255;
 /** goalX/goalY zonder doel. */
 export const NO_GOAL = -1;
-/** Eigenaar van neutrale entities (scrap-nodes, onbezette claimpunten). */
-export const NEUTRAL = 255;
 
 /** Componentbits in mask. */
 export const C = {
@@ -50,6 +48,8 @@ export const C = {
   resource: 1 << 8,
   claim: 1 << 9,
   corpse: 1 << 10,
+  /** De held van zijn speler (een unit met de stats uit SimHero; PlayerState houdt xp, level, perks en oplappen). */
+  hero: 1 << 11,
 } as const;
 
 if (MAX_ENTITIES > 1 << ENTITY_INDEX_BITS) throw new Error('MAX_ENTITIES past niet in de index-bits van de entity-id');
@@ -108,7 +108,7 @@ export class World {
   readonly ordCount = new Uint8Array(MAX_ENTITIES);
   /** Fase binnen de huidige order (PHASE_*). */
   readonly phase = new Uint8Array(MAX_ENTITIES);
-  /** Teller van de huidige fase in ticks (verzamelen, omscholen) of de lijk-timer. */
+  /** Teller van de huidige fase in ticks (verzamelen, omscholen), de lijk-timer, of de onderzoeksvoortgang van een gebouw. */
   readonly work = new Int32Array(MAX_ENTITIES);
   // Target en Combat
   readonly target = new Uint32Array(MAX_ENTITIES);
@@ -126,11 +126,17 @@ export class World {
   readonly fh = new Uint8Array(MAX_ENTITIES);
   readonly bstate = new Uint8Array(MAX_ENTITIES);
   readonly progress = new Int32Array(MAX_ENTITIES);
+  /** Onderzoek in een voltooid gebouw: techId + 1, 0 = geen; de voortgang staat in `work` (duizendsten van een tick). */
+  readonly research = new Uint16Array(MAX_ENTITIES);
   // ResourceNode
   readonly amount = new Int32Array(MAX_ENTITIES);
-  // Claim: de eigenaar staat in `owner` (NEUTRAL als onbezet); wie neemt en hoe ver
+  // Claim: de eigenaar staat in `owner` (OWNER_NEUTRAL als onbezet). claimBy en claimProgress tonen de voortgang van
+  // het verst gevorderde claimgebouw in aanbouw van een andere speler binnen de straal (claimProgress = 0..65535,
+  // wordt animT); systeem 7 zet ze elke tick.
   readonly claimBy = new Uint8Array(MAX_ENTITIES);
   readonly claimProgress = new Int32Array(MAX_ENTITIES);
+  /** Claimpunt: bitset van spelers die het ooit namen (ontdekking, xpPerDiscovery voor de held). */
+  readonly seenBy = new Uint8Array(MAX_ENTITIES);
   // Presentatie (gaat de snapshot in, is ook state zodat de hash de hele snapshot dekt)
   readonly anim = new Uint8Array(MAX_ENTITIES);
   readonly animT = new Uint16Array(MAX_ENTITIES);
@@ -151,7 +157,7 @@ export class World {
     this.flowField[i] = NO_FIELD;
     this.goalX[i] = NO_GOAL;
     this.goalY[i] = NO_GOAL;
-    this.claimBy[i] = NEUTRAL;
+    this.claimBy[i] = OWNER_NEUTRAL;
     return i;
   }
 
@@ -299,9 +305,11 @@ export function entityStateArrays(w: World): readonly StateArray[] {
     one('fh', w.fh),
     one('bstate', w.bstate),
     one('progress', w.progress),
+    one('research', w.research),
     one('amount', w.amount),
     one('claimBy', w.claimBy),
     one('claimProgress', w.claimProgress),
+    one('seenBy', w.seenBy),
     one('anim', w.anim),
     one('animT', w.animT),
     one('flags', w.flags),

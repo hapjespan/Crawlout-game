@@ -16,20 +16,39 @@ export type {
   SimMap,
   SimPlayer,
   SimPoint,
+  SimAbility,
+  SimAuraEffect,
+  SimEffect,
+  SimHero,
+  SimPerk,
   SimScrapNode,
+  SimSpecialTuning,
+  SimTech,
   SimUnitType,
 } from './config.js';
+export {
+  AURA_SIDE_ALLY,
+  AURA_SIDE_ENEMY,
+  AURA_TARGET_ALL,
+  AURA_TARGET_TURRETS,
+  AURA_TARGET_UNITS,
+  EFFECT_TARGET_ALL,
+  EFFECT_TARGET_HERO,
+  EFFECT_TARGET_TYPE,
+  MAX_ABILITIES,
+  MAX_PERKS,
+  MAX_TECHS,
+} from './config.js';
+export { HERO_ALIVE, HERO_DEAD, HERO_EMPTY, HERO_NONE, HERO_REVIVING } from './effects.js';
 export { MAX_RADIUS, MAX_SPEED, envHash, validateEnv } from './config.js';
 export type { ClaimKind, SimMapSource } from './fromData.js';
-export { CLAIM_KINDS, PROVIDES_HQ, PROVIDES_WORKSHOP, simConfigFromGameData, simMapFromGrid, simPlayersFromLobby } from './fromData.js';
+export { CLAIM_KINDS, EFFECT_STATS, PROVIDES_CLAIM, PROVIDES_HQ, PROVIDES_WORKSHOP, simConfigFromGameData, simMapFromGrid, simPlayersFromLobby } from './fromData.js';
 export {
-  NEUTRAL,
   NO_ENTITY,
   NO_FIELD,
   ORDER_ATTACK,
   ORDER_ATTACK_MOVE,
   ORDER_BUILD,
-  ORDER_CLAIM,
   ORDER_CRAFT,
   ORDER_GATHER,
   ORDER_MOVE,

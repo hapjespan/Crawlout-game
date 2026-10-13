@@ -1,12 +1,14 @@
-import { MAX_PLAYERS } from '@crawlout/protocol';
+import { MAX_PLAYERS, OWNER_NEUTRAL } from '@crawlout/protocol';
 import type { SimBuildingType, SimConfig, SimMap, SimPlayer, SimUnitType } from '../config.js';
+import { MAX_ABILITIES } from '../config.js';
 import type { World } from '../ecs/world.js';
-import { BSTATE_DONE, C, NEUTRAL, NO_FIELD, NO_GOAL } from '../ecs/world.js';
+import { BSTATE_DONE, C, NO_FIELD, NO_GOAL } from '../ecs/world.js';
 import type { EventBuffer } from '../events.js';
 import type { FlowFields } from '../flowfield.js';
 import { idiv } from '../math/int.js';
 import { atan2A } from '../math/trig.js';
 import type { Rng } from '../rng.js';
+import type { Auras } from './hero.js';
 
 /** Per-speler state (SoA op MAX_PLAYERS). Gaat de hash en de serialisatie in. */
 export class PlayerState {
@@ -22,9 +24,31 @@ export class PlayerState {
   /** Scripted AI: index van de volgende bouworder en de volgende aanvalsgolf. */
   readonly aiBuild = new Int32Array(MAX_PLAYERS);
   readonly aiAttack = new Int32Array(MAX_PLAYERS);
+  /** Onderzochte techs als bitset (bit k = techId k, MAX_TECHS). */
+  readonly tech = new Uint32Array(MAX_PLAYERS);
+  // Held (één per speler; systems/hero.ts). De held-entity draagt C.hero; dit blijft bestaan als hij dood is.
+  /** HERO_NONE, HERO_ALIVE, HERO_DEAD, HERO_REVIVING of HERO_EMPTY. */
+  readonly heroState = new Uint8Array(MAX_PLAYERS);
+  /** Entity-id van de levende held, anders 0. */
+  readonly heroEnt = new Uint32Array(MAX_PLAYERS);
+  readonly heroLevel = new Int32Array(MAX_PLAYERS);
+  readonly heroXp = new Int32Array(MAX_PLAYERS);
+  /** Gekozen perks als bitset (bit k = perkId k, MAX_PERKS). */
+  readonly heroPerks = new Uint32Array(MAX_PLAYERS);
+  /** Level-ups zonder gekozen perk. */
+  readonly heroPending = new Int32Array(MAX_PLAYERS);
+  /** Aantal keer opgelapt. */
+  readonly heroRevives = new Int32Array(MAX_PLAYERS);
+  /** Ticks tot het oplappen klaar is (HERO_REVIVING). */
+  readonly heroTimer = new Int32Array(MAX_PLAYERS);
+  /** Per speler en ability-slot (MAX_ABILITIES): cooldown in ticks, en de zone (midden, resterende ticks). */
+  readonly abCooldown = new Int32Array(MAX_PLAYERS * MAX_ABILITIES);
+  readonly zoneX = new Int32Array(MAX_PLAYERS * MAX_ABILITIES);
+  readonly zoneY = new Int32Array(MAX_PLAYERS * MAX_ABILITIES);
+  readonly zoneTicks = new Int32Array(MAX_PLAYERS * MAX_ABILITIES);
 }
 
-export const NO_WINNER = NEUTRAL;
+export const NO_WINNER = OWNER_NEUTRAL;
 export const WIN_NONE = 0;
 export const WIN_DESTRUCTION = 1;
 export const WIN_DOMINANCE = 2;
@@ -99,6 +123,10 @@ export interface SimContext {
   readonly rng: Rng;
   /** Het frame dat nu wordt uitgevoerd. */
   readonly frame: number;
+  /** Indices van de claimpunten, oplopend (afgeleid: ze ontstaan alleen in de startopstelling en verdwijnen nooit). */
+  readonly claimPoints: readonly number[];
+  /** Ability-zones van deze tick (afgeleid, systems/hero.ts auraSystem). */
+  readonly auras: Auras;
   unitType(typeId: number): SimUnitType | undefined;
   buildingType(typeId: number): SimBuildingType | undefined;
 }
@@ -213,7 +241,7 @@ export function face(w: World, i: number, x: number, y: number): void {
 export function isEnemy(w: World, i: number, t: number): boolean {
   if (!w.has(t, C.health) || w.hp[t]! <= 0) return false;
   const o = w.owner[t]!;
-  return o !== NEUTRAL && o !== w.owner[i]!;
+  return o !== OWNER_NEUTRAL && o !== w.owner[i]!;
 }
 
 /** Kwadraat van de afstand tussen de middelpunten van twee entities. */
@@ -241,12 +269,34 @@ export function nearestOwnBuilding(ctx: SimContext, owner: number, x: number, y:
   return best;
 }
 
-/** Dichtstbijzijnde scrap-node met voorraad, of -1. Tiebreak laagste index. */
-export function nearestNode(w: World, x: number, y: number): number {
+/**
+ * Of speler p van scrap-node `node` mag verzamelen: niet als de node binnen claimRadius ligt van een claimpunt van
+ * een andere speler, tenzij hij ook binnen de straal van een eigen punt ligt.
+ */
+export function nodeAllowed(ctx: SimContext, node: number, p: number): boolean {
+  const w = ctx.world;
+  const r = ctx.config.claimRadius;
+  const r2 = r * r;
+  let blocked = false;
+  for (const pt of ctx.claimPoints) {
+    const o = w.owner[pt]!;
+    if (o === OWNER_NEUTRAL) continue;
+    const dx = w.x[node]! - w.x[pt]!;
+    const dy = w.y[node]! - w.y[pt]!;
+    if (dx * dx + dy * dy > r2) continue;
+    if (o === p) return true;
+    blocked = true;
+  }
+  return !blocked;
+}
+
+/** Dichtstbijzijnde scrap-node met voorraad waar speler p mag verzamelen (nodeAllowed), of -1. Tiebreak laagste index. */
+export function nearestNode(ctx: SimContext, p: number, x: number, y: number): number {
+  const w = ctx.world;
   let best = -1;
   let bestD = 0;
   for (let j = 0; j < w.highWater; j++) {
-    if (!w.has(j, C.resource) || w.amount[j]! <= 0) continue;
+    if (!w.has(j, C.resource) || w.amount[j]! <= 0 || !nodeAllowed(ctx, j, p)) continue;
     const dx = w.x[j]! - x;
     const dy = w.y[j]! - y;
     const d = dx * dx + dy * dy;

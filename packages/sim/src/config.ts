@@ -55,7 +55,7 @@ export interface SimUnitType {
   readonly scrapCost: number; // kosten van omscholen in de werkplaats
   readonly craftTicks: number;
   readonly popCost: number;
-  /** Tech-ids die nodig zijn. Onderzoek bestaat nog niet in de sim: een type met prereqTech is nog niet beschikbaar. */
+  /** Tech-ids die de speler onderzocht moet hebben voor Craft of SetRole naar dit type. */
   readonly prereqTech: readonly number[];
 }
 
@@ -76,6 +76,105 @@ export interface SimBuildingType {
   readonly prereqTech: readonly number[];
 }
 
+/** Doel van een effect: alles van de speler, de held, of één unit- of gebouwtype (typeId). */
+export const EFFECT_TARGET_ALL = 0;
+export const EFFECT_TARGET_HERO = 1;
+export const EFFECT_TARGET_TYPE = 2;
+
+/**
+ * Eén effect van een tech of perk (contract 3, effects[]). stat is de index in EFFECT_STATS (EffectStat in packages/data);
+ * delta in sim-eenheden: Pct-stats promille, M-stats eenheden, S-stats ticks, SPECIAL-letters ruw.
+ */
+export interface SimEffect {
+  readonly stat: number;
+  /** EFFECT_TARGET_*. */
+  readonly target: number;
+  /** Unit- of gebouw-typeId bij EFFECT_TARGET_TYPE, anders 0. */
+  readonly typeId: number;
+  readonly delta: number;
+}
+
+/** Eén tech (tech.json). Op techId: techs[k].techId === k. */
+export interface SimTech {
+  readonly techId: number;
+  readonly factionId: number;
+  readonly scrapCost: number;
+  readonly researchTicks: number;
+  /** Gebouwtype waarin de tech onderzocht wordt (lab, werkplaats). */
+  readonly buildingTypeId: number;
+  readonly prereqTech: readonly number[];
+  readonly effects: readonly SimEffect[];
+}
+
+/** Eén perk (perks.json). Op perkId: perks[k].perkId === k. */
+export interface SimPerk {
+  readonly perkId: number;
+  /** Index in de SPECIAL-volgorde S P E C I A L. */
+  readonly requiresStat: number;
+  readonly requiresMin: number;
+  readonly effects: readonly SimEffect[];
+}
+
+/** Kant en doel van een ability-effect (heroes.json abilities[].effects[]). */
+export const AURA_SIDE_ENEMY = 0;
+export const AURA_SIDE_ALLY = 1;
+export const AURA_TARGET_UNITS = 0;
+export const AURA_TARGET_TURRETS = 1;
+export const AURA_TARGET_ALL = 2;
+
+/** Effect van een ability op alles binnen de straal zolang de zone duurt. Alleen speed- en damage-stats (STAT in effects.ts). */
+export interface SimAuraEffect {
+  readonly stat: number;
+  readonly side: number;
+  readonly target: number;
+  /** Promille. */
+  readonly delta: number;
+}
+
+export interface SimAbility {
+  readonly cooldownTicks: number;
+  /** Max afstand van de held tot het doelpunt (0 = op de held). */
+  readonly rangeU: number;
+  readonly radiusU: number;
+  readonly durationTicks: number;
+  readonly effects: readonly SimAuraEffect[];
+}
+
+/** Eén held (heroes.json). Op heroId: heroes[k].heroId === k. typeId = heroTypeId(heroId) uit @crawlout/data. */
+export interface SimHero {
+  readonly heroId: number;
+  readonly typeId: number;
+  readonly factionId: number;
+  /** Unittype dat lichaam, wapen en basisstats levert (het militie-loadout van de factie); SPECIAL schaalt daarop. */
+  readonly baseTypeId: number;
+  /** S P E C I A L. */
+  readonly special: readonly number[];
+  /** Cumulatieve xp per level: xpThresholds[k] = xp voor level k + 2. */
+  readonly xpThresholds: readonly number[];
+  readonly xpPerKill: number;
+  readonly xpPerDiscovery: number;
+  readonly abilities: readonly SimAbility[];
+  /** perkIds waaruit de held kiest. */
+  readonly perkPool: readonly number[];
+  readonly reviveScrap: number;
+  readonly reviveTicks: number;
+  /** Per keer oplappen gaat dit deel van perks en health weg, in promille. */
+  readonly revivePenaltyPermille: number;
+  readonly maxRevives: number;
+}
+
+/** SPECIAL van de held, per punt van de letter (sim.json, ter review). */
+export interface SimSpecialTuning {
+  readonly strengthDamagePermille: number;
+  readonly perceptionRangeU: number;
+  readonly enduranceHpPermille: number;
+  readonly charismaGrowthPermille: number;
+  readonly intelligenceResearchPermille: number;
+  readonly agilitySpeedPermille: number;
+  readonly luckCritPermille: number;
+  readonly critDamagePermille: number;
+}
+
 export interface SimFaction {
   readonly factionId: number;
   /** In bestandsvolgorde (contract 2, startopstelling). */
@@ -91,11 +190,17 @@ export interface SimFaction {
   readonly roleTypeIds: readonly number[];
   /** Index in SimConfig.aiScripts voor AI-spelers van deze factie, -1 = geen script. */
   readonly aiScript: number;
+  /** Het gebouw dat het Claim-commando bouwt (provides claim, geen hoofdgebouw); 0 = geen. */
+  readonly claimTypeId: number;
+  /** De held van deze factie (index in SimConfig.heroes), -1 = geen held. */
+  readonly heroId: number;
 }
 
 export interface SimAiScript {
   readonly buildOrder: readonly { readonly atTick: number; readonly typeId: number }[];
   readonly attackTimersTicks: readonly number[];
+  /** Deel van de bewoners dat de AI tot militie omschoolt, in promille (ai/*.json militiaPct). */
+  readonly militiaPermille: number;
 }
 
 export interface SimConfig {
@@ -106,6 +211,13 @@ export interface SimConfig {
   /** Op factionId: factions[k].factionId === k. */
   readonly factions: readonly SimFaction[];
   readonly aiScripts: readonly SimAiScript[];
+  /** Op techId; hoogstens MAX_TECHS (bitset per speler). */
+  readonly techs: readonly SimTech[];
+  /** Op heroId. */
+  readonly heroes: readonly SimHero[];
+  /** Op perkId; hoogstens MAX_PERKS (bitset per held). */
+  readonly perks: readonly SimPerk[];
+  readonly special: SimSpecialTuning;
   /** damageMatrix[damageType][armorType] in promille (1000 = normale schade). */
   readonly damageMatrix: readonly (readonly number[])[];
   /** Ticks in een minuut, voor housingGrowthPerMin (omgerekend door de adapter, niet door de sim). */
@@ -122,16 +234,17 @@ export interface SimConfig {
   readonly aggroRange: number;
   /** Reikwijdte voor verzamelen, afleveren, bouwen en omscholen: afstand tot node of footprint. */
   readonly interactRange: number;
-  /** Straal rond een claimpunt waarbinnen units het nemen. */
+  /**
+   * Straal rond een claimpunt (besluit sprint 2, sectie 13): een voltooid gebouw met provides claim waarvan de footprint
+   * hierbinnen ligt houdt het punt; een scrap-node hierbinnen van een bezet punt is exclusief voor de eigenaar.
+   */
   readonly claimRadius: number;
-  /** Ticks dat claimende units ongestoord in de straal moeten staan. */
-  readonly claimTicks: number;
   /** Bovengrens van de pop-cap, los van het aantal bedden. */
   readonly popCapMax: number;
   /** Ticks dat een gedode unit als lijk (anim death) blijft staan. */
   readonly corpseTicks: number;
-  /** Scripted AI: deel van de bewoners dat de AI tot militie omschoolt, in promille. */
-  readonly aiMilitiaPermille: number;
+  /** Teruggave bij Cancel van een bouwplaats of een betaalde omscholing, in promille van de prijs (1000 = alles). */
+  readonly cancelRefundPermille: number;
 }
 
 /** Eén speler in de startopstelling, in playerId-volgorde. */
@@ -159,6 +272,18 @@ export const MAX_SPEED = UNITS_PER_METER >> 1;
 export const MAX_RADIUS = UNITS_PER_METER;
 /** Geometrie: grootste footprint-zijde in cellen (past in Uint8 en in de ringzoeker rond gebouwen). */
 export const MAX_FOOTPRINT = 16;
+/** Geometrie van de state: onderzochte techs staan per speler in een uint32-bitset. */
+export const MAX_TECHS = 32;
+/** Geometrie van de state: gekozen perks staan per held in een uint32-bitset. */
+export const MAX_PERKS = 32;
+/** Geometrie van de state: abilities per held (cooldown en zone per slot). */
+export const MAX_ABILITIES = 4;
+/** SPECIAL heeft zeven letters. */
+export const SPECIAL_COUNT = 7;
+/** Aantal effect-stats (EffectStat in packages/data): hpPct .. researchTimePct en de zeven SPECIAL-letters. */
+export const EFFECT_STAT_COUNT = 14;
+/** Grens voor bouw- en onderzoekstijd in ticks: voortgang telt in duizendsten van een tick (PROGRESS_ONE) in een int32. */
+export const MAX_WORK_TICKS = 2_000_000;
 const U16 = 0xffff;
 const I31 = 0x7fffffff;
 
@@ -200,10 +325,9 @@ export function validateEnv(env: SimEnv): void {
   req(intIn(config.aggroRange, 0, MAX_MAP_CELLS_SIDE << 8), 'aggroRange');
   req(intIn(config.interactRange, 0, MAX_MAP_CELLS_SIDE << 8), 'interactRange');
   req(intIn(config.claimRadius, 0, MAX_MAP_CELLS_SIDE << 8), 'claimRadius');
-  req(intIn(config.claimTicks, 1, I31), 'claimTicks');
   req(intIn(config.popCapMax, 0, 4096), 'popCapMax');
   req(intIn(config.corpseTicks, 0, U16), 'corpseTicks');
-  req(intIn(config.aiMilitiaPermille, 0, 1000), 'aiMilitiaPermille');
+  req(intIn(config.cancelRefundPermille, 0, 1000), 'cancelRefundPermille');
 
   const armorCount = config.damageMatrix[0]?.length ?? 0;
   req(config.damageMatrix.length > 0 && armorCount > 0, 'damageMatrix leeg');
@@ -235,7 +359,7 @@ export function validateEnv(env: SimEnv): void {
     req(intIn(b.typeId, 1, U16) && !buildingIds.has(b.typeId) && !unitIds.has(b.typeId), `${at}: typeId ongeldig of dubbel`);
     buildingIds.add(b.typeId);
     req(intIn(b.maxHp, 1, I31) && intIn(b.armorType, 0, armorCount - 1), `${at}: hp of armorType`);
-    req(intIn(b.scrapCost, 0, I31) && intIn(b.buildTicks, 0, I31) && intIn(b.beds, 0, 0xffff), `${at}: kosten, bouwtijd of bedden`);
+    req(intIn(b.scrapCost, 0, I31) && intIn(b.buildTicks, 0, MAX_WORK_TICKS) && intIn(b.beds, 0, 0xffff), `${at}: kosten, bouwtijd of bedden`);
     req(intIn(b.footprintW, 1, MAX_FOOTPRINT) && intIn(b.footprintH, 1, MAX_FOOTPRINT), `${at}: footprint`);
     req(intIn(b.provides, 0, 0xff) && intIn(b.factionId, 0, config.factions.length - 1), `${at}: provides of factionId`);
     for (const t of b.prereqTech) req(intIn(t, 0, U16), `${at}: prereqTech`);
@@ -249,10 +373,59 @@ export function validateEnv(env: SimEnv): void {
     req(f.settlerTypeId === 0 || unitIds.has(f.settlerTypeId), `${at}: settlerTypeId`);
     for (const t of f.roleTypeIds) req(t === 0 || unitIds.has(t), `${at}: roleTypeIds`);
     req(intIn(f.aiScript, -1, config.aiScripts.length - 1), `${at}: aiScript`);
+    req(f.claimTypeId === 0 || buildingIds.has(f.claimTypeId), `${at}: claimTypeId`);
   });
+  const checkEffects = (effects: readonly SimEffect[], at: string): void => {
+    for (const e of effects) {
+      req(intIn(e.stat, 0, EFFECT_STAT_COUNT - 1) && intIn(e.delta, -I31, I31), `${at}: effect stat of delta`);
+      req(intIn(e.target, EFFECT_TARGET_ALL, EFFECT_TARGET_TYPE), `${at}: effect-doel`);
+      req(e.target === EFFECT_TARGET_TYPE ? unitIds.has(e.typeId) || buildingIds.has(e.typeId) : e.typeId === 0, `${at}: effect-typeId`);
+    }
+  };
+  req(config.techs.length <= MAX_TECHS, `meer dan ${MAX_TECHS} techs`);
+  config.techs.forEach((t, k) => {
+    const at = `tech ${k}`;
+    req(t.techId === k && intIn(t.factionId, 0, config.factions.length - 1), `${at}: techId of factionId`);
+    req(intIn(t.scrapCost, 0, I31) && intIn(t.researchTicks, 0, MAX_WORK_TICKS) && buildingIds.has(t.buildingTypeId), `${at}: kosten, tijd of gebouw`);
+    for (const q of t.prereqTech) req(intIn(q, 0, config.techs.length - 1), `${at}: prereqTech`);
+    checkEffects(t.effects, at);
+  });
+  for (const u of config.unitTypes) for (const t of u.prereqTech) req(intIn(t, 0, config.techs.length - 1), `unittype ${u.typeId}: prereqTech`);
+  for (const b of config.buildingTypes) for (const t of b.prereqTech) req(intIn(t, 0, config.techs.length - 1), `gebouwtype ${b.typeId}: prereqTech`);
+  req(config.perks.length <= MAX_PERKS, `meer dan ${MAX_PERKS} perks`);
+  config.perks.forEach((pk, k) => {
+    req(pk.perkId === k && intIn(pk.requiresStat, 0, SPECIAL_COUNT - 1) && intIn(pk.requiresMin, -I31, I31), `perk ${k}: id of requires`);
+    checkEffects(pk.effects, `perk ${k}`);
+  });
+  const sp = config.special;
+  for (const v of [sp.strengthDamagePermille, sp.perceptionRangeU, sp.enduranceHpPermille, sp.charismaGrowthPermille, sp.intelligenceResearchPermille, sp.agilitySpeedPermille]) {
+    req(intIn(v, -100000, 100000), 'special-tuning');
+  }
+  req(intIn(sp.luckCritPermille, 0, 1000) && intIn(sp.critDamagePermille, 0, 100000), 'special-tuning: luckCritPermille of critDamagePermille');
+  config.heroes.forEach((hr, k) => {
+    const at = `held ${k}`;
+    req(hr.heroId === k && intIn(hr.typeId, 1, U16) && !unitIds.has(hr.typeId) && !buildingIds.has(hr.typeId), `${at}: heroId of typeId`);
+    req(intIn(hr.factionId, 0, config.factions.length - 1) && unitIds.has(hr.baseTypeId), `${at}: factionId of baseTypeId`);
+    req(hr.special.length === SPECIAL_COUNT && hr.special.every((v) => intIn(v, 0, 100)), `${at}: special`);
+    req(hr.xpThresholds.every((v, j) => intIn(v, 1, I31) && (j === 0 || v > hr.xpThresholds[j - 1]!)), `${at}: xpThresholds`);
+    req(intIn(hr.xpPerKill, 0, I31) && intIn(hr.xpPerDiscovery, 0, I31), `${at}: xp`);
+    req(hr.abilities.length <= MAX_ABILITIES, `${at}: meer dan ${MAX_ABILITIES} abilities`);
+    for (const a of hr.abilities) {
+      req(intIn(a.cooldownTicks, 0, I31) && intIn(a.durationTicks, 0, I31), `${at}: ability-tijden`);
+      req(intIn(a.rangeU, 0, MAX_MAP_CELLS_SIDE << 8) && intIn(a.radiusU, 0, MAX_MAP_CELLS_SIDE << 8), `${at}: ability-afstanden`);
+      for (const e of a.effects) {
+        req(intIn(e.stat, 0, EFFECT_STAT_COUNT - 1) && intIn(e.delta, -100000, 100000), `${at}: ability-effect`);
+        req(intIn(e.side, AURA_SIDE_ENEMY, AURA_SIDE_ALLY) && intIn(e.target, AURA_TARGET_UNITS, AURA_TARGET_ALL), `${at}: ability-effect kant of doel`);
+      }
+    }
+    for (const q of hr.perkPool) req(intIn(q, 0, config.perks.length - 1), `${at}: perkPool`);
+    req(intIn(hr.reviveScrap, 0, I31) && intIn(hr.reviveTicks, 0, I31) && intIn(hr.revivePenaltyPermille, 0, 1000) && intIn(hr.maxRevives, 0, 1000), `${at}: oplappen`);
+  });
+  config.factions.forEach((f, k) => req(intIn(f.heroId, -1, config.heroes.length - 1), `factie ${k}: heroId`));
   for (const s of config.aiScripts) {
     for (const o of s.buildOrder) req(intIn(o.atTick, 0, I31) && buildingIds.has(o.typeId), 'aiScript buildOrder');
     for (const t of s.attackTimersTicks) req(intIn(t, 0, I31), 'aiScript attackTimersTicks');
+    req(intIn(s.militiaPermille, 0, 1000), 'aiScript militiaPermille');
   }
   for (const p of players) {
     req(intIn(p.factionId, 0, config.factions.length - 1), `speler met onbekende factie ${p.factionId}`);
@@ -263,6 +436,12 @@ export function validateEnv(env: SimEnv): void {
 const hashInts = (h: number, vs: readonly number[]): number => {
   let x = fnv1aInt(h, vs.length);
   for (const v of vs) x = fnv1aInt(x, v);
+  return x;
+};
+
+const hashEffects = (h: number, effects: readonly SimEffect[]): number => {
+  let x = fnv1aInt(h, effects.length);
+  for (const e of effects) x = hashInts(x, [e.stat, e.target, e.typeId, e.delta]);
   return x;
 };
 
@@ -282,10 +461,9 @@ export function envHash(env: SimEnv): number {
     c.aggroRange,
     c.interactRange,
     c.claimRadius,
-    c.claimTicks,
     c.popCapMax,
     c.corpseTicks,
-    c.aiMilitiaPermille,
+    c.cancelRefundPermille,
   ]);
   h = fnv1aInt(h, c.unitTypes.length);
   for (const u of c.unitTypes) {
@@ -300,7 +478,7 @@ export function envHash(env: SimEnv): number {
   }
   h = fnv1aInt(h, c.factions.length);
   for (const f of c.factions) {
-    h = hashInts(h, [f.factionId, f.startScrap, f.housingGrowthPerMin, f.hqTypeId, f.settlerTypeId, f.aiScript]);
+    h = hashInts(h, [f.factionId, f.startScrap, f.housingGrowthPerMin, f.hqTypeId, f.settlerTypeId, f.aiScript, f.claimTypeId, f.heroId]);
     h = fnv1aInt(h, f.startUnits.length);
     for (const s of f.startUnits) h = hashInts(h, [s.typeId, s.count]);
     h = hashInts(h, f.roleTypeIds);
@@ -310,7 +488,44 @@ export function envHash(env: SimEnv): number {
     h = fnv1aInt(h, s.buildOrder.length);
     for (const o of s.buildOrder) h = hashInts(h, [o.atTick, o.typeId]);
     h = hashInts(h, s.attackTimersTicks);
+    h = fnv1aInt(h, s.militiaPermille);
   }
+  h = fnv1aInt(h, c.techs.length);
+  for (const t of c.techs) {
+    h = hashInts(h, [t.techId, t.factionId, t.scrapCost, t.researchTicks, t.buildingTypeId]);
+    h = hashInts(h, t.prereqTech);
+    h = hashEffects(h, t.effects);
+  }
+  h = fnv1aInt(h, c.perks.length);
+  for (const pk of c.perks) {
+    h = hashInts(h, [pk.perkId, pk.requiresStat, pk.requiresMin]);
+    h = hashEffects(h, pk.effects);
+  }
+  h = fnv1aInt(h, c.heroes.length);
+  for (const hr of c.heroes) {
+    h = hashInts(h, [hr.heroId, hr.typeId, hr.factionId, hr.baseTypeId, hr.xpPerKill, hr.xpPerDiscovery]);
+    h = hashInts(h, [hr.reviveScrap, hr.reviveTicks, hr.revivePenaltyPermille, hr.maxRevives]);
+    h = hashInts(h, hr.special);
+    h = hashInts(h, hr.xpThresholds);
+    h = hashInts(h, hr.perkPool);
+    h = fnv1aInt(h, hr.abilities.length);
+    for (const a of hr.abilities) {
+      h = hashInts(h, [a.cooldownTicks, a.rangeU, a.radiusU, a.durationTicks]);
+      h = fnv1aInt(h, a.effects.length);
+      for (const e of a.effects) h = hashInts(h, [e.stat, e.side, e.target, e.delta]);
+    }
+  }
+  const sp = c.special;
+  h = hashInts(h, [
+    sp.strengthDamagePermille,
+    sp.perceptionRangeU,
+    sp.enduranceHpPermille,
+    sp.charismaGrowthPermille,
+    sp.intelligenceResearchPermille,
+    sp.agilitySpeedPermille,
+    sp.luckCritPermille,
+    sp.critDamagePermille,
+  ]);
   h = fnv1aInt(h, c.damageMatrix.length);
   for (const row of c.damageMatrix) h = hashInts(h, row);
 

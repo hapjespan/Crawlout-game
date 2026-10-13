@@ -34,6 +34,7 @@ interface Start {
   nodes: number[];
   claims: number[];
   hq: number[];
+  hero: number[][];
   scav: number[][];
   builder: number[][];
   militia: number[][];
@@ -41,9 +42,10 @@ interface Start {
 
 function startOf(r: Replay): Start {
   const sim = createReplaySim(r);
-  const s: Start = { sim, nodes: [], claims: [], hq: [], scav: [], builder: [], militia: [] };
+  const s: Start = { sim, nodes: [], claims: [], hq: [], hero: [], scav: [], builder: [], militia: [] };
   for (let p = 0; p < r.players.length; p++) {
     s.scav.push([]);
+    s.hero.push([]);
     s.builder.push([]);
     s.militia.push([]);
   }
@@ -52,6 +54,7 @@ function startOf(r: Replay): Start {
     if (u.kind === 'scrapNode') s.nodes.push(id);
     else if (u.kind === 'claimPoint') s.claims.push(id);
     else if (u.kind === 'building') s.hq.push(id);
+    else if (u.kind === 'hero') s.hero[u.owner]!.push(id);
     else if (u.role === ROLES.indexOf('scavenger')) s.scav[u.owner]!.push(id);
     else if (u.role === ROLES.indexOf('builder')) s.builder[u.owner]!.push(id);
     else if (u.role === ROLES.indexOf('militia')) s.militia[u.owner]!.push(id);
@@ -76,6 +79,9 @@ function nearest(sim: Sim, ids: readonly number[], x: number, y: number): number
 
 const cell = (cx: number, cy: number): { x: number; y: number } => ({ x: cx * 256 + 128, y: cy * 256 + 128 });
 const building = (key: string): number => buildingTypeId(gameData().data.buildings.find((b) => b.key === key)!.id);
+const tech = (key: string): number => gameData().data.tech.find((t) => t.key === key)!.id;
+const loadout = (key: string): number => gameData().data.loadouts.find((l) => l.key === key)!.id;
+const data = { get heroes() { return gameData().data.heroes; } };
 
 class Script {
   private readonly frames = new Map<number, CommandEnvelope[]>();
@@ -121,7 +127,7 @@ export const FIXTURES: readonly FixtureDef[] = [
         .add(302, 0, 'Move', { ids: a.slice(2, 4), ...cell(12, 26) }, 101)
         .add(302, 0, 'Move', { ids: a.slice(2, 4), ...cell(20, 26) }, 100)
         .move(400, 1, b, 16, 16)
-        .add(450, 1, 'Research', { techId: 0 }); // nog no-op
+        .add(450, 1, 'Research', { techId: 0 }); // ongeldig: geen lab en prereqTech ontbreekt
       r.bundles = s.bundles();
       r.hashes = [{ frame: 599, hash: 0 }]; // lengte; record vult de echte hashes in
       return r;
@@ -129,7 +135,7 @@ export const FIXTURES: readonly FixtureDef[] = [
   },
   {
     // Een potje-fragment op Rustbelt met twee mensen: verzamelen, bouwen (woning, werkplaats), rol wisselen,
-    // claimen, en gevecht met AttackMove en Attack. Plus een Cancel met teruggave en een Surrender aan het eind.
+    // claimen met een claimpaal, en gevecht met AttackMove en Attack. Plus een Cancel met teruggave en een Surrender aan het eind.
     name: 's2-rustbelt-skirmish',
     build() {
       const r = base('rustbelt', 777, [false, false]);
@@ -150,9 +156,10 @@ export const FIXTURES: readonly FixtureDef[] = [
       s.add(1010, 1, 'Build', { ids: st.builder[1]!, typeId: building('radiobaken'), ...cell(104, 100) });
       // omscholen: twee scavengers van speler 0 worden militie
       s.add(1800, 0, 'SetRole', { ids: st.scav[0]!.slice(0, 2), role: 'militia' });
-      // claim: de militie van speler 1 neemt het nederzettingspunt aan zijn kant
+      // claim: de bouwer van speler 1 zet een claimpaal bij het punt aan zijn kant (na de werkplaats); de militie mag niet
       const claim1 = nearest(sim, st.claims, spawns[1]!.x, spawns[1]!.y);
-      s.add(300, 1, 'Claim', { ids: st.militia[1]!, pointId: claim1 });
+      s.add(300, 1, 'Claim', { ids: st.militia[1]!, pointId: claim1 }); // ongeldig: geen bouwers
+      s.add(2000, 1, 'Claim', { ids: st.builder[1]!, pointId: claim1 });
       // gevecht: militie van speler 0 op AttackMove naar dat claimpunt
       const c1 = sim.getUnit(claim1)!;
       s.add(1200, 0, 'AttackMove', { ids: st.militia[0]!, x: c1.x, y: c1.y });
@@ -166,15 +173,98 @@ export const FIXTURES: readonly FixtureDef[] = [
     },
   },
   {
-    // Scripted AI tegen scripted AI op Rustbelt tot er een winnaar is. Geen bundels met commando's: de AI zit in de sim.
+    // Sprint 3 op Rustbelt met twee mensen: claimen met de claimpaal (ook een ongeldige Claim zonder bouwers), de held
+    // (escorte, gevecht, Lockdown, xp door kills en ontdekking, PickPerk, dood en oplappen met Recruit, Cancel van het
+    // oplappen), onderzoek in de werkplaats (Research, Cancel met teruggave, opnieuw) en Craft van een patrol.
+    name: 's3-rustbelt-hero-claims',
+    build() {
+      const r = base('rustbelt', 303, [false, false]);
+      const st = startOf(r);
+      const sim = st.sim;
+      const s = new Script();
+      const spawns = [cell(20, 20), cell(107, 107)];
+      const centre = nearest(sim, st.claims, cell(64, 64).x, cell(64, 64).y);
+      const own = [nearest(sim, st.claims, cell(81, 31).x, cell(81, 31).y), nearest(sim, st.claims, cell(46, 96).x, cell(46, 96).y)];
+      const hero = data.heroes[0]!.id;
+      for (let p = 0; p < 2; p++) {
+        const node = nearest(sim, st.nodes, spawns[p]!.x, spawns[p]!.y);
+        s.add(4, p, 'Gather', { ids: st.scav[p]!, nodeId: node });
+        s.add(5, p, 'Claim', { ids: st.militia[p]!, pointId: own[p]! }); // ongeldig: geen bouwers
+        s.add(6, p, 'Claim', { ids: st.builder[p]!, pointId: own[p]! });
+      }
+      // speler 0: de held escorteert de bouwer, daarna naar het midden; speler 1 claimt het midden
+      const c = sim.getUnit(centre)!;
+      const o0 = sim.getUnit(own[0]!)!;
+      s.add(8, 0, 'Move', { ids: st.hero[0]!, x: o0.x, y: o0.y - 512 });
+      s.add(900, 1, 'Claim', { ids: st.builder[1]!, pointId: centre });
+      s.add(950, 1, 'AttackMove', { ids: st.hero[1]!, x: c.x, y: c.y });
+      s.add(1000, 0, 'AttackMove', { ids: [...st.hero[0]!, ...st.militia[0]!], x: c.x, y: c.y });
+      s.add(1300, 0, 'HeroAbility', { heroId: hero, abilityId: 0 });
+      s.add(1310, 1, 'HeroAbility', { heroId: hero, abilityId: 0 });
+      // beide spelers sturen scavengers naar het midden (xp voor de helden); speler 1 kiest perks zodra hij kan
+      s.add(1100, 1, 'Move', { ids: st.scav[1]!.slice(0, 2), x: c.x, y: c.y });
+      // (speler 0 stuurt ze naar waar de held van speler 1 op frame 1500 staat; dat volgt deterministisch uit de run)
+      r.bundles = s.bundles();
+      const h1 = stateAt(r, 1500).getUnit(st.hero[1]![0]!)!;
+      s.add(1500, 0, 'Move', { ids: st.scav[0]!.slice(1), x: h1.x, y: h1.y });
+      for (let k = 0; k < 6; k++) s.add(1500 + 1000 * k, 1, 'PickPerk', { heroId: hero, perkId: data.heroes[0]!.perkPool[k]! });
+      // oplappen: beide spelers proberen het op vaste frames (ongeldig zolang hun held leeft), speler 1 annuleert een keer
+      for (let k = 0; k < 20; k++) {
+        s.add(1600 + 300 * k, 0, 'Recruit', { buildingId: st.hq[0]! });
+        s.add(1650 + 300 * k, 1, 'Recruit', { buildingId: st.hq[1]! });
+      }
+      s.add(1700, 1, 'Cancel', { ids: [st.hq[1]!] });
+      // onderzoek: werkplaats, geweerrek (Cancel, opnieuw), patrol craften
+      s.add(1200, 0, 'Build', { ids: st.builder[0]!, typeId: building('werkplaats'), ...cell(28, 20) });
+      s.add(2400, 0, 'Research', { techId: tech('geweerrek') });
+      s.add(2410, 0, 'Cancel', { ids: [st.hq[0]!] }); // stopt het oplappen als dat loopt (teruggave)
+      s.add(2600, 0, 'Research', { techId: tech('composiet_pantser') }); // ongeldig: prereqTech
+      s.add(3200, 0, 'Craft', { ids: st.scav[0]!.slice(0, 1), loadoutId: loadout('patrol') });
+      // later valt speler 1 met held en militie de basis van speler 0 aan; een opgelapte held heeft een nieuwe id
+      r.bundles = s.bundles();
+      const later = stateAt(r, 3400);
+      const hero1 = later.entityIds().filter((id) => later.getUnit(id)!.kind === 'hero' && later.getUnit(id)!.owner === 1);
+      s.add(3400, 1, 'AttackMove', { ids: [...hero1, ...st.militia[1]!], ...spawns[0]! });
+      s.add(3410, 0, 'Move', { ids: st.militia[0]!, ...cell(30, 40) }); // de militie van speler 0 laat de basis open
+      r.bundles = s.bundles();
+      r.hashes = [{ frame: 7999, hash: 0 }];
+      return r;
+    },
+  },
+  {
+    // Scripted AI tegen scripted AI op Rustbelt tot er een winnaar is. Geen bundels met commando's: de AI zit in de sim
+    // (bouwvolgorde, claimpalen, omscholen, aanvalsgolven met de held, Lockdown, oplappen, perks).
     name: 's2-rustbelt-ai-vs-ai',
     build() {
       const r = base('rustbelt', 42, [true, true]);
-      r.hashes = [{ frame: 10999, hash: 0 }];
+      // tot net na de winst (dominantie of vernietiging), hoogstens 30 minuten speeltijd
+      const sim = createReplaySim(r);
+      let end = 35999;
+      for (let f = 0; f < 36000; f++) {
+        sim.applyBundle({ frame: f, commands: [] });
+        sim.tick();
+        const w = sim.winner();
+        if (w !== null) {
+          end = w.frame + 20;
+          break;
+        }
+      }
+      r.hashes = [{ frame: end, hash: 0 }];
       return r;
     },
   },
 ];
+
+/** De sim na het uitvoeren van de frames 0 tot `frame` (exclusief) met de bundels die de replay tot dan heeft. */
+function stateAt(r: Replay, frame: number): Sim {
+  const sim = createReplaySim(r);
+  const byFrame = new Map(r.bundles.filter((b) => b.frame < frame).map((b) => [b.frame, b]));
+  for (let f = 0; f < frame; f++) {
+    sim.applyBundle(byFrame.get(f) ?? { frame: f, commands: [] });
+    sim.tick();
+  }
+  return sim;
+}
 
 /** Ids van de radiobakens die speler 1 in de skirmish-fixture heeft na frame 1014 (deterministisch uit de run). */
 function radioIds(r: Replay): number[] {

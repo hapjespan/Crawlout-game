@@ -130,11 +130,17 @@ describe('sim-tuning', () => {
       aggroRangeU: 2560,
       interactRangeU: 512,
       claimRadiusU: 1536,
-      claimTicks: 400,
       popCapMax: 50,
       corpseTicks: 40,
-      aiMilitiaPermille: 500,
       cancelRefundPermille: 1000,
+      specialStrengthDamagePermille: 100,
+      specialPerceptionRangeU: 64,
+      specialEnduranceHpPermille: 250,
+      specialCharismaGrowthPermille: 50,
+      specialIntelligenceResearchPermille: -30,
+      specialAgilitySpeedPermille: 30,
+      specialLuckCritPermille: 20,
+      critDamagePermille: 1000,
     });
   });
 
@@ -214,7 +220,8 @@ describe('sprint 3: held, claims, cancel, militie', () => {
   it('levert cancelRefundPermille en militiaPermille', () => {
     expect(data.sim.cancelRefundPermille).toBe(1000);
     expect(data.aiScripts[0]!.militiaPermille).toBe(500);
-    expect(data.sim.aiMilitiaPermille).toBe(500); // vervalt, blijft tot de omslag
+    expect('aiMilitiaPermille' in data.sim).toBe(false); // vervallen in 0.6.0
+    expect('claimTicks' in data.sim).toBe(false);
   });
 
   it('weigert ongeldige held-, ai- en sim-data', () => {

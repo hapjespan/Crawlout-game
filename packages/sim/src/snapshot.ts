@@ -5,6 +5,19 @@ import type { EventBuffer } from './events.js';
 import { clampI, idiv } from './math/int.js';
 
 /**
+ * hpPct (contract 1): units en gebouwen hp in procenten van maxHp; scrap-node resterende voorraad in procenten van de
+ * startvoorraad (die staat in maxHp); al het andere (claimpunten) 100.
+ */
+function hpPctOf(w: World, i: number): number {
+  const m = w.mask[i]!;
+  const max = w.maxHp[i]!;
+  if (max <= 0) return 100;
+  if ((m & C.health) !== 0) return clampI(idiv(w.hp[i]! * 100, max), 0, 100);
+  if ((m & C.resource) !== 0) return clampI(idiv(w.amount[i]! * 100, max), 0, 100);
+  return 100;
+}
+
+/**
  * Schrijft één snapshot volgens contract 1 (packages/protocol/src/snapshot.ts) in een nieuwe ArrayBuffer,
  * geschikt als transferable. Entities in oplopende id-volgorde, daarna de events van de laatste tick.
  */
@@ -38,8 +51,7 @@ export function writeSnapshot(w: World, events: EventBuffer, tick: number, hash:
     animT[k] = w.animT[i]!;
     owner[k] = w.owner[i]!;
     anim[k] = w.anim[i]!;
-    const max = w.maxHp[i]!;
-    hpPct[k] = (w.mask[i]! & C.health) !== 0 && max > 0 ? clampI(idiv(w.hp[i]! * 100, max), 0, 100) : 100;
+    hpPct[k] = hpPctOf(w, i);
     flags[k] = w.flags[i]!;
     k++;
   }

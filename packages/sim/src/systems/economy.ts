@@ -11,12 +11,25 @@ import {
   PHASE_RETURN,
   PHASE_WORK,
 } from '../ecs/world.js';
-import { applyUnitType, createUnit, siteHpStep, takeFromNode } from '../entities.js';
+import {
+  SPECIAL_C,
+  SPECIAL_I,
+  STAT_BUILD_TIME,
+  STAT_RESEARCH_TIME,
+  effectSum,
+  gatherAmountOf,
+  liveHeroBonus,
+  refreshPlayer,
+  scalePermille,
+  workRate,
+} from '../effects.js';
+import { heroSystem } from './hero.js';
+import { PROGRESS_ONE, applyUnitType, createUnit, siteHpAt, takeFromNode } from '../entities.js';
 import { imod } from '../math/int.js';
 import type { Census } from './census.js';
 import { takeCensus } from './census.js';
 import type { SimContext } from './common.js';
-import { cellCenterOf, nearestOwnBuilding, nthFreeCellAround, withinReach } from './common.js';
+import { cellCenterOf, nearestOwnBuilding, nodeAllowed, nthFreeCellAround, withinReach } from './common.js';
 import { DEPOT_MASK } from './orders.js';
 
 // Systeem 6: economie. Verzamelen (een rit duurt gatherTicks en levert gatherAmount), afleveren bij een depot,
@@ -37,8 +50,28 @@ export function economySystem(ctx: SimContext, census: Census): void {
     else if (type === ORDER_BUILD) buildWork(ctx, i, reach);
     else if (type === ORDER_CRAFT) craftWork(ctx, i);
   }
+  for (let i = 0; i < w.highWater; i++) if (w.research[i] !== 0 && w.has(i, C.building)) researchWork(ctx, i);
   takeCensus(ctx, census);
   for (let p = 0; p < ctx.playerCount; p++) growth(ctx, census, p);
+  heroSystem(ctx, census);
+}
+
+/** Onderzoek in gebouw i: werk per tick volgens researchTimePct; klaar zet de tech-bit en past de effecten toe. */
+function researchWork(ctx: SimContext, i: number): void {
+  const w = ctx.world;
+  const t = ctx.config.techs[w.research[i]! - 1];
+  const p = w.owner[i]!;
+  if (t === undefined) {
+    w.research[i] = 0;
+    return;
+  }
+  const intel = liveHeroBonus(ctx, p, SPECIAL_I, ctx.config.special.intelligenceResearchPermille);
+  w.work[i] = w.work[i]! + workRate(PROGRESS_ONE, effectSum(ctx, p, STAT_RESEARCH_TIME, w.typeId[i]!, false) + intel);
+  if (w.work[i]! < t.researchTicks * PROGRESS_ONE) return;
+  w.research[i] = 0;
+  w.work[i] = 0;
+  ctx.ps.tech[p] = (ctx.ps.tech[p]! | (1 << t.techId)) >>> 0;
+  refreshPlayer(ctx, p);
 }
 
 function gatherWork(ctx: SimContext, i: number, reach: number): void {
@@ -47,10 +80,11 @@ function gatherWork(ctx: SimContext, i: number, reach: number): void {
   if (t === undefined) return;
   if (w.phase[i] === PHASE_WORK) {
     const node = w.resolve(w.ordT[w.currentOrder(i)]!);
-    if (node < 0 || !w.has(node, C.resource) || !withinReach(w, i, node, reach)) return;
+    if (node < 0 || !w.has(node, C.resource) || !withinReach(w, i, node, reach) || !nodeAllowed(ctx, node, w.owner[i]!)) return;
     w.work[i] = w.work[i]! + 1;
     if (w.work[i]! < t.gatherTicks) return;
-    w.carry[i] = w.carry[i]! + takeFromNode(ctx, node, t.gatherAmount - w.carry[i]!);
+    const want = gatherAmountOf(ctx, i) - w.carry[i]!;
+    w.carry[i] = w.carry[i]! + takeFromNode(ctx, node, want > 0 ? want : 0);
     w.work[i] = 0;
     w.phase[i] = PHASE_RETURN;
   } else if (w.phase[i] === PHASE_RETURN) {
@@ -70,10 +104,13 @@ function buildWork(ctx: SimContext, i: number, reach: number): void {
   if (b < 0 || !w.has(b, C.building) || w.bstate[b] !== BSTATE_SITE || !withinReach(w, i, b, reach)) return;
   const bt = ctx.buildingType(w.typeId[b]!);
   if (bt === undefined) return;
-  const p = w.progress[b]!;
-  w.hp[b] = w.hp[b]! + siteHpStep(bt.maxHp, bt.buildTicks, p);
-  w.progress[b] = p + 1;
-  if (p + 1 >= bt.buildTicks) {
+  const total = bt.buildTicks * PROGRESS_ONE;
+  const p0 = w.progress[b]!;
+  const rate = workRate(PROGRESS_ONE, effectSum(ctx, w.owner[i]!, STAT_BUILD_TIME, w.typeId[i]!, false));
+  const p1 = p0 + rate < total ? p0 + rate : total;
+  w.hp[b] = w.hp[b]! + siteHpAt(w.maxHp[b]!, total, p1) - siteHpAt(w.maxHp[b]!, total, p0);
+  w.progress[b] = p1;
+  if (p1 >= total) {
     w.bstate[b] = BSTATE_DONE;
     ctx.events.push(EVENT_TYPE.buildingDone, w.idOf(b), bt.typeId, w.x[b]!, w.y[b]!);
   }
@@ -109,8 +146,10 @@ function growth(ctx: SimContext, census: Census, p: number): void {
     ps.growth[p] = 0; // geen bed, geen groei (en niets opsparen)
     return;
   }
-  const tpm = ctx.config.ticksPerMinute;
-  ps.growth[p] = ps.growth[p]! + faction.housingGrowthPerMin;
+  // growth telt in duizendsten van een bewoner maal ticksPerMinute; Charisma van een levende held versnelt de groei.
+  const tpm = ctx.config.ticksPerMinute * 1000;
+  const charisma = liveHeroBonus(ctx, p, SPECIAL_C, ctx.config.special.charismaGrowthPermille);
+  ps.growth[p] = ps.growth[p]! + scalePermille(faction.housingGrowthPerMin * 1000, charisma);
   if (ps.growth[p]! < tpm) return;
   ps.growth[p] = ps.growth[p]! - tpm;
   const w = ctx.world;

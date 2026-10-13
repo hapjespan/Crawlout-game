@@ -14,7 +14,7 @@ import type { StateParts } from './state.js';
 import { StateHeader, deserializeState, hashState, serializeState } from './state.js';
 import { aiSystem } from './systems/ai.js';
 import { Census, takeCensus } from './systems/census.js';
-import { ClaimScratch, claimsSystem } from './systems/claims.js';
+import { ClaimScratch, claimsSystem, updateClaimPoints } from './systems/claims.js';
 import { cleanupSystem } from './systems/cleanup.js';
 import { combatSystem } from './systems/combat.js';
 import type { SimCommand } from './systems/commands.js';
@@ -22,6 +22,7 @@ import { applyCommands, normalizeCommand } from './systems/commands.js';
 import type { SimContext } from './systems/common.js';
 import { GlobalState, NO_WINNER, PlayerState, Terrain, WIN_DOMINANCE, WIN_SURRENDER, inMap, setFlowField, walkableAt } from './systems/common.js';
 import { economySystem } from './systems/economy.js';
+import { Auras, auraSystem, heroStatus } from './systems/hero.js';
 import { MovementScratch, movementSystem } from './systems/movement.js';
 import { OrdersScratch, ordersSystem } from './systems/orders.js';
 
@@ -34,7 +35,7 @@ export interface SpawnUnitSpec {
 }
 
 /** Soort entity, voor tests, debug en de query-API. */
-export type EntityKind = 'unit' | 'corpse' | 'building' | 'scrapNode' | 'claimPoint';
+export type EntityKind = 'unit' | 'hero' | 'corpse' | 'building' | 'scrapNode' | 'claimPoint';
 
 /** Leesbare kijk op één entity, voor tests en debug. De renderer gebruikt snapshots, nooit dit. */
 export interface UnitView {
@@ -99,6 +100,9 @@ export class Sim implements SimContext {
   readonly events = new EventBuffer();
   readonly ps = new PlayerState();
   readonly globals = new GlobalState();
+  /** Indices van de claimpunten (afgeleid; opgebouwd in start() en na deserialize). */
+  readonly claimPoints: number[] = [];
+  readonly auras = new Auras();
 
   private tickNo = 0;
   private readonly envHashValue: number;
@@ -152,6 +156,9 @@ export class Sim implements SimContext {
   start(): void {
     if (this.tickNo !== 0 || this.world.highWater !== 0) throw new Error('start() alleen op een verse sim');
     setupStart(this);
+    this.indexClaimPoints();
+    // Punten binnen de straal van een hoofdgebouw zijn meteen van die speler (besluit sprint 2), zonder events.
+    updateClaimPoints(this, this.claimScratch, true);
     this.hashDirty = true;
   }
 
@@ -191,7 +198,8 @@ export class Sim implements SimContext {
     ordersSystem(this, this.ordersScratch);
     // 3 flow fields, gebudgetteerd
     this.flow.step(this.config.flowFieldBudget);
-    // 4 beweging plus separatie
+    // 4 beweging plus separatie (eerst de ability-zones van deze tick, ook voor gevecht)
+    auraSystem(this, this.auras);
     movementSystem(this, this.moveScratch);
     // 5 gevecht
     combatSystem(this);
@@ -235,7 +243,7 @@ export class Sim implements SimContext {
     return writeSnapshot(this.world, this.events, this.tickNo > 0 ? this.tickNo - 1 : 0, this.hash());
   }
 
-  /** Spelerstatus voor de HUD (queryMessage, contract 1). Held: null tot de held in de sim zit. */
+  /** Spelerstatus voor de HUD (queryMessage, contract 1). hero is null als de factie geen held heeft. */
   playerStatus(playerId: number): PlayerStatus {
     if (!isInt(playerId) || playerId < 0 || playerId >= this.playerCount) throw new Error(`onbekende speler ${playerId}`);
     takeCensus(this, this.census);
@@ -246,7 +254,7 @@ export class Sim implements SimContext {
       pop: this.census.pop[playerId]!,
       popCap: this.census.popCap(this, playerId),
       beds: this.census.beds[playerId]!,
-      hero: null,
+      hero: heroStatus(this, playerId),
     };
   }
 
@@ -261,6 +269,14 @@ export class Sim implements SimContext {
   /** Of een speler af is (hoofdgebouw kwijt of opgegeven). */
   isDefeated(playerId: number): boolean {
     return playerId >= 0 && playerId < MAX_PLAYERS && this.ps.defeated[playerId] !== 0;
+  }
+
+  /** Onderzochte tech-ids van een speler, oplopend (debug, tests; de HUD heeft hiervoor nog geen contractveld). */
+  researched(playerId: number): number[] {
+    const bits = this.ps.tech[playerId] ?? 0;
+    const out: number[] = [];
+    for (const t of this.config.techs) if (((bits >>> t.techId) & 1) !== 0) out.push(t.techId);
+    return out;
   }
 
   /** Ticks dat een speler aaneengesloten genoeg claimpunten houdt (winroute B). */
@@ -329,7 +345,17 @@ export class Sim implements SimContext {
     if (i < 0) return null;
     const m = w.mask[i]!;
     const kind: EntityKind =
-      (m & C.corpse) !== 0 ? 'corpse' : (m & C.building) !== 0 ? 'building' : (m & C.resource) !== 0 ? 'scrapNode' : (m & C.claim) !== 0 ? 'claimPoint' : 'unit';
+      (m & C.corpse) !== 0
+        ? 'corpse'
+        : (m & C.building) !== 0
+          ? 'building'
+          : (m & C.resource) !== 0
+            ? 'scrapNode'
+            : (m & C.claim) !== 0
+              ? 'claimPoint'
+              : (m & C.hero) !== 0
+                ? 'hero'
+                : 'unit';
     const o = w.currentOrder(i);
     return {
       id,
@@ -357,6 +383,12 @@ export class Sim implements SimContext {
     };
   }
 
+  private indexClaimPoints(): void {
+    const w = this.world;
+    this.claimPoints.length = 0;
+    for (let i = 0; i < w.highWater; i++) if (w.has(i, C.claim)) this.claimPoints.push(i);
+  }
+
   /** @internal Laadt een geserialiseerde state in deze (verse) sim. */
   loadState(buf: ArrayBuffer): void {
     const s = deserializeState(buf, this.parts, this.envHashValue);
@@ -374,6 +406,7 @@ export class Sim implements SimContext {
       this.flow.refcount[f] = this.flow.refcount[f]! + 1;
     }
     this.flow.rebuild();
+    this.indexClaimPoints();
     this.hashDirty = true;
   }
 }
