@@ -1,10 +1,24 @@
+/// <reference types="vite/client" />
 // Render demo without a sim: fake snapshots at 20 Hz into the renderer, plus selection, move orders and building
 // placement that the fake source mirrors the way the sim would. Open /render-demo.html on the vite dev server.
 // Defaults: 200 units, 40 buildings, 8 scrap nodes, 3 claim points, combat events for the VFX.
+// Character assets come from assets/dist (the asset-cli's output, bundled by Vite): the fake units are loadout 0, so
+// the body asset of that loadout in data/loadouts.json is used when the manifest has it; ?unit=<id> picks any other.
 import { MAX_ENTITIES, TICK_MS, UNITS_PER_METER } from '@crawlout/protocol';
-import { buildingTypeId, createRenderer, snapFootprintCenter, type PlacementPreview } from '@crawlout/render';
+import { buildingTypeId, createRenderer, snapFootprintCenter, type PlacementPreview, type UnitAssetConfig } from '@crawlout/render';
 import { createGridTerrain, FakeSnapshotSource } from '@crawlout/render/dev';
 import { loadClientGameData } from '../game/content.js';
+
+// Every file of assets/dist as a URL (hashed in a build). The manifest's relative paths resolve through this map.
+const ASSET_DIR = '../../../../assets/dist/';
+const assetFiles = import.meta.glob('../../../../assets/dist/**/*', { eager: true, query: '?url', import: 'default' }) as Record<string, string>;
+
+function assetConfig(params: URLSearchParams): UnitAssetConfig | undefined {
+  const manifestUrl = assetFiles[`${ASSET_DIR}manifest.json`];
+  if (!manifestUrl) return undefined;
+  const unit = params.get('unit');
+  return { manifestUrl, resolveUrl: (path) => assetFiles[ASSET_DIR + path] ?? path, ...(unit ? { defaultUnit: unit } : {}) };
+}
 
 const WORLD = 128;
 const PLAYER = 0;
@@ -47,12 +61,14 @@ async function main(): Promise<void> {
   const count = Math.max(1, intParam(params, 'n', 200, MAX_ENTITIES));
   const data = loadClientGameData();
   const footprint = (typeId: number) => data.buildings[typeId - buildingTypeId(0)]?.footprint ?? null;
+  const assets = assetConfig(params);
 
   const renderer = await createRenderer({
     canvas,
     forceWebGL: params.has('webgl'),
     shadows: !params.has('noshadow'),
     dataTextures: params.has('half') ? 'half' : 'auto',
+    ...(assets ? { assets } : {}),
   });
   renderer.setGameData(data);
   const backendEl = document.getElementById('backend');
@@ -61,6 +77,15 @@ async function main(): Promise<void> {
     backendEl.textContent = (renderer.backend === 'webgpu' ? 'WebGPU' : 'WebGL2-fallback') + precision;
   }
   renderer.setTerrain(createGridTerrain(WORLD, WORLD, 1, wastelandHeight, wastelandColor));
+
+  // Unit assets load in the background; show what the units are drawn with once they settle.
+  const unitsEl = document.getElementById('units');
+  const showUnits = (): void => {
+    if (!unitsEl) return;
+    const list = renderer.unitAssets();
+    unitsEl.textContent = list.length === 0 ? (assets ? 'placeholder-rig (geen asset in het manifest)' : 'placeholder-rig (geen manifest)') : list.map((a) => `${a.assetId}: ${a.state}${a.reason ? ` (${a.reason})` : ''}`).join(' · ');
+  };
+  for (const delay of [500, 2000, 6000]) window.setTimeout(showUnits, delay);
 
   const source = new FakeSnapshotSource({
     count,
