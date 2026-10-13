@@ -1,11 +1,15 @@
 {
   "name": "@crawlout/sim",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "private": true,
   "type": "module",
   "main": "src/index.ts",
   "types": "src/index.ts",
-  "exports": { ".": "./src/index.ts" },
+  "exports": {
+    ".": "./src/index.ts",
+    "./testing": "./src/testing.ts",
+    "./worker": "./host/worker-entry.ts"
+  },
   "scripts": { "test": "vitest run", "bench": "node --import tsx src/bench.ts" },
   "dependencies": { "@crawlout/protocol": "workspace:*", "@crawlout/data": "workspace:*" },
   "devDependencies": { "tsx": "^4.0.0" }

@@ -1,10 +1,11 @@
 {
   "name": "@crawlout/replay",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "private": true,
   "type": "module",
   "scripts": {
     "replay": "node --import tsx src/index.ts fixtures",
+    "record": "node --import tsx src/record.ts fixtures",
     "replay:browsers": "echo 'actief vanaf sprint 2 (Playwright)' && exit 0",
     "test": "vitest run"
   },
