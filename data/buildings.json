@@ -33,7 +33,8 @@
     "id": "turret", "faction": "dwellers", "hp": 500, "armorType": "heavy", "scrapCost": 90, "buildS": 25,
     "footprint": { "w": 2, "h": 2 }, "beds": 0, "provides": ["turret"], "prereqTech": ["geweerrek"],
     "visuals": { "mesh": "dweller_building_turret" },
-    "_comment": "startwaarde, geen balans. Turret: kern van het Dweller-turretnetwerk. 90 scrap, 25 s, 500 hp heavy. Vraagt tech geweerrek."
+    "damage": 12, "damageType": "ballistic", "rangeM": 12, "cooldownS": 1,
+    "_comment": "startwaarde, geen balans. Turret: kern van het Dweller-turretnetwerk. 90 scrap, 25 s, 500 hp heavy. Vraagt tech geweerrek. Wapen (besluit 8): 12 ballistic schade per 1,0 s op 12 m, iets sterker per schot dan militie (8 schade, 8 m) en met meer bereik; de turret beweegt niet."
   },
   {
     "id": "lab", "faction": "dwellers", "hp": 450, "armorType": "medium", "scrapCost": 150, "buildS": 40,
