@@ -97,7 +97,9 @@ export const Perk = z
   .object({ id, naam: z.string(), flavourText: z.string(), requires: z.object({ stat: Stat, min: z.number().int() }).strict(), effects: z.array(Effect), _comment: comment })
   .strict();
 
-export const DamageMatrix = z.record(DamageType, z.record(ArmorType, z.number())); // multiplier in procenten
+const ArmorRow = z.record(ArmorType, z.number().nonnegative()); // multiplier in procenten per pantsertype
+// Strict object per schadetype (i.p.v. record) zodat het bestand een _comment kan dragen.
+export const DamageMatrix = z.object({ _comment: comment, ballistic: ArmorRow, energy: ArmorRow, melee: ArmorRow, fire: ArmorRow }).strict();
 
 export const MapDef = z
   .object({
@@ -132,3 +134,4 @@ export type Hero = z.infer<typeof Hero>;
 export type Perk = z.infer<typeof Perk>;
 export type MapDef = z.infer<typeof MapDef>;
 export type AiScript = z.infer<typeof AiScript>;
+export type DamageMatrix = z.infer<typeof DamageMatrix>;

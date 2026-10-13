@@ -1,0 +1,14 @@
+[
+  {
+    "id": "opziener", "faction": "dwellers", "archetype": "krijger",
+    "special": { "S": 6, "P": 5, "E": 6, "C": 4, "I": 4, "A": 6, "L": 3 },
+    "abilities": [
+      { "id": "lockdown", "cooldownS": 45, "rangeM": 10, "_comment": "startwaarde, geen balans. Lockdown: vergrendelt vijanden in bereik. 45 s cooldown, 10 m bereik." }
+    ],
+    "perkPool": ["zware_laarzen", "opzichter_blik", "kluisvet", "papierwerk", "stille_knop", "geluksschot"],
+    "reviveScrap": 100,
+    "reviveS": 40,
+    "revivePenaltyPct": 20,
+    "_comment": "startwaarde, geen balans. Opziener (Krijger-variant van de Dwellers): SPECIAL totaal 34, zwaar op S, E en A voor een vechter. Oplappen bij het hoofdgebouw kost 100 scrap en 40 s, en 20 procent van perks en health (Spelfundament sectie 5); na 4 keer is de held leeg (maximum zit nog niet in het schema, zie contractvraag)."
+  }
+]

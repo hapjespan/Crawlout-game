@@ -1,3 +1,4 @@
 # @crawlout/data
 
 - 0.1.0: schema-skeletten voor contract 3 en de omrekening naar sim-eenheden. Eigenaar: content (werkstroom 4); skeletten door architect.
+- 0.2.0: pure loader `loadGameData(raw)` (valideren, omrekenen naar sim-eenheden, numerieke ids op gesorteerde string-id), `readDataDir` in `@crawlout/data/node`, DamageMatrix-schema als strict object met `_comment`, en Dwellers-startdata in data/ (data/VERSION 0.2.0). Alle waarden startwaarde, geen balans.

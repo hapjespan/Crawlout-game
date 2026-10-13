@@ -1,0 +1,32 @@
+[
+  {
+    "id": "raffinage", "faction": "dwellers", "scrapCost": 100, "researchS": 30, "building": "lab", "prereqTech": [],
+    "effects": [{ "stat": "gatherRatePct", "target": "scavenger", "delta": 20 }],
+    "_comment": "startwaarde, geen balans. Raffinage: meer scrap per bewoner (+20 procent scavenger-opbrengst). Economie-upgrade van de Dwellers, 100 scrap en 30 s. Stat-suffix Pct = procent, M = meter, S = seconde; anders een ruw geheel getal."
+  },
+  {
+    "id": "geweerrek", "faction": "dwellers", "scrapCost": 80, "researchS": 25, "building": "werkplaats", "prereqTech": [],
+    "effects": [],
+    "_comment": "startwaarde, geen balans. Geweerrek: ontgrendelt patrol en turret (die verwijzen ernaar via prereqTech). Geen stat-effect. 80 scrap, 25 s in de werkplaats."
+  },
+  {
+    "id": "composiet_pantser", "faction": "dwellers", "scrapCost": 120, "researchS": 35, "building": "werkplaats", "prereqTech": ["geweerrek"],
+    "effects": [{ "stat": "hpPct", "target": "militie", "delta": 15 }, { "stat": "hpPct", "target": "patrol", "delta": 15 }],
+    "_comment": "startwaarde, geen balans. Composiet-pantser: +15 procent hp voor militie en patrol. Vraagt geweerrek. 120 scrap, 35 s."
+  },
+  {
+    "id": "lasergeleiding", "faction": "dwellers", "scrapCost": 150, "researchS": 40, "building": "lab", "prereqTech": ["raffinage"],
+    "effects": [{ "stat": "damagePct", "target": "turret", "delta": 20 }, { "stat": "rangeM", "target": "turret", "delta": 1 }],
+    "_comment": "startwaarde, geen balans. Lasergeleiding: turrets +20 procent schade en +1 m bereik (lasers die schalen met lab-upgrades). 150 scrap, 40 s."
+  },
+  {
+    "id": "snelle_voeten", "faction": "dwellers", "scrapCost": 90, "researchS": 25, "building": "werkplaats", "prereqTech": [],
+    "effects": [{ "stat": "speedPct", "target": "patrol", "delta": 10 }, { "stat": "speedPct", "target": "militie", "delta": 10 }],
+    "_comment": "startwaarde, geen balans. Snelle voeten: +10 procent snelheid voor militie en patrol (Dwellers zijn snel). 90 scrap, 25 s."
+  },
+  {
+    "id": "bouwrobots", "faction": "dwellers", "scrapCost": 110, "researchS": 30, "building": "lab", "prereqTech": ["raffinage"],
+    "effects": [{ "stat": "buildTimePct", "target": "bouwer", "delta": -20 }],
+    "_comment": "startwaarde, geen balans. Bouwrobots: bouwen 20 procent sneller (negatieve delta = sneller). 110 scrap, 30 s."
+  }
+]

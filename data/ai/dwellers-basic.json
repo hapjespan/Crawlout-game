@@ -1,0 +1,15 @@
+{
+  "id": "dwellers-basic",
+  "faction": "dwellers",
+  "buildOrder": [
+    { "atS": 10, "buildingId": "woning" },
+    { "atS": 45, "buildingId": "werkplaats" },
+    { "atS": 90, "buildingId": "woning" },
+    { "atS": 150, "buildingId": "radiobaken" },
+    { "atS": 240, "buildingId": "turret" },
+    { "atS": 300, "buildingId": "lab" }
+  ],
+  "attackTimersS": [420, 720, 1020],
+  "rallyPoint": { "x": 64, "y": 64 },
+  "_comment": "startwaarde, geen balans. Eenvoudige Dweller-AI: woning, werkplaats, tweede woning, radiobaken, turret en lab op vaste tijden. Aanvalsgolven op 7, 12 en 17 minuten. Rallypunt (64,64) in cellen van 1 m is een placeholder tot de map er is."
+}

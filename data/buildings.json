@@ -1,0 +1,50 @@
+[
+  {
+    "id": "hoofdgebouw", "faction": "dwellers", "hp": 1500, "armorType": "heavy", "scrapCost": 0, "buildS": 0,
+    "footprint": { "w": 5, "h": 5 }, "beds": 6, "provides": ["hq", "claim", "huisvesting"], "prereqTech": [],
+    "visuals": { "mesh": "dweller_building_hq" },
+    "_comment": "startwaarde, geen balans. Hoofdgebouw (hq): staat bij de start, dus 0 scrap en 0 s. 1500 hp en heavy pantser, 5x5 cellen. 6 bedden als startcapaciteit. Hier lapt de held zich op."
+  },
+  {
+    "id": "woning", "faction": "dwellers", "hp": 300, "armorType": "light", "scrapCost": 60, "buildS": 20,
+    "footprint": { "w": 2, "h": 2 }, "beds": 4, "provides": ["huisvesting"], "prereqTech": [],
+    "visuals": { "mesh": "dweller_building_housing" },
+    "_comment": "startwaarde, geen balans. Woning: 4 bedden voor 60 scrap (richtwaarde contract 3). 20 s bouwtijd, 300 hp, 2x2 cellen. Geen bed, geen groei (Spelfundament sectie 2)."
+  },
+  {
+    "id": "werkplaats", "faction": "dwellers", "hp": 600, "armorType": "medium", "scrapCost": 120, "buildS": 35,
+    "footprint": { "w": 3, "h": 3 }, "beds": 0, "provides": ["werkplaats"], "prereqTech": [],
+    "visuals": { "mesh": "dweller_building_workshop" },
+    "_comment": "startwaarde, geen balans. Werkplaats: 120 scrap (richtwaarde contract 3), 35 s bouwtijd, 600 hp, 3x3 cellen. Hier craften bewoners hun loadouts."
+  },
+  {
+    "id": "radiobaken", "faction": "dwellers", "hp": 250, "armorType": "light", "scrapCost": 80, "buildS": 25,
+    "footprint": { "w": 1, "h": 1 }, "beds": 0, "provides": ["beacon"], "prereqTech": [],
+    "visuals": { "mesh": "dweller_building_beacon" },
+    "_comment": "startwaarde, geen balans. Radiobaken: trekt bewoners aan en is het vangnet van de Dwellers (Spelfundament sectie 4). 80 scrap, 25 s, kwetsbaar (250 hp), 1x1 cel."
+  },
+  {
+    "id": "claimpaal", "faction": "dwellers", "hp": 400, "armorType": "medium", "scrapCost": 50, "buildS": 15,
+    "footprint": { "w": 1, "h": 1 }, "beds": 0, "provides": ["claim"], "prereqTech": [],
+    "visuals": { "mesh": "dweller_building_claim_post" },
+    "_comment": "startwaarde, geen balans. Claimpaal: markeert een claimpunt op de map. Goedkoop (50 scrap, 15 s) zodat uitbreiden een afweging van tempo is, niet van kosten."
+  },
+  {
+    "id": "turret", "faction": "dwellers", "hp": 500, "armorType": "heavy", "scrapCost": 90, "buildS": 25,
+    "footprint": { "w": 2, "h": 2 }, "beds": 0, "provides": ["turret"], "prereqTech": ["geweerrek"],
+    "visuals": { "mesh": "dweller_building_turret" },
+    "_comment": "startwaarde, geen balans. Turret: kern van het Dweller-turretnetwerk. 90 scrap, 25 s, 500 hp heavy. Vraagt tech geweerrek."
+  },
+  {
+    "id": "lab", "faction": "dwellers", "hp": 450, "armorType": "medium", "scrapCost": 150, "buildS": 40,
+    "footprint": { "w": 3, "h": 3 }, "beds": 0, "provides": ["lab"], "prereqTech": [],
+    "visuals": { "mesh": "dweller_building_lab" },
+    "_comment": "startwaarde, geen balans. Lab: onderzoekt upgrades (de lasers en raffinage schalen hiermee). 150 scrap, 40 s, 450 hp, 3x3 cellen."
+  },
+  {
+    "id": "trainingsfaciliteit", "faction": "dwellers", "hp": 550, "armorType": "medium", "scrapCost": 180, "buildS": 45,
+    "footprint": { "w": 3, "h": 3 }, "beds": 0, "provides": ["training"], "prereqTech": ["raffinage"],
+    "visuals": { "mesh": "dweller_building_training" },
+    "_comment": "startwaarde, geen balans. Trainingsfaciliteit: het SPECIAL-kanaal van de Dwellers (Spelfundament sectie 4 en 5). Duur (180 scrap, 45 s) en laat: vraagt tech raffinage."
+  }
+]
