@@ -94,11 +94,7 @@ async function main(): Promise<void> {
   };
   /** Tech ids this player has researched (PlayerStatus.techs); prerequisites gate buildings, loadouts and techs. */
   const unlocked = (prereq: readonly number[]): boolean => prereq.every((t) => status?.techs?.includes(t) ?? false);
-  const heroAlive = (): boolean => {
-    const state = status?.hero?.state;
-    if (state !== undefined) return state === 'alive';
-    return [...entities.values()].some((e) => e.owner === session.playerId && heroIdOfTypeId(e.typeId) >= 0);
-  };
+  const heroAlive = (): boolean => status?.hero?.state === 'alive';
   const hqProvidesIdx = PROVIDES.indexOf('hq');
   const myHq = (): EntityRow | undefined =>
     [...entities.values()].find((e) => e.owner === session.playerId && buildingOf(e.typeId)?.provides.includes(hqProvidesIdx));
@@ -285,7 +281,7 @@ async function main(): Promise<void> {
         const cooldownPct = a.cooldownTicks > 0 ? Math.min(100, Math.round((left * 100) / a.cooldownTicks)) : 0;
         return { abilityId: i, naam: a.naam, needsTarget: a.rangeU > 0, cooldownPct };
       }),
-    isHeroDead: () => status?.hero != null && status.hero.state !== 'reviving' && !heroAlive(),
+    isHeroDead: () => status?.hero?.state === 'dead',
     reviveHero: () => {
       const hq = myHq();
       if (hq) session.sendCommand('Recruit', { buildingId: hq.id });
