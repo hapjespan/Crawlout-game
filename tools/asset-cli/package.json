@@ -1,0 +1,8 @@
+{
+  "name": "@crawlout/asset-cli",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": { "build-assets": "node --import tsx src/index.ts", "test": "vitest run" },
+  "devDependencies": { "tsx": "^4.0.0" }
+}

@@ -1,0 +1,28 @@
+{
+  "name": "crawlout",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "packageManager": "pnpm@9",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "dev": "pnpm --filter @crawlout/client dev",
+    "relay": "pnpm --filter @crawlout/relay start",
+    "lint": "eslint .",
+    "typecheck": "pnpm -r --parallel exec tsc --noEmit",
+    "test": "vitest run",
+    "replay": "pnpm --filter @crawlout/replay run replay",
+    "bench": "pnpm --filter @crawlout/sim run bench",
+    "assets": "pnpm --filter @crawlout/asset-cli run build-assets",
+    "format": "prettier --write ."
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.0.0",
+    "@types/node": "^22.0.0",
+    "eslint": "^9.0.0",
+    "prettier": "^3.0.0",
+    "typescript": "^5.6.0",
+    "typescript-eslint": "^8.0.0",
+    "vitest": "^2.0.0"
+  }
+}
