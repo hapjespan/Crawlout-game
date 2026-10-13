@@ -3,7 +3,8 @@ import { ANGLE_FULL, ANIM, ENTITY_FLAG, EVENT_TYPE, MAX_PLAYERS, TICK_MS, UNITS_
 import { parseSnapshot } from '../snapshot/parse.js';
 import { CLIPS } from '../units/rig.js';
 import { buildingTypeId, classifyTypeId, ENTITY_KIND, TYPE_ID_SCRAP_NODE } from '../entities/typeIds.js';
-import { FAKE_BUILD_TICKS, FakeSnapshotSource, FAKE_UNIT_TYPE_ID } from './fakeSnapshots.js';
+import { heroTypeId } from '@crawlout/data';
+import { FAKE_BUILD_TICKS, FakeSnapshotSource, FAKE_UNIT_TYPE_ID, FAKE_ZONE_TICKS } from './fakeSnapshots.js';
 
 describe('FakeSnapshotSource', () => {
   it('produces contract-sized snapshots of 200 units with increasing ticks', () => {
@@ -198,5 +199,59 @@ describe('FakeSnapshotSource', () => {
       for (let k = 0; k < s.eventCount; k++) if (s.events.type[k] === EVENT_TYPE.resourceDepleted) depleted++;
     }
     expect(depleted).toBeGreaterThan(0);
+  });
+
+  it('makes the first unit of every player a hero that casts ability zones ahead of itself', () => {
+    const src = new FakeSnapshotSource({ count: 40, players: 4, heroId: 0, combat: true });
+    const zones: { a: number; b: number; x: number; y: number; hx: number; hy: number }[] = [];
+    let s = parseSnapshot(src.next());
+    const heroIds = [...s.entities.id].filter((_, i) => s.entities.typeId[i] === heroTypeId(0));
+    expect(heroIds).toHaveLength(4);
+    expect(new Set(heroIds.map((id) => s.entities.owner[s.entities.id.indexOf(id)]))).toEqual(new Set([0, 1, 2, 3]));
+    for (let t = 0; t < 3 * FAKE_ZONE_TICKS; t++) {
+      s = parseSnapshot(src.next());
+      for (let k = 0; k < s.eventCount; k++) {
+        if (s.events.type[k] !== EVENT_TYPE.abilityZone) continue;
+        const i = s.entities.id.indexOf(s.events.a[k]!);
+        zones.push({ a: s.events.a[k]!, b: s.events.b[k]!, x: s.events.x[k]!, y: s.events.y[k]!, hx: s.entities.x[i]!, hy: s.entities.y[i]! });
+      }
+    }
+    expect(zones.length).toBeGreaterThanOrEqual(2);
+    for (const z of zones) {
+      expect(heroIds).toContain(z.a); // a = hero
+      expect(z.b).toBe(0); // b = abilityId
+      const d = Math.hypot(z.x - z.hx, z.y - z.hy) / UNITS_PER_METER;
+      expect(d).toBeGreaterThan(0.5); // x, y = zone center, not the hero's position
+      expect(d).toBeLessThan(6.5);
+    }
+    expect(new Set(zones.map((z) => z.a)).size).toBeGreaterThan(1); // heroes take turns
+  });
+
+  it('lets finished turrets shoot at enemy units, with the hit naming the turret as shooter', () => {
+    const turret = buildingTypeId(5);
+    const src = new FakeSnapshotSource({ count: 200, buildings: 24, buildingTypes: 8, combat: true, turrets: [turret] });
+    const turretIds = new Set(src.structures.filter((x) => x.typeId === turret).map((x) => x.id));
+    expect(turretIds.size).toBeGreaterThan(0);
+    let shots = 0;
+    let hits = 0;
+    for (let t = 0; t < 20 * 20; t++) {
+      const s = parseSnapshot(src.next());
+      for (let k = 0; k < s.eventCount; k++) {
+        const a = s.events.a[k]!;
+        const b = s.events.b[k]!;
+        if (s.events.type[k] === EVENT_TYPE.shotFired && s.entities.typeId[s.entities.id.indexOf(a)] === turret) {
+          shots++;
+          const shooter = s.entities.id.indexOf(a);
+          expect(s.entities.anim[shooter]).toBe(ANIM.idle); // a finished building, not a site
+          expect([s.events.x[k], s.events.y[k]]).toEqual([s.entities.x[shooter], s.entities.y[shooter]]);
+          const target = s.entities.id.indexOf(b);
+          expect(classifyTypeId(s.entities.typeId[target]!)).toBe(ENTITY_KIND.unit);
+          expect(s.entities.owner[target]).not.toBe(s.entities.owner[shooter]);
+        }
+        if (s.events.type[k] === EVENT_TYPE.hit && classifyTypeId(s.entities.typeId[s.entities.id.indexOf(b)] ?? 0) === ENTITY_KIND.building) hits++;
+      }
+    }
+    expect(shots).toBeGreaterThan(0);
+    expect(hits).toBeGreaterThan(0);
   });
 });

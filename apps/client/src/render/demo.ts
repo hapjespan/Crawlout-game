@@ -1,9 +1,12 @@
 /// <reference types="vite/client" />
 // Render demo without a sim: fake snapshots at 20 Hz into the renderer, plus selection, move orders and building
 // placement that the fake source mirrors the way the sim would. Open /render-demo.html on the vite dev server.
-// Defaults: 200 units, 40 buildings, 8 scrap nodes, 3 claim points, combat events for the VFX.
+// Defaults: 200 units, 40 buildings, 8 scrap nodes, 3 claim points, combat events for the VFX. The first unit of
+// every player is the hero from data/heroes.json (cap, collar and pauldrons in the team color) and casts its ability
+// zone now and then; the buildings that provide 'turret' shoot from their roof.
 // Character assets come from assets/dist (the asset-cli's output, bundled by Vite): the fake units are loadout 0, so
 // the body asset of that loadout in data/loadouts.json is used when the manifest has it; ?unit=<id> picks any other.
+import { PROVIDES } from '@crawlout/data';
 import { MAX_ENTITIES, TICK_MS, UNITS_PER_METER } from '@crawlout/protocol';
 import { buildingTypeId, createRenderer, snapFootprintCenter, type PlacementPreview } from '@crawlout/render';
 import { createGridTerrain, FakeSnapshotSource } from '@crawlout/render/dev';
@@ -87,6 +90,8 @@ async function main(): Promise<void> {
     scrapNodes: intParam(params, 'nodes', 8, 64),
     claims: intParam(params, 'claims', 3, 32),
     combat: params.get('combat') !== '0',
+    ...(data.heroes.length > 0 && !params.has('nohero') ? { heroId: 0 } : {}),
+    turrets: data.buildings.filter((b) => b.provides.includes(PROVIDES.indexOf('turret'))).map((b) => buildingTypeId(b.id)),
   });
   renderer.pushSnapshot(source.next());
   const pump = window.setInterval(() => renderer.pushSnapshot(source.next()), TICK_MS);

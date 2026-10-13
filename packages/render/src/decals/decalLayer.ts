@@ -1,5 +1,5 @@
 // Ground decals in one instanced draw call: blob shadows under units and scrap heaps, selection rings, claim rings
-// in the owner's color and the placement preview. The quad is a small grid that follows the terrain in the vertex
+// in the owner's color, ability zones and the placement preview. The quad is a small grid that follows the terrain in the vertex
 // shader (terrain height texture), so large decals hug slopes.
 import { MAX_PLAYERS } from '@crawlout/protocol';
 import { Color, DynamicDrawUsage, InstancedBufferAttribute, Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector3, type Scene } from 'three/webgpu';
@@ -30,6 +30,8 @@ export interface DecalStyle {
   grid: number;
   /** Palette slot: teamIndex(owner) or a DECAL_COLOR. */
   color: number;
+  /** 0..1: the fill fades towards the center of a circle (ability zones), 0 keeps it flat. Default 0. */
+  fillEdge?: number;
 }
 
 const LIFT = 0.05; // meters above the terrain
@@ -52,7 +54,7 @@ function dynamic(capacity: number): InstancedBufferAttribute {
 function createDecalMaterial(heights: HeightTexture | null): MeshBasicNodeMaterial {
   const iA = attribute('iDecalA', 'vec4'); // center x, center z, half x, half z (meters)
   const iB = attribute('iDecalB', 'vec4'); // shadow, ring, ring width (m), fill
-  const iC = attribute('iDecalC', 'vec4'); // grid, color slot, shape, unused
+  const iC = attribute('iDecalC', 'vec4'); // grid, color slot, shape, fill edge
   const local = attribute('position', 'vec3').xz; // -1..1 over the quad (not positionLocal: positionNode overwrites it)
   const world = vec2(iA.x, iA.y).add(local.mul(iA.zw));
   const ground = heights ? terrainHeightNode(heights, world) : float(0);
@@ -72,7 +74,9 @@ function createDecalMaterial(heights: HeightTexture | null): MeshBasicNodeMateri
   const width = vertexStage(iB.z);
   const ring = smoothstep(-0.02, 0.03, edge).mul(float(1).sub(smoothstep(width.sub(0.03), width.add(0.02), edge))).mul(vertexStage(iB.y));
   const shadow = float(1).sub(smoothstep(0.2, 0.65, radial)).mul(vertexStage(iB.x)).mul(0.42);
-  const fill = inside.mul(vertexStage(iB.w));
+  // Soft fill: with fill edge 1 it is 30 % at the center and full at the rim of a circle.
+  const edgeWeight = mix(float(1), radial.mul(radial).mul(0.7).add(0.3), vertexStage(iC.w));
+  const fill = inside.mul(vertexStage(iB.w)).mul(min(edgeWeight, 1));
   const cell = abs(fract(p.add(half)).sub(0.5)); // 0.5 on a cell line
   const gridLine = smoothstep(0.44, 0.48, max(cell.x, cell.y)).mul(inside).mul(vertexStage(iC.x));
   const colored = max(max(ring, fill), gridLine);
@@ -148,7 +152,7 @@ export class DecalLayer {
     c[o] = s.grid;
     c[o + 1] = s.color;
     c[o + 2] = s.shape;
-    c[o + 3] = 0;
+    c[o + 3] = s.fillEdge ?? 0;
   }
 
   end(): void {

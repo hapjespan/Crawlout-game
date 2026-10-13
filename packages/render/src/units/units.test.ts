@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Matrix4, Vector3 } from 'three/webgpu';
 import { bakeAnimations } from './bake.js';
-import { createHumanoidGeometry, UNIT_LODS } from './humanoidGeometry.js';
+import { createHumanoidGeometry, HERO_PART_ALPHA, UNIT_LODS } from './humanoidGeometry.js';
 import { ANIM, ANIM_NAMES } from '@crawlout/protocol';
 import { BONES, CLIPS } from './rig.js';
 
@@ -63,12 +63,19 @@ describe('createHumanoidGeometry', () => {
         expect(skin.getX(i)).toBeLessThan(BONES.length);
         expect(weight.getX(i) + weight.getY(i) + weight.getZ(i) + weight.getW(i)).toBeCloseTo(1);
       }
-      g.computeBoundingBox();
-      const box = g.boundingBox!;
-      expect(box.min.y).toBeGreaterThanOrEqual(-0.01); // feet on y = 0
-      expect(box.max.y).toBeGreaterThan(1.7);
-      expect(box.max.y).toBeLessThan(1.9);
       const color = g.getAttribute('color');
+      const position = g.getAttribute('position');
+      // Height of a regular unit, without the hero parts (drawn only on a hero).
+      let minY = Infinity;
+      let maxY = -Infinity;
+      for (let i = 0; i < position.count; i++) {
+        if (color.getW(i) >= HERO_PART_ALPHA - 0.5) continue;
+        minY = Math.min(minY, position.getY(i));
+        maxY = Math.max(maxY, position.getY(i));
+      }
+      expect(minY).toBeGreaterThanOrEqual(-0.01); // feet on y = 0
+      expect(maxY).toBeGreaterThan(1.7);
+      expect(maxY).toBeLessThan(1.9);
       expect(color.itemSize).toBe(4); // rgb + team mask
       expect(color.count).toBe(skin.count);
       // WebGPU allows 8 vertex buffers; the unit pipeline adds iPose and iAnim to these.
@@ -77,5 +84,36 @@ describe('createHumanoidGeometry', () => {
     });
     expect(tris[0]).toBeGreaterThan(tris[1]!);
     expect(tris[1]).toBeGreaterThan(tris[2]!);
+  });
+});
+
+describe('hero parts of the placeholder', () => {
+  it('puts a team-colored cap on top in every LOD, and collar and pauldrons up close', () => {
+    for (const lod of UNIT_LODS) {
+      const g = createHumanoidGeometry(lod);
+      const color = g.getAttribute('color');
+      const position = g.getAttribute('position');
+      const skin = g.getAttribute('skinIndex');
+      let heroVerts = 0;
+      let heroTop = -Infinity;
+      let regularTop = -Infinity;
+      const bones = new Set<number>();
+      for (let i = 0; i < color.count; i++) {
+        const a = color.getW(i);
+        if (a >= HERO_PART_ALPHA - 0.5) {
+          heroVerts++;
+          expect(a - HERO_PART_ALPHA).toBe(1); // fully team-masked
+          heroTop = Math.max(heroTop, position.getY(i));
+          bones.add(skin.getX(i));
+        } else {
+          expect(a).toBeLessThanOrEqual(1);
+          regularTop = Math.max(regularTop, position.getY(i));
+        }
+      }
+      expect(heroVerts).toBeGreaterThan(0);
+      expect(heroTop).toBeGreaterThan(regularTop); // the cap sits above the hair
+      expect(bones.has(BONES.findIndex((b) => b.name === 'Head'))).toBe(true);
+      if (lod < 2) expect(bones.size).toBeGreaterThan(1); // collar on the chest, pauldrons on the arms
+    }
   });
 });

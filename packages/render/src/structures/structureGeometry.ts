@@ -2,6 +2,7 @@
 // Buildings are modeled in footprint space: x and z in [-0.5, 0.5] (scaled by the footprint in meters), y in units of
 // the wall height (scaled per instance), with a foundation down to y = -0.3 so slopes do not show a gap.
 import { BoxGeometry, BufferAttribute, BufferGeometry, CylinderGeometry, IcosahedronGeometry, SphereGeometry } from 'three/webgpu';
+import { BUILDING_ROOF_TOP } from '../entities/footprint.js';
 import { MeshBuilder } from './meshBuilder.js';
 
 const WALL = 0xb9ad96;
@@ -41,7 +42,7 @@ export function createBuildingGeometry(lod: 0 | 1): BufferGeometry {
   const b = new MeshBuilder()
     .add(new BoxGeometry(1, 1.3, 1), { color: WALL, position: [0, 0.35, 0] })
     .add(new BoxGeometry(1.02, 0.07, 1.02), { color: TRIM, team: 1, position: [0, 0.9, 0] })
-    .add(gableRoof(0.05, 1, 0.32), { color: ROOF });
+    .add(gableRoof(0.05, 1, BUILDING_ROOF_TOP - 1), { color: ROOF });
   if (lod === 0) {
     b.add(new BoxGeometry(0.24, 0.42, 0.04), { color: DARK, position: [0, 0.21, 0.5] })
       .add(new BoxGeometry(0.28, 0.05, 0.05), { color: TRIM, team: 1, position: [0, 0.45, 0.51] })
