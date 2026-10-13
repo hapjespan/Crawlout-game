@@ -9,6 +9,8 @@ export interface RelayServerOptions extends Partial<Omit<RoomOptions, 'send' | '
   host?: string;
   /** Tickinterval in ms; 0 schakelt de timer uit (tests roepen tick() zelf aan). */
   tickMs?: number;
+  /** Een gestarte room zonder verbindingen blijft zo lang bestaan voor reconnect (ms). Standaard 60 s. */
+  emptyRoomGraceMs?: number;
 }
 
 export interface RelayServer {
@@ -22,7 +24,9 @@ export interface RelayServer {
 const MAX_PAYLOAD = 16 * 1024 * 1024;
 
 export async function startRelayServer(options: RelayServerOptions = {}): Promise<RelayServer> {
-  const { port, host, tickMs = TICK_MS, ...roomDefaults } = options;
+  const { port, host, tickMs = TICK_MS, emptyRoomGraceMs = 60_000, ...roomDefaults } = options;
+  const now = roomDefaults.now ?? Date.now;
+  const emptySince = new Map<string, number>();
   const rooms = new Map<string, Room>();
   const sockets = new Map<string, WebSocket>();
   const connRoom = new Map<string, Room>();
@@ -33,7 +37,7 @@ export async function startRelayServer(options: RelayServerOptions = {}): Promis
     if (s && s.readyState === s.OPEN) s.send(JSON.stringify(msg));
   };
   const reject = (ws: WebSocket, message: string): void => {
-    ws.send(JSON.stringify({ kind: 'error', message } satisfies ServerMessage));
+    if (ws.readyState === ws.OPEN) ws.send(JSON.stringify({ kind: 'error', message } satisfies ServerMessage));
   };
 
   const wss = new WebSocketServer({ port: port ?? Number(process.env['RELAY_PORT'] ?? 8787), host: host ?? '0.0.0.0', maxPayload: MAX_PAYLOAD });
@@ -79,12 +83,21 @@ export async function startRelayServer(options: RelayServerOptions = {}): Promis
     });
   });
 
+  // Een room in de lobby verdwijnt zodra hij leeg is; een gestarte room blijft emptyRoomGraceMs bestaan,
+  // zodat een speler die wegvalt (ook de enige) via clientId kan terugkomen.
   const pruneRooms = (): void => {
-    for (const [id, room] of rooms) if (room.connectionCount === 0) rooms.delete(id);
+    for (const [id, room] of rooms) {
+      if (room.connectionCount > 0) emptySince.delete(id);
+      else if (!room.isStarted || now() - (emptySince.get(id) ?? now()) > emptyRoomGraceMs) {
+        rooms.delete(id);
+        emptySince.delete(id);
+      } else if (!emptySince.has(id)) emptySince.set(id, now());
+    }
   };
 
   const tick = (): void => {
     for (const room of rooms.values()) room.advance();
+    pruneRooms();
   };
   const timer = tickMs > 0 ? setInterval(tick, tickMs) : null;
 

@@ -1,4 +1,5 @@
 # @crawlout/relay
 
+- 0.2.0: sprint 2. setSettings/addAi/removeAi (host = laagste niet-AI playerId; AI telt mee voor minPlayers, niet voor hashes; settings in lobby). Reconnect via clientId (zelfde playerId, nieuwe `start`, automatische resync via de laagste online menselijke peer; relay vult bundels aan uit de history; timeout 5 s en dan volgende peer). StallNotice op een ontbrekende hash langer dan STALL_TIMEOUT_MS. Adaptieve DELAY uit frame-verschillen van commando's en hashes (geen protocolwijziging). history begrensd op 1200 frames (`recordReplay` voor volledige opname). Per speler monotone uitvoerframes in FrameScheduler. server.ts: readyState-check bij reject, gestarte lege rooms 60 s bewaard. LoopbackRelay.addAi().
 - 0.1.0: sprint 1 plus hash-vergelijking en desync uit sprint 2. Browser-veilige kern (Room, FrameScheduler, HashComparator), LoopbackRelay, RelayTransport, WsRelayClient (`@crawlout/relay/browser`), Node-server op ws met zod-validatie (`@crawlout/relay/server`, `pnpm relay`). Resync en adaptieve DELAY nog niet.
 - 0.0.1: lege package.
