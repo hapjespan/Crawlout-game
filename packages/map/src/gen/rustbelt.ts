@@ -8,7 +8,8 @@ export const RUSTBELT_SPEC: MapSpec = {
   h: 128,
   seed: 1977,
   comment:
-    'Slice-map Rustbelt. Gegenereerd door packages/map/src/gen/rustbelt.ts (pnpm --filter @crawlout/map gen); niet met de hand bewerken. Puntsymmetrisch voor eerlijk spel.',
+    'Slice-map Rustbelt. Gegenereerd door packages/map/src/gen/rustbelt.ts (pnpm --filter @crawlout/map gen); niet met de hand bewerken. Puntsymmetrisch voor eerlijk spel. dominance (2 van de 3 claimpunten, 3 minuten) is een startwaarde, geen balans.',
+  dominance: { pointsRequired: 2, minutes: 3 },
   border: 2,
   flats: [{ x: 20, y: 20, radius: 9 }],
   groundAmplitude: 200, // ruis tot ca. 0,8 m
