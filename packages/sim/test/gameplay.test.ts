@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { CLAIM_POINT_TYPE_ID, SCRAP_NODE_TYPE_ID, unitTypeId } from '@crawlout/data';
-import { ANIM, ENTITY_FLAG, EVENT_TYPE, readSnapshotHeader, snapshotLayout } from '@crawlout/protocol';
+import { ANIM, ENTITY_FLAG, EVENT_TYPE, OWNER_NEUTRAL, readSnapshotHeader, snapshotLayout } from '@crawlout/protocol';
 import type { CommandEnvelope } from '@crawlout/protocol';
-import { NEUTRAL, ORDER_CRAFT, ORDER_GATHER, createSim, createSimWorkerCore, deserialize } from '../src/index.js';
+import { ORDER_CRAFT, ORDER_GATHER, createSim, createSimWorkerCore, deserialize } from '../src/index.js';
 import type { Sim, SimWorkerOutbound } from '../src/index.js';
 import { cellCenter, createOpenMap, createTestMap, testPlayers } from '../src/testing.js';
 import { BUILDER, CONFIG, DATA, MILITIA, SCAV, bundle, cmd, emptySim, envOf, runFrames, testInit, typeByKey } from './helpers.js';
@@ -35,8 +35,8 @@ describe('startopstelling', () => {
     const views = sim.entityIds().map((id) => sim.getUnit(id)!);
     const nodes = map.scrapNodes.length;
     const claims = map.claimPoints.length;
-    expect(views.slice(0, nodes).every((v) => v.typeId === SCRAP_NODE_TYPE_ID && v.owner === NEUTRAL)).toBe(true);
-    expect(views.slice(nodes, nodes + claims).every((v) => v.typeId === CLAIM_POINT_TYPE_ID && v.owner === NEUTRAL)).toBe(true);
+    expect(views.slice(0, nodes).every((v) => v.typeId === SCRAP_NODE_TYPE_ID && v.owner === OWNER_NEUTRAL)).toBe(true);
+    expect(views.slice(nodes, nodes + claims).every((v) => v.typeId === CLAIM_POINT_TYPE_ID && v.owner === OWNER_NEUTRAL)).toBe(true);
     const faction = DATA.factions[0]!;
     const perPlayer = 1 + faction.startUnits.reduce((n, u) => n + u.count, 0);
     for (let p = 0; p < 2; p++) {
@@ -102,6 +102,13 @@ describe('economie', () => {
       return new Uint8Array(buf, L.entity.flags, h.entityCount)[k]!;
     };
     expect(snapAnim() & ENTITY_FLAG.carrying).toBe(ENTITY_FLAG.carrying);
+    // hpPct van een scrap-node is de resterende voorraad in procenten van de startvoorraad: 490 van 500 = 98
+    const buf = sim.writeSnapshot();
+    const h = readSnapshotHeader(buf);
+    const L = snapshotLayout(h.entityCount, h.eventCount);
+    const k = Array.from(new Uint32Array(buf, L.entity.id, h.entityCount)).indexOf(n);
+    expect(new Uint8Array(buf, L.entity.hpPct, h.entityCount)[k]).toBe(98);
+    expect(new Uint8Array(buf, L.entity.owner, h.entityCount)[k]).toBe(OWNER_NEUTRAL);
   });
 
   it('Build: scrap betalen, bouwplaats blokkeert cellen, bouwer maakt hem af, bedden verhogen de pop-cap', () => {
@@ -159,6 +166,19 @@ describe('economie', () => {
     expect(sim.getUnit(site)).toBeNull();
     expect(sim.playerStatus(0).scrap).toBe(before);
     expect(sim.spawnUnit({ typeId: SCAV, owner: 0, ...p })).not.toBe(0); // cel weer begaanbaar
+  });
+
+  it('Cancel geeft cancelRefundPermille van de prijs terug (bouwplaats en betaalde omscholing)', () => {
+    const half = { ...testInit(2), config: { ...CONFIG, cancelRefundPermille: 500 } };
+    const sim = createSim(half);
+    const builder = sim.entityIds().find((id) => sim.getUnit(id)!.typeId === BUILDER && sim.getUnit(id)!.owner === 0)!;
+    const before = sim.playerStatus(0).scrap;
+    const p = cellCenter(16, 14);
+    const ev = play(sim, 1, at(0, cmd(0, 0, 'Build', { ids: [builder], typeId: WONING, x: p.x, y: p.y })));
+    const site = ev.find((e) => e.type === EVENT_TYPE.buildingPlaced)!.a;
+    play(sim, 1, at(1, cmd(1, 0, 'Cancel', { ids: [site] })));
+    const cost = CONFIG.buildingTypes.find((b) => b.typeId === WONING)!.scrapCost;
+    expect(sim.playerStatus(0).scrap).toBe(before - cost + (cost >> 1));
   });
 
   it('huisvesting: met vrije bedden groeit er per ticksPerMinute/housingGrowthPerMin ticks een bewoner bij het hoofdgebouw', () => {
@@ -279,7 +299,7 @@ describe('claims en winroutes', () => {
     const b = sim.spawnUnit({ typeId: SCAV, owner: 1, x: view.x + 512, y: view.y });
     play(sim, CONFIG.claimTicks + 40, at(sim.frame, cmd(sim.frame, 1, 'Claim', { ids: [b], pointId: pt })));
     expect(sim.getUnit(pt)!.owner).toBe(0);
-    expect(sim.getUnit(pt)!.claimBy).toBe(NEUTRAL);
+    expect(sim.getUnit(pt)!.claimBy).toBe(OWNER_NEUTRAL);
     // speler 0 loopt weg: speler 1 neemt het
     play(sim, CONFIG.claimTicks + 200, at(sim.frame, cmd(sim.frame, 0, 'Move', { ids: [a], ...cellCenter(5, 5) })));
     expect(sim.getUnit(pt)!.owner).toBe(1);

@@ -1,10 +1,9 @@
-import { COMMAND_PAYLOADS, CommandEnvelope } from '@crawlout/protocol';
+import { COMMAND_PAYLOADS, CommandEnvelope, OWNER_NEUTRAL } from '@crawlout/protocol';
 import type { CommandPayload, CommandType } from '@crawlout/protocol';
 import { ROLES, UNIT_TYPE_BASE, UNIT_TYPE_MAX, unitTypeId } from '@crawlout/data';
 import {
   BSTATE_SITE,
   C,
-  NEUTRAL,
   NO_ENTITY,
   ORDER_ATTACK,
   ORDER_ATTACK_MOVE,
@@ -106,12 +105,17 @@ function ownedWith(ctx: SimContext, ids: readonly number[], playerId: number, ne
 
 const UNIT = C.unit | C.orders | C.movement;
 
-/** Lopende omscholing die al betaald is: terugbetalen. */
+/** Teruggave bij Cancel (sim.json cancelRefundPct): het deel van de prijs dat terugkomt. */
+export function refundOf(ctx: SimContext, cost: number): number {
+  return idiv(cost * ctx.config.cancelRefundPermille, 1000);
+}
+
+/** Lopende omscholing die al betaald is: terugbetalen volgens cancelRefundPermille. */
 function refundCraft(ctx: SimContext, i: number): void {
   const w = ctx.world;
   if (w.orderType(i) !== ORDER_CRAFT || w.phase[i] !== PHASE_CRAFT) return;
   const t = ctx.unitType(w.ordX[w.currentOrder(i)]!);
-  if (t !== undefined) ctx.ps.scrap[w.owner[i]!] = ctx.ps.scrap[w.owner[i]!]! + t.scrapCost;
+  if (t !== undefined) ctx.ps.scrap[w.owner[i]!] = ctx.ps.scrap[w.owner[i]!]! + refundOf(ctx, t.scrapCost);
 }
 
 /** Nieuwe order die de huidige vervangt. */
@@ -144,7 +148,7 @@ function applyMove(ctx: SimContext, p: number, ids: readonly number[], x: number
 function applyAttack(ctx: SimContext, p: number, pl: CommandPayload<'Attack'>): boolean {
   const w = ctx.world;
   const t = isInt(pl.target) ? w.resolve(pl.target) : -1;
-  if (t < 0 || !w.has(t, C.health) || w.owner[t] === p || w.owner[t] === NEUTRAL) return false;
+  if (t < 0 || !w.has(t, C.health) || w.owner[t] === p || w.owner[t] === OWNER_NEUTRAL) return false;
   let any = false;
   for (const i of ownedWith(ctx, pl.ids, p, UNIT | C.combat)) {
     if (w.damage[i]! <= 0 || !isEnemy(w, i, t)) continue;
@@ -225,14 +229,14 @@ function ownSiteAt(ctx: SimContext, p: number, typeId: number, fx: number, fy: n
   return isSameSite ? b : -1;
 }
 
-/** Cancel: een eigen bouwplaats verdwijnt met volledige teruggave; een unit stopt (een betaalde omscholing wordt terugbetaald). */
+/** Cancel: een eigen bouwplaats verdwijnt met teruggave; een unit stopt (een betaalde omscholing wordt terugbetaald). */
 function applyCancel(ctx: SimContext, p: number, ids: readonly number[]): boolean {
   const w = ctx.world;
   let any = false;
   for (const i of ownedWith(ctx, ids, p, C.building)) {
     if (w.bstate[i] !== BSTATE_SITE) continue;
     const bt = ctx.buildingType(w.typeId[i]!);
-    if (bt !== undefined) ctx.ps.scrap[p] = ctx.ps.scrap[p]! + bt.scrapCost;
+    if (bt !== undefined) ctx.ps.scrap[p] = ctx.ps.scrap[p]! + refundOf(ctx, bt.scrapCost);
     removeBuilding(ctx, i);
     any = true;
   }

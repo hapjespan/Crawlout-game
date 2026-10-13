@@ -1,4 +1,4 @@
-import { ENTITY_GEN_BITS, ENTITY_INDEX_BITS, ENTITY_NONE, MAX_ENTITIES } from '@crawlout/protocol';
+import { ENTITY_GEN_BITS, ENTITY_INDEX_BITS, ENTITY_NONE, MAX_ENTITIES, OWNER_NEUTRAL } from '@crawlout/protocol';
 
 // ECS op typed arrays (SoA), vooraf gealloceerd op MAX_ENTITIES. Geen floats.
 //
@@ -34,8 +34,6 @@ export const BSTATE_DONE = 2;
 export const NO_FIELD = 255;
 /** goalX/goalY zonder doel. */
 export const NO_GOAL = -1;
-/** Eigenaar van neutrale entities (scrap-nodes, onbezette claimpunten). */
-export const NEUTRAL = 255;
 
 /** Componentbits in mask. */
 export const C = {
@@ -128,7 +126,7 @@ export class World {
   readonly progress = new Int32Array(MAX_ENTITIES);
   // ResourceNode
   readonly amount = new Int32Array(MAX_ENTITIES);
-  // Claim: de eigenaar staat in `owner` (NEUTRAL als onbezet); wie neemt en hoe ver
+  // Claim: de eigenaar staat in `owner` (OWNER_NEUTRAL als onbezet); wie neemt en hoe ver
   readonly claimBy = new Uint8Array(MAX_ENTITIES);
   readonly claimProgress = new Int32Array(MAX_ENTITIES);
   // Presentatie (gaat de snapshot in, is ook state zodat de hash de hele snapshot dekt)
@@ -151,7 +149,7 @@ export class World {
     this.flowField[i] = NO_FIELD;
     this.goalX[i] = NO_GOAL;
     this.goalY[i] = NO_GOAL;
-    this.claimBy[i] = NEUTRAL;
+    this.claimBy[i] = OWNER_NEUTRAL;
     return i;
   }
 

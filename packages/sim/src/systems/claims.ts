@@ -1,5 +1,5 @@
-import { EVENT_TYPE, MAX_PLAYERS } from '@crawlout/protocol';
-import { C, NEUTRAL, ORDER_CLAIM } from '../ecs/world.js';
+import { EVENT_TYPE, MAX_PLAYERS, OWNER_NEUTRAL } from '@crawlout/protocol';
+import { C, ORDER_CLAIM } from '../ecs/world.js';
 import type { Census } from './census.js';
 import { takeCensus } from './census.js';
 import type { SimContext } from './common.js';
@@ -50,11 +50,11 @@ export function claimsSystem(ctx: SimContext, s: ClaimScratch, census: Census): 
     }
     if (claimant < 0) {
       if (!anyClaimers) {
-        w.claimBy[pt] = NEUTRAL;
+        w.claimBy[pt] = OWNER_NEUTRAL;
         w.claimProgress[pt] = 0;
       }
     } else if (w.owner[pt] === claimant) {
-      w.claimBy[pt] = NEUTRAL;
+      w.claimBy[pt] = OWNER_NEUTRAL;
       w.claimProgress[pt] = 0;
       finishClaimOrders(ctx, ptId, claimant);
     } else {
@@ -65,7 +65,7 @@ export function claimsSystem(ctx: SimContext, s: ClaimScratch, census: Census): 
       w.claimProgress[pt] = w.claimProgress[pt]! + 1;
       if (w.claimProgress[pt]! >= ctx.config.claimTicks) {
         w.owner[pt] = claimant;
-        w.claimBy[pt] = NEUTRAL;
+        w.claimBy[pt] = OWNER_NEUTRAL;
         w.claimProgress[pt] = 0;
         ctx.events.push(EVENT_TYPE.claimTaken, ptId, claimant, w.x[pt]!, w.y[pt]!);
         finishClaimOrders(ctx, ptId, claimant);

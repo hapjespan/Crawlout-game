@@ -1,7 +1,7 @@
-import { EVENT_TYPE } from '@crawlout/protocol';
+import { EVENT_TYPE, OWNER_NEUTRAL } from '@crawlout/protocol';
 import { CLAIM_POINT_TYPE_ID, SCRAP_NODE_TYPE_ID } from '@crawlout/data';
 import type { SimBuildingType, SimUnitType } from './config.js';
-import { BSTATE_DONE, BSTATE_SITE, C, NEUTRAL, NO_ENTITY, NO_FIELD, NO_GOAL } from './ecs/world.js';
+import { BSTATE_DONE, BSTATE_SITE, C, NO_ENTITY, NO_FIELD, NO_GOAL } from './ecs/world.js';
 import { PROVIDES_HQ } from './fromData.js';
 import { idiv } from './math/int.js';
 import type { SimContext } from './systems/common.js';
@@ -126,9 +126,10 @@ export function createScrapNode(ctx: SimContext, x: number, y: number, amount: n
   w.mask[i] = C.transform | C.owner | C.resource;
   w.x[i] = x;
   w.y[i] = y;
-  w.owner[i] = NEUTRAL;
+  w.owner[i] = OWNER_NEUTRAL;
   w.typeId[i] = SCRAP_NODE_TYPE_ID;
   w.amount[i] = amount;
+  w.maxHp[i] = amount; // startvoorraad: snapshot-hpPct is de resterende voorraad in procenten (contract 1)
   return i;
 }
 
@@ -139,8 +140,8 @@ export function createClaimPoint(ctx: SimContext, x: number, y: number): number 
   w.mask[i] = C.transform | C.owner | C.claim;
   w.x[i] = x;
   w.y[i] = y;
-  w.owner[i] = NEUTRAL;
-  w.claimBy[i] = NEUTRAL;
+  w.owner[i] = OWNER_NEUTRAL;
+  w.claimBy[i] = OWNER_NEUTRAL;
   w.typeId[i] = CLAIM_POINT_TYPE_ID;
   return i;
 }

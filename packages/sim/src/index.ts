@@ -23,7 +23,6 @@ export { MAX_RADIUS, MAX_SPEED, envHash, validateEnv } from './config.js';
 export type { ClaimKind, SimMapSource } from './fromData.js';
 export { CLAIM_KINDS, PROVIDES_HQ, PROVIDES_WORKSHOP, simConfigFromGameData, simMapFromGrid, simPlayersFromLobby } from './fromData.js';
 export {
-  NEUTRAL,
   NO_ENTITY,
   NO_FIELD,
   ORDER_ATTACK,

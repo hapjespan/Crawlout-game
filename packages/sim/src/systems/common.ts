@@ -1,7 +1,7 @@
-import { MAX_PLAYERS } from '@crawlout/protocol';
+import { MAX_PLAYERS, OWNER_NEUTRAL } from '@crawlout/protocol';
 import type { SimBuildingType, SimConfig, SimMap, SimPlayer, SimUnitType } from '../config.js';
 import type { World } from '../ecs/world.js';
-import { BSTATE_DONE, C, NEUTRAL, NO_FIELD, NO_GOAL } from '../ecs/world.js';
+import { BSTATE_DONE, C, NO_FIELD, NO_GOAL } from '../ecs/world.js';
 import type { EventBuffer } from '../events.js';
 import type { FlowFields } from '../flowfield.js';
 import { idiv } from '../math/int.js';
@@ -24,7 +24,7 @@ export class PlayerState {
   readonly aiAttack = new Int32Array(MAX_PLAYERS);
 }
 
-export const NO_WINNER = NEUTRAL;
+export const NO_WINNER = OWNER_NEUTRAL;
 export const WIN_NONE = 0;
 export const WIN_DESTRUCTION = 1;
 export const WIN_DOMINANCE = 2;
@@ -213,7 +213,7 @@ export function face(w: World, i: number, x: number, y: number): void {
 export function isEnemy(w: World, i: number, t: number): boolean {
   if (!w.has(t, C.health) || w.hp[t]! <= 0) return false;
   const o = w.owner[t]!;
-  return o !== NEUTRAL && o !== w.owner[i]!;
+  return o !== OWNER_NEUTRAL && o !== w.owner[i]!;
 }
 
 /** Kwadraat van de afstand tussen de middelpunten van twee entities. */

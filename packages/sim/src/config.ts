@@ -96,6 +96,8 @@ export interface SimFaction {
 export interface SimAiScript {
   readonly buildOrder: readonly { readonly atTick: number; readonly typeId: number }[];
   readonly attackTimersTicks: readonly number[];
+  /** Deel van de bewoners dat de AI tot militie omschoolt, in promille (ai/*.json militiaPct). */
+  readonly militiaPermille: number;
 }
 
 export interface SimConfig {
@@ -130,8 +132,8 @@ export interface SimConfig {
   readonly popCapMax: number;
   /** Ticks dat een gedode unit als lijk (anim death) blijft staan. */
   readonly corpseTicks: number;
-  /** Scripted AI: deel van de bewoners dat de AI tot militie omschoolt, in promille. */
-  readonly aiMilitiaPermille: number;
+  /** Teruggave bij Cancel van een bouwplaats of een betaalde omscholing, in promille van de prijs (1000 = alles). */
+  readonly cancelRefundPermille: number;
 }
 
 /** Eén speler in de startopstelling, in playerId-volgorde. */
@@ -203,7 +205,7 @@ export function validateEnv(env: SimEnv): void {
   req(intIn(config.claimTicks, 1, I31), 'claimTicks');
   req(intIn(config.popCapMax, 0, 4096), 'popCapMax');
   req(intIn(config.corpseTicks, 0, U16), 'corpseTicks');
-  req(intIn(config.aiMilitiaPermille, 0, 1000), 'aiMilitiaPermille');
+  req(intIn(config.cancelRefundPermille, 0, 1000), 'cancelRefundPermille');
 
   const armorCount = config.damageMatrix[0]?.length ?? 0;
   req(config.damageMatrix.length > 0 && armorCount > 0, 'damageMatrix leeg');
@@ -253,6 +255,7 @@ export function validateEnv(env: SimEnv): void {
   for (const s of config.aiScripts) {
     for (const o of s.buildOrder) req(intIn(o.atTick, 0, I31) && buildingIds.has(o.typeId), 'aiScript buildOrder');
     for (const t of s.attackTimersTicks) req(intIn(t, 0, I31), 'aiScript attackTimersTicks');
+    req(intIn(s.militiaPermille, 0, 1000), 'aiScript militiaPermille');
   }
   for (const p of players) {
     req(intIn(p.factionId, 0, config.factions.length - 1), `speler met onbekende factie ${p.factionId}`);
@@ -285,7 +288,7 @@ export function envHash(env: SimEnv): number {
     c.claimTicks,
     c.popCapMax,
     c.corpseTicks,
-    c.aiMilitiaPermille,
+    c.cancelRefundPermille,
   ]);
   h = fnv1aInt(h, c.unitTypes.length);
   for (const u of c.unitTypes) {
@@ -310,6 +313,7 @@ export function envHash(env: SimEnv): number {
     h = fnv1aInt(h, s.buildOrder.length);
     for (const o of s.buildOrder) h = hashInts(h, [o.atTick, o.typeId]);
     h = hashInts(h, s.attackTimersTicks);
+    h = fnv1aInt(h, s.militiaPermille);
   }
   h = fnv1aInt(h, c.damageMatrix.length);
   for (const row of c.damageMatrix) h = hashInts(h, row);

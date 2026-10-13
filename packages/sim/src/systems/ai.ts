@@ -18,7 +18,7 @@ import { ROLE_MILITIA } from './orders.js';
 //  1. bouwvolgorde uit het script (atTick); een gebouw dat nooit kan (andere factie, tech, hoofdgebouw) slaat hij over;
 //  2. bouwers zonder werk helpen bij een eigen bouwplaats;
 //  3. scavengers zonder werk verzamelen bij de dichtstbijzijnde node;
-//  4. met een werkplaats schoolt hij scavengers om tot militie tot aiMilitiaPermille van zijn bewoners militie is,
+//  4. met een werkplaats schoolt hij scavengers om tot militie tot militiaPermille (script) van zijn bewoners militie is,
 //     en houdt hij één bouwer;
 //  5. op elke attackTimersTicks stuurt hij alle militie met AttackMove naar de spawn van de eerste tegenstander die
 //     nog meedoet; na de laatste golf gaat militie zonder werk ook die kant op.
@@ -178,7 +178,7 @@ function think(ctx: SimContext, census: Census, p: number, script: SimAiScript):
   if (workshop && scavs.length > 0) {
     if (builders.length + buildersPlanned === 0) {
       applyCommand(ctx, { playerId: p, seq: 0, type: 'SetRole', payload: { ids: [scavs[0]!], role: 'builder' } });
-    } else if (militia.length + militiaPlanned < idiv(units * ctx.config.aiMilitiaPermille, 1000)) {
+    } else if (militia.length + militiaPlanned < idiv(units * script.militiaPermille, 1000)) {
       applyCommand(ctx, { playerId: p, seq: 0, type: 'SetRole', payload: { ids: [scavs[0]!], role: 'militia' } });
     }
   }

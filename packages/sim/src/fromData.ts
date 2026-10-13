@@ -92,6 +92,7 @@ export function simConfigFromGameData(data: GameData): SimConfig {
     aiScripts: data.aiScripts.map((a) => ({
       buildOrder: a.buildOrder.map((o) => ({ atTick: o.atTick, typeId: buildingTypeId(o.buildingId) })),
       attackTimersTicks: [...a.attackTimersTicks],
+      militiaPermille: a.militiaPermille,
     })),
     damageMatrix: data.damageMatrix.map((row) => [...row]),
     ticksPerMinute: secondsToTicks(60),
@@ -105,7 +106,7 @@ export function simConfigFromGameData(data: GameData): SimConfig {
     claimTicks: t.claimTicks,
     popCapMax: t.popCapMax,
     corpseTicks: t.corpseTicks,
-    aiMilitiaPermille: t.aiMilitiaPermille,
+    cancelRefundPermille: t.cancelRefundPermille,
   };
 }
 
