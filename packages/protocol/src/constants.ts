@@ -7,6 +7,21 @@ export const ANGLE_FULL = 65536; // yaw: 0..65535 = 0..360 graden
 export const MAX_ENTITIES = 4096;
 export const MAX_PLAYERS = 8;
 
+// Yaw-conventie (besluit sprint 1): hoeken lopen van sim +x naar sim +y, dus yaw = atan2(dy, dx) geschaald
+// naar 0..65535. De renderer zet sim (x, y) op wereld (x, z); een model dat bij hoek 0 naar wereld +z kijkt
+// en met Ry draait, gebruikt radialen = PI/2 - yaw * 2 * PI / ANGLE_FULL.
+export const YAW_PLUS_X = 0;
+export const YAW_PLUS_Y = ANGLE_FULL >> 2; // 16384
+
+// Entity-id (besluit sprint 1): uint32 = index * 2^ENTITY_GEN_BITS + generatie. Index in de hoge 12 bits,
+// generatie 1..2^20-1 in de lage 20 bits. Oplopende id is oplopende index; id 0 is nooit een entity.
+export const ENTITY_INDEX_BITS = 12;
+export const ENTITY_GEN_BITS = 20;
+export const ENTITY_NONE = 0;
+
+// Seed: uint32, gekozen door de relay en zo in start en Replay.
+export const SEED_MAX = 0xffffffff;
+
 // Contract 2: lockstep.
 export const DELAY_FRAMES_DEFAULT = 4; // 200 ms bij 20 Hz
 export const DELAY_FRAMES_MIN = 2;
