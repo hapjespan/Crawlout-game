@@ -29,6 +29,10 @@ export function terrainTile(map: MapGrid, heights: Heightmap, x: number, y: numb
   return (heights.data[i] as number) >= CLIFF_MIN_HEIGHT ? TILE_CLIFF : TILE_RUIN;
 }
 
+/** Markeringskleuren voor cellen met een scrap-node of claimpunt (zichtbaar op het terrein; heeft voorrang op de terreinkleur). */
+export const MARK_SCRAP_RGB: readonly [number, number, number] = [235, 190, 40];
+export const MARK_CLAIM_RGB: readonly [number, number, number] = [60, 150, 230];
+
 const TILE_RGB: ReadonlyArray<readonly [number, number, number]> = [
   [150, 128, 94], // grond: woestijnzand
   [112, 96, 90], // ruine: rood-bruin beton
@@ -69,14 +73,20 @@ export function greyboxMesh(map: MapGrid, heights: Heightmap): GreyboxMesh {
   const corner = new Int32Array((w + 1) * (h + 1));
   for (let cy = 0; cy <= h; cy++) for (let cx = 0; cx <= w; cx++) corner[cy * (w + 1) + cx] = cornerHeight(heights, cx, cy);
 
+  // Markering per cel: 0 = geen, 1 = scrap-node, 2 = claimpunt (claim wint bij overlap).
+  const marks = new Uint8Array(cells);
+  for (const n of map.scrapNodes) marks[n.y * w + n.x] = 1;
+  for (const c of map.claimPoints) marks[c.y * w + c.x] = 2;
+
   let v = 0;
   let ii = 0;
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
       const tile = terrainTile(map, heights, x, y);
-      const rgb = TILE_RGB[tile] as readonly [number, number, number];
+      const mark = marks[y * w + x] as number;
+      const rgb = mark === 2 ? MARK_CLAIM_RGB : mark === 1 ? MARK_SCRAP_RGB : (TILE_RGB[tile] as readonly [number, number, number]);
       // Lichte hoogte-arcering: 0..31 extra helderheid per ca. 2 m (alleen visuele hulp).
-      const shade = Math.min(31, Math.max(0, (heights.data[y * w + x] as number) >> 4));
+      const shade = mark !== 0 ? 0 : Math.min(31, Math.max(0, (heights.data[y * w + x] as number) >> 4));
       const base = v;
       const quad: ReadonlyArray<readonly [number, number]> = [
         [x, y],

@@ -12,6 +12,8 @@ import {
   isPassable,
   loadHeightmap,
   loadMap,
+  MARK_CLAIM_RGB,
+  MARK_SCRAP_RGB,
   type GeneratedMap,
   type MapAssets,
 } from '../src/index.js';
@@ -165,5 +167,13 @@ describe('greyboxMesh', () => {
     expect(Array.from(again.positions)).toEqual(Array.from(mesh.positions));
     const colorOf = (x: number, y: number): number[] => Array.from(mesh.colors.subarray((y * 32 + x) * 12, (y * 32 + x) * 12 + 3));
     expect(colorOf(13, 7)).not.toEqual(colorOf(20, 20)); // ruine versus grond
+  });
+
+  it('markeert scrap-node- en claimpunt-cellen met eigen kleur', () => {
+    const colorAt = (x: number, y: number): number[] => Array.from(mesh.colors.subarray((y * 32 + x) * 12, (y * 32 + x) * 12 + 3));
+    const node = map.scrapNodes[0]!;
+    const claim = map.claimPoints[0]!;
+    expect(colorAt(node.x, node.y)).toEqual(Array.from(MARK_SCRAP_RGB));
+    expect(colorAt(claim.x, claim.y)).toEqual(Array.from(MARK_CLAIM_RGB));
   });
 });
