@@ -9,7 +9,7 @@ import {
   type PlayerStatus,
   type StallNotice,
 } from '@crawlout/protocol';
-import { PROVIDES, ROLES, buildingTypeId, kindOfTypeId, type BuildingData } from '@crawlout/data';
+import { PROVIDES, ROLES, buildingTypeId, heroIdOfTypeId, kindOfTypeId, type BuildingData } from '@crawlout/data';
 import { createRenderer, snapFootprintCenter } from '@crawlout/render';
 import {
   mountHud,
@@ -78,10 +78,24 @@ async function main(): Promise<void> {
     const k = kindOfTypeId(typeId);
     return k.kind === 'unit' ? data.loadouts[k.index] : undefined;
   };
+  /** The hero is a unit in the unit typeId range (1000 + heroId); it has no loadout. */
+  const heroOf = (typeId: number) => {
+    const h = heroIdOfTypeId(typeId);
+    return h < 0 ? undefined : data.heroes[h];
+  };
   const buildingOf = (typeId: number): BuildingData | undefined => {
     const k = kindOfTypeId(typeId);
     return k.kind === 'building' ? data.buildings[k.index] : undefined;
   };
+  const myFaction = () => data.factions.find((f) => f.key === session.faction);
+  const myHero = () => {
+    const id = status?.hero?.heroId;
+    return id === undefined ? undefined : data.heroes[id];
+  };
+  const heroAlive = (): boolean => [...entities.values()].some((e) => e.owner === session.playerId && heroIdOfTypeId(e.typeId) >= 0);
+  const hqProvidesIdx = PROVIDES.indexOf('hq');
+  const myHq = (): EntityRow | undefined =>
+    [...entities.values()].find((e) => e.owner === session.playerId && buildingOf(e.typeId)?.provides.includes(hqProvidesIdx));
 
   const netStatus = createStatusOverlay();
   const session = startSession(data, map, {
@@ -147,7 +161,7 @@ async function main(): Promise<void> {
 
   /** Right click: attack an enemy, gather from a scrap node, claim a point, otherwise move. */
   function orderAt(px: number, py: number): void {
-    const ids = mine(selection).filter((id) => loadoutOf(entities.get(id)!.typeId));
+    const ids = mine(selection).filter((id) => loadoutOf(entities.get(id)!.typeId) || heroOf(entities.get(id)!.typeId));
     if (ids.length === 0) return;
     const hit = renderer.pickAt(px, py);
     const target = hit.entityId === null ? undefined : entities.get(hit.entityId);
@@ -159,17 +173,20 @@ async function main(): Promise<void> {
         const scavengers = ids.filter((id) => loadoutOf(entities.get(id)!.typeId)?.role === roleIdx('scavenger'));
         if (scavengers.length > 0) return sendChunked('Gather', scavengers, { nodeId: target.id });
       }
-      if (kind === 'claimPoint') return sendChunked('Claim', ids, { pointId: target.id });
+      if (kind === 'claimPoint') {
+        // Claim builds the faction's claim post next to the point: only builders can (sim contract 2).
+        const builders = ids.filter((id) => loadoutOf(entities.get(id)!.typeId)?.role === roleIdx('builder'));
+        if (builders.length > 0) return sendChunked('Claim', builders, { pointId: target.id });
+      }
     }
     if (hit.ground) sendChunked('Move', ids, { x: Math.round(hit.ground.x), y: Math.round(hit.ground.y) });
   }
 
   // Build menu: this player's faction buildings that need no research yet (tech arrives later) and are not the HQ.
-  const hqProvides = PROVIDES.indexOf('hq');
   const buildable = (): BuildingData[] => {
     const faction = data.factions.find((f) => f.key === session.faction);
     if (!faction) return [];
-    return data.buildings.filter((b) => b.factionId === faction.id && b.prereqTech.length === 0 && !b.provides.includes(hqProvides));
+    return data.buildings.filter((b) => b.factionId === faction.id && b.prereqTech.length === 0 && !b.provides.includes(hqProvidesIdx));
   };
   let placing: BuildOption | null = null;
 
@@ -210,7 +227,7 @@ async function main(): Promise<void> {
       mine(selection).map((id): SelectedEntity => {
         const e = entities.get(id)!;
         const l = loadoutOf(e.typeId);
-        const name = l?.key ?? buildingOf(e.typeId)?.key ?? null;
+        const name = l?.key ?? heroOf(e.typeId)?.naam ?? buildingOf(e.typeId)?.key ?? null;
         const role = l === undefined ? null : (ROLES[l.role] ?? null);
         return { id, typeId: e.typeId, loadoutName: name, hpPct: e.hpPct, role };
       }),
@@ -253,6 +270,39 @@ async function main(): Promise<void> {
       placing = null;
       renderer.setPlacementPreview(null);
       canvas.style.cursor = 'default';
+    },
+    // Hero panel from PlayerStatus.hero (HeroStatus) plus names, abilities and perks from packages/data.
+    heroName: (heroId) => data.heroes[heroId]?.naam,
+    getHeroAbilities: () =>
+      (myHero()?.abilities ?? []).map((a, i) => ({ abilityId: i, naam: a.naam, needsTarget: a.rangeU > 0, cooldownPct: 0 })),
+    isHeroDead: () => status?.hero != null && !heroAlive(),
+    reviveHero: () => {
+      const hq = myHq();
+      if (hq) session.sendCommand('Recruit', { buildingId: hq.id });
+    },
+    getResearchOptions: (buildingIds) =>
+      data.tech
+        .filter((t) => t.factionId === myFaction()?.id && buildingIds.includes(t.buildingId))
+        .map((t) => ({ techId: t.id, naam: t.key, scrapCost: t.scrapCost, affordable: (status?.scrap ?? 0) >= t.scrapCost })),
+    getRecruitOptions: (buildingIds) => {
+      const hero = myHero();
+      const hq = myHq();
+      const hqData = hq ? buildingOf(hq.typeId) : undefined;
+      if (!hero || !hq || !hqData || !buildingIds.includes(hqData.id) || heroAlive()) return [];
+      return [{ buildingId: hq.id, naam: `Oplappen: ${hero.naam}`, scrapCost: hero.reviveScrap, affordable: (status?.scrap ?? 0) >= hero.reviveScrap }];
+    },
+    getCraftOptions: () =>
+      data.loadouts
+        .filter((l) => l.factionId === myFaction()?.id)
+        .map((l) => ({ loadoutId: l.id, naam: l.key, scrapCost: l.scrapCost, affordable: (status?.scrap ?? 0) >= l.scrapCost })),
+    getPerkOptions: () => {
+      const h = status?.hero;
+      const hero = h?.heroId === undefined ? undefined : data.heroes[h.heroId];
+      if (!h || !hero) return [];
+      return hero.perkPool
+        .map((id) => data.perks[id]!)
+        .filter((p) => (h.special[p.requires.stat] ?? 0) >= p.requires.min)
+        .map((p) => ({ perkId: p.id, naam: p.naam, beschrijving: p.flavourText }));
     },
     subscribeAlerts: (cb) => {
       alertListeners.add(cb);
