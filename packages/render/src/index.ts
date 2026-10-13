@@ -22,6 +22,8 @@ export { selectInRect, pickEntity, type ScreenRect, type BoxSelectOptions, type 
 export { RtsCameraController, DEFAULT_PAN_KEYS, type RtsCameraOptions, type RtsCameraBounds, type PanDirection } from './camera/rtsCamera.js';
 export { type FrameStats } from './perf/perfOverlay.js';
 export { CLIPS, BONES } from './units/rig.js';
+export { BODY_SLOT, type UnitAssetConfig, type UnitAssetOptions, type UnitAssetStatus } from './units/unitAssets.js';
+export { type TeamMaskSource } from './units/gltfUnitGeometry.js';
 export { TEAM_COLORS, NEUTRAL_COLOR, teamIndex } from './palette.js';
 export {
   classifyTypeId,

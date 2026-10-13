@@ -7,7 +7,10 @@
 // (layout in bake.ts), plus the team palette as a uniform array (palette.ts; slot MAX_PLAYERS is neutral).
 // The textures are float32, or half-float where the WebGL2 driver refuses float32 (gpu/dataTextures.ts).
 // Vertex buffers stay at 7 of WebGPU's limit of 8: position, normal, color (rgb + team mask in alpha),
-// skinIndex, skinWeight, iPose, iAnim. Real assets swap color for uv (diffuse atlas, mask in its alpha). Vertex skinning reads 4 influences, blends two adjacent frames, then rotates by yaw.
+// skinIndex, skinWeight, iPose, iAnim. A textured asset adds uv (8, the limit): albedo = color * diffuse atlas, with
+// the team mask from the color alpha or, for 'diffuseAlpha' assets, from the atlas alpha; uv = (-1, -1) marks a
+// primitive without the atlas (reads white). Vertex skinning reads 4 influences, blends two adjacent frames, then
+// rotates by yaw.
 // Shading: 3-step toon ramp plus rimlight, team color through the team mask. No PBR.
 import { MeshBasicNodeMaterial, Vector3, type Node, type Texture } from 'three/webgpu';
 import {
@@ -27,6 +30,7 @@ import {
   select,
   sin,
   smoothstep,
+  texture,
   step,
   textureLoad,
   uniform,
@@ -44,6 +48,13 @@ export interface ToonLighting {
   lightDir: Vector3;
 }
 
+export interface UnitAlbedo {
+  /** Diffuse atlas, sampled with the uv attribute. */
+  map?: Texture | null;
+  /** Team mask from the atlas alpha instead of the vertex color alpha. */
+  maskFromMapAlpha?: boolean;
+}
+
 export interface UnitMaterialBundle {
   material: MeshBasicNodeMaterial;
   textures: Texture[];
@@ -56,7 +67,12 @@ export function toonRamp(ndl: Node<'float'>): Node<'float'> {
   return float(0.52).add(step(0.42, h).mul(0.26)).add(step(0.7, h).mul(0.22));
 }
 
-export function createUnitMaterial(anims: BakedAnimations, lighting: ToonLighting, precision: DataTexturePrecision = 'float'): UnitMaterialBundle {
+export function createUnitMaterial(
+  anims: BakedAnimations,
+  lighting: ToonLighting,
+  precision: DataTexturePrecision = 'float',
+  albedoSource: UnitAlbedo = {},
+): UnitMaterialBundle {
   const boneTex = createDataTexture(anims.data, anims.width, anims.height, precision);
   const clipTex = createDataTexture(anims.clipTable, anims.clips.length, 1, precision);
   const lightDir = uniform(lighting.lightDir.clone().normalize());
@@ -109,8 +125,15 @@ export function createUnitMaterial(anims: BakedAnimations, lighting: ToonLightin
 
   // Fragment: albedo with team tint, toon ramp, rim.
   const vertexColor = attribute('color', 'vec4');
-  const base = vertexColor.xyz;
-  const mask = vertexColor.w;
+  let base: Node<'vec3'> = vertexColor.xyz;
+  let mask: Node<'float'> = vertexColor.w;
+  if (albedoSource.map) {
+    const uv = attribute('uv', 'vec2');
+    const plain = uv.x.lessThan(-0.5); // NO_UV: primitive without the atlas
+    const texel = select(plain, vec4(1, 1, 1, 0), texture(albedoSource.map, uv));
+    base = base.mul(texel.xyz);
+    if (albedoSource.maskFromMapAlpha) mask = max(mask, texel.w);
+  }
   const iTeam = palette.element(int(iAnim.z));
   const albedo = mix(base, iTeam.mul(base.mul(0.6).add(0.55)), mask);
   const N = normalize(worldNrm);

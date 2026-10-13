@@ -21,6 +21,8 @@ import { StructureLayer } from './structures/structureLayer.js';
 import { createGridTerrain, type TerrainGeometry } from './terrain/heightField.js';
 import { TerrainLayer } from './terrain/terrainLayer.js';
 import { bakeAnimations } from './units/bake.js';
+import { resolveManifestPath, UnitAssetLoader, createGltfIO } from './units/unitAssetLoader.js';
+import { UnitAssetRegistry, type UnitAssetConfig, type UnitAssetOptions, type UnitAssetStatus } from './units/unitAssets.js';
 import { DEFAULT_LIGHT_DIR, UnitLayer } from './units/unitLayer.js';
 import { EffectSpawner, type EffectContext } from './vfx/effects.js';
 import { ParticlePool } from './vfx/particles.js';
@@ -44,6 +46,12 @@ export interface CreateRendererOptions {
   dataTextures?: 'auto' | DataTexturePrecision;
   /** Building footprint by typeId. setGameData() replaces it with the footprints from GameData. */
   buildingFootprint?: FootprintLookup;
+  /**
+   * Character assets from the asset-cli. With a manifest, setGameData() loads the body asset of every loadout
+   * (visuals.meshSlots.body) that the manifest has; defaultUnit names the asset for all other units. Without it,
+   * or when loading fails, units keep the procedural placeholder rig.
+   */
+  assets?: UnitAssetConfig;
 }
 
 export interface PickResult {
@@ -72,8 +80,16 @@ export interface CrawloutRenderer {
   pushSnapshot(buf: ArrayBuffer): void;
   /** Replaces the terrain. Arrays are kept, not copied. */
   setTerrain(geometry: TerrainGeometry): void;
-  /** Game data for visuals: building footprints by typeId. */
-  setGameData(data: Pick<GameData, 'buildings'>): void;
+  /** Game data for visuals: building footprints by typeId, and (with `assets`) the body asset per loadout. */
+  setGameData(data: Pick<GameData, 'buildings'> & Partial<Pick<GameData, 'loadouts'>>): void;
+  /**
+   * Loads a character asset from an asset-cli manifest and draws the units whose loadout names it (meshSlots.body)
+   * with it; `asDefault` also gives it to every unit without an asset of its own. Resolves with the status, never
+   * rejects: on failure the placeholder rig stays.
+   */
+  loadUnitAsset(manifestUrl: string, assetId: string, opts?: UnitAssetOptions): Promise<UnitAssetStatus>;
+  /** Status of every unit asset requested so far. */
+  unitAssets(): UnitAssetStatus[];
   /** Shows a ghost footprint at a sim position, or hides it with null. */
   setPlacementPreview(preview: PlacementPreview | null): void;
   /** What lies under canvas-local CSS pixel (x, y). Units, buildings, scrap nodes and claim points can be hit. */
@@ -107,7 +123,7 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
   const backend: RenderBackend = (gpu.backend as { isWebGPUBackend?: boolean }).isWebGPUBackend ? 'webgpu' : 'webgl2';
 
   const anims = bakeAnimations();
-  const caps = backend === 'webgpu' ? WEBGPU_DATA_TEXTURE_CAPS : (probeWebGL2DataTextureCaps() ?? { float32: true, maxTextureSize: 4096 });
+  const caps: { float32: boolean; maxTextureSize: number } = backend === 'webgpu' ? WEBGPU_DATA_TEXTURE_CAPS : (probeWebGL2DataTextureCaps() ?? { float32: true, maxTextureSize: 4096 });
   const force = opts.dataTextures && opts.dataTextures !== 'auto' ? opts.dataTextures : undefined;
   const precision = pickDataTexturePrecision(caps, Math.max(anims.width, anims.height, HEIGHT_TEXTURE_EDGE), force);
 
@@ -126,6 +142,16 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
   const terrain = new TerrainLayer(scene, DEFAULT_LIGHT_DIR, { shadow: sun?.factor, precision });
   const decals = new DecalLayer(scene, capacity + 16);
   const units = new UnitLayer(scene, { capacity, lightDir: DEFAULT_LIGHT_DIR, precision, anims });
+  const assetConfig = opts.assets;
+  const loader = new UnitAssetLoader(createGltfIO(), (manifestUrl, path) =>
+    assetConfig?.resolveUrl && manifestUrl === assetConfig.manifestUrl ? assetConfig.resolveUrl(path) : resolveManifestPath(manifestUrl, path),
+  );
+  const unitAssets = new UnitAssetRegistry(units, loader, {
+    config: assetConfig,
+    maxTextureSize: caps.maxTextureSize,
+    warn: (message) => console.warn(`[render] ${message}`),
+  });
+  void unitAssets.start();
   const footprints = new FootprintTable(opts.buildingFootprint ?? null);
   const structures = new StructureLayer(scene, {
     capacity,
@@ -242,7 +268,10 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
     setTerrain,
     setGameData(data) {
       footprints.setLookup(footprintsFromGameData(data));
+      if (data.loadouts) void unitAssets.setLoadouts(data.loadouts);
     },
+    loadUnitAsset: (manifestUrl, assetId, assetOpts) => unitAssets.load(manifestUrl, assetId, assetOpts),
+    unitAssets: () => unitAssets.statuses(),
     setPlacementPreview(p) {
       preview = p ? { ...p } : null;
     },
@@ -270,6 +299,7 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
       void gpu.setAnimationLoop(null);
       resizeObserver.disconnect();
       controls.dispose();
+      unitAssets.dispose();
       overlay?.dispose();
       units.dispose();
       structures.dispose();
