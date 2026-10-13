@@ -185,11 +185,9 @@ export const SimTuning = z
     // Sprint 2 (sim-core, ter review door de architect en content):
     aggroRangeM: nonneg, // militie en units op AttackMove kiezen zelf een doel binnen deze afstand
     interactRangeM: nonneg, // reikwijdte voor verzamelen, afleveren, bouwen en omscholen (tot node of footprint)
-    claimRadiusM: nonneg, // straal rond een claimpunt waarbinnen units het nemen
-    claimS: z.number().positive(), // VERVALT bij de omslag naar claimen via het claimgebouw; seconden ongestoord in de straal om een claimpunt te nemen
+    claimRadiusM: nonneg, // straal rond een claimpunt: een voltooid claimgebouw (provides claim) hierbinnen houdt het punt, scrap-nodes hierbinnen zijn exclusief
     popCapMax: z.number().int().nonnegative(), // bovengrens pop-cap per speler, los van de bedden (Spelfundament 2.5)
     corpseS: nonneg, // seconden dat een gedode unit als lijk blijft staan (death-animatie)
-    aiMilitiaPct: z.number().min(0).max(100), // VERVALT: staat nu in ai/*.json als militiaPct; sim-core leest het daar
     cancelRefundPct: z.number().min(0).max(100), // teruggave bij Cancel van een bouwplaats of betaalde omscholing (besluit sprint 2)
     _comment: comment,
   })

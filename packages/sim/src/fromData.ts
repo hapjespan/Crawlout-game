@@ -13,6 +13,7 @@ const providesBit = (name: (typeof PROVIDES)[number]): number => 1 << PROVIDES.i
 /** Bits in SimBuildingType.provides. */
 export const PROVIDES_HQ = providesBit('hq');
 export const PROVIDES_WORKSHOP = providesBit('werkplaats');
+export const PROVIDES_CLAIM = providesBit('claim');
 
 const ROLE_SCAVENGER = ROLES.indexOf('scavenger');
 
@@ -40,6 +41,12 @@ export function simConfigFromGameData(data: GameData): SimConfig {
       return l === undefined ? 0 : unitTypeId(l.id);
     });
     const aiScript = data.aiScripts.findIndex((a) => a.factionId === f.id);
+    // Claim-commando (besluit sprint 2): het goedkoopste gebouw met provides claim dat geen hoofdgebouw is, dan laagste id.
+    let claim: (typeof data.buildings)[number] | undefined;
+    for (const b of data.buildings) {
+      if (b.factionId !== f.id || !b.provides.includes(PROVIDES.indexOf('claim')) || b.provides.includes(PROVIDES.indexOf('hq'))) continue;
+      if (claim === undefined || b.scrapCost < claim.scrapCost) claim = b;
+    }
     return {
       factionId: f.id,
       startUnits: f.startUnits.map((u) => ({ typeId: unitTypeId(u.loadoutId), count: u.count })),
@@ -49,6 +56,7 @@ export function simConfigFromGameData(data: GameData): SimConfig {
       settlerTypeId: roleTypeIds[ROLE_SCAVENGER] ?? 0,
       roleTypeIds,
       aiScript,
+      claimTypeId: claim === undefined ? 0 : buildingTypeId(claim.id),
     };
   });
   return {
@@ -103,7 +111,6 @@ export function simConfigFromGameData(data: GameData): SimConfig {
     aggroRange: t.aggroRangeU,
     interactRange: t.interactRangeU,
     claimRadius: t.claimRadiusU,
-    claimTicks: t.claimTicks,
     popCapMax: t.popCapMax,
     corpseTicks: t.corpseTicks,
     cancelRefundPermille: t.cancelRefundPermille,

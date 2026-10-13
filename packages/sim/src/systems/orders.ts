@@ -7,7 +7,6 @@ import {
   ORDER_ATTACK,
   ORDER_ATTACK_MOVE,
   ORDER_BUILD,
-  ORDER_CLAIM,
   ORDER_CRAFT,
   ORDER_GATHER,
   ORDER_MOVE,
@@ -17,15 +16,14 @@ import {
   PHASE_WORK,
 } from '../ecs/world.js';
 import { PROVIDES_HQ, PROVIDES_WORKSHOP } from '../fromData.js';
-import { idiv } from '../math/int.js';
 import type { SimContext } from './common.js';
 import {
-  dist2,
   distToRect2,
   face,
   isEnemy,
   nearestNode,
   nearestOwnBuilding,
+  nodeAllowed,
   steerChase,
   steerToEntity,
   steerToPoint,
@@ -35,7 +33,7 @@ import {
 
 // Systeem 2 (unit-deel): per unit de huidige order uitvoeren in oplopende id-volgorde. Bepaalt waar een unit naartoe
 // loopt (steerTo, uitgevoerd door systeem 4) en welk doel hij heeft (gevecht in systeem 5). Het werk zelf
-// (verzamelen, bouwen, omscholen) gebeurt in systeem 6; claimen in systeem 7.
+// (verzamelen, bouwen, omscholen) gebeurt in systeem 6.
 
 export const ROLE_MILITIA = ROLES.indexOf('militia');
 
@@ -177,13 +175,14 @@ function gather(ctx: SimContext, i: number, o: number): void {
     return;
   }
   let node = w.resolve(w.ordT[o]!);
-  if (node >= 0 && !w.has(node, C.resource)) node = -1;
+  // Een node die (inmiddels) exclusief van een ander is, telt als weg: zoek een andere (Spelfundament 3.1).
+  if (node >= 0 && (!w.has(node, C.resource) || !nodeAllowed(ctx, node, w.owner[i]!))) node = -1;
   const reach = ctx.config.interactRange;
   if (w.phase[i] === PHASE_WORK && (node < 0 || !withinReach(w, i, node, reach))) w.phase[i] = PHASE_GO;
   if (w.phase[i] === PHASE_GO && w.carry[i]! >= type.gatherAmount) w.phase[i] = PHASE_RETURN;
   if (w.phase[i] === PHASE_GO) {
     if (node < 0) {
-      node = nearestNode(w, w.x[i]!, w.y[i]!);
+      node = nearestNode(ctx, w.owner[i]!, w.x[i]!, w.y[i]!);
       if (node < 0) {
         if (w.carry[i]! > 0) w.phase[i] = PHASE_RETURN;
         else {
@@ -235,25 +234,6 @@ function build(ctx: SimContext, i: number, o: number): void {
   }
 }
 
-function claim(ctx: SimContext, i: number, o: number): void {
-  const w = ctx.world;
-  const pt = w.resolve(w.ordT[o]!);
-  if (pt < 0 || !w.has(pt, C.claim)) {
-    w.popOrder(i);
-    stopMoving(ctx, i);
-    return;
-  }
-  const r = ctx.config.claimRadius;
-  const inside = dist2(w, i, pt) <= r * r;
-  if (w.phase[i] === PHASE_WORK) {
-    if (w.mvOn[i] === 0 && !inside) w.phase[i] = PHASE_GO; // weggeduwd: opnieuw
-    return;
-  }
-  // Tot op de halve straal lopen, dan wachten tot systeem 7 het punt geeft.
-  steerToPoint(ctx, i, w.x[pt]!, w.y[pt]!, idiv(r, 2), 0);
-  w.phase[i] = PHASE_WORK;
-}
-
 function craft(ctx: SimContext, i: number): void {
   const w = ctx.world;
   if (w.phase[i] !== PHASE_GO) return; // betalen en omscholen in systeem 6
@@ -300,10 +280,6 @@ export function ordersSystem(ctx: SimContext, s: OrdersScratch): void {
       case ORDER_BUILD:
         w.target[i] = NO_ENTITY;
         build(ctx, i, o);
-        break;
-      case ORDER_CLAIM:
-        w.target[i] = NO_ENTITY;
-        claim(ctx, i, o);
         break;
       case ORDER_CRAFT:
         w.target[i] = NO_ENTITY;

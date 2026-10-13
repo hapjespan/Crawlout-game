@@ -1,6 +1,6 @@
 import { ANIM, ENTITY_FLAG, EVENT_TYPE } from '@crawlout/protocol';
 import { BSTATE_SITE, C, NO_ENTITY, ORDER_BUILD, ORDER_CRAFT, ORDER_GATHER, PHASE_CRAFT, PHASE_WORK } from '../ecs/world.js';
-import { makeCorpse, removeBuilding } from '../entities.js';
+import { PROGRESS_ONE, makeCorpse, removeBuilding } from '../entities.js';
 import { clampI, idiv } from '../math/int.js';
 import type { SimContext } from './common.js';
 import { isEnemy } from './common.js';
@@ -52,11 +52,11 @@ function presentation(ctx: SimContext): void {
       const bt = ctx.buildingType(w.typeId[i]!);
       const site = w.bstate[i] === BSTATE_SITE;
       w.anim[i] = site ? ANIM.build : ANIM.idle;
-      w.animT[i] = site && bt !== undefined ? frac(w.progress[i]!, bt.buildTicks) : 0;
+      w.animT[i] = site && bt !== undefined ? frac(w.progress[i]!, bt.buildTicks * PROGRESS_ONE) : 0;
       continue;
     }
     if ((m & C.claim) !== 0) {
-      w.animT[i] = frac(w.claimProgress[i]!, ctx.config.claimTicks);
+      w.animT[i] = w.claimProgress[i]!; // al 0..65535 (systeem 7)
       continue;
     }
     if ((m & C.unit) === 0) continue;

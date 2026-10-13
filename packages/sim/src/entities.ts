@@ -82,7 +82,7 @@ export function createBuilding(ctx: SimContext, bt: SimBuildingType, owner: numb
   w.maxHp[i] = bt.maxHp;
   const instant = done || bt.buildTicks === 0;
   w.bstate[i] = instant ? BSTATE_DONE : BSTATE_SITE;
-  w.progress[i] = instant ? bt.buildTicks : 0;
+  w.progress[i] = instant ? bt.buildTicks * PROGRESS_ONE : 0;
   w.hp[i] = instant ? bt.maxHp : 1;
   if ((bt.provides & PROVIDES_HQ) !== 0) ctx.ps.hadHq[owner] = 1;
   ctx.terrain.setRect(i, fx, fy, bt.footprintW, bt.footprintH, true);
@@ -174,7 +174,15 @@ export function takeFromNode(ctx: SimContext, node: number, want: number): numbe
   return take;
 }
 
-/** hp van een bouwplaats groeit mee met de voortgang: van 1 naar maxHp. */
-export function siteHpStep(maxHp: number, buildTicks: number, p: number): number {
-  return idiv((maxHp - 1) * (p + 1), buildTicks) - idiv((maxHp - 1) * p, buildTicks);
+/**
+ * Schaal van voortgang (bouwen, onderzoek): in duizendsten van een tick werk. Eén bouwer zonder effecten voegt
+ * PROGRESS_ONE per tick toe; een gebouw is af bij buildTicks * PROGRESS_ONE. Zo werken tijd-effecten in promille
+ * (buildTimePct, researchTimePct) zonder breuken.
+ */
+export const PROGRESS_ONE = 1000;
+
+/** hp van een bouwplaats bij voortgang q van total: van 1 naar maxHp. */
+export function siteHpAt(maxHp: number, total: number, q: number): number {
+  if (total <= 0) return maxHp;
+  return 1 + idiv((maxHp - 1) * (q < total ? q : total), total);
 }

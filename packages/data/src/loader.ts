@@ -176,11 +176,8 @@ export interface SimTuningData {
   aggroRangeU: number;
   interactRangeU: number;
   claimRadiusU: number;
-  claimTicks: number;
   popCapMax: number;
   corpseTicks: number;
-  /** VERVALT: gebruik AiScriptData.militiaPermille. */
-  aiMilitiaPermille: number;
   /** Teruggave bij Cancel in promille (1000 = volle prijs). */
   cancelRefundPermille: number;
 }
@@ -463,10 +460,8 @@ export function loadGameData(raw: RawGameData): GameData {
       aggroRangeU: metersToUnits(simRaw.aggroRangeM),
       interactRangeU: metersToUnits(simRaw.interactRangeM),
       claimRadiusU: metersToUnits(simRaw.claimRadiusM),
-      claimTicks: secondsToTicks(simRaw.claimS),
       popCapMax: simRaw.popCapMax,
       corpseTicks: secondsToTicks(simRaw.corpseS),
-      aiMilitiaPermille: pctToPermille(simRaw.aiMilitiaPct),
       cancelRefundPermille: pctToPermille(simRaw.cancelRefundPct),
     },
   };

@@ -8,18 +8,18 @@ import {
   ORDER_ATTACK,
   ORDER_ATTACK_MOVE,
   ORDER_BUILD,
-  ORDER_CLAIM,
   ORDER_CRAFT,
   ORDER_GATHER,
   ORDER_MOVE,
   PHASE_CRAFT,
 } from '../ecs/world.js';
 import { createBuilding, footprintFree, footprintOrigin, removeBuilding } from '../entities.js';
-import { PROVIDES_HQ } from '../fromData.js';
+import { PROVIDES_CLAIM, PROVIDES_HQ } from '../fromData.js';
+import { inClaimRadius } from './claims.js';
 import { idiv, isInt } from '../math/int.js';
 import { isqrt } from '../math/sqrt.js';
 import type { SimContext } from './common.js';
-import { WIN_SURRENDER, inMap, isEnemy, steerToPoint, stopMoving } from './common.js';
+import { WIN_SURRENDER, cellCenterOf, distToRect2, inMap, isEnemy, scanRing, steerToPoint, stopMoving } from './common.js';
 
 // Systeem 1: commando's van deze tick toepassen. Volgorde: playerId, dan seq, dan positie in de bundel.
 // De zod-validatie gebeurt eenmalig bij binnenkomst (normalizeCommand, vanuit Sim.applyBundle); hier alleen
@@ -266,11 +266,62 @@ function applyCraft(ctx: SimContext, p: number, pl: CommandPayload<'Craft'>): bo
   return applyCraftTo(ctx, p, pl.ids, () => typeId);
 }
 
+/**
+ * Claim (besluit sprint 2, contract 2): de bouwers bouwen het claimgebouw van hun factie (SimFaction.claimTypeId) binnen
+ * claimRadius van het punt, als Build. Staat daar al een eigen bouwplaats met provides claim, dan helpen ze daar.
+ * Anders kiest de sim de vrije plek die het dichtst bij het punt ligt (ring voor ring rond de cel van het punt, het
+ * punt zelf blijft vrij; tiebreak scanvolgorde) en waarvan de footprint binnen de straal valt en geen node of claimpunt
+ * bedekt. Een punt dat al van de speler is, of zonder plek, is ongeldig.
+ */
 function applyClaim(ctx: SimContext, p: number, pl: CommandPayload<'Claim'>): boolean {
   const w = ctx.world;
   const point = isInt(pl.pointId) ? w.resolve(pl.pointId) : -1;
   if (point < 0 || !w.has(point, C.claim)) return false;
-  const units = ownedWith(ctx, pl.ids, p, UNIT);
-  for (const i of units) replaceOrder(ctx, i, ORDER_CLAIM, 0, 0, pl.pointId);
-  return units.length > 0;
+  const typeId = ctx.config.factions[ctx.players[p]!.factionId]!.claimTypeId;
+  const bt = typeId === 0 ? undefined : ctx.buildingType(typeId);
+  if (bt === undefined) return false;
+  // Eigen claimbouwplaats binnen de straal: helpen (laagste index eerst).
+  for (let b = 0; b < w.highWater; b++) {
+    if (!w.has(b, C.building) || w.owner[b] !== p || w.bstate[b] !== BSTATE_SITE) continue;
+    const st = ctx.buildingType(w.typeId[b]!);
+    if (st === undefined || (st.provides & PROVIDES_CLAIM) === 0 || !inClaimRadius(ctx, b, point)) continue;
+    return applyBuild(ctx, p, { ids: pl.ids, typeId: st.typeId, x: w.x[b]!, y: w.y[b]! });
+  }
+  if (w.owner[point] === p) return false;
+  const at = claimSite(ctx, point, bt.footprintW, bt.footprintH);
+  if (at === null) return false;
+  return applyBuild(ctx, p, { ids: pl.ids, typeId: bt.typeId, x: at.x, y: at.y });
+}
+
+/** Midden (in eenheden) van de vrije footprint w x h het dichtst bij claimpunt pt binnen claimRadius, of null. */
+export function claimSite(ctx: SimContext, pt: number, fw: number, fh: number): { x: number; y: number } | null {
+  const w = ctx.world;
+  const map = ctx.map;
+  const px = w.x[pt]!;
+  const py = w.y[pt]!;
+  const r = ctx.config.claimRadius;
+  const maxRing = (r >> 8) + (fw > fh ? fw : fh);
+  for (let d = 1; d <= maxRing; d++) {
+    let best = -1;
+    let bestD = 0;
+    scanRing(map, px >> 8, py >> 8, 1, 1, d, (cx, cy) => {
+      const fx = cx - (fw >> 1);
+      const fy = cy - (fh >> 1);
+      if (distToRect2(px, py, fx, fy, fw, fh) > r * r || !footprintFree(ctx, fx, fy, fw, fh)) return false;
+      for (let j = 0; j < w.highWater; j++) {
+        if (!w.has(j, C.resource) && !w.has(j, C.claim)) continue;
+        if (distToRect2(w.x[j]!, w.y[j]!, fx, fy, fw, fh) === 0) return false;
+      }
+      const dx = (cx << 8) + 128 - px;
+      const dy = (cy << 8) + 128 - py;
+      const dd = dx * dx + dy * dy;
+      if (best < 0 || dd < bestD) {
+        best = cy * map.w + cx;
+        bestD = dd;
+      }
+      return false;
+    });
+    if (best >= 0) return cellCenterOf(map, best);
+  }
+  return null;
 }

@@ -99,6 +99,8 @@ export interface SimContext {
   readonly rng: Rng;
   /** Het frame dat nu wordt uitgevoerd. */
   readonly frame: number;
+  /** Indices van de claimpunten, oplopend (afgeleid: ze ontstaan alleen in de startopstelling en verdwijnen nooit). */
+  readonly claimPoints: readonly number[];
   unitType(typeId: number): SimUnitType | undefined;
   buildingType(typeId: number): SimBuildingType | undefined;
 }
@@ -241,12 +243,34 @@ export function nearestOwnBuilding(ctx: SimContext, owner: number, x: number, y:
   return best;
 }
 
-/** Dichtstbijzijnde scrap-node met voorraad, of -1. Tiebreak laagste index. */
-export function nearestNode(w: World, x: number, y: number): number {
+/**
+ * Of speler p van scrap-node `node` mag verzamelen: niet als de node binnen claimRadius ligt van een claimpunt van
+ * een andere speler, tenzij hij ook binnen de straal van een eigen punt ligt.
+ */
+export function nodeAllowed(ctx: SimContext, node: number, p: number): boolean {
+  const w = ctx.world;
+  const r = ctx.config.claimRadius;
+  const r2 = r * r;
+  let blocked = false;
+  for (const pt of ctx.claimPoints) {
+    const o = w.owner[pt]!;
+    if (o === OWNER_NEUTRAL) continue;
+    const dx = w.x[node]! - w.x[pt]!;
+    const dy = w.y[node]! - w.y[pt]!;
+    if (dx * dx + dy * dy > r2) continue;
+    if (o === p) return true;
+    blocked = true;
+  }
+  return !blocked;
+}
+
+/** Dichtstbijzijnde scrap-node met voorraad waar speler p mag verzamelen (nodeAllowed), of -1. Tiebreak laagste index. */
+export function nearestNode(ctx: SimContext, p: number, x: number, y: number): number {
+  const w = ctx.world;
   let best = -1;
   let bestD = 0;
   for (let j = 0; j < w.highWater; j++) {
-    if (!w.has(j, C.resource) || w.amount[j]! <= 0) continue;
+    if (!w.has(j, C.resource) || w.amount[j]! <= 0 || !nodeAllowed(ctx, j, p)) continue;
     const dx = w.x[j]! - x;
     const dy = w.y[j]! - y;
     const d = dx * dx + dy * dy;

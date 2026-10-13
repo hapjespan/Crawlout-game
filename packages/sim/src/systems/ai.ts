@@ -1,4 +1,4 @@
-import { MAX_ENTITIES_PER_COMMAND } from '@crawlout/protocol';
+import { MAX_ENTITIES_PER_COMMAND, OWNER_NEUTRAL } from '@crawlout/protocol';
 import { ROLES } from '@crawlout/data';
 import type { SimAiScript, SimBuildingType } from '../config.js';
 import { BSTATE_DONE, BSTATE_SITE, C, ORDER_CRAFT, ORDER_NONE } from '../ecs/world.js';
@@ -16,7 +16,10 @@ import { ROLE_MILITIA } from './orders.js';
 // unit-orders. Geen cheats: de AI geeft gewone commando's via applyCommand (dezelfde validatie als spelers) en
 // ziet alleen wat elke speler kan zien (eigen units, de map, de spawns). Gedrag:
 //  1. bouwvolgorde uit het script (atTick); een gebouw dat nooit kan (andere factie, tech, hoofdgebouw) slaat hij over;
-//  2. bouwers zonder werk helpen bij een eigen bouwplaats;
+//  2. bouwers zonder werk helpen bij een eigen bouwplaats; is er geen bouwplaats en is de bouwvolgorde af, dan claimt
+//     een vrije bouwer het neutrale claimpunt dat het dichtst bij het hoofdgebouw ligt (Claim-commando: het
+//     claimgebouw van de factie, zodra hij het kan betalen). Pas na de bouwvolgorde, zodat die de bouwer niet
+//     halverwege een claimpaal weghaalt;
 //  3. scavengers zonder werk verzamelen bij de dichtstbijzijnde node;
 //  4. met een werkplaats schoolt hij scavengers om tot militie tot militiaPermille (script) van zijn bewoners militie is,
 //     en houdt hij één bouwer;
@@ -72,6 +75,25 @@ function findSite(ctx: SimContext, hq: number, bt: SimBuildingType): { x: number
     if (found >= 0) return cellCenterOf(map, found);
   }
   return null;
+}
+
+/** Laat bouwer `builder` het neutrale claimpunt het dichtst bij het hoofdgebouw claimen (tiebreak laagste index). */
+function claimNext(ctx: SimContext, p: number, hq: number, builder: number): void {
+  const w = ctx.world;
+  const typeId = ctx.config.factions[ctx.players[p]!.factionId]!.claimTypeId;
+  const bt = typeId === 0 ? undefined : ctx.buildingType(typeId);
+  if (bt === undefined || !canPlaceType(ctx, p, typeId) || ctx.ps.scrap[p]! < bt.scrapCost) return;
+  let best = -1;
+  let bestD = 0;
+  for (const pt of ctx.claimPoints) {
+    if (w.owner[pt] !== OWNER_NEUTRAL) continue;
+    const d = distToRect2(w.x[pt]!, w.y[pt]!, w.fx[hq]!, w.fy[hq]!, w.fw[hq]!, w.fh[hq]!);
+    if (best < 0 || d < bestD) {
+      best = pt;
+      bestD = d;
+    }
+  }
+  if (best >= 0) applyCommand(ctx, { playerId: p, seq: 0, type: 'Claim', payload: { ids: [builder], pointId: w.idOf(best) } });
 }
 
 /** Spawn van de eerste tegenstander na p (cyclisch) die nog meedoet, of null. */
@@ -166,10 +188,13 @@ function think(ctx: SimContext, census: Census, p: number, script: SimAiScript):
     applyCommand(ctx, { playerId: p, seq: 0, type: 'Build', payload: { ids: idleBuilders, typeId: w.typeId[site]!, x: w.x[site]!, y: w.y[site]! } });
   }
 
+  // 2b claimen na de bouwvolgorde
+  if (hq >= 0 && site < 0 && bi >= order.length && idleBuilders.length > 0) claimNext(ctx, p, hq, idleBuilders[0]!);
+
   // 3 scavengers zonder werk naar de dichtstbijzijnde node
   for (const id of idleScavs) {
     const i = w.resolve(id);
-    const node = nearestNode(w, w.x[i]!, w.y[i]!);
+    const node = nearestNode(ctx, p, w.x[i]!, w.y[i]!);
     if (node < 0) break;
     applyCommand(ctx, { playerId: p, seq: 0, type: 'Gather', payload: { ids: [id], nodeId: w.idOf(node) } });
   }

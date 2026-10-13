@@ -91,6 +91,8 @@ export interface SimFaction {
   readonly roleTypeIds: readonly number[];
   /** Index in SimConfig.aiScripts voor AI-spelers van deze factie, -1 = geen script. */
   readonly aiScript: number;
+  /** Het gebouw dat het Claim-commando bouwt (provides claim, geen hoofdgebouw); 0 = geen. */
+  readonly claimTypeId: number;
 }
 
 export interface SimAiScript {
@@ -124,10 +126,11 @@ export interface SimConfig {
   readonly aggroRange: number;
   /** Reikwijdte voor verzamelen, afleveren, bouwen en omscholen: afstand tot node of footprint. */
   readonly interactRange: number;
-  /** Straal rond een claimpunt waarbinnen units het nemen. */
+  /**
+   * Straal rond een claimpunt (besluit sprint 2, sectie 13): een voltooid gebouw met provides claim waarvan de footprint
+   * hierbinnen ligt houdt het punt; een scrap-node hierbinnen van een bezet punt is exclusief voor de eigenaar.
+   */
   readonly claimRadius: number;
-  /** Ticks dat claimende units ongestoord in de straal moeten staan. */
-  readonly claimTicks: number;
   /** Bovengrens van de pop-cap, los van het aantal bedden. */
   readonly popCapMax: number;
   /** Ticks dat een gedode unit als lijk (anim death) blijft staan. */
@@ -161,6 +164,8 @@ export const MAX_SPEED = UNITS_PER_METER >> 1;
 export const MAX_RADIUS = UNITS_PER_METER;
 /** Geometrie: grootste footprint-zijde in cellen (past in Uint8 en in de ringzoeker rond gebouwen). */
 export const MAX_FOOTPRINT = 16;
+/** Grens voor bouw- en onderzoekstijd in ticks: voortgang telt in duizendsten van een tick (PROGRESS_ONE) in een int32. */
+export const MAX_WORK_TICKS = 2_000_000;
 const U16 = 0xffff;
 const I31 = 0x7fffffff;
 
@@ -202,7 +207,6 @@ export function validateEnv(env: SimEnv): void {
   req(intIn(config.aggroRange, 0, MAX_MAP_CELLS_SIDE << 8), 'aggroRange');
   req(intIn(config.interactRange, 0, MAX_MAP_CELLS_SIDE << 8), 'interactRange');
   req(intIn(config.claimRadius, 0, MAX_MAP_CELLS_SIDE << 8), 'claimRadius');
-  req(intIn(config.claimTicks, 1, I31), 'claimTicks');
   req(intIn(config.popCapMax, 0, 4096), 'popCapMax');
   req(intIn(config.corpseTicks, 0, U16), 'corpseTicks');
   req(intIn(config.cancelRefundPermille, 0, 1000), 'cancelRefundPermille');
@@ -237,7 +241,7 @@ export function validateEnv(env: SimEnv): void {
     req(intIn(b.typeId, 1, U16) && !buildingIds.has(b.typeId) && !unitIds.has(b.typeId), `${at}: typeId ongeldig of dubbel`);
     buildingIds.add(b.typeId);
     req(intIn(b.maxHp, 1, I31) && intIn(b.armorType, 0, armorCount - 1), `${at}: hp of armorType`);
-    req(intIn(b.scrapCost, 0, I31) && intIn(b.buildTicks, 0, I31) && intIn(b.beds, 0, 0xffff), `${at}: kosten, bouwtijd of bedden`);
+    req(intIn(b.scrapCost, 0, I31) && intIn(b.buildTicks, 0, MAX_WORK_TICKS) && intIn(b.beds, 0, 0xffff), `${at}: kosten, bouwtijd of bedden`);
     req(intIn(b.footprintW, 1, MAX_FOOTPRINT) && intIn(b.footprintH, 1, MAX_FOOTPRINT), `${at}: footprint`);
     req(intIn(b.provides, 0, 0xff) && intIn(b.factionId, 0, config.factions.length - 1), `${at}: provides of factionId`);
     for (const t of b.prereqTech) req(intIn(t, 0, U16), `${at}: prereqTech`);
@@ -251,6 +255,7 @@ export function validateEnv(env: SimEnv): void {
     req(f.settlerTypeId === 0 || unitIds.has(f.settlerTypeId), `${at}: settlerTypeId`);
     for (const t of f.roleTypeIds) req(t === 0 || unitIds.has(t), `${at}: roleTypeIds`);
     req(intIn(f.aiScript, -1, config.aiScripts.length - 1), `${at}: aiScript`);
+    req(f.claimTypeId === 0 || buildingIds.has(f.claimTypeId), `${at}: claimTypeId`);
   });
   for (const s of config.aiScripts) {
     for (const o of s.buildOrder) req(intIn(o.atTick, 0, I31) && buildingIds.has(o.typeId), 'aiScript buildOrder');
@@ -285,7 +290,6 @@ export function envHash(env: SimEnv): number {
     c.aggroRange,
     c.interactRange,
     c.claimRadius,
-    c.claimTicks,
     c.popCapMax,
     c.corpseTicks,
     c.cancelRefundPermille,
@@ -303,7 +307,7 @@ export function envHash(env: SimEnv): number {
   }
   h = fnv1aInt(h, c.factions.length);
   for (const f of c.factions) {
-    h = hashInts(h, [f.factionId, f.startScrap, f.housingGrowthPerMin, f.hqTypeId, f.settlerTypeId, f.aiScript]);
+    h = hashInts(h, [f.factionId, f.startScrap, f.housingGrowthPerMin, f.hqTypeId, f.settlerTypeId, f.aiScript, f.claimTypeId]);
     h = fnv1aInt(h, f.startUnits.length);
     for (const s of f.startUnits) h = hashInts(h, [s.typeId, s.count]);
     h = hashInts(h, f.roleTypeIds);

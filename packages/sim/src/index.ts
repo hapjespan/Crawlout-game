@@ -21,14 +21,13 @@ export type {
 } from './config.js';
 export { MAX_RADIUS, MAX_SPEED, envHash, validateEnv } from './config.js';
 export type { ClaimKind, SimMapSource } from './fromData.js';
-export { CLAIM_KINDS, PROVIDES_HQ, PROVIDES_WORKSHOP, simConfigFromGameData, simMapFromGrid, simPlayersFromLobby } from './fromData.js';
+export { CLAIM_KINDS, PROVIDES_CLAIM, PROVIDES_HQ, PROVIDES_WORKSHOP, simConfigFromGameData, simMapFromGrid, simPlayersFromLobby } from './fromData.js';
 export {
   NO_ENTITY,
   NO_FIELD,
   ORDER_ATTACK,
   ORDER_ATTACK_MOVE,
   ORDER_BUILD,
-  ORDER_CLAIM,
   ORDER_CRAFT,
   ORDER_GATHER,
   ORDER_MOVE,

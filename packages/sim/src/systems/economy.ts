@@ -11,12 +11,12 @@ import {
   PHASE_RETURN,
   PHASE_WORK,
 } from '../ecs/world.js';
-import { applyUnitType, createUnit, siteHpStep, takeFromNode } from '../entities.js';
+import { PROGRESS_ONE, applyUnitType, createUnit, siteHpAt, takeFromNode } from '../entities.js';
 import { imod } from '../math/int.js';
 import type { Census } from './census.js';
 import { takeCensus } from './census.js';
 import type { SimContext } from './common.js';
-import { cellCenterOf, nearestOwnBuilding, nthFreeCellAround, withinReach } from './common.js';
+import { cellCenterOf, nearestOwnBuilding, nodeAllowed, nthFreeCellAround, withinReach } from './common.js';
 import { DEPOT_MASK } from './orders.js';
 
 // Systeem 6: economie. Verzamelen (een rit duurt gatherTicks en levert gatherAmount), afleveren bij een depot,
@@ -47,7 +47,7 @@ function gatherWork(ctx: SimContext, i: number, reach: number): void {
   if (t === undefined) return;
   if (w.phase[i] === PHASE_WORK) {
     const node = w.resolve(w.ordT[w.currentOrder(i)]!);
-    if (node < 0 || !w.has(node, C.resource) || !withinReach(w, i, node, reach)) return;
+    if (node < 0 || !w.has(node, C.resource) || !withinReach(w, i, node, reach) || !nodeAllowed(ctx, node, w.owner[i]!)) return;
     w.work[i] = w.work[i]! + 1;
     if (w.work[i]! < t.gatherTicks) return;
     w.carry[i] = w.carry[i]! + takeFromNode(ctx, node, t.gatherAmount - w.carry[i]!);
@@ -70,10 +70,12 @@ function buildWork(ctx: SimContext, i: number, reach: number): void {
   if (b < 0 || !w.has(b, C.building) || w.bstate[b] !== BSTATE_SITE || !withinReach(w, i, b, reach)) return;
   const bt = ctx.buildingType(w.typeId[b]!);
   if (bt === undefined) return;
-  const p = w.progress[b]!;
-  w.hp[b] = w.hp[b]! + siteHpStep(bt.maxHp, bt.buildTicks, p);
-  w.progress[b] = p + 1;
-  if (p + 1 >= bt.buildTicks) {
+  const total = bt.buildTicks * PROGRESS_ONE;
+  const p0 = w.progress[b]!;
+  const p1 = p0 + PROGRESS_ONE < total ? p0 + PROGRESS_ONE : total;
+  w.hp[b] = w.hp[b]! + siteHpAt(w.maxHp[b]!, total, p1) - siteHpAt(w.maxHp[b]!, total, p0);
+  w.progress[b] = p1;
+  if (p1 >= total) {
     w.bstate[b] = BSTATE_DONE;
     ctx.events.push(EVENT_TYPE.buildingDone, w.idOf(b), bt.typeId, w.x[b]!, w.y[b]!);
   }

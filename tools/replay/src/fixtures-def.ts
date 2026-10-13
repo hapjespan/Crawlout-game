@@ -129,7 +129,7 @@ export const FIXTURES: readonly FixtureDef[] = [
   },
   {
     // Een potje-fragment op Rustbelt met twee mensen: verzamelen, bouwen (woning, werkplaats), rol wisselen,
-    // claimen, en gevecht met AttackMove en Attack. Plus een Cancel met teruggave en een Surrender aan het eind.
+    // claimen met een claimpaal, en gevecht met AttackMove en Attack. Plus een Cancel met teruggave en een Surrender aan het eind.
     name: 's2-rustbelt-skirmish',
     build() {
       const r = base('rustbelt', 777, [false, false]);
@@ -150,9 +150,10 @@ export const FIXTURES: readonly FixtureDef[] = [
       s.add(1010, 1, 'Build', { ids: st.builder[1]!, typeId: building('radiobaken'), ...cell(104, 100) });
       // omscholen: twee scavengers van speler 0 worden militie
       s.add(1800, 0, 'SetRole', { ids: st.scav[0]!.slice(0, 2), role: 'militia' });
-      // claim: de militie van speler 1 neemt het nederzettingspunt aan zijn kant
+      // claim: de bouwer van speler 1 zet een claimpaal bij het punt aan zijn kant (na de werkplaats); de militie mag niet
       const claim1 = nearest(sim, st.claims, spawns[1]!.x, spawns[1]!.y);
-      s.add(300, 1, 'Claim', { ids: st.militia[1]!, pointId: claim1 });
+      s.add(300, 1, 'Claim', { ids: st.militia[1]!, pointId: claim1 }); // ongeldig: geen bouwers
+      s.add(2000, 1, 'Claim', { ids: st.builder[1]!, pointId: claim1 });
       // gevecht: militie van speler 0 op AttackMove naar dat claimpunt
       const c1 = sim.getUnit(claim1)!;
       s.add(1200, 0, 'AttackMove', { ids: st.militia[0]!, x: c1.x, y: c1.y });

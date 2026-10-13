@@ -17,7 +17,7 @@ export const ORDER_ATTACK_MOVE = 2;
 export const ORDER_ATTACK = 3;
 export const ORDER_GATHER = 4;
 export const ORDER_BUILD = 5;
-export const ORDER_CLAIM = 6;
+// 6 was ORDER_CLAIM (sprint-2-interim); claimen is sinds sprint 3 een Build van het claimgebouw.
 export const ORDER_CRAFT = 7;
 
 /** Fasen binnen een order (veld `phase`). */
@@ -126,7 +126,9 @@ export class World {
   readonly progress = new Int32Array(MAX_ENTITIES);
   // ResourceNode
   readonly amount = new Int32Array(MAX_ENTITIES);
-  // Claim: de eigenaar staat in `owner` (OWNER_NEUTRAL als onbezet); wie neemt en hoe ver
+  // Claim: de eigenaar staat in `owner` (OWNER_NEUTRAL als onbezet). claimBy en claimProgress tonen de voortgang van
+  // het verst gevorderde claimgebouw in aanbouw van een andere speler binnen de straal (claimProgress = 0..65535,
+  // wordt animT); systeem 7 zet ze elke tick.
   readonly claimBy = new Uint8Array(MAX_ENTITIES);
   readonly claimProgress = new Int32Array(MAX_ENTITIES);
   // Presentatie (gaat de snapshot in, is ook state zodat de hash de hele snapshot dekt)

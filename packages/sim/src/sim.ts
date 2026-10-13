@@ -14,7 +14,7 @@ import type { StateParts } from './state.js';
 import { StateHeader, deserializeState, hashState, serializeState } from './state.js';
 import { aiSystem } from './systems/ai.js';
 import { Census, takeCensus } from './systems/census.js';
-import { ClaimScratch, claimsSystem } from './systems/claims.js';
+import { ClaimScratch, claimsSystem, updateClaimPoints } from './systems/claims.js';
 import { cleanupSystem } from './systems/cleanup.js';
 import { combatSystem } from './systems/combat.js';
 import type { SimCommand } from './systems/commands.js';
@@ -99,6 +99,8 @@ export class Sim implements SimContext {
   readonly events = new EventBuffer();
   readonly ps = new PlayerState();
   readonly globals = new GlobalState();
+  /** Indices van de claimpunten (afgeleid; opgebouwd in start() en na deserialize). */
+  readonly claimPoints: number[] = [];
 
   private tickNo = 0;
   private readonly envHashValue: number;
@@ -152,6 +154,9 @@ export class Sim implements SimContext {
   start(): void {
     if (this.tickNo !== 0 || this.world.highWater !== 0) throw new Error('start() alleen op een verse sim');
     setupStart(this);
+    this.indexClaimPoints();
+    // Punten binnen de straal van een hoofdgebouw zijn meteen van die speler (besluit sprint 2), zonder events.
+    updateClaimPoints(this, this.claimScratch, true);
     this.hashDirty = true;
   }
 
@@ -357,6 +362,12 @@ export class Sim implements SimContext {
     };
   }
 
+  private indexClaimPoints(): void {
+    const w = this.world;
+    this.claimPoints.length = 0;
+    for (let i = 0; i < w.highWater; i++) if (w.has(i, C.claim)) this.claimPoints.push(i);
+  }
+
   /** @internal Laadt een geserialiseerde state in deze (verse) sim. */
   loadState(buf: ArrayBuffer): void {
     const s = deserializeState(buf, this.parts, this.envHashValue);
@@ -374,6 +385,7 @@ export class Sim implements SimContext {
       this.flow.refcount[f] = this.flow.refcount[f]! + 1;
     }
     this.flow.rebuild();
+    this.indexClaimPoints();
     this.hashDirty = true;
   }
 }
