@@ -10,6 +10,16 @@ const Pos = { x: int, y: int };
 export const Role = z.enum(['scavenger', 'builder', 'militia']);
 export type Role = z.infer<typeof Role>;
 
+// Besluiten sprint 2:
+// - Build: typeId is de gebouw-typeId (1024 + buildingId, packages/data typeIds.ts); x, y is het midden van de
+//   footprint. De oorsprong (cel linksboven) is cel(x, y) - (w >> 1, h >> 1), met cel(v) = v >> 8. De HUD snapt
+//   het midden op de celgrens (render: snapFootprintCenter); de sim valideert factie, kosten en vrije cellen.
+//   Alleen units met de rol bouwer; wijst x, y naar een eigen bouwplaats van dit type, dan helpen ze daar.
+// - Cancel: ids zijn eigen bouwplaatsen (teruggave) en/of eigen units (stoppen; een betaalde omscholing wordt
+//   terugbetaald).
+// - Claim: ids zijn bouwers; de sim laat hen het claimgebouw (provides `claim`) van hun factie bouwen binnen
+//   claimRadiusM van het punt, als Build. Sprint 2 (interim, zie fase-0 sectie 13): ids staan claimS seconden
+//   ongestoord binnen claimRadiusM.
 export const COMMAND_PAYLOADS = {
   Move: z.object({ ids: EntityIds, ...Pos }).strict(),
   AttackMove: z.object({ ids: EntityIds, ...Pos }).strict(),

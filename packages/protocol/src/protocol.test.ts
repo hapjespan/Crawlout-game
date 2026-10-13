@@ -8,6 +8,8 @@ import {
   ENTITY_INDEX_BITS,
   LobbyPlayer,
   MAX_ENTITIES,
+  MAX_PLAYERS,
+  OWNER_NEUTRAL,
   Replay,
   SEED_MAX,
   SNAPSHOT_HEADER_BYTES,
@@ -44,6 +46,17 @@ describe('besluiten sprint 1', () => {
   it('dominanceMinutes is optioneel: zonder override geldt de waarde uit de map', () => {
     const start = { kind: 'start', seed: 1, map: 'rustbelt', players: [], settings: { mode: 'skirmish', delayFrames: 4 }, dataVersion: '0.2.0', you: 0 };
     expect(ServerMessage.safeParse(start).success).toBe(true);
+  });
+});
+
+describe('besluiten sprint 2', () => {
+  it('de neutrale eigenaar past in het owner-byte en botst niet met een speler', () => {
+    expect(OWNER_NEUTRAL).toBe(255);
+    expect(OWNER_NEUTRAL).toBeGreaterThanOrEqual(MAX_PLAYERS);
+  });
+  it('Build draagt typeId en het midden van de footprint; Claim een pointId', () => {
+    expect(CommandEnvelope.safeParse({ frame: 0, playerId: 0, seq: 0, type: 'Build', payload: { ids: [1], typeId: 1025, x: 5248, y: 5248 } }).success).toBe(true);
+    expect(CommandEnvelope.safeParse({ frame: 0, playerId: 0, seq: 0, type: 'Claim', payload: { ids: [1], pointId: 7 } }).success).toBe(true);
   });
 });
 

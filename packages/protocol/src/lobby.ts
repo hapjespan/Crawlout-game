@@ -16,6 +16,11 @@ const clientId = z.string().min(8).max(64);
 //   (deterministisch, systeem 2 "orders en AI") en meldt geen hashes.
 // - Er is geen client-bericht `start`: de relay start zodra elke menselijke speler ready is en het minimum
 //   aantal spelers (mens plus AI) gehaald is. Het `start`-bericht komt van de relay.
+// Besluiten sprint 2:
+// - delayFrames is de startwaarde van de adaptieve DELAY (frames.ts); de relay klemt hem op DELAY_FRAMES_MIN..MAX.
+// - Reconnect: een join met bekend clientId na start krijgt opnieuw `start` (zelfde seed, map en spelers) en de
+//   relay start de resync zelf (resyncRequest naar de laagste online menselijke peer). Een resyncRequest van de
+//   client blijft toegestaan en is dan een no-op zolang er een resync loopt.
 export const MatchSettings = z.object({ mode: z.enum(['skirmish', 'survival']), delayFrames: uint, dominanceMinutes: uint.optional() }).strict();
 export type MatchSettings = z.infer<typeof MatchSettings>;
 export const LobbyPlayer = z.object({ playerId: uint, name, faction: z.string(), ready: z.boolean(), online: z.boolean(), ai: z.boolean() }).strict();
