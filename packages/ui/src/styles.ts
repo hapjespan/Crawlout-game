@@ -39,4 +39,34 @@ export const HUD_CSS = `
 .co-dialog .co-btn{flex-direction:row;padding:6px 16px}
 .co-btn.co-danger{background:#7a2323;border-color:#ff5252}
 .co-btn.co-danger:hover:not(:disabled){background:#9a2d2d}
+.co-minimap{position:absolute;right:8px;top:48px;padding:4px}
+.co-minimap-canvas{display:block;width:160px;height:160px;cursor:pointer;image-rendering:pixelated}
+.co-build-list{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.co-build-option{width:100%}
+.co-cost{font-size:11px;color:#9aa0a6}
+.co-cost.co-full{color:#ff8a65}
+.co-hero{position:absolute;left:8px;top:64px;width:240px}
+.co-hero h2{margin:0 0 6px;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#9aa0a6}
+.co-xp{height:6px;background:#2b2f33;border-radius:3px;overflow:hidden;margin-bottom:6px}
+.co-xp>span{display:block;height:100%;background:#42a5f5}
+.co-special{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin:0 0 6px;padding:0;list-style:none;text-align:center}
+.co-special b{display:block;font-size:11px;color:#9aa0a6}
+.co-perks{display:flex;flex-direction:column;gap:4px}
+.co-perk-title{margin:0;color:#ffd54f;font-weight:600}
+.co-perk{flex-direction:row;justify-content:space-between;padding:6px 8px}
+.co-toasts{position:absolute;left:50%;top:104px;transform:translateX(-50%);display:flex;flex-direction:column;gap:4px;margin:0;padding:0;list-style:none;pointer-events:none}
+.co-toasts li{display:flex;gap:2px;pointer-events:auto}
+.co-toast{flex-direction:row;padding:6px 14px;font-weight:600}
+.co-toast-attack{background:#7a2323;border-color:#ff5252}
+.co-toast-settlerLost{background:#6a4a12;border-color:#ffb74d}
+.co-toast-claimLost{background:#4a2a6a;border-color:#ba68c8}
+.co-toast-close{font:inherit;color:inherit;background:#2f353b;border:1px solid #4a5159;border-radius:4px;cursor:pointer;padding:0 8px}
+.co-lobby{position:absolute;left:50%;top:30%;transform:translateX(-50%);width:300px}
+.co-lobby h2{margin:0 0 6px;font-size:12px;text-transform:uppercase;color:#9aa0a6}
+.co-lobby-list{list-style:none;margin:0 0 8px;padding:0}
+.co-lobby-list li{display:flex;gap:8px;align-items:center;padding:2px 0}
+.co-lobby-list li>span:first-child{flex:1}
+.co-tag{font-size:10px;border:1px solid #4a5159;border-radius:3px;padding:0 4px;color:#9aa0a6}
+.co-ready{color:#7cb342}.co-notready{color:#9aa0a6}
+.co-lobby .co-actions{display:flex;gap:8px}
 `;
