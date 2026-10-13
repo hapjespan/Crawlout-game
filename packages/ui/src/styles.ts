@@ -54,6 +54,13 @@ export const HUD_CSS = `
 .co-perks{display:flex;flex-direction:column;gap:4px}
 .co-perk-title{margin:0;color:#ffd54f;font-weight:600}
 .co-perk{flex-direction:row;justify-content:space-between;padding:6px 8px}
+.co-revives{margin:0 0 6px;color:#c4c7ca;font-size:12px}
+.co-revive{flex-direction:row;justify-content:space-between;width:100%;margin-bottom:6px;background:#2e5a2e;border-color:#7cb342}
+.co-abilities{display:flex;flex-direction:column;gap:4px;margin-bottom:6px}
+.co-ability{position:relative;flex-direction:row;justify-content:space-between;padding:6px 8px;overflow:hidden}
+.co-cooldown{position:absolute;left:0;bottom:0;height:3px;background:#ffb74d}
+.co-building{position:absolute;left:8px;bottom:236px;width:260px}
+.co-building h2{margin:0 0 6px;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#9aa0a6}
 .co-toasts{position:absolute;left:50%;top:104px;transform:translateX(-50%);display:flex;flex-direction:column;gap:4px;margin:0;padding:0;list-style:none;pointer-events:none}
 .co-toasts li{display:flex;gap:2px;pointer-events:auto}
 .co-toast{flex-direction:row;padding:6px 14px;font-weight:600}

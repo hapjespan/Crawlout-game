@@ -18,7 +18,7 @@ export interface NetworkState {
 }
 
 /** Soorten doel die de HUD van de volgende wereldklik verwacht. */
-export type TargetingKind = 'move' | 'attackMove' | 'gather';
+export type TargetingKind = 'move' | 'attackMove' | 'gather' | 'heroAbility';
 export interface TargetPoint {
   x: number;
   y: number;
@@ -65,13 +65,30 @@ export interface BuildOption {
   affordable: boolean;
 }
 
-export interface HeroInfo {
-  heroId: number;
+/** Een ability van de held; de lijst komt uit data (heroes.abilities) plus de cooldown uit de sim. */
+export interface HeroAbilityOption {
+  abilityId: number;
   naam: string;
-  /** Absolute xp waarbij het volgende level begint. */
-  xpForNext: number;
-  /** Onbesteed aantal perk-keuzes (level-ups zonder gekozen perk). */
-  pendingPerks: number;
+  /** True als de ability een positie op de kaart vraagt (HUD gaat in targeting). */
+  needsTarget: boolean;
+  /** 0 = klaar, 100 = net gebruikt. */
+  cooldownPct: number;
+}
+/** Optie in het gebouwpaneel (research, rekruteren) of het craft-menu. */
+interface CostedOption {
+  naam: string;
+  scrapCost: number;
+  affordable: boolean;
+}
+export interface ResearchOption extends CostedOption {
+  techId: number;
+}
+export interface RecruitOption extends CostedOption {
+  /** Het gebouw dat rekruteert; gaat als buildingId mee in Recruit. */
+  buildingId: number;
+}
+export interface CraftOption extends CostedOption {
+  loadoutId: number;
 }
 export interface PerkOption {
   perkId: number;
@@ -133,10 +150,22 @@ export interface HudDeps {
   beginPlacement?(option: BuildOption): void;
   /** De HUD stopt de plaatsing zelf (Escape, selectie zonder bouwers). */
   endPlacement?(): void;
-  /** Held-id, xp-drempel en onbestede perks; samen met PlayerStatus.hero vormt dit het held-paneel. */
-  getHeroInfo?(): HeroInfo | null;
+  /** Naam van de held uit data (heroes); zonder valt het paneel terug op "Held". Het paneel zelf leest PlayerStatus.hero. */
+  heroName?(heroId: number): string | undefined;
   /** Te kiezen perks bij een level-up. */
   getPerkOptions?(): readonly PerkOption[];
+  /** Abilities van de held (een knop per ability, sneltoetsen Z, X, C). Zonder deze dep geen ability-knoppen. */
+  getHeroAbilities?(): readonly HeroAbilityOption[];
+  /** Is de held dood? Dan toont het paneel Oplappen (zolang revivesLeft niet 0 is). PlayerStatus kent geen dood-vlag. */
+  isHeroDead?(): boolean;
+  /** Oplappen van de dode held. Er is geen protocol-commando voor; de client regelt dit (zie README). */
+  reviveHero?(): void;
+  /** Research-opties voor de geselecteerde gebouwen (buildingIds van de selectie). */
+  getResearchOptions?(buildingIds: readonly number[]): readonly ResearchOption[];
+  /** Recruit-opties voor de geselecteerde gebouwen. */
+  getRecruitOptions?(buildingIds: readonly number[]): readonly RecruitOption[];
+  /** Craft-opties voor de geselecteerde bewoners; leeg of ontbrekend als ze niet bij een werkplaats staan. */
+  getCraftOptions?(): readonly CraftOption[];
   /** Waarschuwingen; geeft de afmelder terug. */
   subscribeAlerts?(cb: (alert: HudAlert) => void): () => void;
   /** Lobby-paneel (multiplayer). */
