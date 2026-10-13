@@ -1,15 +1,65 @@
 [
   {
-    "id": "opziener", "faction": "dwellers", "archetype": "krijger",
-    "special": { "S": 6, "P": 5, "E": 6, "C": 4, "I": 4, "A": 6, "L": 3 },
-    "abilities": [
-      { "id": "lockdown", "cooldownS": 45, "rangeM": 10, "_comment": "startwaarde, geen balans. Lockdown: vergrendelt vijanden in bereik. 45 s cooldown, 10 m bereik." }
+    "id": "opziener",
+    "faction": "dwellers",
+    "archetype": "krijger",
+    "special": {
+      "S": 6,
+      "P": 5,
+      "E": 6,
+      "C": 4,
+      "I": 4,
+      "A": 6,
+      "L": 3
+    },
+    "naam": "Opziener",
+    "xpPerLevel": [
+      100,
+      200,
+      300,
+      400,
+      500,
+      600
     ],
-    "perkPool": ["zware_laarzen", "opzichter_blik", "kluisvet", "papierwerk", "stille_knop", "geluksschot"],
+    "xpPerKill": 10,
+    "xpPerDiscovery": 25,
+    "abilities": [
+      {
+        "id": "lockdown",
+        "naam": "Lockdown",
+        "cooldownS": 45,
+        "rangeM": 10,
+        "radiusM": 6,
+        "durationS": 8,
+        "effects": [
+          {
+            "stat": "speedPct",
+            "side": "enemy",
+            "target": "units",
+            "delta": -50
+          },
+          {
+            "stat": "damagePct",
+            "side": "ally",
+            "target": "alle",
+            "delta": 25
+          }
+        ],
+        "_comment": "startwaarde, geen balans. Lockdown (Spelfundament 5, Opziener): richt op een punt tot 10 m (rangeM) van de held; binnen 6 m straal (radiusM) zijn vijandelijke units 8 s (durationS) 50 procent trager (speedPct -50) en doen eigen units en turrets in de straal 25 procent meer schade (damagePct +25, target alle). Cooldown 45 s. Effecten gelden zolang een unit in de straal staat; de sim past ze per tick toe en leest ze uit effects."
+      }
+    ],
+    "perkPool": [
+      "zware_laarzen",
+      "opzichter_blik",
+      "kluisvet",
+      "papierwerk",
+      "stille_knop",
+      "geluksschot"
+    ],
     "reviveScrap": 100,
     "reviveS": 40,
     "revivePenaltyPct": 20,
     "maxRevives": 4,
-    "_comment": "startwaarde, geen balans. Opziener (Krijger-variant van de Dwellers): SPECIAL totaal 34, zwaar op S, E en A voor een vechter. Oplappen bij het hoofdgebouw kost 100 scrap en 40 s, en 20 procent van perks en health (Spelfundament sectie 5); na 4 keer is de held leeg (maxRevives)."
+    "_comment": "startwaarde, geen balans. Opziener (Krijger-variant van de Dwellers): SPECIAL totaal 34, zwaar op S, E en A voor een vechter. Oplappen bij het hoofdgebouw kost 100 scrap en 40 s, en 20 procent van perks en health (Spelfundament sectie 5); na 4 keer is de held leeg (maxRevives). Sprint 3: naam voor de HUD; xpPerLevel is PER STAP (level 1 naar 2 kost 100, 2 naar 3 kost 200, enzovoort; 6 stappen = maxlevel 7, een perk-keuze per level voor de 6 perks); de loader levert cumulatieve drempels (100, 300, 600, 1000, 1500, 2100). xpPerKill 10 per gedode vijandelijke unit en xpPerDiscovery 25 per ontdekking (eerste keer een claimpunt of creep-kamp nemen); startwaarden, geen balans."
   }
 ]

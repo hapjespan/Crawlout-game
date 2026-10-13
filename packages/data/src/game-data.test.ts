@@ -1,7 +1,7 @@
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { convertDelta, convertDominance, loadGameData, type RawGameData } from './loader.js';
-import { MapDef } from './schemas.js';
+import { convertDelta, convertDominance, cumulate, loadGameData, PROVIDES, type RawGameData } from './loader.js';
+import { EffectStat, MapDef } from './schemas.js';
 import { readDataDir } from './node.js';
 import { metersToUnits, secondsToTicks } from './units.js';
 
@@ -134,6 +134,7 @@ describe('sim-tuning', () => {
       popCapMax: 50,
       corpseTicks: 40,
       aiMilitiaPermille: 500,
+      cancelRefundPermille: 1000,
     });
   });
 
@@ -180,5 +181,88 @@ describe('determinisme', () => {
     const r = raw();
     const reversed = { ...r, loadouts: [...(r.loadouts as unknown[])].reverse(), buildings: [...(r.buildings as unknown[])].reverse() };
     expect(loadGameData(reversed)).toEqual(a);
+  });
+});
+
+describe('sprint 3: held, claims, cancel, militie', () => {
+  const data = loadGameData(raw());
+  const hero = data.heroes[0]!;
+
+  it('rekent de xp-tabel per stap om naar cumulatieve integer-drempels', () => {
+    expect(cumulate([100, 200, 300])).toEqual([100, 300, 600]);
+    expect(hero.xpThresholds).toEqual([100, 300, 600, 1000, 1500, 2100]);
+    expect(hero.xpThresholds.every((x, i) => Number.isInteger(x) && (i === 0 || x > hero.xpThresholds[i - 1]!))).toBe(true);
+    expect(hero.naam).toBe('Opziener');
+    expect(hero.xpPerKill).toBe(10);
+    expect(hero.xpPerDiscovery).toBe(25);
+    expect(hero.revivePenaltyPermille).toBe(200);
+    expect(hero.maxRevives).toBe(4);
+  });
+
+  it('rekent Lockdown om: radius in eenheden, duur in ticks, effecten in promille', () => {
+    const lockdown = hero.abilities.find((a) => a.id === 'lockdown')!;
+    expect(lockdown.rangeU).toBe(2560); // 10 m
+    expect(lockdown.radiusU).toBe(1536); // 6 m
+    expect(lockdown.durationTicks).toBe(160); // 8 s
+    expect(lockdown.cooldownTicks).toBe(900); // 45 s
+    expect(lockdown.effects).toEqual([
+      { stat: 'speedPct', side: 'enemy', target: 'units', delta: -500 },
+      { stat: 'damagePct', side: 'ally', target: 'alle', delta: 250 },
+    ]);
+  });
+
+  it('levert cancelRefundPermille en militiaPermille', () => {
+    expect(data.sim.cancelRefundPermille).toBe(1000);
+    expect(data.aiScripts[0]!.militiaPermille).toBe(500);
+    expect(data.sim.aiMilitiaPermille).toBe(500); // vervalt, blijft tot de omslag
+  });
+
+  it('weigert ongeldige held-, ai- en sim-data', () => {
+    const noXp = clone(raw());
+    (noXp.heroes as { xpPerLevel: number[] }[])[0]!.xpPerLevel = [];
+    expect(() => loadGameData(noXp)).toThrow(/xpPerLevel/);
+    const fractional = clone(raw());
+    (fractional.heroes as { xpPerLevel: number[] }[])[0]!.xpPerLevel = [100.5];
+    expect(() => loadGameData(fractional)).toThrow(/xpPerLevel/);
+    const noMilitia = clone(raw());
+    delete (noMilitia.ai[0] as { militiaPct?: number }).militiaPct;
+    expect(() => loadGameData(noMilitia)).toThrow(/militiaPct/);
+    const badRefund = clone(raw());
+    (badRefund.sim as { cancelRefundPct: number }).cancelRefundPct = 150;
+    expect(() => loadGameData(badRefund)).toThrow(/cancelRefundPct/);
+    const badEffect = clone(raw());
+    (badEffect.heroes as { abilities: { effects: { stat: string }[] }[] }[])[0]!.abilities[0]!.effects[0]!.stat = 'koekjesPct';
+    expect(() => loadGameData(badEffect)).toThrow(/stat/);
+  });
+
+  it('heeft het hoofdgebouw als claimbron en hq, en een bouwbare claimpaal', () => {
+    const hq = data.buildings.find((b) => b.key === 'hoofdgebouw')!;
+    expect(hq.provides).toContain(PROVIDES.indexOf('hq'));
+    expect(hq.provides).toContain(PROVIDES.indexOf('claim'));
+    const paal = data.buildings.find((b) => b.key === 'claimpaal')!;
+    expect(paal.provides).toEqual([PROVIDES.indexOf('claim')]);
+    expect(paal.scrapCost).toBeGreaterThan(0);
+    expect(data.sim.claimRadiusU).toBe(1536);
+  });
+
+  it('kan elke tech onderzoeken in een bouwbaar gebouw met toepasbare effecten', () => {
+    const hqIndex = PROVIDES.indexOf('hq');
+    const buildable = (b: number, seen = new Set<number>()): boolean => {
+      const building = data.buildings[b]!;
+      if (building.provides.includes(hqIndex) || seen.has(b)) return false;
+      seen.add(b);
+      return building.prereqTech.every((t) => buildable(data.tech[t]!.buildingId, seen));
+    };
+    for (const t of data.tech) {
+      expect(buildable(t.buildingId), t.key).toBe(true);
+      for (const e of t.effects) expect(EffectStat.options, t.key).toContain(e.stat);
+    }
+    // Loadouts met prereqTech (patrol, turret) worden bereikbaar via een onderzoekbare tech.
+    for (const l of data.loadouts) for (const p of l.prereqTech) expect(buildable(data.tech[p]!.buildingId), l.key).toBe(true);
+    for (const b of data.buildings) for (const p of b.prereqTech) expect(buildable(data.tech[p]!.buildingId), b.key).toBe(true);
+  });
+
+  it('gebruikt in perks alleen EffectStats uit de enum', () => {
+    for (const p of data.perks) for (const e of p.effects) expect(EffectStat.options, p.key).toContain(e.stat);
   });
 });

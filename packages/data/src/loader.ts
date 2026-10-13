@@ -106,13 +106,38 @@ export interface TechData {
   effects: EffectData[];
 }
 
+export interface AbilityEffectData {
+  stat: EffectStat;
+  side: 'enemy' | 'ally';
+  target: string;
+  /** Zelfde omrekening als EffectData.delta (convertDelta). */
+  delta: number;
+}
+
+export interface AbilityData {
+  id: string;
+  naam: string;
+  cooldownTicks: number;
+  /** Max afstand van de held tot het doelpunt, in eenheden. */
+  rangeU: number;
+  /** Straal van het effectgebied, in eenheden. */
+  radiusU: number;
+  durationTicks: number;
+  effects: AbilityEffectData[];
+}
+
 export interface HeroData {
   id: number;
   key: string;
   factionId: number;
   archetype: number; // index in ARCHETYPES
   special: [number, number, number, number, number, number, number]; // volgorde van STATS: S P E C I A L
-  abilities: { id: string; cooldownTicks: number; rangeU: number }[];
+  naam: string;
+  /** Cumulatieve xp-drempels: xpThresholds[i] = totale xp om level i+2 te bereiken. Maxlevel = lengte + 1. Strikt stijgend, integers. */
+  xpThresholds: number[];
+  xpPerKill: number;
+  xpPerDiscovery: number;
+  abilities: AbilityData[];
   perkPool: number[]; // perk-ids
   reviveScrap: number;
   reviveTicks: number;
@@ -137,6 +162,8 @@ export interface AiScriptData {
   buildOrder: { atTick: number; buildingId: number }[];
   attackTimersTicks: number[];
   rallyPointU: { x: number; y: number };
+  /** Deel van de bewoners dat de AI omschoolt tot militie, in promille. */
+  militiaPermille: number;
 }
 
 /** Sim-tuning in sim-eenheden (integers). */
@@ -152,7 +179,10 @@ export interface SimTuningData {
   claimTicks: number;
   popCapMax: number;
   corpseTicks: number;
+  /** VERVALT: gebruik AiScriptData.militiaPermille. */
   aiMilitiaPermille: number;
+  /** Teruggave bij Cancel in promille (1000 = volle prijs). */
+  cancelRefundPermille: number;
 }
 
 export interface GameData {
@@ -236,6 +266,17 @@ export function convertDelta(stat: EffectStat, delta: number): number {
 
 const convertEffects = (effects: { stat: EffectStat; target: string; delta: number }[]): EffectData[] =>
   effects.map((e) => ({ stat: e.stat, target: e.target, delta: convertDelta(e.stat, e.delta) }));
+
+/** Cumulatieve som van xp per stap: [100, 200] wordt [100, 300]. */
+export function cumulate(steps: readonly number[]): number[] {
+  const out: number[] = [];
+  let total = 0;
+  for (const step of steps) {
+    total += step;
+    out.push(total);
+  }
+  return out;
+}
 
 function parseVersion(version: string): { text: string; packed: number } {
   const text = version.trim();
@@ -356,7 +397,19 @@ export function loadGameData(raw: RawGameData): GameData {
       factionId: ref(factionIx, 'factie', where, h.faction),
       archetype: idx(ARCHETYPES, h.archetype),
       special: [h.special.S, h.special.P, h.special.E, h.special.C, h.special.I, h.special.A, h.special.L],
-      abilities: h.abilities.map((a) => ({ id: a.id, cooldownTicks: secondsToTicks(a.cooldownS), rangeU: metersToUnits(a.rangeM) })),
+      naam: h.naam,
+      xpThresholds: cumulate(h.xpPerLevel),
+      xpPerKill: h.xpPerKill,
+      xpPerDiscovery: h.xpPerDiscovery,
+      abilities: h.abilities.map((a) => ({
+        id: a.id,
+        naam: a.naam,
+        cooldownTicks: secondsToTicks(a.cooldownS),
+        rangeU: metersToUnits(a.rangeM),
+        radiusU: metersToUnits(a.radiusM),
+        durationTicks: secondsToTicks(a.durationS),
+        effects: a.effects.map((e) => ({ stat: e.stat, side: e.side, target: e.target, delta: convertDelta(e.stat, e.delta) })),
+      })),
       perkPool: h.perkPool.map((p) => ref(perkIx, 'perk', where, p)),
       reviveScrap: Math.trunc(h.reviveScrap),
       reviveTicks: secondsToTicks(h.reviveS),
@@ -383,6 +436,7 @@ export function loadGameData(raw: RawGameData): GameData {
       buildOrder: a.buildOrder.map((o) => ({ atTick: secondsToTicks(o.atS), buildingId: ref(buildingIx, 'gebouw', where, o.buildingId) })),
       attackTimersTicks: a.attackTimersS.map((s) => secondsToTicks(s)),
       rallyPointU: { x: metersToUnits(a.rallyPoint.x), y: metersToUnits(a.rallyPoint.y) },
+      militiaPermille: pctToPermille(a.militiaPct),
     };
   });
 
@@ -413,6 +467,7 @@ export function loadGameData(raw: RawGameData): GameData {
       popCapMax: simRaw.popCapMax,
       corpseTicks: secondsToTicks(simRaw.corpseS),
       aiMilitiaPermille: pctToPermille(simRaw.aiMilitiaPct),
+      cancelRefundPermille: pctToPermille(simRaw.cancelRefundPct),
     },
   };
 }

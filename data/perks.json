@@ -1,38 +1,104 @@
 [
   {
-    "id": "zware_laarzen", "naam": "Zware Laarzen", "flavourText": "Ze zijn drie maten te groot, maar de kluisdeur sluit er wel mee.",
-    "requires": { "stat": "E", "min": 5 },
-    "effects": [{ "stat": "hpPct", "target": "held", "delta": 10 }],
-    "_comment": "startwaarde, geen balans. +10 procent hp voor de held, vraagt Endurance 5."
+    "id": "zware_laarzen",
+    "naam": "Zware Laarzen",
+    "flavourText": "Ze zijn drie maten te groot, maar de kluisdeur sluit er wel mee.",
+    "requires": {
+      "stat": "E",
+      "min": 5
+    },
+    "effects": [
+      {
+        "stat": "hpPct",
+        "target": "held",
+        "delta": 10
+      }
+    ],
+    "_comment": "startwaarde, geen balans. +10 procent hp voor de held, vraagt Endurance 5. Effect voor de sim: stat hpPct, doel 'held', delta 10 (procent, loader levert promille); optelbaar bij het basisgetal van dat doel."
   },
   {
-    "id": "opzichter_blik", "naam": "Opzichterblik", "flavourText": "Niemand weet wat hij opschrijft, maar iedereen werkt ineens harder.",
-    "requires": { "stat": "C", "min": 4 },
-    "effects": [{ "stat": "gatherRatePct", "target": "scavenger", "delta": 5 }],
-    "_comment": "startwaarde, geen balans. +5 procent scavenger-opbrengst (Charisma 4)."
+    "id": "opzichter_blik",
+    "naam": "Opzichterblik",
+    "flavourText": "Niemand weet wat hij opschrijft, maar iedereen werkt ineens harder.",
+    "requires": {
+      "stat": "C",
+      "min": 4
+    },
+    "effects": [
+      {
+        "stat": "gatherRatePct",
+        "target": "scavenger",
+        "delta": 5
+      }
+    ],
+    "_comment": "startwaarde, geen balans. +5 procent scavenger-opbrengst (Charisma 4). Effect voor de sim: stat gatherRatePct, doel 'scavenger', delta 5 (procent, loader levert promille); optelbaar bij het basisgetal van dat doel."
   },
   {
-    "id": "kluisvet", "naam": "Kluisvet", "flavourText": "Drie generaties zonder zon. Je gloeit er bijna van.",
-    "requires": { "stat": "E", "min": 6 },
-    "effects": [{ "stat": "hpPct", "target": "turret", "delta": 10 }],
-    "_comment": "startwaarde, geen balans. Turrets +10 procent hp (Endurance 6), past bij de turret-focus van de Opziener."
+    "id": "kluisvet",
+    "naam": "Kluisvet",
+    "flavourText": "Drie generaties zonder zon. Je gloeit er bijna van.",
+    "requires": {
+      "stat": "E",
+      "min": 6
+    },
+    "effects": [
+      {
+        "stat": "hpPct",
+        "target": "turret",
+        "delta": 10
+      }
+    ],
+    "_comment": "startwaarde, geen balans. Turrets +10 procent hp (Endurance 6), past bij de turret-focus van de Opziener. Effect voor de sim: stat hpPct, doel 'turret', delta 10 (procent, loader levert promille); optelbaar bij het basisgetal van dat doel."
   },
   {
-    "id": "papierwerk", "naam": "Papierwerk", "flavourText": "Formulier 27-B: aanvraag voor een formulier. Wordt binnen zes weken afgehandeld.",
-    "requires": { "stat": "I", "min": 4 },
-    "effects": [{ "stat": "researchTimePct", "target": "alle", "delta": -10 }],
-    "_comment": "startwaarde, geen balans. Upgrades 10 procent sneller (Intelligence 4); de Opziener maakt upgrades goedkoper volgens Spelfundament sectie 4."
+    "id": "papierwerk",
+    "naam": "Papierwerk",
+    "flavourText": "Formulier 27-B: aanvraag voor een formulier. Wordt binnen zes weken afgehandeld.",
+    "requires": {
+      "stat": "I",
+      "min": 4
+    },
+    "effects": [
+      {
+        "stat": "researchTimePct",
+        "target": "alle",
+        "delta": -10
+      }
+    ],
+    "_comment": "startwaarde, geen balans. Upgrades 10 procent sneller (Intelligence 4); de Opziener maakt upgrades goedkoper volgens Spelfundament sectie 4. Effect voor de sim: stat researchTimePct, doel 'alle', delta -10 (procent, loader levert promille); optelbaar bij het basisgetal van dat doel."
   },
   {
-    "id": "stille_knop", "naam": "De Stille Knop", "flavourText": "Niet indrukken. Nee, echt niet. Hij zit er nu eenmaal.",
-    "requires": { "stat": "P", "min": 5 },
-    "effects": [{ "stat": "rangeM", "target": "turret", "delta": 1 }],
-    "_comment": "startwaarde, geen balans. Turrets +1 m bereik (Perception 5)."
+    "id": "stille_knop",
+    "naam": "De Stille Knop",
+    "flavourText": "Niet indrukken. Nee, echt niet. Hij zit er nu eenmaal.",
+    "requires": {
+      "stat": "P",
+      "min": 5
+    },
+    "effects": [
+      {
+        "stat": "rangeM",
+        "target": "turret",
+        "delta": 1
+      }
+    ],
+    "_comment": "startwaarde, geen balans. Turrets +1 m bereik (Perception 5). Effect voor de sim: stat rangeM, doel 'turret', delta 1 (meter, loader levert eenheden); optelbaar bij het basisgetal van dat doel."
   },
   {
-    "id": "geluksschot", "naam": "Geluksschot", "flavourText": "Mikken wordt overgewaardeerd. Statistisch gezien.",
-    "requires": { "stat": "L", "min": 3 },
-    "effects": [{ "stat": "damagePct", "target": "held", "delta": 8 }],
-    "_comment": "startwaarde, geen balans. +8 procent schade van de held (Luck 3); Luck stuurt crits en loot."
+    "id": "geluksschot",
+    "naam": "Geluksschot",
+    "flavourText": "Mikken wordt overgewaardeerd. Statistisch gezien.",
+    "requires": {
+      "stat": "L",
+      "min": 3
+    },
+    "effects": [
+      {
+        "stat": "damagePct",
+        "target": "held",
+        "delta": 8
+      }
+    ],
+    "_comment": "startwaarde, geen balans. +8 procent schade van de held (Luck 3); Luck stuurt crits en loot. Effect voor de sim: stat damagePct, doel 'held', delta 8 (procent, loader levert promille); optelbaar bij het basisgetal van dat doel."
   }
 ]

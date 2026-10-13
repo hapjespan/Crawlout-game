@@ -98,13 +98,38 @@ export const Tech = z
 
 export const Special = z.object({ S: z.number().int(), P: z.number().int(), E: z.number().int(), C: z.number().int(), I: z.number().int(), A: z.number().int(), L: z.number().int() }).strict();
 
+// Effect van een ability op alles binnen de radius, gedurende durationS. Zelfde stat-enum en suffix-conventie als tech en perks.
+// side: 'enemy' = vijanden van de held, 'ally' = eigen units en gebouwen van de speler. target: 'units', 'turrets' of 'alle'.
+export const AbilityEffect = z.object({ stat: EffectStat, side: z.enum(['enemy', 'ally']), target: z.enum(['units', 'turrets', 'alle']), delta: z.number() }).strict();
+
+export const Ability = z
+  .object({
+    id,
+    naam: z.string(),
+    cooldownS: nonneg,
+    rangeM: nonneg, // max afstand van de held tot het doelpunt (0 = op de held zelf)
+    radiusM: nonneg, // straal rond het doelpunt waarbinnen de effecten gelden
+    durationS: nonneg, // duur van de effecten in seconden
+    effects: z.array(AbilityEffect),
+    _comment: comment,
+  })
+  .strict();
+
 export const Hero = z
   .object({
     id,
     faction: id,
     archetype: Archetype,
     special: Special,
-    abilities: z.array(z.object({ id, cooldownS: nonneg, rangeM: nonneg, _comment: comment }).strict()),
+    naam: z.string(), // weergavenaam voor de HUD
+    /**
+     * XP per levelstap, PER STAP (niet cumulatief): xpPerLevel[0] = xp om van level 1 naar 2 te komen, [1] = van 2 naar 3, enzovoort.
+     * Maxlevel = lengte + 1. De loader levert de cumulatieve drempels (xpThresholds) als integers.
+     */
+    xpPerLevel: z.array(z.number().int().positive()).min(1),
+    xpPerKill: z.number().int().nonnegative(), // xp voor de held per gedode vijandelijke unit
+    xpPerDiscovery: z.number().int().nonnegative(), // xp voor de held per ontdekking (eerste keer een claimpunt of creep-kamp nemen)
+    abilities: z.array(Ability),
     perkPool: z.array(id),
     reviveScrap: nonneg,
     reviveS: nonneg,
@@ -144,6 +169,7 @@ export const AiScript = z
     buildOrder: z.array(z.object({ atS: nonneg, buildingId: id }).strict()),
     attackTimersS: z.array(nonneg),
     rallyPoint: z.object({ x: z.number().int(), y: z.number().int() }).strict(),
+    militiaPct: z.number().min(0).max(100), // deel van de bewoners dat de AI tot militie omschoolt (besluit sprint 2: uit sim.json)
     _comment: comment,
   })
   .strict();
@@ -160,10 +186,11 @@ export const SimTuning = z
     aggroRangeM: nonneg, // militie en units op AttackMove kiezen zelf een doel binnen deze afstand
     interactRangeM: nonneg, // reikwijdte voor verzamelen, afleveren, bouwen en omscholen (tot node of footprint)
     claimRadiusM: nonneg, // straal rond een claimpunt waarbinnen units het nemen
-    claimS: z.number().positive(), // seconden ongestoord in de straal om een claimpunt te nemen
+    claimS: z.number().positive(), // VERVALT bij de omslag naar claimen via het claimgebouw; seconden ongestoord in de straal om een claimpunt te nemen
     popCapMax: z.number().int().nonnegative(), // bovengrens pop-cap per speler, los van de bedden (Spelfundament 2.5)
     corpseS: nonneg, // seconden dat een gedode unit als lijk blijft staan (death-animatie)
-    aiMilitiaPct: z.number().min(0).max(100), // scripted AI: deel van de bewoners dat militie wordt; hoort later in ai/*.json
+    aiMilitiaPct: z.number().min(0).max(100), // VERVALT: staat nu in ai/*.json als militiaPct; sim-core leest het daar
+    cancelRefundPct: z.number().min(0).max(100), // teruggave bij Cancel van een bouwplaats of betaalde omscholing (besluit sprint 2)
     _comment: comment,
   })
   .strict();
@@ -172,6 +199,7 @@ export type Faction = z.infer<typeof Faction>;
 export type Loadout = z.infer<typeof Loadout>;
 export type Building = z.infer<typeof Building>;
 export type Tech = z.infer<typeof Tech>;
+export type Ability = z.infer<typeof Ability>;
 export type Hero = z.infer<typeof Hero>;
 export type EffectStat = z.infer<typeof EffectStat>;
 export type Perk = z.infer<typeof Perk>;
