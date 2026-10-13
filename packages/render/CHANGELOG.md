@@ -1,3 +1,4 @@
 # @crawlout/render
 
 - 0.0.1: lege package.
+- 0.1.0 (sprint 1): three.js gepind op exact `0.186.1` (`@types/three` `0.186.0`), WebGPURenderer uit `three/webgpu` met WebGL2-fallback, TSL uit `three/tsl`. `createRenderer({ canvas })` met `pushSnapshot`, interpolatie één tick achter, `setTerrain`, `pickAt`, `boxSelect`, `focus`, `stats` en `dispose`; RTS-camera (WASD/pijlen, randscroll, wiel, Q/E en middelste muisknop). Units: procedurele humanoid met 11 bones, 8 clips gebakken in een bone-matrix-texture (layout in `units/bake.ts`, dezelfde die de asset-cli gaat leveren), instanced skinning in TSL met per instance alleen pose, clip, clipvoortgang, teamindex en flags; 3 LODs, één draw call per LOD plus één voor blob-schaduwen en selectieringen; toon-ramp in 3 stappen plus rimlight. Eigen fps/ms/drawcall-overlay. Dev-entry `@crawlout/render/dev` met `FakeSnapshotSource` (200 lopende units volgens contract 1).

@@ -1,0 +1,92 @@
+// Picking and box selection on the interpolated frame: pure math, no GPU readback.
+// The renderer only reports which entity ids are under the cursor or inside a rectangle;
+// turning that into a selection is a command for the sim (contract 2), the snapshot echoes it in flags.
+import { ENTITY_FLAG } from '@crawlout/protocol';
+import type { InterpolatedFrame } from '../snapshot/interpolate.js';
+
+/** Height of a unit's pick center above its feet, and the pick radius around it, meters. */
+export const PICK_CENTER_HEIGHT = 0.9;
+export const PICK_RADIUS = 0.75;
+
+export interface ScreenRect {
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
+}
+
+export interface BoxSelectOptions {
+  /** Only entities of this owner. */
+  owner?: number;
+  /** Include entities flagged dead. Default false. */
+  includeDead?: boolean;
+}
+
+/**
+ * Ids of entities whose pick center projects inside `rect` (canvas CSS pixels, any corner order).
+ * `viewProj` is projection * view, column-major (three.js Matrix4.elements).
+ */
+export function selectInRect(
+  frame: InterpolatedFrame,
+  viewProj: ArrayLike<number>,
+  width: number,
+  height: number,
+  rect: ScreenRect,
+  opts: BoxSelectOptions = {},
+): number[] {
+  const minX = Math.min(rect.x0, rect.x1);
+  const maxX = Math.max(rect.x0, rect.x1);
+  const minY = Math.min(rect.y0, rect.y1);
+  const maxY = Math.max(rect.y0, rect.y1);
+  const m = viewProj;
+  const out: number[] = [];
+  for (let i = 0; i < frame.count; i++) {
+    if (opts.owner !== undefined && frame.owner[i] !== opts.owner) continue;
+    if (!opts.includeDead && (frame.flags[i]! & ENTITY_FLAG.dead) !== 0) continue;
+    const x = frame.x[i]!;
+    const y = frame.y[i]! + PICK_CENTER_HEIGHT;
+    const z = frame.z[i]!;
+    const w = m[3]! * x + m[7]! * y + m[11]! * z + m[15]!;
+    if (w <= 0) continue; // behind the camera
+    const nx = (m[0]! * x + m[4]! * y + m[8]! * z + m[12]!) / w;
+    const ny = (m[1]! * x + m[5]! * y + m[9]! * z + m[13]!) / w;
+    const sx = (nx + 1) * 0.5 * width;
+    const sy = (1 - ny) * 0.5 * height;
+    if (sx >= minX && sx <= maxX && sy >= minY && sy <= maxY) out.push(frame.id[i]!);
+  }
+  return out;
+}
+
+/**
+ * Index of the nearest entity hit by the ray (origin o, normalized direction d), or -1.
+ * Units are spheres of PICK_RADIUS around their pick center; dead entities are skipped.
+ */
+export function pickEntity(
+  frame: InterpolatedFrame,
+  ox: number,
+  oy: number,
+  oz: number,
+  dx: number,
+  dy: number,
+  dz: number,
+): number {
+  let best = -1;
+  let bestT = Infinity;
+  const r2 = PICK_RADIUS * PICK_RADIUS;
+  for (let i = 0; i < frame.count; i++) {
+    if ((frame.flags[i]! & ENTITY_FLAG.dead) !== 0) continue;
+    const cx = frame.x[i]! - ox;
+    const cy = frame.y[i]! + PICK_CENTER_HEIGHT - oy;
+    const cz = frame.z[i]! - oz;
+    const t = cx * dx + cy * dy + cz * dz;
+    if (t <= 0) continue;
+    const d2 = cx * cx + cy * cy + cz * cz - t * t;
+    if (d2 > r2) continue;
+    const hit = t - Math.sqrt(r2 - d2);
+    if (hit < bestT) {
+      bestT = hit;
+      best = i;
+    }
+  }
+  return best;
+}
