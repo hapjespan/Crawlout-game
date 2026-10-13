@@ -76,6 +76,17 @@ describe('omrekening naar sim-eenheden', () => {
   });
 });
 
+describe('sim-tuning', () => {
+  it('rekent sim.json om naar integers', () => {
+    expect(loadGameData(raw()).sim).toEqual({ unitRadiusU: 96, arriveRadiusU: 64, separationPermille: 500, flowFieldBudget: 2048, walkAnimStep: 2048 });
+  });
+
+  it('weigert een onbekend veld in sim.json', () => {
+    const r = raw();
+    expect(() => loadGameData({ ...r, sim: { ...(clone(r.sim) as object), extra: 1 } })).toThrow(/sim\.json/);
+  });
+});
+
 describe('validatie', () => {
   it('weigert een onbekend veld', () => {
     const r = raw();

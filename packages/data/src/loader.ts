@@ -1,5 +1,5 @@
 import { ZodError, type ZodTypeAny, type z } from 'zod';
-import { AiScript, ArmorType, Building, DamageMatrix, DamageType, Faction, Hero, Loadout, Perk, Role, Stat, Tech, BodyType, Provides, Archetype } from './schemas.js';
+import { AiScript, ArmorType, Building, DamageMatrix, DamageType, Faction, Hero, Loadout, Perk, Role, SimTuning, Stat, Tech, BodyType, Provides, Archetype } from './schemas.js';
 import { metersToUnits, mpsToUnitsPerTick, pctToPermille, secondsToTicks } from './units.js';
 
 // De loader: PUUR. Geen fs, geen IO, geen klok. Krijgt geparste JSON, valideert met de zod-schema's,
@@ -17,6 +17,8 @@ export interface RawGameData {
   heroes: unknown;
   perks: unknown;
   damageMatrix: unknown;
+  /** Inhoud van data/sim.json. */
+  sim: unknown;
   /** Alle bestanden uit data/ai/, in elke volgorde (de loader sorteert op id). */
   ai: unknown[];
 }
@@ -131,6 +133,15 @@ export interface AiScriptData {
   rallyPointU: { x: number; y: number };
 }
 
+/** Sim-tuning in sim-eenheden (integers). */
+export interface SimTuningData {
+  unitRadiusU: number;
+  arriveRadiusU: number;
+  separationPermille: number;
+  flowFieldBudget: number;
+  walkAnimStep: number;
+}
+
 export interface GameData {
   /** Semver uit data/VERSION, ongewijzigd. Hoort in replay en hash-seed. */
   dataVersion: string;
@@ -146,6 +157,7 @@ export interface GameData {
   aiScripts: AiScriptData[];
   /** damageMatrix[damageTypeIndex][armorTypeIndex] = multiplier in promille (1000 = 100 procent). */
   damageMatrix: number[][];
+  sim: SimTuningData;
 }
 
 function parseWith<S extends ZodTypeAny>(file: string, schema: S, value: unknown): z.infer<S> {
@@ -221,6 +233,7 @@ export function loadGameData(raw: RawGameData): GameData {
   const heroesRaw = sortById('heroes.json', parseList('heroes.json', Hero, raw.heroes));
   const perksRaw = sortById('perks.json', parseList('perks.json', Perk, raw.perks));
   const matrixRaw = parseWith('damage-matrix.json', DamageMatrix, raw.damageMatrix);
+  const simRaw = parseWith('sim.json', SimTuning, raw.sim);
   const aiRaw = sortById(
     'ai/*.json',
     raw.ai.map((item, index) => parseWith(`ai/[${index}]`, AiScript, item)),
@@ -358,5 +371,12 @@ export function loadGameData(raw: RawGameData): GameData {
     perks,
     aiScripts,
     damageMatrix,
+    sim: {
+      unitRadiusU: metersToUnits(simRaw.unitRadiusM),
+      arriveRadiusU: metersToUnits(simRaw.arriveRadiusM),
+      separationPermille: pctToPermille(simRaw.separationPct),
+      flowFieldBudget: simRaw.flowFieldBudgetCells,
+      walkAnimStep: simRaw.walkAnimStep,
+    },
   };
 }

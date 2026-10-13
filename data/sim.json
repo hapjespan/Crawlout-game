@@ -1,0 +1,8 @@
+{
+  "unitRadiusM": 0.375,
+  "arriveRadiusM": 0.25,
+  "separationPct": 50,
+  "flowFieldBudgetCells": 2048,
+  "walkAnimStep": 2048,
+  "_comment": "startwaarde, geen balans. unitRadiusM 0,375 m is de globale unitstraal voor separatie (96 eenheden). arriveRadiusM 0,25 m: een Move-order is klaar binnen deze afstand (64 eenheden). separationPct 50: de helft van de overlap lost separatie per tick op. flowFieldBudgetCells 2048: max cellen die per tick worden uitgebreid, alle velden samen. walkAnimStep 2048 is een ruwe integer (animT-stap per tick, 0..65535 wrapt), bewust geen menselijke eenheid."
+}

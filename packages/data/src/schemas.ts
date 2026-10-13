@@ -126,6 +126,18 @@ export const AiScript = z
   })
   .strict();
 
+// Sim-tuning (data/sim.json): globale getallen die de sim nodig heeft maar die bij geen loadout horen.
+export const SimTuning = z
+  .object({
+    unitRadiusM: nonneg, // globale unitstraal voor separatie, in meters
+    arriveRadiusM: nonneg, // een Move-order is klaar binnen deze afstand
+    separationPct: z.number().min(0).max(100), // deel van de overlap dat separatie per tick oplost
+    flowFieldBudgetCells: z.number().int().positive(), // max flow-field-cellen per tick, alle velden samen
+    walkAnimStep: z.number().int().min(0).max(65535), // ruwe animT-stap per tick (0..65535 wrapt), geen menselijke eenheid
+    _comment: comment,
+  })
+  .strict();
+
 export type Faction = z.infer<typeof Faction>;
 export type Loadout = z.infer<typeof Loadout>;
 export type Building = z.infer<typeof Building>;
@@ -135,3 +147,4 @@ export type Perk = z.infer<typeof Perk>;
 export type MapDef = z.infer<typeof MapDef>;
 export type AiScript = z.infer<typeof AiScript>;
 export type DamageMatrix = z.infer<typeof DamageMatrix>;
+export type SimTuning = z.infer<typeof SimTuning>;

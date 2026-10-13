@@ -22,6 +22,7 @@ export function readDataDir(dir: string): RawGameData {
     heroes: readJson(join(dir, 'heroes.json')),
     perks: readJson(join(dir, 'perks.json')),
     damageMatrix: readJson(join(dir, 'damage-matrix.json')),
+    sim: readJson(join(dir, 'sim.json')),
     ai: aiFiles.map((name) => readJson(join(aiDir, name))),
   };
 }
