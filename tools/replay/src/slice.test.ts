@@ -13,7 +13,8 @@ import { createReplaySim, parseReplay } from './run.js';
 // Eindcriterium van de sim-core-brief op de slice-map Rustbelt, met de echte data:
 //  - 50 bewoners per kant verzamelen, bouwen, wisselen van rol en vechten (fixture s4-rustbelt-fifty, binnen de regels);
 //  - turrets schieten en de AI onderzoekt de prereqTech van zijn bouworder (fixture s4-rustbelt-turrets);
-//  - de scripted AI tegen zichzelf levert een winnaar binnen een redelijk aantal ticks.
+//  - de scripted AI tegen zichzelf levert een winnaar binnen een redelijk aantal ticks;
+//  - bouwers hervatten na een onderbreking, Stop houdt ze stil, vrije bouwers helpen (fixture s5-rustbelt-builder-resume).
 
 const FIXTURES_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'fixtures');
 const fixture = (name: string): Replay => parseReplay(JSON.parse(readFileSync(join(FIXTURES_DIR, `${name}.json`), 'utf8')));
@@ -45,6 +46,39 @@ function unitsOf(sim: Sim, owner: number, r?: number): number[] {
 }
 
 describe('slice: Rustbelt met echte data', () => {
+  it('bouwers hervatten na een Move, Stop houdt ze stil, Build op de plaats helpt, vrije bouwers helpen (fixture s5-rustbelt-builder-resume)', () => {
+    const r = fixture('s5-rustbelt-builder-resume');
+    const done: { frame: number; owner: number; typeId: number }[] = [];
+    const builder = [0, 1].map((p) => unitsOf(createReplaySim(r), p, role('builder'))[0]!);
+    const seen: { frame: number; order: number[]; site: number[] }[] = [];
+    let stoppedProgress = -1;
+    const sim = play(r, (s) => {
+      for (let k = 0; k < s.events.count; k++) {
+        if (s.events.type[k] !== EVENT_TYPE.buildingDone) continue;
+        const u = s.getUnit(s.events.a[k]!)!;
+        done.push({ frame: s.frame - 1, owner: u.owner, typeId: u.typeId });
+      }
+      const units = builder.map((id) => s.getUnit(id)!);
+      seen.push({ frame: s.frame - 1, order: units.map((u) => u.order), site: units.map((u) => u.orderTarget) });
+      if (s.frame - 1 >= 1400 && s.frame - 1 < 1800) {
+        const site = s.entityIds().map((id) => s.getUnit(id)!).find((u) => u.kind === 'building' && u.owner === 0 && u.buildState === 1)!;
+        if (stoppedProgress < 0) stoppedProgress = site.progress;
+        expect(site.progress).toBe(stoppedProgress); // na Stop: niemand bouwt, ook niet vanzelf
+        expect(units[0]!.order).toBe(0);
+      }
+    });
+    // speler 0: werkplaats af na de Move-onderbreking, woning af na de rechtsklik
+    expect(done.filter((d) => d.owner === 0).map((d) => d.typeId)).toEqual([building('werkplaats'), building('woning')]);
+    expect(done.find((d) => d.owner === 0 && d.typeId === building('woning'))!.frame).toBeGreaterThan(1800);
+    // de werkplaats-bouwer was aan het lopen (Move) en ging daarna zonder bevel weer bouwen
+    const movedAt = seen.findIndex((x) => x.frame >= 250 && x.order[0] === 1);
+    expect(seen.slice(movedAt).some((x) => x.order[0] === 5)).toBe(true);
+    // speler 1: B (het laatste bouwbevel) eerst, daarna A vanzelf, ondanks de vlucht
+    expect(done.filter((d) => d.owner === 1)).toHaveLength(2);
+    expect(seen.some((x) => x.frame > 700 && x.order[1] === 1)).toBe(true);
+    expect(sim.getUnit(builder[1]!)!.order).toBe(0);
+  });
+
   it('50 bewoners per kant verzamelen, bouwen, wisselen van rol en vechten (fixture s4-rustbelt-fifty)', { timeout: 60_000 }, () => {
     const r = fixture('s4-rustbelt-fifty');
     const peak = [0, 0];

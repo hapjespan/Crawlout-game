@@ -209,6 +209,8 @@ export const SimTuning = z
     specialAgilitySpeedPct: z.number(), // A: procent extra snelheid van de held per punt
     specialLuckCritPct: z.number().min(0), // L: procent kans op een kritiek schot van de held per punt
     critDamagePct: z.number().min(0), // extra schade van een kritiek schot, in procent
+    // Data 0.8.0 (sim-core, speltest): een bouwer zonder taak helpt vanzelf bij een eigen bouwplaats binnen deze straal (tot de rand van de footprint)
+    builderAutoHelpRadiusM: nonneg,
     _comment: comment,
   })
   .strict();

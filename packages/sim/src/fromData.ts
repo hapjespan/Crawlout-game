@@ -212,6 +212,7 @@ export function simConfigFromGameData(data: GameData): SimConfig {
     popCapMax: t.popCapMax,
     corpseTicks: t.corpseTicks,
     cancelRefundPermille: t.cancelRefundPermille,
+    builderAutoHelpRadius: t.builderAutoHelpRadiusU,
   };
 }
 

@@ -253,6 +253,8 @@ export interface SimConfig {
   readonly corpseTicks: number;
   /** Teruggave bij Cancel van een bouwplaats of een betaalde omscholing, in promille van de prijs (1000 = alles). */
   readonly cancelRefundPermille: number;
+  /** Een bouwer zonder taak helpt vanzelf bij een eigen bouwplaats binnen deze afstand (tot de rand van de footprint). */
+  readonly builderAutoHelpRadius: number;
 }
 
 /** Eén speler in de startopstelling, in playerId-volgorde. */
@@ -336,6 +338,7 @@ export function validateEnv(env: SimEnv): void {
   req(intIn(config.popCapMax, 0, 4096), 'popCapMax');
   req(intIn(config.corpseTicks, 0, U16), 'corpseTicks');
   req(intIn(config.cancelRefundPermille, 0, 1000), 'cancelRefundPermille');
+  req(intIn(config.builderAutoHelpRadius, 0, MAX_MAP_CELLS_SIDE << 8), 'builderAutoHelpRadius');
 
   const armorCount = config.damageMatrix[0]?.length ?? 0;
   req(config.damageMatrix.length > 0 && armorCount > 0, 'damageMatrix leeg');
@@ -474,6 +477,7 @@ export function envHash(env: SimEnv): number {
     c.popCapMax,
     c.corpseTicks,
     c.cancelRefundPermille,
+    c.builderAutoHelpRadius,
   ]);
   h = fnv1aInt(h, c.unitTypes.length);
   for (const u of c.unitTypes) {

@@ -56,6 +56,10 @@ export interface UnitView {
   readonly order: number;
   readonly phase: number;
   readonly target: number;
+  /** ordT van de huidige order: de bouwplaats bij Build, de node bij Gather, het doel bij Attack (Move: groepsstraal); 0 = geen order. */
+  readonly orderTarget: number;
+  /** Bouwer: de onthouden onafgemaakte bouwplaats waar hij zonder taak naar terugkeert, 0 = geen. */
+  readonly resumeSite: number;
   readonly carry: number;
   /** Gebouw: 1 in aanbouw, 2 af; anders 0. */
   readonly buildState: number;
@@ -382,6 +386,8 @@ export class Sim implements SimContext {
       order: o < 0 ? 0 : w.ordType[o]!,
       phase: w.phase[i]!,
       target: w.target[i]!,
+      orderTarget: o < 0 ? 0 : w.ordT[o]!,
+      resumeSite: w.resumeSite[i]!,
       carry: w.carry[i]!,
       buildState: w.bstate[i]!,
       progress: w.progress[i]!,

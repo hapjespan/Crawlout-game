@@ -119,6 +119,13 @@ export class World {
   readonly range = new Int32Array(MAX_ENTITIES);
   // Economie
   readonly carry = new Int32Array(MAX_ENTITIES);
+  /**
+   * Bouwer: id van zijn laatste onafgemaakte bouwplaats (gezet bij elke bouworder, gewist door Stop). Zonder order
+   * loopt hij daar vanzelf naar terug zolang de plaats bestaat en onaf is (systeem 2, orders.ts).
+   */
+  readonly resumeSite = new Uint32Array(MAX_ENTITIES);
+  /** 1 na een Stop (of Cancel op de unit): geen automatisch helpen tot het volgende bevel. */
+  readonly buildHold = new Uint8Array(MAX_ENTITIES);
   // Building: footprint in cellen (fx, fy linksboven), bouwstatus en voortgang in ticks
   readonly fx = new Int32Array(MAX_ENTITIES);
   readonly fy = new Int32Array(MAX_ENTITIES);
@@ -299,6 +306,8 @@ export function entityStateArrays(w: World): readonly StateArray[] {
     one('damageType', w.damageType),
     one('range', w.range),
     one('carry', w.carry),
+    one('resumeSite', w.resumeSite),
+    one('buildHold', w.buildHold),
     one('fx', w.fx),
     one('fy', w.fy),
     one('fw', w.fw),
