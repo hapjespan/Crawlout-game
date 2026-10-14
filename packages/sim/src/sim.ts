@@ -1,12 +1,13 @@
-import type { FrameBundle, PlayerStatus } from '@crawlout/protocol';
+import type { FrameBundle, PlayerStatus, QueueItem } from '@crawlout/protocol';
 import { MAX_PLAYERS } from '@crawlout/protocol';
 import type { SimBuildingType, SimConfig, SimEnv, SimInit, SimMap, SimPlayer, SimUnitType } from './config.js';
 import { envHash, validateEnv } from './config.js';
-import { C, NO_ENTITY, NO_FIELD, World } from './ecs/world.js';
-import { createBuilding, createUnit, footprintFree } from './entities.js';
+import { C, NO_ENTITY, NO_FIELD, ORDER_CRAFT, PHASE_CRAFT, PHASE_WORK, World } from './ecs/world.js';
+import { PROGRESS_ONE, createBuilding, createUnit, footprintFree } from './entities.js';
 import { EventBuffer } from './events.js';
 import { FlowFields, MAX_FLOW_FIELDS } from './flowfield.js';
-import { isInt } from './math/int.js';
+import { clampI, idiv, isInt } from './math/int.js';
+import { PROVIDES_WORKSHOP } from './fromData.js';
 import { Rng } from './rng.js';
 import { writeSnapshot } from './snapshot.js';
 import { setupStart } from './start.js';
@@ -20,7 +21,7 @@ import { combatSystem } from './systems/combat.js';
 import type { SimCommand } from './systems/commands.js';
 import { applyCommands, normalizeCommand } from './systems/commands.js';
 import type { SimContext } from './systems/common.js';
-import { GlobalState, NO_WINNER, PlayerState, Terrain, WIN_DOMINANCE, WIN_SURRENDER, inMap, setFlowField, walkableAt } from './systems/common.js';
+import { GlobalState, NO_WINNER, PlayerState, Terrain, WIN_DOMINANCE, WIN_SURRENDER, inMap, nearestOwnBuilding, setFlowField, walkableAt } from './systems/common.js';
 import { economySystem } from './systems/economy.js';
 import { Auras, auraSystem, heroStatus } from './systems/hero.js';
 import { MovementScratch, movementSystem } from './systems/movement.js';
@@ -267,7 +268,36 @@ export class Sim implements SimContext {
       beds: this.census.beds[playerId]!,
       hero: heroStatus(this, playerId),
       techs: this.researched(playerId), // besluit sprint 3 (architect): de HUD filtert bouwmenu en craft-opties op prereqTech
+      queue: this.queue(playerId),
     };
+  }
+
+  /**
+   * Lopend werk van een speler voor het gebouwpaneel van de HUD (PlayerStatus.queue, speltest 14 oktober): eerst
+   * onderzoek per gebouw, dan omscholingen per unit die bij de werkplaats staat, elk in oplopende entity-id. Een
+   * omscholing die op scrap wacht staat er met 0 promille in; een unit die nog naar de werkplaats loopt niet.
+   */
+  queue(playerId: number): QueueItem[] {
+    const w = this.world;
+    const out: QueueItem[] = [];
+    for (let i = 0; i < w.highWater; i++) {
+      if (w.alive[i] !== 1 || w.owner[i] !== playerId || w.research[i] === 0 || !w.has(i, C.building)) continue;
+      const t = this.config.techs[w.research[i]! - 1];
+      if (t === undefined) continue;
+      const total = t.researchTicks * PROGRESS_ONE;
+      out.push({ kind: 'research', buildingId: w.idOf(i), id: t.techId, progressPermille: permille(w.work[i]!, total) });
+    }
+    for (let i = 0; i < w.highWater; i++) {
+      if (w.alive[i] !== 1 || w.owner[i] !== playerId || !w.has(i, C.unit | C.orders) || w.orderType(i) !== ORDER_CRAFT) continue;
+      const phase = w.phase[i]!;
+      if (phase !== PHASE_WORK && phase !== PHASE_CRAFT) continue;
+      const t = this.unitTypes[w.ordX[w.currentOrder(i)]!];
+      const ws = nearestOwnBuilding(this, playerId, w.x[i]!, w.y[i]!, PROVIDES_WORKSHOP);
+      if (t === undefined || ws < 0) continue;
+      const progress = phase === PHASE_CRAFT ? permille(w.work[i]!, t.craftTicks) : 0;
+      out.push({ kind: 'craft', buildingId: w.idOf(ws), id: t.loadoutId, progressPermille: progress });
+    }
+    return out;
   }
 
   /** De winnaar, of null zolang het potje loopt. */
@@ -424,6 +454,9 @@ export class Sim implements SimContext {
     this.hashDirty = true;
   }
 }
+
+/** a van b in promille, 0..1000 (b <= 0 telt als klaar). */
+const permille = (a: number, b: number): number => (b <= 0 ? 1000 : clampI(idiv(a * 1000, b), 0, 1000));
 
 /** Maakt een nieuwe sim met startopstelling (tenzij opts.start === false). Valideert de invoer; gooit bij ongeldige invoer. */
 export function createSim(init: SimInit, opts: CreateSimOptions = {}): Sim {

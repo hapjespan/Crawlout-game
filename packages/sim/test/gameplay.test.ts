@@ -261,6 +261,36 @@ describe('onderzoek en craft', () => {
     expect(sim.researched(1)).toEqual([]);
   });
 
+  it('PlayerStatus.queue: lopend onderzoek en omscholen met voortgang in promille', () => {
+    const sim = emptySim(32);
+    const ws = sim.spawnBuilding(WERKPLAATS, 0, 14, 4);
+    sim.setScrap(0, 1000);
+    const scav = sim.spawnUnit({ typeId: SCAV, owner: 0, ...cellCenter(13, 5) });
+    expect(sim.playerStatus(0).queue).toEqual([]);
+    play(sim, 1, at(0, cmd(0, 0, 'Research', { techId: GEWEERREK.techId }), cmd(0, 0, 'Craft', { ids: [scav], loadoutId: PATROL_LOADOUT })));
+    // patrol vraagt geweerrek: alleen het onderzoek loopt
+    let q = sim.playerStatus(0).queue!;
+    expect(q).toHaveLength(1);
+    expect(q[0]).toMatchObject({ kind: 'research', buildingId: ws, id: GEWEERREK.techId });
+    expect(q[0]!.progressPermille).toBeLessThan(10); // één tick werk in het frame van het commando
+    play(sim, GEWEERREK.researchTicks >> 1);
+    q = sim.playerStatus(0).queue!;
+    expect(q[0]!.progressPermille).toBeGreaterThan(400);
+    expect(q[0]!.progressPermille).toBeLessThan(600);
+    play(sim, GEWEERREK.researchTicks);
+    expect(sim.playerStatus(0).queue).toEqual([]);
+    const patrol = CONFIG.unitTypes.find((u) => u.loadoutId === PATROL_LOADOUT)!;
+    play(sim, 1, at(sim.frame, cmd(sim.frame, 0, 'Craft', { ids: [scav], loadoutId: PATROL_LOADOUT })));
+    play(sim, 40);
+    q = sim.playerStatus(0).queue!;
+    expect(q).toHaveLength(1);
+    expect(q[0]).toMatchObject({ kind: 'craft', buildingId: ws, id: PATROL_LOADOUT });
+    expect(q[0]!.progressPermille).toBeGreaterThan(0);
+    play(sim, patrol.craftTicks);
+    expect(sim.playerStatus(0).queue).toEqual([]);
+    expect(sim.getUnit(scav)!.typeId).toBe(patrol.typeId);
+  });
+
   it('tech-effecten: hpPct op militie verhoogt maxHp en hp van bestaande en nieuwe units; Cancel stopt onderzoek met teruggave', () => {
     const sim = emptySim(31);
     sim.spawnBuilding(WERKPLAATS, 0, 14, 4);
@@ -542,6 +572,7 @@ describe('state', () => {
           abilityCooldownTicks: [0],
         },
         techs: [],
+        queue: [],
       },
       winner: null,
     });
