@@ -128,12 +128,16 @@ function refundCraft(ctx: SimContext, i: number): void {
   if (t !== undefined) ctx.ps.scrap[w.owner[i]!] = ctx.ps.scrap[w.owner[i]!]! + refundOf(ctx, t.scrapCost);
 }
 
-/** Nieuwe order die de huidige vervangt. */
+/**
+ * Nieuwe order die de huidige vervangt. Een bevel heft een eerdere Stop op (`buildHold`); de onthouden bouwplaats
+ * (`resumeSite`) blijft staan, zodat een bouwer na bijvoorbeeld een Move zonder taak weer verder bouwt.
+ */
 function replaceOrder(ctx: SimContext, i: number, type: number, x: number, y: number, t: number): void {
   const w = ctx.world;
   refundCraft(ctx, i);
   w.clearOrders(i);
   w.target[i] = NO_ENTITY;
+  w.buildHold[i] = 0;
   w.pushOrder(i, type, x, y, t);
 }
 
@@ -169,6 +173,10 @@ function applyAttack(ctx: SimContext, p: number, pl: CommandPayload<'Attack'>): 
   return any;
 }
 
+/**
+ * Stop (en Cancel op een unit): de speler wil dat hij echt stopt. Een bouwer vergeet zijn bouwplaats en helpt ook niet
+ * vanzelf bij een bouwplaats in de buurt (`buildHold`) tot hij een nieuw bevel krijgt.
+ */
 function applyStop(ctx: SimContext, p: number, ids: readonly number[]): boolean {
   const w = ctx.world;
   const units = ownedWith(ctx, ids, p, UNIT);
@@ -176,6 +184,8 @@ function applyStop(ctx: SimContext, p: number, ids: readonly number[]): boolean 
     refundCraft(ctx, i);
     w.clearOrders(i);
     w.target[i] = NO_ENTITY;
+    w.resumeSite[i] = NO_ENTITY;
+    w.buildHold[i] = 1;
     stopMoving(ctx, i);
   }
   return units.length > 0;
@@ -206,7 +216,9 @@ export function canPlaceType(ctx: SimContext, p: number, typeId: number): boolea
 
 /**
  * Build: (x, y) is het midden van de footprint (cel van (x, y) min de halve footprint is de oorsprong). Alleen units
- * met de rol bouwer. Staat er op die plek al een eigen bouwplaats van dit type, dan helpen ze daar (zonder kosten).
+ * met de rol bouwer. Staat er op die plek al een eigen bouwplaats van dit type, dan helpen ze daar (zonder kosten);
+ * zo wordt een rechtsklik op een bouwplaats in de client (Build met het typeId en het midden van die plaats) "help
+ * bouwen". Elke bouwer onthoudt de plaats (`resumeSite`) tot een nieuw bouwbevel of Stop.
  */
 function applyBuild(ctx: SimContext, p: number, pl: CommandPayload<'Build'>): boolean {
   const w = ctx.world;
@@ -226,7 +238,10 @@ function applyBuild(ctx: SimContext, p: number, pl: CommandPayload<'Build'>): bo
   }
   const siteId = w.idOf(site);
   if (w.bstate[site] !== BSTATE_SITE) return true; // bouwtijd 0: meteen af
-  for (const i of builders) replaceOrder(ctx, i, ORDER_BUILD, 0, 0, siteId);
+  for (const i of builders) {
+    replaceOrder(ctx, i, ORDER_BUILD, 0, 0, siteId);
+    w.resumeSite[i] = siteId;
+  }
   return true;
 }
 

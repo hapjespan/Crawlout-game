@@ -310,7 +310,42 @@ const FIXTURES_S4: FixtureDef[] = [
   },
 ];
 
-export const FIXTURES: readonly FixtureDef[] = [...FIXTURES_UP_TO_S3, ...FIXTURES_S4];
+const FIXTURES_S5: FixtureDef[] = [
+  {
+    // Bouwers na de speltest van Martien (data 0.8.0), twee mensen op Rustbelt:
+    //  - speler 0: werkplaats; halverwege een Move ver weg (buiten de hulpstraal), daarna hervat hij vanzelf. Dan een
+    //    woning, Stop (geen hervatten, geen automatisch helpen ernaast), en later een Build met typeId en het midden
+    //    van die bouwplaats (de rechtsklik van de client): hij helpt weer, zonder kosten;
+    //  - speler 1: woning A en meteen woning B (het nieuwe bouwbevel overschrijft het geheugen); na B pakt hij A
+    //    vanzelf op (binnen builderAutoHelpRadius), vlucht halverwege A (Move) en hervat A daarna.
+    name: 's5-rustbelt-builder-resume',
+    build() {
+      const r = base('rustbelt', 505, [false, false]);
+      const st = startOf(r);
+      const s = new Script();
+      const b0 = st.builder[0]!;
+      const b1 = st.builder[1]!;
+      s.add(6, 0, 'Build', { ids: b0, typeId: building('werkplaats'), ...cell(28, 20) });
+      s.move(250, 0, b0, 30, 40);
+      s.add(1300, 0, 'Build', { ids: b0, typeId: building('woning'), ...cell(12, 9) });
+      s.add(1400, 0, 'Stop', { ids: b0 });
+      s.add(6, 1, 'Build', { ids: b1, typeId: building('woning'), ...cell(99, 107) });
+      s.add(8, 1, 'Build', { ids: b1, typeId: building('woning'), ...cell(104, 100) });
+      s.move(700, 1, b1, 100, 84);
+      r.bundles = s.bundles();
+      // de rechtsklik: Build met het typeId en het midden van de bouwplaats zoals de client die uit de snapshot leest
+      const sim = stateAt(r, 1800);
+      const woning = building('woning');
+      const site = sim.entityIds().map((id) => sim.getUnit(id)!).find((u) => u.kind === 'building' && u.owner === 0 && u.typeId === woning && u.buildState === 1)!;
+      s.add(1800, 0, 'Build', { ids: b0, typeId: woning, x: site.x, y: site.y });
+      r.bundles = s.bundles();
+      r.hashes = [{ frame: 2599, hash: 0 }];
+      return r;
+    },
+  },
+];
+
+export const FIXTURES: readonly FixtureDef[] = [...FIXTURES_UP_TO_S3, ...FIXTURES_S4, ...FIXTURES_S5];
 
 /** De sim na het uitvoeren van de frames 0 tot `frame` (exclusief) met de bundels die de replay tot dan heeft. */
 function stateAt(r: Replay, frame: number): Sim {

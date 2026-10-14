@@ -194,6 +194,8 @@ export interface SimTuningData {
   specialAgilitySpeedPermille: number;
   specialLuckCritPermille: number;
   critDamagePermille: number;
+  /** Een bouwer zonder taak helpt bij een eigen bouwplaats binnen deze afstand (tot de rand van de footprint; data 0.8.0). */
+  builderAutoHelpRadiusU: number;
 }
 
 export interface GameData {
@@ -489,6 +491,7 @@ export function loadGameData(raw: RawGameData): GameData {
       specialAgilitySpeedPermille: pctToPermille(simRaw.specialAgilitySpeedPct),
       specialLuckCritPermille: pctToPermille(simRaw.specialLuckCritPct),
       critDamagePermille: pctToPermille(simRaw.critDamagePct),
+      builderAutoHelpRadiusU: metersToUnits(simRaw.builderAutoHelpRadiusM),
     },
   };
 }

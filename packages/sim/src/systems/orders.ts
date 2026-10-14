@@ -37,6 +37,7 @@ import {
 // (verzamelen, bouwen, omscholen) gebeurt in systeem 6.
 
 export const ROLE_MILITIA = ROLES.indexOf('militia');
+const ROLE_BUILDER = ROLES.indexOf('builder');
 
 /** Depots voor scrap: hoofdgebouw en werkplaats. */
 export const DEPOT_MASK = PROVIDES_HQ | PROVIDES_WORKSHOP;
@@ -45,13 +46,21 @@ export class OrdersScratch {
   /** Indices van alle entities met Health en een eigenaar (units en gebouwen), oplopend. */
   readonly targets = new Int32Array(MAX_ENTITIES);
   targetCount = 0;
+  /** Indices van alle bouwplaatsen (in aanbouw), oplopend, voor bouwers zonder taak. */
+  readonly sites = new Int32Array(MAX_ENTITIES);
+  siteCount = 0;
 }
 
 function collectTargets(ctx: SimContext, s: OrdersScratch): void {
   const w = ctx.world;
   let k = 0;
-  for (let j = 0; j < w.highWater; j++) if (w.has(j, C.health) && w.hp[j]! > 0) s.targets[k++] = j;
+  let n = 0;
+  for (let j = 0; j < w.highWater; j++) {
+    if (w.has(j, C.health) && w.hp[j]! > 0) s.targets[k++] = j;
+    if (w.bstate[j] === BSTATE_SITE && w.has(j, C.building)) s.sites[n++] = j;
+  }
   s.targetCount = k;
+  s.siteCount = n;
 }
 
 /**
@@ -135,7 +144,64 @@ function idle(ctx: SimContext, s: OrdersScratch, i: number): void {
   const w = ctx.world;
   if (w.role[i] === ROLE_MILITIA && autoEngage(ctx, s, i)) return;
   w.target[i] = NO_ENTITY;
+  if (w.role[i] === ROLE_BUILDER && !w.has(i, C.hero)) {
+    if (builderIdle(ctx, s, i)) return;
+  } else w.resumeSite[i] = NO_ENTITY; // geen bouwer (meer): niets te onthouden
   if (w.mvOn[i] === 1) stopMoving(ctx, i); // zonder order loopt een unit alleen achter een doel aan
+}
+
+/** Index van de eigen bouwplaats (in aanbouw) met deze id, of -1. */
+function ownSite(ctx: SimContext, i: number, id: number): number {
+  const w = ctx.world;
+  if (id === NO_ENTITY) return -1;
+  const b = w.resolve(id);
+  return b >= 0 && w.has(b, C.building) && w.bstate[b] === BSTATE_SITE && w.owner[b] === w.owner[i] ? b : -1;
+}
+
+/**
+ * Bouwer zonder taak (speltest Martien):
+ *  1. hervatten: bestaat zijn onthouden bouwplaats (`resumeSite`) nog en is ze onaf, dan loopt hij erheen en bouwt
+ *     verder, waar hij ook is. Dat geldt na elk ander bevel (Move, AttackMove, Attack); Stop wist het geheugen en een
+ *     nieuw bouwbevel overschrijft het;
+ *  2. helpen: anders (en niet net met Stop stilgezet) pakt hij de dichtstbijzijnde eigen bouwplaats binnen
+ *     builderAutoHelpRadius op, gemeten tot de rand van de footprint, tiebreak laagste id.
+ * Geeft true als hij een bouworder kreeg.
+ */
+function builderIdle(ctx: SimContext, s: OrdersScratch, i: number): boolean {
+  const w = ctx.world;
+  let b = ownSite(ctx, i, w.resumeSite[i]!);
+  if (b < 0) {
+    w.resumeSite[i] = NO_ENTITY;
+    if (w.buildHold[i] !== 0) return false;
+    b = nearestOwnSite(ctx, s, i, ctx.config.builderAutoHelpRadius);
+    if (b < 0) return false;
+  }
+  const id = w.idOf(b);
+  w.pushOrder(i, ORDER_BUILD, 0, 0, id);
+  w.resumeSite[i] = id;
+  build(ctx, i, w.currentOrder(i));
+  return true;
+}
+
+/** Dichtstbijzijnde eigen bouwplaats binnen r (tot de rand van de footprint); bij gelijke afstand de laagste id. */
+function nearestOwnSite(ctx: SimContext, s: OrdersScratch, i: number, r: number): number {
+  const w = ctx.world;
+  const p = w.owner[i]!;
+  const x = w.x[i]!;
+  const y = w.y[i]!;
+  const r2 = r * r;
+  let best = -1;
+  let bestD = 0;
+  for (let k = 0; k < s.siteCount; k++) {
+    const b = s.sites[k]!;
+    if (w.owner[b] !== p) continue;
+    const d = distToRect2(x, y, w.fx[b]!, w.fy[b]!, w.fw[b]!, w.fh[b]!);
+    if (d <= r2 && (best < 0 || d < bestD)) {
+      best = b;
+      bestD = d;
+    }
+  }
+  return best;
 }
 
 function attackMove(ctx: SimContext, s: OrdersScratch, i: number, o: number): void {
@@ -221,6 +287,7 @@ function build(ctx: SimContext, i: number, o: number): void {
   const w = ctx.world;
   const b = w.resolve(w.ordT[o]!);
   if (b < 0 || !w.has(b, C.building) || w.bstate[b] !== BSTATE_SITE) {
+    if (w.resumeSite[i] === w.ordT[o]) w.resumeSite[i] = NO_ENTITY; // af of weg: niets meer te hervatten
     w.popOrder(i);
     stopMoving(ctx, i);
     return;

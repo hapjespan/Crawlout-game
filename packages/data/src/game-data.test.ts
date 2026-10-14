@@ -141,6 +141,7 @@ describe('sim-tuning', () => {
       specialAgilitySpeedPermille: 30,
       specialLuckCritPermille: 20,
       critDamagePermille: 1000,
+      builderAutoHelpRadiusU: 3072,
     });
   });
 
