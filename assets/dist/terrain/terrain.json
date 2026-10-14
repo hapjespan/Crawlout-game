@@ -1,0 +1,29 @@
+{
+  "format": "crawlout-terrain/1",
+  "id": "rock_terrain_4",
+  "attribution": "\"Rock Terrain 4\" by Lassi Kaukonen (https://sketchfab.com/thesidekick), CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/). Source: https://sketchfab.com/3d-models/rock-terrain-4-3a0e4dec66154901bf905384622183dd",
+  "heightfield": {
+    "path": "rock_terrain_4.height.json",
+    "w": 128,
+    "h": 128,
+    "metersPerCell": 1,
+    "minM": 0,
+    "maxM": 26.25
+  },
+  "albedo": {
+    "path": "rock_terrain_4.albedo.jpg",
+    "width": 1024,
+    "height": 1024,
+    "mime": "image/jpeg"
+  },
+  "rockTint": "#454340",
+  "groundTint": "#2b2b2b",
+  "crop": {
+    "rotationDeg": 20,
+    "minX": -10,
+    "minZ": -43,
+    "sizeM": 64,
+    "scale": 2,
+    "heightOffsetM": 1.5701
+  }
+}
