@@ -212,7 +212,7 @@ describe('held-abilities', () => {
   });
 });
 
-describe('research en recruit voor geselecteerde gebouwen', () => {
+describe('verouderde deps: research en recruit worden kaarten', () => {
   const research: ResearchOption[] = [
     { techId: 7, naam: 'Pantser', scrapCost: 80, affordable: true },
     { techId: 8, naam: 'Vuurwapens', scrapCost: 900, affordable: false },
@@ -225,19 +225,21 @@ describe('research en recruit voor geselecteerde gebouwen', () => {
     const panel = t.el.querySelector('[aria-label="Gebouw"]');
     expect(panel?.textContent).toContain('Pantser');
     expect(panel?.textContent).toContain('900');
-    expect(t.el.querySelector<HTMLButtonElement>('[data-research="8"]')?.disabled).toBe(true);
+    expect(t.el.querySelector<HTMLButtonElement>('[data-card-kind="research"][data-card-id="8"]')?.getAttribute('aria-disabled')).toBe('true');
     expect(t.queries.research.at(-1)).toEqual([4]);
   });
 
   it('klik en cijfers sturen Research en Recruit; te duur stuurt niets', () => {
     const t = setup({ selection: [building(9, 4)], research, recruit });
     mounted = t.handle;
-    click(t.el.querySelector('[data-research="7"]'));
+    click(t.el.querySelector('[data-card-kind="research"][data-card-id="7"]'));
     press('3');
     press('2');
+    press('1');
     expect(t.sent).toEqual([
       { type: 'Research', payload: { techId: 7 } },
       { type: 'Recruit', payload: { buildingId: 4 } },
+      { type: 'Research', payload: { techId: 7 } },
     ]);
     t.sent.forEach(expectValid);
   });
@@ -257,32 +259,33 @@ describe('research en recruit voor geselecteerde gebouwen', () => {
   });
 });
 
-describe('craft voor geselecteerde bewoners', () => {
+describe('verouderde deps: craft wordt kaarten', () => {
   const craft: CraftOption[] = [
     { loadoutId: 2, naam: 'Knuppel', scrapCost: 20, affordable: true },
     { loadoutId: 3, naam: 'Geweer', scrapCost: 300, affordable: false },
   ];
 
-  it('K opent het menu; keuze stuurt Craft met alleen units', () => {
+  it('K activeert de cijfertoetsen; keuze stuurt Craft met alleen units', () => {
     const t = setup({ selection: [unit(1), unit(2), building(9, 1)], craft });
     mounted = t.handle;
-    expect(t.el.querySelector('[aria-label="Craftmenu"]')).toBeNull();
+    expect(t.el.querySelector('[aria-label="Gebouw"]')).toBeNull();
+    press('1'); // zonder K is 1 de rolletoets
+    expect(t.sent).toEqual([{ type: 'SetRole', payload: { ids: [1, 2, 9], role: 'scavenger' } }]);
+    t.sent.length = 0;
     press('k');
-    expect(t.el.querySelector('[aria-label="Craftmenu"]')).not.toBeNull();
-    expect(t.el.querySelector<HTMLButtonElement>('[data-craft="3"]')?.disabled).toBe(true);
+    click(t.el.querySelector('[data-card-id="3"]'));
     press('2');
     expect(t.sent).toEqual([]);
     press('1');
     expect(t.sent).toEqual([{ type: 'Craft', payload: { ids: [1, 2], loadoutId: 2 } }]);
     expectValid(t.sent[0]!);
-    expect(t.el.querySelector('[aria-label="Craftmenu"]')).toBeNull();
   });
 
   it('zonder opties (niet bij een werkplaats) is K uitgeschakeld', () => {
     const t = setup({ selection: [unit(1)] });
     mounted = t.handle;
     press('k');
-    expect(t.el.querySelector('[aria-label="Craftmenu"]')).toBeNull();
+    expect(t.el.querySelector('.co-cards')).toBeNull();
   });
 });
 

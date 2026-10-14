@@ -7,6 +7,10 @@ import type { HudDeps, HudHandle } from './types.js';
 export type {
   AlertKind,
   BuildOption,
+  BuildingCard,
+  CardIconId,
+  CardKind,
+  CardState,
   CraftOption,
   HeroAbilityOption,
   RecruitOption,
@@ -30,6 +34,7 @@ export type {
   TargetResult,
   UnitActivity,
 } from './types.js';
+export { CARD_ICON_IDS } from './types.js';
 export { ACTIONS, HudController } from './controller.js';
 
 const STYLE_ID = 'co-hud-style';

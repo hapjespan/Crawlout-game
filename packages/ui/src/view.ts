@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import type { PlayerStatus } from '@crawlout/protocol';
 import { ABILITY_KEYS, ACTIONS, PERK_KEYS, ROLE_LABEL, keyLabel } from './controller.js';
 import type { HudController, HudState } from './controller.js';
+import { CardPanel } from './cards.js';
 import { drawMinimap } from './minimap.js';
 import type { AlertKind, RosterGroup, SelectedEntity, TargetingKind, UnitActivity } from './types.js';
 
@@ -182,7 +183,6 @@ function CommandCard(props: { ctl: HudController; state: HudState }): ComponentC
       }),
     ),
     state.buildMenuOpen ? h(BuildMenu, { ctl, state }) : null,
-    h(CraftMenu, { ctl, state }),
   );
 }
 
@@ -321,76 +321,6 @@ function HeroPanel(props: { ctl: HudController; state: HudState }): ComponentChi
   );
 }
 
-function BuildingPanel(props: { ctl: HudController; state: HudState }): ComponentChild {
-  const { ctl } = props;
-  const entries = ctl.buildingEntries();
-  if (entries.length === 0) return null;
-  const digitsActive = ctl.buildingPanelActive();
-  return h(
-    'section',
-    { class: 'co-panel co-building', 'aria-label': 'Gebouw' },
-    h('h2', null, 'Gebouw'),
-    h(
-      'ul',
-      { class: 'co-build-list' },
-      entries.map((e, i) =>
-        h(
-          'li',
-          { key: `${e.kind}${e.kind === 'research' ? e.techId : e.buildingId}` },
-          h(
-            'button',
-            {
-              type: 'button',
-              class: 'co-btn co-build-option',
-              disabled: !e.affordable,
-              'data-research': e.kind === 'research' ? e.techId : undefined,
-              'data-recruit': e.kind === 'recruit' ? e.buildingId : undefined,
-              'aria-label': `${e.kind === 'research' ? 'Onderzoek' : 'Rekruteer'} ${e.naam}, ${e.scrapCost} scrap${e.affordable ? '' : ', te duur'}${digitsActive && i < 9 ? ` (sneltoets ${i + 1})` : ''}`,
-              onClick: () => ctl.chooseBuildingEntry(i),
-            },
-            h('span', null, `${e.kind === 'research' ? 'Onderzoek' : 'Rekruteer'} ${e.naam}`),
-            h('span', { class: e.affordable ? 'co-cost' : 'co-cost co-full' }, String(e.scrapCost)),
-            digitsActive && i < 9 ? h('span', { class: 'co-key', 'aria-hidden': 'true' }, String(i + 1)) : null,
-          ),
-        ),
-      ),
-    ),
-  );
-}
-
-function CraftMenu(props: { ctl: HudController; state: HudState }): ComponentChild {
-  const { ctl, state } = props;
-  if (!state.craftMenuOpen) return null;
-  return h(
-    'div',
-    { class: 'co-menu', role: 'group', 'aria-label': 'Craftmenu' },
-    h(
-      'ul',
-      { class: 'co-build-list' },
-      state.craftOptions.map((o, i) =>
-        h(
-          'li',
-          { key: o.loadoutId },
-          h(
-            'button',
-            {
-              type: 'button',
-              class: 'co-btn co-build-option',
-              disabled: !o.affordable,
-              'data-craft': o.loadoutId,
-              'aria-label': `Craft ${o.naam}, ${o.scrapCost} scrap${o.affordable ? '' : ', te duur'} (sneltoets ${i + 1})`,
-              onClick: () => ctl.chooseCraft(o.loadoutId),
-            },
-            h('span', null, o.naam),
-            h('span', { class: o.affordable ? 'co-cost' : 'co-cost co-full' }, String(o.scrapCost)),
-            h('span', { class: 'co-key', 'aria-hidden': 'true' }, String(i + 1)),
-          ),
-        ),
-      ),
-    ),
-  );
-}
-
 function Minimap(props: { ctl: HudController; state: HudState }): ComponentChild {
   const { ctl, state } = props;
   const ref = useRef<HTMLCanvasElement>(null);
@@ -516,7 +446,7 @@ export function Hud(props: { ctl: HudController }): ComponentChild {
     h(HeroPanel, { ctl, state }),
     h(Toasts, { ctl, state }),
     h(LobbyPanel, { ctl, state }),
-    h(BuildingPanel, { ctl, state }),
+    h(CardPanel, { ctl, state }),
     h(SelectionPanel, { selection: state.selection }),
     h(RosterBar, { ctl, state }),
     h(CommandCard, { ctl, state }),

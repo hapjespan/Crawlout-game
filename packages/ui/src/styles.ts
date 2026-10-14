@@ -76,8 +76,36 @@ export const HUD_CSS = `
 .co-abilities{display:flex;flex-direction:column;gap:4px;margin-bottom:6px}
 .co-ability{position:relative;flex-direction:row;justify-content:space-between;padding:6px 8px;overflow:hidden}
 .co-cooldown{position:absolute;left:0;bottom:0;height:3px;background:#ffb74d}
-.co-building{position:absolute;left:8px;bottom:236px;width:260px}
-.co-building h2{margin:0 0 6px;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#9aa0a6}
+.co-cards{position:absolute;left:8px;bottom:236px;width:300px;max-height:calc(100% - 320px);overflow:auto}
+.co-cards h2{margin:0 0 6px;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#9aa0a6}
+.co-cards-hint{font-size:12px;margin:0 0 6px}
+.co-card-list{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.co-card{display:flex;flex-direction:column;background:#24282c;border:1px solid #3a4046;border-radius:6px;overflow:hidden}
+.co-card-main{display:grid;grid-template-columns:28px 1fr auto;column-gap:6px;row-gap:2px;align-items:center;width:100%;flex:1;padding:6px;background:none;border:0;color:inherit;font:12px/1.25 system-ui,sans-serif;text-align:left;cursor:pointer}
+.co-card-main:hover:not([aria-disabled=true]){background:#2f353b}
+.co-card-main:focus-visible,.co-card-cancel:focus-visible{outline:3px solid #ffd54f;outline-offset:-2px}
+.co-card-main[aria-disabled=true]{cursor:default}
+.co-card-icon{grid-row:1 / span 2;color:#c4c7ca}
+.co-card-name{font-weight:600;font-size:13px}
+.co-card-meta{grid-column:2 / span 2;display:flex;gap:8px;color:#c4c7ca}
+.co-card-cost.co-full{color:#ff8a65;font-weight:600}
+.co-card-effects,.co-card-unlocks,.co-card-status{grid-column:1 / span 3;color:#c4c7ca}
+.co-card-unlocks{color:#9aa0a6}
+.co-card-status{display:flex;align-items:center;gap:4px;font-size:11px;text-transform:uppercase;letter-spacing:.04em;margin-top:2px}
+.co-card-glyph{flex:none}
+.co-card-locked{opacity:.6;border-style:dashed}
+.co-card-tooExpensive{border-color:#8a4a3a}
+.co-card-tooExpensive .co-card-status{color:#ff8a65}
+.co-card-running{border-color:#64b5f6}
+.co-card-running .co-card-status{color:#90caf9}
+.co-card-done{border-color:#558b2f}
+.co-card-done .co-card-status{color:#aed581}
+.co-card-available .co-card-status{color:#e6e6e6}
+.co-card-run{display:flex;align-items:center;gap:6px;padding:0 6px 6px}
+.co-card-progress{flex:1;height:6px;background:#2b2f33;border-radius:3px;overflow:hidden}
+.co-card-progress>span{display:block;height:100%;background:#42a5f5}
+.co-card-cancel{font:inherit;font-size:11px;color:inherit;background:#2f353b;border:1px solid #4a5159;border-radius:4px;padding:1px 6px;cursor:pointer}
+.co-card-cancel:hover{background:#3b434b}
 .co-toasts{position:absolute;left:50%;top:104px;transform:translateX(-50%);display:flex;flex-direction:column;gap:4px;margin:0;padding:0;list-style:none;pointer-events:none}
 .co-toasts li{display:flex;gap:2px;pointer-events:auto}
 .co-toast{flex-direction:row;padding:6px 14px;font-weight:600}
