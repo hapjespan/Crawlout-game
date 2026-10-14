@@ -141,6 +141,7 @@ describe('besluiten sprint 3', () => {
       beds: 0,
       hero: full,
       techs: [1],
+      queue: [],
     };
     expect(status.hero?.state).toBe('reviving');
   });

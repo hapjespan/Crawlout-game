@@ -13,6 +13,7 @@ const status: PlayerStatus = {
   popCap: 12,
   beds: 10,
   hero: null,
+  queue: [],
 };
 const unit = (id: number, role: SelectedEntity['role'] = 'scavenger'): SelectedEntity => ({
   id,

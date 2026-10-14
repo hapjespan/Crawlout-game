@@ -44,6 +44,7 @@ let status: PlayerStatus = {
     entityId: 0,
     abilityCooldownTicks: [0, 0],
   },
+  queue: [],
 };
 let heroDead = false;
 const abilities = [

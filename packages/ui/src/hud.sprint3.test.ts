@@ -36,6 +36,7 @@ const status = (hero: HeroStatus | null): PlayerStatus => ({
   popCap: 8,
   beds: 4,
   hero,
+  queue: [],
 });
 const unit = (id: number): SelectedEntity => ({
   id,
