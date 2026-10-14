@@ -193,17 +193,28 @@ export interface PlayerStatus {
    */
   techs?: number[];
   /**
-   * Lopend werk in eigen gebouwen (speltest 14 oktober, voor het gebouwpaneel met kaarten): onderzoek en craft met
-   * voortgang. buildingId is de entity van het gebouw, progressPermille 0..1000. Optioneel tot de sim het levert.
+   * Lopend werk (speltest 14 oktober, voor het gebouwpaneel met kaarten; architect-besluit sectie 16): onderzoek per
+   * gebouw en craft per bewoner, met voortgang. Oplopend op buildingId, dan unitId. Optioneel tot de sim het levert
+   * (balans-branch), daarna verplicht; de HUD toont zonder queue geen voortgang.
    */
   queue?: QueueItem[];
 }
 
+/**
+ * Eén lopend werk. Research loopt in een gebouw (economie: w.research en w.work op het gebouw): buildingId = het lab,
+ * unitId = ENTITY_NONE; Cancel op het gebouw stopt het. Craft loopt op de bewoner die omgeschoold wordt (w.work op de
+ * unit, bij de werkplaats): unitId = die bewoner, buildingId = de werkplaats waar hij staat, ENTITY_NONE zolang hij
+ * onderweg is; Cancel op de unit stopt het (teruggave volgens cancelRefundPct). Twee bewoners die hetzelfde loadout
+ * craften zijn twee items.
+ */
 export interface QueueItem {
   kind: 'research' | 'craft';
-  /** Entity-id van het gebouw waarin het werk loopt. */
+  /** Entity-id van het gebouw waarin het werk loopt (craft onderweg: ENTITY_NONE). */
   buildingId: number;
+  /** Bij craft de bewoner die omgeschoold wordt; bij research ENTITY_NONE. Optioneel tot de sim het levert. */
+  unitId?: number;
   /** techId bij research, loadoutId bij craft. */
   id: number;
+  /** 0..1000; bij craft 0 zolang de bewoner nog onderweg is naar de werkplaats. */
   progressPermille: number;
 }
