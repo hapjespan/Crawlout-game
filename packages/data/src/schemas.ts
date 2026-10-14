@@ -164,6 +164,7 @@ export const MapDef = z
     size: z.object({ w: z.number().int().positive(), h: z.number().int().positive() }).strict(), // cellen van 1 m
     heightmap: z.string(),
     passability: z.string(),
+    props: z.string().optional(), // optioneel, buiten de sim: decoratieve props (data/maps/<id>.props.json), alleen voor de renderer
     scrapNodes: z.array(z.object({ x: z.number().int(), y: z.number().int(), amount: nonneg }).strict()),
     claimPoints: z.array(z.object({ x: z.number().int(), y: z.number().int(), kind: z.enum(['scrap', 'settlement', 'powerArmor']) }).strict()),
     spawns: z.array(z.object({ x: z.number().int(), y: z.number().int() }).strict()),

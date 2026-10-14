@@ -6,6 +6,7 @@
   },
   "heightmap": "maps/rustbelt.heightmap.json",
   "passability": "maps/rustbelt.passability.json",
+  "props": "maps/rustbelt.props.json",
   "scrapNodes": [
     {
       "x": 28,
