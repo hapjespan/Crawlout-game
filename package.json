@@ -14,6 +14,7 @@
     "replay": "pnpm --filter @crawlout/replay run replay",
     "bench": "pnpm --filter @crawlout/sim run bench",
     "assets": "pnpm --filter @crawlout/asset-cli run build-assets",
+    "assets:local": "pnpm --filter @crawlout/asset-cli run build-assets --local",
     "format": "prettier --write ."
   },
   "devDependencies": {

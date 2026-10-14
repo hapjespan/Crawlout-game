@@ -275,6 +275,24 @@ describe('UnitAssetRegistry', () => {
     expect(units.rigCount).toBe(2);
   });
 
+  it('binds an asset to typeIds without a loadout (the hero) through config.bind', async () => {
+    const { loader } = await fakeDist();
+    const units = layer();
+    const registry = new UnitAssetRegistry(units, loader, {
+      config: { manifestUrl: MANIFEST_URL, bind: { [FIXTURE_ID]: [1000, 1002] } },
+      maxTextureSize: 4096,
+    });
+    await registry.start();
+    expect(units.rigName(units.rigFor(1000))).toBe(FIXTURE_ID);
+    expect(units.rigName(units.rigFor(1002))).toBe(FIXTURE_ID);
+    expect(units.rigFor(1001)).toBe(PLACEHOLDER_RIG); // not bound, no default
+    expect(units.rigFor(1)).toBe(PLACEHOLDER_RIG);
+    await registry.setLoadouts(loadouts); // the loadout body reuses the rig, the binding stays
+    expect(units.rigCount).toBe(2);
+    expect(units.rigName(units.rigFor(1000))).toBe(FIXTURE_ID);
+    expect(registry.statuses()[0]!.typeIds).toEqual([1000, 1002, 1]);
+  });
+
   it('keeps the placeholder when loading fails and reports why', async () => {
     const { loader } = await fakeDist({ anim: new ArrayBuffer(32) });
     const units = layer();

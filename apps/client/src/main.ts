@@ -68,7 +68,7 @@ async function main(): Promise<void> {
   const map = loadClientMap(SLICE_MAP);
   const params = new URLSearchParams(location.search);
   const perf = document.getElementById('perf') ?? true;
-  const assets = assetConfig(params);
+  const assets = assetConfig(params, data.heroes);
   const renderer = await createRenderer({
     canvas,
     forceWebGL: params.has('webgl'),

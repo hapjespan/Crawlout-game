@@ -18,6 +18,11 @@ export interface UnitAssetConfig {
   defaultUnit?: string;
   /** Where the team mask comes from (gltfUnitGeometry.ts). Default 'materialName'. */
   teamMask?: TeamMaskSource;
+  /**
+   * Extra bindings of asset id to unit typeIds, for units without a loadout body slot (the hero: 1000 + heroId). Loaded
+   * at start; a binding wins over the default rig, like a loadout body.
+   */
+  bind?: Readonly<Record<string, readonly number[]>>;
 }
 
 export interface UnitAssetOptions {
@@ -66,10 +71,22 @@ export class UnitAssetRegistry {
     },
   ) {}
 
-  /** Loads the configured default unit, if any. */
+  /** Loads the configured default unit and the configured bindings, if any. */
   async start(): Promise<void> {
     const c = this.opts.config;
-    if (c?.defaultUnit) await this.load(c.manifestUrl, c.defaultUnit, { asDefault: true });
+    const loads: Promise<unknown>[] = [];
+    if (c?.defaultUnit) loads.push(this.load(c.manifestUrl, c.defaultUnit, { asDefault: true }));
+    for (const assetId of Object.keys(c?.bind ?? {}))
+      if (assetId !== c?.defaultUnit) loads.push(this.load(c!.manifestUrl, assetId));
+    await Promise.all(loads);
+  }
+
+  /** typeIds drawn with `assetId`: from the loadouts plus the configured bindings. */
+  private typesOf(assetId: string): number[] {
+    return [
+      ...(this.typesByAsset.get(assetId) ?? []),
+      ...(this.opts.config?.bind?.[assetId] ?? []),
+    ];
   }
 
   /**
@@ -176,7 +193,7 @@ export class UnitAssetRegistry {
     const { status, rig } = entry;
     return rig.then((index) => {
       if (index !== null && !this.disposed) {
-        this.assign(status, this.typesByAsset.get(assetId) ?? [], index);
+        this.assign(status, this.typesOf(assetId), index);
         if (opts.asDefault) this.layer.setDefaultRig(index);
       }
       return status;

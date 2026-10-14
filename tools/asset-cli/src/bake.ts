@@ -4,6 +4,7 @@
 import type { Animation, Document, Node } from '@gltf-transform/core';
 import { ANIM_NAMES, type AnimName } from '@crawlout/protocol';
 import type { BakedAnimation, BakedClip } from './manifest.js';
+import { compose, multiply, slerp, type Mat, type Pose } from './math.js';
 
 export const BAKE_FPS = 30;
 /** Clips die niet loopen: de laatste pose op p = 1 wordt meegenomen. */
@@ -23,66 +24,7 @@ export interface BakeResult {
   data: Uint8Array;
 }
 
-type Mat = Float64Array; // 16, column-major
-interface Pose {
-  t: [number, number, number];
-  r: [number, number, number, number];
-  s: [number, number, number];
-}
-
-function compose({ t, r, s }: Pose): Mat {
-  const [x, y, z, w] = r;
-  const m = new Float64Array(16);
-  m[0] = (1 - 2 * (y * y + z * z)) * s[0];
-  m[1] = 2 * (x * y + z * w) * s[0];
-  m[2] = 2 * (x * z - y * w) * s[0];
-  m[4] = 2 * (x * y - z * w) * s[1];
-  m[5] = (1 - 2 * (x * x + z * z)) * s[1];
-  m[6] = 2 * (y * z + x * w) * s[1];
-  m[8] = 2 * (x * z + y * w) * s[2];
-  m[9] = 2 * (y * z - x * w) * s[2];
-  m[10] = (1 - 2 * (x * x + y * y)) * s[2];
-  m[12] = t[0];
-  m[13] = t[1];
-  m[14] = t[2];
-  m[15] = 1;
-  return m;
-}
-
-function multiply(a: ArrayLike<number>, b: ArrayLike<number>): Mat {
-  const out = new Float64Array(16);
-  for (let c = 0; c < 4; c++) {
-    for (let r = 0; r < 4; r++) {
-      let sum = 0;
-      for (let k = 0; k < 4; k++) sum += a[k * 4 + r]! * b[c * 4 + k]!;
-      out[c * 4 + r] = sum;
-    }
-  }
-  return out;
-}
-
-function slerp(
-  a: readonly number[],
-  b: readonly number[],
-  f: number,
-): [number, number, number, number] {
-  let dot = a[0]! * b[0]! + a[1]! * b[1]! + a[2]! * b[2]! + a[3]! * b[3]!;
-  const sign = dot < 0 ? -1 : 1;
-  dot *= sign;
-  let k0 = 1 - f;
-  let k1 = f * sign;
-  if (dot < 0.9995) {
-    const theta = Math.acos(dot);
-    const sin = Math.sin(theta);
-    k0 = Math.sin((1 - f) * theta) / sin;
-    k1 = (Math.sin(f * theta) / sin) * sign;
-  }
-  const q = [0, 1, 2, 3].map((i) => k0 * a[i]! + k1 * b[i]!);
-  const len = Math.hypot(q[0]!, q[1]!, q[2]!, q[3]!) || 1;
-  return [q[0]! / len, q[1]! / len, q[2]! / len, q[3]! / len];
-}
-
-interface Track {
+export interface Track {
   node: Node;
   path: 'translation' | 'rotation' | 'scale';
   times: Float32Array | number[];
@@ -90,7 +32,7 @@ interface Track {
   interpolation: 'LINEAR' | 'STEP' | 'CUBICSPLINE';
 }
 
-function readTracks(animation: Animation): Track[] {
+export function readTracks(animation: Animation): Track[] {
   const tracks: Track[] = [];
   for (const channel of animation.listChannels()) {
     const node = channel.getTargetNode();
@@ -117,7 +59,7 @@ function readTracks(animation: Animation): Track[] {
   return tracks;
 }
 
-function sampleTrack(track: Track, time: number): number[] {
+export function sampleTrack(track: Track, time: number): number[] {
   const { times, values, interpolation, path } = track;
   const stride = interpolation === 'CUBICSPLINE' ? 3 : 1;
   const value = (i: number): number[] => values[i * stride + (stride === 3 ? 1 : 0)]!;

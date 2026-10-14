@@ -50,6 +50,7 @@ function remapInfluences(
 export function pruneBones(
   document: Document,
   mapping: Readonly<Record<string, string>>,
+  merge: Readonly<Record<string, string>> = {},
 ): PruneResult {
   const root = document.getRoot();
   const skins = root.listSkins();
@@ -77,7 +78,19 @@ export function pruneBones(
   let next = 0;
   keep.forEach((k, i) => (newIndex[i] = k ? next++ : -1));
   const target = new Int32Array(joints.length);
+  const mergeInto = new Map(
+    Object.entries(merge).map(([source, into]) => [source.toLowerCase(), into]),
+  );
   joints.forEach((joint, i) => {
+    const into = keep[i] ? undefined : mergeInto.get(joint.getName().toLowerCase());
+    if (into !== undefined) {
+      const hit = joints.findIndex(
+        (j, k) => keep[k] && lookup.get(j.getName().toLowerCase()) === into,
+      );
+      if (hit < 0) throw new Error(`merge: doelbone "${into}" staat niet in de bones van de rig`);
+      target[i] = newIndex[hit]!;
+      return;
+    }
     let node: Node | null = joint;
     let hit = -1;
     while (node) {
