@@ -65,7 +65,7 @@ async function main(): Promise<void> {
   const data = loadClientGameData();
   const footprint = (typeId: number) =>
     data.buildings[typeId - buildingTypeId(0)]?.footprint ?? null;
-  const assets = assetConfig(params);
+  const assets = assetConfig(params, data.heroes);
 
   const renderer = await createRenderer({
     canvas,
