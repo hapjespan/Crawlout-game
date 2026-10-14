@@ -9,3 +9,7 @@ coverage/
 .claude/agent-memory-local/
 .claude/settings.local.json
 .claude/worktrees/
+
+# Local-only assets (fan art outside the own IP); never committed
+assets/local/
+assets/dist-local/
