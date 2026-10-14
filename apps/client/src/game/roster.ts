@@ -6,7 +6,7 @@ import type { RosterGroup, RosterUnit, UnitActivity } from '@crawlout/ui';
 import type { EntityRow } from './snapshot.js';
 
 /** Display names per loadout key; loadouts.json has no name field yet, so unknown keys show as-is. */
-const LOADOUT_NAMES: Record<string, string> = {
+export const LOADOUT_NAMES: Record<string, string> = {
   scavenger: 'Plunderaar',
   bouwer: 'Bouwer',
   militie: 'Militie',

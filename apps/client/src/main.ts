@@ -27,6 +27,7 @@ import { assetConfig } from './game/assets.js';
 import { loadClientGameData, loadClientMap } from './game/content.js';
 import { startSession } from './game/session.js';
 import { createStatusOverlay } from './net/statusOverlay.js';
+import { buildingCards } from './game/cards.js';
 import { buildRoster } from './game/roster.js';
 import { EVENT_TYPE, readSnapshot, type EntityRow } from './game/snapshot.js';
 
@@ -100,7 +101,6 @@ async function main(): Promise<void> {
   };
   /** Tech ids this player has researched (PlayerStatus.techs); prerequisites gate buildings, loadouts and techs. */
   const unlocked = (prereq: readonly number[]): boolean => prereq.every((t) => status?.techs?.includes(t) ?? false);
-  const heroAlive = (): boolean => status?.hero?.state === 'alive';
   const hqProvidesIdx = PROVIDES.indexOf('hq');
   const myHq = (): EntityRow | undefined =>
     [...entities.values()].find((e) => e.owner === session.playerId && buildingOf(e.typeId)?.provides.includes(hqProvidesIdx));
@@ -297,35 +297,28 @@ async function main(): Promise<void> {
       const hq = myHq();
       if (hq) session.sendCommand('Recruit', { buildingId: hq.id });
     },
-    getResearchOptions: (buildingIds) =>
-      data.tech
-        .filter(
-          (t) =>
-            t.factionId === myFaction()?.id &&
-            buildingIds.includes(t.buildingId) &&
-            !(status?.techs?.includes(t.id) ?? false) &&
-            unlocked(t.prereqTech),
-        )
-        .map((t) => ({ techId: t.id, naam: t.key, scrapCost: t.scrapCost, affordable: (status?.scrap ?? 0) >= t.scrapCost })),
-    getRecruitOptions: (buildingIds) => {
-      const hero = myHero();
-      const hq = myHq();
-      const hqData = hq ? buildingOf(hq.typeId) : undefined;
-      if (!hero || !hq || !hqData || !buildingIds.includes(hqData.id) || heroAlive()) return [];
-      return [{ buildingId: hq.id, naam: `Oplappen: ${hero.naam}`, scrapCost: hero.reviveScrap, affordable: (status?.scrap ?? 0) >= hero.reviveScrap }];
+    getBuildingCards: () =>
+      buildingCards({
+        data,
+        factionId: myFaction()?.id,
+        playerId: session.playerId,
+        status,
+        selected: mine(selection).map((id) => entities.get(id)!),
+        own: [...entities.values()].filter((e) => e.owner === session.playerId),
+        heroDead: status?.hero?.state === 'dead' || status?.hero?.state === 'reviving',
+      }),
+    startCard: (card) => {
+      if (card.kind === 'research') session.sendCommand('Research', { techId: card.id });
+      else if (card.kind === 'revive') session.sendCommand('Recruit', { buildingId: card.id });
+      else {
+        const settlers = mine(selection).filter((id) => loadoutOf(entities.get(id)!.typeId));
+        if (settlers.length > 0) sendChunked('Craft', settlers, { loadoutId: card.id });
+      }
     },
-    getCraftOptions: () =>
-      data.loadouts
-        .filter((l) => l.factionId === myFaction()?.id && unlocked(l.prereqTech))
-        .map((l) => ({ loadoutId: l.id, naam: l.key, scrapCost: l.scrapCost, affordable: (status?.scrap ?? 0) >= l.scrapCost })),
-    getPerkOptions: () => {
-      const h = status?.hero;
-      const hero = h?.heroId === undefined ? undefined : data.heroes[h.heroId];
-      if (!h || !hero) return [];
-      return hero.perkPool
-        .map((id) => data.perks[id]!)
-        .filter((p) => (h.special[p.requires.stat] ?? 0) >= p.requires.min)
-        .map((p) => ({ perkId: p.id, naam: p.naam, beschrijving: p.flavourText }));
+    cancelCard: (card) => {
+      // Cancel on the building stops its research or revive (sim: Cancel on an own building).
+      const building = card.kind === 'revive' ? card.id : status?.queue?.find((q) => q.kind === card.kind && q.id === card.id)?.buildingId;
+      if (building !== undefined) session.sendCommand('Cancel', { ids: [building] });
     },
     getRoster: () => buildRoster(data, myFaction()?.id, session.playerId, entities.values()),
     selectUnits: (ids, add) => {
