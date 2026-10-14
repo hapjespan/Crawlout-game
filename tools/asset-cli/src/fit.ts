@@ -3,7 +3,7 @@
 // opnieuw gebonden, gedraaid, naar een doelhoogte geschaald en met de voeten op y = 0 gezet. Daarna zijn alle
 // transformaties toegepast: de mesh-nodes staan op de identiteit onder de scene, joint-wereldmatrices zijn star (geen
 // schaal), inverse-bindmatrices zijn de inverse van de rustpose en rustpose = bindpose (wat render verwacht).
-import type { Accessor, Document, Node } from '@gltf-transform/core';
+import type { Accessor, Document, Node, Primitive } from '@gltf-transform/core';
 import { prune } from '@gltf-transform/functions';
 import {
   compose,
@@ -249,7 +249,7 @@ export function mergeSkinnedPrimitives(document: Document): number {
   if (!skin || nodes.some((n) => n.getSkin() !== skin)) return 0;
   const semantics = ['POSITION', 'NORMAL', 'TEXCOORD_0', 'JOINTS_0', 'WEIGHTS_0'] as const;
   const size = { POSITION: 3, NORMAL: 3, TEXCOORD_0: 2, JOINTS_0: 4, WEIGHTS_0: 4 } as const;
-  const groups = new Map<unknown, { prims: import('@gltf-transform/core').Primitive[] }>();
+  const groups = new Map<unknown, { prims: Primitive[] }>();
   for (const node of nodes)
     for (const prim of node.getMesh()!.listPrimitives()) {
       if (prim.getMode() !== 4) continue;
@@ -274,7 +274,7 @@ export function mergeSkinnedPrimitives(document: Document): number {
         const el = new Array<number>(size[s]).fill(0);
         for (let i = 0; i < count; i++) {
           if (accessor) accessor.getElement(i, el);
-          else el.fill(s === 'NORMAL' ? 0 : 0);
+          else el.fill(0);
           data[s].push(...el);
         }
       }

@@ -138,7 +138,14 @@ export function retargetClips(
 
   const sourceRest = worldMatrices(new Map());
   const targetRest = worldMatrices(new Map());
-  const restRot = (m: Mat): Quat => rotationOf(m).q;
+  const rotationOfMatrix = (m: Mat): Quat => rotationOf(m).q;
+  // Rustrotaties in de wereld liggen vast; één keer berekenen in plaats van per frame.
+  const sourceRestInverse = new Map(
+    [...sourceOf.values()].map((src) => [src, quatInvert(rotationOfMatrix(sourceRest(src)))]),
+  );
+  const targetRestRotation = new Map(
+    targetJoints.map((joint) => [joint, rotationOfMatrix(targetRest(joint))]),
+  );
 
   // Rustpose-uitlijning per doelbone.
   const jointParent = (j: Node): Node | null => {
@@ -219,10 +226,10 @@ export function retargetClips(
           worldRot.set(joint, quatMultiply(parentQ, joint.getRotation()));
           continue;
         }
-        const delta = quatMultiply(restRot(sourceNow(src)), quatInvert(restRot(sourceRest(src))));
+        const delta = quatMultiply(rotationOfMatrix(sourceNow(src)), sourceRestInverse.get(src)!);
         const world = quatMultiply(
           quatMultiply(delta, align.get(joint)!),
-          restRot(targetRest(joint)),
+          targetRestRotation.get(joint)!,
         );
         worldRot.set(joint, world);
         let local = quatMultiply(quatInvert(parentQ), world);
