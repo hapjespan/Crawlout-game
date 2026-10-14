@@ -7,11 +7,14 @@ import {
   PCFShadowMap,
   PerspectiveCamera,
   Plane,
+  SRGBColorSpace,
   Raycaster,
   Scene,
+  TextureLoader,
   Vector2,
   Vector3,
   WebGPURenderer,
+  type Texture,
 } from 'three/webgpu';
 import { uniform } from 'three/tsl';
 import { RtsCameraController, type RtsCameraOptions } from './camera/rtsCamera.js';
@@ -49,10 +52,23 @@ import {
   type ResolvedSource,
 } from './props/propAssets.js';
 import { PropLayer, type RenderProp } from './props/propLayer.js';
+import {
+  buildingMeshes,
+  loadBuildingAssets,
+  type BuildingAssetStatus,
+  type BuildingVisual,
+} from './structures/buildingAssets.js';
 import { createPropMaterial } from './structures/propMaterial.js';
+import { DEFAULT_LAYER_SIZE } from './structures/textureArray.js';
 import { StructureLayer } from './structures/structureLayer.js';
 import { createGridTerrain, type TerrainGeometry } from './terrain/heightField.js';
 import { TerrainLayer } from './terrain/terrainLayer.js';
+import type { TerrainDetailOptions } from './terrain/terrainRefine.js';
+import {
+  loadTerrainTextures,
+  type TerrainTextureOptions,
+  type TerrainTextureStatus,
+} from './terrain/terrainTextures.js';
 import { bakeAnimations } from './units/bake.js';
 import { resolveManifestPath, UnitAssetLoader, createGltfIO } from './units/unitAssetLoader.js';
 import {
@@ -91,6 +107,18 @@ export interface CreateRendererOptions {
    * or when loading fails, units keep the procedural placeholder rig.
    */
   assets?: UnitAssetConfig;
+  /**
+   * Detail texture and tints of the terrain material: terrain.json of the asset-cli (assets/dist/terrain), or explicit
+   * values. Without it the terrain uses the Rock Terrain 4 tints and no texture. setTerrainTextures() changes it later.
+   */
+  terrainTextures?: TerrainTextureOptions;
+  /** Render-only refinement of the terrain mesh (terrain/terrainRefine.ts). Default { subdivide: 2, baseStep: 1 }. */
+  terrainDetail?: TerrainDetailOptions;
+  /**
+   * Building assets (kind 'building') from the `assets` manifest for the building types whose visuals.mesh it has,
+   * loaded by setGameData. Default true; false keeps the placeholder blocks.
+   */
+  buildingAssets?: boolean;
 }
 
 export interface PickResult {
@@ -117,8 +145,16 @@ export interface CrawloutRenderer {
   readonly cameraControls: RtsCameraController;
   /** Hands over one snapshot buffer (contract 1). The renderer keeps a reference: do not reuse the buffer. */
   pushSnapshot(buf: ArrayBuffer): void;
-  /** Replaces the terrain. Arrays are kept, not copied. */
+  /**
+   * Replaces the terrain. The mesh is resampled into a smooth grid for drawing (terrainDetail); height lookups use
+   * that surface. The given arrays are not modified.
+   */
   setTerrain(geometry: TerrainGeometry): void;
+  /**
+   * Detail texture and tints of the terrain material (terrain.json or explicit values). Resolves with the status once
+   * the texture is loaded; never rejects (on failure the tints that could be read still apply).
+   */
+  setTerrainTextures(textures: TerrainTextureOptions): Promise<TerrainTextureStatus>;
   /**
    * Game data for visuals: building footprints by typeId, the radius and duration of hero ability zones (event
    * abilityZone), and (with `assets`) the body asset per loadout.
@@ -138,6 +174,11 @@ export interface CrawloutRenderer {
   ): Promise<UnitAssetStatus>;
   /** Status of every unit asset requested so far. */
   unitAssets(): UnitAssetStatus[];
+  /**
+   * Status of the building assets of the last setGameData (one per visuals.mesh in buildings.json): loading, ready
+   * (drawn with the asset) or failed (placeholder, with the reason). Empty without a manifest.
+   */
+  buildingAssets(): BuildingAssetStatus[];
   /**
    * Decorative props (the map's props file; PropInstance of @crawlout/map fits RenderProp). Each asset id comes from
    * the manifest (kind 'prop', three LODs), else from `source.sourceUrl` (a source GLB), else a placeholder per kind,
@@ -175,6 +216,8 @@ const HEIGHT_TEXTURE_EDGE = 512;
 const PARTICLES_PER_POOL = 4096;
 /** How far prop art is pulled towards the warm wasteland grey (structures/propMaterial.ts grade). */
 const PROP_GRADE = 0.22;
+/** The same for building assets: lighter, their tints per building type should stay readable. */
+const BUILDING_GRADE = 0.12;
 const PREVIEW_VALID: DecalStyle = {
   shape: DECAL_SHAPE.rect,
   shadow: 0,
@@ -219,7 +262,42 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
   const clock = (now: number): number => (now - clockStart) / 1000;
 
   const sun = shadowsOn ? new SunShadow(scene, DEFAULT_LIGHT_DIR) : null;
-  const terrain = new TerrainLayer(scene, DEFAULT_LIGHT_DIR, { shadow: sun?.factor, precision });
+  const terrain = new TerrainLayer(scene, DEFAULT_LIGHT_DIR, {
+    shadow: sun?.factor,
+    precision,
+    ...(opts.terrainDetail ? { detail: opts.terrainDetail } : {}),
+  });
+  let terrainTexture: Texture | null = null;
+  let terrainGeneration = 0;
+  const setTerrainTextures = async (
+    textures: TerrainTextureOptions,
+  ): Promise<TerrainTextureStatus> => {
+    const generation = ++terrainGeneration;
+    const { texture, status } = await loadTerrainTextures(textures, {
+      fetchText: async (url) => {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.text();
+      },
+      loadTexture: async (url) => {
+        const t = await new TextureLoader().loadAsync(url);
+        t.colorSpace = SRGBColorSpace;
+        t.anisotropy = 8;
+        return t;
+      },
+    });
+    if (generation !== terrainGeneration) {
+      texture?.dispose();
+      return status;
+    }
+    terrain.setTints(status.rockTint, status.groundTint);
+    terrain.setAlbedo(texture);
+    terrainTexture?.dispose();
+    terrainTexture = texture;
+    if (status.state === 'failed') console.warn(`[render] terrain textures: ${status.reason}`);
+    return status;
+  };
+  if (opts.terrainTextures) void setTerrainTextures(opts.terrainTextures);
   const decals = new DecalLayer(scene, capacity + 64);
   const units = new UnitLayer(scene, { capacity, lightDir: DEFAULT_LIGHT_DIR, precision, anims });
   const assetConfig = opts.assets;
@@ -267,6 +345,68 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
     fetchBytes: (url) => gltfIO.fetchBytes(url),
     parseGltf: (bytes, url) => gltfIO.parseGltf(bytes, url),
   });
+  let buildingStatuses: BuildingAssetStatus[] = [];
+  let buildingGeneration = 0;
+  const loadBuildings = async (buildings: Parameters<typeof buildingMeshes>[0]): Promise<void> => {
+    const generation = ++buildingGeneration;
+    const manifestUrl = assetConfig?.manifestUrl;
+    if (!manifestUrl || opts.buildingAssets === false) {
+      buildingStatuses = [];
+      structures.setBuildingAssets(new Map(), null);
+      return;
+    }
+    const meshes = buildingMeshes(buildings);
+    buildingStatuses = [...new Set(meshes.values())].map((assetId) => ({
+      assetId,
+      buildingIds: [...meshes].filter(([, a]) => a === assetId).map(([id]) => id),
+      state: 'loading',
+    }));
+    const set = await loadBuildingAssets(
+      {
+        manifest: (url) => loader.manifest(url),
+        fetchBytes: (url) => gltfIO.fetchBytes(url),
+        parseGltf: (bytes, url) => gltfIO.parseGltf(bytes, url),
+      },
+      manifestUrl,
+      resolveAssetPath,
+      meshes,
+      { maxLayerSize: Math.min(DEFAULT_LAYER_SIZE, caps.maxTextureSize) },
+    );
+    const disposeSet = (): void => {
+      for (const v of set.visuals.values()) for (const g of new Set(v.lods)) g.dispose();
+    };
+    if (generation !== buildingGeneration) {
+      disposeSet();
+      set.layers?.dispose();
+      return;
+    }
+    buildingStatuses = set.statuses;
+    for (const st of set.statuses)
+      if (st.state === 'failed' && st.reason !== 'not in the manifest')
+        console.warn(`[render] building "${st.assetId}": ${st.reason}`);
+    const byBuilding = new Map<number, BuildingVisual>();
+    for (const [buildingId, assetId] of meshes) {
+      const v = set.visuals.get(assetId);
+      if (v) byBuilding.set(buildingId, v);
+    }
+    buildingLayers?.dispose();
+    buildingLayers = set.layers;
+    structures.setBuildingAssets(
+      byBuilding,
+      byBuilding.size === 0
+        ? null
+        : createPropMaterial({
+            lightDir: DEFAULT_LIGHT_DIR,
+            name: 'crawlout-building-asset-toon',
+            shadow: sun?.factor,
+            layers: set.layers,
+            reveal: true,
+            grade: BUILDING_GRADE,
+          }),
+    );
+    disposeSet(); // the structure layer drew its own copies
+  };
+  let buildingLayers: { dispose(): void } | null = null;
   let propStatuses = new Map<string, PropAssetStatus>();
   let propGeneration = 0;
   const additive = new ParticlePool(scene, PARTICLES_PER_POOL, time, true);
@@ -311,6 +451,7 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
     },
     heightAt: (x, z) => terrain.heightAt(x, z),
     footprint: (typeId) => footprints.get(typeId),
+    buildingTop: (typeId) => structures.buildingTop(typeId),
     ability: (heroId, abilityId) => abilities?.(heroId, abilityId) ?? null,
   };
 
@@ -391,14 +532,18 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
         effects.handle(ev.type[k]!, ev.a[k]!, ev.b[k]!, ev.x[k]!, ev.y[k]!, t0, effectContext);
     },
     setTerrain,
+    setTerrainTextures,
     setGameData(data) {
       footprints.setLookup(footprintsFromGameData(data));
       abilities = data.heroes ? abilitiesFromGameData({ heroes: data.heroes }) : null;
       if (data.loadouts) void unitAssets.setLoadouts(data.loadouts);
+      void loadBuildings(data.buildings);
     },
     loadUnitAsset: (manifestUrl, assetId, assetOpts) =>
       unitAssets.load(manifestUrl, assetId, assetOpts),
     unitAssets: () => unitAssets.statuses(),
+    buildingAssets: () =>
+      buildingStatuses.map((st) => ({ ...st, buildingIds: [...st.buildingIds] })),
     async setProps(list, source = {}) {
       const generation = ++propGeneration;
       props.setProps(list);
@@ -502,14 +647,18 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
       unitAssets.dispose();
       overlay?.dispose();
       units.dispose();
+      buildingGeneration++;
       structures.dispose();
+      buildingLayers?.dispose();
       props.dispose();
       propRegistry.dispose();
       decals.dispose();
       additive.dispose();
       smoke.dispose();
       sun?.dispose();
+      terrainGeneration++;
       terrain.dispose();
+      terrainTexture?.dispose();
       interp.clear();
       zones.clear();
       gpu.dispose();

@@ -80,6 +80,22 @@ describe('EffectSpawner', () => {
     expect(tracer.z + tracer.vz * tracer.life).toBeCloseTo(20, 0);
   });
 
+  it('fires a turret from the top of its drawn asset when the context knows it', () => {
+    const add = new Collect();
+    new EffectSpawner(add, new Collect(), seeded()).handle(
+      EVENT_TYPE.shotFired,
+      3,
+      2,
+      30 * M,
+      30 * M,
+      0,
+      { ...ctx, buildingTop: () => 2.07 },
+    );
+    const flash = add.items[0]!;
+    expect(flash.y).toBeGreaterThan(2 + 2.07);
+    expect(flash.y).toBeLessThan(2 + 2.07 + 0.5);
+  });
+
   it('fires a turret from its roof, with the tracer coming down onto the target', () => {
     const add = new Collect();
     new EffectSpawner(add, new Collect(), seeded()).handle(

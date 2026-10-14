@@ -37,6 +37,11 @@ export interface EffectContext {
   footprint(typeId: number): Footprint;
   /** Zone radius and duration for (heroId, abilityId) from GameData; null or absent: no zone is drawn. */
   ability?(heroId: number, abilityId: number): AbilityShape | null;
+  /**
+   * Top of the drawn building above its ground, meters (a building asset's bounds); absent: the placeholder's roof
+   * ridge (buildingRoofHeight). A turret fires from there.
+   */
+  buildingTop?(typeId: number): number;
 }
 
 const INV_UNITS = 1 / UNITS_PER_METER;
@@ -111,7 +116,8 @@ export class EffectSpawner {
         let forward: number;
         if (fromBuilding) {
           const f = ctx.footprint(this.e1.typeId);
-          my = groundUnder(ctx, x, z, f) + buildingRoofHeight(f) + ROOF_MUZZLE_LIFT;
+          const top = ctx.buildingTop ? ctx.buildingTop(this.e1.typeId) : buildingRoofHeight(f);
+          my = groundUnder(ctx, x, z, f) + top + ROOF_MUZZLE_LIFT;
           forward = ROOF_MUZZLE_FORWARD;
         } else {
           my = ctx.heightAt(x, z) + MUZZLE_HEIGHT;
