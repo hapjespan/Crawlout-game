@@ -2,9 +2,16 @@
 export const BUDGETS = {
   /** Maximum aantal driehoeken per LOD voor karakters (brief: 3000-4000, 1200-1500, 400-600). */
   characterMaxTris: [4000, 1500, 600] as const,
-  /** Props: LOD0 hetzelfde plafond; LOD1/2 als aandeel van LOD0. */
-  propMaxTris0: 4000,
-  propLodRatios: [1, 0.4, 0.15] as const,
+  /** Ondergrens per LOD voor karakters (brief). Alleen afgedwongen als de buis zelf heeft gereduceerd: een bron mag lichter zijn dan de band. */
+  characterMinTris: [3000, 1200, 400] as const,
+  /** Doel voor LOD1 en LOD2 van karakters: het midden van de band, zodat simplify aan beide kanten marge heeft. */
+  characterLodTargets: [3600, 1350, 500] as const,
+  /**
+   * Props mogen lagere budgetten hebben dan karakters: de brief stelt alleen eisen aan karakters, en de Gobkit-props
+   * zijn 3 tot 52 driehoeken. Absolute plafonds per LOD (geen aandeel van LOD0); een prop onder het plafond blijft
+   * ongewijzigd, dus LOD1 en LOD2 zijn dan dezelfde geometrie als LOD0.
+   */
+  propMaxTris: [2000, 800, 300] as const,
   maxBones: 28,
   maxTextureSize: 2048,
   characterHeight: 1.8,
