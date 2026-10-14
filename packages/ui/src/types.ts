@@ -96,6 +96,42 @@ export interface PerkOption {
   beschrijving?: string;
 }
 
+/** Soort kaart in het gebouwpaneel. `revive` is het oplappen van de held (Recruit in het protocol). */
+export type CardKind = 'research' | 'craft' | 'revive';
+/**
+ * Status van een kaart. De client bepaalt die uit data, voorraad en PlayerStatus.queue:
+ * - available: te starten; tooExpensive: genoeg slots maar te weinig scrap; locked: er ontbreekt een vereiste;
+ * - running: loopt nu (progressPct hoort erbij); done: klaar (eenmalig onderzoek).
+ */
+export type CardState = 'available' | 'tooExpensive' | 'locked' | 'running' | 'done';
+/** Bekende icoonnamen; een onbekende naam valt terug op een neutraal symbool. */
+export const CARD_ICON_IDS = ['research', 'craft', 'revive', 'shield', 'blade', 'gun', 'tower', 'patrol', 'wrench', 'heart', 'crate', 'bolt', 'gear'] as const;
+export type CardIconId = (typeof CARD_ICON_IDS)[number];
+
+/** Eén kaart in het gebouwpaneel: een onderzoek, een craft of het oplappen van de held. Alle teksten zijn kant-en-klaar Nederlands. */
+export interface BuildingCard {
+  kind: CardKind;
+  /** techId bij research, loadoutId bij craft, buildingId (hoofdgebouw) bij revive. Samen met kind uniek binnen het paneel. */
+  id: number;
+  naam: string;
+  /** Een CardIconId; onbekende waarden geven het neutrale symbool. */
+  icon: string;
+  scrapCost: number;
+  /** Duur in seconden; 0 verbergt de duur. */
+  seconds: number;
+  /** Effect in gewone taal, een regel per effect, bijvoorbeeld "+20% schade voor militie". */
+  effects: readonly string[];
+  /** Wat dit ontgrendelt, bijvoorbeeld ["Patrouille", "Turret"]. */
+  unlocks: readonly string[];
+  /** Namen van wat er nog ontbreekt (alleen bij locked), bijvoorbeeld ["Geweerrek"]. */
+  requires: readonly string[];
+  state: CardState;
+  /** 0..100, alleen bij running. */
+  progressPct?: number;
+  /** Sneltoets, een cijfer "1" tot "9" (de client nummert de kaarten in de getoonde volgorde). */
+  hotkey: string;
+}
+
 export type AlertKind = 'attack' | 'settlerLost' | 'claimLost';
 export interface HudAlert {
   kind: AlertKind;
@@ -179,11 +215,24 @@ export interface HudDeps {
   isHeroDead?(): boolean;
   /** Oplappen van de dode held. Er is geen protocol-commando voor; de client regelt dit (zie README). */
   reviveHero?(): void;
-  /** Research-opties voor de geselecteerde gebouwen (buildingIds van de selectie). */
+  // Sprint 4: gebouwpaneel met kaarten.
+  /**
+   * Kaarten voor het gebouwpaneel, voor de huidige selectie: gebouwen (research, oplappen) of bewoners bij een werkplaats (craft).
+   * Leeg of ontbrekend: geen paneel. De HUD kent geen spelregels; status, kosten en teksten komen volledig van de client.
+   * Houd de kaartobjecten stabiel als niets verandert (de HUD leest bij elke refresh).
+   */
+  getBuildingCards?(selection: readonly SelectedEntity[]): readonly BuildingCard[];
+  /** De speler start een kaart (klik of sneltoets). De HUD roept dit alleen aan voor state available; de client stuurt het commando (Research, Craft of Recruit). */
+  startCard?(card: BuildingCard): void;
+  /** De speler annuleert een lopende kaart (state running); de client stuurt Cancel op het gebouw. */
+  cancelCard?(card: BuildingCard): void;
+
+  // Verouderd sinds sprint 4: gebruik getBuildingCards. Zonder getBuildingCards bouwt de HUD er zelf kaarten van (zonder icoon, effecten of duur).
+  /** @deprecated Gebruik getBuildingCards. Research-opties voor de geselecteerde gebouwen (buildingIds van de selectie). */
   getResearchOptions?(buildingIds: readonly number[]): readonly ResearchOption[];
-  /** Recruit-opties voor de geselecteerde gebouwen. */
+  /** @deprecated Gebruik getBuildingCards. Recruit-opties voor de geselecteerde gebouwen. */
   getRecruitOptions?(buildingIds: readonly number[]): readonly RecruitOption[];
-  /** Craft-opties voor de geselecteerde bewoners; leeg of ontbrekend als ze niet bij een werkplaats staan. */
+  /** @deprecated Gebruik getBuildingCards. Craft-opties voor de geselecteerde bewoners; leeg of ontbrekend als ze niet bij een werkplaats staan. */
   getCraftOptions?(): readonly CraftOption[];
   /** Waarschuwingen; geeft de afmelder terug. */
   subscribeAlerts?(cb: (alert: HudAlert) => void): () => void;

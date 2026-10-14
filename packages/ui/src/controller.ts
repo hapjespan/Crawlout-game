@@ -3,6 +3,7 @@ import type { PlayerStatus, Role } from '@crawlout/protocol';
 import { kindOfTypeId } from '@crawlout/data';
 import type {
   BuildOption,
+  BuildingCard,
   CraftOption,
   HeroAbilityOption,
   HudAlert,
@@ -77,8 +78,26 @@ export const ACTIONS: readonly ActionDef[] = [
 /** Sneltoets als label. */
 export const keyLabel = (key: string): string => (key === ' ' ? 'Spatie' : key.toUpperCase());
 
-/** Een regel in het gebouwpaneel: research of rekruteren, genummerd 1..n. */
-export type BuildingEntry = ({ kind: 'research' } & ResearchOption) | ({ kind: 'recruit' } & RecruitOption);
+/** Tekst per kaartstatus; de view toont die naast een symbool, zodat de status nooit alleen via kleur te zien is. */
+export const CARD_STATE_LABEL: Record<BuildingCard['state'], string> = {
+  available: 'Beschikbaar',
+  tooExpensive: 'Te duur',
+  locked: 'Vergrendeld',
+  running: 'Bezig',
+  done: 'Klaar',
+};
+
+/** Kaarten uit de oude deps (getResearchOptions, getRecruitOptions, getCraftOptions): zonder icoon, effecten of duur. */
+function legacyCards(research: readonly ResearchOption[], recruit: readonly RecruitOption[], craft: readonly CraftOption[]): BuildingCard[] {
+  const base = { seconds: 0, effects: [], unlocks: [], requires: [] } as const;
+  const state = (affordable: boolean): BuildingCard['state'] => (affordable ? 'available' : 'tooExpensive');
+  const all: Omit<BuildingCard, 'hotkey'>[] = [
+    ...research.map((o) => ({ ...base, kind: 'research' as const, id: o.techId, naam: o.naam, icon: 'research', scrapCost: o.scrapCost, state: state(o.affordable) })),
+    ...recruit.map((o) => ({ ...base, kind: 'revive' as const, id: o.buildingId, naam: o.naam, icon: 'revive', scrapCost: o.scrapCost, state: state(o.affordable) })),
+    ...craft.map((o) => ({ ...base, kind: 'craft' as const, id: o.loadoutId, naam: o.naam, icon: 'craft', scrapCost: o.scrapCost, state: state(o.affordable) })),
+  ];
+  return all.map((c, i) => ({ ...c, hotkey: String(i + 1) }));
+}
 
 export const ROLE_LABEL: Record<Role, string> = { scavenger: 'Plunderaar', builder: 'Bouwer', militia: 'Militie' };
 const ACTION_ROLE: Partial<Record<ActionId, Role>> = { roleScavenger: 'scavenger', roleBuilder: 'builder', roleMilitia: 'militia' };
@@ -100,9 +119,9 @@ export interface HudState {
   heroDead: boolean;
   /** Ability die op een positie wacht (targeting 'heroAbility'). */
   pendingAbility: HeroAbilityOption | null;
-  researchOptions: readonly ResearchOption[];
-  recruitOptions: readonly RecruitOption[];
-  craftOptions: readonly CraftOption[];
+  /** Kaarten van het gebouwpaneel voor de huidige selectie. */
+  cards: readonly BuildingCard[];
+  /** Bij een selectie met bewoners: K heeft de cijfertoetsen van de craftkaarten geactiveerd. */
   craftMenuOpen: boolean;
   toasts: readonly ToastAlert[];
   lobby: LobbyView | null;
@@ -149,9 +168,7 @@ export class HudController implements HudHandle {
       heroAbilities: [],
       heroDead: false,
       pendingAbility: null,
-      researchOptions: [],
-      recruitOptions: [],
-      craftOptions: [],
+      cards: [],
       craftMenuOpen: false,
       toasts: [],
       lobby: null,
@@ -215,7 +232,7 @@ export class HudController implements HudHandle {
       case 'revive':
         return this.canRevive();
       case 'craft':
-        return this.state.craftOptions.length > 0;
+        return this.hasCraftCards();
       case 'minimap':
         return this.deps.getMinimap !== undefined;
       case 'alert':
@@ -248,33 +265,51 @@ export class HudController implements HudHandle {
     return hero?.heroId !== undefined && !this.state.heroDead && a.cooldownPct <= 0;
   }
 
-  /** Research gevolgd door rekruteren: de genummerde regels van het gebouwpaneel. */
-  buildingEntries(): BuildingEntry[] {
-    return [
-      ...this.state.researchOptions.map((o) => ({ kind: 'research' as const, ...o })),
-      ...this.state.recruitOptions.map((o) => ({ kind: 'recruit' as const, ...o })),
-    ];
+  /** Alleen gebouwen geselecteerd (en er is een selectie). */
+  private buildingsOnly(): boolean {
+    return this.state.selection.length > 0 && this.state.selection.every((s) => kindOfTypeId(s.typeId).kind === 'building');
   }
 
-  /** Cijfers 1..n gaan naar het gebouwpaneel zodra alleen gebouwen geselecteerd zijn. */
-  buildingPanelActive(): boolean {
-    return this.state.selection.length > 0 && this.state.selection.every((s) => kindOfTypeId(s.typeId).kind === 'building') && this.buildingEntries().length > 0;
+  hasCraftCardsForKeys(): boolean {
+    return this.hasCraftCards();
   }
 
-  chooseBuildingEntry(index: number): boolean {
-    const e = this.buildingEntries()[index];
-    if (!e || !e.affordable) return false;
-    if (e.kind === 'research') this.deps.sendCommand('Research', { techId: e.techId });
-    else this.deps.sendCommand('Recruit', { buildingId: e.buildingId });
+  /** Kan deze lopende kaart geannuleerd worden (is er een cancelCard-dep)? */
+  canCancelCard(card: BuildingCard): boolean {
+    return card.state === 'running' && this.deps.cancelCard !== undefined;
+  }
+
+  private hasCraftCards(): boolean {
+    return this.state.cards.some((c) => c.kind === 'craft') && this.state.selection.some((s) => kindOfTypeId(s.typeId).kind !== 'building');
+  }
+
+  /** Werken de cijfertoetsen nu voor de kaarten? Bij alleen gebouwen altijd; bij bewoners na K (craft). */
+  cardKeysActive(): boolean {
+    if (this.state.cards.length === 0) return false;
+    return this.buildingsOnly() || (this.state.craftMenuOpen && this.hasCraftCards());
+  }
+
+  /** Mag deze kaart nu starten? Alleen state available, en bij craft moet er een bewoner in de selectie zijn. */
+  canStartCard(card: BuildingCard): boolean {
+    if (card.state !== 'available' || this.state.confirmSurrender) return false;
+    return card.kind !== 'craft' || this.selectedIds(false).length > 0;
+  }
+
+  /** Start een kaart (klik of sneltoets). Geeft false als ze niet start (vergrendeld, te duur, loopt of klaar). */
+  startCard(card: BuildingCard): boolean {
+    if (!this.canStartCard(card)) return false;
+    if (this.deps.startCard) this.deps.startCard(card);
+    else if (card.kind === 'research') this.deps.sendCommand('Research', { techId: card.id });
+    else if (card.kind === 'revive') this.deps.sendCommand('Recruit', { buildingId: card.id });
+    else this.deps.sendCommand('Craft', { ids: this.selectedIds(false), loadoutId: card.id });
+    if (card.kind === 'craft') this.set({ craftMenuOpen: false });
     return true;
   }
 
-  chooseCraft(loadoutId: number): boolean {
-    const o = this.state.craftOptions.find((c) => c.loadoutId === loadoutId);
-    const ids = this.selectedIds(false);
-    if (!o || !o.affordable || ids.length === 0) return false;
-    this.deps.sendCommand('Craft', { ids, loadoutId });
-    this.set({ craftMenuOpen: false });
+  /** Annuleert een lopende kaart. De oude deps hebben geen annuleren; dan blijft de kaart ongemoeid. */
+  cancelCard(card: BuildingCard): boolean {
+    if (card.state !== 'running' || !this.deps.cancelCard) return false;
+    this.deps.cancelCard(card);
     return true;
   }
 
@@ -503,12 +538,11 @@ export class HudController implements HudHandle {
       const option = this.state.buildOptions[Number(key) - 1];
       return option ? this.chooseBuild(option.buildingId) || true : true;
     }
-    if (this.state.craftMenuOpen && /^[1-9]$/.test(key)) {
-      const option = this.state.craftOptions[Number(key) - 1];
-      return option ? this.chooseCraft(option.loadoutId) || true : true;
+    // Kaarten van het gebouwpaneel (alleen gebouwen, of bewoners na K): cijfers starten de kaart met die sneltoets.
+    if (/^[1-9]$/.test(key) && this.cardKeysActive()) {
+      const card = this.state.cards.find((c) => c.hotkey === key);
+      return card ? this.startCard(card) || true : true;
     }
-    // Gebouwpaneel (alleen gebouwen geselecteerd): cijfers kiezen research of rekruteren.
-    if (/^[1-9]$/.test(key) && this.buildingPanelActive()) return this.chooseBuildingEntry(Number(key) - 1) || true;
     // Perk-keuze bij een level-up: F1, F2, F3 (browser-hulp op F1 wordt onderdrukt).
     const perkIdx = PERK_KEYS.indexOf(key as (typeof PERK_KEYS)[number]);
     if (perkIdx >= 0) {
@@ -609,7 +643,7 @@ export class HudController implements HudHandle {
     const pendingPerks = hero !== null && (hero.pendingPerks ?? 0) > 0;
     const buildingIds = [...new Set(selection.flatMap((s) => (kindOfTypeId(s.typeId).kind === 'building' ? [kindOfTypeId(s.typeId).index] : [])))];
     const units = selection.some((s) => kindOfTypeId(s.typeId).kind !== 'building');
-    const craftOptions = units ? (d.getCraftOptions?.() ?? []) : [];
+    const cards = this.readCards(selection, buildingIds, units);
     const placement = selection.some((s) => s.role === 'builder') ? this.state.placement : null;
     if (this.state.placement && !placement) d.endPlacement?.();
     this.state = {
@@ -622,16 +656,25 @@ export class HudController implements HudHandle {
       perkOptions: pendingPerks ? (d.getPerkOptions?.() ?? []).filter((p) => !hero?.perks.includes(p.perkId)) : [],
       heroAbilities: hero ? (d.getHeroAbilities?.() ?? []) : [],
       heroDead: hero !== null && (d.isHeroDead?.() ?? false),
-      researchOptions: buildingIds.length > 0 ? (d.getResearchOptions?.(buildingIds) ?? []) : [],
-      recruitOptions: buildingIds.length > 0 ? (d.getRecruitOptions?.(buildingIds) ?? []) : [],
-      craftOptions,
-      craftMenuOpen: craftOptions.length > 0 ? this.state.craftMenuOpen : false,
+      cards,
+      craftMenuOpen: cards.some((c) => c.kind === 'craft') && units ? this.state.craftMenuOpen : false,
       lobby: this.state.showLobby ? (d.getLobby?.() ?? null) : null,
       roster: d.getRoster?.() ?? [],
       network: this.deps.getNetwork?.() ?? NO_NETWORK,
       // Targeting zonder selectie heeft geen zin meer.
       targeting: selection.length === 0 && this.state.targeting !== 'heroAbility' ? null : this.state.targeting,
     };
+  }
+
+  /** Kaarten voor de selectie: de nieuwe dep, of (tijdelijk) opgebouwd uit de oude deps. */
+  private readCards(selection: readonly SelectedEntity[], buildingIds: readonly number[], units: boolean): readonly BuildingCard[] {
+    const d = this.deps;
+    if (selection.length === 0) return [];
+    if (d.getBuildingCards) return d.getBuildingCards(selection);
+    const research = buildingIds.length > 0 ? (d.getResearchOptions?.(buildingIds) ?? []) : [];
+    const recruit = buildingIds.length > 0 ? (d.getRecruitOptions?.(buildingIds) ?? []) : [];
+    const craft = units ? (d.getCraftOptions?.() ?? []) : [];
+    return research.length + recruit.length + craft.length > 0 ? legacyCards(research, recruit, craft) : [];
   }
 
   private set(patch: Partial<HudState>): void {

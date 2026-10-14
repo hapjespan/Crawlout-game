@@ -1,6 +1,6 @@
 // Demo van de HUD met mock-deps. Open /hud-demo.html in `pnpm dev`. Niet gekoppeld aan main.ts.
 import { mountHud } from '@crawlout/ui';
-import type { BuildOption, HudAlert, HudDeps, MinimapData, NetworkState, SelectedEntity, TargetingKind } from '@crawlout/ui';
+import type { BuildOption, BuildingCard, HudAlert, HudDeps, MinimapData, NetworkState, SelectedEntity, TargetingKind } from '@crawlout/ui';
 import type { PlayerStatus } from '@crawlout/protocol';
 
 const hudEl = document.getElementById('hud');
@@ -63,6 +63,55 @@ const buildOptions: BuildOption[] = [
   { buildingId: 2, typeId: 22, naam: 'Werkbank', scrapCost: 90, footprint: { w: 3, h: 2 }, affordable: true },
   { buildingId: 3, typeId: 23, naam: 'Toren', scrapCost: 400, footprint: { w: 2, h: 2 }, affordable: false },
 ];
+// Mock-kaarten: in de demo regelt dit de "client". Alle vijf de statussen komen voor.
+interface MockCard extends Omit<BuildingCard, 'state' | 'progressPct' | 'hotkey'> {
+  /** Vereist (naam) tot dat onderzoek klaar is; null = niets. */
+  needs: { id: number; naam: string } | null;
+  done: boolean;
+  /** Seconden die al lopen; null = loopt niet. */
+  elapsed: number | null;
+}
+const researchMocks: MockCard[] = [
+  { kind: 'research', id: 1, naam: 'Pantserplaten', icon: 'shield', scrapCost: 80, seconds: 30, effects: ['+20% schade voor militie'], unlocks: [], requires: [], needs: null, done: false, elapsed: null },
+  { kind: 'research', id: 2, naam: 'Geweerrek', icon: 'gun', scrapCost: 90, seconds: 45, effects: ['Militie kan geweren dragen'], unlocks: ['Patrouille', 'Turret'], requires: [], needs: null, done: false, elapsed: 18 },
+  { kind: 'research', id: 3, naam: 'Scherpschutters', icon: 'bolt', scrapCost: 140, seconds: 60, effects: ['+30% bereik voor geweren'], unlocks: [], requires: [], needs: { id: 2, naam: 'Geweerrek' }, done: false, elapsed: null },
+  { kind: 'research', id: 4, naam: 'Waterfilter', icon: 'research', scrapCost: 900, seconds: 50, effects: ['+2 bewoners per hut'], unlocks: ['Moestuin'], requires: [], needs: null, done: false, elapsed: null },
+  { kind: 'research', id: 5, naam: 'Betere wapens', icon: 'blade', scrapCost: 60, seconds: 20, effects: ['+10% schade voor alle bewoners'], unlocks: [], requires: [], needs: null, done: true, elapsed: null },
+  { kind: 'revive', id: 9, naam: 'Held oplappen', icon: 'revive', scrapCost: 120, seconds: 40, effects: ['De held keert terug met volle gezondheid'], unlocks: [], requires: [], needs: null, done: false, elapsed: null },
+];
+const craftMocks: MockCard[] = [
+  { kind: 'craft', id: 2, naam: 'Knuppel', icon: 'craft', scrapCost: 20, seconds: 8, effects: ['Bewoner vecht met een knuppel'], unlocks: [], requires: [], needs: null, done: false, elapsed: null },
+  { kind: 'craft', id: 3, naam: 'Geweer', icon: 'gun', scrapCost: 300, seconds: 25, effects: ['Bewoner schiet op afstand'], unlocks: [], requires: [], needs: { id: 2, naam: 'Geweerrek' }, done: false, elapsed: null },
+];
+const mockOf = (c: BuildingCard): MockCard | undefined => [...researchMocks, ...craftMocks].find((m) => m.kind === c.kind && m.id === c.id);
+const isDone = (id: number): boolean => researchMocks.find((m) => m.kind === 'research' && m.id === id)?.done ?? false;
+function cardsFor(sel: readonly SelectedEntity[]): BuildingCard[] {
+  const onlyBuildings = sel.length > 0 && sel.every((s) => s.typeId >= 1024);
+  const mocks = onlyBuildings ? researchMocks : craftMocks;
+  return mocks.map((m, i) => {
+    const locked = m.needs !== null && !isDone(m.needs.id);
+    const state: BuildingCard['state'] = m.done ? 'done' : m.elapsed !== null ? 'running' : locked ? 'locked' : status.scrap < m.scrapCost ? 'tooExpensive' : 'available';
+    return {
+      kind: m.kind, id: m.id, naam: m.naam, icon: m.icon, scrapCost: m.scrapCost, seconds: m.seconds, effects: m.effects, unlocks: m.unlocks,
+      requires: locked && m.needs ? [m.needs.naam] : [], state, hotkey: String(i + 1),
+      ...(state === 'running' ? { progressPct: Math.round(((m.elapsed ?? 0) / m.seconds) * 100) } : {}),
+    };
+  });
+}
+function startCard(c: BuildingCard): void {
+  const m = mockOf(c);
+  if (!m) return;
+  status = { ...status, scrap: status.scrap - m.scrapCost };
+  m.elapsed = 0;
+  log(`start ${c.kind} ${c.naam} (${m.scrapCost} scrap)`);
+}
+function cancelCard(c: BuildingCard): void {
+  const m = mockOf(c);
+  if (!m) return;
+  m.elapsed = null;
+  status = { ...status, scrap: status.scrap + m.scrapCost };
+  log(`geannuleerd: ${c.naam} (teruggave ${m.scrapCost})`);
+}
 const alertCbs = new Set<(a: HudAlert) => void>();
 const emitAlert = (a: HudAlert): void => alertCbs.forEach((cb) => cb(a));
 let selection: SelectedEntity[] = ALL;
@@ -102,9 +151,9 @@ const deps: HudDeps = {
     heroDead = false;
     log('held opgelapt');
   },
-  getResearchOptions: (ids) => (ids.length > 0 ? [{ techId: 1, naam: 'Pantser', scrapCost: 100, affordable: status.scrap >= 100 }] : []),
-  getRecruitOptions: (ids) => (ids.length > 0 ? [{ buildingId: ids[0] ?? 0, naam: 'Strijder', scrapCost: 60, affordable: status.scrap >= 60 }] : []),
-  getCraftOptions: () => [{ loadoutId: 2, naam: 'Knuppel', scrapCost: 20, affordable: status.scrap >= 20 }],
+  getBuildingCards: (sel) => cardsFor(sel),
+  startCard,
+  cancelCard,
   getPerkOptions: () => [
     { perkId: 1, naam: 'Taai', beschrijving: '+10% hp' },
     { perkId: 2, naam: 'Snel', beschrijving: '+10% tempo' },
@@ -134,6 +183,14 @@ worldEl.addEventListener('click', (e) => {
 // Mock-gedrag: scrap loopt op; D = desync, W = stall, Y = selectie wisselen.
 setInterval(() => {
   status = { ...status, scrap: status.scrap + 3 };
+  for (const m of [...researchMocks, ...craftMocks]) {
+    if (m.elapsed === null) continue;
+    m.elapsed += 1;
+    if (m.elapsed >= m.seconds) {
+      m.elapsed = null;
+      m.done = m.kind === 'research';
+    }
+  }
   notify();
 }, 1000);
 window.addEventListener('keydown', (e) => {
@@ -142,8 +199,8 @@ window.addEventListener('keydown', (e) => {
   else if (e.key === 'j') emitAlert({ kind: (['attack', 'settlerLost', 'claimLost'] as const)[Math.floor(Math.random() * 3)]!, x: Math.round(Math.random() * MAP_W) * U, y: Math.round(Math.random() * MAP_W) * U });
   else if (e.key === 'u') status = { ...status, hero: status.hero ? { ...status.hero, pendingPerks: status.hero.pendingPerks ? 0 : 1 } : null };
   else if (e.key === 'o') heroDead = !heroDead;
-  else if (e.key === 'y') selection = selection.length === ALL.length ? ALL.slice(1, 2) : selection.length === 1 ? [] : ALL;
+  else if (e.key === 'y') selection = selection === ALL ? ALL.slice(0, 1) : selection.length === 1 && selection[0]?.typeId === ALL[0]?.typeId ? ALL.slice(1) : selection.length > 0 && selection !== ALL ? [] : ALL;
   else return;
   notify();
 });
-log('Demo: D = desync, W = stall, Y = selectie (gebouw komt mee in de eerste stand), J = alert, U = level-up, O = held dood/levend; B = bouwen, cijfer kiest gebouw, klik plaatst');
+log('Demo: D = desync, W = stall, Y = selectie (alles, gebouw, bewoners, niets; gebouw toont de onderzoekskaarten, bewoners de craftkaarten met K + cijfer), J = alert, U = level-up, O = held dood/levend; B = bouwen, cijfer kiest gebouw, klik plaatst');
