@@ -164,4 +164,18 @@ export interface PlayerStatus {
    * filtert. Optioneel tot de HUD en de client hem lezen (sprint 4); de sim levert hem al.
    */
   techs?: number[];
+  /**
+   * Lopend werk in eigen gebouwen (speltest 14 oktober, voor het gebouwpaneel met kaarten): onderzoek en craft met
+   * voortgang. buildingId is de entity van het gebouw, progressPermille 0..1000. Optioneel tot de sim het levert.
+   */
+  queue?: QueueItem[];
+}
+
+export interface QueueItem {
+  kind: 'research' | 'craft';
+  /** Entity-id van het gebouw waarin het werk loopt. */
+  buildingId: number;
+  /** techId bij research, loadoutId bij craft. */
+  id: number;
+  progressPermille: number;
 }
