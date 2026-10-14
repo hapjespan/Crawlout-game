@@ -16,6 +16,7 @@ import {
   SEED_MAX,
   SNAPSHOT_HEADER_BYTES,
   ServerMessage,
+  TICK_MS,
   YAW_PLUS_X,
   YAW_PLUS_Y,
   readSnapshotHeader,
@@ -144,6 +145,28 @@ describe('besluiten sprint 3', () => {
       queue: [],
     };
     expect(status.hero?.state).toBe('reviving');
+  });
+  it('PlayerStatus.dominance (protocol 0.6.0): eigen stand plus de hoogste tegenstander, optioneel tot de HUD hem leest', () => {
+    const status: PlayerStatus = {
+      playerId: 0,
+      scrap: 0,
+      settlers: 0,
+      pop: 0,
+      popCap: 0,
+      beds: 0,
+      hero: null,
+      queue: [],
+      dominance: {
+        pointsHeld: 1,
+        pointsRequired: 2,
+        ticksHeld: 0,
+        ticksRequired: 9600,
+        leader: { playerId: 1, pointsHeld: 2, ticksHeld: 4800 },
+      },
+    };
+    const d = status.dominance!;
+    expect(d.leader!.ticksHeld * TICK_MS).toBe(240_000);
+    expect({ ...status, dominance: { ...d, leader: null } }.dominance.leader).toBeNull();
   });
   it('Recruit draagt alleen het gebouw (het hoofdgebouw bij oplappen), HeroAbility mag zonder doel', () => {
     expect(

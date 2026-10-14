@@ -198,6 +198,37 @@ export interface PlayerStatus {
    * (protocol 0.5.0, balans-ronde; Sim.queue in packages/sim/src/sim.ts); leeg zonder lopend werk.
    */
   queue: QueueItem[];
+  /**
+   * Winroute B, dominantie (protocol 0.6.0, voorstel architect fase-0 sectie 17, ter bevestiging): de eigen stand plus
+   * de hoogste tegenstander, zodat de HUD "nog 4:12" en "de vijand houdt 2 van 3" kan tonen. Optioneel tot de HUD hem
+   * leest; de sim levert hem altijd (Sim.dominance in packages/sim/src/sim.ts).
+   */
+  dominance?: DominanceStatus;
+}
+
+/**
+ * Dominantie van een speler (winroute B: pointsRequired claimpunten gedurende ticksRequired ticks aaneengesloten).
+ * pointsHeld = claimpunten van de speler nu; ticksHeld = ticks dat hij er aaneengesloten genoeg houdt (0 zolang hij
+ * er minder dan pointsRequired heeft; de klok begint opnieuw zodra hij er een verliest). pointsRequired en
+ * ticksRequired komen uit de map (dominance { pointsRequired, minutes }, of de lobby-override). De winst valt in de
+ * tick waarin ticksHeld ticksRequired bereikt. Resterende tijd = (ticksRequired - ticksHeld) * TICK_MS.
+ */
+export interface DominanceStatus {
+  pointsHeld: number;
+  pointsRequired: number;
+  ticksHeld: number;
+  ticksRequired: number;
+  /**
+   * De tegenstander die het dichtst bij dominantie is: de meeste ticksHeld, dan de meeste pointsHeld, dan de laagste
+   * playerId; alleen spelers die nog meedoen. null als er geen tegenstander meer meedoet.
+   */
+  leader: DominanceLeader | null;
+}
+
+export interface DominanceLeader {
+  playerId: number;
+  pointsHeld: number;
+  ticksHeld: number;
 }
 
 /**
