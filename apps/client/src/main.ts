@@ -38,6 +38,7 @@ import { loadClientGameData, loadClientMap } from './game/content.js';
 import { startSession } from './game/session.js';
 import { createStatusOverlay } from './net/statusOverlay.js';
 import { buildingCards } from './game/cards.js';
+import { dominanceView } from './game/dominance.js';
 import { buildRoster } from './game/roster.js';
 import { EVENT_TYPE, readSnapshot, type EntityRow } from './game/snapshot.js';
 
@@ -393,6 +394,7 @@ async function main(): Promise<void> {
             : items.flatMap((q) => (q.buildingId !== ENTITY_NONE ? [q.buildingId] : []));
       if (ids.length > 0) sendChunked('Cancel', ids, {});
     },
+    getDominance: () => dominanceView(status, (id) => session.playerName(id), session.playerId),
     getRoster: () => buildRoster(data, myFaction()?.id, session.playerId, entities.values()),
     selectUnits: (ids, add) => {
       selection = add ? new Set([...selection, ...ids]) : new Set(ids);
