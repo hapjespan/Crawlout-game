@@ -6,12 +6,16 @@
 // zone now and then; the buildings that provide 'turret' shoot from their roof.
 // Character assets come from assets/dist (the asset-cli's output, bundled by Vite): the fake units are loadout 0, so
 // the body asset of that loadout in data/loadouts.json is used when the manifest has it; ?unit=<id> picks any other.
+// Decorative props come from Rustbelt's props file (200 trees, rocks, bushes, grass) on the demo terrain: manifest
+// first, then the source GLBs in assets/src/props, then a placeholder per kind. ?props=0 hides them, ?props=src skips
+// the manifest, ?props=ph shows the placeholders only.
 import { PROVIDES } from '@crawlout/data';
 import { MAX_ENTITIES, TICK_MS, UNITS_PER_METER } from '@crawlout/protocol';
 import { buildingTypeId, createRenderer, snapFootprintCenter, type PlacementPreview } from '@crawlout/render';
 import { createGridTerrain, FakeSnapshotSource } from '@crawlout/render/dev';
 import { assetConfig } from '../game/assets.js';
 import { loadClientGameData } from '../game/content.js';
+import { loadMapProps, propSource } from './props.js';
 
 const WORLD = 128;
 const PLAYER = 0;
@@ -79,6 +83,18 @@ async function main(): Promise<void> {
     unitsEl.textContent = list.length === 0 ? (assets ? 'placeholder-rig (geen asset in het manifest)' : 'placeholder-rig (geen manifest)') : list.map((a) => `${a.assetId}: ${a.state}${a.reason ? ` (${a.reason})` : ''}`).join(' · ');
   };
   for (const delay of [500, 2000, 6000]) window.setTimeout(showUnits, delay);
+
+  const propsMode = params.get('props');
+  const propsEl = document.getElementById('props');
+  if (propsMode !== '0') {
+    const source = propsMode === 'src' ? propSource({ manifest: false }) : propsMode === 'ph' ? { manifestUrl: null } : propSource();
+    void renderer.setProps(loadMapProps('rustbelt'), source).then((list) => {
+      if (!propsEl) return;
+      const by = new Map<string, number>();
+      for (const p of list) by.set(p.origin, (by.get(p.origin) ?? 0) + p.instances);
+      propsEl.textContent = [...by].map(([origin, n]) => `${n} uit ${origin}`).join(', ');
+    });
+  } else if (propsEl) propsEl.textContent = 'uit';
 
   const source = new FakeSnapshotSource({
     count,

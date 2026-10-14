@@ -21,6 +21,9 @@ export { TerrainHeightField, createGridTerrain, type TerrainGeometry } from './t
 export { selectInRect, pickEntity, type ScreenRect, type BoxSelectOptions, type PickShape } from './picking/selection.js';
 export { RtsCameraController, DEFAULT_PAN_KEYS, type RtsCameraOptions, type RtsCameraBounds, type PanDirection } from './camera/rtsCamera.js';
 export { type FrameStats } from './perf/perfOverlay.js';
+export { type RenderProp } from './props/propLayer.js';
+export { type PropSourceOptions, type PropAssetStatus, type PropOrigin } from './props/propAssets.js';
+export { PROP_TARGET_HEIGHT, PROP_KIND_HEIGHT, propKindOf, propTargetHeight, type PropKind } from './props/propFit.js';
 export { CLIPS, BONES } from './units/rig.js';
 export { BODY_SLOT, type UnitAssetConfig, type UnitAssetOptions, type UnitAssetStatus } from './units/unitAssets.js';
 export { type TeamMaskSource } from './units/gltfUnitGeometry.js';

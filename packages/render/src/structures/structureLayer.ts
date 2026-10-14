@@ -4,7 +4,8 @@
 // interpolated frame, by typeId (entities/typeIds.ts). A site (anim build) grows with its progress in animT inside a
 // scaffold; a scrap heap shrinks with its remaining stock in hpPct (structureVisuals.ts).
 import { ANIM, ENTITY_FLAG } from '@crawlout/protocol';
-import { DynamicDrawUsage, Frustum, InstancedBufferAttribute, Matrix4, Mesh, Sphere, type BufferGeometry, type Camera, type MeshBasicNodeMaterial, type Scene } from 'three/webgpu';
+import { Frustum, Matrix4, Sphere, type Camera, type MeshBasicNodeMaterial, type Scene } from 'three/webgpu';
+import { InstanceBatch } from './instanceBatch.js';
 import { DECAL_COLOR, DECAL_SHAPE, type DecalLayer, type DecalStyle } from '../decals/decalLayer.js';
 import { buildingWallHeight, type FootprintTable } from '../entities/footprint.js';
 import { buildingIdOf, classifyTypeId, ENTITY_KIND } from '../entities/typeIds.js';
@@ -48,77 +49,6 @@ function hash01(id: number): number {
   return (h >>> 0) / 4294967296;
 }
 
-class Batch {
-  readonly mesh: Mesh;
-  private readonly pos: InstancedBufferAttribute;
-  private readonly scale: InstancedBufferAttribute;
-  private readonly tint: InstancedBufferAttribute;
-  count = 0;
-
-  constructor(scene: Scene, geometry: BufferGeometry, material: MeshBasicNodeMaterial, capacity: number, name: string) {
-    const attr = (): InstancedBufferAttribute => {
-      const a = new InstancedBufferAttribute(new Float32Array(capacity * 4), 4);
-      a.setUsage(DynamicDrawUsage);
-      return a;
-    };
-    this.pos = attr();
-    this.scale = attr();
-    this.tint = attr();
-    geometry.setAttribute('iPos', this.pos);
-    geometry.setAttribute('iScale', this.scale);
-    geometry.setAttribute('iTint', this.tint);
-    this.mesh = new Mesh(geometry, material);
-    this.mesh.name = name;
-    this.mesh.frustumCulled = false;
-    this.mesh.count = 0;
-    this.mesh.visible = false;
-    scene.add(this.mesh);
-  }
-
-  get capacity(): number {
-    return this.pos.count;
-  }
-
-  push(x: number, y: number, z: number, yaw: number, sx: number, sy: number, sz: number, team: number, tint: readonly [number, number, number]): void {
-    const k = this.count;
-    if (k >= this.capacity) return;
-    this.count = k + 1;
-    const o = k * 4;
-    const p = this.pos.array as Float32Array;
-    const s = this.scale.array as Float32Array;
-    const t = this.tint.array as Float32Array;
-    p[o] = x;
-    p[o + 1] = y;
-    p[o + 2] = z;
-    p[o + 3] = yaw;
-    s[o] = sx;
-    s[o + 1] = sy;
-    s[o + 2] = sz;
-    s[o + 3] = team;
-    t[o] = tint[0];
-    t[o + 1] = tint[1];
-    t[o + 2] = tint[2];
-    t[o + 3] = 1;
-  }
-
-  commit(): void {
-    const n = this.count;
-    this.mesh.count = n;
-    this.mesh.visible = n > 0;
-    if (n === 0) return;
-    for (const a of [this.pos, this.scale, this.tint]) {
-      a.clearUpdateRanges();
-      a.addUpdateRange(0, n * 4);
-      a.needsUpdate = true;
-    }
-  }
-
-  dispose(): void {
-    this.mesh.removeFromParent();
-    this.mesh.geometry.dispose();
-  }
-}
-
 export interface StructureMaterials {
   building: MeshBasicNodeMaterial;
   scrap: MeshBasicNodeMaterial;
@@ -138,10 +68,10 @@ export interface StructureLayerOptions {
 const WHITE: readonly [number, number, number] = [1, 1, 1];
 
 export class StructureLayer {
-  private readonly buildings: [Batch, Batch];
-  private readonly scaffolds: Batch;
-  private readonly scrap: Batch;
-  private readonly claims: Batch;
+  private readonly buildings: [InstanceBatch, InstanceBatch];
+  private readonly scaffolds: InstanceBatch;
+  private readonly scrap: InstanceBatch;
+  private readonly claims: InstanceBatch;
   private readonly footprints: FootprintTable;
   private readonly heightAt: (x: number, z: number) => number;
   private readonly lodDist2: number;
@@ -160,13 +90,13 @@ export class StructureLayer {
     const d = opts.lodDistance ?? 60;
     this.lodDist2 = d * d;
     this.buildings = [
-      new Batch(scene, createBuildingGeometry(0), m.building, cap, 'buildings-lod0'),
-      new Batch(scene, createBuildingGeometry(1), m.building, cap, 'buildings-lod1'),
+      new InstanceBatch(scene, createBuildingGeometry(0), m.building, cap, 'buildings-lod0'),
+      new InstanceBatch(scene, createBuildingGeometry(1), m.building, cap, 'buildings-lod1'),
     ];
-    this.scaffolds = new Batch(scene, createScaffoldGeometry(), m.building, cap, 'building-scaffolds');
+    this.scaffolds = new InstanceBatch(scene, createScaffoldGeometry(), m.building, cap, 'building-scaffolds');
     for (const b of [...this.buildings, this.scaffolds]) b.mesh.castShadow = opts.castShadows ?? false;
-    this.scrap = new Batch(scene, createScrapHeapGeometry(), m.scrap, cap, 'scrap-nodes');
-    this.claims = new Batch(scene, createClaimGeometry(), m.claim, cap, 'claim-points');
+    this.scrap = new InstanceBatch(scene, createScrapHeapGeometry(), m.scrap, cap, 'scrap-nodes');
+    this.claims = new InstanceBatch(scene, createClaimGeometry(), m.claim, cap, 'claim-points');
   }
 
   /** Lowest terrain point under a footprint, so the building's foundation never floats. */

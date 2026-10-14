@@ -16,6 +16,8 @@ import { PerfMeter, PerfOverlay, type FrameStats } from './perf/perfOverlay.js';
 import { pickEntity, pickNearestOnScreen, selectInRect, type BoxSelectOptions, type PickShape, type ScreenRect } from './picking/selection.js';
 import { SunShadow } from './shadows/sunShadow.js';
 import { createInterpolatedFrame, simYawToRender, SnapshotInterpolator } from './snapshot/interpolate.js';
+import { PropAssetRegistry, type PropAssetStatus, type PropSourceOptions, type ResolvedSource } from './props/propAssets.js';
+import { PropLayer, type RenderProp } from './props/propLayer.js';
 import { createPropMaterial } from './structures/propMaterial.js';
 import { StructureLayer } from './structures/structureLayer.js';
 import { createGridTerrain, type TerrainGeometry } from './terrain/heightField.js';
@@ -94,6 +96,16 @@ export interface CrawloutRenderer {
   loadUnitAsset(manifestUrl: string, assetId: string, opts?: UnitAssetOptions): Promise<UnitAssetStatus>;
   /** Status of every unit asset requested so far. */
   unitAssets(): UnitAssetStatus[];
+  /**
+   * Decorative props (the map's props file; PropInstance of @crawlout/map fits RenderProp). Each asset id comes from
+   * the manifest (kind 'prop', three LODs), else from `source.sourceUrl` (a source GLB), else a placeholder per kind,
+   * fitted to a believable height (props/propFit.ts) times the prop's scale. Height from the terrain. Props are not
+   * pickable and never block a pick. `source` defaults to the renderer's `assets` manifest. Resolves with the status
+   * per asset once everything is loaded; never rejects. An empty list removes all props.
+   */
+  setProps(props: readonly RenderProp[], source?: PropSourceOptions): Promise<PropAssetStatus[]>;
+  /** Status of every prop asset of the current props. */
+  propAssets(): PropAssetStatus[];
   /** Shows a ghost footprint at a sim position, or hides it with null. */
   setPlacementPreview(preview: PlacementPreview | null): void;
   /** What lies under canvas-local CSS pixel (x, y). Units, buildings, scrap nodes and claim points can be hit. */
@@ -116,6 +128,8 @@ function createOverlay(stats: boolean | HTMLElement, canvas: HTMLCanvasElement):
 /** Height-texture edge the decals may need (terrain/heightTexture.ts caps at 512). */
 const HEIGHT_TEXTURE_EDGE = 512;
 const PARTICLES_PER_POOL = 4096;
+/** How far prop art is pulled towards the warm wasteland grey (structures/propMaterial.ts grade). */
+const PROP_GRADE = 0.22;
 const PREVIEW_VALID: DecalStyle = { shape: DECAL_SHAPE.rect, shadow: 0, ring: 1, ringWidth: 0.14, fill: 0.3, grid: 0.55, color: DECAL_COLOR.valid };
 const PREVIEW_INVALID: DecalStyle = { ...PREVIEW_VALID, color: DECAL_COLOR.invalid };
 
@@ -147,9 +161,10 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
   const decals = new DecalLayer(scene, capacity + 64);
   const units = new UnitLayer(scene, { capacity, lightDir: DEFAULT_LIGHT_DIR, precision, anims });
   const assetConfig = opts.assets;
-  const loader = new UnitAssetLoader(createGltfIO(), (manifestUrl, path) =>
-    assetConfig?.resolveUrl && manifestUrl === assetConfig.manifestUrl ? assetConfig.resolveUrl(path) : resolveManifestPath(manifestUrl, path),
-  );
+  const gltfIO = createGltfIO();
+  const resolveAssetPath = (manifestUrl: string, path: string): string =>
+    assetConfig?.resolveUrl && manifestUrl === assetConfig.manifestUrl ? assetConfig.resolveUrl(path) : resolveManifestPath(manifestUrl, path);
+  const loader = new UnitAssetLoader(gltfIO, resolveAssetPath);
   const unitAssets = new UnitAssetRegistry(units, loader, {
     config: assetConfig,
     maxTextureSize: caps.maxTextureSize,
@@ -168,6 +183,13 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
       claim: createPropMaterial({ lightDir: DEFAULT_LIGHT_DIR, name: 'crawlout-claim-toon', time }),
     },
   });
+  const props = new PropLayer(scene, {
+    heightAt: (x, z) => terrain.heightAt(x, z),
+    material: (map) => createPropMaterial({ lightDir: DEFAULT_LIGHT_DIR, name: 'crawlout-prop-toon', shadow: sun?.factor, map, grade: PROP_GRADE }),
+  });
+  const propRegistry = new PropAssetRegistry({ manifest: (url) => loader.manifest(url), fetchBytes: (url) => gltfIO.fetchBytes(url), parseGltf: (bytes, url) => gltfIO.parseGltf(bytes, url) });
+  let propStatuses = new Map<string, PropAssetStatus>();
+  let propGeneration = 0;
   const additive = new ParticlePool(scene, PARTICLES_PER_POOL, time, true);
   const smoke = new ParticlePool(scene, PARTICLES_PER_POOL, time, false);
   const zones = new AbilityZones();
@@ -178,6 +200,7 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
   const setTerrain = (geometry: TerrainGeometry): void => {
     terrain.set(geometry);
     decals.setHeights(terrain.heightTexture);
+    props.relayout();
     const hf = terrain.heightField;
     if (hf) {
       controls.bounds = { minX: hf.minX, maxX: hf.maxX, minZ: hf.minZ, maxZ: hf.maxZ };
@@ -244,6 +267,7 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
       const f = footprints.get(preview.typeId);
       decals.push(preview.x / UNITS_PER_METER, preview.y / UNITS_PER_METER, f.w / 2, f.h / 2, preview.valid ? PREVIEW_VALID : PREVIEW_INVALID);
     }
+    props.update(camera, decals); // last: when the decal batch is full, prop blobs are what drops
     decals.end();
     additive.commit();
     smoke.commit();
@@ -283,6 +307,35 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
     },
     loadUnitAsset: (manifestUrl, assetId, assetOpts) => unitAssets.load(manifestUrl, assetId, assetOpts),
     unitAssets: () => unitAssets.statuses(),
+    async setProps(list, source = {}) {
+      const generation = ++propGeneration;
+      props.setProps(list);
+      const src: ResolvedSource = {
+        manifestUrl: source.manifestUrl === null ? undefined : (source.manifestUrl ?? assetConfig?.manifestUrl),
+        resolveUrl: source.resolveUrl ? (_manifestUrl, path) => source.resolveUrl!(path) : resolveAssetPath,
+        sourceUrl: source.sourceUrl,
+        placeholders: source.placeholders ?? true,
+        heights: source.heights,
+      };
+      propStatuses = new Map(props.assetIds().map((assetId) => [assetId, { assetId, instances: props.instanceCount(assetId), state: 'loading', origin: 'none' }]));
+      const current = propStatuses;
+      await Promise.all(
+        props.assetIds().map(async (assetId) => {
+          const r = await propRegistry.resolve(assetId, src);
+          if (generation !== propGeneration) return;
+          props.setVisual(assetId, r.visual);
+          const status = current.get(assetId)!;
+          status.state = 'ready';
+          status.origin = r.origin;
+          if (r.reasons.length > 0) status.reason = r.reasons.join('; ');
+          if (r.triangles) status.triangles = r.triangles;
+          if (r.visual) status.height = Math.round(r.visual.height * r.visual.fit * 100) / 100;
+          if (r.origin !== 'manifest' && r.reasons.some((m) => !m.startsWith('not in'))) console.warn(`[render] prop "${assetId}": ${status.reason}`);
+        }),
+      );
+      return [...current.values()].map((st) => ({ ...st }));
+    },
+    propAssets: () => [...propStatuses.values()].map((st) => ({ ...st })),
     setPlacementPreview(p) {
       preview = p ? { ...p } : null;
     },
@@ -318,6 +371,8 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
       overlay?.dispose();
       units.dispose();
       structures.dispose();
+      props.dispose();
+      propRegistry.dispose();
       decals.dispose();
       additive.dispose();
       smoke.dispose();
