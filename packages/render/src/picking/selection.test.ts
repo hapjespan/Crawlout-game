@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { Matrix4, PerspectiveCamera } from 'three/webgpu';
 import { ENTITY_FLAG } from '@crawlout/protocol';
 import { createInterpolatedFrame, type InterpolatedFrame } from '../snapshot/interpolate.js';
-import { pickEntity, PICK_CENTER_HEIGHT, selectInRect } from './selection.js';
+import { pickEntity, pickNearestOnScreen, PICK_CENTER_HEIGHT, selectInRect } from './selection.js';
 
 function frameOf(units: { id: number; x: number; z: number; owner?: number; flags?: number }[]): InterpolatedFrame {
   const f = createInterpolatedFrame(units.length);
@@ -63,5 +63,24 @@ describe('pickEntity', () => {
   it('misses empty space and dead units', () => {
     expect(pickEntity(frame, 20, PICK_CENTER_HEIGHT, 50, 0, 0, -1)).toBe(-1);
     expect(pickEntity(frame, 3, 30, 0, 0, -1, 0)).toBe(-1);
+  });
+});
+
+describe('pickNearestOnScreen', () => {
+  // Unit 1 sits in the screen center of the top-down camera (see selectInRect), unit 2 further off.
+  const frame = frameOf([
+    { id: 1, x: 0, z: 0 },
+    { id: 2, x: 10, z: 0 },
+    { id: 3, x: 0.2, z: 0, flags: ENTITY_FLAG.dead },
+  ]);
+  const { viewProj } = topDown();
+
+  it('picks the unit next to a click that just misses it', () => {
+    expect(pickNearestOnScreen(frame, viewProj.elements, 800, 800, 410, 405)).toBe(0);
+  });
+
+  it('ignores clicks further away than the tolerance and dead units', () => {
+    expect(pickNearestOnScreen(frame, viewProj.elements, 800, 800, 400, 600)).toBe(-1);
+    expect(pickNearestOnScreen(frame, viewProj.elements, 800, 800, 410, 405, 4)).toBe(-1);
   });
 });

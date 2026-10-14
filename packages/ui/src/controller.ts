@@ -14,6 +14,7 @@ import type {
   PerkOption,
   RecruitOption,
   ResearchOption,
+  RosterGroup,
   SelectedEntity,
   TargetPoint,
   TargetResult,
@@ -108,6 +109,9 @@ export interface HudState {
   showMinimap: boolean;
   showHero: boolean;
   showLobby: boolean;
+  roster: readonly RosterGroup[];
+  /** Uitgeklapte groep in de eenhedenbalk (key), of null. */
+  rosterOpen: string | null;
 }
 
 const NO_NETWORK: NetworkState = { desync: null, stall: null };
@@ -132,6 +136,8 @@ export class HudController implements HudHandle {
     this.state = {
       status: null,
       selection: [],
+      roster: [],
+      rosterOpen: null,
       network: NO_NETWORK,
       targeting: null,
       buildMenuOpen: false,
@@ -523,8 +529,42 @@ export class HudController implements HudHandle {
       this.openHostSettings();
       return true;
     }
+    if (key === '.' && this.deps.getRoster) return this.selectNextIdle() || true;
     const action = ACTIONS.find((a) => a.key === key);
     return action ? this.run(action.id) : false;
+  }
+
+  /** Klik op een type in de eenhedenbalk: selecteer alle units van dat type en klap de lijst uit (nogmaals: inklappen). */
+  selectGroup(key: string, add = false): boolean {
+    const group = this.state.roster.find((g) => g.key === key);
+    if (!group || !this.deps.selectUnits) return false;
+    this.deps.selectUnits(
+      group.units.map((u) => u.id),
+      add,
+    );
+    this.read();
+    this.set({ rosterOpen: this.state.rosterOpen === key && !add ? null : key });
+    return true;
+  }
+
+  /** Klik op één unit in de uitgeklapte lijst: alleen die unit selecteren en de camera erheen. */
+  selectRosterUnit(id: number, add = false): boolean {
+    const unit = this.state.roster.flatMap((g) => g.units).find((u) => u.id === id);
+    if (!unit || !this.deps.selectUnits) return false;
+    this.deps.selectUnits([id], add);
+    if (!add) this.deps.focusCamera?.(unit.x, unit.y);
+    this.refresh();
+    return true;
+  }
+
+  /** Punt (.): de volgende unit zonder taak selecteren en de camera erheen; elke druk gaat een unit verder. */
+  selectNextIdle(): boolean {
+    const idle = this.state.roster.flatMap((g) => g.units).filter((u) => u.activity === 'idle');
+    if (idle.length === 0 || !this.deps.selectUnits) return false;
+    const current = this.state.selection.length === 1 ? this.state.selection[0]?.id : undefined;
+    const at = idle.findIndex((u) => u.id === current);
+    const next = idle[(at + 1) % idle.length]!;
+    return this.selectRosterUnit(next.id);
   }
 
   canToggleReady(): boolean {
@@ -587,6 +627,7 @@ export class HudController implements HudHandle {
       craftOptions,
       craftMenuOpen: craftOptions.length > 0 ? this.state.craftMenuOpen : false,
       lobby: this.state.showLobby ? (d.getLobby?.() ?? null) : null,
+      roster: d.getRoster?.() ?? [],
       network: this.deps.getNetwork?.() ?? NO_NETWORK,
       // Targeting zonder selectie heeft geen zin meer.
       targeting: selection.length === 0 && this.state.targeting !== 'heroAbility' ? null : this.state.targeting,

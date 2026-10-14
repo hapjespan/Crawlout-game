@@ -70,6 +70,43 @@ export function selectInRect(
   return out;
 }
 
+/** Click tolerance in CSS pixels: a click this close to a unit's pick center still selects it. */
+export const PICK_TOLERANCE_PX = 16;
+
+/**
+ * Index of the unit whose projected pick center is nearest to (px, py) within maxPx, or -1.
+ * The fallback for clicks that just miss a unit: at RTS distance a unit is only a few pixels wide.
+ */
+export function pickNearestOnScreen(
+  frame: InterpolatedFrame,
+  viewProj: ArrayLike<number>,
+  width: number,
+  height: number,
+  px: number,
+  py: number,
+  maxPx: number = PICK_TOLERANCE_PX,
+): number {
+  const m = viewProj;
+  let best = -1;
+  let bestD2 = maxPx * maxPx;
+  for (let i = 0; i < frame.count; i++) {
+    if ((frame.flags[i]! & ENTITY_FLAG.dead) !== 0 || !drawsAsUnit(frame.typeId[i]!)) continue;
+    const x = frame.x[i]!;
+    const y = frame.y[i]! + PICK_CENTER_HEIGHT;
+    const z = frame.z[i]!;
+    const w = m[3]! * x + m[7]! * y + m[11]! * z + m[15]!;
+    if (w <= 0) continue;
+    const sx = (((m[0]! * x + m[4]! * y + m[8]! * z + m[12]!) / w + 1) * 0.5) * width;
+    const sy = ((1 - (m[1]! * x + m[5]! * y + m[9]! * z + m[13]!) / w) * 0.5) * height;
+    const d2 = (sx - px) ** 2 + (sy - py) ** 2;
+    if (d2 < bestD2) {
+      bestD2 = d2;
+      best = i;
+    }
+  }
+  return best;
+}
+
 /**
  * Index of the nearest entity hit by the ray (origin o, normalized direction d), or -1.
  * Units are spheres of PICK_RADIUS around their pick center; `shape` gives other entities their own sphere.

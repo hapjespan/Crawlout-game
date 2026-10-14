@@ -120,6 +120,25 @@ export interface LobbyView {
   you: number;
 }
 
+/** Wat een unit nu doet, afgeleid uit de snapshot (anim en flags). */
+export type UnitActivity = 'idle' | 'moving' | 'gathering' | 'carrying' | 'building' | 'fighting';
+
+/** Eén eigen unit in de eenhedenbalk; x en y in sim-eenheden (voor de camera). */
+export interface RosterUnit {
+  id: number;
+  hpPct: number;
+  activity: UnitActivity;
+  x: number;
+  y: number;
+}
+
+/** Eigen units van één type (loadout of held), in vaste volgorde. */
+export interface RosterGroup {
+  key: string;
+  naam: string;
+  units: readonly RosterUnit[];
+}
+
 /** Alles wat de HUD van buiten nodig heeft. Frame, seq en playerId vult de netwerklaag in. */
 export interface HudDeps {
   /** Stuurt een commando; payload volgt COMMAND_PAYLOADS. */
@@ -172,6 +191,10 @@ export interface HudDeps {
   getLobby?(): LobbyView | null;
   toggleReady?(): void;
   openHostSettings?(): void;
+  /** Eenhedenbalk: eigen units per type met wat ze doen. Ontbreekt: geen balk. */
+  getRoster?(): readonly RosterGroup[];
+  /** Zet de selectie van de client (add: bij de huidige selectie voegen). Nodig voor de eenhedenbalk. */
+  selectUnits?(ids: readonly number[], add: boolean): void;
 }
 
 export interface HudHandle {

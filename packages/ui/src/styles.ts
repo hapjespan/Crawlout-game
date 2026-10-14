@@ -19,6 +19,23 @@ export const HUD_CSS = `
 .co-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(44px,1fr));gap:4px;margin:0;padding:0;list-style:none}
 .co-cell{background:#2b2f33;border-radius:4px;padding:4px;font-size:11px;text-align:center}
 .co-cell b{display:block;font-size:13px}
+.co-roster{position:absolute;left:calc(8px + 260px + 12px);right:calc(8px + 300px + 12px);bottom:8px;display:flex;flex-direction:column;gap:6px;padding:6px}
+.co-roster-groups{display:flex;flex-wrap:wrap;gap:6px}
+.co-roster-group{display:flex;align-items:baseline;gap:6px;padding:6px 10px;background:#24282c;border:1px solid #3a4046;border-radius:4px;color:inherit;font:inherit;cursor:pointer}
+.co-roster-group:disabled{opacity:.45;cursor:default}
+.co-roster-group.co-selected,.co-roster-unit.co-selected{border-color:#7dff7d}
+.co-roster-count{font-weight:700}
+.co-roster-idle{font-size:12px;color:#ffd54f}
+.co-roster-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:4px;max-height:132px;overflow:auto;margin:0;padding:0;list-style:none}
+.co-roster-unit{display:grid;grid-template-columns:10px 1fr;grid-template-rows:auto auto;column-gap:6px;align-items:center;width:100%;padding:4px 6px;background:#1d2023;border:1px solid #33383d;border-radius:4px;color:inherit;font:12px/1.2 system-ui,sans-serif;text-align:left;cursor:pointer}
+.co-roster-unit .co-hp{grid-column:1 / span 2}
+.co-activity-dot{width:8px;height:8px;border-radius:50%;background:#8a9097}
+.co-roster-unit[data-activity=idle] .co-activity-dot{background:#ffd54f}
+.co-roster-unit[data-activity=moving] .co-activity-dot{background:#64b5f6}
+.co-roster-unit[data-activity=gathering] .co-activity-dot,.co-roster-unit[data-activity=carrying] .co-activity-dot{background:#a1887f}
+.co-roster-unit[data-activity=building] .co-activity-dot{background:#81c784}
+.co-roster-unit[data-activity=fighting] .co-activity-dot{background:#e57373}
+.co-roster-group:focus-visible,.co-roster-unit:focus-visible{outline:2px solid #ffd54f;outline-offset:1px}
 .co-commands{position:absolute;right:8px;bottom:8px;width:300px}
 .co-buttons{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
 .co-btn{pointer-events:auto;font:inherit;color:inherit;background:#2f353b;border:1px solid #4a5159;border-radius:4px;padding:6px 4px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px}

@@ -24,6 +24,7 @@ Toetsen werken niet in een tekstveld en niet met Ctrl, Cmd of Alt.
 | V | Oplappen | held dood en `revivesLeft` niet 0 |
 | N | Minimap tonen of verbergen | `getMinimap` |
 | Spatie | Camera naar de laatste waarschuwing | waarschuwing aanwezig |
+| . (punt) | Volgende unit zonder taak selecteren, camera erheen | eenhedenbalk aanwezig |
 | L | Lobby-paneel | `getLobby` |
 | R, O | Klaar, host-instellingen | lobby-paneel open |
 | Esc | Annuleren: opgeven-dialoog, targeting, plaatsing, menu's | |

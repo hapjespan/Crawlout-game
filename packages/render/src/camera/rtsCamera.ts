@@ -66,7 +66,7 @@ export class RtsCameraController {
   ) {
     this.minDistance = opts.minDistance ?? 10;
     this.maxDistance = opts.maxDistance ?? 140;
-    this.edgeMargin = opts.edgeMargin ?? 14;
+    this.edgeMargin = opts.edgeMargin ?? 16;
     this.heightAt = opts.heightAt ?? (() => 0);
     for (const [code, dir] of Object.entries(DEFAULT_PAN_KEYS)) this.panKeys.set(code, dir);
     for (const [code, dir] of Object.entries(opts.panKeys ?? {})) {
@@ -74,8 +74,11 @@ export class RtsCameraController {
       else this.panKeys.delete(code);
     }
     this.listen(dom, 'wheel', this.onWheel, { passive: false });
-    this.listen(dom, 'pointermove', this.onPointerMove);
-    this.listen(dom, 'pointerleave', this.onPointerLeave);
+    // Edge scroll follows the pointer over the whole window (also over HUD panels at the edge), and keeps
+    // scrolling when the pointer leaves the window across an edge, as in a desktop RTS.
+    this.listen(window, 'pointermove', this.onPointerMove);
+    const root = (globalThis as { document?: Document }).document?.documentElement;
+    if (root) this.listen(root, 'pointerleave', this.onPointerLeave);
     this.listen(dom, 'pointerdown', this.onPointerDown);
     this.listen(window, 'pointerup', this.onPointerUp);
     this.listen(window, 'blur', this.onBlur);
@@ -109,8 +112,14 @@ export class RtsCameraController {
     if (this.rotating) this.yaw -= e.movementX * 0.006;
   }
 
+  /** Pointer left the window: keep the last position if it was in the edge strip, so scrolling continues. */
   private onPointerLeave(): void {
-    this.pointer = null;
+    if (this.pointer && !this.inEdgeStrip(this.pointer)) this.pointer = null;
+  }
+
+  private inEdgeStrip(p: { x: number; y: number }): boolean {
+    const m = this.edgeMargin;
+    return p.x < m || p.y < m || p.x > this.dom.clientWidth - m || p.y > this.dom.clientHeight - m;
   }
 
   private onPointerDown(e: PointerEvent): void {

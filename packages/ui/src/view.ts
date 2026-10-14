@@ -5,7 +5,7 @@ import type { PlayerStatus } from '@crawlout/protocol';
 import { ABILITY_KEYS, ACTIONS, PERK_KEYS, ROLE_LABEL, keyLabel } from './controller.js';
 import type { HudController, HudState } from './controller.js';
 import { drawMinimap } from './minimap.js';
-import type { AlertKind, SelectedEntity, TargetingKind } from './types.js';
+import type { AlertKind, RosterGroup, SelectedEntity, TargetingKind, UnitActivity } from './types.js';
 
 const TARGETING_TEXT: Record<TargetingKind, string> = {
   move: 'Kies een bestemming op de kaart (Esc om te annuleren)',
@@ -55,7 +55,7 @@ function SelectionPanel(props: { selection: readonly SelectedEntity[] }): Compon
   } else if (sel.length === 1 && sel[0]) {
     const u = sel[0];
     body = [
-      h('p', { class: 'co-unit-name' }, `Type ${u.typeId}`),
+      h('p', { class: 'co-unit-name' }, u.loadoutName ?? `Type ${u.typeId}`),
       h('p', { class: 'co-unit-meta' }, `Loadout: ${u.loadoutName ?? 'geen'} · Rol: ${u.role ? ROLE_LABEL[u.role] : 'geen'} · ${u.hpPct}%`),
       h(HpBar, { pct: u.hpPct }),
     ];
@@ -78,6 +78,76 @@ function SelectionPanel(props: { selection: readonly SelectedEntity[] }): Compon
     { class: 'co-panel co-selection', 'aria-label': 'Selectie' },
     h('h2', null, sel.length > 1 ? `Selectie (${sel.length})` : 'Selectie'),
     body,
+  );
+}
+
+const ACTIVITY_TEXT: Record<UnitActivity, string> = {
+  idle: 'Niets te doen',
+  moving: 'Onderweg',
+  gathering: 'Verzamelt',
+  carrying: 'Brengt scrap terug',
+  building: 'Bouwt',
+  fighting: 'Vecht',
+};
+
+/** Eenhedenbalk: per type een knop met aantal en het aantal zonder taak; klik selecteert, de lijst toont wat elke unit doet. */
+function RosterBar(props: { ctl: HudController; state: HudState }): ComponentChild {
+  const { ctl, state } = props;
+  if (state.roster.length === 0) return null;
+  const selected = new Set(state.selection.map((s) => s.id));
+  const open: RosterGroup | undefined = state.roster.find((g) => g.key === state.rosterOpen);
+  return h(
+    'section',
+    { class: 'co-panel co-roster', 'aria-label': 'Eenheden per type' },
+    open
+      ? h(
+          'ul',
+          { class: 'co-roster-list', 'aria-label': `${open.naam}: ${open.units.length} eenheden` },
+          open.units.map((u, i) =>
+            h(
+              'li',
+              { key: u.id },
+              h(
+                'button',
+                {
+                  type: 'button',
+                  class: selected.has(u.id) ? 'co-roster-unit co-selected' : 'co-roster-unit',
+                  'data-activity': u.activity,
+                  'aria-label': `${open.naam} ${i + 1}: ${ACTIVITY_TEXT[u.activity]}, ${u.hpPct}% gezondheid`,
+                  'aria-pressed': selected.has(u.id),
+                  onClick: (e: MouseEvent) => ctl.selectRosterUnit(u.id, e.shiftKey),
+                },
+                h('span', { class: 'co-activity-dot', 'aria-hidden': 'true' }),
+                h('span', { class: 'co-roster-unit-text' }, ACTIVITY_TEXT[u.activity]),
+                h(HpBar, { pct: u.hpPct }),
+              ),
+            ),
+          ),
+        )
+      : null,
+    h(
+      'div',
+      { class: 'co-roster-groups' },
+      state.roster.map((g) => {
+        const idle = g.units.filter((u) => u.activity === 'idle').length;
+        const allSelected = g.units.length > 0 && g.units.every((u) => selected.has(u.id));
+        return h(
+          'button',
+          {
+            key: g.key,
+            type: 'button',
+            class: allSelected ? 'co-roster-group co-selected' : 'co-roster-group',
+            'aria-label': `${g.naam}: ${g.units.length}, waarvan ${idle} zonder taak. Klik om ze te selecteren.`,
+            'aria-expanded': state.rosterOpen === g.key,
+            disabled: g.units.length === 0,
+            onClick: (e: MouseEvent) => ctl.selectGroup(g.key, e.shiftKey),
+          },
+          h('span', { class: 'co-roster-name' }, g.naam),
+          h('span', { class: 'co-roster-count' }, String(g.units.length)),
+          idle > 0 ? h('span', { class: 'co-roster-idle', title: `${idle} zonder taak (punt-toets: volgende)` }, `${idle} vrij`) : null,
+        );
+      }),
+    ),
   );
 }
 
@@ -448,6 +518,7 @@ export function Hud(props: { ctl: HudController }): ComponentChild {
     h(LobbyPanel, { ctl, state }),
     h(BuildingPanel, { ctl, state }),
     h(SelectionPanel, { selection: state.selection }),
+    h(RosterBar, { ctl, state }),
     h(CommandCard, { ctl, state }),
     state.confirmSurrender ? h(SurrenderDialog, { ctl }) : null,
   );

@@ -13,7 +13,7 @@ import {
   type DataTexturePrecision,
 } from './gpu/dataTextures.js';
 import { PerfMeter, PerfOverlay, type FrameStats } from './perf/perfOverlay.js';
-import { pickEntity, selectInRect, type BoxSelectOptions, type PickShape, type ScreenRect } from './picking/selection.js';
+import { pickEntity, pickNearestOnScreen, selectInRect, type BoxSelectOptions, type PickShape, type ScreenRect } from './picking/selection.js';
 import { SunShadow } from './shadows/sunShadow.js';
 import { createInterpolatedFrame, simYawToRender, SnapshotInterpolator } from './snapshot/interpolate.js';
 import { createPropMaterial } from './structures/propMaterial.js';
@@ -290,7 +290,11 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
       ndc.set((x / Math.max(1, canvas.clientWidth)) * 2 - 1, -(y / Math.max(1, canvas.clientHeight)) * 2 + 1);
       raycaster.setFromCamera(ndc, camera);
       const { origin, direction } = raycaster.ray;
-      const hit = pickEntity(frame, origin.x, origin.y, origin.z, direction.x, direction.y, direction.z, pickShape);
+      let hit = pickEntity(frame, origin.x, origin.y, origin.z, direction.x, direction.y, direction.z, pickShape);
+      if (hit < 0) {
+        viewProj.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
+        hit = pickNearestOnScreen(frame, viewProj.elements, canvas.clientWidth, canvas.clientHeight, x, y);
+      }
       let ground: PickResult['ground'] = null;
       const mesh = terrain.object;
       const hits = mesh ? raycaster.intersectObject(mesh, false) : [];

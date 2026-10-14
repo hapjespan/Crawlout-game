@@ -57,3 +57,49 @@ describe('RtsCameraController keys', () => {
     expect(remapped.dz).toBeCloseTo(arrow.dz);
   });
 });
+
+describe('RtsCameraController edge scroll', () => {
+  let root: EventTarget;
+  beforeEach(() => {
+    vi.stubGlobal('window', new EventTarget());
+    root = new EventTarget();
+    vi.stubGlobal('document', { documentElement: root });
+  });
+  afterEach(() => vi.unstubAllGlobals());
+
+  const move = (x: number, y: number): void => void window.dispatchEvent(Object.assign(new Event('pointermove'), { clientX: x, clientY: y, movementX: 0 }));
+
+  function panAfter(steps: () => void): number {
+    const cam = new RtsCameraController(new PerspectiveCamera(), fakeDom());
+    const x = cam.target.x;
+    const z = cam.target.z;
+    steps();
+    cam.update(0.1);
+    cam.dispose();
+    return Math.hypot(cam.target.x - x, cam.target.z - z);
+  }
+
+  it('scrolls when the pointer is in the edge strip anywhere in the window, not only over the canvas', () => {
+    expect(panAfter(() => move(400, 300))).toBe(0);
+    expect(panAfter(() => move(799, 300))).toBeGreaterThan(0.1);
+    expect(panAfter(() => move(400, 2))).toBeGreaterThan(0.1);
+  });
+
+  it('keeps scrolling after the pointer leaves the window across an edge', () => {
+    expect(
+      panAfter(() => {
+        move(2, 300);
+        root.dispatchEvent(new Event('pointerleave'));
+      }),
+    ).toBeGreaterThan(0.1);
+  });
+
+  it('stops when the pointer leaves the window from the middle', () => {
+    expect(
+      panAfter(() => {
+        move(400, 300);
+        root.dispatchEvent(new Event('pointerleave'));
+      }),
+    ).toBe(0);
+  });
+});

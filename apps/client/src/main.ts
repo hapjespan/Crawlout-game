@@ -26,6 +26,7 @@ import { assetConfig } from './game/assets.js';
 import { loadClientGameData, loadClientMap } from './game/content.js';
 import { startSession } from './game/session.js';
 import { createStatusOverlay } from './net/statusOverlay.js';
+import { buildRoster } from './game/roster.js';
 import { EVENT_TYPE, readSnapshot, type EntityRow } from './game/snapshot.js';
 
 const SLICE_MAP = 'rustbelt';
@@ -315,6 +316,11 @@ async function main(): Promise<void> {
         .map((id) => data.perks[id]!)
         .filter((p) => (h.special[p.requires.stat] ?? 0) >= p.requires.min)
         .map((p) => ({ perkId: p.id, naam: p.naam, beschrijving: p.flavourText }));
+    },
+    getRoster: () => buildRoster(data, myFaction()?.id, session.playerId, entities.values()),
+    selectUnits: (ids, add) => {
+      selection = add ? new Set([...selection, ...ids]) : new Set(ids);
+      notify();
     },
     subscribeAlerts: (cb) => {
       alertListeners.add(cb);

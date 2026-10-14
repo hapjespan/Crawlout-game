@@ -21,11 +21,14 @@ export type {
   MinimapData,
   NetworkState,
   PerkOption,
+  RosterGroup,
+  RosterUnit,
   SelectedEntity,
   TargetingKind,
   TargetPoint,
   TargetNode,
   TargetResult,
+  UnitActivity,
 } from './types.js';
 export { ACTIONS, HudController } from './controller.js';
 
