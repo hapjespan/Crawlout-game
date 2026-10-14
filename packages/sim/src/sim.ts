@@ -1,5 +1,5 @@
 import type { FrameBundle, PlayerStatus, QueueItem } from '@crawlout/protocol';
-import { MAX_PLAYERS } from '@crawlout/protocol';
+import { ENTITY_NONE, MAX_PLAYERS } from '@crawlout/protocol';
 import type { SimBuildingType, SimConfig, SimEnv, SimInit, SimMap, SimPlayer, SimUnitType } from './config.js';
 import { envHash, validateEnv } from './config.js';
 import { C, NO_ENTITY, NO_FIELD, ORDER_CRAFT, PHASE_CRAFT, PHASE_WORK, World } from './ecs/world.js';
@@ -274,9 +274,10 @@ export class Sim implements SimContext {
   }
 
   /**
-   * Lopend werk van een speler voor het gebouwpaneel van de HUD (PlayerStatus.queue, speltest 14 oktober): eerst
-   * onderzoek per gebouw, dan omscholingen per unit die bij de werkplaats staat, elk in oplopende entity-id. Een
-   * omscholing die op scrap wacht staat er met 0 promille in; een unit die nog naar de werkplaats loopt niet.
+   * Lopend werk van een speler voor het gebouwpaneel van de HUD (PlayerStatus.queue, speltest 14 oktober, architect-
+   * besluit sectie 16): onderzoek per gebouw (unitId ENTITY_NONE) en omscholing per bewoner (unitId = de bewoner,
+   * buildingId = de werkplaats waar hij staat, ENTITY_NONE zolang hij onderweg is; 0 promille onderweg en zolang hij op
+   * scrap wacht). Oplopend op buildingId, dan unitId.
    */
   queue(playerId: number): QueueItem[] {
     const w = this.world;
@@ -286,18 +287,20 @@ export class Sim implements SimContext {
       const t = this.config.techs[w.research[i]! - 1];
       if (t === undefined) continue;
       const total = t.researchTicks * PROGRESS_ONE;
-      out.push({ kind: 'research', buildingId: w.idOf(i), id: t.techId, progressPermille: permille(w.work[i]!, total) });
+      out.push({ kind: 'research', buildingId: w.idOf(i), unitId: ENTITY_NONE, id: t.techId, progressPermille: permille(w.work[i]!, total) });
     }
     for (let i = 0; i < w.highWater; i++) {
       if (w.alive[i] !== 1 || w.owner[i] !== playerId || !w.has(i, C.unit | C.orders) || w.orderType(i) !== ORDER_CRAFT) continue;
       const phase = w.phase[i]!;
-      if (phase !== PHASE_WORK && phase !== PHASE_CRAFT) continue;
       const t = this.unitTypes[w.ordX[w.currentOrder(i)]!];
-      const ws = nearestOwnBuilding(this, playerId, w.x[i]!, w.y[i]!, PROVIDES_WORKSHOP);
-      if (t === undefined || ws < 0) continue;
+      if (t === undefined) continue;
+      // bij de werkplaats (systeem 2 zet PHASE_WORK pas binnen interactRange): de werkplaats waar hij staat
+      const at = phase === PHASE_WORK || phase === PHASE_CRAFT ? nearestOwnBuilding(this, playerId, w.x[i]!, w.y[i]!, PROVIDES_WORKSHOP) : -1;
       const progress = phase === PHASE_CRAFT ? permille(w.work[i]!, t.craftTicks) : 0;
-      out.push({ kind: 'craft', buildingId: w.idOf(ws), id: t.loadoutId, progressPermille: progress });
+      out.push({ kind: 'craft', buildingId: at < 0 ? ENTITY_NONE : w.idOf(at), unitId: w.idOf(i), id: t.loadoutId, progressPermille: progress });
     }
+    // oplopend op buildingId, dan unitId (contract 1); bij research is unitId ENTITY_NONE en een gebouw heeft één onderzoek
+    out.sort((a, b) => a.buildingId - b.buildingId || a.unitId! - b.unitId!);
     return out;
   }
 

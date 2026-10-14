@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { CLAIM_POINT_TYPE_ID, SCRAP_NODE_TYPE_ID, heroTypeId, unitTypeId } from '@crawlout/data';
-import { ANIM, ENTITY_FLAG, EVENT_TYPE, OWNER_NEUTRAL, readSnapshotHeader, snapshotLayout } from '@crawlout/protocol';
+import { ANIM, ENTITY_FLAG, ENTITY_NONE, EVENT_TYPE, OWNER_NEUTRAL, readSnapshotHeader, snapshotLayout } from '@crawlout/protocol';
 import type { CommandEnvelope } from '@crawlout/protocol';
 import { ORDER_CRAFT, ORDER_GATHER, createSim, createSimWorkerCore, deserialize } from '../src/index.js';
 import type { Sim, SimWorkerOutbound } from '../src/index.js';
@@ -261,17 +261,17 @@ describe('onderzoek en craft', () => {
     expect(sim.researched(1)).toEqual([]);
   });
 
-  it('PlayerStatus.queue: lopend onderzoek en omscholen met voortgang in promille', () => {
-    const sim = emptySim(32);
+  it('PlayerStatus.queue: onderzoek op het gebouw, omscholing op de bewoner (onderweg zonder gebouw), oplopend; Cancel op de bewoner geeft terug', () => {
+    const sim = createSim({ ...testInit(32), config: { ...CONFIG, cancelRefundPermille: 500 } });
+    for (const id of sim.entityIds()) if (sim.getUnit(id)!.kind === 'unit' && sim.getUnit(id)!.owner === 0 && sim.getUnit(id)!.typeId !== SCAV) sim.destroyEntity(id);
     const ws = sim.spawnBuilding(WERKPLAATS, 0, 14, 4);
     sim.setScrap(0, 1000);
-    const scav = sim.spawnUnit({ typeId: SCAV, owner: 0, ...cellCenter(13, 5) });
+    const scavs = sim.entityIds().filter((id) => sim.getUnit(id)!.typeId === SCAV && sim.getUnit(id)!.owner === 0);
     expect(sim.playerStatus(0).queue).toEqual([]);
-    play(sim, 1, at(0, cmd(0, 0, 'Research', { techId: GEWEERREK.techId }), cmd(0, 0, 'Craft', { ids: [scav], loadoutId: PATROL_LOADOUT })));
-    // patrol vraagt geweerrek: alleen het onderzoek loopt
+    play(sim, 1, at(sim.frame, cmd(sim.frame, 0, 'Research', { techId: GEWEERREK.techId })));
     let q = sim.playerStatus(0).queue!;
     expect(q).toHaveLength(1);
-    expect(q[0]).toMatchObject({ kind: 'research', buildingId: ws, id: GEWEERREK.techId });
+    expect(q[0]).toMatchObject({ kind: 'research', buildingId: ws, unitId: ENTITY_NONE, id: GEWEERREK.techId });
     expect(q[0]!.progressPermille).toBeLessThan(10); // één tick werk in het frame van het commando
     play(sim, GEWEERREK.researchTicks >> 1);
     q = sim.playerStatus(0).queue!;
@@ -279,16 +279,31 @@ describe('onderzoek en craft', () => {
     expect(q[0]!.progressPermille).toBeLessThan(600);
     play(sim, GEWEERREK.researchTicks);
     expect(sim.playerStatus(0).queue).toEqual([]);
+    // twee bewoners craften patrol: eerst onderweg (buildingId ENTITY_NONE, 0 promille), dan bij de werkplaats
     const patrol = CONFIG.unitTypes.find((u) => u.loadoutId === PATROL_LOADOUT)!;
-    play(sim, 1, at(sim.frame, cmd(sim.frame, 0, 'Craft', { ids: [scav], loadoutId: PATROL_LOADOUT })));
-    play(sim, 40);
+    const [a, b] = [scavs[0]!, scavs[1]!];
+    play(sim, 1, at(sim.frame, cmd(sim.frame, 0, 'Craft', { ids: [b, a], loadoutId: PATROL_LOADOUT })));
     q = sim.playerStatus(0).queue!;
-    expect(q).toHaveLength(1);
-    expect(q[0]).toMatchObject({ kind: 'craft', buildingId: ws, id: PATROL_LOADOUT });
-    expect(q[0]!.progressPermille).toBeGreaterThan(0);
+    expect(q.map((x) => [x.kind, x.buildingId, x.unitId, x.id, x.progressPermille])).toEqual([
+      ['craft', ENTITY_NONE, Math.min(a, b), PATROL_LOADOUT, 0],
+      ['craft', ENTITY_NONE, Math.max(a, b), PATROL_LOADOUT, 0],
+    ]);
+    for (let n = 0; n < 400 && sim.playerStatus(0).queue!.some((x) => x.progressPermille === 0); n++) play(sim, 1);
+    q = sim.playerStatus(0).queue!;
+    expect(q.map((x) => [x.buildingId, x.unitId])).toEqual([
+      [ws, Math.min(a, b)],
+      [ws, Math.max(a, b)],
+    ]);
+    expect(q.every((x) => x.progressPermille > 0)).toBe(true);
+    // Cancel op een bewoner stopt zijn omscholing met teruggave (cancelRefundPermille)
+    const before = sim.playerStatus(0).scrap;
+    play(sim, 1, at(sim.frame, cmd(sim.frame, 0, 'Cancel', { ids: [a] })));
+    expect(sim.playerStatus(0).scrap).toBe(before + (patrol.scrapCost >> 1));
+    expect(sim.playerStatus(0).queue!.map((x) => x.unitId)).toEqual([b]);
     play(sim, patrol.craftTicks);
     expect(sim.playerStatus(0).queue).toEqual([]);
-    expect(sim.getUnit(scav)!.typeId).toBe(patrol.typeId);
+    expect(sim.getUnit(b)!.typeId).toBe(patrol.typeId);
+    expect(sim.getUnit(a)!.typeId).toBe(SCAV);
   });
 
   it('tech-effecten: hpPct op militie verhoogt maxHp en hp van bestaande en nieuwe units; Cancel stopt onderzoek met teruggave', () => {
