@@ -57,7 +57,7 @@ export function sourceVertices(): SourceVertex[] {
   return out;
 }
 
-function sourceDocument(): Document {
+function sourceDocument(rename: Readonly<Record<string, string>> = {}): Document {
   const doc = new Document().setLogger(new Logger(Logger.Verbosity.WARN));
   const buffer = doc.createBuffer();
   const scene = doc.createScene('scene');
@@ -100,7 +100,7 @@ function sourceDocument(): Document {
       g.dispose();
     }
     const acc = (array: Float32Array | Uint16Array, type: 'VEC3' | 'VEC4' | 'SCALAR') => doc.createAccessor().setArray(array).setType(type).setBuffer(buffer);
-    const material = doc.createMaterial(name).setBaseColorFactor([...MATERIAL_COLORS[name]]);
+    const material = doc.createMaterial(rename[name] ?? name).setBaseColorFactor([...MATERIAL_COLORS[name]]);
     mesh.addPrimitive(
       doc
         .createPrimitive()
@@ -121,9 +121,10 @@ function io(): NodeIO {
 }
 
 /** One LOD GLB as lods.ts writes it (dedup, prune, reorder, meshopt); `quantized` adds quantize() first. */
-export async function fixtureGlb(opts: { meshopt?: boolean; quantized?: boolean } = {}): Promise<Uint8Array> {
+/** `materialNames` renames the fixture's materials (Team_Shirt, Skin), e.g. to an asset without a "team" material. */
+export async function fixtureGlb(opts: { meshopt?: boolean; quantized?: boolean; materialNames?: Readonly<Record<string, string>> } = {}): Promise<Uint8Array> {
   await Promise.all([MeshoptEncoder.ready, MeshoptDecoder.ready]);
-  const doc = sourceDocument();
+  const doc = sourceDocument(opts.materialNames);
   if (opts.quantized) await doc.transform(quantize());
   if (opts.meshopt ?? true) {
     await doc.transform(dedup(), prune({ keepSolidTextures: true }), reorder({ encoder: MeshoptEncoder }));

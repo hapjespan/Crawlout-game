@@ -49,3 +49,51 @@ export function bakedAnimationsFromManifest(baked: BakedAnimation, boneCount: nu
   clips.forEach((c, i) => clipTable.set([c.startRow, c.frameCount, c.loop ? 1 : 0, c.duration], i * 4));
   return { boneCount, width: baked.width, height: baked.height, data, clips, clipTable };
 }
+
+/** The size a character is drawn at: the artist brief's 1.8 m, feet on y = 0, facing +Z. */
+export const CHARACTER_HEIGHT = 1.8;
+/** Heights (m) the manifest bounds may have without rescaling: art in meters stays as authored. */
+export const CHARACTER_HEIGHT_RANGE: readonly [number, number] = [1.2, 2.6];
+/** Feet further than this (m) from y = 0 are lifted or lowered onto it. */
+const FEET_TOLERANCE = 0.05;
+
+export interface CharacterFit {
+  /** Uniform scale around the model origin. */
+  scale: number;
+  /** Added to y after the scale. */
+  lift: number;
+}
+
+/**
+ * How to bring a character to the brief from its manifest bounds (model space, rest pose). Art in meters at a human
+ * height stays as it is; anything outside CHARACTER_HEIGHT_RANGE (centimeters, inches) is scaled to CHARACTER_HEIGHT,
+ * and feet off y = 0 are moved onto it. Facing is not corrected: the asset-cli rejects a character facing -Z.
+ */
+export function characterFit(bounds: { min: readonly number[]; max: readonly number[] }): CharacterFit {
+  const minY = bounds.min[1] ?? 0;
+  const height = (bounds.max[1] ?? 0) - minY;
+  if (!(height > 1e-6)) return { scale: 1, lift: 0 };
+  const [lo, hi] = CHARACTER_HEIGHT_RANGE;
+  const scale = height < lo || height > hi ? CHARACTER_HEIGHT / height : 1;
+  const feet = minY * scale;
+  return { scale, lift: Math.abs(feet) > FEET_TOLERANCE ? -feet : 0 };
+}
+
+/**
+ * Applies a fit to every skin matrix in place: M' = T(0, lift, 0) * S(scale) * M. With skin weights summing to 1 the
+ * lift moves each vertex exactly once, so the shader needs no extra transform.
+ */
+export function applyCharacterFit(anims: BakedAnimations, fit: CharacterFit): void {
+  if (fit.scale === 1 && fit.lift === 0) return;
+  const d = anims.data;
+  // Each matrix is 4 texels (columns) of 4 floats; scale rows x, y, z of all columns, then lift the translation.
+  for (let m = 0; m < d.length; m += 16) {
+    for (let c = 0; c < 4; c++) {
+      const o = m + c * 4;
+      d[o] = d[o]! * fit.scale;
+      d[o + 1] = d[o + 1]! * fit.scale;
+      d[o + 2] = d[o + 2]! * fit.scale;
+    }
+    d[m + 13] = d[m + 13]! + fit.lift * d[m + 15]!;
+  }
+}

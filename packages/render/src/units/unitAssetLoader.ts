@@ -5,7 +5,7 @@
 import { manifestSchema, type AssetEntry, type AssetManifest } from '@crawlout/asset-cli/manifest';
 import type { Object3D } from 'three/webgpu';
 import type { BakedAnimations } from './bake.js';
-import { bakedAnimationsFromManifest } from './bakedManifest.js';
+import { applyCharacterFit, bakedAnimationsFromManifest, characterFit } from './bakedManifest.js';
 import { unitGeometryFromGltf, type TeamMaskSource, type UnitGeometryResult } from './gltfUnitGeometry.js';
 
 export class UnitAssetError extends Error {
@@ -110,6 +110,7 @@ export class UnitAssetLoader {
       ...entry.lods.map((lod) => this.io.fetchBytes(url(lod.path))),
     ]);
     const anims = bakedAnimationsFromManifest(baked, entry.boneCount, animBytes!);
+    applyCharacterFit(anims, characterFit(entry.bounds)); // 1.8 m, feet on y = 0 (bakedManifest.ts)
     const lods = await Promise.all(
       entry.lods.map(async (lod, i) => {
         const scene = await this.io.parseGltf(glbs[i]!, url(lod.path));

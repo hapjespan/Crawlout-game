@@ -16,7 +16,9 @@ export class UnitGeometryError extends Error {
 
 /**
  * Where the team mask comes from. 'materialName' (default): primitives whose glTF material name contains "team"
- * take the owner's color, the rest keep their own. 'diffuseAlpha': the alpha of the diffuse texture is the mask
+ * take the owner's color, the rest keep their own. An asset without a "team" material falls back to its main
+ * material (name "main" or "body" as a word, e.g. Quaternius' M_Main): that whole material takes the owner's color,
+ * on a neutral base so the team color reads clean (TEAM_FALLBACK_BASE). 'diffuseAlpha': the alpha of the diffuse texture is the mask
  * (artist brief). 'none': no team color on the model; the selection ring and blob still show the owner.
  */
 export type TeamMaskSource = 'materialName' | 'diffuseAlpha' | 'none';
@@ -35,6 +37,13 @@ export interface UnitGeometryResult {
   /** Distinct diffuse textures found; only the first one is used (one draw per LOD needs one atlas). */
   textureCount: number;
 }
+
+/** Material names that carry the team mask. */
+export const TEAM_MATERIAL = /team/i;
+/** The main material, team-masked when no material matches TEAM_MATERIAL. */
+export const TEAM_MATERIAL_FALLBACK = /(^|[^a-z])(main|body)([^a-z]|$)/i;
+/** Base color (linear grey) of a fallback team material: the unit material then shows the pure team color. */
+export const TEAM_FALLBACK_BASE = 0.8;
 
 /** uv of primitives without the atlas: the material reads white there. */
 export const NO_UV = -1;
@@ -113,6 +122,9 @@ export function unitGeometryFromGltf(root: Object3D, opts: UnitGeometryOptions):
   };
   for (const mesh of meshes) mapOf((Array.isArray(mesh.material) ? mesh.material[0] : mesh.material) as MaterialLike);
   const atlas = maps[0] ?? null;
+  const materialName = (mesh: SkinnedMesh): string => ((Array.isArray(mesh.material) ? mesh.material[0] : mesh.material) as MaterialLike).name;
+  const teamPattern =
+    teamMask !== 'materialName' ? null : meshes.some((m) => TEAM_MATERIAL.test(materialName(m))) ? TEAM_MATERIAL : TEAM_MATERIAL_FALLBACK;
 
   const pos: number[] = [];
   const nrm: number[] = [];
@@ -144,7 +156,8 @@ export function unitGeometryFromGltf(root: Object3D, opts: UnitGeometryOptions):
     const map = material.map ?? null;
     const textured = atlas !== null && map !== null && (map === atlas || map.source === atlas.source) && uv !== undefined;
     base.copy(material.color ?? new Color(1, 1, 1));
-    const mask = teamMask === 'materialName' && /team/i.test(material.name) ? 1 : 0;
+    const mask = teamPattern?.test(material.name) ? 1 : 0;
+    if (mask && teamPattern === TEAM_MATERIAL_FALLBACK) base.setRGB(TEAM_FALLBACK_BASE, TEAM_FALLBACK_BASE, TEAM_FALLBACK_BASE);
 
     const T = isQuantized(p) ? dequantizationOf(mesh) : new Matrix4();
     normalMatrix.getNormalMatrix(T);

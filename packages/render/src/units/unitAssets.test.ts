@@ -3,8 +3,8 @@ import { ANIM, ANIM_NAMES } from '@crawlout/protocol';
 import { manifestSchema } from '@crawlout/asset-cli/manifest';
 import { Matrix4, Scene, Vector3, type BufferAttribute, type SkinnedMesh } from 'three/webgpu';
 import { bakeAnimations } from './bake.js';
-import { BakedManifestError, bakedAnimationsFromManifest } from './bakedManifest.js';
-import { dequantizationOf, unitGeometryFromGltf } from './gltfUnitGeometry.js';
+import { applyCharacterFit, BakedManifestError, bakedAnimationsFromManifest, CHARACTER_HEIGHT, characterFit } from './bakedManifest.js';
+import { dequantizationOf, TEAM_FALLBACK_BASE, unitGeometryFromGltf } from './gltfUnitGeometry.js';
 import { createGltfIO, resolveManifestPath, UnitAssetLoader } from './unitAssetLoader.js';
 import { UnitAssetRegistry } from './unitAssets.js';
 import { PLACEHOLDER_RIG, UnitLayer } from './unitLayer.js';
@@ -186,7 +186,7 @@ describe('UnitAssetRegistry', () => {
     return new UnitLayer(new Scene(), { capacity: 8, lightDir: new Vector3(0, 1, 0) });
   }
 
-  it('draws loadouts whose body slot names a manifest asset with it, the rest with the placeholder', async () => {
+  it('draws loadouts whose body slot names a manifest asset with it, and the first body for everyone else', async () => {
     const { loader } = await fakeDist();
     const units = layer();
     const warnings: string[] = [];
@@ -194,8 +194,10 @@ describe('UnitAssetRegistry', () => {
     await registry.setLoadouts(loadouts);
     expect(units.rigCount).toBe(2);
     expect(units.rigName(units.rigFor(1))).toBe(FIXTURE_ID); // typeId 1 = loadout 0
-    expect(units.rigFor(2)).toBe(PLACEHOLDER_RIG); // asset not in the manifest yet: placeholder, no warning
-    expect(units.rigFor(3)).toBe(PLACEHOLDER_RIG);
+    // Asset not in the manifest yet (no warning) or no body: the first loadout body, also for the hero.
+    expect(units.rigName(units.rigFor(2))).toBe(FIXTURE_ID);
+    expect(units.rigName(units.rigFor(3))).toBe(FIXTURE_ID);
+    expect(units.rigName(units.rigFor(1000))).toBe(FIXTURE_ID);
     expect(warnings).toEqual([]);
     const [status] = registry.statuses();
     expect(status).toMatchObject({ assetId: FIXTURE_ID, state: 'ready', typeIds: [1], triangles: [36, 36, 36] });
@@ -225,5 +227,71 @@ describe('UnitAssetRegistry', () => {
     expect(warnings.length).toBe(1);
     const tooBig = new UnitAssetRegistry(layer(), (await fakeDist()).loader, { maxTextureSize: 8 });
     expect((await tooBig.load(MANIFEST_URL, FIXTURE_ID)).reason).toMatch(/GPU limit/);
+  });
+});
+
+describe('real characters without a team material', () => {
+  async function geometryWith(names: Record<string, string>) {
+    const io = createGltfIO(async () => new ArrayBuffer(0));
+    const scene = await io.parseGltf(copy(await fixtureGlb({ materialNames: names })), 'https://assets.test/x.glb');
+    return unitGeometryFromGltf(scene, { boneCount: JOINTS.length }).geometry;
+  }
+  const maskedColors = (g: Awaited<ReturnType<typeof geometryWith>>) => {
+    const c = g.getAttribute('color');
+    const masked = new Set<string>();
+    let unmasked = 0;
+    for (let i = 0; i < c.count; i++) {
+      if (c.getW(i) > 0.5) masked.add([c.getX(i), c.getY(i), c.getZ(i)].map((v) => v.toFixed(3)).join(','));
+      else unmasked++;
+    }
+    return { masked, unmasked, total: c.count };
+  };
+
+  it('masks the main material (Quaternius M_Main) on a neutral base when no material says "team"', async () => {
+    const g = await geometryWith({ Team_Shirt: 'M_Main', Skin: 'M_Joints' });
+    const { masked, unmasked } = maskedColors(g);
+    const grey = TEAM_FALLBACK_BASE.toFixed(3);
+    expect([...masked]).toEqual([`${grey},${grey},${grey}`]); // the team color shows pure
+    expect(unmasked).toBeGreaterThan(0); // M_Joints keeps its own color
+  });
+
+  it('keeps an explicit team material as the only mask and its own color', async () => {
+    const g = await geometryWith({ Team_Shirt: 'Team_Shirt', Skin: 'M_Main' });
+    const { masked } = maskedColors(g);
+    expect([...masked]).toEqual([MATERIAL_COLORS.Team_Shirt.slice(0, 3).map((v) => v.toFixed(3)).join(',')]);
+  });
+
+  it('masks nothing when no material is team or main', async () => {
+    const g = await geometryWith({ Team_Shirt: 'Cloth', Skin: 'Skin' });
+    expect(maskedColors(g).masked.size).toBe(0);
+  });
+});
+
+describe('characterFit', () => {
+  it('leaves a character in meters at a human height as authored (Quaternius: 1.83 m, feet at 2 mm)', () => {
+    expect(characterFit({ min: [-0.97, 0.002415, -0.16], max: [0.97, 1.827399, 0.2] })).toEqual({ scale: 1, lift: 0 });
+  });
+
+  it('scales centimeters to 1.8 m and puts the feet on y = 0', () => {
+    const fit = characterFit({ min: [-50, -10, -20], max: [50, 170, 20] });
+    expect(fit.scale).toBeCloseTo(CHARACTER_HEIGHT / 180, 9);
+    expect(fit.lift).toBeCloseTo(0.1, 9);
+    const anims = bakeAnimations();
+    const before = anims.data.slice();
+    applyCharacterFit(anims, fit);
+    // Every skin matrix maps a point p to fit.scale * (M p) + lift on y.
+    const m0 = new Matrix4().fromArray(before, 0);
+    const m1 = new Matrix4().fromArray(anims.data, 0);
+    const p = new Vector3(0.3, 1.2, -0.4);
+    const want = p.clone().applyMatrix4(m0).multiplyScalar(fit.scale).add(new Vector3(0, fit.lift, 0));
+    const got = p.clone().applyMatrix4(m1);
+    expect(got.distanceTo(want)).toBeLessThan(1e-5);
+  });
+
+  it('is a no-op for the identity fit', () => {
+    const anims = bakeAnimations();
+    const before = anims.data.slice();
+    applyCharacterFit(anims, { scale: 1, lift: 0 });
+    expect(anims.data).toEqual(before);
   });
 });

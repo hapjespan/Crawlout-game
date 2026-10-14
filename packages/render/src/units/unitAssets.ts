@@ -82,17 +82,27 @@ export class UnitAssetRegistry {
       this.typesByAsset.set(id, list);
     }
     const loads: Promise<unknown>[] = [];
+    // Without a configured default unit, the first loadout body (in loadout order) also draws the units and heroes
+    // without a body of their own, so no placeholder stands between real characters.
+    let first = !this.opts.config?.defaultUnit;
     for (const [assetId, typeIds] of this.typesByAsset) {
+      const asDefault = first;
+      first = false;
       const loaded = [...this.entries.values()].find((e) => e.status.assetId === assetId && e.status.state !== 'failed');
       if (loaded) {
-        loads.push(loaded.rig.then((rig) => this.assign(loaded.status, typeIds, rig)));
+        loads.push(
+          loaded.rig.then((rig) => {
+            this.assign(loaded.status, typeIds, rig);
+            if (asDefault && rig !== null && !this.disposed) this.layer.setDefaultRig(rig);
+          }),
+        );
         continue;
       }
       const c = this.opts.config;
       if (!c) continue;
       loads.push(
         this.loader.has(c.manifestUrl, assetId).then(
-          (has) => (has ? this.load(c.manifestUrl, assetId) : null),
+          (has) => (has ? this.load(c.manifestUrl, assetId, { asDefault }) : null),
           () => null, // no manifest yet: placeholder for everyone
         ),
       );
