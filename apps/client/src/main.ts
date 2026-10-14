@@ -2,6 +2,7 @@
 // Local skirmish against the scripted AI on the slice map; the same session code drives the ws relay later.
 import {
   ANIM,
+  ENTITY_NONE,
   MAX_ENTITIES_PER_COMMAND,
   OWNER_NEUTRAL,
   type CommandPayload,
@@ -379,12 +380,15 @@ async function main(): Promise<void> {
       }
     },
     cancelCard: (card) => {
-      // Cancel on the building stops its research or revive (sim: Cancel on an own building).
-      const building =
+      // Research and revive run in the building, craft runs on the settler (contract 1, QueueItem.unitId).
+      const items = status?.queue?.filter((q) => q.kind === card.kind && q.id === card.id) ?? [];
+      const ids =
         card.kind === 'revive'
-          ? card.id
-          : status?.queue?.find((q) => q.kind === card.kind && q.id === card.id)?.buildingId;
-      if (building !== undefined) session.sendCommand('Cancel', { ids: [building] });
+          ? [card.id]
+          : card.kind === 'craft'
+            ? items.flatMap((q) => (q.unitId !== undefined && q.unitId !== ENTITY_NONE ? [q.unitId] : []))
+            : items.flatMap((q) => (q.buildingId !== ENTITY_NONE ? [q.buildingId] : []));
+      if (ids.length > 0) sendChunked('Cancel', ids, {});
     },
     getRoster: () => buildRoster(data, myFaction()?.id, session.playerId, entities.values()),
     selectUnits: (ids, add) => {
