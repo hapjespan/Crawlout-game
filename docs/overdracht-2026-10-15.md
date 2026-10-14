@@ -39,7 +39,7 @@ Chrome op batterij draait op 30 fps; aan de lader krijg je 120.
 
 1. **Speel een potje** tegen de AI met de HUD: dominantie, kaarten, gebouwen, terrein. Controleer ook visueel of de kliffen op de nieuwe Rustbelt kloppen met waar je wel en niet kunt lopen.
 2. **Meet op een laptop met geïntegreerde GPU** (doel: 60 fps, minder dan 150 draw calls, geen frame boven 20 ms). Gaat het niet goed, probeer dan `?detail=1` of `?buildings=ph`.
-3. **Browsers:** `npx -y pnpm@9 --filter @crawlout/replay exec playwright install chromium firefox webkit`, daarna `replay:browsers`. CI draait nu op de gepushte branch; kijk of die groen is.
+3. **CI en browsers:** CI heeft nog nooit gedraaid. GitHub kent de workflows pas als ze op `main` staan, en `ci.yml` start bij een push naar main of bij een pull request. Open een PR van `sprint-1` naar `main` (`gh pr create --base main --head sprint-1`) om CI te starten. Browsers lokaal: `npx -y pnpm@9 --filter @crawlout/replay exec playwright install chromium firefox webkit`, daarna `replay:browsers`.
 4. **Testgroep** (5 tot 8 mensen): een potje tegen de AI en een potje met twee browsers over de relay, met een reload halverwege.
 5. **Ontwerpkeuze na de testgroep:** het settlement-claimpunt ligt 56 m van huis, en de map is rond minuut 25 leeg aan scrap. Is dat het tempo dat je wilt?
 
