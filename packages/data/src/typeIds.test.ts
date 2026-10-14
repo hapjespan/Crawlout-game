@@ -1,5 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { BUILDING_TYPE_BASE, CLAIM_POINT_TYPE_ID, HERO_TYPE_BASE, SCRAP_NODE_TYPE_ID, buildingTypeId, heroIdOfTypeId, heroTypeId, kindOfTypeId, unitTypeId } from './typeIds.js';
+import {
+  BUILDING_TYPE_BASE,
+  CLAIM_POINT_TYPE_ID,
+  HERO_TYPE_BASE,
+  SCRAP_NODE_TYPE_ID,
+  buildingTypeId,
+  heroIdOfTypeId,
+  heroTypeId,
+  kindOfTypeId,
+  unitTypeId,
+} from './typeIds.js';
 
 describe('typeId-ruimte', () => {
   it('legt de constanten vast', () => {
@@ -16,7 +26,8 @@ describe('typeId-ruimte', () => {
   });
 
   it('doet een roundtrip voor units en gebouwen', () => {
-    for (let i = 0; i <= 998; i++) expect(kindOfTypeId(unitTypeId(i))).toEqual({ kind: 'unit', index: i });
+    for (let i = 0; i <= 998; i++)
+      expect(kindOfTypeId(unitTypeId(i))).toEqual({ kind: 'unit', index: i });
     for (let i = 0; i <= 998; i++) expect(heroIdOfTypeId(unitTypeId(i))).toBe(-1);
     // een held is een unit (render en HUD), herkenbaar via heroIdOfTypeId
     for (let h = 0; h <= 23; h++) {
@@ -24,7 +35,8 @@ describe('typeId-ruimte', () => {
       expect(heroIdOfTypeId(heroTypeId(h))).toBe(h);
     }
     for (const t of [0, 999, 1024, 2048, -1, 1000.5]) expect(heroIdOfTypeId(t)).toBe(-1);
-    for (let i = 0; i <= 1023; i++) expect(kindOfTypeId(buildingTypeId(i))).toEqual({ kind: 'building', index: i });
+    for (let i = 0; i <= 1023; i++)
+      expect(kindOfTypeId(buildingTypeId(i))).toEqual({ kind: 'building', index: i });
   });
 
   it('herkent node, claim en none', () => {

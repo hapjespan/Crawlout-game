@@ -17,7 +17,8 @@ import { createReplaySim, parseReplay } from './run.js';
 //  - bouwers hervatten na een onderbreking, Stop houdt ze stil, vrije bouwers helpen (fixture s5-rustbelt-builder-resume).
 
 const FIXTURES_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'fixtures');
-const fixture = (name: string): Replay => parseReplay(JSON.parse(readFileSync(join(FIXTURES_DIR, `${name}.json`), 'utf8')));
+const fixture = (name: string): Replay =>
+  parseReplay(JSON.parse(readFileSync(join(FIXTURES_DIR, `${name}.json`), 'utf8')));
 
 /** Speelt een replay af en roept na elke tick `each` aan (events van die tick staan in sim.events). */
 function play(r: Replay, each: (sim: Sim) => void): Sim {
@@ -33,10 +34,18 @@ function play(r: Replay, each: (sim: Sim) => void): Sim {
 }
 
 const lobby = (ai: boolean): LobbyPlayer[] =>
-  [0, 1].map((i) => ({ playerId: i, name: `p${i}`, faction: 'dwellers', ready: true, online: !ai, ai }));
+  [0, 1].map((i) => ({
+    playerId: i,
+    name: `p${i}`,
+    faction: 'dwellers',
+    ready: true,
+    online: !ai,
+    ai,
+  }));
 const settings = { mode: 'skirmish' as const, delayFrames: 4 };
 const role = (name: 'scavenger' | 'builder' | 'militia'): number => ROLES.indexOf(name);
-const building = (key: string): number => buildingTypeId(gameData().data.buildings.find((b) => b.key === key)!.id);
+const building = (key: string): number =>
+  buildingTypeId(gameData().data.buildings.find((b) => b.key === key)!.id);
 
 function unitsOf(sim: Sim, owner: number, r?: number): number[] {
   return sim.entityIds().filter((id) => {
@@ -59,17 +68,29 @@ describe('slice: Rustbelt met echte data', () => {
         done.push({ frame: s.frame - 1, owner: u.owner, typeId: u.typeId });
       }
       const units = builder.map((id) => s.getUnit(id)!);
-      seen.push({ frame: s.frame - 1, order: units.map((u) => u.order), site: units.map((u) => u.orderTarget) });
+      seen.push({
+        frame: s.frame - 1,
+        order: units.map((u) => u.order),
+        site: units.map((u) => u.orderTarget),
+      });
       if (s.frame - 1 >= 1400 && s.frame - 1 < 1800) {
-        const site = s.entityIds().map((id) => s.getUnit(id)!).find((u) => u.kind === 'building' && u.owner === 0 && u.buildState === 1)!;
+        const site = s
+          .entityIds()
+          .map((id) => s.getUnit(id)!)
+          .find((u) => u.kind === 'building' && u.owner === 0 && u.buildState === 1)!;
         if (stoppedProgress < 0) stoppedProgress = site.progress;
         expect(site.progress).toBe(stoppedProgress); // na Stop: niemand bouwt, ook niet vanzelf
         expect(units[0]!.order).toBe(0);
       }
     });
     // speler 0: werkplaats af na de Move-onderbreking, woning af na de rechtsklik
-    expect(done.filter((d) => d.owner === 0).map((d) => d.typeId)).toEqual([building('werkplaats'), building('woning')]);
-    expect(done.find((d) => d.owner === 0 && d.typeId === building('woning'))!.frame).toBeGreaterThan(1800);
+    expect(done.filter((d) => d.owner === 0).map((d) => d.typeId)).toEqual([
+      building('werkplaats'),
+      building('woning'),
+    ]);
+    expect(
+      done.find((d) => d.owner === 0 && d.typeId === building('woning'))!.frame,
+    ).toBeGreaterThan(1800);
     // de werkplaats-bouwer was aan het lopen (Move) en ging daarna zonder bevel weer bouwen
     const movedAt = seen.findIndex((x) => x.frame >= 250 && x.order[0] === 1);
     expect(seen.slice(movedAt).some((x) => x.order[0] === 5)).toBe(true);
@@ -79,66 +100,77 @@ describe('slice: Rustbelt met echte data', () => {
     expect(sim.getUnit(builder[1]!)!.order).toBe(0);
   });
 
-  it('50 bewoners per kant verzamelen, bouwen, wisselen van rol en vechten (fixture s4-rustbelt-fifty)', { timeout: 60_000 }, () => {
-    const r = fixture('s4-rustbelt-fifty');
-    const peak = [0, 0];
-    const peakMilitia = [0, 0];
-    const scrapIn = [0, 0];
-    const counts = new Map<number, number>();
-    play(r, (sim) => {
-      for (let k = 0; k < sim.events.count; k++) counts.set(sim.events.type[k]!, (counts.get(sim.events.type[k]!) ?? 0) + 1);
-      if (sim.frame % 20 !== 0) return;
-      for (let p = 0; p < 2; p++) {
-        const st = sim.playerStatus(p);
-        peak[p] = Math.max(peak[p]!, st.settlers);
-        expect(st.settlers).toBeLessThanOrEqual(st.popCap); // geen bewoners buiten de pop-cap om
-        peakMilitia[p] = Math.max(peakMilitia[p]!, unitsOf(sim, p, role('militia')).length);
-        scrapIn[p] = Math.max(scrapIn[p]!, st.scrap);
-      }
-    });
-    // 50 bewoners per kant, alleen uit huisvestingsgroei (pop-cap 50: hoofdgebouw plus elf woningen)
-    expect(peak).toEqual([50, 50]);
-    // verzameld (de scrap steeg ver boven de startScrap), gebouwd (werkplaats en elf woningen per kant)
-    for (let p = 0; p < 2; p++) expect(scrapIn[p]).toBeGreaterThan(1000);
-    expect(counts.get(EVENT_TYPE.buildingDone) ?? 0).toBeGreaterThanOrEqual(24);
-    // van rol gewisseld (bouwers en 20 militie per kant) en gevochten
-    for (let p = 0; p < 2; p++) expect(peakMilitia[p]).toBeGreaterThanOrEqual(20);
-    expect(counts.get(EVENT_TYPE.shotFired) ?? 0).toBeGreaterThan(200);
-    expect(counts.get(EVENT_TYPE.death) ?? 0).toBeGreaterThanOrEqual(40);
-  });
-
-  it('turrets schieten en de AI onderzoekt voor zijn turret (fixture s4-rustbelt-turrets)', { timeout: 60_000 }, () => {
-    const r = fixture('s4-rustbelt-turrets');
-    const turret = building('turret');
-    const owner = new Map<number, number>();
-    const shots = [0, 0];
-    const placedAt = [-1, -1];
-    const researchedAt = [-1, -1];
-    const geweerrek = gameData().data.tech.find((t) => t.key === 'geweerrek')!.id;
-    let zones = 0;
-    const sim = play(r, (s) => {
-      for (let k = 0; k < s.events.count; k++) {
-        const t = s.events.type[k]!;
-        const a = s.events.a[k]!;
-        if (t === EVENT_TYPE.buildingPlaced && s.events.b[k] === turret) {
-          const o = s.getUnit(a)!.owner;
-          owner.set(a, o);
-          if (placedAt[o]! < 0) placedAt[o] = s.frame;
+  it(
+    '50 bewoners per kant verzamelen, bouwen, wisselen van rol en vechten (fixture s4-rustbelt-fifty)',
+    { timeout: 60_000 },
+    () => {
+      const r = fixture('s4-rustbelt-fifty');
+      const peak = [0, 0];
+      const peakMilitia = [0, 0];
+      const scrapIn = [0, 0];
+      const counts = new Map<number, number>();
+      play(r, (sim) => {
+        for (let k = 0; k < sim.events.count; k++)
+          counts.set(sim.events.type[k]!, (counts.get(sim.events.type[k]!) ?? 0) + 1);
+        if (sim.frame % 20 !== 0) return;
+        for (let p = 0; p < 2; p++) {
+          const st = sim.playerStatus(p);
+          peak[p] = Math.max(peak[p]!, st.settlers);
+          expect(st.settlers).toBeLessThanOrEqual(st.popCap); // geen bewoners buiten de pop-cap om
+          peakMilitia[p] = Math.max(peakMilitia[p]!, unitsOf(sim, p, role('militia')).length);
+          scrapIn[p] = Math.max(scrapIn[p]!, st.scrap);
         }
-        if (t === EVENT_TYPE.shotFired && owner.has(a)) shots[owner.get(a)!]!++;
-        if (t === EVENT_TYPE.abilityZone) zones++;
-      }
-      for (let p = 0; p < 2; p++) if (researchedAt[p]! < 0 && s.researched(p).includes(geweerrek)) researchedAt[p] = s.frame;
-    });
-    // de AI (speler 1) onderzocht geweerrek en bouwde daarna de turret
-    expect(researchedAt[1]).toBeGreaterThan(0);
-    expect(placedAt[1]).toBeGreaterThanOrEqual(researchedAt[1]!);
-    expect(shots[0]).toBeGreaterThan(0);
-    expect(shots[1]).toBeGreaterThan(0);
-    expect(zones).toBeGreaterThan(0);
-    const laser = gameData().data.tech.find((t) => t.key === 'lasergeleiding')!.id;
-    expect(sim.researched(0)).toContain(laser);
-  });
+      });
+      // 50 bewoners per kant, alleen uit huisvestingsgroei (pop-cap 50: hoofdgebouw plus elf woningen)
+      expect(peak).toEqual([50, 50]);
+      // verzameld (de scrap steeg ver boven de startScrap), gebouwd (werkplaats en elf woningen per kant)
+      for (let p = 0; p < 2; p++) expect(scrapIn[p]).toBeGreaterThan(1000);
+      expect(counts.get(EVENT_TYPE.buildingDone) ?? 0).toBeGreaterThanOrEqual(24);
+      // van rol gewisseld (bouwers en 20 militie per kant) en gevochten
+      for (let p = 0; p < 2; p++) expect(peakMilitia[p]).toBeGreaterThanOrEqual(20);
+      expect(counts.get(EVENT_TYPE.shotFired) ?? 0).toBeGreaterThan(200);
+      expect(counts.get(EVENT_TYPE.death) ?? 0).toBeGreaterThanOrEqual(40);
+    },
+  );
+
+  it(
+    'turrets schieten en de AI onderzoekt voor zijn turret (fixture s4-rustbelt-turrets)',
+    { timeout: 60_000 },
+    () => {
+      const r = fixture('s4-rustbelt-turrets');
+      const turret = building('turret');
+      const owner = new Map<number, number>();
+      const shots = [0, 0];
+      const placedAt = [-1, -1];
+      const researchedAt = [-1, -1];
+      const geweerrek = gameData().data.tech.find((t) => t.key === 'geweerrek')!.id;
+      let zones = 0;
+      const sim = play(r, (s) => {
+        for (let k = 0; k < s.events.count; k++) {
+          const t = s.events.type[k]!;
+          const a = s.events.a[k]!;
+          if (t === EVENT_TYPE.buildingPlaced && s.events.b[k] === turret) {
+            const o = s.getUnit(a)!.owner;
+            owner.set(a, o);
+            if (placedAt[o]! < 0) placedAt[o] = s.frame;
+          }
+          if (t === EVENT_TYPE.shotFired && owner.has(a)) shots[owner.get(a)!]!++;
+          if (t === EVENT_TYPE.abilityZone) zones++;
+        }
+        for (let p = 0; p < 2; p++)
+          if (researchedAt[p]! < 0 && s.researched(p).includes(geweerrek))
+            researchedAt[p] = s.frame;
+      });
+      // de AI (speler 1) onderzocht geweerrek en bouwde daarna de turret
+      expect(researchedAt[1]).toBeGreaterThan(0);
+      expect(placedAt[1]).toBeGreaterThanOrEqual(researchedAt[1]!);
+      expect(shots[0]).toBeGreaterThan(0);
+      expect(shots[1]).toBeGreaterThan(0);
+      expect(zones).toBeGreaterThan(0);
+      const laser = gameData().data.tech.find((t) => t.key === 'lasergeleiding')!.id;
+      expect(sim.researched(0)).toContain(laser);
+    },
+  );
 
   it('scripted AI tegen scripted AI levert een winnaar', { timeout: 60_000 }, () => {
     const env = buildEnv('rustbelt', lobby(true), settings);
@@ -152,10 +184,17 @@ describe('slice: Rustbelt met echte data', () => {
       sim.applyBundle({ frame: f, commands: [] });
       sim.tick();
       for (let k = 0; k < sim.events.count; k++) {
-        if (sim.events.type[k] === EVENT_TYPE.claimTaken && sim.events.b[k]! < 2) claims[sim.events.b[k]!]!++;
-        if (sim.events.type[k] === EVENT_TYPE.shotFired && sim.getUnit(sim.events.a[k]!)?.typeId === turret) turretShots++;
+        if (sim.events.type[k] === EVENT_TYPE.claimTaken && sim.events.b[k]! < 2)
+          claims[sim.events.b[k]!]!++;
+        if (
+          sim.events.type[k] === EVENT_TYPE.shotFired &&
+          sim.getUnit(sim.events.a[k]!)?.typeId === turret
+        )
+          turretShots++;
       }
-      for (let p = 0; p < 2; p++) if (sim.ps.zoneTicks[p * 4] === env.config.heroes[0]!.abilities[0]!.durationTicks - 1) lockdowns++;
+      for (let p = 0; p < 2; p++)
+        if (sim.ps.zoneTicks[p * 4] === env.config.heroes[0]!.abilities[0]!.durationTicks - 1)
+          lockdowns++;
     }
     const w = sim.winner();
     expect(w).not.toBeNull();

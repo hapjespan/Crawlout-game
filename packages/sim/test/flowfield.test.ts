@@ -29,7 +29,8 @@ describe('flow fields', () => {
     ref.step(1 << 20);
     expect(Array.from(ff.dist[s]!)).toEqual(Array.from(ref.dist[r]!));
     // geblokkeerde cellen hebben geen afstand
-    for (let c = 0; c < map.passable.length; c++) if (map.passable[c] === 0) expect(ff.dist[s]![c]).toBe(DIST_UNKNOWN);
+    for (let c = 0; c < map.passable.length; c++)
+      if (map.passable[c] === 0) expect(ff.dist[s]![c]).toBe(DIST_UNKNOWN);
   });
 
   it('volgt het veld door de opening in de muur', () => {
@@ -88,7 +89,8 @@ describe('flow fields', () => {
     expect(ff.dist[s]![20 * 64 + 9]).toBe(1); // links naast het blok
     expect(ff.dist[s]![21 * 64 + 13]).toBe(1); // rechts naast het blok
     let cell = 30 * 64 + 5;
-    for (let steps = 0; steps < 100 && ff.dist[s]![cell] !== 1; steps++) cell = ff.nextCell(s, cell);
+    for (let steps = 0; steps < 100 && ff.dist[s]![cell] !== 1; steps++)
+      cell = ff.nextCell(s, cell);
     expect(ff.dist[s]![cell]).toBe(1);
     expect(ff.nextCell(s, cell)).toBe(cell); // aan de rand: geen begaanbare buur die beter is
   });

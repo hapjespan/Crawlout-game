@@ -3,7 +3,15 @@ import { ROLES } from '@crawlout/data';
 import type { SimAiScript, SimBuildingType } from '../config.js';
 import { AI_SITE_FRONT, AI_SITE_HQ, MAX_ABILITIES } from '../config.js';
 import { HERO_DEAD, hasTechs, heroOf } from '../effects.js';
-import { BSTATE_DONE, BSTATE_SITE, C, ORDER_ATTACK_MOVE, ORDER_CRAFT, ORDER_GATHER, ORDER_NONE } from '../ecs/world.js';
+import {
+  BSTATE_DONE,
+  BSTATE_SITE,
+  C,
+  ORDER_ATTACK_MOVE,
+  ORDER_CRAFT,
+  ORDER_GATHER,
+  ORDER_NONE,
+} from '../ecs/world.js';
 import { footprintFree } from '../entities.js';
 import { PROVIDES_HQ, PROVIDES_WORKSHOP } from '../fromData.js';
 import { clampI, idiv } from '../math/int.js';
@@ -12,7 +20,16 @@ import type { Census } from './census.js';
 import { takeCensus } from './census.js';
 import { applyCommand, canPlaceType } from './commands.js';
 import type { SimContext } from './common.js';
-import { MAX_FREE_RING, NO_WINNER, cellCenterOf, distToRect2, isEnemy, nearestNode, nodeAllowed, scanRing } from './common.js';
+import {
+  MAX_FREE_RING,
+  NO_WINNER,
+  cellCenterOf,
+  distToRect2,
+  isEnemy,
+  nearestNode,
+  nodeAllowed,
+  scanRing,
+} from './common.js';
 import { heroIndex } from './hero.js';
 import { ROLE_MILITIA } from './orders.js';
 
@@ -60,7 +77,8 @@ const ROLE_BUILDER = ROLES.indexOf('builder');
 
 function chunks(ids: readonly number[]): number[][] {
   const out: number[][] = [];
-  for (let k = 0; k < ids.length; k += MAX_ENTITIES_PER_COMMAND) out.push(ids.slice(k, k + MAX_ENTITIES_PER_COMMAND));
+  for (let k = 0; k < ids.length; k += MAX_ENTITIES_PER_COMMAND)
+    out.push(ids.slice(k, k + MAX_ENTITIES_PER_COMMAND));
   return out;
 }
 
@@ -116,7 +134,14 @@ function ownClaimNear(ctx: SimContext, p: number, x: number, y: number): number 
  * (AI_SITE_FRONT); zonder eigen claimpunt het hoofdgebouw. Een gebouw met een wapen (turret) zoekt vanaf een punt voor
  * het anker richting `toward` (de spawn van de vijand), zodat een aanval binnen zijn bereik komt.
  */
-function findSite(ctx: SimContext, p: number, hq: number, bt: SimBuildingType, site: number, toward: { x: number; y: number } | null): { x: number; y: number } | null {
+function findSite(
+  ctx: SimContext,
+  p: number,
+  hq: number,
+  bt: SimBuildingType,
+  site: number,
+  toward: { x: number; y: number } | null,
+): { x: number; y: number } | null {
   const w = ctx.world;
   const map = ctx.map;
   let cx = w.fx[hq]! + (w.fw[hq]! >> 1);
@@ -177,11 +202,19 @@ function findSite(ctx: SimContext, p: number, hq: number, bt: SimBuildingType, s
  * Laat bouwer `builder` het neutrale claimpunt het dichtst bij het hoofdgebouw claimen (tiebreak laagste index). Ligt
  * het verder dan claimSafeRadius, dan pas vanaf claimFarFromTicks, en de militie zonder taak gaat als escorte mee.
  */
-function claimNext(ctx: SimContext, p: number, hq: number, builder: number, script: SimAiScript, idleMilitia: number[]): boolean {
+function claimNext(
+  ctx: SimContext,
+  p: number,
+  hq: number,
+  builder: number,
+  script: SimAiScript,
+  idleMilitia: number[],
+): boolean {
   const w = ctx.world;
   const typeId = ctx.config.factions[ctx.players[p]!.factionId]!.claimTypeId;
   const bt = typeId === 0 ? undefined : ctx.buildingType(typeId);
-  if (bt === undefined || !canPlaceType(ctx, p, typeId) || ctx.ps.scrap[p]! < bt.scrapCost) return false;
+  if (bt === undefined || !canPlaceType(ctx, p, typeId) || ctx.ps.scrap[p]! < bt.scrapCost)
+    return false;
   let best = -1;
   let bestD = 0;
   for (const pt of ctx.claimPoints) {
@@ -195,12 +228,26 @@ function claimNext(ctx: SimContext, p: number, hq: number, builder: number, scri
   if (best < 0) return false;
   const far = bestD > script.claimSafeRadius * script.claimSafeRadius;
   if (far && ctx.frame < script.claimFarFromTicks) return false;
-  if (!applyCommand(ctx, { playerId: p, seq: 0, type: 'Claim', payload: { ids: [builder], pointId: w.idOf(best) } })) return false;
+  if (
+    !applyCommand(ctx, {
+      playerId: p,
+      seq: 0,
+      type: 'Claim',
+      payload: { ids: [builder], pointId: w.idOf(best) },
+    })
+  )
+    return false;
   if (far) {
     // de escorte loopt naar een punt net naast het claimpunt (ESCORT_OFFSET), zodat raidOver hem niet voor een
     // afgelopen raid houdt terwijl het punt nog neutraal is
     const x = w.x[best]! + ESCORT_OFFSET;
-    for (const ids of chunks(idleMilitia)) applyCommand(ctx, { playerId: p, seq: 0, type: 'AttackMove', payload: { ids, x, y: w.y[best]! } });
+    for (const ids of chunks(idleMilitia))
+      applyCommand(ctx, {
+        playerId: p,
+        seq: 0,
+        type: 'AttackMove',
+        payload: { ids, x, y: w.y[best]! },
+      });
     idleMilitia.length = 0;
   }
   return true;
@@ -233,12 +280,23 @@ function exclusiveFor(ctx: SimContext, j: number, p: number): boolean {
 function armyType(ctx: SimContext, p: number, script: SimAiScript): number {
   for (const t of script.armyTypeIds) {
     const u = ctx.unitType(t);
-    if (u !== undefined && u.factionId === ctx.players[p]!.factionId && hasTechs(ctx, p, u.prereqTech)) return t;
+    if (
+      u !== undefined &&
+      u.factionId === ctx.players[p]!.factionId &&
+      hasTechs(ctx, p, u.prereqTech)
+    )
+      return t;
   }
   return 0;
 }
 
-function think(ctx: SimContext, census: Census, scratch: AiScratch, p: number, script: SimAiScript): void {
+function think(
+  ctx: SimContext,
+  census: Census,
+  scratch: AiScratch,
+  p: number,
+  script: SimAiScript,
+): void {
   const w = ctx.world;
   const ps = ctx.ps;
   const tick = ctx.frame;
@@ -271,7 +329,12 @@ function think(ctx: SimContext, census: Census, scratch: AiScratch, p: number, s
     if (w.owner[i] !== p) continue;
     if (w.has(i, C.building)) {
       const bt = ctx.buildingType(w.typeId[i]!);
-      if (bt !== undefined && w.bstate[i] === BSTATE_DONE && (bt.provides & PROVIDES_WORKSHOP) !== 0) workshop = true;
+      if (
+        bt !== undefined &&
+        w.bstate[i] === BSTATE_DONE &&
+        (bt.provides & PROVIDES_WORKSHOP) !== 0
+      )
+        workshop = true;
       if (w.bstate[i] === BSTATE_SITE) {
         if (site < 0) site = i;
         if (w.typeId[i] === script.housingTypeId) housingSite = true;
@@ -294,7 +357,8 @@ function think(ctx: SimContext, census: Census, scratch: AiScratch, p: number, s
       if (ord === ORDER_NONE) idleBuilders.push(id);
     } else if (role === ROLE_MILITIA) {
       militia.push(id);
-      if (ord === ORDER_NONE || (ord === ORDER_ATTACK_MOVE && raidOver(ctx, p, i))) idleMilitia.push(id);
+      if (ord === ORDER_NONE || (ord === ORDER_ATTACK_MOVE && raidOver(ctx, p, i)))
+        idleMilitia.push(id);
     } else if (role === ROLE_SCAVENGER) {
       scavs.push(id);
       if (ord === ORDER_NONE) idleScavs.push(id);
@@ -316,18 +380,43 @@ function think(ctx: SimContext, census: Census, scratch: AiScratch, p: number, s
   const hero = heroIndex(ctx, p);
   const heroId = hero < 0 ? -1 : w.idOf(hero);
   let nodes = 0;
-  for (let j = 0; j < w.highWater; j++) if (w.has(j, C.resource) && w.amount[j]! > 0 && nodeAllowed(ctx, j, p)) nodes++;
+  for (let j = 0; j < w.highWater; j++)
+    if (w.has(j, C.resource) && w.amount[j]! > 0 && nodeAllowed(ctx, j, p)) nodes++;
   const h = heroOf(ctx, p);
   // zonder nodes komt er geen scrap meer bij: dan wachten op het oplappen heeft geen zin
-  const heroWaits = hq >= 0 && h !== undefined && ps.heroState[p] === HERO_DEAD && (nodes > 0 || ps.scrap[p]! >= h.reviveScrap);
+  const heroWaits =
+    hq >= 0 &&
+    h !== undefined &&
+    ps.heroState[p] === HERO_DEAD &&
+    (nodes > 0 || ps.scrap[p]! >= h.reviveScrap);
 
   // 2 huisvesting zodra de pop-cap in zicht komt
   const popCap = census.popCap(ctx, p);
   const hbt = script.housingTypeId === 0 ? undefined : ctx.buildingType(script.housingTypeId);
-  if (!heroWaits && hq >= 0 && hbt !== undefined && !housingSite && popCap < ctx.config.popCapMax && popCap - census.pop[p]! <= script.housingFreeBeds) {
-    if (canPlaceType(ctx, p, hbt.typeId) && ps.scrap[p]! >= hbt.scrapCost && idleBuilders.length > 0) {
+  if (
+    !heroWaits &&
+    hq >= 0 &&
+    hbt !== undefined &&
+    !housingSite &&
+    popCap < ctx.config.popCapMax &&
+    popCap - census.pop[p]! <= script.housingFreeBeds
+  ) {
+    if (
+      canPlaceType(ctx, p, hbt.typeId) &&
+      ps.scrap[p]! >= hbt.scrapCost &&
+      idleBuilders.length > 0
+    ) {
       const at = findSite(ctx, p, hq, hbt, AI_SITE_HQ, enemySpawn);
-      if (at !== null && applyCommand(ctx, { playerId: p, seq: 0, type: 'Build', payload: { ids: [idleBuilders[0]!], typeId: hbt.typeId, x: at.x, y: at.y } })) takeBuilder();
+      if (
+        at !== null &&
+        applyCommand(ctx, {
+          playerId: p,
+          seq: 0,
+          type: 'Build',
+          payload: { ids: [idleBuilders[0]!], typeId: hbt.typeId, x: at.x, y: at.y },
+        })
+      )
+        takeBuilder();
     }
   }
 
@@ -348,7 +437,8 @@ function think(ctx: SimContext, census: Census, scratch: AiScratch, p: number, s
         bi++;
         continue;
       }
-      if (r >= 0) applyCommand(ctx, { playerId: p, seq: 0, type: 'Research', payload: { techId: r } });
+      if (r >= 0)
+        applyCommand(ctx, { playerId: p, seq: 0, type: 'Research', payload: { techId: r } });
       else saving = true;
       break;
     }
@@ -364,7 +454,14 @@ function think(ctx: SimContext, census: Census, scratch: AiScratch, p: number, s
       bi++;
       continue;
     }
-    if (applyCommand(ctx, { playerId: p, seq: 0, type: 'Build', payload: { ids: [builder], typeId, x: at.x, y: at.y } })) {
+    if (
+      applyCommand(ctx, {
+        playerId: p,
+        seq: 0,
+        type: 'Build',
+        payload: { ids: [builder], typeId, x: at.x, y: at.y },
+      })
+    ) {
       bi++;
       takeBuilder();
     }
@@ -373,13 +470,29 @@ function think(ctx: SimContext, census: Census, scratch: AiScratch, p: number, s
   ps.aiBuild[p] = bi;
 
   // 3b extra gebouwen bij genoeg scrap
-  if (!saving && hq >= 0 && bi >= order.length && site < 0 && ps.scrap[p]! >= script.richScrap && idleBuilders.length > 0) {
+  if (
+    !saving &&
+    hq >= 0 &&
+    bi >= order.length &&
+    site < 0 &&
+    ps.scrap[p]! >= script.richScrap &&
+    idleBuilders.length > 0
+  ) {
     const rb = richBuild(ctx, p, script);
     if (rb >= 0) {
       const o = script.richBuilds[rb]!;
       const bt = ctx.buildingType(o.typeId)!;
       const at = findSite(ctx, p, hq, bt, o.site, enemySpawn);
-      if (at !== null && applyCommand(ctx, { playerId: p, seq: 0, type: 'Build', payload: { ids: [idleBuilders[0]!], typeId: o.typeId, x: at.x, y: at.y } })) takeBuilder();
+      if (
+        at !== null &&
+        applyCommand(ctx, {
+          playerId: p,
+          seq: 0,
+          type: 'Build',
+          payload: { ids: [idleBuilders[0]!], typeId: o.typeId, x: at.x, y: at.y },
+        })
+      )
+        takeBuilder();
     }
   }
 
@@ -389,7 +502,8 @@ function think(ctx: SimContext, census: Census, scratch: AiScratch, p: number, s
       if (hasTechs(ctx, p, [techId])) continue;
       const r = researchFor(ctx, p, [techId]);
       if (r === RESEARCH_IMPOSSIBLE) continue;
-      if (r >= 0) applyCommand(ctx, { playerId: p, seq: 0, type: 'Research', payload: { techId: r } });
+      if (r >= 0)
+        applyCommand(ctx, { playerId: p, seq: 0, type: 'Research', payload: { techId: r } });
       break;
     }
   }
@@ -401,7 +515,12 @@ function think(ctx: SimContext, census: Census, scratch: AiScratch, p: number, s
 
   // 6 bouwers zonder werk helpen bij een bouwplaats
   if (site >= 0 && idleBuilders.length > 0) {
-    applyCommand(ctx, { playerId: p, seq: 0, type: 'Build', payload: { ids: idleBuilders, typeId: w.typeId[site]!, x: w.x[site]!, y: w.y[site]! } });
+    applyCommand(ctx, {
+      playerId: p,
+      seq: 0,
+      type: 'Build',
+      payload: { ids: idleBuilders, typeId: w.typeId[site]!, x: w.x[site]!, y: w.y[site]! },
+    });
   }
 
   // 7 plunderaars zonder werk naar een node met plek, exclusieve nodes eerst
@@ -411,7 +530,13 @@ function think(ctx: SimContext, census: Census, scratch: AiScratch, p: number, s
     let bestEx = false;
     let bestD = 0;
     for (let j = 0; j < w.highWater; j++) {
-      if (!w.has(j, C.resource) || w.amount[j]! <= 0 || load[j]! >= script.scavengersPerNode || !nodeAllowed(ctx, j, p)) continue;
+      if (
+        !w.has(j, C.resource) ||
+        w.amount[j]! <= 0 ||
+        load[j]! >= script.scavengersPerNode ||
+        !nodeAllowed(ctx, j, p)
+      )
+        continue;
       const ex = exclusiveFor(ctx, j, p);
       const dx = w.x[j]! - w.x[i]!;
       const dy = w.y[j]! - w.y[i]!;
@@ -425,7 +550,12 @@ function think(ctx: SimContext, census: Census, scratch: AiScratch, p: number, s
     if (best < 0) best = nearestNode(ctx, p, w.x[i]!, w.y[i]!);
     if (best < 0) break;
     load[best] = load[best]! + 1;
-    applyCommand(ctx, { playerId: p, seq: 0, type: 'Gather', payload: { ids: [id], nodeId: w.idOf(best) } });
+    applyCommand(ctx, {
+      playerId: p,
+      seq: 0,
+      type: 'Gather',
+      payload: { ids: [id], nodeId: w.idOf(best) },
+    });
   }
 
   // 10a dreiging: de vijandelijke unit bij een eigen gebouw het dichtst bij het hoofdgebouw
@@ -441,9 +571,23 @@ function think(ctx: SimContext, census: Census, scratch: AiScratch, p: number, s
     const pick = idleScavs.length > 0 ? idleScavs[idleScavs.length - 1]! : scavs[scavs.length - 1]!;
     const army = armyType(ctx, p, script);
     if (builders.length + buildersPlanned < script.builders) {
-      applyCommand(ctx, { playerId: p, seq: 0, type: 'SetRole', payload: { ids: [pick], role: 'builder' } });
-    } else if (army !== 0 && affordable(ctx, p, army, militiaPlanned) && (militia.length + militiaPlanned < idiv(units * share, 1000) || excess > 0)) {
-      applyCommand(ctx, { playerId: p, seq: 0, type: 'Craft', payload: { ids: [pick], loadoutId: ctx.unitType(army)!.loadoutId } });
+      applyCommand(ctx, {
+        playerId: p,
+        seq: 0,
+        type: 'SetRole',
+        payload: { ids: [pick], role: 'builder' },
+      });
+    } else if (
+      army !== 0 &&
+      affordable(ctx, p, army, militiaPlanned) &&
+      (militia.length + militiaPlanned < idiv(units * share, 1000) || excess > 0)
+    ) {
+      applyCommand(ctx, {
+        playerId: p,
+        seq: 0,
+        type: 'Craft',
+        payload: { ids: [pick], loadoutId: ctx.unitType(army)!.loadoutId },
+      });
     } else if (army !== 0 && ps.scrap[p]! >= script.richScrap && army !== roleTypes[ROLE_MILITIA]) {
       upgradeOne(ctx, militia, army);
     }
@@ -459,7 +603,8 @@ function think(ctx: SimContext, census: Census, scratch: AiScratch, p: number, s
       const need = allIn ? 1 : script.waveMinArmy + k * script.waveArmyGrowth;
       const waited = tick >= due + script.waveMaxWaitTicks && militia.length >= script.waveMinArmy;
       if ((militia.length > 0 || allIn) && (militia.length >= need || waited || allIn)) {
-        const push = allIn || (tick >= script.pushFromTicks && militia.length >= script.pushMinArmy);
+        const push =
+          allIn || (tick >= script.pushFromTicks && militia.length >= script.pushMinArmy);
         // een raid alleen tegen dominantie: houdt de vijand genoeg punten, dan zijn claimpunt het dichtst bij huis
         const raid = !push && ownedBy(ctx, enemy) >= ctx.map.dominance.pointsRequired;
         const target = push ? enemySpawn : raid ? waveTarget(ctx, hq, enemy, null) : null;
@@ -471,7 +616,13 @@ function think(ctx: SimContext, census: Census, scratch: AiScratch, p: number, s
         }
         const send = allIn ? [...militia, ...scavs] : [...militia];
         if (heroId >= 0) send.push(heroId);
-        for (const ids of chunks(send)) applyCommand(ctx, { playerId: p, seq: 0, type: 'AttackMove', payload: { ids, x: target.x, y: target.y } });
+        for (const ids of chunks(send))
+          applyCommand(ctx, {
+            playerId: p,
+            seq: 0,
+            type: 'AttackMove',
+            payload: { ids, x: target.x, y: target.y },
+          });
         ps.aiAttack[p] = k + 1;
         const jitter = script.waveJitterTicks > 0 ? ctx.rng.nextInt(script.waveJitterTicks + 1) : 0;
         ps.aiWaveAt[p] = tick + script.waveIntervalTicks + jitter;
@@ -490,7 +641,10 @@ function think(ctx: SimContext, census: Census, scratch: AiScratch, p: number, s
     to = { x: w.x[threat]!, y: w.y[threat]! };
     r = 0;
   } else {
-    const from = script.rallySite === AI_SITE_FRONT && enemySpawn !== null ? enemySpawn : { x: w.x[hq]!, y: w.y[hq]! };
+    const from =
+      script.rallySite === AI_SITE_FRONT && enemySpawn !== null
+        ? enemySpawn
+        : { x: w.x[hq]!, y: w.y[hq]! };
     const pt = script.rallySite === AI_SITE_HQ ? -1 : ownClaimNear(ctx, p, from.x, from.y);
     to = pt >= 0 ? { x: w.x[pt]!, y: w.y[pt]! } : { x: w.x[hq]!, y: w.y[hq]! };
   }
@@ -501,7 +655,13 @@ function think(ctx: SimContext, census: Census, scratch: AiScratch, p: number, s
     const dy = w.y[i]! - to.y;
     if (dx * dx + dy * dy > r * r) go.push(id);
   }
-  for (const ids of chunks(go)) applyCommand(ctx, { playerId: p, seq: 0, type: 'AttackMove', payload: { ids, x: to.x, y: to.y } });
+  for (const ids of chunks(go))
+    applyCommand(ctx, {
+      playerId: p,
+      seq: 0,
+      type: 'AttackMove',
+      payload: { ids, x: to.x, y: to.y },
+    });
 }
 
 /**
@@ -515,7 +675,8 @@ function richBuild(ctx: SimContext, p: number, script: SimAiScript): number {
     let want = 0;
     for (let q = 0; q <= k; q++) if (script.richBuilds[q]!.typeId === t) want++;
     let have = 0;
-    for (let i = 0; i < w.highWater; i++) if (w.alive[i] === 1 && w.owner[i] === p && w.has(i, C.building) && w.typeId[i] === t) have++;
+    for (let i = 0; i < w.highWater; i++)
+      if (w.alive[i] === 1 && w.owner[i] === p && w.has(i, C.building) && w.typeId[i] === t) have++;
     if (have >= want) continue;
     const bt = ctx.buildingType(t);
     if (bt === undefined || !canPlaceType(ctx, p, t) || ctx.ps.scrap[p]! < bt.scrapCost) return -1;
@@ -554,7 +715,12 @@ function upgradeOne(ctx: SimContext, militia: readonly number[], best: number): 
   for (const id of militia) {
     const i = w.resolve(id);
     if (w.typeId[i] === best) continue;
-    applyCommand(ctx, { playerId: w.owner[i]!, seq: 0, type: 'Craft', payload: { ids: [id], loadoutId: ctx.unitType(best)!.loadoutId } });
+    applyCommand(ctx, {
+      playerId: w.owner[i]!,
+      seq: 0,
+      type: 'Craft',
+      payload: { ids: [id], loadoutId: ctx.unitType(best)!.loadoutId },
+    });
     return;
   }
 }
@@ -594,13 +760,19 @@ function ownedBy(ctx: SimContext, q: number): number {
 }
 
 /** Doel van een golf: het claimpunt van de vijand het dichtst bij het eigen hoofdgebouw, anders `spawn` (of null). */
-function waveTarget(ctx: SimContext, hq: number, enemy: number, spawn: { x: number; y: number } | null): { x: number; y: number } | null {
+function waveTarget(
+  ctx: SimContext,
+  hq: number,
+  enemy: number,
+  spawn: { x: number; y: number } | null,
+): { x: number; y: number } | null {
   const w = ctx.world;
   let best = -1;
   let bestD = 0;
   for (const pt of ctx.claimPoints) {
     if (w.owner[pt] !== enemy) continue;
-    const d = hq >= 0 ? distToRect2(w.x[pt]!, w.y[pt]!, w.fx[hq]!, w.fy[hq]!, w.fw[hq]!, w.fh[hq]!) : 0;
+    const d =
+      hq >= 0 ? distToRect2(w.x[pt]!, w.y[pt]!, w.fx[hq]!, w.fy[hq]!, w.fw[hq]!, w.fh[hq]!) : 0;
     if (best < 0 || d < bestD) {
       best = pt;
       bestD = d;
@@ -655,11 +827,24 @@ function heroThink(ctx: SimContext, p: number, hq: number): void {
   const h = heroOf(ctx, p);
   if (h === undefined) return;
   if (ps.heroState[p] === HERO_DEAD && hq >= 0 && ps.scrap[p]! >= h.reviveScrap) {
-    applyCommand(ctx, { playerId: p, seq: 0, type: 'Recruit', payload: { buildingId: w.idOf(hq) } });
+    applyCommand(ctx, {
+      playerId: p,
+      seq: 0,
+      type: 'Recruit',
+      payload: { buildingId: w.idOf(hq) },
+    });
   }
   if (ps.heroPending[p]! > 0) {
     for (const perkId of h.perkPool) {
-      if (applyCommand(ctx, { playerId: p, seq: 0, type: 'PickPerk', payload: { heroId: h.heroId, perkId } })) break;
+      if (
+        applyCommand(ctx, {
+          playerId: p,
+          seq: 0,
+          type: 'PickPerk',
+          payload: { heroId: h.heroId, perkId },
+        })
+      )
+        break;
     }
   }
   const i = heroIndex(ctx, p);
@@ -683,6 +868,11 @@ function heroThink(ctx: SimContext, p: number, hq: number): void {
     }
     if (best < 0) continue;
     const at = ab.rangeU > 0 ? best : i;
-    applyCommand(ctx, { playerId: p, seq: 0, type: 'HeroAbility', payload: { heroId: h.heroId, abilityId: a, x: w.x[at]!, y: w.y[at]! } });
+    applyCommand(ctx, {
+      playerId: p,
+      seq: 0,
+      type: 'HeroAbility',
+      payload: { heroId: h.heroId, abilityId: a, x: w.x[at]!, y: w.y[at]! },
+    });
   }
 }

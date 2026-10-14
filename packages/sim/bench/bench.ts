@@ -57,7 +57,10 @@ export function runBench(clock: () => number): BenchResult {
   const home = [cellCenter(20, 30), cellCenter(MAP_SIDE - 21, MAP_SIDE - 31)];
   for (let side = 0; side < 2; side++) {
     for (let k = 0; k < PER_SIDE; k++) {
-      const c = cellCenter(10 + (k % 10) + side * (MAP_SIDE - 30), 14 + Math.floor(k / 10) + side * (MAP_SIDE - 30));
+      const c = cellCenter(
+        10 + (k % 10) + side * (MAP_SIDE - 30),
+        14 + Math.floor(k / 10) + side * (MAP_SIDE - 30),
+      );
       sim.spawnUnit({ typeId: scavType, owner: side, x: c.x, y: c.y });
     }
   }
@@ -68,14 +71,33 @@ export function runBench(clock: () => number): BenchResult {
       const mil = unitsOf(sim, side, ROLES.indexOf('militia'));
       for (let k = mil.length; k < PER_SIDE; k++) {
         const h = home[side]!;
-        sim.spawnUnit({ typeId: milType, owner: side, x: h.x + (k % 8) * 256, y: h.y + Math.floor(k / 8) * 256 });
+        sim.spawnUnit({
+          typeId: milType,
+          owner: side,
+          x: h.x + (k % 8) * 256,
+          y: h.y + Math.floor(k / 8) * 256,
+        });
       }
       const all = unitsOf(sim, side, ROLES.indexOf('militia'));
       const t = home[1 - side]!;
-      for (const ids of chunks(all)) cmds.push({ frame: f, playerId: side, seq: seq++, type: 'AttackMove', payload: { ids, x: t.x, y: t.y } });
+      for (const ids of chunks(all))
+        cmds.push({
+          frame: f,
+          playerId: side,
+          seq: seq++,
+          type: 'AttackMove',
+          payload: { ids, x: t.x, y: t.y },
+        });
       if (f > 0) continue; // verzamelen loopt vanzelf door; opnieuw geven zou de rit afbreken
       const scav = unitsOf(sim, side, ROLES.indexOf('scavenger'));
-      for (const ids of chunks(scav)) cmds.push({ frame: f, playerId: side, seq: seq++, type: 'Gather', payload: { ids, nodeId: nodes[side]! } });
+      for (const ids of chunks(scav))
+        cmds.push({
+          frame: f,
+          playerId: side,
+          seq: seq++,
+          type: 'Gather',
+          payload: { ids, nodeId: nodes[side]! },
+        });
     }
     return cmds;
   };
@@ -99,9 +121,19 @@ export function runBench(clock: () => number): BenchResult {
       else if (sim.events.type[k] === EVENT_TYPE.death) deaths++;
     }
     scrapIn += sim.playerStatus(0).scrap + sim.playerStatus(1).scrap - before;
-    if (f === TICKS - 1) units = sim.entityIds().filter((id) => sim.getUnit(id)!.kind === 'unit').length;
+    if (f === TICKS - 1)
+      units = sim.entityIds().filter((id) => sim.getUnit(id)!.kind === 'unit').length;
   }
-  return { units, ticks: TICKS, totalMs: total, maxMs: max, finalHash: sim.hash(), shots, deaths, scrapIn };
+  return {
+    units,
+    ticks: TICKS,
+    totalMs: total,
+    maxMs: max,
+    finalHash: sim.hash(),
+    shots,
+    deaths,
+    scrapIn,
+  };
 }
 
 reportBench(runBench(now));

@@ -35,7 +35,8 @@ export function combatSystem(ctx: SimContext): void {
     const hero = (w.mask[i]! & C.hero) !== 0;
     if (hero) {
       const chance = heroSpecial(ctx, w.owner[i]!, SPECIAL_L) * ctx.config.special.luckCritPermille;
-      if (chance > 0 && ctx.rng.nextInt(1000) < chance) dmg = scalePermille(dmg, ctx.config.special.critDamagePermille);
+      if (chance > 0 && ctx.rng.nextInt(1000) < chance)
+        dmg = scalePermille(dmg, ctx.config.special.critDamagePermille);
     }
     const before = w.hp[t]!;
     w.hp[t] = before - idiv(dmg * mult, 1000);

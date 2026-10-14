@@ -42,7 +42,16 @@ export {
 export { HERO_ALIVE, HERO_DEAD, HERO_EMPTY, HERO_NONE, HERO_REVIVING } from './effects.js';
 export { MAX_RADIUS, MAX_SPEED, envHash, validateEnv } from './config.js';
 export type { ClaimKind, SimMapSource } from './fromData.js';
-export { CLAIM_KINDS, EFFECT_STATS, PROVIDES_CLAIM, PROVIDES_HQ, PROVIDES_WORKSHOP, simConfigFromGameData, simMapFromGrid, simPlayersFromLobby } from './fromData.js';
+export {
+  CLAIM_KINDS,
+  EFFECT_STATS,
+  PROVIDES_CLAIM,
+  PROVIDES_HQ,
+  PROVIDES_WORKSHOP,
+  simConfigFromGameData,
+  simMapFromGrid,
+  simPlayersFromLobby,
+} from './fromData.js';
 export {
   NO_ENTITY,
   NO_FIELD,
@@ -60,7 +69,19 @@ export {
 export { MAX_FLOW_FIELDS } from './flowfield.js';
 export { STATE_FORMAT_VERSION } from './state.js';
 export type { SimCommand } from './systems/commands.js';
-export type { CreateSimOptions, EntityKind, SimWinner, SpawnUnitSpec, UnitView, WinReason } from './sim.js';
+export type {
+  CreateSimOptions,
+  EntityKind,
+  SimWinner,
+  SpawnUnitSpec,
+  UnitView,
+  WinReason,
+} from './sim.js';
 export { Sim, createSim, deserialize } from './sim.js';
-export type { SimWorkerCore, SimWorkerInbound, SimWorkerOutbound, SimWorkerPort } from './worker.js';
+export type {
+  SimWorkerCore,
+  SimWorkerInbound,
+  SimWorkerOutbound,
+  SimWorkerPort,
+} from './worker.js';
 export { CATCH_UP_BACKLOG, createSimWorkerCore } from './worker.js';

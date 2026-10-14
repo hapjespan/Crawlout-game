@@ -18,7 +18,14 @@ export interface FixtureDef {
 }
 
 const players = (ai: boolean[]): LobbyPlayer[] =>
-  ai.map((isAi, i) => ({ playerId: i, name: isAi ? `ai${i}` : `speler${i}`, faction: 'dwellers', ready: true, online: !isAi, ai: isAi }));
+  ai.map((isAi, i) => ({
+    playerId: i,
+    name: isAi ? `ai${i}` : `speler${i}`,
+    faction: 'dwellers',
+    ready: true,
+    online: !isAi,
+    ai: isAi,
+  }));
 
 const base = (map: string, seed: number, ai: boolean[]): Replay => ({
   dataVersion: gameData().data.dataVersion,
@@ -44,7 +51,16 @@ interface Start {
 
 function startOf(r: Replay): Start {
   const sim = createReplaySim(r);
-  const s: Start = { sim, nodes: [], claims: [], hq: [], hero: [], scav: [], builder: [], militia: [] };
+  const s: Start = {
+    sim,
+    nodes: [],
+    claims: [],
+    hq: [],
+    hero: [],
+    scav: [],
+    builder: [],
+    militia: [],
+  };
   for (let p = 0; p < r.players.length; p++) {
     s.scav.push([]);
     s.hero.push([]);
@@ -79,22 +95,42 @@ function nearest(sim: Sim, ids: readonly number[], x: number, y: number): number
   return best;
 }
 
-const cell = (cx: number, cy: number): { x: number; y: number } => ({ x: cx * 256 + 128, y: cy * 256 + 128 });
-const building = (key: string): number => buildingTypeId(gameData().data.buildings.find((b) => b.key === key)!.id);
+const cell = (cx: number, cy: number): { x: number; y: number } => ({
+  x: cx * 256 + 128,
+  y: cy * 256 + 128,
+});
+const building = (key: string): number =>
+  buildingTypeId(gameData().data.buildings.find((b) => b.key === key)!.id);
 const tech = (key: string): number => gameData().data.tech.find((t) => t.key === key)!.id;
 const loadout = (key: string): number => gameData().data.loadouts.find((l) => l.key === key)!.id;
-const data = { get heroes() { return gameData().data.heroes; } };
+const data = {
+  get heroes() {
+    return gameData().data.heroes;
+  },
+};
 
 class Script {
   private readonly frames = new Map<number, CommandEnvelope[]>();
   private readonly seqs: number[] = [];
 
   /** Commando dat in `execFrame` wordt uitgevoerd; gegeven in execFrame - DELAY. */
-  add(execFrame: number, playerId: number, type: CommandEnvelope['type'], payload: unknown, seq?: number): this {
-    const s = seq ?? (this.seqs[playerId] ?? 0);
+  add(
+    execFrame: number,
+    playerId: number,
+    type: CommandEnvelope['type'],
+    payload: unknown,
+    seq?: number,
+  ): this {
+    const s = seq ?? this.seqs[playerId] ?? 0;
     this.seqs[playerId] = Math.max(this.seqs[playerId] ?? 0, s + 1);
     const list = this.frames.get(execFrame) ?? [];
-    list.push({ frame: Math.max(0, execFrame - DELAY_FRAMES_DEFAULT), playerId, seq: s, type, payload });
+    list.push({
+      frame: Math.max(0, execFrame - DELAY_FRAMES_DEFAULT),
+      playerId,
+      seq: s,
+      type,
+      payload,
+    });
     this.frames.set(execFrame, list);
     return this;
   }
@@ -104,7 +140,9 @@ class Script {
   }
 
   bundles(): FrameBundle[] {
-    return [...this.frames.keys()].sort((a, b) => a - b).map((frame) => ({ frame, commands: this.frames.get(frame)! }));
+    return [...this.frames.keys()]
+      .sort((a, b) => a - b)
+      .map((frame) => ({ frame, commands: this.frames.get(frame)! }));
   }
 }
 
@@ -152,10 +190,22 @@ const FIXTURES_UP_TO_S3: FixtureDef[] = [
         s.add(6, p, 'Build', { ids: st.builder[p]!, typeId: building('woning'), ...toward[p]! });
       }
       // speler 0 bouwt meteen een werkplaats (hij heeft genoeg scrap na een paar ritten), speler 1 later
-      s.add(700, 0, 'Build', { ids: st.builder[0]!, typeId: building('werkplaats'), ...cell(28, 20) });
-      s.add(1000, 1, 'Build', { ids: st.builder[1]!, typeId: building('werkplaats'), ...cell(99, 107) });
+      s.add(700, 0, 'Build', {
+        ids: st.builder[0]!,
+        typeId: building('werkplaats'),
+        ...cell(28, 20),
+      });
+      s.add(1000, 1, 'Build', {
+        ids: st.builder[1]!,
+        typeId: building('werkplaats'),
+        ...cell(99, 107),
+      });
       // cancel: speler 1 zet een radiobaken neer en trekt het terug
-      s.add(1010, 1, 'Build', { ids: st.builder[1]!, typeId: building('radiobaken'), ...cell(104, 100) });
+      s.add(1010, 1, 'Build', {
+        ids: st.builder[1]!,
+        typeId: building('radiobaken'),
+        ...cell(104, 100),
+      });
       // omscholen: twee scavengers van speler 0 worden militie
       s.add(1800, 0, 'SetRole', { ids: st.scav[0]!.slice(0, 2), role: 'militia' });
       // claim: de bouwer van speler 1 zet een claimpaal bij het punt aan zijn kant (na de werkplaats); de militie mag niet
@@ -167,8 +217,16 @@ const FIXTURES_UP_TO_S3: FixtureDef[] = [
       s.add(1200, 0, 'AttackMove', { ids: st.militia[0]!, x: c1.x, y: c1.y });
       r.bundles = s.bundles();
       // de radiobaken-id volgt pas uit de run: Cancel op alle entities die er dan staan is ongeldig voor de rest
-      r.bundles.push({ frame: 1015, commands: [{ frame: 1011, playerId: 1, seq: 500, type: 'Cancel', payload: { ids: radioIds(r) } }] });
-      r.bundles.push({ frame: 2900, commands: [{ frame: 2896, playerId: 1, seq: 501, type: 'Surrender', payload: {} }] });
+      r.bundles.push({
+        frame: 1015,
+        commands: [
+          { frame: 1011, playerId: 1, seq: 500, type: 'Cancel', payload: { ids: radioIds(r) } },
+        ],
+      });
+      r.bundles.push({
+        frame: 2900,
+        commands: [{ frame: 2896, playerId: 1, seq: 501, type: 'Surrender', payload: {} }],
+      });
       r.bundles.sort((x, y) => x.frame - y.frame);
       r.hashes = [{ frame: 2999, hash: 0 }];
       return r;
@@ -187,7 +245,14 @@ const FIXTURES_UP_TO_S3: FixtureDef[] = [
       const spawns = [cell(20, 20), cell(107, 107)];
       const centre = nearest(sim, st.claims, cell(64, 64).x, cell(64, 64).y);
       // het settlement-punt aan de eigen kant (sinds data 0.7.0 bij de 2500-node, besluit 9)
-      const own = spawns.map((s) => nearest(sim, st.claims.filter((id) => id !== centre), s.x, s.y));
+      const own = spawns.map((s) =>
+        nearest(
+          sim,
+          st.claims.filter((id) => id !== centre),
+          s.x,
+          s.y,
+        ),
+      );
       const hero = data.heroes[0]!.id;
       for (let p = 0; p < 2; p++) {
         const node = nearest(sim, st.nodes, spawns[p]!.x, spawns[p]!.y);
@@ -210,7 +275,11 @@ const FIXTURES_UP_TO_S3: FixtureDef[] = [
       r.bundles = s.bundles();
       const h1 = stateAt(r, 1500).getUnit(st.hero[1]![0]!)!;
       s.add(1500, 0, 'Move', { ids: st.scav[0]!.slice(1), x: h1.x, y: h1.y });
-      for (let k = 0; k < 6; k++) s.add(1500 + 1000 * k, 1, 'PickPerk', { heroId: hero, perkId: data.heroes[0]!.perkPool[k]! });
+      for (let k = 0; k < 6; k++)
+        s.add(1500 + 1000 * k, 1, 'PickPerk', {
+          heroId: hero,
+          perkId: data.heroes[0]!.perkPool[k]!,
+        });
       // oplappen: beide spelers proberen het op vaste frames (ongeldig zolang hun held leeft), speler 1 annuleert een keer
       for (let k = 0; k < 20; k++) {
         s.add(1600 + 300 * k, 0, 'Recruit', { buildingId: st.hq[0]! });
@@ -218,7 +287,11 @@ const FIXTURES_UP_TO_S3: FixtureDef[] = [
       }
       s.add(1700, 1, 'Cancel', { ids: [st.hq[1]!] });
       // onderzoek: werkplaats, geweerrek (Cancel, opnieuw), patrol craften
-      s.add(1200, 0, 'Build', { ids: st.builder[0]!, typeId: building('werkplaats'), ...cell(28, 20) });
+      s.add(1200, 0, 'Build', {
+        ids: st.builder[0]!,
+        typeId: building('werkplaats'),
+        ...cell(28, 20),
+      });
       s.add(2400, 0, 'Research', { techId: tech('geweerrek') });
       s.add(2410, 0, 'Cancel', { ids: [st.hq[0]!] }); // stopt het oplappen als dat loopt (teruggave)
       s.add(2600, 0, 'Research', { techId: tech('composiet_pantser') }); // ongeldig: prereqTech
@@ -226,7 +299,9 @@ const FIXTURES_UP_TO_S3: FixtureDef[] = [
       // later valt speler 1 met held en militie de basis van speler 0 aan; een opgelapte held heeft een nieuwe id
       r.bundles = s.bundles();
       const later = stateAt(r, 3400);
-      const hero1 = later.entityIds().filter((id) => later.getUnit(id)!.kind === 'hero' && later.getUnit(id)!.owner === 1);
+      const hero1 = later
+        .entityIds()
+        .filter((id) => later.getUnit(id)!.kind === 'hero' && later.getUnit(id)!.owner === 1);
       s.add(3400, 1, 'AttackMove', { ids: [...hero1, ...st.militia[1]!], ...spawns[0]! });
       s.add(3410, 0, 'Move', { ids: st.militia[0]!, ...cell(30, 40) }); // de militie van speler 0 laat de basis open
       r.bundles = s.bundles();
@@ -259,7 +334,9 @@ const FIXTURES_UP_TO_S3: FixtureDef[] = [
 ];
 
 /** Woningen voor speler 0 (midden van de 2 bij 2 footprint, in cellen) in een blok links boven het hoofdgebouw. */
-const HOUSES: PlannedBuilding[] = [6, 9, 12].flatMap((cy) => [6, 9, 12, 15].map((cx) => ({ key: 'woning', cx, cy })));
+const HOUSES: PlannedBuilding[] = [6, 9, 12].flatMap((cy) =>
+  [6, 9, 12, 15].map((cx) => ({ key: 'woning', cx, cy })),
+);
 
 const FIXTURES_S4: FixtureDef[] = [
   {
@@ -312,7 +389,8 @@ const FIXTURES_S4: FixtureDef[] = [
       };
       let deaths = 0;
       recordControlled(r, 30000, [settlementBot(0, plan), settlementBot(1, plan)], (sim) => {
-        for (let k = 0; k < sim.events.count; k++) if (sim.events.type[k] === EVENT_TYPE.death) deaths++;
+        for (let k = 0; k < sim.events.count; k++)
+          if (sim.events.type[k] === EVENT_TYPE.death) deaths++;
         return deaths >= 40;
       });
       return r;
@@ -346,7 +424,13 @@ const FIXTURES_S5: FixtureDef[] = [
       // de rechtsklik: Build met het typeId en het midden van de bouwplaats zoals de client die uit de snapshot leest
       const sim = stateAt(r, 1800);
       const woning = building('woning');
-      const site = sim.entityIds().map((id) => sim.getUnit(id)!).find((u) => u.kind === 'building' && u.owner === 0 && u.typeId === woning && u.buildState === 1)!;
+      const site = sim
+        .entityIds()
+        .map((id) => sim.getUnit(id)!)
+        .find(
+          (u) =>
+            u.kind === 'building' && u.owner === 0 && u.typeId === woning && u.buildState === 1,
+        )!;
       s.add(1800, 0, 'Build', { ids: b0, typeId: woning, x: site.x, y: site.y });
       r.bundles = s.bundles();
       r.hashes = [{ frame: 2599, hash: 0 }];
@@ -355,7 +439,11 @@ const FIXTURES_S5: FixtureDef[] = [
   },
 ];
 
-export const FIXTURES: readonly FixtureDef[] = [...FIXTURES_UP_TO_S3, ...FIXTURES_S4, ...FIXTURES_S5];
+export const FIXTURES: readonly FixtureDef[] = [
+  ...FIXTURES_UP_TO_S3,
+  ...FIXTURES_S4,
+  ...FIXTURES_S5,
+];
 
 /** De sim na het uitvoeren van de frames 0 tot `frame` (exclusief) met de bundels die de replay tot dan heeft. */
 function stateAt(r: Replay, frame: number): Sim {
@@ -378,6 +466,8 @@ function radioIds(r: Replay): number[] {
     sim.tick();
   }
   const radio = building('radiobaken');
-  const ids = sim.entityIds().filter((id) => sim.getUnit(id)!.typeId === radio && sim.getUnit(id)!.owner === 1);
+  const ids = sim
+    .entityIds()
+    .filter((id) => sim.getUnit(id)!.typeId === radio && sim.getUnit(id)!.owner === 1);
   return ids.length > 0 ? ids : [1];
 }

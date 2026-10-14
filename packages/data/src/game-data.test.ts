@@ -1,6 +1,14 @@
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { AI_SITES, convertDelta, convertDominance, cumulate, loadGameData, PROVIDES, type RawGameData } from './loader.js';
+import {
+  AI_SITES,
+  convertDelta,
+  convertDominance,
+  cumulate,
+  loadGameData,
+  PROVIDES,
+  type RawGameData,
+} from './loader.js';
 import { EffectStat, MapDef } from './schemas.js';
 import { readDataDir } from './node.js';
 import { metersToUnits, secondsToTicks } from './units.js';
@@ -24,7 +32,15 @@ describe('data/ valideert', () => {
   });
 
   it('geeft numerieke ids op gesorteerde string-id', () => {
-    for (const list of [data.factions, data.loadouts, data.buildings, data.tech, data.heroes, data.perks, data.aiScripts]) {
+    for (const list of [
+      data.factions,
+      data.loadouts,
+      data.buildings,
+      data.tech,
+      data.heroes,
+      data.perks,
+      data.aiScripts,
+    ]) {
       list.forEach((record, i) => expect(record.id).toBe(i));
       const keys = list.map((r) => r.key);
       expect(keys).toEqual([...keys].sort());
@@ -42,7 +58,17 @@ describe('data/ valideert', () => {
 
   it('heeft elke loadout-waarde als integer in sim-eenheden', () => {
     for (const l of data.loadouts) {
-      for (const v of [l.hpI, l.damage, l.rangeU, l.speedUPT, l.cooldownTicks, l.scrapCost, l.craftTicks, l.popCost]) expect(Number.isInteger(v)).toBe(true);
+      for (const v of [
+        l.hpI,
+        l.damage,
+        l.rangeU,
+        l.speedUPT,
+        l.cooldownTicks,
+        l.scrapCost,
+        l.craftTicks,
+        l.popCost,
+      ])
+        expect(Number.isInteger(v)).toBe(true);
     }
   });
 });
@@ -73,7 +99,9 @@ describe('omrekening naar sim-eenheden', () => {
     const data = loadGameData(raw());
     const patrol = data.loadouts.find((l) => l.key === 'patrol')!;
     expect(data.tech[patrol.prereqTech[0]!]!.key).toBe('geweerrek');
-    expect(data.buildings[data.tech.find((t) => t.key === 'raffinage')!.buildingId]!.key).toBe('lab');
+    expect(data.buildings[data.tech.find((t) => t.key === 'raffinage')!.buildingId]!.key).toBe(
+      'lab',
+    );
   });
 });
 
@@ -110,12 +138,32 @@ describe('sprint 2: gather, maxRevives, dominance, effect-stats', () => {
   });
 
   it('rekent dominance om naar ticks en valideert het MapDef-veld', () => {
-    expect(convertDominance({ pointsRequired: 1000, minutes: 10 })).toEqual({ pointsRequired: 1000, ticks: 12000 });
-    const map = JSON.parse(JSON.stringify({ id: 'm', size: { w: 8, h: 8 }, heightmap: 'h', passability: 'p', scrapNodes: [], claimPoints: [], spawns: [], creepCamps: [] }));
+    expect(convertDominance({ pointsRequired: 1000, minutes: 10 })).toEqual({
+      pointsRequired: 1000,
+      ticks: 12000,
+    });
+    const map = JSON.parse(
+      JSON.stringify({
+        id: 'm',
+        size: { w: 8, h: 8 },
+        heightmap: 'h',
+        passability: 'p',
+        scrapNodes: [],
+        claimPoints: [],
+        spawns: [],
+        creepCamps: [],
+      }),
+    );
     expect(MapDef.safeParse(map).success).toBe(false); // dominance is verplicht
-    expect(MapDef.safeParse({ ...map, dominance: { pointsRequired: 1000, minutes: 10 } }).success).toBe(true);
-    expect(MapDef.safeParse({ ...map, dominance: { pointsRequired: 0, minutes: 10 } }).success).toBe(false);
-    expect(MapDef.safeParse({ ...map, dominance: { pointsRequired: 1000, minutes: 10, x: 1 } }).success).toBe(false);
+    expect(
+      MapDef.safeParse({ ...map, dominance: { pointsRequired: 1000, minutes: 10 } }).success,
+    ).toBe(true);
+    expect(
+      MapDef.safeParse({ ...map, dominance: { pointsRequired: 0, minutes: 10 } }).success,
+    ).toBe(false);
+    expect(
+      MapDef.safeParse({ ...map, dominance: { pointsRequired: 1000, minutes: 10, x: 1 } }).success,
+    ).toBe(false);
   });
 });
 
@@ -147,7 +195,9 @@ describe('sim-tuning', () => {
 
   it('weigert een onbekend veld in sim.json', () => {
     const r = raw();
-    expect(() => loadGameData({ ...r, sim: { ...(clone(r.sim) as object), extra: 1 } })).toThrow(/sim\.json/);
+    expect(() => loadGameData({ ...r, sim: { ...(clone(r.sim) as object), extra: 1 } })).toThrow(
+      /sim\.json/,
+    );
   });
 });
 
@@ -186,7 +236,11 @@ describe('determinisme', () => {
     const b = loadGameData(raw());
     expect(JSON.stringify(a)).toBe(JSON.stringify(b));
     const r = raw();
-    const reversed = { ...r, loadouts: [...(r.loadouts as unknown[])].reverse(), buildings: [...(r.buildings as unknown[])].reverse() };
+    const reversed = {
+      ...r,
+      loadouts: [...(r.loadouts as unknown[])].reverse(),
+      buildings: [...(r.buildings as unknown[])].reverse(),
+    };
     expect(loadGameData(reversed)).toEqual(a);
   });
 });
@@ -198,7 +252,11 @@ describe('sprint 3: held, claims, cancel, militie', () => {
   it('rekent de xp-tabel per stap om naar cumulatieve integer-drempels', () => {
     expect(cumulate([100, 200, 300])).toEqual([100, 300, 600]);
     expect(hero.xpThresholds).toEqual([80, 200, 360, 560, 810, 1110]);
-    expect(hero.xpThresholds.every((x, i) => Number.isInteger(x) && (i === 0 || x > hero.xpThresholds[i - 1]!))).toBe(true);
+    expect(
+      hero.xpThresholds.every(
+        (x, i) => Number.isInteger(x) && (i === 0 || x > hero.xpThresholds[i - 1]!),
+      ),
+    ).toBe(true);
     expect(hero.naam).toBe('Opziener');
     expect(hero.xpPerKill).toBe(25);
     expect(hero.xpPerAssist).toBe(15);
@@ -241,7 +299,9 @@ describe('sprint 3: held, claims, cancel, militie', () => {
     (badRefund.sim as { cancelRefundPct: number }).cancelRefundPct = 150;
     expect(() => loadGameData(badRefund)).toThrow(/cancelRefundPct/);
     const badEffect = clone(raw());
-    (badEffect.heroes as { abilities: { effects: { stat: string }[] }[] }[])[0]!.abilities[0]!.effects[0]!.stat = 'koekjesPct';
+    (
+      badEffect.heroes as { abilities: { effects: { stat: string }[] }[] }[]
+    )[0]!.abilities[0]!.effects[0]!.stat = 'koekjesPct';
     expect(() => loadGameData(badEffect)).toThrow(/stat/);
   });
 
@@ -268,12 +328,15 @@ describe('sprint 3: held, claims, cancel, militie', () => {
       for (const e of t.effects) expect(EffectStat.options, t.key).toContain(e.stat);
     }
     // Loadouts met prereqTech (patrol, turret) worden bereikbaar via een onderzoekbare tech.
-    for (const l of data.loadouts) for (const p of l.prereqTech) expect(buildable(data.tech[p]!.buildingId), l.key).toBe(true);
-    for (const b of data.buildings) for (const p of b.prereqTech) expect(buildable(data.tech[p]!.buildingId), b.key).toBe(true);
+    for (const l of data.loadouts)
+      for (const p of l.prereqTech) expect(buildable(data.tech[p]!.buildingId), l.key).toBe(true);
+    for (const b of data.buildings)
+      for (const p of b.prereqTech) expect(buildable(data.tech[p]!.buildingId), b.key).toBe(true);
   });
 
   it('gebruikt in perks alleen EffectStats uit de enum', () => {
-    for (const p of data.perks) for (const e of p.effects) expect(EffectStat.options, p.key).toContain(e.stat);
+    for (const p of data.perks)
+      for (const e of p.effects) expect(EffectStat.options, p.key).toContain(e.stat);
   });
 });
 
@@ -310,20 +373,57 @@ describe('sprint 4: turrets in data (besluit 8)', () => {
 describe('balans speltest 14 oktober: AI-script', () => {
   const data = loadGameData(raw());
   const ai = data.aiScripts[0]!;
-  const ix = <T extends { key: string; id: number }>(list: T[], key: string): number => list.find((x) => x.key === key)!.id;
+  const ix = <T extends { key: string; id: number }>(list: T[], key: string): number =>
+    list.find((x) => x.key === key)!.id;
 
   it('rekent het script om naar sim-eenheden en numerieke ids', () => {
-    expect(ai.buildOrder.map((o) => AI_SITES[o.site])).toEqual(['hq', 'hq', 'claim', 'front', 'hq', 'claim']);
-    expect(ai.buildOrder[2]).toEqual({ atTick: secondsToTicks(150), buildingId: ix(data.buildings, 'werkplaats'), site: AI_SITES.indexOf('claim') });
-    expect(ai.research).toEqual(['geweerrek', 'raffinage', 'composiet_pantser', 'snelle_voeten', 'bouwrobots', 'lasergeleiding'].map((k) => ix(data.tech, k)));
+    expect(ai.buildOrder.map((o) => AI_SITES[o.site])).toEqual([
+      'hq',
+      'hq',
+      'claim',
+      'front',
+      'hq',
+      'claim',
+    ]);
+    expect(ai.buildOrder[2]).toEqual({
+      atTick: secondsToTicks(150),
+      buildingId: ix(data.buildings, 'werkplaats'),
+      site: AI_SITES.indexOf('claim'),
+    });
+    expect(ai.research).toEqual(
+      [
+        'geweerrek',
+        'raffinage',
+        'composiet_pantser',
+        'snelle_voeten',
+        'bouwrobots',
+        'lasergeleiding',
+      ].map((k) => ix(data.tech, k)),
+    );
     expect(ai.armyLoadouts).toEqual([ix(data.loadouts, 'patrol'), ix(data.loadouts, 'militie')]);
     expect(ai.housingBuildingId).toBe(ix(data.buildings, 'woning'));
     expect(ai.richBuilds.every((o) => o.buildingId === ix(data.buildings, 'turret'))).toBe(true);
-    expect({ min: ai.militiaPermille, max: ai.militiaPermilleMax, perMin: ai.militiaPermillePerMin, threat: ai.threatMilitiaPermille }).toEqual({ min: 200, max: 600, perMin: 25, threat: 500 });
+    expect({
+      min: ai.militiaPermille,
+      max: ai.militiaPermilleMax,
+      perMin: ai.militiaPermillePerMin,
+      threat: ai.threatMilitiaPermille,
+    }).toEqual({ min: 200, max: 600, perMin: 25, threat: 500 });
     expect(ai.attackTimersTicks).toEqual([secondsToTicks(480), secondsToTicks(720)]);
-    expect([ai.waveIntervalTicks, ai.waveJitterTicks, ai.waveMaxWaitTicks, ai.pushFromTicks]).toEqual([3600, 600, 1800, 33600]);
-    expect([ai.claimFromTicks, ai.claimFarFromTicks, ai.researchFromTicks]).toEqual([1200, 9600, 3600]);
-    expect([ai.claimSafeRadiusU, ai.defendRadiusU, ai.rallyRadiusU]).toEqual([metersToUnits(30), metersToUnits(14), metersToUnits(6)]);
+    expect([
+      ai.waveIntervalTicks,
+      ai.waveJitterTicks,
+      ai.waveMaxWaitTicks,
+      ai.pushFromTicks,
+    ]).toEqual([3600, 600, 1800, 33600]);
+    expect([ai.claimFromTicks, ai.claimFarFromTicks, ai.researchFromTicks]).toEqual([
+      1200, 9600, 3600,
+    ]);
+    expect([ai.claimSafeRadiusU, ai.defendRadiusU, ai.rallyRadiusU]).toEqual([
+      metersToUnits(30),
+      metersToUnits(14),
+      metersToUnits(6),
+    ]);
     expect(AI_SITES[ai.rallySite]).toBe('claim');
     expect(ai.allInWithoutNodes).toBe(true);
   });

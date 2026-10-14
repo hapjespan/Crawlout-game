@@ -1,9 +1,27 @@
 import { describe, expect, it } from 'vitest';
 import { ENTITY_FIELDS, EVENT_TYPE, readSnapshotHeader, snapshotLayout } from '@crawlout/protocol';
-import { FNV_OFFSET, NO_ENTITY, createSim, deserialize, fnv1a, genOf, indexOf } from '../src/index.js';
+import {
+  FNV_OFFSET,
+  NO_ENTITY,
+  createSim,
+  deserialize,
+  fnv1a,
+  genOf,
+  indexOf,
+} from '../src/index.js';
 import type { Sim } from '../src/index.js';
 import { cellCenter, createTestMap } from '../src/testing.js';
-import { CONFIG, SCAV, bundle, cmd, emptySim, runFrames, scriptedBundles, spawnBlock, testInit } from './helpers.js';
+import {
+  CONFIG,
+  SCAV,
+  bundle,
+  cmd,
+  emptySim,
+  runFrames,
+  scriptedBundles,
+  spawnBlock,
+  testInit,
+} from './helpers.js';
 
 const TEST_UNIT_TYPE = SCAV;
 const TEST_SIM_CONFIG = CONFIG;
@@ -39,17 +57,27 @@ describe('ECS en entity-ids', () => {
 
   it('weigert spawns op muur, buiten de map, met onbekend type of ongeldige eigenaar', () => {
     const sim = emptySim();
-    expect(sim.spawnUnit({ typeId: TEST_UNIT_TYPE, owner: 0, ...cellCenter(0, 0) })).toBe(NO_ENTITY);
+    expect(sim.spawnUnit({ typeId: TEST_UNIT_TYPE, owner: 0, ...cellCenter(0, 0) })).toBe(
+      NO_ENTITY,
+    );
     expect(sim.spawnUnit({ typeId: TEST_UNIT_TYPE, owner: 0, x: -1, y: 300 })).toBe(NO_ENTITY);
     expect(sim.spawnUnit({ typeId: 99, owner: 0, ...cellCenter(5, 5) })).toBe(NO_ENTITY);
-    expect(sim.spawnUnit({ typeId: TEST_UNIT_TYPE, owner: 2, ...cellCenter(5, 5) })).toBe(NO_ENTITY);
+    expect(sim.spawnUnit({ typeId: TEST_UNIT_TYPE, owner: 2, ...cellCenter(5, 5) })).toBe(
+      NO_ENTITY,
+    );
   });
 
   it('valideert de invoer', () => {
-    const bad = { ...testInit(), map: { ...createTestMap(), w: 4, h: 4, passable: new Uint8Array(3) } };
+    const bad = {
+      ...testInit(),
+      map: { ...createTestMap(), w: 4, h: 4, passable: new Uint8Array(3) },
+    };
     expect(() => createSim(bad)).toThrow();
     expect(() => createSim({ ...testInit(), seed: -1 })).toThrow();
-    const fast = { ...TEST_SIM_CONFIG, unitTypes: [{ ...TEST_SIM_CONFIG.unitTypes[0]!, speed: 1000 }] };
+    const fast = {
+      ...TEST_SIM_CONFIG,
+      unitTypes: [{ ...TEST_SIM_CONFIG.unitTypes[0]!, speed: 1000 }],
+    };
     expect(() => createSim({ ...testInit(), config: fast })).toThrow();
   });
 });
@@ -106,8 +134,12 @@ describe('determinisme', () => {
   it('weigert een state met een andere map of config', () => {
     const { sim } = setup();
     const buf = sim.serialize();
-    expect(() => deserialize(buf, { ...testInit(), map: createTestMap(48, 48) })).toThrow(/envHash/);
-    expect(() => deserialize(buf, { ...testInit(), config: { ...TEST_SIM_CONFIG, dataVersion: 'x' } })).toThrow(/envHash/);
+    expect(() => deserialize(buf, { ...testInit(), map: createTestMap(48, 48) })).toThrow(
+      /envHash/,
+    );
+    expect(() =>
+      deserialize(buf, { ...testInit(), config: { ...TEST_SIM_CONFIG, dataVersion: 'x' } }),
+    ).toThrow(/envHash/);
     expect(() => deserialize(new ArrayBuffer(8), testInit())).toThrow();
   });
 });
@@ -172,8 +204,20 @@ describe('commando’s', () => {
     const r2 = setup();
     const t1 = cellCenter(20, 20);
     const t2 = cellCenter(10, 40);
-    const c1 = { frame: 0, playerId: 0, seq: 1, type: 'Move' as const, payload: { ids: r1.a, x: t1.x, y: t1.y } };
-    const c2 = { frame: 0, playerId: 0, seq: 2, type: 'Move' as const, payload: { ids: r1.a, x: t2.x, y: t2.y } };
+    const c1 = {
+      frame: 0,
+      playerId: 0,
+      seq: 1,
+      type: 'Move' as const,
+      payload: { ids: r1.a, x: t1.x, y: t1.y },
+    };
+    const c2 = {
+      frame: 0,
+      playerId: 0,
+      seq: 2,
+      type: 'Move' as const,
+      payload: { ids: r1.a, x: t2.x, y: t2.y },
+    };
     r1.sim.applyBundle(bundle(0, [c1, c2]));
     r2.sim.applyBundle(bundle(0, [c2, c1]));
     expect(r1.sim.tick()).toBe(r2.sim.tick());
@@ -196,12 +240,14 @@ describe('beweging', () => {
     const sim = emptySim();
     const c = cellCenter(10, 10);
     const ids: number[] = [];
-    for (let k = 0; k < 10; k++) ids.push(sim.spawnUnit({ typeId: TEST_UNIT_TYPE, owner: 0, ...c }));
+    for (let k = 0; k < 10; k++)
+      ids.push(sim.spawnUnit({ typeId: TEST_UNIT_TYPE, owner: 0, ...c }));
     for (let f = 0; f < 100; f++) sim.tick();
     const us = ids.map((id) => sim.getUnit(id)!);
     let minD = Infinity;
     for (let i = 0; i < us.length; i++)
-      for (let j = i + 1; j < us.length; j++) minD = Math.min(minD, Math.hypot(us[i]!.x - us[j]!.x, us[i]!.y - us[j]!.y));
+      for (let j = i + 1; j < us.length; j++)
+        minD = Math.min(minD, Math.hypot(us[i]!.x - us[j]!.x, us[i]!.y - us[j]!.y));
     expect(minD).toBeGreaterThan(2 * 96 * 0.8);
   });
 

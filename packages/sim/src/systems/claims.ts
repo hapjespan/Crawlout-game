@@ -70,7 +70,8 @@ export function updateClaimPoints(ctx: SimContext, s: ClaimScratch, quiet: boole
       else if (w.bstate[b] === BSTATE_SITE && o !== cur) {
         const bt = ctx.buildingType(w.typeId[b]!)!;
         const total = bt.buildTicks * PROGRESS_ONE;
-        const prog = total <= 0 ? ANIM_FULL : clampI(idiv(w.progress[b]! * ANIM_FULL, total), 0, ANIM_FULL);
+        const prog =
+          total <= 0 ? ANIM_FULL : clampI(idiv(w.progress[b]! * ANIM_FULL, total), 0, ANIM_FULL);
         if (prog > siteProgress) {
           siteProgress = prog;
           siteOwner = o;
@@ -106,7 +107,8 @@ function winRoutes(ctx: SimContext, s: ClaimScratch, census: Census): void {
   const g = ctx.globals;
   takeCensus(ctx, census);
   for (let p = 0; p < ctx.playerCount; p++) {
-    if (ps.defeated[p] === 0 && ps.hadHq[p] === 1 && census.hqCount[p] === 0) ps.defeated[p] = WIN_DESTRUCTION;
+    if (ps.defeated[p] === 0 && ps.hadHq[p] === 1 && census.hqCount[p] === 0)
+      ps.defeated[p] = WIN_DESTRUCTION;
   }
   if (g.winner !== NO_WINNER) return;
   const dom = ctx.map.dominance;

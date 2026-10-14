@@ -1,11 +1,38 @@
 import { describe, expect, it } from 'vitest';
 import { CLAIM_POINT_TYPE_ID, SCRAP_NODE_TYPE_ID, heroTypeId, unitTypeId } from '@crawlout/data';
-import { ANIM, ENTITY_FLAG, ENTITY_NONE, EVENT_TYPE, OWNER_NEUTRAL, readSnapshotHeader, snapshotLayout } from '@crawlout/protocol';
+import {
+  ANIM,
+  ENTITY_FLAG,
+  ENTITY_NONE,
+  EVENT_TYPE,
+  OWNER_NEUTRAL,
+  readSnapshotHeader,
+  snapshotLayout,
+} from '@crawlout/protocol';
 import type { CommandEnvelope } from '@crawlout/protocol';
-import { ORDER_CRAFT, ORDER_GATHER, createSim, createSimWorkerCore, deserialize } from '../src/index.js';
+import {
+  ORDER_CRAFT,
+  ORDER_GATHER,
+  createSim,
+  createSimWorkerCore,
+  deserialize,
+} from '../src/index.js';
 import type { Sim, SimWorkerOutbound } from '../src/index.js';
 import { cellCenter, createOpenMap, createTestMap, testPlayers } from '../src/testing.js';
-import { BUILDER, CONFIG, DATA, MILITIA, SCAV, bundle, cmd, emptySim, envOf, runFrames, testInit, typeByKey } from './helpers.js';
+import {
+  BUILDER,
+  CONFIG,
+  DATA,
+  MILITIA,
+  SCAV,
+  bundle,
+  cmd,
+  emptySim,
+  envOf,
+  runFrames,
+  testInit,
+  typeByKey,
+} from './helpers.js';
 
 const WONING = typeByKey('woning');
 const WERKPLAATS = typeByKey('werkplaats');
@@ -14,19 +41,26 @@ const scavType = CONFIG.unitTypes.find((u) => u.typeId === SCAV)!;
 const milType = CONFIG.unitTypes.find((u) => u.typeId === MILITIA)!;
 
 /** Draait ticks met een vaste commandolijst per frame en verzamelt alle events. */
-function play(sim: Sim, frames: number, script: Map<number, CommandEnvelope[]> = new Map()): { type: number; a: number; b: number }[] {
+function play(
+  sim: Sim,
+  frames: number,
+  script: Map<number, CommandEnvelope[]> = new Map(),
+): { type: number; a: number; b: number }[] {
   const events: { type: number; a: number; b: number }[] = [];
   for (let n = 0; n < frames; n++) {
     const f = sim.frame;
     sim.applyBundle(bundle(f, script.get(f) ?? []));
     sim.tick();
-    for (let k = 0; k < sim.events.count; k++) events.push({ type: sim.events.type[k]!, a: sim.events.a[k]!, b: sim.events.b[k]! });
+    for (let k = 0; k < sim.events.count; k++)
+      events.push({ type: sim.events.type[k]!, a: sim.events.a[k]!, b: sim.events.b[k]! });
   }
   return events;
 }
 
-const at = (frame: number, ...cmds: CommandEnvelope[]): Map<number, CommandEnvelope[]> => new Map([[frame, cmds]]);
-const kindOf = (sim: Sim, kind: string): number[] => sim.entityIds().filter((id) => sim.getUnit(id)!.kind === kind);
+const at = (frame: number, ...cmds: CommandEnvelope[]): Map<number, CommandEnvelope[]> =>
+  new Map([[frame, cmds]]);
+const kindOf = (sim: Sim, kind: string): number[] =>
+  sim.entityIds().filter((id) => sim.getUnit(id)!.kind === kind);
 
 describe('startopstelling', () => {
   it('zet nodes, claimpunten, per speler hoofdgebouw en startunits in vaste id-volgorde, plus startScrap', () => {
@@ -35,21 +69,45 @@ describe('startopstelling', () => {
     const views = sim.entityIds().map((id) => sim.getUnit(id)!);
     const nodes = map.scrapNodes.length;
     const claims = map.claimPoints.length;
-    expect(views.slice(0, nodes).every((v) => v.typeId === SCRAP_NODE_TYPE_ID && v.owner === OWNER_NEUTRAL)).toBe(true);
-    expect(views.slice(nodes, nodes + claims).every((v) => v.typeId === CLAIM_POINT_TYPE_ID && v.owner === OWNER_NEUTRAL)).toBe(true);
+    expect(
+      views
+        .slice(0, nodes)
+        .every((v) => v.typeId === SCRAP_NODE_TYPE_ID && v.owner === OWNER_NEUTRAL),
+    ).toBe(true);
+    expect(
+      views
+        .slice(nodes, nodes + claims)
+        .every((v) => v.typeId === CLAIM_POINT_TYPE_ID && v.owner === OWNER_NEUTRAL),
+    ).toBe(true);
     const faction = DATA.factions[0]!;
     const settlers = faction.startUnits.reduce((n, u) => n + u.count, 0);
     const perPlayer = 2 + settlers; // hoofdgebouw, startunits, held
     for (let p = 0; p < 2; p++) {
-      const block = views.slice(nodes + claims + p * perPlayer, nodes + claims + (p + 1) * perPlayer);
+      const block = views.slice(
+        nodes + claims + p * perPlayer,
+        nodes + claims + (p + 1) * perPlayer,
+      );
       expect(block[0]).toMatchObject({ kind: 'building', typeId: HQ, owner: p, buildState: 2 });
       const spawn = map.spawns[p]!;
       expect(block[0]!.x >> 8).toBe(spawn.x >> 8);
-      const want = faction.startUnits.flatMap((u) => Array.from({ length: u.count }, () => unitTypeId(u.loadoutId)));
+      const want = faction.startUnits.flatMap((u) =>
+        Array.from({ length: u.count }, () => unitTypeId(u.loadoutId)),
+      );
       expect(block.slice(1, 1 + settlers).map((v) => v.typeId)).toEqual(want);
-      expect(block.slice(1, 1 + settlers).every((v) => v.kind === 'unit' && v.owner === p)).toBe(true);
-      expect(block[1 + settlers]).toMatchObject({ kind: 'hero', typeId: heroTypeId(DATA.heroes[0]!.id), owner: p });
-      expect(sim.playerStatus(p)).toMatchObject({ scrap: faction.startScrap, settlers, beds: 6, popCap: 6 });
+      expect(block.slice(1, 1 + settlers).every((v) => v.kind === 'unit' && v.owner === p)).toBe(
+        true,
+      );
+      expect(block[1 + settlers]).toMatchObject({
+        kind: 'hero',
+        typeId: heroTypeId(DATA.heroes[0]!.id),
+        owner: p,
+      });
+      expect(sim.playerStatus(p)).toMatchObject({
+        scrap: faction.startScrap,
+        settlers,
+        beds: 6,
+        popCap: 6,
+      });
     }
     // deterministisch: zelfde invoer, zelfde hash; andere spelers, andere hash
     expect(createSim(testInit(5)).hash()).toBe(sim.hash());
@@ -57,7 +115,9 @@ describe('startopstelling', () => {
   });
 
   it('weigert een map zonder genoeg spawns', () => {
-    expect(() => createSim(testInit(1, { ...createTestMap(), spawns: [cellCenter(8, 8)] }))).toThrow(/spawns/);
+    expect(() =>
+      createSim(testInit(1, { ...createTestMap(), spawns: [cellCenter(8, 8)] })),
+    ).toThrow(/spawns/);
   });
 });
 
@@ -66,27 +126,39 @@ describe('economie', () => {
     const map = createTestMap();
     // een node naast het hoofdgebouw
     const g = scavType.gatherAmount;
-    const s2 = createSim(testInit(1, { ...map, scrapNodes: [{ ...cellCenter(14, 8), amount: 2 * g + (g >> 1) }] }));
+    const s2 = createSim(
+      testInit(1, { ...map, scrapNodes: [{ ...cellCenter(14, 8), amount: 2 * g + (g >> 1) }] }),
+    );
     const n = kindOf(s2, 'scrapNode')[0]!;
     const scavs = s2.entityIds().filter((id) => {
       const u = s2.getUnit(id)!;
       return u.kind === 'unit' && u.owner === 0 && u.typeId === SCAV;
     });
     const before = s2.playerStatus(0).scrap;
-    const ev = play(s2, 6 * scavType.gatherTicks, at(0, cmd(0, 0, 'Gather', { ids: scavs.slice(0, 2), nodeId: n })));
+    const ev = play(
+      s2,
+      6 * scavType.gatherTicks,
+      at(0, cmd(0, 0, 'Gather', { ids: scavs.slice(0, 2), nodeId: n })),
+    );
     // twee ritten van gatherAmount en een rest van de helft, daarna is de node op
     expect(s2.playerStatus(0).scrap).toBe(before + 2 * g + (g >> 1));
     expect(s2.getUnit(n)).toBeNull();
-    expect(ev.filter((e) => e.type === EVENT_TYPE.resourceDepleted)).toEqual([{ type: EVENT_TYPE.resourceDepleted, a: n, b: 0 }]);
+    expect(ev.filter((e) => e.type === EVENT_TYPE.resourceDepleted)).toEqual([
+      { type: EVENT_TYPE.resourceDepleted, a: n, b: 0 },
+    ]);
     // zonder nodes in de map zijn de scavengers klaar
     const left = scavs.slice(0, 2).map((id) => s2.getUnit(id)!.order);
     expect(left).toEqual([0, 0]);
   });
 
   it('een rit duurt gatherTicks en zet de unit op anim gather', () => {
-    const sim = createSim(testInit(1, { ...createTestMap(), scrapNodes: [{ ...cellCenter(13, 8), amount: 500 }] }));
+    const sim = createSim(
+      testInit(1, { ...createTestMap(), scrapNodes: [{ ...cellCenter(13, 8), amount: 500 }] }),
+    );
     const n = kindOf(sim, 'scrapNode')[0]!;
-    const scav = sim.entityIds().find((id) => sim.getUnit(id)!.typeId === SCAV && sim.getUnit(id)!.owner === 0)!;
+    const scav = sim
+      .entityIds()
+      .find((id) => sim.getUnit(id)!.typeId === SCAV && sim.getUnit(id)!.owner === 0)!;
     play(sim, 1, at(0, cmd(0, 0, 'Gather', { ids: [scav], nodeId: n })));
     let first = -1;
     for (let f = 1; f < 2 * scavType.gatherTicks + 200 && first < 0; f++) {
@@ -109,17 +181,25 @@ describe('economie', () => {
     const h = readSnapshotHeader(buf);
     const L = snapshotLayout(h.entityCount, h.eventCount);
     const k = Array.from(new Uint32Array(buf, L.entity.id, h.entityCount)).indexOf(n);
-    expect(new Uint8Array(buf, L.entity.hpPct, h.entityCount)[k]).toBe(Math.trunc(((500 - scavType.gatherAmount) * 100) / 500));
+    expect(new Uint8Array(buf, L.entity.hpPct, h.entityCount)[k]).toBe(
+      Math.trunc(((500 - scavType.gatherAmount) * 100) / 500),
+    );
     expect(new Uint8Array(buf, L.entity.owner, h.entityCount)[k]).toBe(OWNER_NEUTRAL);
   });
 
   it('Build: scrap betalen, bouwplaats blokkeert cellen, bouwer maakt hem af, bedden verhogen de pop-cap', () => {
     const sim = createSim(testInit(2));
-    const builder = sim.entityIds().find((id) => sim.getUnit(id)!.typeId === BUILDER && sim.getUnit(id)!.owner === 0)!;
+    const builder = sim
+      .entityIds()
+      .find((id) => sim.getUnit(id)!.typeId === BUILDER && sim.getUnit(id)!.owner === 0)!;
     const wt = CONFIG.buildingTypes.find((b) => b.typeId === WONING)!;
     const before = sim.playerStatus(0);
     const p = cellCenter(16, 14);
-    const ev = play(sim, 1, at(0, cmd(0, 0, 'Build', { ids: [builder], typeId: WONING, x: p.x, y: p.y })));
+    const ev = play(
+      sim,
+      1,
+      at(0, cmd(0, 0, 'Build', { ids: [builder], typeId: WONING, x: p.x, y: p.y })),
+    );
     expect(sim.playerStatus(0).scrap).toBe(before.scrap - wt.scrapCost);
     const site = ev.find((e) => e.type === EVENT_TYPE.buildingPlaced)!.a;
     expect(sim.getUnit(site)).toMatchObject({ kind: 'building', buildState: 1, owner: 0 });
@@ -137,17 +217,26 @@ describe('economie', () => {
 
   it('weigert Build zonder bouwer, zonder scrap, voor een hoofdgebouw of op een muur', () => {
     const sim = createSim(testInit(2));
-    const scav = sim.entityIds().find((id) => sim.getUnit(id)!.typeId === SCAV && sim.getUnit(id)!.owner === 0)!;
-    const builder = sim.entityIds().find((id) => sim.getUnit(id)!.typeId === BUILDER && sim.getUnit(id)!.owner === 0)!;
+    const scav = sim
+      .entityIds()
+      .find((id) => sim.getUnit(id)!.typeId === SCAV && sim.getUnit(id)!.owner === 0)!;
+    const builder = sim
+      .entityIds()
+      .find((id) => sim.getUnit(id)!.typeId === BUILDER && sim.getUnit(id)!.owner === 0)!;
     const p = cellCenter(16, 14);
     const h0 = sim.hash();
     const s = sim.serialize();
-    play(sim, 1, at(0,
-      cmd(0, 0, 'Build', { ids: [scav], typeId: WONING, x: p.x, y: p.y }), // geen bouwer
-      cmd(0, 0, 'Build', { ids: [builder], typeId: HQ, x: p.x, y: p.y }), // hoofdgebouw
-      cmd(0, 0, 'Build', { ids: [builder], typeId: WONING, ...cellCenter(32, 5) }), // muur
-      cmd(0, 1, 'Build', { ids: [builder], typeId: WONING, x: p.x, y: p.y }), // niet van speler 1
-    ));
+    play(
+      sim,
+      1,
+      at(
+        0,
+        cmd(0, 0, 'Build', { ids: [scav], typeId: WONING, x: p.x, y: p.y }), // geen bouwer
+        cmd(0, 0, 'Build', { ids: [builder], typeId: HQ, x: p.x, y: p.y }), // hoofdgebouw
+        cmd(0, 0, 'Build', { ids: [builder], typeId: WONING, ...cellCenter(32, 5) }), // muur
+        cmd(0, 1, 'Build', { ids: [builder], typeId: WONING, x: p.x, y: p.y }), // niet van speler 1
+      ),
+    );
     const ref = deserialize(s, envOf(testInit(2)));
     expect(ref.hash()).toBe(h0);
     play(ref, 1);
@@ -159,10 +248,16 @@ describe('economie', () => {
 
   it('Cancel op een bouwplaats geeft de scrap terug en maakt de cellen vrij', () => {
     const sim = createSim(testInit(2));
-    const builder = sim.entityIds().find((id) => sim.getUnit(id)!.typeId === BUILDER && sim.getUnit(id)!.owner === 0)!;
+    const builder = sim
+      .entityIds()
+      .find((id) => sim.getUnit(id)!.typeId === BUILDER && sim.getUnit(id)!.owner === 0)!;
     const before = sim.playerStatus(0).scrap;
     const p = cellCenter(16, 14);
-    const ev = play(sim, 1, at(0, cmd(0, 0, 'Build', { ids: [builder], typeId: WONING, x: p.x, y: p.y })));
+    const ev = play(
+      sim,
+      1,
+      at(0, cmd(0, 0, 'Build', { ids: [builder], typeId: WONING, x: p.x, y: p.y })),
+    );
     const site = ev.find((e) => e.type === EVENT_TYPE.buildingPlaced)!.a;
     play(sim, 1, at(1, cmd(1, 0, 'Cancel', { ids: [site] })));
     expect(sim.getUnit(site)).toBeNull();
@@ -173,10 +268,16 @@ describe('economie', () => {
   it('Cancel geeft cancelRefundPermille van de prijs terug (bouwplaats en betaalde omscholing)', () => {
     const half = { ...testInit(2), config: { ...CONFIG, cancelRefundPermille: 500 } };
     const sim = createSim(half);
-    const builder = sim.entityIds().find((id) => sim.getUnit(id)!.typeId === BUILDER && sim.getUnit(id)!.owner === 0)!;
+    const builder = sim
+      .entityIds()
+      .find((id) => sim.getUnit(id)!.typeId === BUILDER && sim.getUnit(id)!.owner === 0)!;
     const before = sim.playerStatus(0).scrap;
     const p = cellCenter(16, 14);
-    const ev = play(sim, 1, at(0, cmd(0, 0, 'Build', { ids: [builder], typeId: WONING, x: p.x, y: p.y })));
+    const ev = play(
+      sim,
+      1,
+      at(0, cmd(0, 0, 'Build', { ids: [builder], typeId: WONING, x: p.x, y: p.y })),
+    );
     const site = ev.find((e) => e.type === EVENT_TYPE.buildingPlaced)!.a;
     play(sim, 1, at(1, cmd(1, 0, 'Cancel', { ids: [site] })));
     const cost = CONFIG.buildingTypes.find((b) => b.typeId === WONING)!.scrapCost;
@@ -213,13 +314,27 @@ describe('economie', () => {
     }
     expect(switched).toBeGreaterThan(milType.craftTicks);
     expect(sim.playerStatus(0).scrap).toBe(100 - milType.scrapCost);
-    expect(sim.getUnit(s)).toMatchObject({ order: 0, role: milType.role, loadoutId: milType.loadoutId });
+    expect(sim.getUnit(s)).toMatchObject({
+      order: 0,
+      role: milType.role,
+      loadoutId: milType.loadoutId,
+    });
     // zonder werkplaats wacht een unit (en betaalt niets)
     const t = sim.spawnUnit({ typeId: SCAV, owner: 1, ...cellCenter(40, 40) });
     play(sim, 50, at(sim.frame, cmd(sim.frame, 1, 'SetRole', { ids: [t], role: 'builder' })));
     expect(sim.getUnit(t)).toMatchObject({ typeId: SCAV, order: ORDER_CRAFT });
     // Craft met een loadout met prereqTech (patrol) kan nog niet
-    play(sim, 1, at(sim.frame, cmd(sim.frame, 0, 'Craft', { ids: [s], loadoutId: DATA.loadouts.find((l) => l.key === 'patrol')!.id })));
+    play(
+      sim,
+      1,
+      at(
+        sim.frame,
+        cmd(sim.frame, 0, 'Craft', {
+          ids: [s],
+          loadoutId: DATA.loadouts.find((l) => l.key === 'patrol')!.id,
+        }),
+      ),
+    );
     expect(sim.getUnit(s)!.order).toBe(0);
   });
 });
@@ -234,28 +349,60 @@ describe('onderzoek en craft', () => {
   it('Research: kosten meteen, researchTicks in de werkplaats, daarna ontgrendelt prereqTech loadouts en gebouwen', () => {
     const sim = createSim(testInit(30));
     sim.setScrap(0, 1000);
-    const builder = sim.entityIds().find((id) => sim.getUnit(id)!.typeId === BUILDER && sim.getUnit(id)!.owner === 0)!;
-    const scav = sim.entityIds().find((id) => sim.getUnit(id)!.typeId === SCAV && sim.getUnit(id)!.owner === 0)!;
+    const builder = sim
+      .entityIds()
+      .find((id) => sim.getUnit(id)!.typeId === BUILDER && sim.getUnit(id)!.owner === 0)!;
+    const scav = sim
+      .entityIds()
+      .find((id) => sim.getUnit(id)!.typeId === SCAV && sim.getUnit(id)!.owner === 0)!;
     const t = cellCenter(16, 14);
     // zonder tech: geen turret en geen patrol; zonder werkplaats: geen onderzoek
-    let ev = play(sim, 1, at(0, cmd(0, 0, 'Build', { ids: [builder], typeId: TURRET, ...t }), cmd(0, 0, 'Research', { techId: GEWEERREK.techId })));
+    let ev = play(
+      sim,
+      1,
+      at(
+        0,
+        cmd(0, 0, 'Build', { ids: [builder], typeId: TURRET, ...t }),
+        cmd(0, 0, 'Research', { techId: GEWEERREK.techId }),
+      ),
+    );
     expect(ev.some((e) => e.type === EVENT_TYPE.buildingPlaced)).toBe(false);
     expect(sim.playerStatus(0).scrap).toBe(1000);
     const ws = sim.spawnBuilding(WERKPLAATS, 0, 14, 4);
-    play(sim, 1, at(sim.frame, cmd(sim.frame, 0, 'Craft', { ids: [scav], loadoutId: PATROL_LOADOUT })));
+    play(
+      sim,
+      1,
+      at(sim.frame, cmd(sim.frame, 0, 'Craft', { ids: [scav], loadoutId: PATROL_LOADOUT })),
+    );
     expect(sim.getUnit(scav)!.order).toBe(0);
     // een tech met een onvervulde prereqTech kan niet
     play(sim, 1, at(sim.frame, cmd(sim.frame, 0, 'Research', { techId: PANTSER.techId })));
     expect(sim.playerStatus(0).scrap).toBe(1000);
-    play(sim, 1, at(sim.frame, cmd(sim.frame, 0, 'Research', { techId: GEWEERREK.techId }), cmd(sim.frame, 0, 'Research', { techId: GEWEERREK.techId })));
+    play(
+      sim,
+      1,
+      at(
+        sim.frame,
+        cmd(sim.frame, 0, 'Research', { techId: GEWEERREK.techId }),
+        cmd(sim.frame, 0, 'Research', { techId: GEWEERREK.techId }),
+      ),
+    );
     expect(sim.playerStatus(0).scrap).toBe(1000 - GEWEERREK.scrapCost);
     expect(sim.researched(0)).toEqual([]);
     play(sim, GEWEERREK.researchTicks - 1);
     expect(sim.researched(0)).toEqual([GEWEERREK.techId]);
     expect(sim.getUnit(ws)!.buildState).toBe(2);
-    ev = play(sim, 1, at(sim.frame, cmd(sim.frame, 0, 'Build', { ids: [builder], typeId: TURRET, ...t })));
+    ev = play(
+      sim,
+      1,
+      at(sim.frame, cmd(sim.frame, 0, 'Build', { ids: [builder], typeId: TURRET, ...t })),
+    );
     expect(ev.some((e) => e.type === EVENT_TYPE.buildingPlaced && e.b === TURRET)).toBe(true);
-    play(sim, 1, at(sim.frame, cmd(sim.frame, 0, 'Craft', { ids: [scav], loadoutId: PATROL_LOADOUT })));
+    play(
+      sim,
+      1,
+      at(sim.frame, cmd(sim.frame, 0, 'Craft', { ids: [scav], loadoutId: PATROL_LOADOUT })),
+    );
     expect(sim.getUnit(scav)!.order).toBe(ORDER_CRAFT);
     // speler 1 heeft de tech niet
     expect(sim.researched(1)).toEqual([]);
@@ -263,15 +410,28 @@ describe('onderzoek en craft', () => {
 
   it('PlayerStatus.queue: onderzoek op het gebouw, omscholing op de bewoner (onderweg zonder gebouw), oplopend; Cancel op de bewoner geeft terug', () => {
     const sim = createSim({ ...testInit(32), config: { ...CONFIG, cancelRefundPermille: 500 } });
-    for (const id of sim.entityIds()) if (sim.getUnit(id)!.kind === 'unit' && sim.getUnit(id)!.owner === 0 && sim.getUnit(id)!.typeId !== SCAV) sim.destroyEntity(id);
+    for (const id of sim.entityIds())
+      if (
+        sim.getUnit(id)!.kind === 'unit' &&
+        sim.getUnit(id)!.owner === 0 &&
+        sim.getUnit(id)!.typeId !== SCAV
+      )
+        sim.destroyEntity(id);
     const ws = sim.spawnBuilding(WERKPLAATS, 0, 14, 4);
     sim.setScrap(0, 1000);
-    const scavs = sim.entityIds().filter((id) => sim.getUnit(id)!.typeId === SCAV && sim.getUnit(id)!.owner === 0);
+    const scavs = sim
+      .entityIds()
+      .filter((id) => sim.getUnit(id)!.typeId === SCAV && sim.getUnit(id)!.owner === 0);
     expect(sim.playerStatus(0).queue).toEqual([]);
     play(sim, 1, at(sim.frame, cmd(sim.frame, 0, 'Research', { techId: GEWEERREK.techId })));
     let q = sim.playerStatus(0).queue!;
     expect(q).toHaveLength(1);
-    expect(q[0]).toMatchObject({ kind: 'research', buildingId: ws, unitId: ENTITY_NONE, id: GEWEERREK.techId });
+    expect(q[0]).toMatchObject({
+      kind: 'research',
+      buildingId: ws,
+      unitId: ENTITY_NONE,
+      id: GEWEERREK.techId,
+    });
     expect(q[0]!.progressPermille).toBeLessThan(10); // één tick werk in het frame van het commando
     play(sim, GEWEERREK.researchTicks >> 1);
     q = sim.playerStatus(0).queue!;
@@ -282,13 +442,22 @@ describe('onderzoek en craft', () => {
     // twee bewoners craften patrol: eerst onderweg (buildingId ENTITY_NONE, 0 promille), dan bij de werkplaats
     const patrol = CONFIG.unitTypes.find((u) => u.loadoutId === PATROL_LOADOUT)!;
     const [a, b] = [scavs[0]!, scavs[1]!];
-    play(sim, 1, at(sim.frame, cmd(sim.frame, 0, 'Craft', { ids: [b, a], loadoutId: PATROL_LOADOUT })));
+    play(
+      sim,
+      1,
+      at(sim.frame, cmd(sim.frame, 0, 'Craft', { ids: [b, a], loadoutId: PATROL_LOADOUT })),
+    );
     q = sim.playerStatus(0).queue!;
     expect(q.map((x) => [x.kind, x.buildingId, x.unitId, x.id, x.progressPermille])).toEqual([
       ['craft', ENTITY_NONE, Math.min(a, b), PATROL_LOADOUT, 0],
       ['craft', ENTITY_NONE, Math.max(a, b), PATROL_LOADOUT, 0],
     ]);
-    for (let n = 0; n < 400 && sim.playerStatus(0).queue!.some((x) => x.progressPermille === 0); n++) play(sim, 1);
+    for (
+      let n = 0;
+      n < 400 && sim.playerStatus(0).queue!.some((x) => x.progressPermille === 0);
+      n++
+    )
+      play(sim, 1);
     q = sim.playerStatus(0).queue!;
     expect(q.map((x) => [x.buildingId, x.unitId])).toEqual([
       [ws, Math.min(a, b)],
@@ -320,7 +489,9 @@ describe('onderzoek en craft', () => {
     play(sim, 10);
     const before = sim.playerStatus(0).scrap;
     play(sim, 1, at(sim.frame, cmd(sim.frame, 0, 'Cancel', { ids: [ws] })));
-    expect(sim.playerStatus(0).scrap).toBe(before + idivTest(PANTSER.scrapCost * CONFIG.cancelRefundPermille, 1000));
+    expect(sim.playerStatus(0).scrap).toBe(
+      before + idivTest(PANTSER.scrapCost * CONFIG.cancelRefundPermille, 1000),
+    );
     play(sim, PANTSER.researchTicks + 10);
     expect(sim.researched(0)).toEqual([GEWEERREK.techId]);
     // opnieuw, nu tot het eind
@@ -343,9 +514,15 @@ describe('gevecht', () => {
     const a = sim.spawnUnit({ typeId: MILITIA, owner: 0, ...cellCenter(10, 10) });
     const b = sim.spawnUnit({ typeId: SCAV, owner: 1, ...cellCenter(14, 10) });
     const ev = play(sim, 1, at(0, cmd(0, 0, 'Attack', { ids: [a], target: b })));
-    const dmg = Math.trunc((milType.damage * CONFIG.damageMatrix[milType.damageType]![scavType.armorType]!) / 1000);
-    expect(ev.filter((e) => e.type === EVENT_TYPE.shotFired)).toEqual([{ type: EVENT_TYPE.shotFired, a, b }]);
-    expect(ev.filter((e) => e.type === EVENT_TYPE.hit)).toEqual([{ type: EVENT_TYPE.hit, a: b, b: a }]);
+    const dmg = Math.trunc(
+      (milType.damage * CONFIG.damageMatrix[milType.damageType]![scavType.armorType]!) / 1000,
+    );
+    expect(ev.filter((e) => e.type === EVENT_TYPE.shotFired)).toEqual([
+      { type: EVENT_TYPE.shotFired, a, b },
+    ]);
+    expect(ev.filter((e) => e.type === EVENT_TYPE.hit)).toEqual([
+      { type: EVENT_TYPE.hit, a: b, b: a },
+    ]);
     expect(sim.getUnit(b)!.hp).toBe(scavType.maxHp - dmg);
     // de scavenger vecht niet terug (geen militie, geen order)
     const all = play(sim, milType.cooldown * 10);
@@ -376,7 +553,9 @@ describe('gevecht', () => {
 
   it('AttackMove: onderweg vechten, daarna doorlopen naar het punt', () => {
     const sim = emptySim(7, createOpenMap(64, 64));
-    const a = [0, 1, 2].map((k) => sim.spawnUnit({ typeId: MILITIA, owner: 0, ...cellCenter(5, 10 + k) }));
+    const a = [0, 1, 2].map((k) =>
+      sim.spawnUnit({ typeId: MILITIA, owner: 0, ...cellCenter(5, 10 + k) }),
+    );
     const b = sim.spawnUnit({ typeId: SCAV, owner: 1, ...cellCenter(25, 11) });
     const goal = cellCenter(50, 11);
     play(sim, 1, at(0, cmd(0, 0, 'AttackMove', { ids: a, ...goal })));
@@ -417,7 +596,15 @@ describe('claims en winroutes', () => {
     const s0 = sim.spawnUnit({ typeId: SCAV, owner: 0, x: view.x - 10 * 256, y: view.y + 256 });
     const before = sim.playerStatus(0).scrap;
     // een scavenger kan niet claimen; de bouwer zet een claimpaal binnen claimRadius neer
-    let ev = play(sim, 1, at(0, cmd(0, 0, 'Claim', { ids: [s0], pointId: pt }), cmd(0, 0, 'Claim', { ids: [b0], pointId: pt })));
+    let ev = play(
+      sim,
+      1,
+      at(
+        0,
+        cmd(0, 0, 'Claim', { ids: [s0], pointId: pt }),
+        cmd(0, 0, 'Claim', { ids: [b0], pointId: pt }),
+      ),
+    );
     const placed = ev.filter((e) => e.type === EVENT_TYPE.buildingPlaced);
     expect(placed).toHaveLength(1);
     const post = placed[0]!.a;
@@ -431,23 +618,33 @@ describe('claims en winroutes', () => {
     ev = play(sim, paal.buildTicks + 200);
     expect(sim.getUnit(post)!.buildState).toBe(2);
     expect(sim.getUnit(pt)).toMatchObject({ owner: 0, claimBy: OWNER_NEUTRAL, claimProgress: 0 });
-    expect(ev.filter((e) => e.type === EVENT_TYPE.claimTaken)).toEqual([{ type: EVENT_TYPE.claimTaken, a: pt, b: 0 }]);
+    expect(ev.filter((e) => e.type === EVENT_TYPE.claimTaken)).toEqual([
+      { type: EVENT_TYPE.claimTaken, a: pt, b: 0 },
+    ]);
     // een tweede Claim op een eigen punt is ongeldig
     ev = play(sim, 1, at(sim.frame, cmd(sim.frame, 0, 'Claim', { ids: [b0], pointId: pt })));
     expect(ev.some((e) => e.type === EVENT_TYPE.buildingPlaced)).toBe(false);
     // speler 1 zet ook een paal neer: de huidige eigenaar houdt het punt
     sim.setScrap(1, 500);
     const b1 = sim.spawnUnit({ typeId: BUILDER, owner: 1, x: view.x + 10 * 256, y: view.y });
-    play(sim, paal.buildTicks + 300, at(sim.frame, cmd(sim.frame, 1, 'Claim', { ids: [b1], pointId: pt })));
+    play(
+      sim,
+      paal.buildTicks + 300,
+      at(sim.frame, cmd(sim.frame, 1, 'Claim', { ids: [b1], pointId: pt })),
+    );
     const posts = kindOf(sim, 'building').filter((id) => sim.getUnit(id)!.typeId === CLAIMPAAL);
     expect(posts.map((id) => sim.getUnit(id)!.owner).sort()).toEqual([0, 1]);
     expect(sim.getUnit(pt)!.owner).toBe(0);
     // de paal van speler 0 gaat neer: het punt gaat naar speler 1
-    const army = [0, 1, 2, 3, 4, 5].map((k) => sim.spawnUnit({ typeId: MILITIA, owner: 1, x: view.x - 4 * 256, y: view.y + (k - 3) * 256 }));
+    const army = [0, 1, 2, 3, 4, 5].map((k) =>
+      sim.spawnUnit({ typeId: MILITIA, owner: 1, x: view.x - 4 * 256, y: view.y + (k - 3) * 256 }),
+    );
     ev = play(sim, 1200, at(sim.frame, cmd(sim.frame, 1, 'Attack', { ids: army, target: post })));
     expect(sim.getUnit(post)).toBeNull();
     expect(sim.getUnit(pt)!.owner).toBe(1);
-    expect(ev.filter((e) => e.type === EVENT_TYPE.claimTaken)).toEqual([{ type: EVENT_TYPE.claimTaken, a: pt, b: 1 }]);
+    expect(ev.filter((e) => e.type === EVENT_TYPE.claimTaken)).toEqual([
+      { type: EVENT_TYPE.claimTaken, a: pt, b: 1 },
+    ]);
   });
 
   it('zonder claimgebouw valt het punt terug naar neutraal (claimTaken met b = OWNER_NEUTRAL)', () => {
@@ -457,10 +654,18 @@ describe('claims en winroutes', () => {
     const post = sim.spawnBuilding(CLAIMPAAL, 0, (v.x >> 8) + 2, v.y >> 8);
     play(sim, 1);
     expect(sim.getUnit(pt)!.owner).toBe(0);
-    const army = [0, 1, 2, 3, 4, 5].map((k) => sim.spawnUnit({ typeId: MILITIA, owner: 1, x: v.x + 6 * 256, y: v.y + (k - 3) * 256 }));
-    const ev = play(sim, 1200, at(sim.frame, cmd(sim.frame, 1, 'Attack', { ids: army, target: post })));
+    const army = [0, 1, 2, 3, 4, 5].map((k) =>
+      sim.spawnUnit({ typeId: MILITIA, owner: 1, x: v.x + 6 * 256, y: v.y + (k - 3) * 256 }),
+    );
+    const ev = play(
+      sim,
+      1200,
+      at(sim.frame, cmd(sim.frame, 1, 'Attack', { ids: army, target: post })),
+    );
     expect(sim.getUnit(pt)!.owner).toBe(OWNER_NEUTRAL);
-    expect(ev.filter((e) => e.type === EVENT_TYPE.claimTaken)).toEqual([{ type: EVENT_TYPE.claimTaken, a: pt, b: OWNER_NEUTRAL }]);
+    expect(ev.filter((e) => e.type === EVENT_TYPE.claimTaken)).toEqual([
+      { type: EVENT_TYPE.claimTaken, a: pt, b: OWNER_NEUTRAL },
+    ]);
   });
 
   it('het hoofdgebouw is een claimbron: een punt bij de spawn is vanaf de start van de speler, zonder event', () => {
@@ -474,7 +679,14 @@ describe('claims en winroutes', () => {
 
   it('exclusieve nodes: een node binnen claimRadius van een bezet punt is alleen voor de eigenaar', () => {
     const open = createOpenMap(64, 64);
-    const map = { ...open, scrapNodes: [{ ...cellCenter(34, 32), amount: 500 }, { ...cellCenter(40, 50), amount: 500 }], claimPoints: [{ ...cellCenter(32, 32), kind: 0 }] };
+    const map = {
+      ...open,
+      scrapNodes: [
+        { ...cellCenter(34, 32), amount: 500 },
+        { ...cellCenter(40, 50), amount: 500 },
+      ],
+      claimPoints: [{ ...cellCenter(32, 32), kind: 0 }],
+    };
     const sim = createSim(testInit(21, map));
     const [excl, free] = kindOf(sim, 'scrapNode');
     const pt = kindOf(sim, 'claimPoint')[0]!;
@@ -483,7 +695,15 @@ describe('claims en winroutes', () => {
     expect(sim.getUnit(pt)!.owner).toBe(0);
     const s1 = sim.spawnUnit({ typeId: SCAV, owner: 1, ...cellCenter(36, 34) });
     const s0 = sim.spawnUnit({ typeId: SCAV, owner: 0, ...cellCenter(36, 30) });
-    play(sim, 1, at(sim.frame, cmd(sim.frame, 1, 'Gather', { ids: [s1], nodeId: excl! }), cmd(sim.frame, 0, 'Gather', { ids: [s0], nodeId: excl! })));
+    play(
+      sim,
+      1,
+      at(
+        sim.frame,
+        cmd(sim.frame, 1, 'Gather', { ids: [s1], nodeId: excl! }),
+        cmd(sim.frame, 0, 'Gather', { ids: [s0], nodeId: excl! }),
+      ),
+    );
     play(sim, 400);
     // speler 0 haalt er scrap; de scavenger van speler 1 is omgeleid naar de vrije node
     expect(sim.getUnit(excl!)!.amount).toBeLessThan(500);
@@ -507,12 +727,23 @@ describe('claims en winroutes', () => {
 
   it('winroute A: het hoofdgebouw van de tegenstander slopen', () => {
     const sim = createSim(testInit(11, createOpenMap(64, 64)));
-    const hq1 = sim.entityIds().find((id) => sim.getUnit(id)!.kind === 'building' && sim.getUnit(id)!.owner === 1)!;
+    const hq1 = sim
+      .entityIds()
+      .find((id) => sim.getUnit(id)!.kind === 'building' && sim.getUnit(id)!.owner === 1)!;
     const v = sim.getUnit(hq1)!;
     const army: number[] = [];
-    for (let k = 0; k < 30; k++) army.push(sim.spawnUnit({ typeId: MILITIA, owner: 0, x: v.x - 6 * 256 + (k % 6) * 128, y: v.y - 6 * 256 + Math.floor(k / 6) * 200 }));
+    for (let k = 0; k < 30; k++)
+      army.push(
+        sim.spawnUnit({
+          typeId: MILITIA,
+          owner: 0,
+          x: v.x - 6 * 256 + (k % 6) * 128,
+          y: v.y - 6 * 256 + Math.floor(k / 6) * 200,
+        }),
+      );
     // de verdedigers van speler 1 eerst weg
-    for (const id of sim.entityIds()) if (sim.getUnit(id)!.kind === 'unit' && sim.getUnit(id)!.owner === 1) sim.destroyEntity(id);
+    for (const id of sim.entityIds())
+      if (sim.getUnit(id)!.kind === 'unit' && sim.getUnit(id)!.owner === 1) sim.destroyEntity(id);
     play(sim, 1, at(sim.frame, cmd(sim.frame, 0, 'Attack', { ids: army, target: hq1 })));
     for (let f = 0; f < 4000 && sim.winner() === null; f++) play(sim, 1);
     expect(sim.getUnit(hq1)).toBeNull();
@@ -525,7 +756,9 @@ describe('claims en winroutes', () => {
     play(sim, 1, at(0, cmd(0, 0, 'Surrender', {})));
     expect(sim.winner()).toMatchObject({ playerId: 1, reason: 'surrender', frame: 0 });
     const h = sim.hash();
-    const u = sim.entityIds().find((id) => sim.getUnit(id)!.kind === 'unit' && sim.getUnit(id)!.owner === 0)!;
+    const u = sim
+      .entityIds()
+      .find((id) => sim.getUnit(id)!.kind === 'unit' && sim.getUnit(id)!.owner === 0)!;
     const ref = deserialize(sim.serialize(), envOf(testInit(12)));
     play(sim, 1, at(1, cmd(1, 0, 'Move', { ids: [u], ...cellCenter(20, 20) })));
     play(ref, 1);
@@ -538,20 +771,26 @@ describe('state', () => {
   it('serialize/deserialize midden in een potje met gebouwen, bouwplaatsen, lijken en flow fields: zelfde hash, zelfde vervolg', () => {
     const init = testInit(13, createTestMap(), testPlayers(2, true));
     const sim = createSim(init);
-    const builder = sim.entityIds().find((id) => sim.getUnit(id)!.typeId === BUILDER && sim.getUnit(id)!.owner === 0)!;
+    const builder = sim
+      .entityIds()
+      .find((id) => sim.getUnit(id)!.typeId === BUILDER && sim.getUnit(id)!.owner === 0)!;
     const p = cellCenter(16, 14);
     play(sim, 1, at(0, cmd(0, 0, 'Build', { ids: [builder], typeId: WONING, x: p.x, y: p.y })));
     for (const stop of [40, 333, 1200]) {
       play(sim, stop - sim.frame);
       const copy = deserialize(sim.serialize(), envOf(init));
       expect(copy.hash()).toBe(sim.hash());
-      expect(runFrames(copy, 300)).toEqual(runFrames(deserialize(sim.serialize(), envOf(init)), 300));
+      expect(runFrames(copy, 300)).toEqual(
+        runFrames(deserialize(sim.serialize(), envOf(init)), 300),
+      );
     }
   });
 
   it('weigert een state met andere spelers (ai-vlag in de envHash)', () => {
     const sim = createSim(testInit(14));
-    expect(() => deserialize(sim.serialize(), envOf(testInit(14, createTestMap(), testPlayers(2, true))))).toThrow(/envHash/);
+    expect(() =>
+      deserialize(sim.serialize(), envOf(testInit(14, createTestMap(), testPlayers(2, true)))),
+    ).toThrow(/envHash/);
   });
 
   it('playerStatus en de query in de worker-schil', () => {
@@ -583,7 +822,11 @@ describe('state', () => {
           revivesLeft: 4,
           state: 'alive',
           reviveTicksLeft: 0,
-          entityId: core.sim!.entityIds().find((id) => core.sim!.getUnit(id)!.kind === 'hero' && core.sim!.getUnit(id)!.owner === 1),
+          entityId: core
+            .sim!.entityIds()
+            .find(
+              (id) => core.sim!.getUnit(id)!.kind === 'hero' && core.sim!.getUnit(id)!.owner === 1,
+            ),
           abilityCooldownTicks: [0],
         },
         techs: [],
@@ -597,9 +840,15 @@ describe('state', () => {
 
   it('presentatie: een bouwplaats heeft anim build en animT als voortgang', () => {
     const sim = createSim(testInit(16));
-    const builder = sim.entityIds().find((id) => sim.getUnit(id)!.typeId === BUILDER && sim.getUnit(id)!.owner === 0)!;
+    const builder = sim
+      .entityIds()
+      .find((id) => sim.getUnit(id)!.typeId === BUILDER && sim.getUnit(id)!.owner === 0)!;
     const p = cellCenter(16, 14);
-    const ev = play(sim, 200, at(0, cmd(0, 0, 'Build', { ids: [builder], typeId: WONING, x: p.x, y: p.y })));
+    const ev = play(
+      sim,
+      200,
+      at(0, cmd(0, 0, 'Build', { ids: [builder], typeId: WONING, x: p.x, y: p.y })),
+    );
     const site = ev.find((e) => e.type === EVENT_TYPE.buildingPlaced)!.a;
     const buf = sim.writeSnapshot();
     const h = readSnapshotHeader(buf);

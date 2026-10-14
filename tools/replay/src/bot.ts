@@ -20,7 +20,12 @@ export type Controller = (sim: Sim, frame: number, add: Add) => void;
  * envelope.frame = uitvoerframe - DELAY, seq per speler oplopend. `until` mag eerder stoppen (true = stop na dit frame).
  * Vult r.bundles en zet het laatste frame in r.hashes (record vult de echte hashes in).
  */
-export function recordControlled(r: Replay, frames: number, controllers: readonly Controller[], until?: (sim: Sim, frame: number) => boolean): Sim {
+export function recordControlled(
+  r: Replay,
+  frames: number,
+  controllers: readonly Controller[],
+  until?: (sim: Sim, frame: number) => boolean,
+): Sim {
   const sim = createReplaySim(r);
   const seqs: number[] = [];
   const bundles: FrameBundle[] = [];
@@ -51,7 +56,8 @@ const ROLE_SCAV = ROLES.indexOf('scavenger');
 const ROLE_BUILDER = ROLES.indexOf('builder');
 const ROLE_MILITIA = ROLES.indexOf('militia');
 
-export const buildingType = (key: string): number => buildingTypeId(gameData().data.buildings.find((b) => b.key === key)!.id);
+export const buildingType = (key: string): number =>
+  buildingTypeId(gameData().data.buildings.find((b) => b.key === key)!.id);
 export const techOf = (key: string): number => gameData().data.tech.find((t) => t.key === key)!.id;
 
 /** Gebouw in de bouwlijst: type en het midden (cellen) van de footprint voor speler 0; speler 1 krijgt het spiegelbeeld. */
@@ -80,11 +86,16 @@ export interface BotPlan {
    * army waarvoor de techs er zijn, zolang hij meer dan keepScavengers plunderaars heeft. Zonder spend geeft hij na zijn
    * plan niets meer uit (een passieve speler).
    */
-  readonly spend?: { readonly aboveScrap: number; readonly army: readonly string[]; readonly keepScavengers: number };
+  readonly spend?: {
+    readonly aboveScrap: number;
+    readonly army: readonly string[];
+    readonly keepScavengers: number;
+  };
 }
 
 /** Midden van een footprint van `size` cellen, gespiegeld in het midden van een map van `side` cellen (puntsymmetrie). */
-export const mirror = (c: number, size: number, side: number): number => (size % 2 === 1 ? side - 1 - c : side - c);
+export const mirror = (c: number, size: number, side: number): number =>
+  size % 2 === 1 ? side - 1 - c : side - c;
 
 /** Een bot voor speler p volgens plan. Kijkt elke `every` frames. */
 export function settlementBot(p: number, plan: BotPlan, every = 10): Controller {
@@ -103,11 +114,16 @@ export function settlementBot(p: number, plan: BotPlan, every = 10): Controller 
     const hq = mine.find((u) => u.kind === 'building' && u.typeId === buildingType('hoofdgebouw'));
     const st = sim.playerStatus(p);
     const techs = st.techs ?? [];
-    const done = (key: string): UnitView | undefined => mine.find((u) => u.kind === 'building' && u.typeId === buildingType(key) && u.buildState === 2);
-    const role = (r: number): UnitView[] => units.filter((u) => u.role === r && u.order !== ORDER_CRAFT);
+    const done = (key: string): UnitView | undefined =>
+      mine.find(
+        (u) => u.kind === 'building' && u.typeId === buildingType(key) && u.buildState === 2,
+      );
+    const role = (r: number): UnitView[] =>
+      units.filter((u) => u.role === r && u.order !== ORDER_CRAFT);
     const idle = (list: UnitView[]): UnitView[] => list.filter((u) => u.order === ORDER_NONE);
     const send = (type: CommandEnvelope['type'], ids: number[], payload: object): void => {
-      for (let k = 0; k < ids.length; k += MAX_ENTITIES_PER_COMMAND) add(p, type, { ids: ids.slice(k, k + MAX_ENTITIES_PER_COMMAND), ...payload });
+      for (let k = 0; k < ids.length; k += MAX_ENTITIES_PER_COMMAND)
+        add(p, type, { ids: ids.slice(k, k + MAX_ENTITIES_PER_COMMAND), ...payload });
     };
 
     // verzamelen: scavengers zonder werk naar de dichtstbijzijnde node met voorraad
@@ -125,12 +141,18 @@ export function settlementBot(p: number, plan: BotPlan, every = 10): Controller 
       }
       if (best !== undefined) byNode.set(best.id, [...(byNode.get(best.id) ?? []), u.id]);
     }
-    for (const [nodeId, ids] of [...byNode].sort((a, b) => a[0] - b[0])) send('Gather', ids, { nodeId });
+    for (const [nodeId, ids] of [...byNode].sort((a, b) => a[0] - b[0]))
+      send('Gather', ids, { nodeId });
 
     // bouwers: aanvullen in de werkplaats, één tegelijk
     const scavs = role(ROLE_SCAV);
     const crafting = units.some((u) => u.order === ORDER_CRAFT);
-    if (done('werkplaats') && !crafting && role(ROLE_BUILDER).length < plan.builders && scavs.length > 0) {
+    if (
+      done('werkplaats') &&
+      !crafting &&
+      role(ROLE_BUILDER).length < plan.builders &&
+      scavs.length > 0
+    ) {
       add(p, 'SetRole', { ids: [scavs[scavs.length - 1]!.id], role: 'builder' });
     }
 
@@ -145,16 +167,24 @@ export function settlementBot(p: number, plan: BotPlan, every = 10): Controller 
     };
     while (next < plan.builds.length) {
       const t = at(plan.builds[next]!);
-      const placed = mine.some((u) => u.kind === 'building' && u.typeId === t.typeId && Math.abs(u.x - t.x) <= 128 && Math.abs(u.y - t.y) <= 128);
+      const placed = mine.some(
+        (u) =>
+          u.kind === 'building' &&
+          u.typeId === t.typeId &&
+          Math.abs(u.x - t.x) <= 128 &&
+          Math.abs(u.y - t.y) <= 128,
+      );
       if (!placed) break;
       next++;
     }
     if (builders.length > 0) {
-      if (site !== undefined) send('Build', builders, { typeId: site.typeId, x: site.x, y: site.y });
+      if (site !== undefined)
+        send('Build', builders, { typeId: site.typeId, x: site.x, y: site.y });
       else if (next < plan.builds.length) {
         const b = plan.builds[next]!;
         const def = data.buildings.find((x) => x.key === b.key)!;
-        if (def.prereqTech.every((t) => techs.includes(t)) && st.scrap >= def.scrapCost) send('Build', builders, at(b));
+        if (def.prereqTech.every((t) => techs.includes(t)) && st.scrap >= def.scrapCost)
+          send('Build', builders, at(b));
       }
     }
 
@@ -164,19 +194,46 @@ export function settlementBot(p: number, plan: BotPlan, every = 10): Controller 
 
     // uitgeven boven een drempel: omscholen tot het beste leger-loadout
     const sp = plan.spend;
-    if (sp !== undefined && st.scrap >= sp.aboveScrap && done('werkplaats') && !crafting && scavs.length > sp.keepScavengers) {
-      const lo = sp.army.map((k) => data.loadouts.find((l) => l.key === k)!).find((l) => l.prereqTech.every((t) => techs.includes(t)));
+    if (
+      sp !== undefined &&
+      st.scrap >= sp.aboveScrap &&
+      done('werkplaats') &&
+      !crafting &&
+      scavs.length > sp.keepScavengers
+    ) {
+      const lo = sp.army
+        .map((k) => data.loadouts.find((l) => l.key === k)!)
+        .find((l) => l.prereqTech.every((t) => techs.includes(t)));
       if (lo !== undefined) add(p, 'Craft', { ids: [scavs[0]!.id], loadoutId: lo.id });
     }
 
     // militie
-    if (!militiaDone && (st.settlers >= plan.militiaAtSettlers || (plan.militiaFrame !== undefined && f >= plan.militiaFrame)) && done('werkplaats')) {
+    if (
+      !militiaDone &&
+      (st.settlers >= plan.militiaAtSettlers ||
+        (plan.militiaFrame !== undefined && f >= plan.militiaFrame)) &&
+      done('werkplaats')
+    ) {
       militiaDone = true;
-      send('SetRole', scavs.slice(0, plan.militiaCount).map((u) => u.id), { role: 'militia' });
+      send(
+        'SetRole',
+        scavs.slice(0, plan.militiaCount).map((u) => u.id),
+        { role: 'militia' },
+      );
     }
     const militia = role(ROLE_MILITIA);
-    const enemyHq = all.find((u) => u.kind === 'building' && u.owner !== p && u.owner < 8 && u.typeId === buildingType('hoofdgebouw'));
-    if (enemyHq !== undefined && militia.length >= plan.attackWithMilitia && f >= (plan.attackFrame ?? 0)) {
+    const enemyHq = all.find(
+      (u) =>
+        u.kind === 'building' &&
+        u.owner !== p &&
+        u.owner < 8 &&
+        u.typeId === buildingType('hoofdgebouw'),
+    );
+    if (
+      enemyHq !== undefined &&
+      militia.length >= plan.attackWithMilitia &&
+      f >= (plan.attackFrame ?? 0)
+    ) {
       if (!attacked || f - lastAttack >= 400) {
         const ids = (attacked ? idle(militia) : militia).map((u) => u.id);
         if (hero !== undefined && (!attacked || hero.order === ORDER_NONE)) ids.push(hero.id);
@@ -189,16 +246,21 @@ export function settlementBot(p: number, plan: BotPlan, every = 10): Controller 
     // de held: oplappen, perks, Lockdown op de dichtstbijzijnde vijand binnen bereik
     const h = data.heroes[st.hero?.heroId ?? -1];
     if (h !== undefined && st.hero !== null) {
-      if (st.hero.state === 'dead' && hq !== undefined && st.scrap >= h.reviveScrap) add(p, 'Recruit', { buildingId: hq.id });
-      if (st.hero.pendingPerks > 0) for (const perkId of h.perkPool) add(p, 'PickPerk', { heroId: h.id, perkId });
+      if (st.hero.state === 'dead' && hq !== undefined && st.scrap >= h.reviveScrap)
+        add(p, 'Recruit', { buildingId: hq.id });
+      if (st.hero.pendingPerks > 0)
+        for (const perkId of h.perkPool) add(p, 'PickPerk', { heroId: h.id, perkId });
       if (hero !== undefined && st.hero.abilityCooldownTicks[0] === 0) {
         const ab = h.abilities[0]!;
-        const enemies = all.filter((u) => (u.kind === 'unit' || u.kind === 'hero') && u.owner !== p && u.owner < 8);
+        const enemies = all.filter(
+          (u) => (u.kind === 'unit' || u.kind === 'hero') && u.owner !== p && u.owner < 8,
+        );
         const near = enemies
           .map((u) => ({ u, d: (u.x - hero.x) ** 2 + (u.y - hero.y) ** 2 }))
           .filter((e) => e.d <= ab.rangeU * ab.rangeU)
           .sort((a, b) => a.d - b.d || a.u.id - b.u.id)[0];
-        if (near !== undefined) add(p, 'HeroAbility', { heroId: h.id, abilityId: 0, x: near.u.x, y: near.u.y });
+        if (near !== undefined)
+          add(p, 'HeroAbility', { heroId: h.id, abilityId: 0, x: near.u.x, y: near.u.y });
       }
     }
   };

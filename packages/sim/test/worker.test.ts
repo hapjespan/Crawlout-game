@@ -83,7 +83,8 @@ describe('worker-schil', () => {
     // bijgewerkt: weer de gewone gang, een snapshot per tick en hoogstens maxTicks
     expect(core.catchingUp()).toBe(false);
     out.length = 0;
-    for (let f = 130; f < 130 + CATCH_UP_BACKLOG; f++) core.receive({ kind: 'bundle', bundle: bundle(f) });
+    for (let f = 130; f < 130 + CATCH_UP_BACKLOG; f++)
+      core.receive({ kind: 'bundle', bundle: bundle(f) });
     expect(core.catchingUp()).toBe(false);
     expect(core.pump(8, () => true)).toBe(8);
     expect(out.map((o) => o.msg.kind)).toEqual(Array(8).fill('snapshot'));

@@ -53,7 +53,9 @@ export function reviveScale(h: SimHero, revives: number): number {
 }
 
 const matches = (e: SimEffect, stat: number, typeId: number, isHero: boolean): boolean =>
-  e.stat === stat && (e.target === EFFECT_TARGET_ALL || (e.target === EFFECT_TARGET_HERO ? isHero : e.typeId === typeId));
+  e.stat === stat &&
+  (e.target === EFFECT_TARGET_ALL ||
+    (e.target === EFFECT_TARGET_HERO ? isHero : e.typeId === typeId));
 
 /** Of speler p alle techs in `list` heeft onderzocht. */
 export function hasTechs(ctx: SimContext, p: number, list: readonly number[]): boolean {
@@ -63,7 +65,13 @@ export function hasTechs(ctx: SimContext, p: number, list: readonly number[]): b
 }
 
 /** Som van de deltas van alle actieve effecten van speler p op `stat` voor een entity van type typeId (of de held). */
-export function effectSum(ctx: SimContext, p: number, stat: number, typeId: number, isHero: boolean): number {
+export function effectSum(
+  ctx: SimContext,
+  p: number,
+  stat: number,
+  typeId: number,
+  isHero: boolean,
+): number {
   let sum = 0;
   const bits = ctx.ps.tech[p]!;
   if (bits !== 0) {
@@ -78,7 +86,8 @@ export function effectSum(ctx: SimContext, p: number, stat: number, typeId: numb
     const scale = h === undefined ? 0 : reviveScale(h, ctx.ps.heroRevives[p]!);
     for (const pk of ctx.config.perks) {
       if (((perks >>> pk.perkId) & 1) === 0) continue;
-      for (const e of pk.effects) if (matches(e, stat, typeId, isHero)) sum += idiv(e.delta * scale, 1000);
+      for (const e of pk.effects)
+        if (matches(e, stat, typeId, isHero)) sum += idiv(e.delta * scale, 1000);
     }
   }
   return sum;
@@ -113,7 +122,8 @@ export const scalePermille = (base: number, permille: number): number => {
  * Tijd-effect (buildTimePct, researchTimePct) als werk per tick in duizendsten (PROGRESS_ONE = 1000 zonder effect):
  * -20% tijd geeft 1250 per tick. Minstens 1 in de noemer, zodat -100% of minder meteen klaar is.
  */
-export const workRate = (one: number, timePermille: number): number => idiv(one * 1000, clampI(1000 + timePermille, 1, 0x7fffffff));
+export const workRate = (one: number, timePermille: number): number =>
+  idiv(one * 1000, clampI(1000 + timePermille, 1, 0x7fffffff));
 
 /**
  * Zet maxHp, damage, speed en range van entity i uit het basistype plus de effecten van de eigenaar.
@@ -130,12 +140,27 @@ export function applyStats(ctx: SimContext, i: number, grow: boolean): void {
     if (h === undefined || t === undefined) return;
     const sp = ctx.config.special;
     const special = (k: number): number => heroSpecial(ctx, p, k);
-    const hp = scalePermille(t.maxHp, special(SPECIAL_E) * sp.enduranceHpPermille + effectSum(ctx, p, STAT_HP, h.typeId, true));
+    const hp = scalePermille(
+      t.maxHp,
+      special(SPECIAL_E) * sp.enduranceHpPermille + effectSum(ctx, p, STAT_HP, h.typeId, true),
+    );
     w.maxHp[i] = Math.max(1, idiv(hp * reviveScale(h, ctx.ps.heroRevives[p]!), 1000));
-    w.damage[i] = scalePermille(t.damage, special(SPECIAL_S) * sp.strengthDamagePermille + effectSum(ctx, p, STAT_DAMAGE, h.typeId, true));
-    const speed = scalePermille(t.speed, special(SPECIAL_A) * sp.agilitySpeedPermille + effectSum(ctx, p, STAT_SPEED, h.typeId, true));
+    w.damage[i] = scalePermille(
+      t.damage,
+      special(SPECIAL_S) * sp.strengthDamagePermille +
+        effectSum(ctx, p, STAT_DAMAGE, h.typeId, true),
+    );
+    const speed = scalePermille(
+      t.speed,
+      special(SPECIAL_A) * sp.agilitySpeedPermille + effectSum(ctx, p, STAT_SPEED, h.typeId, true),
+    );
     w.speed[i] = clampI(speed, 0, MAX_SPEED);
-    w.range[i] = Math.max(0, t.range + special(SPECIAL_P) * sp.perceptionRangeU + effectSum(ctx, p, STAT_RANGE, h.typeId, true));
+    w.range[i] = Math.max(
+      0,
+      t.range +
+        special(SPECIAL_P) * sp.perceptionRangeU +
+        effectSum(ctx, p, STAT_RANGE, h.typeId, true),
+    );
   } else if (w.has(i, C.building)) {
     const bt = ctx.buildingType(typeId);
     if (bt === undefined) return;
@@ -151,7 +176,11 @@ export function applyStats(ctx: SimContext, i: number, grow: boolean): void {
     if (t === undefined) return;
     w.maxHp[i] = Math.max(1, scalePermille(t.maxHp, effectSum(ctx, p, STAT_HP, typeId, false)));
     w.damage[i] = scalePermille(t.damage, effectSum(ctx, p, STAT_DAMAGE, typeId, false));
-    w.speed[i] = clampI(scalePermille(t.speed, effectSum(ctx, p, STAT_SPEED, typeId, false)), 0, MAX_SPEED);
+    w.speed[i] = clampI(
+      scalePermille(t.speed, effectSum(ctx, p, STAT_SPEED, typeId, false)),
+      0,
+      MAX_SPEED,
+    );
     w.range[i] = Math.max(0, t.range + effectSum(ctx, p, STAT_RANGE, typeId, false));
   } else return;
   const newMax = w.maxHp[i]!;

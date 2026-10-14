@@ -87,7 +87,9 @@ describe('fnv1a', () => {
   });
   it('fnv1aInt is gelijk aan vier bytes little-endian', () => {
     const v = 0xdeadbeef | 0;
-    expect(fnv1aInt(FNV_OFFSET, v)).toBe(fnv1a(FNV_OFFSET, new Uint8Array([0xef, 0xbe, 0xad, 0xde])));
+    expect(fnv1aInt(FNV_OFFSET, v)).toBe(
+      fnv1a(FNV_OFFSET, new Uint8Array([0xef, 0xbe, 0xad, 0xde])),
+    );
   });
 });
 

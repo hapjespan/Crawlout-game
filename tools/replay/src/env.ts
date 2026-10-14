@@ -44,7 +44,11 @@ export function mapGrid(id: string): { def: MapDef; grid: MapGrid } {
 }
 
 /** SimEnv voor een replay of start-bericht: map, data, spelers en de lobby-override van de dominantie. */
-export function buildEnv(mapId: string, players: readonly LobbyPlayer[], settings: MatchSettings): SimEnv {
+export function buildEnv(
+  mapId: string,
+  players: readonly LobbyPlayer[],
+  settings: MatchSettings,
+): SimEnv {
   const { data, config } = gameData();
   const { def, grid } = mapGrid(mapId);
   return envFrom(data, config, def, grid, players, settings);

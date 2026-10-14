@@ -47,7 +47,14 @@ export interface MatchResult {
 }
 
 const lobby = (ai: readonly boolean[]): LobbyPlayer[] =>
-  ai.map((isAi, i) => ({ playerId: i, name: `p${i}`, faction: 'dwellers', ready: true, online: !isAi, ai: isAi }));
+  ai.map((isAi, i) => ({
+    playerId: i,
+    name: `p${i}`,
+    faction: 'dwellers',
+    ready: true,
+    online: !isAi,
+    ai: isAi,
+  }));
 
 export interface MatchOptions {
   /** Welke spelers AI zijn (standaard beide). */
@@ -91,12 +98,24 @@ export function playMatch(seed: number, opts: MatchOptions = {}): MatchResult {
   const seq: number[] = [];
   let f = 0;
   for (; f < maxFrames && sim.winner() === null; f++) {
-    const commands: { frame: number; playerId: number; seq: number; type: never; payload: unknown }[] = [];
+    const commands: {
+      frame: number;
+      playerId: number;
+      seq: number;
+      type: never;
+      payload: unknown;
+    }[] = [];
     for (const c of opts.controllers ?? []) {
       c(sim, f, (playerId, type, payload) => {
         const s = seq[playerId] ?? 0;
         seq[playerId] = s + 1;
-        commands.push({ frame: Math.max(0, f - 4), playerId, seq: s, type: type as never, payload });
+        commands.push({
+          frame: Math.max(0, f - 4),
+          playerId,
+          seq: s,
+          type: type as never,
+          payload,
+        });
       });
     }
     sim.applyBundle({ frame: f, commands });
@@ -119,7 +138,12 @@ export function playMatch(seed: number, opts: MatchOptions = {}): MatchResult {
         }
       } else if (t === EVENT_TYPE.death) {
         const u = sim.getUnit(sim.events.a[k]!);
-        if (u !== null && u.owner < n && (u.kind === 'corpse' || u.kind === 'unit' || u.kind === 'hero')) traces[u.owner]!.lost++;
+        if (
+          u !== null &&
+          u.owner < n &&
+          (u.kind === 'corpse' || u.kind === 'unit' || u.kind === 'hero')
+        )
+          traces[u.owner]!.lost++;
       }
     }
     if ((f + 1) % TICKS_PER_MINUTE === 0) sample(sim, traces);
@@ -133,7 +157,14 @@ export function playMatch(seed: number, opts: MatchOptions = {}): MatchResult {
   }
   const w = sim.winner();
   const frame = w === null ? f - 1 : w.frame;
-  return { seed, winner: w?.playerId ?? null, reason: w?.reason ?? null, frame, minutes: (frame + 1) / TICKS_PER_MINUTE, players: traces };
+  return {
+    seed,
+    winner: w?.playerId ?? null,
+    reason: w?.reason ?? null,
+    frame,
+    minutes: (frame + 1) / TICKS_PER_MINUTE,
+    players: traces,
+  };
 }
 
 function sample(sim: Sim, traces: PlayerTrace[]): void {
@@ -158,17 +189,26 @@ function sample(sim: Sim, traces: PlayerTrace[]): void {
 function buildingKeys(sim: Sim): Map<number, string> {
   const out = new Map<number, string>();
   const keys = gameData().data.buildings;
-  for (const b of sim.config.buildingTypes) out.set(b.typeId, keys[b.buildingId]?.key ?? String(b.typeId));
+  for (const b of sim.config.buildingTypes)
+    out.set(b.typeId, keys[b.buildingId]?.key ?? String(b.typeId));
   return out;
 }
 
 /** Woningen voor speler 0 (midden van de 2 bij 2 footprint, in cellen) in een blok links boven het hoofdgebouw. */
-const HOUSES: PlannedBuilding[] = [6, 9, 12].flatMap((cy) => [6, 9, 12, 15].map((cx) => ({ key: 'woning', cx, cy })));
+const HOUSES: PlannedBuilding[] = [6, 9, 12].flatMap((cy) =>
+  [6, 9, 12, 15].map((cx) => ({ key: 'woning', cx, cy })),
+);
 
 /** Bot-plannen voor de balansmeting: passief zoals fixture s4-rustbelt-turrets, actief met omscholen boven een drempel. */
 export const BOT_PLANS: Record<'passief' | 'actief', BotPlan> = {
   passief: {
-    builds: [{ key: 'werkplaats', cx: 26, cy: 20 }, HOUSES[0]!, { key: 'turret', cx: 28, cy: 27 }, { key: 'lab', cx: 14, cy: 26 }, HOUSES[1]!],
+    builds: [
+      { key: 'werkplaats', cx: 26, cy: 20 },
+      HOUSES[0]!,
+      { key: 'turret', cx: 28, cy: 27 },
+      { key: 'lab', cx: 14, cy: 26 },
+      HOUSES[1]!,
+    ],
     research: ['geweerrek', 'raffinage', 'lasergeleiding'],
     builders: 1,
     militiaAtSettlers: 99,
@@ -178,8 +218,21 @@ export const BOT_PLANS: Record<'passief' | 'actief', BotPlan> = {
     attackFrame: 6400,
   },
   actief: {
-    builds: [{ key: 'werkplaats', cx: 26, cy: 20 }, ...HOUSES.slice(0, 3), { key: 'turret', cx: 28, cy: 27 }, { key: 'lab', cx: 14, cy: 26 }, ...HOUSES.slice(3)],
-    research: ['geweerrek', 'raffinage', 'composiet_pantser', 'snelle_voeten', 'bouwrobots', 'lasergeleiding'],
+    builds: [
+      { key: 'werkplaats', cx: 26, cy: 20 },
+      ...HOUSES.slice(0, 3),
+      { key: 'turret', cx: 28, cy: 27 },
+      { key: 'lab', cx: 14, cy: 26 },
+      ...HOUSES.slice(3),
+    ],
+    research: [
+      'geweerrek',
+      'raffinage',
+      'composiet_pantser',
+      'snelle_voeten',
+      'bouwrobots',
+      'lasergeleiding',
+    ],
     builders: 2,
     militiaAtSettlers: 99,
     militiaFrame: 4800,

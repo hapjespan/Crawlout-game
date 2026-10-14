@@ -155,7 +155,9 @@ function ownSite(ctx: SimContext, i: number, id: number): number {
   const w = ctx.world;
   if (id === NO_ENTITY) return -1;
   const b = w.resolve(id);
-  return b >= 0 && w.has(b, C.building) && w.bstate[b] === BSTATE_SITE && w.owner[b] === w.owner[i] ? b : -1;
+  return b >= 0 && w.has(b, C.building) && w.bstate[b] === BSTATE_SITE && w.owner[b] === w.owner[i]
+    ? b
+    : -1;
 }
 
 /**
@@ -245,7 +247,8 @@ function gather(ctx: SimContext, i: number, o: number): void {
   // Een node die (inmiddels) exclusief van een ander is, telt als weg: zoek een andere (Spelfundament 3.1).
   if (node >= 0 && (!w.has(node, C.resource) || !nodeAllowed(ctx, node, w.owner[i]!))) node = -1;
   const reach = ctx.config.interactRange;
-  if (w.phase[i] === PHASE_WORK && (node < 0 || !withinReach(w, i, node, reach))) w.phase[i] = PHASE_GO;
+  if (w.phase[i] === PHASE_WORK && (node < 0 || !withinReach(w, i, node, reach)))
+    w.phase[i] = PHASE_GO;
   if (w.phase[i] === PHASE_GO && w.carry[i]! >= gatherAmountOf(ctx, i)) w.phase[i] = PHASE_RETURN;
   if (w.phase[i] === PHASE_GO) {
     if (node < 0) {

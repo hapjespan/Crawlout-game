@@ -33,10 +33,23 @@ export type SimWorkerOutbound =
    * Tijdens het inhalen: de state-hash na elk meldframe (frame % HASH_INTERVAL_FRAMES == 0) waarvan geen snapshot
    * gepost is, oplopend. Komt vóór de snapshot van de laatste tick van dezelfde slag.
    */
-  | { readonly kind: 'hashes'; readonly reports: readonly { readonly frame: number; readonly hash: number }[] }
-  | { readonly kind: 'state'; readonly frame: number; readonly hash: number; readonly buffer: ArrayBuffer }
+  | {
+      readonly kind: 'hashes';
+      readonly reports: readonly { readonly frame: number; readonly hash: number }[];
+    }
+  | {
+      readonly kind: 'state';
+      readonly frame: number;
+      readonly hash: number;
+      readonly buffer: ArrayBuffer;
+    }
   /** Antwoord op query: status na het laatst uitgevoerde frame (frame = aantal uitgevoerde ticks). */
-  | { readonly kind: 'status'; readonly frame: number; readonly status: PlayerStatus; readonly winner: SimWinner | null }
+  | {
+      readonly kind: 'status';
+      readonly frame: number;
+      readonly status: PlayerStatus;
+      readonly winner: SimWinner | null;
+    }
   | { readonly kind: 'error'; readonly message: string };
 
 export interface SimWorkerPort {
@@ -73,7 +86,8 @@ export function createSimWorkerCore(port: SimWorkerPort): SimWorkerCore {
     port.post({ kind: 'ready', frame: s.frame, hash: s.hash() }, []);
   };
 
-  const catchingUp = (): boolean => sim !== null && (loaded || sim.readyBundles() > CATCH_UP_BACKLOG);
+  const catchingUp = (): boolean =>
+    sim !== null && (loaded || sim.readyBundles() > CATCH_UP_BACKLOG);
 
   const core: SimWorkerCore = {
     get sim() {
@@ -104,7 +118,15 @@ export function createSimWorkerCore(port: SimWorkerPort): SimWorkerCore {
           }
           case 'query':
             if (sim === null) throw new Error('query voor init');
-            port.post({ kind: 'status', frame: sim.frame, status: sim.playerStatus(msg.playerId), winner: sim.winner() }, []);
+            port.post(
+              {
+                kind: 'status',
+                frame: sim.frame,
+                status: sim.playerStatus(msg.playerId),
+                winner: sim.winner(),
+              },
+              [],
+            );
             return;
         }
       } catch (e) {
@@ -143,7 +165,8 @@ export function createSimWorkerCore(port: SimWorkerPort): SimWorkerCore {
         if (!sim.hasBundle()) loaded = false;
         if (n === 0) return 0;
         // de laatste tick meldt zijn hash via de snapshot-header, zoals buiten het inhalen
-        if (reports.length > 0 && reports[reports.length - 1]!.frame === sim.frame - 1) reports.pop();
+        if (reports.length > 0 && reports[reports.length - 1]!.frame === sim.frame - 1)
+          reports.pop();
         if (reports.length > 0) port.post({ kind: 'hashes', reports }, []);
         const buffer = sim.writeSnapshot();
         port.post({ kind: 'snapshot', buffer }, [buffer]);

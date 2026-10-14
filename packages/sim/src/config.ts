@@ -215,7 +215,11 @@ export const AI_SITE_FRONT = 2;
 /** Scripted AI (ai/*.json, balans speltest 14 oktober). Tijden in ticks, afstanden in eenheden, aandelen in promille. */
 export interface SimAiScript {
   /** site: AI_SITE_*. */
-  readonly buildOrder: readonly { readonly atTick: number; readonly typeId: number; readonly site?: number }[];
+  readonly buildOrder: readonly {
+    readonly atTick: number;
+    readonly typeId: number;
+    readonly site?: number;
+  }[];
   /** De eerste aanvalsgolven; daarna elke waveIntervalTicks (plus 0..waveJitterTicks via sim.rng). */
   readonly attackTimersTicks: readonly number[];
   /** Deel van de bewoners dat de AI tot militie omschoolt aan het begin, in promille (ai/*.json militiaPct). */
@@ -349,17 +353,27 @@ function req(cond: boolean, msg: string): void {
 const intIn = (v: unknown, lo: number, hi: number): boolean => isInt(v) && v >= lo && v <= hi;
 
 function checkPoint(map: SimMap, p: SimPoint, what: string): void {
-  req(intIn(p.x, 0, (map.w << 8) - 1) && intIn(p.y, 0, (map.h << 8) - 1), `${what} (${p.x},${p.y}) ligt buiten de map`);
+  req(
+    intIn(p.x, 0, (map.w << 8) - 1) && intIn(p.y, 0, (map.h << 8) - 1),
+    `${what} (${p.x},${p.y}) ligt buiten de map`,
+  );
 }
 
 /** Valideert de invoer eenmalig voor de eerste tick. Gooit bij ongeldige invoer. */
 export function validateEnv(env: SimEnv): void {
   const { map, config, players } = env;
   req(intIn(players.length, 1, MAX_PLAYERS), `aantal spelers ${players.length}`);
-  req(intIn(map.w, 1, MAX_MAP_CELLS_SIDE) && intIn(map.h, 1, MAX_MAP_CELLS_SIDE), `mapmaat ${map.w}x${map.h}`);
+  req(
+    intIn(map.w, 1, MAX_MAP_CELLS_SIDE) && intIn(map.h, 1, MAX_MAP_CELLS_SIDE),
+    `mapmaat ${map.w}x${map.h}`,
+  );
   req(map.passable.length === map.w * map.h, 'passable heeft niet w*h cellen');
-  for (let i = 0; i < map.passable.length; i++) req(map.passable[i]! <= 1, `passable[${i}] is geen 0 of 1`);
-  req(map.spawns.length >= players.length, `map heeft ${map.spawns.length} spawns voor ${players.length} spelers`);
+  for (let i = 0; i < map.passable.length; i++)
+    req(map.passable[i]! <= 1, `passable[${i}] is geen 0 of 1`);
+  req(
+    map.spawns.length >= players.length,
+    `map heeft ${map.spawns.length} spawns voor ${players.length} spelers`,
+  );
   for (const s of map.spawns) checkPoint(map, s, 'spawn');
   for (const n of map.scrapNodes) {
     checkPoint(map, n, 'scrap-node');
@@ -369,9 +383,15 @@ export function validateEnv(env: SimEnv): void {
     checkPoint(map, c, 'claimpunt');
     req(intIn(c.kind, 0, 0xff), 'claimpunt kind');
   }
-  req(intIn(map.dominance.pointsRequired, 1, 0xff) && intIn(map.dominance.ticks, 1, I31), 'dominance');
+  req(
+    intIn(map.dominance.pointsRequired, 1, 0xff) && intIn(map.dominance.ticks, 1, I31),
+    'dominance',
+  );
 
-  req(typeof config.dataVersion === 'string' && config.dataVersion.length > 0, 'dataVersion ontbreekt');
+  req(
+    typeof config.dataVersion === 'string' && config.dataVersion.length > 0,
+    'dataVersion ontbreekt',
+  );
   req(intIn(config.arriveRadius, 0, MAX_RADIUS * 4), 'arriveRadius');
   req(intIn(config.separationPermille, 0, 1000), 'separationPermille');
   req(intIn(config.flowFieldBudget, 1, 1 << 24), 'flowFieldBudget');
@@ -400,33 +420,72 @@ export function validateEnv(env: SimEnv): void {
     req(intIn(u.maxHp, 1, I31), `${at}: maxHp`);
     req(intIn(u.speed, 0, MAX_SPEED), `${at}: speed (max ${MAX_SPEED})`);
     req(intIn(u.radius, 0, MAX_RADIUS), `${at}: radius (max ${MAX_RADIUS})`);
-    req(intIn(u.armorType, 0, armorCount - 1) && intIn(u.damageType, 0, config.damageMatrix.length - 1), `${at}: armor- of damageType`);
-    req(intIn(u.bodyType, 0, 0xff) && intIn(u.role, 0, 0xff) && intIn(u.loadoutId, 0, U16), `${at}: bodyType, role of loadoutId`);
+    req(
+      intIn(u.armorType, 0, armorCount - 1) &&
+        intIn(u.damageType, 0, config.damageMatrix.length - 1),
+      `${at}: armor- of damageType`,
+    );
+    req(
+      intIn(u.bodyType, 0, 0xff) && intIn(u.role, 0, 0xff) && intIn(u.loadoutId, 0, U16),
+      `${at}: bodyType, role of loadoutId`,
+    );
     req(intIn(u.factionId, 0, config.factions.length - 1), `${at}: factionId`);
-    req(intIn(u.damage, 0, I31) && intIn(u.range, 0, MAX_MAP_CELLS_SIDE << 8) && intIn(u.cooldown, 0, I31), `${at}: gevecht`);
+    req(
+      intIn(u.damage, 0, I31) &&
+        intIn(u.range, 0, MAX_MAP_CELLS_SIDE << 8) &&
+        intIn(u.cooldown, 0, I31),
+      `${at}: gevecht`,
+    );
     req(intIn(u.gatherAmount, 0, I31) && intIn(u.gatherTicks, 0, I31), `${at}: verzamelen`);
     req(u.gatherAmount === 0 || u.gatherTicks > 0, `${at}: gatherAmount zonder gatherTicks`);
-    req(intIn(u.scrapCost, 0, I31) && intIn(u.craftTicks, 0, I31) && intIn(u.popCost, 0, 0xff), `${at}: kosten`);
+    req(
+      intIn(u.scrapCost, 0, I31) && intIn(u.craftTicks, 0, I31) && intIn(u.popCost, 0, 0xff),
+      `${at}: kosten`,
+    );
     for (const t of u.prereqTech) req(intIn(t, 0, U16), `${at}: prereqTech`);
   }
   const buildingIds = new Set<number>();
   for (const b of config.buildingTypes) {
     const at = `gebouwtype ${b.typeId}`;
-    req(intIn(b.typeId, 1, U16) && !buildingIds.has(b.typeId) && !unitIds.has(b.typeId), `${at}: typeId ongeldig of dubbel`);
+    req(
+      intIn(b.typeId, 1, U16) && !buildingIds.has(b.typeId) && !unitIds.has(b.typeId),
+      `${at}: typeId ongeldig of dubbel`,
+    );
     buildingIds.add(b.typeId);
     req(intIn(b.maxHp, 1, I31) && intIn(b.armorType, 0, armorCount - 1), `${at}: hp of armorType`);
-    req(intIn(b.scrapCost, 0, I31) && intIn(b.buildTicks, 0, MAX_WORK_TICKS) && intIn(b.beds, 0, 0xffff), `${at}: kosten, bouwtijd of bedden`);
-    req(intIn(b.footprintW, 1, MAX_FOOTPRINT) && intIn(b.footprintH, 1, MAX_FOOTPRINT), `${at}: footprint`);
-    req(intIn(b.provides, 0, 0xff) && intIn(b.factionId, 0, config.factions.length - 1), `${at}: provides of factionId`);
+    req(
+      intIn(b.scrapCost, 0, I31) &&
+        intIn(b.buildTicks, 0, MAX_WORK_TICKS) &&
+        intIn(b.beds, 0, 0xffff),
+      `${at}: kosten, bouwtijd of bedden`,
+    );
+    req(
+      intIn(b.footprintW, 1, MAX_FOOTPRINT) && intIn(b.footprintH, 1, MAX_FOOTPRINT),
+      `${at}: footprint`,
+    );
+    req(
+      intIn(b.provides, 0, 0xff) && intIn(b.factionId, 0, config.factions.length - 1),
+      `${at}: provides of factionId`,
+    );
     for (const t of b.prereqTech) req(intIn(t, 0, U16), `${at}: prereqTech`);
-    req(intIn(b.damage, 0, I31) && intIn(b.damageType, 0, config.damageMatrix.length - 1), `${at}: damage of damageType`);
-    req(intIn(b.range, 0, MAX_MAP_CELLS_SIDE << 8) && intIn(b.cooldown, 0, I31), `${at}: range of cooldown`);
+    req(
+      intIn(b.damage, 0, I31) && intIn(b.damageType, 0, config.damageMatrix.length - 1),
+      `${at}: damage of damageType`,
+    );
+    req(
+      intIn(b.range, 0, MAX_MAP_CELLS_SIDE << 8) && intIn(b.cooldown, 0, I31),
+      `${at}: range of cooldown`,
+    );
   }
   config.factions.forEach((f, k) => {
     const at = `factie ${k}`;
     req(f.factionId === k, `${at}: factionId moet de index zijn`);
-    for (const s of f.startUnits) req(unitIds.has(s.typeId) && intIn(s.count, 1, 1024), `${at}: startUnits`);
-    req(intIn(f.startScrap, 0, I31) && intIn(f.housingGrowthPerMin, 0, I31), `${at}: startScrap of housingGrowthPerMin`);
+    for (const s of f.startUnits)
+      req(unitIds.has(s.typeId) && intIn(s.count, 1, 1024), `${at}: startUnits`);
+    req(
+      intIn(f.startScrap, 0, I31) && intIn(f.housingGrowthPerMin, 0, I31),
+      `${at}: startScrap of housingGrowthPerMin`,
+    );
     req(buildingIds.has(f.hqTypeId), `${at}: hqTypeId`);
     req(f.settlerTypeId === 0 || unitIds.has(f.settlerTypeId), `${at}: settlerTypeId`);
     for (const t of f.roleTypeIds) req(t === 0 || unitIds.has(t), `${at}: roleTypeIds`);
@@ -435,72 +494,191 @@ export function validateEnv(env: SimEnv): void {
   });
   const checkEffects = (effects: readonly SimEffect[], at: string): void => {
     for (const e of effects) {
-      req(intIn(e.stat, 0, EFFECT_STAT_COUNT - 1) && intIn(e.delta, -I31, I31), `${at}: effect stat of delta`);
+      req(
+        intIn(e.stat, 0, EFFECT_STAT_COUNT - 1) && intIn(e.delta, -I31, I31),
+        `${at}: effect stat of delta`,
+      );
       req(intIn(e.target, EFFECT_TARGET_ALL, EFFECT_TARGET_TYPE), `${at}: effect-doel`);
-      req(e.target === EFFECT_TARGET_TYPE ? unitIds.has(e.typeId) || buildingIds.has(e.typeId) : e.typeId === 0, `${at}: effect-typeId`);
+      req(
+        e.target === EFFECT_TARGET_TYPE
+          ? unitIds.has(e.typeId) || buildingIds.has(e.typeId)
+          : e.typeId === 0,
+        `${at}: effect-typeId`,
+      );
     }
   };
   req(config.techs.length <= MAX_TECHS, `meer dan ${MAX_TECHS} techs`);
   config.techs.forEach((t, k) => {
     const at = `tech ${k}`;
-    req(t.techId === k && intIn(t.factionId, 0, config.factions.length - 1), `${at}: techId of factionId`);
-    req(intIn(t.scrapCost, 0, I31) && intIn(t.researchTicks, 0, MAX_WORK_TICKS) && buildingIds.has(t.buildingTypeId), `${at}: kosten, tijd of gebouw`);
+    req(
+      t.techId === k && intIn(t.factionId, 0, config.factions.length - 1),
+      `${at}: techId of factionId`,
+    );
+    req(
+      intIn(t.scrapCost, 0, I31) &&
+        intIn(t.researchTicks, 0, MAX_WORK_TICKS) &&
+        buildingIds.has(t.buildingTypeId),
+      `${at}: kosten, tijd of gebouw`,
+    );
     for (const q of t.prereqTech) req(intIn(q, 0, config.techs.length - 1), `${at}: prereqTech`);
     checkEffects(t.effects, at);
   });
-  for (const u of config.unitTypes) for (const t of u.prereqTech) req(intIn(t, 0, config.techs.length - 1), `unittype ${u.typeId}: prereqTech`);
-  for (const b of config.buildingTypes) for (const t of b.prereqTech) req(intIn(t, 0, config.techs.length - 1), `gebouwtype ${b.typeId}: prereqTech`);
+  for (const u of config.unitTypes)
+    for (const t of u.prereqTech)
+      req(intIn(t, 0, config.techs.length - 1), `unittype ${u.typeId}: prereqTech`);
+  for (const b of config.buildingTypes)
+    for (const t of b.prereqTech)
+      req(intIn(t, 0, config.techs.length - 1), `gebouwtype ${b.typeId}: prereqTech`);
   req(config.perks.length <= MAX_PERKS, `meer dan ${MAX_PERKS} perks`);
   config.perks.forEach((pk, k) => {
-    req(pk.perkId === k && intIn(pk.requiresStat, 0, SPECIAL_COUNT - 1) && intIn(pk.requiresMin, -I31, I31), `perk ${k}: id of requires`);
+    req(
+      pk.perkId === k &&
+        intIn(pk.requiresStat, 0, SPECIAL_COUNT - 1) &&
+        intIn(pk.requiresMin, -I31, I31),
+      `perk ${k}: id of requires`,
+    );
     checkEffects(pk.effects, `perk ${k}`);
   });
   const sp = config.special;
-  for (const v of [sp.strengthDamagePermille, sp.perceptionRangeU, sp.enduranceHpPermille, sp.charismaGrowthPermille, sp.intelligenceResearchPermille, sp.agilitySpeedPermille]) {
+  for (const v of [
+    sp.strengthDamagePermille,
+    sp.perceptionRangeU,
+    sp.enduranceHpPermille,
+    sp.charismaGrowthPermille,
+    sp.intelligenceResearchPermille,
+    sp.agilitySpeedPermille,
+  ]) {
     req(intIn(v, -100000, 100000), 'special-tuning');
   }
-  req(intIn(sp.luckCritPermille, 0, 1000) && intIn(sp.critDamagePermille, 0, 100000), 'special-tuning: luckCritPermille of critDamagePermille');
+  req(
+    intIn(sp.luckCritPermille, 0, 1000) && intIn(sp.critDamagePermille, 0, 100000),
+    'special-tuning: luckCritPermille of critDamagePermille',
+  );
   config.heroes.forEach((hr, k) => {
     const at = `held ${k}`;
-    req(hr.heroId === k && intIn(hr.typeId, 1, U16) && !unitIds.has(hr.typeId) && !buildingIds.has(hr.typeId), `${at}: heroId of typeId`);
-    req(intIn(hr.factionId, 0, config.factions.length - 1) && unitIds.has(hr.baseTypeId), `${at}: factionId of baseTypeId`);
-    req(hr.special.length === SPECIAL_COUNT && hr.special.every((v) => intIn(v, 0, 100)), `${at}: special`);
-    req(hr.xpThresholds.every((v, j) => intIn(v, 1, I31) && (j === 0 || v > hr.xpThresholds[j - 1]!)), `${at}: xpThresholds`);
-    req(intIn(hr.xpPerKill, 0, I31) && intIn(hr.xpPerDiscovery, 0, I31) && intIn(hr.xpPerAssist, 0, I31), `${at}: xp`);
+    req(
+      hr.heroId === k &&
+        intIn(hr.typeId, 1, U16) &&
+        !unitIds.has(hr.typeId) &&
+        !buildingIds.has(hr.typeId),
+      `${at}: heroId of typeId`,
+    );
+    req(
+      intIn(hr.factionId, 0, config.factions.length - 1) && unitIds.has(hr.baseTypeId),
+      `${at}: factionId of baseTypeId`,
+    );
+    req(
+      hr.special.length === SPECIAL_COUNT && hr.special.every((v) => intIn(v, 0, 100)),
+      `${at}: special`,
+    );
+    req(
+      hr.xpThresholds.every((v, j) => intIn(v, 1, I31) && (j === 0 || v > hr.xpThresholds[j - 1]!)),
+      `${at}: xpThresholds`,
+    );
+    req(
+      intIn(hr.xpPerKill, 0, I31) &&
+        intIn(hr.xpPerDiscovery, 0, I31) &&
+        intIn(hr.xpPerAssist, 0, I31),
+      `${at}: xp`,
+    );
     req(intIn(hr.xpAssistRadius, 0, MAX_MAP_CELLS_SIDE << 8), `${at}: xpAssistRadius`);
     req(hr.abilities.length <= MAX_ABILITIES, `${at}: meer dan ${MAX_ABILITIES} abilities`);
     for (const a of hr.abilities) {
-      req(intIn(a.cooldownTicks, 0, I31) && intIn(a.durationTicks, 0, I31), `${at}: ability-tijden`);
-      req(intIn(a.rangeU, 0, MAX_MAP_CELLS_SIDE << 8) && intIn(a.radiusU, 0, MAX_MAP_CELLS_SIDE << 8), `${at}: ability-afstanden`);
+      req(
+        intIn(a.cooldownTicks, 0, I31) && intIn(a.durationTicks, 0, I31),
+        `${at}: ability-tijden`,
+      );
+      req(
+        intIn(a.rangeU, 0, MAX_MAP_CELLS_SIDE << 8) && intIn(a.radiusU, 0, MAX_MAP_CELLS_SIDE << 8),
+        `${at}: ability-afstanden`,
+      );
       for (const e of a.effects) {
-        req(intIn(e.stat, 0, EFFECT_STAT_COUNT - 1) && intIn(e.delta, -100000, 100000), `${at}: ability-effect`);
-        req(intIn(e.side, AURA_SIDE_ENEMY, AURA_SIDE_ALLY) && intIn(e.target, AURA_TARGET_UNITS, AURA_TARGET_ALL), `${at}: ability-effect kant of doel`);
+        req(
+          intIn(e.stat, 0, EFFECT_STAT_COUNT - 1) && intIn(e.delta, -100000, 100000),
+          `${at}: ability-effect`,
+        );
+        req(
+          intIn(e.side, AURA_SIDE_ENEMY, AURA_SIDE_ALLY) &&
+            intIn(e.target, AURA_TARGET_UNITS, AURA_TARGET_ALL),
+          `${at}: ability-effect kant of doel`,
+        );
       }
     }
     for (const q of hr.perkPool) req(intIn(q, 0, config.perks.length - 1), `${at}: perkPool`);
-    req(intIn(hr.reviveScrap, 0, I31) && intIn(hr.reviveTicks, 0, I31) && intIn(hr.revivePenaltyPermille, 0, 1000) && intIn(hr.maxRevives, 0, 1000), `${at}: oplappen`);
+    req(
+      intIn(hr.reviveScrap, 0, I31) &&
+        intIn(hr.reviveTicks, 0, I31) &&
+        intIn(hr.revivePenaltyPermille, 0, 1000) &&
+        intIn(hr.maxRevives, 0, 1000),
+      `${at}: oplappen`,
+    );
   });
-  config.factions.forEach((f, k) => req(intIn(f.heroId, -1, config.heroes.length - 1), `factie ${k}: heroId`));
+  config.factions.forEach((f, k) =>
+    req(intIn(f.heroId, -1, config.heroes.length - 1), `factie ${k}: heroId`),
+  );
   for (const s of config.aiScripts) {
-    for (const o of s.buildOrder) req(intIn(o.atTick, 0, I31) && buildingIds.has(o.typeId) && intIn(o.site ?? 0, AI_SITE_HQ, AI_SITE_FRONT), 'aiScript buildOrder');
+    for (const o of s.buildOrder)
+      req(
+        intIn(o.atTick, 0, I31) &&
+          buildingIds.has(o.typeId) &&
+          intIn(o.site ?? 0, AI_SITE_HQ, AI_SITE_FRONT),
+        'aiScript buildOrder',
+      );
     for (const t of s.attackTimersTicks) req(intIn(t, 0, I31), 'aiScript attackTimersTicks');
-    for (const v of [s.militiaPermille, s.militiaPermilleMax, s.militiaPermillePerMin, s.threatMilitiaPermille]) req(intIn(v, 0, 1000), 'aiScript militie-aandeel');
+    for (const v of [
+      s.militiaPermille,
+      s.militiaPermilleMax,
+      s.militiaPermillePerMin,
+      s.threatMilitiaPermille,
+    ])
+      req(intIn(v, 0, 1000), 'aiScript militie-aandeel');
     req(s.housingTypeId === 0 || buildingIds.has(s.housingTypeId), 'aiScript housingTypeId');
     for (const t of s.research) req(intIn(t, 0, config.techs.length - 1), 'aiScript research');
-    req(s.armyTypeIds.length > 0 && s.armyTypeIds.every((t) => unitIds.has(t)), 'aiScript armyTypeIds');
-    req(intIn(s.builders, 0, 1024) && intIn(s.housingFreeBeds, 0, 4096) && intIn(s.scavengersPerNode, 1, 4096), 'aiScript aantallen');
-    req(intIn(s.waveMinArmy, 0, 4096) && intIn(s.waveArmyGrowth, 0, 4096) && intIn(s.richScrap, 0, I31), 'aiScript golven');
-    for (const o of s.richBuilds) req(buildingIds.has(o.typeId) && intIn(o.site, AI_SITE_HQ, AI_SITE_FRONT), 'aiScript richBuilds');
-    for (const t of [s.researchFromTicks, s.claimFromTicks, s.waveJitterTicks, s.waveMaxWaitTicks]) req(intIn(t, 0, I31), 'aiScript tijden');
+    req(
+      s.armyTypeIds.length > 0 && s.armyTypeIds.every((t) => unitIds.has(t)),
+      'aiScript armyTypeIds',
+    );
+    req(
+      intIn(s.builders, 0, 1024) &&
+        intIn(s.housingFreeBeds, 0, 4096) &&
+        intIn(s.scavengersPerNode, 1, 4096),
+      'aiScript aantallen',
+    );
+    req(
+      intIn(s.waveMinArmy, 0, 4096) &&
+        intIn(s.waveArmyGrowth, 0, 4096) &&
+        intIn(s.richScrap, 0, I31),
+      'aiScript golven',
+    );
+    for (const o of s.richBuilds)
+      req(
+        buildingIds.has(o.typeId) && intIn(o.site, AI_SITE_HQ, AI_SITE_FRONT),
+        'aiScript richBuilds',
+      );
+    for (const t of [s.researchFromTicks, s.claimFromTicks, s.waveJitterTicks, s.waveMaxWaitTicks])
+      req(intIn(t, 0, I31), 'aiScript tijden');
     req(intIn(s.waveIntervalTicks, 1, I31), 'aiScript waveIntervalTicks');
-    req(intIn(s.defendRadius, 0, MAX_MAP_CELLS_SIDE << 8) && intIn(s.rallyRadius, 0, MAX_MAP_CELLS_SIDE << 8), 'aiScript afstanden');
+    req(
+      intIn(s.defendRadius, 0, MAX_MAP_CELLS_SIDE << 8) &&
+        intIn(s.rallyRadius, 0, MAX_MAP_CELLS_SIDE << 8),
+      'aiScript afstanden',
+    );
     req(intIn(s.rallySite, AI_SITE_HQ, AI_SITE_FRONT), 'aiScript rallySite');
     req(intIn(s.pushFromTicks, 0, I31), 'aiScript pushFromTicks');
-    req(intIn(s.pushMinArmy, 0, 4096) && typeof s.allInWithoutNodes === 'boolean', 'aiScript pushMinArmy of allInWithoutNodes');
-    req(intIn(s.claimSafeRadius, 0, MAX_MAP_CELLS_SIDE << 8) && intIn(s.claimFarFromTicks, 0, I31), 'aiScript claim-escorte');
+    req(
+      intIn(s.pushMinArmy, 0, 4096) && typeof s.allInWithoutNodes === 'boolean',
+      'aiScript pushMinArmy of allInWithoutNodes',
+    );
+    req(
+      intIn(s.claimSafeRadius, 0, MAX_MAP_CELLS_SIDE << 8) && intIn(s.claimFarFromTicks, 0, I31),
+      'aiScript claim-escorte',
+    );
   }
   for (const p of players) {
-    req(intIn(p.factionId, 0, config.factions.length - 1), `speler met onbekende factie ${p.factionId}`);
+    req(
+      intIn(p.factionId, 0, config.factions.length - 1),
+      `speler met onbekende factie ${p.factionId}`,
+    );
     req(typeof p.ai === 'boolean', 'speler zonder ai-vlag');
   }
 }
@@ -540,19 +718,60 @@ export function envHash(env: SimEnv): number {
   ]);
   h = fnv1aInt(h, c.unitTypes.length);
   for (const u of c.unitTypes) {
-    h = hashInts(h, [u.typeId, u.loadoutId, u.factionId, u.bodyType, u.role, u.armorType, u.maxHp, u.speed, u.radius, u.damage, u.damageType]);
-    h = hashInts(h, [u.range, u.cooldown, u.gatherAmount, u.gatherTicks, u.scrapCost, u.craftTicks, u.popCost]);
+    h = hashInts(h, [
+      u.typeId,
+      u.loadoutId,
+      u.factionId,
+      u.bodyType,
+      u.role,
+      u.armorType,
+      u.maxHp,
+      u.speed,
+      u.radius,
+      u.damage,
+      u.damageType,
+    ]);
+    h = hashInts(h, [
+      u.range,
+      u.cooldown,
+      u.gatherAmount,
+      u.gatherTicks,
+      u.scrapCost,
+      u.craftTicks,
+      u.popCost,
+    ]);
     h = hashInts(h, u.prereqTech);
   }
   h = fnv1aInt(h, c.buildingTypes.length);
   for (const b of c.buildingTypes) {
-    h = hashInts(h, [b.typeId, b.buildingId, b.factionId, b.maxHp, b.armorType, b.scrapCost, b.buildTicks, b.footprintW, b.footprintH, b.beds, b.provides]);
+    h = hashInts(h, [
+      b.typeId,
+      b.buildingId,
+      b.factionId,
+      b.maxHp,
+      b.armorType,
+      b.scrapCost,
+      b.buildTicks,
+      b.footprintW,
+      b.footprintH,
+      b.beds,
+      b.provides,
+    ]);
     h = hashInts(h, b.prereqTech);
     h = hashInts(h, [b.damage, b.damageType, b.range, b.cooldown]);
   }
   h = fnv1aInt(h, c.factions.length);
   for (const f of c.factions) {
-    h = hashInts(h, [f.factionId, f.startScrap, f.housingGrowthPerMin, f.hqTypeId, f.settlerTypeId, f.aiScript, f.claimTypeId, f.heroId]);
+    h = hashInts(h, [
+      f.factionId,
+      f.startScrap,
+      f.housingGrowthPerMin,
+      f.hqTypeId,
+      f.settlerTypeId,
+      f.aiScript,
+      f.claimTypeId,
+      f.heroId,
+    ]);
     h = fnv1aInt(h, f.startUnits.length);
     for (const s of f.startUnits) h = hashInts(h, [s.typeId, s.count]);
     h = hashInts(h, f.roleTypeIds);
@@ -562,14 +781,42 @@ export function envHash(env: SimEnv): number {
     h = fnv1aInt(h, s.buildOrder.length);
     for (const o of s.buildOrder) h = hashInts(h, [o.atTick, o.typeId, o.site ?? AI_SITE_HQ]);
     h = hashInts(h, s.attackTimersTicks);
-    h = hashInts(h, [s.militiaPermille, s.militiaPermilleMax, s.militiaPermillePerMin, s.threatMilitiaPermille, s.builders]);
-    h = hashInts(h, [s.housingTypeId, s.housingFreeBeds, s.researchFromTicks, s.richScrap, s.scavengersPerNode, s.claimFromTicks]);
+    h = hashInts(h, [
+      s.militiaPermille,
+      s.militiaPermilleMax,
+      s.militiaPermillePerMin,
+      s.threatMilitiaPermille,
+      s.builders,
+    ]);
+    h = hashInts(h, [
+      s.housingTypeId,
+      s.housingFreeBeds,
+      s.researchFromTicks,
+      s.richScrap,
+      s.scavengersPerNode,
+      s.claimFromTicks,
+    ]);
     h = fnv1aInt(h, s.richBuilds.length);
     for (const o of s.richBuilds) h = hashInts(h, [o.typeId, o.site]);
     h = hashInts(h, s.research);
     h = hashInts(h, s.armyTypeIds);
-    h = hashInts(h, [s.claimSafeRadius, s.claimFarFromTicks, s.pushMinArmy, s.pushFromTicks, s.allInWithoutNodes ? 1 : 0]);
-    h = hashInts(h, [s.defendRadius, s.rallySite, s.rallyRadius, s.waveIntervalTicks, s.waveJitterTicks, s.waveMinArmy, s.waveArmyGrowth, s.waveMaxWaitTicks]);
+    h = hashInts(h, [
+      s.claimSafeRadius,
+      s.claimFarFromTicks,
+      s.pushMinArmy,
+      s.pushFromTicks,
+      s.allInWithoutNodes ? 1 : 0,
+    ]);
+    h = hashInts(h, [
+      s.defendRadius,
+      s.rallySite,
+      s.rallyRadius,
+      s.waveIntervalTicks,
+      s.waveJitterTicks,
+      s.waveMinArmy,
+      s.waveArmyGrowth,
+      s.waveMaxWaitTicks,
+    ]);
   }
   h = fnv1aInt(h, c.techs.length);
   for (const t of c.techs) {
@@ -584,7 +831,16 @@ export function envHash(env: SimEnv): number {
   }
   h = fnv1aInt(h, c.heroes.length);
   for (const hr of c.heroes) {
-    h = hashInts(h, [hr.heroId, hr.typeId, hr.factionId, hr.baseTypeId, hr.xpPerKill, hr.xpPerDiscovery, hr.xpPerAssist, hr.xpAssistRadius]);
+    h = hashInts(h, [
+      hr.heroId,
+      hr.typeId,
+      hr.factionId,
+      hr.baseTypeId,
+      hr.xpPerKill,
+      hr.xpPerDiscovery,
+      hr.xpPerAssist,
+      hr.xpAssistRadius,
+    ]);
     h = hashInts(h, [hr.reviveScrap, hr.reviveTicks, hr.revivePenaltyPermille, hr.maxRevives]);
     h = hashInts(h, hr.special);
     h = hashInts(h, hr.xpThresholds);

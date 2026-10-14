@@ -9,5 +9,6 @@ export const imod = (a: number, b: number): number => {
 /** BigInt-deling (rondt af naar nul). Alleen voor tabellen die bij module-load worden opgebouwd. */
 export const bdiv = (a: bigint, b: bigint): bigint => a / b;
 /* eslint-enable no-restricted-syntax */
-export const clampI = (v: number, lo: number, hi: number): number => (v < lo ? lo : v > hi ? hi : v);
+export const clampI = (v: number, lo: number, hi: number): number =>
+  v < lo ? lo : v > hi ? hi : v;
 export const isInt = (v: unknown): v is number => typeof v === 'number' && Number.isInteger(v);

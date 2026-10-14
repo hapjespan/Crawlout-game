@@ -1,5 +1,24 @@
 import { ZodError, type ZodTypeAny, type z } from 'zod';
-import { AiScript, AiSite, ArmorType, EffectStat, Building, DamageMatrix, DamageType, Faction, Hero, Loadout, Perk, Role, SimTuning, Stat, Tech, BodyType, Provides, Archetype } from './schemas.js';
+import {
+  AiScript,
+  AiSite,
+  ArmorType,
+  EffectStat,
+  Building,
+  DamageMatrix,
+  DamageType,
+  Faction,
+  Hero,
+  Loadout,
+  Perk,
+  Role,
+  SimTuning,
+  Stat,
+  Tech,
+  BodyType,
+  Provides,
+  Archetype,
+} from './schemas.js';
 import { metersToUnits, mpsToUnitsPerTick, pctToPermille, secondsToTicks } from './units.js';
 
 // De loader: PUUR. Geen fs, geen IO, geen klok. Krijgt geparste JSON, valideert met de zod-schema's,
@@ -273,7 +292,9 @@ function parseWith<S extends ZodTypeAny>(file: string, schema: S, value: unknown
 }
 
 function formatZodError(error: ZodError): string {
-  return error.issues.map((issue) => `${issue.path.join('.') || '(root)'}: ${issue.message}`).join('; ');
+  return error.issues
+    .map((issue) => `${issue.path.join('.') || '(root)'}: ${issue.message}`)
+    .join('; ');
 }
 
 function parseList<S extends ZodTypeAny>(file: string, schema: S, value: unknown): z.infer<S>[] {
@@ -287,7 +308,8 @@ const compareIds = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0
 function sortById<T extends { id: string }>(file: string, records: T[]): T[] {
   const sorted = [...records].sort((a, b) => compareIds(a.id, b.id));
   for (let i = 1; i < sorted.length; i++) {
-    if (sorted[i]!.id === sorted[i - 1]!.id) throw new Error(`data/${file}: dubbele id '${sorted[i]!.id}'`);
+    if (sorted[i]!.id === sorted[i - 1]!.id)
+      throw new Error(`data/${file}: dubbele id '${sorted[i]!.id}'`);
   }
   return sorted;
 }
@@ -315,7 +337,9 @@ export function convertDelta(stat: EffectStat, delta: number): number {
   return Math.trunc(delta);
 }
 
-const convertEffects = (effects: { stat: EffectStat; target: string; delta: number }[]): EffectData[] =>
+const convertEffects = (
+  effects: { stat: EffectStat; target: string; delta: number }[],
+): EffectData[] =>
   effects.map((e) => ({ stat: e.stat, target: e.target, delta: convertDelta(e.stat, e.delta) }));
 
 /** Cumulatieve som van xp per stap: [100, 200] wordt [100, 300]. */
@@ -346,7 +370,10 @@ export function loadGameData(raw: RawGameData): GameData {
 
   const factionsRaw = sortById('factions.json', parseList('factions.json', Faction, raw.factions));
   const loadoutsRaw = sortById('loadouts.json', parseList('loadouts.json', Loadout, raw.loadouts));
-  const buildingsRaw = sortById('buildings.json', parseList('buildings.json', Building, raw.buildings));
+  const buildingsRaw = sortById(
+    'buildings.json',
+    parseList('buildings.json', Building, raw.buildings),
+  );
   const techRaw = sortById('tech.json', parseList('tech.json', Tech, raw.tech));
   const heroesRaw = sortById('heroes.json', parseList('heroes.json', Hero, raw.heroes));
   const perksRaw = sortById('perks.json', parseList('perks.json', Perk, raw.perks));
@@ -363,7 +390,8 @@ export function loadGameData(raw: RawGameData): GameData {
   const techIx = indexOf(techRaw);
   const perkIx = indexOf(perksRaw);
 
-  const idx = <T extends readonly string[]>(options: T, value: T[number]): number => options.indexOf(value);
+  const idx = <T extends readonly string[]>(options: T, value: T[number]): number =>
+    options.indexOf(value);
 
   const factions: FactionData[] = factionsRaw.map((f, id) => {
     const where = `data/factions.json '${f.id}'`;
@@ -372,7 +400,10 @@ export function loadGameData(raw: RawGameData): GameData {
       key: f.id,
       naam: f.naam,
       bodyTypes: f.bodyTypes.map((b) => idx(BODY_TYPES, b)),
-      startUnits: f.startUnits.map((u) => ({ loadoutId: ref(loadoutIx, 'loadout', where, u.loadoutId), count: u.count })),
+      startUnits: f.startUnits.map((u) => ({
+        loadoutId: ref(loadoutIx, 'loadout', where, u.loadoutId),
+        count: u.count,
+      })),
       startScrap: Math.trunc(f.startScrap),
       housingGrowthPerMin: Math.trunc(f.housingGrowthPerMin),
       safetyNet: { threshold: f.safetyNet.threshold, action: f.safetyNet.action },
@@ -451,7 +482,15 @@ export function loadGameData(raw: RawGameData): GameData {
       key: h.id,
       factionId: ref(factionIx, 'factie', where, h.faction),
       archetype: idx(ARCHETYPES, h.archetype),
-      special: [h.special.S, h.special.P, h.special.E, h.special.C, h.special.I, h.special.A, h.special.L],
+      special: [
+        h.special.S,
+        h.special.P,
+        h.special.E,
+        h.special.C,
+        h.special.I,
+        h.special.A,
+        h.special.L,
+      ],
       naam: h.naam,
       xpThresholds: cumulate(h.xpPerLevel),
       xpPerKill: h.xpPerKill,
@@ -465,7 +504,12 @@ export function loadGameData(raw: RawGameData): GameData {
         rangeU: metersToUnits(a.rangeM),
         radiusU: metersToUnits(a.radiusM),
         durationTicks: secondsToTicks(a.durationS),
-        effects: a.effects.map((e) => ({ stat: e.stat, side: e.side, target: e.target, delta: convertDelta(e.stat, e.delta) })),
+        effects: a.effects.map((e) => ({
+          stat: e.stat,
+          side: e.side,
+          target: e.target,
+          delta: convertDelta(e.stat, e.delta),
+        })),
       })),
       perkPool: h.perkPool.map((p) => ref(perkIx, 'perk', where, p)),
       reviveScrap: Math.trunc(h.reviveScrap),
@@ -508,7 +552,10 @@ export function loadGameData(raw: RawGameData): GameData {
       researchFromTicks: secondsToTicks(a.researchFromS),
       armyLoadouts: a.armyLoadouts.map((l) => ref(loadoutIx, 'loadout', where, l)),
       richScrap: Math.trunc(a.richScrap),
-      richBuilds: a.richBuilds.map((o) => ({ buildingId: ref(buildingIx, 'gebouw', where, o.buildingId), site: AI_SITES.indexOf(o.site) })),
+      richBuilds: a.richBuilds.map((o) => ({
+        buildingId: ref(buildingIx, 'gebouw', where, o.buildingId),
+        site: AI_SITES.indexOf(o.site),
+      })),
       scavengersPerNode: a.scavengersPerNode,
       claimFromTicks: secondsToTicks(a.claimFromS),
       claimSafeRadiusU: metersToUnits(a.claimSafeRadiusM),
@@ -528,7 +575,9 @@ export function loadGameData(raw: RawGameData): GameData {
   });
 
   // Vaste volgorde via de enum-lijsten; nooit via Object.keys.
-  const damageMatrix = DAMAGE_TYPES.map((damageType) => ARMOR_TYPES.map((armorType) => pctToPermille(matrixRaw[damageType][armorType] ?? 0)));
+  const damageMatrix = DAMAGE_TYPES.map((damageType) =>
+    ARMOR_TYPES.map((armorType) => pctToPermille(matrixRaw[damageType][armorType] ?? 0)),
+  );
 
   return {
     dataVersion: version.text,

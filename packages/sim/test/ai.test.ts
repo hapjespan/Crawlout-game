@@ -35,7 +35,11 @@ const quiet: SimAiScript = {
   waveJitterTicks: 0,
 };
 
-function aiSim(script: Partial<SimAiScript>, map: SimMap = createOpenMap(64, 64), players = testPlayers(1, true)): Sim {
+function aiSim(
+  script: Partial<SimAiScript>,
+  map: SimMap = createOpenMap(64, 64),
+  players = testPlayers(1, true),
+): Sim {
   const config: SimConfig = { ...CONFIG, aiScripts: [{ ...quiet, ...script }] };
   return createSim({ seed: 5, players, map, config });
 }
@@ -45,12 +49,17 @@ function play(sim: Sim, frames: number): { type: number; a: number; b: number }[
   for (let n = 0; n < frames; n++) {
     sim.applyBundle(bundle(sim.frame));
     sim.tick();
-    for (let k = 0; k < sim.events.count; k++) ev.push({ type: sim.events.type[k]!, a: sim.events.a[k]!, b: sim.events.b[k]! });
+    for (let k = 0; k < sim.events.count; k++)
+      ev.push({ type: sim.events.type[k]!, a: sim.events.a[k]!, b: sim.events.b[k]! });
   }
   return ev;
 }
 
-const unitsOf = (sim: Sim, owner: number) => sim.entityIds().map((id) => sim.getUnit(id)!).filter((u) => u.owner === owner && u.kind === 'unit');
+const unitsOf = (sim: Sim, owner: number) =>
+  sim
+    .entityIds()
+    .map((id) => sim.getUnit(id)!)
+    .filter((u) => u.owner === owner && u.kind === 'unit');
 
 describe('scripted AI (balans speltest 14 oktober)', () => {
   it('bouwt een woning zodra er housingFreeBeds of minder vrije bedden zijn, één tegelijk', () => {
@@ -65,7 +74,10 @@ describe('scripted AI (balans speltest 14 oktober)', () => {
   });
 
   it('onderzoekt de techs uit research in volgorde, vanaf researchFromTicks', () => {
-    const sim = aiSim({ research: [techId('snelle_voeten'), techId('geweerrek')], researchFromTicks: 100 });
+    const sim = aiSim({
+      research: [techId('snelle_voeten'), techId('geweerrek')],
+      researchFromTicks: 100,
+    });
     sim.setScrap(0, 5000);
     const ws = sim.spawnBuilding(WERKPLAATS, 0, 20, 4, true);
     play(sim, 99);
@@ -95,7 +107,9 @@ describe('scripted AI (balans speltest 14 oktober)', () => {
     const pt = sim.entityIds().find((id) => sim.getUnit(id)!.kind === 'claimPoint')!;
     expect(sim.getUnit(pt)!.owner).toBe(0);
     // de plunderaars kregen in frame 0 al werk (toen was het punt nog neutraal): Stop, dan verdeelt de AI opnieuw
-    const scavs = unitsOf(sim, 0).filter((u) => u.typeId === SCAV).map((u) => u.id);
+    const scavs = unitsOf(sim, 0)
+      .filter((u) => u.typeId === SCAV)
+      .map((u) => u.id);
     sim.applyBundle(bundle(sim.frame, [cmd(sim.frame, 0, 'Stop', { ids: scavs })]));
     sim.tick();
     play(sim, 2);
@@ -109,7 +123,11 @@ describe('scripted AI (balans speltest 14 oktober)', () => {
   });
 
   it('schoolt plunderaars om tot het eerste leger-loadout waarvoor de techs er zijn', () => {
-    const sim = aiSim({ militiaPermille: 500, militiaPermilleMax: 500, armyTypeIds: [PATROL, MILITIA] });
+    const sim = aiSim({
+      militiaPermille: 500,
+      militiaPermilleMax: 500,
+      armyTypeIds: [PATROL, MILITIA],
+    });
     sim.setScrap(0, 5000);
     sim.spawnBuilding(WERKPLAATS, 0, 16, 4, true);
     play(sim, 2);
@@ -126,15 +144,40 @@ describe('scripted AI (balans speltest 14 oktober)', () => {
   });
 
   it('een raid gaat naar het claimpunt van de vijand en keert terug zodra het punt neutraal is; een push naar de spawn', () => {
-    const map: SimMap = { ...createOpenMap(64, 64), claimPoints: [{ ...cellCenter(40, 40), kind: 1 }] };
-    const run = (pushFromTicks: number): { target: { x: number; y: number }; sim: Sim; army: number[] } => {
-      const sim = aiSim({ attackTimersTicks: [10], waveMinArmy: 2, waveArmyGrowth: 0, pushMinArmy: 2, pushFromTicks, allInWithoutNodes: false }, map, testPlayers(2, false).map((p, i) => ({ ...p, ai: i === 0 })));
-      const army = [0, 1, 2].map((k) => sim.spawnUnit({ typeId: MILITIA, owner: 0, ...cellCenter(20 + k, 20) }));
+    const map: SimMap = {
+      ...createOpenMap(64, 64),
+      claimPoints: [{ ...cellCenter(40, 40), kind: 1 }],
+    };
+    const run = (
+      pushFromTicks: number,
+    ): { target: { x: number; y: number }; sim: Sim; army: number[] } => {
+      const sim = aiSim(
+        {
+          attackTimersTicks: [10],
+          waveMinArmy: 2,
+          waveArmyGrowth: 0,
+          pushMinArmy: 2,
+          pushFromTicks,
+          allInWithoutNodes: false,
+        },
+        map,
+        testPlayers(2, false).map((p, i) => ({ ...p, ai: i === 0 })),
+      );
+      const army = [0, 1, 2].map((k) =>
+        sim.spawnUnit({ typeId: MILITIA, owner: 0, ...cellCenter(20 + k, 20) }),
+      );
       sim.spawnBuilding(CLAIMPAAL, 1, 41, 40, true);
       play(sim, 11);
       const u = sim.getUnit(army[0]!)!;
       expect(u.order).toBe(ORDER_ATTACK_MOVE);
-      return { target: { x: sim.world.ordX[sim.world.currentOrder(sim.world.resolve(army[0]!))]!, y: sim.world.ordY[sim.world.currentOrder(sim.world.resolve(army[0]!))]! }, sim, army };
+      return {
+        target: {
+          x: sim.world.ordX[sim.world.currentOrder(sim.world.resolve(army[0]!))]!,
+          y: sim.world.ordY[sim.world.currentOrder(sim.world.resolve(army[0]!))]!,
+        },
+        sim,
+        army,
+      };
     };
     const raid = run(1 << 30);
     expect(raid.target).toEqual(cellCenter(40, 40));

@@ -15,27 +15,50 @@ const perkByKey = (key: string): number => DATA.perks.find((p) => p.key === key)
 const idiv = (a: number, b: number): number => Math.trunc(a / b);
 const S = HERO.special;
 
-function play(sim: Sim, frames: number, script: Map<number, CommandEnvelope[]> = new Map()): { type: number; a: number; b: number }[] {
+function play(
+  sim: Sim,
+  frames: number,
+  script: Map<number, CommandEnvelope[]> = new Map(),
+): { type: number; a: number; b: number }[] {
   const events: { type: number; a: number; b: number }[] = [];
   for (let n = 0; n < frames; n++) {
     const f = sim.frame;
     sim.applyBundle(bundle(f, script.get(f) ?? []));
     sim.tick();
-    for (let k = 0; k < sim.events.count; k++) events.push({ type: sim.events.type[k]!, a: sim.events.a[k]!, b: sim.events.b[k]! });
+    for (let k = 0; k < sim.events.count; k++)
+      events.push({ type: sim.events.type[k]!, a: sim.events.a[k]!, b: sim.events.b[k]! });
   }
   return events;
 }
-const at = (frame: number, ...cmds: CommandEnvelope[]): Map<number, CommandEnvelope[]> => new Map([[frame, cmds]]);
-const heroOf = (sim: Sim, p: number): number => sim.entityIds().find((id) => sim.getUnit(id)!.kind === 'hero' && sim.getUnit(id)!.owner === p) ?? 0;
-const hqOf = (sim: Sim, p: number): number => sim.entityIds().find((id) => sim.getUnit(id)!.kind === 'building' && sim.getUnit(id)!.owner === p)!;
+const at = (frame: number, ...cmds: CommandEnvelope[]): Map<number, CommandEnvelope[]> =>
+  new Map([[frame, cmds]]);
+const heroOf = (sim: Sim, p: number): number =>
+  sim.entityIds().find((id) => sim.getUnit(id)!.kind === 'hero' && sim.getUnit(id)!.owner === p) ??
+  0;
+const hqOf = (sim: Sim, p: number): number =>
+  sim
+    .entityIds()
+    .find((id) => sim.getUnit(id)!.kind === 'building' && sim.getUnit(id)!.owner === p)!;
 const open = (seed: number): Sim => createSim(testInit(seed, createOpenMap(64, 64)));
 
 /** Laat een groep vijandelijke militie de held van p doodschieten. */
 function killHero(sim: Sim, p: number): void {
   const h = sim.getUnit(heroOf(sim, p))!;
-  const army = [0, 1, 2, 3, 4, 5, 6, 7].map((k) => sim.spawnUnit({ typeId: MILITIA, owner: 1 - p, x: h.x + 5 * 256, y: h.y + (k - 4) * 200 }));
-  for (let n = 0; n < 600 && sim.playerStatus(p).hero!.revivesLeft !== undefined && heroOf(sim, p) !== 0; n++) {
-    play(sim, 1, n === 0 ? at(sim.frame, cmd(sim.frame, 1 - p, 'Attack', { ids: army, target: heroOf(sim, p) })) : new Map());
+  const army = [0, 1, 2, 3, 4, 5, 6, 7].map((k) =>
+    sim.spawnUnit({ typeId: MILITIA, owner: 1 - p, x: h.x + 5 * 256, y: h.y + (k - 4) * 200 }),
+  );
+  for (
+    let n = 0;
+    n < 600 && sim.playerStatus(p).hero!.revivesLeft !== undefined && heroOf(sim, p) !== 0;
+    n++
+  ) {
+    play(
+      sim,
+      1,
+      n === 0
+        ? at(sim.frame, cmd(sim.frame, 1 - p, 'Attack', { ids: army, target: heroOf(sim, p) }))
+        : new Map(),
+    );
   }
   for (const id of army) sim.destroyEntity(id);
 }
@@ -47,18 +70,34 @@ describe('held', () => {
     expect(h).toMatchObject({ kind: 'hero', typeId: HERO.typeId, owner: 0, role: milType.role });
     const maxHp = idiv(milType.maxHp * (1000 + S[2]! * SP.enduranceHpPermille), 1000);
     expect(h).toMatchObject({ hp: maxHp, maxHp });
-    expect(sim.playerStatus(0).hero).toMatchObject({ heroId: HERO.heroId, level: 1, xp: 0, pendingPerks: 0, revivesLeft: HERO.maxRevives, special: [...S] });
+    expect(sim.playerStatus(0).hero).toMatchObject({
+      heroId: HERO.heroId,
+      level: 1,
+      xp: 0,
+      pendingPerks: 0,
+      revivesLeft: HERO.maxRevives,
+      special: [...S],
+    });
     // de held telt niet als bewoner
-    expect(sim.playerStatus(0).settlers).toBe(DATA.factions[0]!.startUnits.reduce((n, u) => n + u.count, 0));
+    expect(sim.playerStatus(0).settlers).toBe(
+      DATA.factions[0]!.startUnits.reduce((n, u) => n + u.count, 0),
+    );
   });
 
   it('xp per kill en per ontdekking; een level geeft een perk-keuze en heroLevel', () => {
     const sim = open(41);
     const hero = heroOf(sim, 0);
     // alleen de held schiet: de startunits van speler 0 weg
-    for (const id of sim.entityIds()) if (sim.getUnit(id)!.kind === 'unit' && sim.getUnit(id)!.owner === 0) sim.destroyEntity(id);
+    for (const id of sim.entityIds())
+      if (sim.getUnit(id)!.kind === 'unit' && sim.getUnit(id)!.owner === 0) sim.destroyEntity(id);
     const h = sim.getUnit(hero)!;
-    for (let k = 0; k < 10; k++) sim.spawnUnit({ typeId: SCAV, owner: 1, x: h.x + 4 * 256 + (k % 5) * 100, y: h.y + (k >> 1) * 60 });
+    for (let k = 0; k < 10; k++)
+      sim.spawnUnit({
+        typeId: SCAV,
+        owner: 1,
+        x: h.x + 4 * 256 + (k % 5) * 100,
+        y: h.y + (k >> 1) * 60,
+      });
     const ev = play(sim, 2000);
     // de held is militie: hij kiest zelf een doel en schiet de scavengers neer
     const xp = 10 * HERO.xpPerKill;
@@ -66,8 +105,16 @@ describe('held', () => {
     // level uit de drempels: 1 plus het aantal gehaalde drempels; elk level één perk-keuze en één heroLevel-event
     const level = 1 + HERO.xpThresholds.filter((t) => t <= xp).length;
     expect(level).toBeGreaterThan(1);
-    expect(sim.playerStatus(0).hero).toMatchObject({ level, pendingPerks: level - 1, xpNext: HERO.xpThresholds[level - 1] });
-    const levels = Array.from({ length: level - 1 }, (_, k) => ({ type: EVENT_TYPE.heroLevel, a: hero, b: k + 2 }));
+    expect(sim.playerStatus(0).hero).toMatchObject({
+      level,
+      pendingPerks: level - 1,
+      xpNext: HERO.xpThresholds[level - 1],
+    });
+    const levels = Array.from({ length: level - 1 }, (_, k) => ({
+      type: EVENT_TYPE.heroLevel,
+      a: hero,
+      b: k + 2,
+    }));
     expect(ev.filter((e) => e.type === EVENT_TYPE.heroLevel)).toEqual(levels);
     // ontdekking: een claimpunt voor het eerst nemen
     const pt = sim.entityIds().find((id) => sim.getUnit(id)!.kind === 'claimPoint')!;
@@ -103,7 +150,8 @@ describe('held', () => {
     const sim = open(42);
     const hero = heroOf(sim, 0);
     const laarzen = perkByKey('zware_laarzen');
-    const pick = (perkId: number, heroId = HERO.heroId): void => void play(sim, 1, at(sim.frame, cmd(sim.frame, 0, 'PickPerk', { heroId, perkId })));
+    const pick = (perkId: number, heroId = HERO.heroId): void =>
+      void play(sim, 1, at(sim.frame, cmd(sim.frame, 0, 'PickPerk', { heroId, perkId })));
     pick(laarzen); // geen open keuze
     expect(sim.playerStatus(0).hero!.perks).toEqual([]);
     sim.ps.heroPending[0] = 2;
@@ -122,19 +170,38 @@ describe('held', () => {
       const sim = open(43);
       const h = sim.getUnit(heroOf(sim, 0))!;
       const enemy = sim.spawnUnit({ typeId: SCAV, owner: 1, x: h.x + 2 * 256, y: h.y + 3 * 256 });
-      const target = sim.spawnUnit({ typeId: typeByKey('scavenger'), owner: 1, x: h.x - 3 * 256, y: h.y - 2 * 256 });
+      const target = sim.spawnUnit({
+        typeId: typeByKey('scavenger'),
+        owner: 1,
+        x: h.x - 3 * 256,
+        y: h.y - 2 * 256,
+      });
       const ally = sim.spawnUnit({ typeId: MILITIA, owner: 0, x: h.x - 3 * 256, y: h.y + 256 });
       const goal = cellCenter(60, 60);
-      const cmds = [cmd(sim.frame, 1, 'Move', { ids: [enemy], ...goal }), cmd(sim.frame, 0, 'Attack', { ids: [ally], target })];
-      if (cast) cmds.push(cmd(sim.frame, 0, 'HeroAbility', { heroId: HERO.heroId, abilityId: 0, x: h.x, y: h.y }));
+      const cmds = [
+        cmd(sim.frame, 1, 'Move', { ids: [enemy], ...goal }),
+        cmd(sim.frame, 0, 'Attack', { ids: [ally], target }),
+      ];
+      if (cast)
+        cmds.push(
+          cmd(sim.frame, 0, 'HeroAbility', { heroId: HERO.heroId, abilityId: 0, x: h.x, y: h.y }),
+        );
       const x0 = sim.getUnit(enemy)!.x;
       const hp0 = sim.getUnit(target)!.hp;
       play(sim, 10, at(sim.frame, ...cmds));
       // de zone loopt durationTicks; een tweede cast in de cooldown doet niets
       const zoneOk = !cast || sim.ps.zoneTicks[0] === HERO.abilities[0]!.durationTicks - 10;
       const result = { moved: sim.getUnit(enemy)!.x - x0, dealt: hp0 - sim.getUnit(target)!.hp };
-      if (cast) play(sim, 1, at(sim.frame, cmd(sim.frame, 0, 'HeroAbility', { heroId: HERO.heroId, abilityId: 0 })));
-      return { ...result, ok: zoneOk && sim.ps.abCooldown[0] === (cast ? HERO.abilities[0]!.cooldownTicks - 11 : 0) };
+      if (cast)
+        play(
+          sim,
+          1,
+          at(sim.frame, cmd(sim.frame, 0, 'HeroAbility', { heroId: HERO.heroId, abilityId: 0 })),
+        );
+      return {
+        ...result,
+        ok: zoneOk && sim.ps.abCooldown[0] === (cast ? HERO.abilities[0]!.cooldownTicks - 11 : 0),
+      };
     };
     const plain = run(false);
     const locked = run(true);
@@ -143,7 +210,11 @@ describe('held', () => {
     expect(locked.dealt).toBeGreaterThan(plain.dealt);
     // buiten rangeU kan het niet
     const sim = open(44);
-    play(sim, 1, at(0, cmd(0, 0, 'HeroAbility', { heroId: HERO.heroId, abilityId: 0, ...cellCenter(60, 60) })));
+    play(
+      sim,
+      1,
+      at(0, cmd(0, 0, 'HeroAbility', { heroId: HERO.heroId, abilityId: 0, ...cellCenter(60, 60) })),
+    );
     expect(sim.ps.abCooldown[0]).toBe(0);
   });
 
@@ -160,7 +231,10 @@ describe('held', () => {
     killHero(sim, 0);
     expect(heroOf(sim, 0)).toBe(0);
     expect(sim.getUnit(turret)!.maxHp).toBe(turretType.maxHp);
-    expect(sim.playerStatus(0).hero).toMatchObject({ perks: [kluisvet], revivesLeft: HERO.maxRevives });
+    expect(sim.playerStatus(0).hero).toMatchObject({
+      perks: [kluisvet],
+      revivesLeft: HERO.maxRevives,
+    });
     // oplappen: kosten meteen, na reviveTicks naast het hoofdgebouw
     sim.setScrap(0, HERO.reviveScrap + 5);
     const hq = hqOf(sim, 0);
@@ -173,10 +247,15 @@ describe('held', () => {
     expect(hero).not.toBe(0);
     const scale = 1000 - HERO.revivePenaltyPermille;
     const full = idiv(milType.maxHp * (1000 + S[2]! * SP.enduranceHpPermille), 1000);
-    expect(sim.getUnit(hero)).toMatchObject({ maxHp: idiv(full * scale, 1000), hp: idiv(full * scale, 1000) });
+    expect(sim.getUnit(hero)).toMatchObject({
+      maxHp: idiv(full * scale, 1000),
+      hp: idiv(full * scale, 1000),
+    });
     expect(sim.playerStatus(0).hero!.revivesLeft).toBe(HERO.maxRevives - 1);
     // perks weer actief, met 20% minder effect
-    expect(sim.getUnit(turret)!.maxHp).toBe(idiv(turretType.maxHp * (1000 + idiv(100 * scale, 1000)), 1000));
+    expect(sim.getUnit(turret)!.maxHp).toBe(
+      idiv(turretType.maxHp * (1000 + idiv(100 * scale, 1000)), 1000),
+    );
   });
 
   it('Cancel op het hoofdgebouw stopt het oplappen met teruggave; na maxRevives is de held leeg', () => {
@@ -186,18 +265,28 @@ describe('held', () => {
     const hq = hqOf(sim, 0);
     play(sim, 1, at(sim.frame, cmd(sim.frame, 0, 'Recruit', { buildingId: hq })));
     play(sim, 5, at(sim.frame, cmd(sim.frame, 0, 'Cancel', { ids: [hq] })));
-    expect(sim.playerStatus(0).scrap).toBe(idiv(HERO.reviveScrap * CONFIG.cancelRefundPermille, 1000));
+    expect(sim.playerStatus(0).scrap).toBe(
+      idiv(HERO.reviveScrap * CONFIG.cancelRefundPermille, 1000),
+    );
     play(sim, HERO.reviveTicks);
     expect(heroOf(sim, 0)).toBe(0);
     // laatste keer oplappen gebruikt: de volgende dood maakt hem leeg
     sim.setScrap(0, HERO.reviveScrap);
     sim.ps.heroRevives[0] = HERO.maxRevives - 1;
-    play(sim, HERO.reviveTicks + 1, at(sim.frame, cmd(sim.frame, 0, 'Recruit', { buildingId: hq })));
+    play(
+      sim,
+      HERO.reviveTicks + 1,
+      at(sim.frame, cmd(sim.frame, 0, 'Recruit', { buildingId: hq })),
+    );
     expect(sim.playerStatus(0).hero!.revivesLeft).toBe(0);
     killHero(sim, 0);
     expect(sim.playerStatus(0).hero!.revivesLeft).toBe(0);
     sim.setScrap(0, 1000);
-    play(sim, HERO.reviveTicks + 5, at(sim.frame, cmd(sim.frame, 0, 'Recruit', { buildingId: hq })));
+    play(
+      sim,
+      HERO.reviveTicks + 5,
+      at(sim.frame, cmd(sim.frame, 0, 'Recruit', { buildingId: hq })),
+    );
     expect(heroOf(sim, 0)).toBe(0);
     expect(sim.playerStatus(0).scrap).toBe(1000);
   });
@@ -205,20 +294,41 @@ describe('held', () => {
   it('HeroStatus: state, reviveTicksLeft, entityId en abilityCooldownTicks volgen de held (besluit 1, sprint 4)', () => {
     const sim = open(48);
     const ab = HERO.abilities[0]!;
-    expect(sim.playerStatus(0).hero).toMatchObject({ state: 'alive', entityId: heroOf(sim, 0), reviveTicksLeft: 0, abilityCooldownTicks: [0] });
-    play(sim, 1, at(sim.frame, cmd(sim.frame, 0, 'HeroAbility', { heroId: HERO.heroId, abilityId: 0 })));
+    expect(sim.playerStatus(0).hero).toMatchObject({
+      state: 'alive',
+      entityId: heroOf(sim, 0),
+      reviveTicksLeft: 0,
+      abilityCooldownTicks: [0],
+    });
+    play(
+      sim,
+      1,
+      at(sim.frame, cmd(sim.frame, 0, 'HeroAbility', { heroId: HERO.heroId, abilityId: 0 })),
+    );
     play(sim, 10);
     expect(sim.playerStatus(0).hero!.abilityCooldownTicks).toEqual([ab.cooldownTicks - 11]);
     killHero(sim, 0);
-    expect(sim.playerStatus(0).hero).toMatchObject({ state: 'dead', entityId: 0, reviveTicksLeft: 0 });
+    expect(sim.playerStatus(0).hero).toMatchObject({
+      state: 'dead',
+      entityId: 0,
+      reviveTicksLeft: 0,
+    });
     sim.setScrap(0, HERO.reviveScrap);
     play(sim, 1, at(sim.frame, cmd(sim.frame, 0, 'Recruit', { buildingId: hqOf(sim, 0) })));
     play(sim, 5);
-    expect(sim.playerStatus(0).hero).toMatchObject({ state: 'reviving', entityId: 0, reviveTicksLeft: HERO.reviveTicks - 6 }); // de Recruit-tick telt al mee
+    expect(sim.playerStatus(0).hero).toMatchObject({
+      state: 'reviving',
+      entityId: 0,
+      reviveTicksLeft: HERO.reviveTicks - 6,
+    }); // de Recruit-tick telt al mee
     play(sim, HERO.reviveTicks);
     const back = heroOf(sim, 0);
     expect(back).not.toBe(0);
-    expect(sim.playerStatus(0).hero).toMatchObject({ state: 'alive', entityId: back, reviveTicksLeft: 0 });
+    expect(sim.playerStatus(0).hero).toMatchObject({
+      state: 'alive',
+      entityId: back,
+      reviveTicksLeft: 0,
+    });
     sim.ps.heroRevives[0] = HERO.maxRevives;
     killHero(sim, 0);
     expect(sim.playerStatus(0).hero).toMatchObject({ state: 'empty', entityId: 0, revivesLeft: 0 });
@@ -241,6 +351,8 @@ describe('held', () => {
       expect(copy.tick()).toBe(sim.tick());
     }
     expect(heroOf(copy, 0)).not.toBe(0);
-    expect(copy.getUnit(sim.entityIds().find((id) => sim.getUnit(id)!.kind === 'claimPoint')!)!.owner).toBe(OWNER_NEUTRAL);
+    expect(
+      copy.getUnit(sim.entityIds().find((id) => sim.getUnit(id)!.kind === 'claimPoint')!)!.owner,
+    ).toBe(OWNER_NEUTRAL);
   });
 });

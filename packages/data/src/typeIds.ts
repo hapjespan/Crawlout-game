@@ -20,7 +20,8 @@ export const CLAIM_POINT_TYPE_ID = 2049;
 export type TypeIdKind = 'unit' | 'building' | 'scrapNode' | 'claimPoint' | 'none';
 
 function checkIndex(what: string, index: number, max: number): void {
-  if (!Number.isInteger(index) || index < 0 || index > max) throw new RangeError(`${what} ${index} valt buiten 0..${max}`);
+  if (!Number.isInteger(index) || index < 0 || index > max)
+    throw new RangeError(`${what} ${index} valt buiten 0..${max}`);
 }
 
 export const unitTypeId = (loadoutId: number): number => {
@@ -35,7 +36,9 @@ export const heroTypeId = (heroId: number): number => {
 
 /** heroId voor een held-typeId, anders -1. */
 export const heroIdOfTypeId = (typeId: number): number =>
-  Number.isInteger(typeId) && typeId >= HERO_TYPE_BASE && typeId <= HERO_TYPE_MAX ? typeId - HERO_TYPE_BASE : -1;
+  Number.isInteger(typeId) && typeId >= HERO_TYPE_BASE && typeId <= HERO_TYPE_MAX
+    ? typeId - HERO_TYPE_BASE
+    : -1;
 
 export const buildingTypeId = (buildingId: number): number => {
   checkIndex('buildingId', buildingId, BUILDING_TYPE_MAX - BUILDING_TYPE_BASE);
@@ -48,8 +51,10 @@ export const buildingTypeId = (buildingId: number): number => {
  */
 export function kindOfTypeId(typeId: number): { kind: TypeIdKind; index: number } {
   if (Number.isInteger(typeId)) {
-    if (typeId >= UNIT_TYPE_BASE && typeId <= UNIT_TYPE_MAX) return { kind: 'unit', index: typeId - UNIT_TYPE_BASE };
-    if (typeId >= BUILDING_TYPE_BASE && typeId <= BUILDING_TYPE_MAX) return { kind: 'building', index: typeId - BUILDING_TYPE_BASE };
+    if (typeId >= UNIT_TYPE_BASE && typeId <= UNIT_TYPE_MAX)
+      return { kind: 'unit', index: typeId - UNIT_TYPE_BASE };
+    if (typeId >= BUILDING_TYPE_BASE && typeId <= BUILDING_TYPE_MAX)
+      return { kind: 'building', index: typeId - BUILDING_TYPE_BASE };
     if (typeId === SCRAP_NODE_TYPE_ID) return { kind: 'scrapNode', index: 0 };
     if (typeId === CLAIM_POINT_TYPE_ID) return { kind: 'claimPoint', index: 0 };
   }

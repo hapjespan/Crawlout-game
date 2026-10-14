@@ -16,19 +16,23 @@ const EXPECTED = [
 
 describe('potjelengte: AI tegen AI op Rustbelt', () => {
   for (const e of EXPECTED) {
-    it(`seed ${e.seed}: een winnaar tussen 25 en 35 minuten, scrap loopt niet op, de held levelt`, { timeout: 120_000 }, () => {
-      const r = playMatch(e.seed, { maxFrames: 45 * TICKS_PER_MINUTE });
-      expect({ seed: r.seed, winner: r.winner, reason: r.reason, frame: r.frame }).toEqual(e);
-      expect(r.frame).toBeGreaterThanOrEqual(25 * TICKS_PER_MINUTE);
-      expect(r.frame).toBeLessThan(35 * TICKS_PER_MINUTE);
-      for (const p of r.players) {
-        // ongebruikte scrap loopt niet op: de AI geeft zijn inkomen uit
-        expect(p.peakScrap).toBeLessThan(600);
-        expect(p.spent).toBeGreaterThan(p.income - 300);
-      }
-      // de held van de winnaar haalt minstens level 3, die van de verliezer minstens level 2
-      expect(r.players[r.winner!]!.heroLevel).toBeGreaterThanOrEqual(3);
-      for (const p of r.players) expect(p.heroLevel).toBeGreaterThanOrEqual(2);
-    });
+    it(
+      `seed ${e.seed}: een winnaar tussen 25 en 35 minuten, scrap loopt niet op, de held levelt`,
+      { timeout: 120_000 },
+      () => {
+        const r = playMatch(e.seed, { maxFrames: 45 * TICKS_PER_MINUTE });
+        expect({ seed: r.seed, winner: r.winner, reason: r.reason, frame: r.frame }).toEqual(e);
+        expect(r.frame).toBeGreaterThanOrEqual(25 * TICKS_PER_MINUTE);
+        expect(r.frame).toBeLessThan(35 * TICKS_PER_MINUTE);
+        for (const p of r.players) {
+          // ongebruikte scrap loopt niet op: de AI geeft zijn inkomen uit
+          expect(p.peakScrap).toBeLessThan(600);
+          expect(p.spent).toBeGreaterThan(p.income - 300);
+        }
+        // de held van de winnaar haalt minstens level 3, die van de verliezer minstens level 2
+        expect(r.players[r.winner!]!.heroLevel).toBeGreaterThanOrEqual(3);
+        for (const p of r.players) expect(p.heroLevel).toBeGreaterThanOrEqual(2);
+      },
+    );
   }
 });

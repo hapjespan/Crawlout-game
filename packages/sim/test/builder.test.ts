@@ -4,7 +4,18 @@ import type { CommandEnvelope } from '@crawlout/protocol';
 import { ORDER_BUILD, ORDER_NONE, createSim, deserialize } from '../src/index.js';
 import type { Sim } from '../src/index.js';
 import { cellCenter } from '../src/testing.js';
-import { BUILDER, CONFIG, MILITIA, SCAV, bundle, cmd, emptySim, envOf, testInit, typeByKey } from './helpers.js';
+import {
+  BUILDER,
+  CONFIG,
+  MILITIA,
+  SCAV,
+  bundle,
+  cmd,
+  emptySim,
+  envOf,
+  testInit,
+  typeByKey,
+} from './helpers.js';
 
 // Bouwers na de speltest van Martien: hervatten na een onderbreking, Stop wist het geheugen, vrije bouwers helpen
 // binnen builderAutoHelpRadius, en Build op een eigen bouwplaats (rechtsklik in de client) is helpen.
@@ -14,19 +25,29 @@ const WERKPLAATS = typeByKey('werkplaats');
 const woning = CONFIG.buildingTypes.find((b) => b.typeId === WONING)!;
 const RADIUS = CONFIG.builderAutoHelpRadius;
 
-function play(sim: Sim, frames: number, script: Map<number, CommandEnvelope[]> = new Map()): { type: number; a: number }[] {
+function play(
+  sim: Sim,
+  frames: number,
+  script: Map<number, CommandEnvelope[]> = new Map(),
+): { type: number; a: number }[] {
   const events: { type: number; a: number }[] = [];
   for (let n = 0; n < frames; n++) {
     const f = sim.frame;
     sim.applyBundle(bundle(f, script.get(f) ?? []));
     sim.tick();
-    for (let k = 0; k < sim.events.count; k++) events.push({ type: sim.events.type[k]!, a: sim.events.a[k]! });
+    for (let k = 0; k < sim.events.count; k++)
+      events.push({ type: sim.events.type[k]!, a: sim.events.a[k]! });
   }
   return events;
 }
 
 /** Eén commando, uitgevoerd in de volgende tick. */
-function send(sim: Sim, type: CommandEnvelope['type'], payload: unknown, playerId = 0): { type: number; a: number }[] {
+function send(
+  sim: Sim,
+  type: CommandEnvelope['type'],
+  payload: unknown,
+  playerId = 0,
+): { type: number; a: number }[] {
   return play(sim, 1, new Map([[sim.frame, [cmd(sim.frame, playerId, type, payload)]]]));
 }
 
@@ -39,7 +60,10 @@ function until(sim: Sim, max: number, done: () => boolean): number {
   throw new Error(`niet binnen ${max} ticks`);
 }
 
-const builderOf = (sim: Sim, p = 0): number => sim.entityIds().find((id) => sim.getUnit(id)!.typeId === BUILDER && sim.getUnit(id)!.owner === p)!;
+const builderOf = (sim: Sim, p = 0): number =>
+  sim
+    .entityIds()
+    .find((id) => sim.getUnit(id)!.typeId === BUILDER && sim.getUnit(id)!.owner === p)!;
 
 /** Volledige sim met een woning in aanbouw bij (16, 14) waar de startbouwer van speler 0 al even aan werkt. */
 function siteInProgress(): { sim: Sim; builder: number; site: number } {
@@ -62,7 +86,11 @@ const dist = (sim: Sim, a: number, b: number): number => {
 describe('bouwer hervat zijn bouwplaats', () => {
   it('na een Move naar elders (verder dan de hulpstraal) loopt hij zonder taak terug en bouwt de plaats af', () => {
     const { sim, builder, site } = siteInProgress();
-    expect(sim.getUnit(builder)).toMatchObject({ order: ORDER_BUILD, orderTarget: site, resumeSite: site });
+    expect(sim.getUnit(builder)).toMatchObject({
+      order: ORDER_BUILD,
+      orderTarget: site,
+      resumeSite: site,
+    });
     send(sim, 'Move', { ids: [builder], ...cellCenter(24, 30) });
     expect(sim.getUnit(builder)).toMatchObject({ order: 1, resumeSite: site }); // ORDER_MOVE, geheugen blijft
     const progress = sim.getUnit(site)!.progress;
@@ -121,7 +149,11 @@ describe('bouwer hervat zijn bouwplaats', () => {
     const { sim, builder, site } = siteInProgress();
     const ev = send(sim, 'Build', { ids: [builder], typeId: WONING, ...cellCenter(14, 40) });
     const second = ev.find((e) => e.type === EVENT_TYPE.buildingPlaced)!.a;
-    expect(sim.getUnit(builder)).toMatchObject({ order: ORDER_BUILD, orderTarget: second, resumeSite: second });
+    expect(sim.getUnit(builder)).toMatchObject({
+      order: ORDER_BUILD,
+      orderTarget: second,
+      resumeSite: second,
+    });
     send(sim, 'Move', { ids: [builder], ...cellCenter(8, 50) });
     until(sim, 600, () => sim.getUnit(builder)!.order === ORDER_BUILD);
     expect(sim.getUnit(builder)!.orderTarget).toBe(second);
@@ -168,7 +200,11 @@ describe('vrije bouwers helpen binnen builderAutoHelpRadius', () => {
     sim.spawnBuilding(WONING, 1, 19, 30, false);
     expect(left).toBeLessThan(below);
     play(sim, 1);
-    expect(sim.getUnit(b)).toMatchObject({ order: ORDER_BUILD, orderTarget: left, resumeSite: left });
+    expect(sim.getUnit(b)).toMatchObject({
+      order: ORDER_BUILD,
+      orderTarget: left,
+      resumeSite: left,
+    });
     // omgekeerde spawnvolgorde: weer de laagste id
     const simR = emptySim(5);
     const bR = simR.spawnUnit({ typeId: BUILDER, owner: 0, x: 4224, y: 7807 });
@@ -230,7 +266,11 @@ describe('Build op een eigen bouwplaats is helpen (rechtsklik in de client)', ()
       const ev = send(sim, 'Build', { ids: [b], typeId, x: s.x, y: s.y });
       expect(ev.some((e) => e.type === EVENT_TYPE.buildingPlaced)).toBe(false);
       expect(sim.playerStatus(0).scrap).toBe(500);
-      expect(sim.getUnit(b)).toMatchObject({ order: ORDER_BUILD, orderTarget: site, resumeSite: site });
+      expect(sim.getUnit(b)).toMatchObject({
+        order: ORDER_BUILD,
+        orderTarget: site,
+        resumeSite: site,
+      });
       const built = play(sim, 2000);
       expect(built.some((e) => e.type === EVENT_TYPE.buildingDone && e.a === site)).toBe(true);
     }
@@ -240,7 +280,9 @@ describe('Build op een eigen bouwplaats is helpen (rechtsklik in de client)', ()
     const time = (helpers: number): number => {
       const sim = emptySim(8);
       const site = sim.spawnBuilding(WONING, 0, 20, 20, false);
-      const ids = Array.from({ length: helpers }, (_, k) => sim.spawnUnit({ typeId: BUILDER, owner: 0, ...cellCenter(19 + 3 * k, 18) }));
+      const ids = Array.from({ length: helpers }, (_, k) =>
+        sim.spawnUnit({ typeId: BUILDER, owner: 0, ...cellCenter(19 + 3 * k, 18) }),
+      );
       const s = sim.getUnit(site)!;
       send(sim, 'Build', { ids, typeId: WONING, x: s.x, y: s.y });
       return until(sim, 2000, () => sim.getUnit(site)!.buildState === 2);
@@ -282,7 +324,19 @@ describe('determinisme van het bouwgeheugen', () => {
     expect(copy.hash()).toBe(sim.hash());
     // een Build en meteen Stop: order en positie gelijk aan een onaangeroerde unit, maar het geheugen (buildHold) niet
     const s = sim.getUnit(site)!;
-    play(sim, 1, new Map([[sim.frame, [cmd(sim.frame, 0, 'Build', { ids: [u], typeId: WONING, x: s.x, y: s.y }), cmd(sim.frame, 0, 'Stop', { ids: [u] })]]]));
+    play(
+      sim,
+      1,
+      new Map([
+        [
+          sim.frame,
+          [
+            cmd(sim.frame, 0, 'Build', { ids: [u], typeId: WONING, x: s.x, y: s.y }),
+            cmd(sim.frame, 0, 'Stop', { ids: [u] }),
+          ],
+        ],
+      ]),
+    );
     play(copy, 1);
     expect(sim.getUnit(u)).toMatchObject({ order: ORDER_NONE, resumeSite: 0 });
     expect(copy.getUnit(u)).toMatchObject({ order: ORDER_NONE, resumeSite: 0 });

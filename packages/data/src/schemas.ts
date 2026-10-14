@@ -11,7 +11,16 @@ export const DamageType = z.enum(['ballistic', 'energy', 'melee', 'fire']);
 export const BodyType = z.enum(['human', 'robot']);
 export const Role = z.enum(['scavenger', 'builder', 'militia']);
 export const Archetype = z.enum(['bouwer', 'krijger', 'tacticus']);
-export const Provides = z.enum(['werkplaats', 'huisvesting', 'claim', 'turret', 'beacon', 'lab', 'hq', 'training']);
+export const Provides = z.enum([
+  'werkplaats',
+  'huisvesting',
+  'claim',
+  'turret',
+  'beacon',
+  'lab',
+  'hq',
+  'training',
+]);
 export const Stat = z.enum(['S', 'P', 'E', 'C', 'I', 'A', 'L']);
 
 export const Faction = z
@@ -63,7 +72,9 @@ export const Building = z
     armorType: ArmorType,
     scrapCost: nonneg,
     buildS: nonneg,
-    footprint: z.object({ w: z.number().int().positive(), h: z.number().int().positive() }).strict(), // cellen van 1 m
+    footprint: z
+      .object({ w: z.number().int().positive(), h: z.number().int().positive() })
+      .strict(), // cellen van 1 m
     beds: z.number().int().nonnegative(),
     provides: z.array(Provides),
     prereqTech: z.array(id),
@@ -79,7 +90,12 @@ export const Building = z
   .superRefine((b, ctx) => {
     if (!b.provides.includes('turret')) return;
     for (const field of ['damage', 'damageType', 'rangeM', 'cooldownS'] as const) {
-      if (b[field] === undefined) ctx.addIssue({ code: 'custom', path: [field], message: `verplicht voor een gebouw met provides turret` });
+      if (b[field] === undefined)
+        ctx.addIssue({
+          code: 'custom',
+          path: [field],
+          message: `verplicht voor een gebouw met provides turret`,
+        });
     }
   });
 
@@ -101,17 +117,45 @@ export const EffectStat = z.enum([
   'A',
   'L',
 ]);
-export const Effect = z.object({ stat: EffectStat, target: z.string(), delta: z.number() }).strict();
-
-export const Tech = z
-  .object({ id, faction: id, scrapCost: nonneg, researchS: nonneg, building: id, prereqTech: z.array(id), effects: z.array(Effect), _comment: comment })
+export const Effect = z
+  .object({ stat: EffectStat, target: z.string(), delta: z.number() })
   .strict();
 
-export const Special = z.object({ S: z.number().int(), P: z.number().int(), E: z.number().int(), C: z.number().int(), I: z.number().int(), A: z.number().int(), L: z.number().int() }).strict();
+export const Tech = z
+  .object({
+    id,
+    faction: id,
+    scrapCost: nonneg,
+    researchS: nonneg,
+    building: id,
+    prereqTech: z.array(id),
+    effects: z.array(Effect),
+    _comment: comment,
+  })
+  .strict();
+
+export const Special = z
+  .object({
+    S: z.number().int(),
+    P: z.number().int(),
+    E: z.number().int(),
+    C: z.number().int(),
+    I: z.number().int(),
+    A: z.number().int(),
+    L: z.number().int(),
+  })
+  .strict();
 
 // Effect van een ability op alles binnen de radius, gedurende durationS. Zelfde stat-enum en suffix-conventie als tech en perks.
 // side: 'enemy' = vijanden van de held, 'ally' = eigen units en gebouwen van de speler. target: 'units', 'turrets' of 'alle'.
-export const AbilityEffect = z.object({ stat: EffectStat, side: z.enum(['enemy', 'ally']), target: z.enum(['units', 'turrets', 'alle']), delta: z.number() }).strict();
+export const AbilityEffect = z
+  .object({
+    stat: EffectStat,
+    side: z.enum(['enemy', 'ally']),
+    target: z.enum(['units', 'turrets', 'alle']),
+    delta: z.number(),
+  })
+  .strict();
 
 export const Ability = z
   .object({
@@ -154,12 +198,27 @@ export const Hero = z
   .strict();
 
 export const Perk = z
-  .object({ id, naam: z.string(), flavourText: z.string(), requires: z.object({ stat: Stat, min: z.number().int() }).strict(), effects: z.array(Effect), _comment: comment })
+  .object({
+    id,
+    naam: z.string(),
+    flavourText: z.string(),
+    requires: z.object({ stat: Stat, min: z.number().int() }).strict(),
+    effects: z.array(Effect),
+    _comment: comment,
+  })
   .strict();
 
 const ArmorRow = z.record(ArmorType, z.number().nonnegative()); // multiplier in procenten per pantsertype
 // Strict object per schadetype (i.p.v. record) zodat het bestand een _comment kan dragen.
-export const DamageMatrix = z.object({ _comment: comment, ballistic: ArmorRow, energy: ArmorRow, melee: ArmorRow, fire: ArmorRow }).strict();
+export const DamageMatrix = z
+  .object({
+    _comment: comment,
+    ballistic: ArmorRow,
+    energy: ArmorRow,
+    melee: ArmorRow,
+    fire: ArmorRow,
+  })
+  .strict();
 
 export const MapDef = z
   .object({
@@ -168,11 +227,25 @@ export const MapDef = z
     heightmap: z.string(),
     passability: z.string(),
     props: z.string().optional(), // optioneel, buiten de sim: decoratieve props (data/maps/<id>.props.json), alleen voor de renderer
-    scrapNodes: z.array(z.object({ x: z.number().int(), y: z.number().int(), amount: nonneg }).strict()),
-    claimPoints: z.array(z.object({ x: z.number().int(), y: z.number().int(), kind: z.enum(['scrap', 'settlement', 'powerArmor']) }).strict()),
+    scrapNodes: z.array(
+      z.object({ x: z.number().int(), y: z.number().int(), amount: nonneg }).strict(),
+    ),
+    claimPoints: z.array(
+      z
+        .object({
+          x: z.number().int(),
+          y: z.number().int(),
+          kind: z.enum(['scrap', 'settlement', 'powerArmor']),
+        })
+        .strict(),
+    ),
     spawns: z.array(z.object({ x: z.number().int(), y: z.number().int() }).strict()),
-    creepCamps: z.array(z.object({ x: z.number().int(), y: z.number().int(), tier: z.number().int() }).strict()),
-    dominance: z.object({ pointsRequired: z.number().int().positive(), minutes: z.number().positive() }).strict(),
+    creepCamps: z.array(
+      z.object({ x: z.number().int(), y: z.number().int(), tier: z.number().int() }).strict(),
+    ),
+    dominance: z
+      .object({ pointsRequired: z.number().int().positive(), minutes: z.number().positive() })
+      .strict(),
     _comment: comment,
   })
   .strict();
@@ -186,7 +259,9 @@ export const AiScript = z
     id,
     faction: id,
     // site (balans speltest 14 oktober): optioneel, standaard hq
-    buildOrder: z.array(z.object({ atS: nonneg, buildingId: id, site: AiSite.optional() }).strict()),
+    buildOrder: z.array(
+      z.object({ atS: nonneg, buildingId: id, site: AiSite.optional() }).strict(),
+    ),
     attackTimersS: z.array(nonneg), // de eerste aanvalsgolven; daarna elke waveIntervalS
     rallyPoint: z.object({ x: z.number().int(), y: z.number().int() }).strict(),
     militiaPct: pct, // deel van de bewoners dat de AI tot militie omschoolt aan het begin (besluit sprint 2: uit sim.json)

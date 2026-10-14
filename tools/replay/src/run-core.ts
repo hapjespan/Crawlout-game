@@ -63,7 +63,13 @@ export function runReplayIn(r: Replay, env: SimEnv, opts: RunOptions = {}): Repl
 export function compareRun(r: Replay, run: ReplayRun): ReplayCheck {
   for (const e of r.hashes) {
     const actual = run.hashes[e.frame];
-    if (actual !== e.hash) return { ok: false, frames: run.lastFrame + 1, checked: r.hashes.length, mismatch: { frame: e.frame, expected: e.hash, actual: actual ?? -1 } };
+    if (actual !== e.hash)
+      return {
+        ok: false,
+        frames: run.lastFrame + 1,
+        checked: r.hashes.length,
+        mismatch: { frame: e.frame, expected: e.hash, actual: actual ?? -1 },
+      };
   }
   return { ok: true, frames: run.lastFrame + 1, checked: r.hashes.length, mismatch: null };
 }
@@ -72,7 +78,8 @@ export function compareRun(r: Replay, run: ReplayRun): ReplayCheck {
 export function recordedHashes(run: ReplayRun): FrameHash[] {
   const out: FrameHash[] = [];
   for (let f = 0; f <= run.lastFrame; f++) {
-    if (f % HASH_INTERVAL_FRAMES === 0 || f === run.lastFrame) out.push({ frame: f, hash: run.hashes[f]! });
+    if (f % HASH_INTERVAL_FRAMES === 0 || f === run.lastFrame)
+      out.push({ frame: f, hash: run.hashes[f]! });
   }
   return out;
 }

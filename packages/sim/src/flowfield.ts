@@ -48,7 +48,13 @@ export class FlowFields {
   }
 
   private matches(s: number, x0: number, y0: number, w: number, h: number): boolean {
-    return this.active[s] === 1 && this.tx0[s] === x0 && this.ty0[s] === y0 && this.tw[s] === w && this.th[s] === h;
+    return (
+      this.active[s] === 1 &&
+      this.tx0[s] === x0 &&
+      this.ty0[s] === y0 &&
+      this.tw[s] === w &&
+      this.th[s] === h
+    );
   }
 
   /** Of slot s precies deze doelrechthoek heeft. */
@@ -182,7 +188,8 @@ export class FlowFields {
       this.processed[s] = 0;
       this.seed(s);
       while (this.processed[s]! < want) {
-        if (this.processed[s]! >= this.tail[s]!) throw new Error(`flow field ${s}: voortgang ${want} niet reproduceerbaar`);
+        if (this.processed[s]! >= this.tail[s]!)
+          throw new Error(`flow field ${s}: voortgang ${want} niet reproduceerbaar`);
         this.expand(s);
       }
     }
@@ -211,14 +218,70 @@ export class FlowFields {
     let bestD = here;
     let c = 0;
     let d = 0;
-    if (pE) { c = cell + 1; d = dist[c]!; if (d !== DIST_UNKNOWN && d < bestD) { bestD = d; best = c; } }
-    if (pW) { c = cell - 1; d = dist[c]!; if (d !== DIST_UNKNOWN && d < bestD) { bestD = d; best = c; } }
-    if (pS) { c = cell + w; d = dist[c]!; if (d !== DIST_UNKNOWN && d < bestD) { bestD = d; best = c; } }
-    if (pN) { c = cell - w; d = dist[c]!; if (d !== DIST_UNKNOWN && d < bestD) { bestD = d; best = c; } }
-    if (pE && pS && pass[cell + w + 1] === 1) { c = cell + w + 1; d = dist[c]!; if (d !== DIST_UNKNOWN && d < bestD) { bestD = d; best = c; } }
-    if (pW && pS && pass[cell + w - 1] === 1) { c = cell + w - 1; d = dist[c]!; if (d !== DIST_UNKNOWN && d < bestD) { bestD = d; best = c; } }
-    if (pE && pN && pass[cell - w + 1] === 1) { c = cell - w + 1; d = dist[c]!; if (d !== DIST_UNKNOWN && d < bestD) { bestD = d; best = c; } }
-    if (pW && pN && pass[cell - w - 1] === 1) { c = cell - w - 1; d = dist[c]!; if (d !== DIST_UNKNOWN && d < bestD) { bestD = d; best = c; } }
+    if (pE) {
+      c = cell + 1;
+      d = dist[c]!;
+      if (d !== DIST_UNKNOWN && d < bestD) {
+        bestD = d;
+        best = c;
+      }
+    }
+    if (pW) {
+      c = cell - 1;
+      d = dist[c]!;
+      if (d !== DIST_UNKNOWN && d < bestD) {
+        bestD = d;
+        best = c;
+      }
+    }
+    if (pS) {
+      c = cell + w;
+      d = dist[c]!;
+      if (d !== DIST_UNKNOWN && d < bestD) {
+        bestD = d;
+        best = c;
+      }
+    }
+    if (pN) {
+      c = cell - w;
+      d = dist[c]!;
+      if (d !== DIST_UNKNOWN && d < bestD) {
+        bestD = d;
+        best = c;
+      }
+    }
+    if (pE && pS && pass[cell + w + 1] === 1) {
+      c = cell + w + 1;
+      d = dist[c]!;
+      if (d !== DIST_UNKNOWN && d < bestD) {
+        bestD = d;
+        best = c;
+      }
+    }
+    if (pW && pS && pass[cell + w - 1] === 1) {
+      c = cell + w - 1;
+      d = dist[c]!;
+      if (d !== DIST_UNKNOWN && d < bestD) {
+        bestD = d;
+        best = c;
+      }
+    }
+    if (pE && pN && pass[cell - w + 1] === 1) {
+      c = cell - w + 1;
+      d = dist[c]!;
+      if (d !== DIST_UNKNOWN && d < bestD) {
+        bestD = d;
+        best = c;
+      }
+    }
+    if (pW && pN && pass[cell - w - 1] === 1) {
+      c = cell - w - 1;
+      d = dist[c]!;
+      if (d !== DIST_UNKNOWN && d < bestD) {
+        bestD = d;
+        best = c;
+      }
+    }
     return best;
   }
 }

@@ -22,12 +22,25 @@ import {
   workRate,
 } from '../effects.js';
 import { heroSystem } from './hero.js';
-import { PROGRESS_ONE, applyUnitType, completeBuilding, createUnit, siteHpAt, takeFromNode } from '../entities.js';
+import {
+  PROGRESS_ONE,
+  applyUnitType,
+  completeBuilding,
+  createUnit,
+  siteHpAt,
+  takeFromNode,
+} from '../entities.js';
 import { imod } from '../math/int.js';
 import type { Census } from './census.js';
 import { takeCensus } from './census.js';
 import type { SimContext } from './common.js';
-import { cellCenterOf, nearestOwnBuilding, nodeAllowed, nthFreeCellAround, withinReach } from './common.js';
+import {
+  cellCenterOf,
+  nearestOwnBuilding,
+  nodeAllowed,
+  nthFreeCellAround,
+  withinReach,
+} from './common.js';
 import { DEPOT_MASK } from './orders.js';
 
 // Systeem 6: economie. Verzamelen (een rit duurt gatherTicks en levert gatherAmount), afleveren bij een depot,
@@ -48,7 +61,8 @@ export function economySystem(ctx: SimContext, census: Census): void {
     else if (type === ORDER_BUILD) buildWork(ctx, i, reach);
     else if (type === ORDER_CRAFT) craftWork(ctx, i);
   }
-  for (let i = 0; i < w.highWater; i++) if (w.research[i] !== 0 && w.has(i, C.building)) researchWork(ctx, i);
+  for (let i = 0; i < w.highWater; i++)
+    if (w.research[i] !== 0 && w.has(i, C.building)) researchWork(ctx, i);
   takeCensus(ctx, census);
   for (let p = 0; p < ctx.playerCount; p++) growth(ctx, census, p);
   heroSystem(ctx, census);
@@ -64,7 +78,9 @@ function researchWork(ctx: SimContext, i: number): void {
     return;
   }
   const intel = liveHeroBonus(ctx, p, SPECIAL_I, ctx.config.special.intelligenceResearchPermille);
-  w.work[i] = w.work[i]! + workRate(PROGRESS_ONE, effectSum(ctx, p, STAT_RESEARCH_TIME, w.typeId[i]!, false) + intel);
+  w.work[i] =
+    w.work[i]! +
+    workRate(PROGRESS_ONE, effectSum(ctx, p, STAT_RESEARCH_TIME, w.typeId[i]!, false) + intel);
   if (w.work[i]! < t.researchTicks * PROGRESS_ONE) return;
   w.research[i] = 0;
   w.work[i] = 0;
@@ -78,7 +94,13 @@ function gatherWork(ctx: SimContext, i: number, reach: number): void {
   if (t === undefined) return;
   if (w.phase[i] === PHASE_WORK) {
     const node = w.resolve(w.ordT[w.currentOrder(i)]!);
-    if (node < 0 || !w.has(node, C.resource) || !withinReach(w, i, node, reach) || !nodeAllowed(ctx, node, w.owner[i]!)) return;
+    if (
+      node < 0 ||
+      !w.has(node, C.resource) ||
+      !withinReach(w, i, node, reach) ||
+      !nodeAllowed(ctx, node, w.owner[i]!)
+    )
+      return;
     w.work[i] = w.work[i]! + 1;
     if (w.work[i]! < t.gatherTicks) return;
     const want = gatherAmountOf(ctx, i) - w.carry[i]!;
@@ -99,12 +121,16 @@ function buildWork(ctx: SimContext, i: number, reach: number): void {
   const w = ctx.world;
   if (w.phase[i] !== PHASE_WORK) return;
   const b = w.resolve(w.ordT[w.currentOrder(i)]!);
-  if (b < 0 || !w.has(b, C.building) || w.bstate[b] !== BSTATE_SITE || !withinReach(w, i, b, reach)) return;
+  if (b < 0 || !w.has(b, C.building) || w.bstate[b] !== BSTATE_SITE || !withinReach(w, i, b, reach))
+    return;
   const bt = ctx.buildingType(w.typeId[b]!);
   if (bt === undefined) return;
   const total = bt.buildTicks * PROGRESS_ONE;
   const p0 = w.progress[b]!;
-  const rate = workRate(PROGRESS_ONE, effectSum(ctx, w.owner[i]!, STAT_BUILD_TIME, w.typeId[i]!, false));
+  const rate = workRate(
+    PROGRESS_ONE,
+    effectSum(ctx, w.owner[i]!, STAT_BUILD_TIME, w.typeId[i]!, false),
+  );
   const p1 = p0 + rate < total ? p0 + rate : total;
   w.hp[b] = w.hp[b]! + siteHpAt(w.maxHp[b]!, total, p1) - siteHpAt(w.maxHp[b]!, total, p0);
   w.progress[b] = p1;
@@ -137,7 +163,12 @@ function growth(ctx: SimContext, census: Census, p: number): void {
   const hq = census.hq[p]!;
   const faction = ctx.config.factions[ctx.players[p]!.factionId]!;
   const settler = faction.settlerTypeId === 0 ? undefined : ctx.unitType(faction.settlerTypeId);
-  if (ps.defeated[p] !== 0 || hq < 0 || settler === undefined || census.pop[p]! + settler.popCost > census.popCap(ctx, p)) {
+  if (
+    ps.defeated[p] !== 0 ||
+    hq < 0 ||
+    settler === undefined ||
+    census.pop[p]! + settler.popCost > census.popCap(ctx, p)
+  ) {
     ps.growth[p] = 0; // geen bed, geen groei (en niets opsparen)
     return;
   }
@@ -148,7 +179,14 @@ function growth(ctx: SimContext, census: Census, p: number): void {
   if (ps.growth[p]! < tpm) return;
   ps.growth[p] = ps.growth[p]! - tpm;
   const w = ctx.world;
-  const c = nthFreeCellAround(ctx, w.fx[hq]!, w.fy[hq]!, w.fw[hq]!, w.fh[hq]!, imod(ctx.frame, SPAWN_SPREAD));
+  const c = nthFreeCellAround(
+    ctx,
+    w.fx[hq]!,
+    w.fy[hq]!,
+    w.fw[hq]!,
+    w.fh[hq]!,
+    imod(ctx.frame, SPAWN_SPREAD),
+  );
   if (c < 0) return;
   const at = cellCenterOf(ctx.map, c);
   createUnit(ctx, settler, p, at.x, at.y, 0);

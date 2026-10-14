@@ -16,7 +16,8 @@ export function parseReplay(json: unknown): Replay {
 /** Omgeving van een replay; gooit als de replay voor andere data is of de map niet bestaat. */
 export function replayEnv(r: Replay): SimEnv {
   const { data } = gameData();
-  if (data.dataVersion !== r.dataVersion) throw new Error(`replay is voor data ${r.dataVersion}, data/VERSION is ${data.dataVersion}`);
+  if (data.dataVersion !== r.dataVersion)
+    throw new Error(`replay is voor data ${r.dataVersion}, data/VERSION is ${data.dataVersion}`);
   return buildEnv(r.map, r.players, r.settings);
 }
 

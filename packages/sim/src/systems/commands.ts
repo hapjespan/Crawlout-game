@@ -22,7 +22,16 @@ import { applyHeroAbility, applyPickPerk, applyRecruit, cancelRevive } from './h
 import { idiv, isInt } from '../math/int.js';
 import { isqrt } from '../math/sqrt.js';
 import type { SimContext } from './common.js';
-import { WIN_SURRENDER, cellCenterOf, distToRect2, inMap, isEnemy, scanRing, steerToPoint, stopMoving } from './common.js';
+import {
+  WIN_SURRENDER,
+  cellCenterOf,
+  distToRect2,
+  inMap,
+  isEnemy,
+  scanRing,
+  steerToPoint,
+  stopMoving,
+} from './common.js';
 
 // Systeem 1: commando's van deze tick toepassen. Volgorde: playerId, dan seq, dan positie in de bundel.
 // De zod-validatie gebeurt eenmalig bij binnenkomst (normalizeCommand, vanuit Sim.applyBundle); hier alleen
@@ -31,7 +40,12 @@ import { WIN_SURRENDER, cellCenterOf, distToRect2, inMap, isEnemy, scanRing, ste
 
 /** Een gevalideerd commando: payload past bij het type. */
 export type SimCommand = {
-  [K in CommandType]: { readonly playerId: number; readonly seq: number; readonly type: K; readonly payload: CommandPayload<K> };
+  [K in CommandType]: {
+    readonly playerId: number;
+    readonly seq: number;
+    readonly type: K;
+    readonly payload: CommandPayload<K>;
+  };
 }[CommandType];
 
 /** zod-validatie van een commando uit een bundel. null als het niet aan contract 2 voldoet. */
@@ -40,7 +54,12 @@ export function normalizeCommand(raw: unknown): SimCommand | null {
   if (!env.success) return null;
   const payload = COMMAND_PAYLOADS[env.data.type].safeParse(env.data.payload);
   if (!payload.success) return null;
-  return { playerId: env.data.playerId, seq: env.data.seq, type: env.data.type, payload: payload.data } as SimCommand;
+  return {
+    playerId: env.data.playerId,
+    seq: env.data.seq,
+    type: env.data.type,
+    payload: payload.data,
+  } as SimCommand;
 }
 
 export function applyCommands(ctx: SimContext, cmds: readonly SimCommand[]): void {
@@ -77,7 +96,12 @@ export function applyCommand(ctx: SimContext, cmd: SimCommand): boolean {
     case 'Cancel':
       return applyCancel(ctx, p, cmd.payload.ids);
     case 'SetRole':
-      return applyCraftTo(ctx, p, cmd.payload.ids, (_i, factionRoles) => factionRoles[ROLES.indexOf(cmd.payload.role)] ?? 0);
+      return applyCraftTo(
+        ctx,
+        p,
+        cmd.payload.ids,
+        (_i, factionRoles) => factionRoles[ROLES.indexOf(cmd.payload.role)] ?? 0,
+      );
     case 'Craft':
       return applyCraft(ctx, p, cmd.payload);
     case 'Claim':
@@ -100,7 +124,12 @@ export function applyCommand(ctx: SimContext, cmd: SimCommand): boolean {
 }
 
 /** Indices van levende entities met deze ids die van `playerId` zijn en `needMask` hebben, zonder dubbelen. */
-function ownedWith(ctx: SimContext, ids: readonly number[], playerId: number, needMask: number): number[] {
+function ownedWith(
+  ctx: SimContext,
+  ids: readonly number[],
+  playerId: number,
+  needMask: number,
+): number[] {
   const w = ctx.world;
   const out: number[] = [];
   for (const id of ids) {
@@ -125,14 +154,22 @@ function refundCraft(ctx: SimContext, i: number): void {
   const w = ctx.world;
   if (w.orderType(i) !== ORDER_CRAFT || w.phase[i] !== PHASE_CRAFT) return;
   const t = ctx.unitType(w.ordX[w.currentOrder(i)]!);
-  if (t !== undefined) ctx.ps.scrap[w.owner[i]!] = ctx.ps.scrap[w.owner[i]!]! + refundOf(ctx, t.scrapCost);
+  if (t !== undefined)
+    ctx.ps.scrap[w.owner[i]!] = ctx.ps.scrap[w.owner[i]!]! + refundOf(ctx, t.scrapCost);
 }
 
 /**
  * Nieuwe order die de huidige vervangt. Een bevel heft een eerdere Stop op (`buildHold`); de onthouden bouwplaats
  * (`resumeSite`) blijft staan, zodat een bouwer na bijvoorbeeld een Move zonder taak weer verder bouwt.
  */
-function replaceOrder(ctx: SimContext, i: number, type: number, x: number, y: number, t: number): void {
+function replaceOrder(
+  ctx: SimContext,
+  i: number,
+  type: number,
+  x: number,
+  y: number,
+  t: number,
+): void {
   const w = ctx.world;
   refundCraft(ctx, i);
   w.clearOrders(i);
@@ -141,7 +178,14 @@ function replaceOrder(ctx: SimContext, i: number, type: number, x: number, y: nu
   w.pushOrder(i, type, x, y, t);
 }
 
-function applyMove(ctx: SimContext, p: number, ids: readonly number[], x: number, y: number, attack: boolean): boolean {
+function applyMove(
+  ctx: SimContext,
+  p: number,
+  ids: readonly number[],
+  x: number,
+  y: number,
+  attack: boolean,
+): boolean {
   if (!isInt(x) || !isInt(y) || !inMap(ctx.map, x, y)) return false;
   const units = ownedWith(ctx, ids, p, attack ? UNIT | C.combat : UNIT);
   if (units.length === 0) return false;
@@ -162,7 +206,8 @@ function applyMove(ctx: SimContext, p: number, ids: readonly number[], x: number
 function applyAttack(ctx: SimContext, p: number, pl: CommandPayload<'Attack'>): boolean {
   const w = ctx.world;
   const t = isInt(pl.target) ? w.resolve(pl.target) : -1;
-  if (t < 0 || !w.has(t, C.health) || w.owner[t] === p || w.owner[t] === OWNER_NEUTRAL) return false;
+  if (t < 0 || !w.has(t, C.health) || w.owner[t] === p || w.owner[t] === OWNER_NEUTRAL)
+    return false;
   let any = false;
   for (const i of ownedWith(ctx, pl.ids, p, UNIT | C.combat)) {
     if (w.damage[i]! <= 0 || !isEnemy(w, i, t)) continue;
@@ -211,7 +256,11 @@ function applyGather(ctx: SimContext, p: number, pl: CommandPayload<'Gather'>): 
 export function canPlaceType(ctx: SimContext, p: number, typeId: number): boolean {
   const bt = ctx.buildingType(typeId);
   if (bt === undefined) return false;
-  return bt.factionId === ctx.players[p]!.factionId && (bt.provides & PROVIDES_HQ) === 0 && hasTechs(ctx, p, bt.prereqTech);
+  return (
+    bt.factionId === ctx.players[p]!.factionId &&
+    (bt.provides & PROVIDES_HQ) === 0 &&
+    hasTechs(ctx, p, bt.prereqTech)
+  );
 }
 
 /**
@@ -222,7 +271,8 @@ export function canPlaceType(ctx: SimContext, p: number, typeId: number): boolea
  */
 function applyBuild(ctx: SimContext, p: number, pl: CommandPayload<'Build'>): boolean {
   const w = ctx.world;
-  if (!isInt(pl.typeId) || !isInt(pl.x) || !isInt(pl.y) || !inMap(ctx.map, pl.x, pl.y)) return false;
+  if (!isInt(pl.typeId) || !isInt(pl.x) || !isInt(pl.y) || !inMap(ctx.map, pl.x, pl.y))
+    return false;
   const builders = ownedWith(ctx, pl.ids, p, UNIT).filter((i) => w.role[i] === ROLE_BUILDER);
   if (builders.length === 0) return false;
   const bt = ctx.buildingType(pl.typeId);
@@ -250,7 +300,13 @@ function ownSiteAt(ctx: SimContext, p: number, typeId: number, fx: number, fy: n
   const w = ctx.world;
   if (fx < 0 || fy < 0 || fx >= ctx.map.w || fy >= ctx.map.h) return -1;
   const b = ctx.terrain.occ[fy * ctx.map.w + fx]! - 1;
-  const isSameSite = b >= 0 && w.owner[b] === p && w.typeId[b] === typeId && w.bstate[b] === BSTATE_SITE && w.fx[b] === fx && w.fy[b] === fy;
+  const isSameSite =
+    b >= 0 &&
+    w.owner[b] === p &&
+    w.typeId[b] === typeId &&
+    w.bstate[b] === BSTATE_SITE &&
+    w.fx[b] === fx &&
+    w.fy[b] === fy;
   return isSameSite ? b : -1;
 }
 
@@ -290,13 +346,24 @@ function applyCancel(ctx: SimContext, p: number, ids: readonly number[]): boolea
 function applyResearch(ctx: SimContext, p: number, techId: number): boolean {
   const t = isInt(techId) ? ctx.config.techs[techId] : undefined;
   if (t === undefined || t.factionId !== ctx.players[p]!.factionId) return false;
-  if (hasTechs(ctx, p, [t.techId]) || !hasTechs(ctx, p, t.prereqTech) || ctx.ps.scrap[p]! < t.scrapCost) return false;
+  if (
+    hasTechs(ctx, p, [t.techId]) ||
+    !hasTechs(ctx, p, t.prereqTech) ||
+    ctx.ps.scrap[p]! < t.scrapCost
+  )
+    return false;
   const w = ctx.world;
   let lab = -1;
   for (let i = 0; i < w.highWater; i++) {
     if (!w.has(i, C.building) || w.owner[i] !== p) continue;
     if (w.research[i] === t.techId + 1) return false; // al in onderzoek
-    if (lab < 0 && w.typeId[i] === t.buildingTypeId && w.bstate[i] === BSTATE_DONE && w.research[i] === 0) lab = i;
+    if (
+      lab < 0 &&
+      w.typeId[i] === t.buildingTypeId &&
+      w.bstate[i] === BSTATE_DONE &&
+      w.research[i] === 0
+    )
+      lab = i;
   }
   if (lab < 0) return false;
   ctx.ps.scrap[p] = ctx.ps.scrap[p]! - t.scrapCost;
@@ -306,7 +373,12 @@ function applyResearch(ctx: SimContext, p: number, techId: number): boolean {
 }
 
 /** Omscholen in de werkplaats naar het type dat `pick` per unit kiest (0 = niet). */
-function applyCraftTo(ctx: SimContext, p: number, ids: readonly number[], pick: (i: number, factionRoles: readonly number[]) => number): boolean {
+function applyCraftTo(
+  ctx: SimContext,
+  p: number,
+  ids: readonly number[],
+  pick: (i: number, factionRoles: readonly number[]) => number,
+): boolean {
   const w = ctx.world;
   const roles = ctx.config.factions[ctx.players[p]!.factionId]!.roleTypeIds;
   let any = false;
@@ -314,7 +386,12 @@ function applyCraftTo(ctx: SimContext, p: number, ids: readonly number[], pick: 
     if (w.has(i, C.hero)) continue; // de held schoolt niet om
     const typeId = pick(i, roles);
     const t = typeId === 0 ? undefined : ctx.unitType(typeId);
-    if (t === undefined || t.factionId !== ctx.players[p]!.factionId || !hasTechs(ctx, p, t.prereqTech)) continue;
+    if (
+      t === undefined ||
+      t.factionId !== ctx.players[p]!.factionId ||
+      !hasTechs(ctx, p, t.prereqTech)
+    )
+      continue;
     if (t.typeId === w.typeId[i]) continue;
     if (w.orderType(i) === ORDER_CRAFT && w.ordX[w.currentOrder(i)] === t.typeId) continue; // al onderweg
     replaceOrder(ctx, i, ORDER_CRAFT, t.typeId, 0, 0);
@@ -324,7 +401,8 @@ function applyCraftTo(ctx: SimContext, p: number, ids: readonly number[], pick: 
 }
 
 function applyCraft(ctx: SimContext, p: number, pl: CommandPayload<'Craft'>): boolean {
-  if (!isInt(pl.loadoutId) || pl.loadoutId < 0 || pl.loadoutId >= HERO_TYPE_BASE - UNIT_TYPE_BASE) return false;
+  if (!isInt(pl.loadoutId) || pl.loadoutId < 0 || pl.loadoutId >= HERO_TYPE_BASE - UNIT_TYPE_BASE)
+    return false;
   const typeId = unitTypeId(pl.loadoutId);
   return applyCraftTo(ctx, p, pl.ids, () => typeId);
 }
@@ -347,7 +425,8 @@ function applyClaim(ctx: SimContext, p: number, pl: CommandPayload<'Claim'>): bo
   for (let b = 0; b < w.highWater; b++) {
     if (!w.has(b, C.building) || w.owner[b] !== p || w.bstate[b] !== BSTATE_SITE) continue;
     const st = ctx.buildingType(w.typeId[b]!);
-    if (st === undefined || (st.provides & PROVIDES_CLAIM) === 0 || !inClaimRadius(ctx, b, point)) continue;
+    if (st === undefined || (st.provides & PROVIDES_CLAIM) === 0 || !inClaimRadius(ctx, b, point))
+      continue;
     return applyBuild(ctx, p, { ids: pl.ids, typeId: st.typeId, x: w.x[b]!, y: w.y[b]! });
   }
   if (w.owner[point] === p) return false;
@@ -357,7 +436,12 @@ function applyClaim(ctx: SimContext, p: number, pl: CommandPayload<'Claim'>): bo
 }
 
 /** Midden (in eenheden) van de vrije footprint w x h het dichtst bij claimpunt pt binnen claimRadius, of null. */
-export function claimSite(ctx: SimContext, pt: number, fw: number, fh: number): { x: number; y: number } | null {
+export function claimSite(
+  ctx: SimContext,
+  pt: number,
+  fw: number,
+  fh: number,
+): { x: number; y: number } | null {
   const w = ctx.world;
   const map = ctx.map;
   const px = w.x[pt]!;
@@ -370,7 +454,8 @@ export function claimSite(ctx: SimContext, pt: number, fw: number, fh: number): 
     scanRing(map, px >> 8, py >> 8, 1, 1, d, (cx, cy) => {
       const fx = cx - (fw >> 1);
       const fy = cy - (fh >> 1);
-      if (distToRect2(px, py, fx, fy, fw, fh) > r * r || !footprintFree(ctx, fx, fy, fw, fh)) return false;
+      if (distToRect2(px, py, fx, fy, fw, fh) > r * r || !footprintFree(ctx, fx, fy, fw, fh))
+        return false;
       for (let j = 0; j < w.highWater; j++) {
         if (!w.has(j, C.resource) && !w.has(j, C.claim)) continue;
         if (distToRect2(w.x[j]!, w.y[j]!, fx, fy, fw, fh) === 0) return false;

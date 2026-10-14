@@ -12,7 +12,8 @@ import type { GlobalState, PlayerState } from './systems/common.js';
 // Byte-volgorde: de chunks zijn views op typed arrays en dus platform-endian. Alle doelplatforms
 // (x86, ARM in browsers en Node) zijn little-endian; het formaat is daarmee little-endian. De assert hieronder
 // laat een big-endian platform meteen bij het laden falen in plaats van stil andere hashes te geven.
-if (new Uint8Array(new Uint16Array([1]).buffer)[0] !== 1) throw new Error('sim: big-endian platform; state en hash vereisen little-endian');
+if (new Uint8Array(new Uint16Array([1]).buffer)[0] !== 1)
+  throw new Error('sim: big-endian platform; state en hash vereisen little-endian');
 
 export const STATE_MAGIC = 0x4c575243; // 'CRWL' als little-endian bytes
 export const STATE_FORMAT_VERSION = 5;
@@ -56,8 +57,10 @@ export class StateHeader {
   }
 }
 
-const bytesOf = (a: Uint8Array | Uint16Array | Uint32Array | Int32Array, elements: number): Uint8Array =>
-  new Uint8Array(a.buffer, a.byteOffset, elements * a.BYTES_PER_ELEMENT);
+const bytesOf = (
+  a: Uint8Array | Uint16Array | Uint32Array | Int32Array,
+  elements: number,
+): Uint8Array => new Uint8Array(a.buffer, a.byteOffset, elements * a.BYTES_PER_ELEMENT);
 
 /** Alles behalve de header: entities, flow fields, spelers en globale state. */
 export interface StateParts {
@@ -72,9 +75,29 @@ function bodyChunks(p: StateParts): Uint8Array[] {
   const { world: w, flow: ff, ps } = p;
   const out: Uint8Array[] = [bytesOf(w.freeStack, w.freeCount)];
   for (const s of w.stateArrays) out.push(bytesOf(s.array, w.highWater * s.perEntity));
-  for (const a of [ff.active, ff.tx0, ff.ty0, ff.tw, ff.th, ff.processed]) out.push(bytesOf(a, MAX_FLOW_FIELDS));
-  const players = [ps.scrap, ps.growth, ps.domTicks, ps.defeated, ps.hadHq, ps.aiBuild, ps.aiAttack, ps.aiWaveAt, ps.tech];
-  players.push(ps.heroState, ps.heroEnt, ps.heroLevel, ps.heroXp, ps.heroPerks, ps.heroPending, ps.heroRevives, ps.heroTimer);
+  for (const a of [ff.active, ff.tx0, ff.ty0, ff.tw, ff.th, ff.processed])
+    out.push(bytesOf(a, MAX_FLOW_FIELDS));
+  const players = [
+    ps.scrap,
+    ps.growth,
+    ps.domTicks,
+    ps.defeated,
+    ps.hadHq,
+    ps.aiBuild,
+    ps.aiAttack,
+    ps.aiWaveAt,
+    ps.tech,
+  ];
+  players.push(
+    ps.heroState,
+    ps.heroEnt,
+    ps.heroLevel,
+    ps.heroXp,
+    ps.heroPerks,
+    ps.heroPending,
+    ps.heroRevives,
+    ps.heroTimer,
+  );
   players.push(ps.abCooldown, ps.zoneX, ps.zoneY, ps.zoneTicks);
   for (const a of players) out.push(bytesOf(a, a.length));
   out.push(bytesOf(p.globals.words, p.globals.words.length));
@@ -107,7 +130,11 @@ export function serializeState(header: StateHeader, p: StateParts, s: StateScala
  * Leest een geserialiseerde state in verse StateParts (alles nul). Controleert magic, versie,
  * capaciteiten en envHash. Geeft de scalars terug; afgeleide data (flow-field-velden, refcounts) bouwt de aanroeper op.
  */
-export function deserializeState(buf: ArrayBuffer, p: StateParts, expectedEnvHash: number): StateScalars {
+export function deserializeState(
+  buf: ArrayBuffer,
+  p: StateParts,
+  expectedEnvHash: number,
+): StateScalars {
   const w = p.world;
   const src = new Uint8Array(buf);
   const header = new StateHeader();
@@ -115,12 +142,16 @@ export function deserializeState(buf: ArrayBuffer, p: StateParts, expectedEnvHas
   header.bytes.set(src.subarray(0, header.bytes.length));
   const h = header.words;
   if (h[H.magic] !== STATE_MAGIC) throw new Error('state: geen Crawlout-state (magic klopt niet)');
-  if (h[H.version] !== STATE_FORMAT_VERSION) throw new Error(`state: formatversie ${h[H.version]}, verwacht ${STATE_FORMAT_VERSION}`);
-  if (h[H.maxEntities] !== MAX_ENTITIES || h[H.maxFlowFields] !== MAX_FLOW_FIELDS) throw new Error('state: andere capaciteiten');
-  if (h[H.envHash] !== expectedEnvHash) throw new Error('state: andere data, config of map (envHash klopt niet)');
+  if (h[H.version] !== STATE_FORMAT_VERSION)
+    throw new Error(`state: formatversie ${h[H.version]}, verwacht ${STATE_FORMAT_VERSION}`);
+  if (h[H.maxEntities] !== MAX_ENTITIES || h[H.maxFlowFields] !== MAX_FLOW_FIELDS)
+    throw new Error('state: andere capaciteiten');
+  if (h[H.envHash] !== expectedEnvHash)
+    throw new Error('state: andere data, config of map (envHash klopt niet)');
   const highWater = h[H.highWater]!;
   const freeCount = h[H.freeCount]!;
-  if (highWater > MAX_ENTITIES || freeCount > highWater) throw new Error('state: highWater of freeCount buiten bereik');
+  if (highWater > MAX_ENTITIES || freeCount > highWater)
+    throw new Error('state: highWater of freeCount buiten bereik');
   w.highWater = highWater;
   w.freeCount = freeCount;
 

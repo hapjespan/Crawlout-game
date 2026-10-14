@@ -4,12 +4,18 @@ import type { SimMap, SimPlayer } from './config.js';
 // (simConfigFromGameData), de maps voor replays uit data/maps via packages/map. Dominantie en voorraden hier zijn
 // alleen testgetallen voor deze kunstmaps.
 
-const cc = (cx: number, cy: number): { x: number; y: number } => ({ x: (cx << 8) + 128, y: (cy << 8) + 128 });
+const cc = (cx: number, cy: number): { x: number; y: number } => ({
+  x: (cx << 8) + 128,
+  y: (cy << 8) + 128,
+});
 
 /** Positie in eenheden van het midden van cel (cx, cy). */
 export const cellCenter = cc;
 
-function features(w: number, h: number): Pick<SimMap, 'spawns' | 'scrapNodes' | 'claimPoints' | 'dominance'> {
+function features(
+  w: number,
+  h: number,
+): Pick<SimMap, 'spawns' | 'scrapNodes' | 'claimPoints' | 'dominance'> {
   return {
     spawns: [cc(8, 8), cc(w - 9, h - 9)],
     scrapNodes: [
@@ -46,7 +52,8 @@ export function createTestMap(w = 64, h = 64): SimMap {
 export function createOpenMap(w = 128, h = 128): SimMap {
   const passable = new Uint8Array(w * h);
   for (let y = 0; y < h; y++) {
-    for (let x = 0; x < w; x++) passable[y * w + x] = x === 0 || y === 0 || x === w - 1 || y === h - 1 ? 0 : 1;
+    for (let x = 0; x < w; x++)
+      passable[y * w + x] = x === 0 || y === 0 || x === w - 1 || y === h - 1 ? 0 : 1;
   }
   return { w, h, passable, ...features(w, h) };
 }

@@ -105,7 +105,8 @@ export class Terrain {
     this.walk.set(this.map.passable);
     this.occ.fill(0);
     for (let i = 0; i < world.highWater; i++) {
-      if (world.has(i, C.building)) this.setRect(i, world.fx[i]!, world.fy[i]!, world.fw[i]!, world.fh[i]!, true);
+      if (world.has(i, C.building))
+        this.setRect(i, world.fx[i]!, world.fy[i]!, world.fw[i]!, world.fh[i]!, true);
     }
   }
 }
@@ -146,9 +147,11 @@ export function setFlowField(ctx: SimContext, i: number, slot: number): void {
 /** Cel-index voor een positie in eenheden (moet binnen de map liggen). */
 export const cellAt = (map: SimMap, x: number, y: number): number => (y >> 8) * map.w + (x >> 8);
 
-export const inMap = (map: SimMap, x: number, y: number): boolean => x >= 0 && y >= 0 && x < map.w << 8 && y < map.h << 8;
+export const inMap = (map: SimMap, x: number, y: number): boolean =>
+  x >= 0 && y >= 0 && x < map.w << 8 && y < map.h << 8;
 
-export const walkableAt = (ctx: SimContext, x: number, y: number): boolean => ctx.terrain.walk[cellAt(ctx.map, x, y)] === 1;
+export const walkableAt = (ctx: SimContext, x: number, y: number): boolean =>
+  ctx.terrain.walk[cellAt(ctx.map, x, y)] === 1;
 
 /** Geometrie: een achtervolgde unit krijgt pas een nieuw flow field als hij zoveel cellen van het oude doel is. */
 export const CHASE_REPATH_CELLS = 4;
@@ -157,7 +160,18 @@ export const CHASE_REPATH_CELLS = 4;
  * Laat unit i naar (x, y) lopen via het flow field naar de doelrechthoek (cellen). arriveR is de aankomstafstand;
  * groupR > 0 zet de contactregel voor groeps-Moves aan. Een veld met hetzelfde doel wordt hergebruikt.
  */
-export function steerTo(ctx: SimContext, i: number, x: number, y: number, rx: number, ry: number, rw: number, rh: number, arriveR: number, groupR: number): void {
+export function steerTo(
+  ctx: SimContext,
+  i: number,
+  x: number,
+  y: number,
+  rx: number,
+  ry: number,
+  rw: number,
+  rh: number,
+  arriveR: number,
+  groupR: number,
+): void {
   const w = ctx.world;
   w.mvOn[i] = 1;
   w.goalX[i] = x;
@@ -170,7 +184,14 @@ export function steerTo(ctx: SimContext, i: number, x: number, y: number, rx: nu
 }
 
 /** Naar een punt in de map: de cel als doelrechthoek, of de footprint van het gebouw dat op die cel staat. */
-export function steerToPoint(ctx: SimContext, i: number, x: number, y: number, arriveR: number, groupR: number): void {
+export function steerToPoint(
+  ctx: SimContext,
+  i: number,
+  x: number,
+  y: number,
+  arriveR: number,
+  groupR: number,
+): void {
   const b = ctx.terrain.occ[cellAt(ctx.map, x, y)]! - 1;
   const w = ctx.world;
   if (b >= 0) steerTo(ctx, i, x, y, w.fx[b]!, w.fy[b]!, w.fw[b]!, w.fh[b]!, arriveR, groupR);
@@ -184,7 +205,12 @@ export function steerChase(ctx: SimContext, i: number, x: number, y: number): vo
   if (f !== NO_FIELD && w.mvOn[i] === 1 && ctx.flow.tw[f] === 1 && ctx.flow.th[f] === 1) {
     const dx = ctx.flow.tx0[f]! - (x >> 8);
     const dy = ctx.flow.ty0[f]! - (y >> 8);
-    if (dx <= CHASE_REPATH_CELLS && -dx <= CHASE_REPATH_CELLS && dy <= CHASE_REPATH_CELLS && -dy <= CHASE_REPATH_CELLS) {
+    if (
+      dx <= CHASE_REPATH_CELLS &&
+      -dx <= CHASE_REPATH_CELLS &&
+      dy <= CHASE_REPATH_CELLS &&
+      -dy <= CHASE_REPATH_CELLS
+    ) {
       w.goalX[i] = x;
       w.goalY[i] = y;
       w.goalR[i] = 0;
@@ -207,7 +233,14 @@ export function stopMoving(ctx: SimContext, i: number): void {
 }
 
 /** Kwadraat van de afstand van (x, y) tot de rechthoek van cellen [fx, fx+fw) x [fy, fy+fh), in eenheden. */
-export function distToRect2(x: number, y: number, fx: number, fy: number, fw: number, fh: number): number {
+export function distToRect2(
+  x: number,
+  y: number,
+  fx: number,
+  fy: number,
+  fw: number,
+  fh: number,
+): number {
   const x0 = fx << 8;
   const y0 = fy << 8;
   const x1 = ((fx + fw) << 8) - 1;
@@ -219,7 +252,8 @@ export function distToRect2(x: number, y: number, fx: number, fy: number, fw: nu
 
 /** Of entity t binnen afstand r van unit i ligt: tot de footprint voor gebouwen, tot de rand (radius) voor units. */
 export function withinReach(w: World, i: number, t: number, r: number): boolean {
-  if ((w.mask[t]! & C.building) !== 0) return distToRect2(w.x[i]!, w.y[i]!, w.fx[t]!, w.fy[t]!, w.fw[t]!, w.fh[t]!) <= r * r;
+  if ((w.mask[t]! & C.building) !== 0)
+    return distToRect2(w.x[i]!, w.y[i]!, w.fx[t]!, w.fy[t]!, w.fw[t]!, w.fh[t]!) <= r * r;
   const dx = w.x[t]! - w.x[i]!;
   const dy = w.y[t]! - w.y[i]!;
   const rr = r + w.radius[t]!;
@@ -229,7 +263,8 @@ export function withinReach(w: World, i: number, t: number, r: number): boolean 
 /** Laat unit i naar entity t lopen: een gebouw via zijn footprint, anders via de cel van t. */
 export function steerToEntity(ctx: SimContext, i: number, t: number): void {
   const w = ctx.world;
-  if ((w.mask[t]! & C.building) !== 0) steerTo(ctx, i, w.x[t]!, w.y[t]!, w.fx[t]!, w.fy[t]!, w.fw[t]!, w.fh[t]!, 0, 0);
+  if ((w.mask[t]! & C.building) !== 0)
+    steerTo(ctx, i, w.x[t]!, w.y[t]!, w.fx[t]!, w.fy[t]!, w.fw[t]!, w.fh[t]!, 0, 0);
   else steerToPoint(ctx, i, w.x[t]!, w.y[t]!, 0, 0);
 }
 
@@ -254,7 +289,13 @@ export function dist2(w: World, i: number, j: number): number {
 }
 
 /** Dichtstbijzijnde voltooide eigen gebouw met een van de provides-bits, of -1. Tiebreak laagste index. */
-export function nearestOwnBuilding(ctx: SimContext, owner: number, x: number, y: number, providesMask: number): number {
+export function nearestOwnBuilding(
+  ctx: SimContext,
+  owner: number,
+  x: number,
+  y: number,
+  providesMask: number,
+): number {
   const w = ctx.world;
   let best = -1;
   let bestD = 0;
@@ -314,7 +355,15 @@ export function nearestNode(ctx: SimContext, p: number, x: number, y: number): n
  * Cellen op ring d (Chebyshev-afstand d >= 1) rond de rechthoek [fx, fx+fw) x [fy, fy+fh), rij voor rij, binnen
  * de map. Roept visit aan tot die true geeft; geeft dan die cel-index terug, anders -1.
  */
-export function scanRing(map: SimMap, fx: number, fy: number, fw: number, fh: number, d: number, visit: (cx: number, cy: number) => boolean): number {
+export function scanRing(
+  map: SimMap,
+  fx: number,
+  fy: number,
+  fw: number,
+  fh: number,
+  d: number,
+  visit: (cx: number, cy: number) => boolean,
+): number {
   const x0 = fx - d;
   const y0 = fy - d;
   const x1 = fx + fw - 1 + d;
@@ -334,7 +383,15 @@ export function scanRing(map: SimMap, fx: number, fy: number, fw: number, fh: nu
 export const MAX_FREE_RING = 24;
 
 /** De vrije (begaanbare) cel rond een rechthoek die het dichtst bij (x, y) ligt, ring voor ring. -1 als er geen is. */
-export function nearestFreeCellAround(ctx: SimContext, fx: number, fy: number, fw: number, fh: number, x: number, y: number): number {
+export function nearestFreeCellAround(
+  ctx: SimContext,
+  fx: number,
+  fy: number,
+  fw: number,
+  fh: number,
+  x: number,
+  y: number,
+): number {
   const map = ctx.map;
   for (let d = 1; d <= MAX_FREE_RING; d++) {
     let best = -1;
@@ -357,7 +414,14 @@ export function nearestFreeCellAround(ctx: SimContext, fx: number, fy: number, f
 }
 
 /** De k-de vrije cel rond een rechthoek (ring voor ring, rij voor rij). -1 als er minder zijn. */
-export function nthFreeCellAround(ctx: SimContext, fx: number, fy: number, fw: number, fh: number, k: number): number {
+export function nthFreeCellAround(
+  ctx: SimContext,
+  fx: number,
+  fy: number,
+  fw: number,
+  fh: number,
+  k: number,
+): number {
   const map = ctx.map;
   let left = k;
   for (let d = 1; d <= MAX_FREE_RING; d++) {

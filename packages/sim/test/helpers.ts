@@ -20,26 +20,54 @@ export const typeByKey = (key: string): number => {
   return CONFIG.buildingTypes.find((t) => t.buildingId === b.id)!.typeId;
 };
 
-export function testInit(seed = 1, map: SimMap = createTestMap(), players: SimPlayer[] = testPlayers(2)): SimInit {
+export function testInit(
+  seed = 1,
+  map: SimMap = createTestMap(),
+  players: SimPlayer[] = testPlayers(2),
+): SimInit {
   return { seed, players, map, config: CONFIG };
 }
 
 /** Sim zonder startopstelling (alleen de map), voor tests die zelf spawnen. */
-export function emptySim(seed = 1, map: SimMap = createTestMap(), players: SimPlayer[] = testPlayers(2)): Sim {
+export function emptySim(
+  seed = 1,
+  map: SimMap = createTestMap(),
+  players: SimPlayer[] = testPlayers(2),
+): Sim {
   return createSim(testInit(seed, map, players), { start: false });
 }
 
-export const envOf = (init: SimInit) => ({ players: init.players, map: init.map, config: init.config });
+export const envOf = (init: SimInit) => ({
+  players: init.players,
+  map: init.map,
+  config: init.config,
+});
 
 let seq = 0;
-export function cmd(frame: number, playerId: number, type: CommandEnvelope['type'], payload: unknown): CommandEnvelope {
+export function cmd(
+  frame: number,
+  playerId: number,
+  type: CommandEnvelope['type'],
+  payload: unknown,
+): CommandEnvelope {
   return { frame, playerId, seq: seq++, type, payload };
 }
 
-export const bundle = (frame: number, commands: CommandEnvelope[] = []): FrameBundle => ({ frame, commands });
+export const bundle = (frame: number, commands: CommandEnvelope[] = []): FrameBundle => ({
+  frame,
+  commands,
+});
 
 /** Spawnt een blok units van één speler rond cel (cx, cy). */
-export function spawnBlock(sim: Sim, owner: number, cx: number, cy: number, count: number, cols = 5, typeId = SCAV): number[] {
+export function spawnBlock(
+  sim: Sim,
+  owner: number,
+  cx: number,
+  cy: number,
+  count: number,
+  cols = 5,
+  typeId = SCAV,
+): number[] {
   const ids: number[] = [];
   for (let k = 0; k < count; k++) {
     const c = cellCenter(cx + (k % cols), cy + Math.floor(k / cols));
@@ -70,7 +98,11 @@ export function scriptedBundles(a: number[], b: number[]): Map<number, CommandEn
 }
 
 /** Draait `frames` ticks en geeft de hash per tick. */
-export function runFrames(sim: Sim, frames: number, script: Map<number, CommandEnvelope[]> = new Map()): number[] {
+export function runFrames(
+  sim: Sim,
+  frames: number,
+  script: Map<number, CommandEnvelope[]> = new Map(),
+): number[] {
   const out: number[] = [];
   for (let f = sim.frame; out.length < frames; f++) {
     sim.applyBundle(bundle(f, script.get(f) ?? []));

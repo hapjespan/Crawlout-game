@@ -30,7 +30,14 @@ export function applyUnitType(ctx: SimContext, i: number, t: SimUnitType): void 
 }
 
 /** Nieuwe unit op (x, y); geen controle op begaanbaarheid. Geeft de index of -1 als de wereld vol is. */
-export function createUnit(ctx: SimContext, t: SimUnitType, owner: number, x: number, y: number, yaw: number): number {
+export function createUnit(
+  ctx: SimContext,
+  t: SimUnitType,
+  owner: number,
+  x: number,
+  y: number,
+  yaw: number,
+): number {
   const w = ctx.world;
   const i = w.alloc();
   if (i < 0) return -1;
@@ -46,7 +53,13 @@ export function createUnit(ctx: SimContext, t: SimUnitType, owner: number, x: nu
 }
 
 /** Of de footprint met oorsprong (fx, fy) binnen de map ligt en volledig begaanbaar en vrij is. */
-export function footprintFree(ctx: SimContext, fx: number, fy: number, fw: number, fh: number): boolean {
+export function footprintFree(
+  ctx: SimContext,
+  fx: number,
+  fy: number,
+  fw: number,
+  fh: number,
+): boolean {
   const map = ctx.map;
   if (fx < 0 || fy < 0 || fx + fw > map.w || fy + fh > map.h) return false;
   for (let y = fy; y < fy + fh; y++) {
@@ -56,7 +69,12 @@ export function footprintFree(ctx: SimContext, fx: number, fy: number, fw: numbe
 }
 
 /** Oorsprong (linksboven, in cellen) van een footprint waarvan de cel van (x, y) het midden is. */
-export const footprintOrigin = (x: number, y: number, fw: number, fh: number): { fx: number; fy: number } => ({
+export const footprintOrigin = (
+  x: number,
+  y: number,
+  fw: number,
+  fh: number,
+): { fx: number; fy: number } => ({
   fx: (x >> 8) - (fw >> 1),
   fy: (y >> 8) - (fh >> 1),
 });
@@ -65,7 +83,14 @@ export const footprintOrigin = (x: number, y: number, fw: number, fh: number): {
  * Nieuw gebouw (bouwplaats of af) met footprint op (fx, fy). De cellen worden onbegaanbaar, units erin worden naar
  * de dichtstbijzijnde vrije cel ernaast gezet, en alle flow fields beginnen opnieuw. Controleert niets; zie footprintFree.
  */
-export function createBuilding(ctx: SimContext, bt: SimBuildingType, owner: number, fx: number, fy: number, done: boolean): number {
+export function createBuilding(
+  ctx: SimContext,
+  bt: SimBuildingType,
+  owner: number,
+  fx: number,
+  fy: number,
+  done: boolean,
+): number {
   const w = ctx.world;
   const i = w.alloc();
   if (i < 0) return -1;

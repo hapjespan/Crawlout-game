@@ -21,7 +21,12 @@ function hpPctOf(w: World, i: number): number {
  * Schrijft één snapshot volgens contract 1 (packages/protocol/src/snapshot.ts) in een nieuwe ArrayBuffer,
  * geschikt als transferable. Entities in oplopende id-volgorde, daarna de events van de laatste tick.
  */
-export function writeSnapshot(w: World, events: EventBuffer, tick: number, hash: number): ArrayBuffer {
+export function writeSnapshot(
+  w: World,
+  events: EventBuffer,
+  tick: number,
+  hash: number,
+): ArrayBuffer {
   const count = w.liveCount();
   const evCount = events.count;
   const layout = snapshotLayout(count, evCount);

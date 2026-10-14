@@ -38,10 +38,18 @@ function buildTable(): Int32Array {
   for (let k = 0; k < TRIG_STEPS; k++) {
     const r = k & (QUARTER - 1);
     switch (k >> 8) {
-      case 0: t[k] = q[r]!; break;
-      case 1: t[k] = q[QUARTER - r]!; break;
-      case 2: t[k] = -q[r]!; break;
-      default: t[k] = -q[QUARTER - r]!; break;
+      case 0:
+        t[k] = q[r]!;
+        break;
+      case 1:
+        t[k] = q[QUARTER - r]!;
+        break;
+      case 2:
+        t[k] = -q[r]!;
+        break;
+      default:
+        t[k] = -q[QUARTER - r]!;
+        break;
     }
   }
   return t;
@@ -51,9 +59,11 @@ function buildTable(): Int32Array {
 export const SIN_TABLE: Int32Array = buildTable();
 
 /** Sinus van een uint16-hoek, schaal TRIG_ONE. Rondt af naar de dichtstbijzijnde tabelstap. */
-export const sinA = (angle: number): number => SIN_TABLE[((angle + 32) >> STEP_SHIFT) & (TRIG_STEPS - 1)]!;
+export const sinA = (angle: number): number =>
+  SIN_TABLE[((angle + 32) >> STEP_SHIFT) & (TRIG_STEPS - 1)]!;
 /** Cosinus van een uint16-hoek, schaal TRIG_ONE. */
-export const cosA = (angle: number): number => SIN_TABLE[((angle + 32 + YAW_PLUS_Y) >> STEP_SHIFT) & (TRIG_STEPS - 1)]!;
+export const cosA = (angle: number): number =>
+  SIN_TABLE[((angle + 32 + YAW_PLUS_Y) >> STEP_SHIFT) & (TRIG_STEPS - 1)]!;
 
 /**
  * Hoek van de vector (dx, dy) als uint16, zonder Math.atan2: octant-reductie plus binair zoeken in de tabel.

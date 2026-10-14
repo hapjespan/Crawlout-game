@@ -109,7 +109,9 @@ export function movementSystem(ctx: SimContext, s: MovementScratch): void {
     const dx = ax - x;
     const dy = ay - y;
     const len = isqrt(dx * dx + dy * dy);
-    const sp = ctx.auras.any ? clampI(scalePermille(w.speed[i]!, ctx.auras.speed[i]!), 0, MAX_SPEED) : w.speed[i]!;
+    const sp = ctx.auras.any
+      ? clampI(scalePermille(w.speed[i]!, ctx.auras.speed[i]!), 0, MAX_SPEED)
+      : w.speed[i]!;
     if (len === 0) continue;
     if (snap && len <= sp) {
       s.vx[i] = dx;
@@ -157,7 +159,13 @@ export function movementSystem(ctx: SimContext, s: MovementScratch): void {
           const reach = rr + slack;
           if (dx >= reach || -dx >= reach || dy >= reach || -dy >= reach) continue;
           const d2 = dx * dx + dy * dy;
-          if (movingWithGoal && d2 < reach * reach && w.mvOn[j] === 0 && w.goalX[j] === w.goalX[i] && w.goalY[j] === w.goalY[i]) {
+          if (
+            movingWithGoal &&
+            d2 < reach * reach &&
+            w.mvOn[j] === 0 &&
+            w.goalX[j] === w.goalX[i] &&
+            w.goalY[j] === w.goalY[i]
+          ) {
             s.contact[i] = 1;
           }
           if (d2 >= rr * rr || perm === 0) continue;

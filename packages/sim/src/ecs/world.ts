@@ -1,4 +1,10 @@
-import { ENTITY_GEN_BITS, ENTITY_INDEX_BITS, ENTITY_NONE, MAX_ENTITIES, OWNER_NEUTRAL } from '@crawlout/protocol';
+import {
+  ENTITY_GEN_BITS,
+  ENTITY_INDEX_BITS,
+  ENTITY_NONE,
+  MAX_ENTITIES,
+  OWNER_NEUTRAL,
+} from '@crawlout/protocol';
 
 // ECS op typed arrays (SoA), vooraf gealloceerd op MAX_ENTITIES. Geen floats.
 //
@@ -52,7 +58,8 @@ export const C = {
   hero: 1 << 11,
 } as const;
 
-if (MAX_ENTITIES > 1 << ENTITY_INDEX_BITS) throw new Error('MAX_ENTITIES past niet in de index-bits van de entity-id');
+if (MAX_ENTITIES > 1 << ENTITY_INDEX_BITS)
+  throw new Error('MAX_ENTITIES past niet in de index-bits van de entity-id');
 
 export const makeId = (index: number, gen: number): number => index * GEN_SPAN + gen;
 export const indexOf = (id: number): number => id >>> ENTITY_GEN_BITS;
@@ -267,7 +274,11 @@ export interface StateArray {
 /** Alle per-entity state-arrays in vaste volgorde. Wijzigen = formatversie omhoog en nieuwe fixtures. */
 export function entityStateArrays(w: World): readonly StateArray[] {
   const one = (name: string, array: IntArray): StateArray => ({ name, array, perEntity: 1 });
-  const ord = (name: string, array: IntArray): StateArray => ({ name, array, perEntity: ORDER_SLOTS });
+  const ord = (name: string, array: IntArray): StateArray => ({
+    name,
+    array,
+    perEntity: ORDER_SLOTS,
+  });
   return [
     one('gen', w.gen),
     one('alive', w.alive),

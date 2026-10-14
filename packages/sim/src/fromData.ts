@@ -1,6 +1,22 @@
-import { EffectStat, PROVIDES, ROLES, buildingTypeId, heroTypeId, secondsToTicks, unitTypeId } from '@crawlout/data';
+import {
+  EffectStat,
+  PROVIDES,
+  ROLES,
+  buildingTypeId,
+  heroTypeId,
+  secondsToTicks,
+  unitTypeId,
+} from '@crawlout/data';
 import type { AbilityEffectData, EffectData, GameData, LoadoutData } from '@crawlout/data';
-import type { SimAuraEffect, SimConfig, SimEffect, SimFaction, SimHero, SimMap, SimPlayer } from './config.js';
+import type {
+  SimAuraEffect,
+  SimConfig,
+  SimEffect,
+  SimFaction,
+  SimHero,
+  SimMap,
+  SimPlayer,
+} from './config.js';
 import {
   AURA_SIDE_ALLY,
   AURA_SIDE_ENEMY,
@@ -25,20 +41,37 @@ export const TARGET_HERO = 'held';
 const AURA_STATS: readonly EffectStatName[] = ['speedPct', 'damagePct'];
 
 function simAuraEffect(e: AbilityEffectData, where: string): SimAuraEffect {
-  if (!AURA_STATS.includes(e.stat)) throw new Error(`${where}: ability-effect '${e.stat}' kan de sim (nog) niet toepassen; alleen ${AURA_STATS.join(', ')}`);
-  const target = e.target === 'units' ? AURA_TARGET_UNITS : e.target === 'turrets' ? AURA_TARGET_TURRETS : AURA_TARGET_ALL;
-  return { stat: statIndex(e.stat), side: e.side === 'enemy' ? AURA_SIDE_ENEMY : AURA_SIDE_ALLY, target, delta: e.delta };
+  if (!AURA_STATS.includes(e.stat))
+    throw new Error(
+      `${where}: ability-effect '${e.stat}' kan de sim (nog) niet toepassen; alleen ${AURA_STATS.join(', ')}`,
+    );
+  const target =
+    e.target === 'units'
+      ? AURA_TARGET_UNITS
+      : e.target === 'turrets'
+        ? AURA_TARGET_TURRETS
+        : AURA_TARGET_ALL;
+  return {
+    stat: statIndex(e.stat),
+    side: e.side === 'enemy' ? AURA_SIDE_ENEMY : AURA_SIDE_ALLY,
+    target,
+    delta: e.delta,
+  };
 }
 
 /** Effect uit GameData naar SimEffect: het doel wordt alles, de held, of één unit- of gebouwtype. Gooit bij een onbekend doel. */
 function simEffect(data: GameData, e: EffectData, where: string): SimEffect {
   const stat = statIndex(e.stat);
-  if (e.target === TARGET_ALL) return { stat, target: EFFECT_TARGET_ALL, typeId: 0, delta: e.delta };
-  if (e.target === TARGET_HERO) return { stat, target: EFFECT_TARGET_HERO, typeId: 0, delta: e.delta };
+  if (e.target === TARGET_ALL)
+    return { stat, target: EFFECT_TARGET_ALL, typeId: 0, delta: e.delta };
+  if (e.target === TARGET_HERO)
+    return { stat, target: EFFECT_TARGET_HERO, typeId: 0, delta: e.delta };
   const l = data.loadouts.find((x) => x.key === e.target);
-  if (l !== undefined) return { stat, target: EFFECT_TARGET_TYPE, typeId: unitTypeId(l.id), delta: e.delta };
+  if (l !== undefined)
+    return { stat, target: EFFECT_TARGET_TYPE, typeId: unitTypeId(l.id), delta: e.delta };
   const b = data.buildings.find((x) => x.key === e.target);
-  if (b !== undefined) return { stat, target: EFFECT_TARGET_TYPE, typeId: buildingTypeId(b.id), delta: e.delta };
+  if (b !== undefined)
+    return { stat, target: EFFECT_TARGET_TYPE, typeId: buildingTypeId(b.id), delta: e.delta };
   throw new Error(`${where}: onbekend effect-doel '${e.target}'`);
 }
 
@@ -58,7 +91,11 @@ export const PROVIDES_CLAIM = providesBit('claim');
 const ROLE_SCAVENGER = ROLES.indexOf('scavenger');
 
 /** Het loadout waar SetRole naartoe omschoolt: binnen de factie, zonder prereqTech, goedkoopste, dan laagste id. */
-function defaultLoadoutForRole(data: GameData, factionId: number, role: number): LoadoutData | undefined {
+function defaultLoadoutForRole(
+  data: GameData,
+  factionId: number,
+  role: number,
+): LoadoutData | undefined {
   let best: LoadoutData | undefined;
   for (const l of data.loadouts) {
     if (l.factionId !== factionId || l.role !== role || l.prereqTech.length > 0) continue;
@@ -73,7 +110,8 @@ export function simConfigFromGameData(data: GameData): SimConfig {
   const factions: SimFaction[] = data.factions.map((f) => {
     let hq: number | undefined;
     for (const b of data.buildings) {
-      if (hq === undefined && b.factionId === f.id && b.provides.includes(PROVIDES.indexOf('hq'))) hq = b.id;
+      if (hq === undefined && b.factionId === f.id && b.provides.includes(PROVIDES.indexOf('hq')))
+        hq = b.id;
     }
     if (hq === undefined) throw new Error(`factie ${f.key}: geen gebouw met provides hq`);
     const roleTypeIds = ROLES.map((_, role) => {
@@ -84,7 +122,12 @@ export function simConfigFromGameData(data: GameData): SimConfig {
     // Claim-commando (besluit sprint 2): het goedkoopste gebouw met provides claim dat geen hoofdgebouw is, dan laagste id.
     let claim: (typeof data.buildings)[number] | undefined;
     for (const b of data.buildings) {
-      if (b.factionId !== f.id || !b.provides.includes(PROVIDES.indexOf('claim')) || b.provides.includes(PROVIDES.indexOf('hq'))) continue;
+      if (
+        b.factionId !== f.id ||
+        !b.provides.includes(PROVIDES.indexOf('claim')) ||
+        b.provides.includes(PROVIDES.indexOf('hq'))
+      )
+        continue;
       if (claim === undefined || b.scrapCost < claim.scrapCost) claim = b;
     }
     return {
@@ -172,7 +215,11 @@ export function simConfigFromGameData(data: GameData): SimConfig {
     })),
     factions,
     aiScripts: data.aiScripts.map((a) => ({
-      buildOrder: a.buildOrder.map((o) => ({ atTick: o.atTick, typeId: buildingTypeId(o.buildingId), site: o.site })),
+      buildOrder: a.buildOrder.map((o) => ({
+        atTick: o.atTick,
+        typeId: buildingTypeId(o.buildingId),
+        site: o.site,
+      })),
       attackTimersTicks: [...a.attackTimersTicks],
       militiaPermille: a.militiaPermille,
       militiaPermilleMax: a.militiaPermilleMax,
@@ -250,8 +297,16 @@ export interface SimMapSource {
   readonly h: number;
   readonly passable: Uint8Array;
   readonly spawns: readonly { readonly ux: number; readonly uy: number }[];
-  readonly scrapNodes: readonly { readonly ux: number; readonly uy: number; readonly amount: number }[];
-  readonly claimPoints: readonly { readonly ux: number; readonly uy: number; readonly kind: string }[];
+  readonly scrapNodes: readonly {
+    readonly ux: number;
+    readonly uy: number;
+    readonly amount: number;
+  }[];
+  readonly claimPoints: readonly {
+    readonly ux: number;
+    readonly uy: number;
+    readonly kind: string;
+  }[];
   readonly dominance: { readonly pointsRequired: number; readonly ticks: number };
 }
 
@@ -276,10 +331,16 @@ export function simMapFromGrid(grid: SimMapSource): SimMap {
  * Spelers uit het start-bericht (LobbyPlayer[]) naar SimPlayer[], in playerId-volgorde. playerId moet 0..n-1 zijn:
  * spawns[i] hoort bij playerId i. Gooit bij een onbekende factie of een gat in de playerIds.
  */
-export function simPlayersFromLobby(data: GameData, players: readonly { playerId: number; faction: string; ai: boolean }[]): SimPlayer[] {
+export function simPlayersFromLobby(
+  data: GameData,
+  players: readonly { playerId: number; faction: string; ai: boolean }[],
+): SimPlayer[] {
   const sorted = [...players].sort((a, b) => a.playerId - b.playerId);
   return sorted.map((p, i) => {
-    if (p.playerId !== i) throw new Error(`playerIds moeten 0..${players.length - 1} zijn, kreeg ${p.playerId} op plek ${i}`);
+    if (p.playerId !== i)
+      throw new Error(
+        `playerIds moeten 0..${players.length - 1} zijn, kreeg ${p.playerId} op plek ${i}`,
+      );
     const f = data.factions.find((x) => x.key === p.faction);
     if (f === undefined) throw new Error(`speler ${p.playerId}: onbekende factie ${p.faction}`);
     return { factionId: f.id, ai: p.ai };

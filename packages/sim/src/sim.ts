@@ -1,8 +1,24 @@
 import type { FrameBundle, PlayerStatus, QueueItem } from '@crawlout/protocol';
 import { ENTITY_NONE, MAX_PLAYERS } from '@crawlout/protocol';
-import type { SimBuildingType, SimConfig, SimEnv, SimInit, SimMap, SimPlayer, SimUnitType } from './config.js';
+import type {
+  SimBuildingType,
+  SimConfig,
+  SimEnv,
+  SimInit,
+  SimMap,
+  SimPlayer,
+  SimUnitType,
+} from './config.js';
 import { envHash, validateEnv } from './config.js';
-import { C, NO_ENTITY, NO_FIELD, ORDER_CRAFT, PHASE_CRAFT, PHASE_WORK, World } from './ecs/world.js';
+import {
+  C,
+  NO_ENTITY,
+  NO_FIELD,
+  ORDER_CRAFT,
+  PHASE_CRAFT,
+  PHASE_WORK,
+  World,
+} from './ecs/world.js';
 import { PROGRESS_ONE, createBuilding, createUnit, footprintFree } from './entities.js';
 import { EventBuffer } from './events.js';
 import { FlowFields, MAX_FLOW_FIELDS } from './flowfield.js';
@@ -21,7 +37,18 @@ import { combatSystem } from './systems/combat.js';
 import type { SimCommand } from './systems/commands.js';
 import { applyCommands, normalizeCommand } from './systems/commands.js';
 import type { SimContext } from './systems/common.js';
-import { GlobalState, NO_WINNER, PlayerState, Terrain, WIN_DOMINANCE, WIN_SURRENDER, inMap, nearestOwnBuilding, setFlowField, walkableAt } from './systems/common.js';
+import {
+  GlobalState,
+  NO_WINNER,
+  PlayerState,
+  Terrain,
+  WIN_DOMINANCE,
+  WIN_SURRENDER,
+  inMap,
+  nearestOwnBuilding,
+  setFlowField,
+  walkableAt,
+} from './systems/common.js';
 import { economySystem } from './systems/economy.js';
 import { Auras, auraSystem, heroStatus } from './systems/hero.js';
 import { MovementScratch, movementSystem } from './systems/movement.js';
@@ -160,7 +187,8 @@ export class Sim implements SimContext {
    * bruikbaar op een verse sim voor frame 0.
    */
   start(): void {
-    if (this.tickNo !== 0 || this.world.highWater !== 0) throw new Error('start() alleen op een verse sim');
+    if (this.tickNo !== 0 || this.world.highWater !== 0)
+      throw new Error('start() alleen op een verse sim');
     setupStart(this);
     this.indexClaimPoints();
     // Punten binnen de straal van een hoofdgebouw zijn meteen van die speler (besluit sprint 2), zonder events.
@@ -174,8 +202,10 @@ export class Sim implements SimContext {
    * Een bundel voor een al uitgevoerd frame, of een tweede bundel voor hetzelfde frame, is een programmeerfout.
    */
   applyBundle(bundle: FrameBundle): void {
-    if (!isInt(bundle.frame) || bundle.frame < this.tickNo) throw new Error(`bundel voor frame ${bundle.frame}, sim staat op ${this.tickNo}`);
-    if (this.pending.has(bundle.frame)) throw new Error(`dubbele bundel voor frame ${bundle.frame}`);
+    if (!isInt(bundle.frame) || bundle.frame < this.tickNo)
+      throw new Error(`bundel voor frame ${bundle.frame}, sim staat op ${this.tickNo}`);
+    if (this.pending.has(bundle.frame))
+      throw new Error(`dubbele bundel voor frame ${bundle.frame}`);
     const cmds: SimCommand[] = [];
     for (const c of bundle.commands) {
       const n = normalizeCommand(c);
@@ -253,12 +283,18 @@ export class Sim implements SimContext {
 
   /** Snapshot voor de renderer (contract 1), als nieuwe transferable ArrayBuffer. Tick in de header = laatst uitgevoerde frame. */
   writeSnapshot(): ArrayBuffer {
-    return writeSnapshot(this.world, this.events, this.tickNo > 0 ? this.tickNo - 1 : 0, this.hash());
+    return writeSnapshot(
+      this.world,
+      this.events,
+      this.tickNo > 0 ? this.tickNo - 1 : 0,
+      this.hash(),
+    );
   }
 
   /** Spelerstatus voor de HUD (queryMessage, contract 1). hero is null als de factie geen held heeft. */
   playerStatus(playerId: number): PlayerStatus {
-    if (!isInt(playerId) || playerId < 0 || playerId >= this.playerCount) throw new Error(`onbekende speler ${playerId}`);
+    if (!isInt(playerId) || playerId < 0 || playerId >= this.playerCount)
+      throw new Error(`onbekende speler ${playerId}`);
     takeCensus(this, this.census);
     return {
       playerId,
@@ -283,21 +319,48 @@ export class Sim implements SimContext {
     const w = this.world;
     const out: QueueItem[] = [];
     for (let i = 0; i < w.highWater; i++) {
-      if (w.alive[i] !== 1 || w.owner[i] !== playerId || w.research[i] === 0 || !w.has(i, C.building)) continue;
+      if (
+        w.alive[i] !== 1 ||
+        w.owner[i] !== playerId ||
+        w.research[i] === 0 ||
+        !w.has(i, C.building)
+      )
+        continue;
       const t = this.config.techs[w.research[i]! - 1];
       if (t === undefined) continue;
       const total = t.researchTicks * PROGRESS_ONE;
-      out.push({ kind: 'research', buildingId: w.idOf(i), unitId: ENTITY_NONE, id: t.techId, progressPermille: permille(w.work[i]!, total) });
+      out.push({
+        kind: 'research',
+        buildingId: w.idOf(i),
+        unitId: ENTITY_NONE,
+        id: t.techId,
+        progressPermille: permille(w.work[i]!, total),
+      });
     }
     for (let i = 0; i < w.highWater; i++) {
-      if (w.alive[i] !== 1 || w.owner[i] !== playerId || !w.has(i, C.unit | C.orders) || w.orderType(i) !== ORDER_CRAFT) continue;
+      if (
+        w.alive[i] !== 1 ||
+        w.owner[i] !== playerId ||
+        !w.has(i, C.unit | C.orders) ||
+        w.orderType(i) !== ORDER_CRAFT
+      )
+        continue;
       const phase = w.phase[i]!;
       const t = this.unitTypes[w.ordX[w.currentOrder(i)]!];
       if (t === undefined) continue;
       // bij de werkplaats (systeem 2 zet PHASE_WORK pas binnen interactRange): de werkplaats waar hij staat
-      const at = phase === PHASE_WORK || phase === PHASE_CRAFT ? nearestOwnBuilding(this, playerId, w.x[i]!, w.y[i]!, PROVIDES_WORKSHOP) : -1;
+      const at =
+        phase === PHASE_WORK || phase === PHASE_CRAFT
+          ? nearestOwnBuilding(this, playerId, w.x[i]!, w.y[i]!, PROVIDES_WORKSHOP)
+          : -1;
       const progress = phase === PHASE_CRAFT ? permille(w.work[i]!, t.craftTicks) : 0;
-      out.push({ kind: 'craft', buildingId: at < 0 ? ENTITY_NONE : w.idOf(at), unitId: w.idOf(i), id: t.loadoutId, progressPermille: progress });
+      out.push({
+        kind: 'craft',
+        buildingId: at < 0 ? ENTITY_NONE : w.idOf(at),
+        unitId: w.idOf(i),
+        id: t.loadoutId,
+        progressPermille: progress,
+      });
     }
     // oplopend op buildingId, dan unitId (contract 1); bij research is unitId ENTITY_NONE en een gebouw heeft één onderzoek
     out.sort((a, b) => a.buildingId - b.buildingId || a.unitId! - b.unitId!);
@@ -308,7 +371,12 @@ export class Sim implements SimContext {
   winner(): SimWinner | null {
     const g = this.globals;
     if (g.winner === NO_WINNER) return null;
-    const reason: WinReason = g.reason === WIN_DOMINANCE ? 'dominance' : g.reason === WIN_SURRENDER ? 'surrender' : 'destruction';
+    const reason: WinReason =
+      g.reason === WIN_DOMINANCE
+        ? 'dominance'
+        : g.reason === WIN_SURRENDER
+          ? 'surrender'
+          : 'destruction';
     return { playerId: g.winner, reason, frame: g.frame };
   }
 
@@ -338,7 +406,13 @@ export class Sim implements SimContext {
     const t = isInt(spec.typeId) ? this.unitTypes[spec.typeId] : undefined;
     if (t === undefined) return NO_ENTITY;
     if (!isInt(spec.owner) || spec.owner < 0 || spec.owner >= this.playerCount) return NO_ENTITY;
-    if (!isInt(spec.x) || !isInt(spec.y) || !inMap(this.map, spec.x, spec.y) || !walkableAt(this, spec.x, spec.y)) return NO_ENTITY;
+    if (
+      !isInt(spec.x) ||
+      !isInt(spec.y) ||
+      !inMap(this.map, spec.x, spec.y) ||
+      !walkableAt(this, spec.x, spec.y)
+    )
+      return NO_ENTITY;
     const i = createUnit(this, t, spec.owner, spec.x, spec.y, spec.yaw ?? 0);
     if (i < 0) return NO_ENTITY;
     this.hashDirty = true;
@@ -348,7 +422,8 @@ export class Sim implements SimContext {
   /** Gebouw-helper voor tests en tools: footprint met oorsprong (fx, fy) in cellen. NO_ENTITY als het niet past. */
   spawnBuilding(typeId: number, owner: number, fx: number, fy: number, done = true): number {
     const bt = this.buildingTypes[typeId];
-    if (bt === undefined || !isInt(owner) || owner < 0 || owner >= this.playerCount) return NO_ENTITY;
+    if (bt === undefined || !isInt(owner) || owner < 0 || owner >= this.playerCount)
+      return NO_ENTITY;
     if (!footprintFree(this, fx, fy, bt.footprintW, bt.footprintH)) return NO_ENTITY;
     const i = createBuilding(this, bt, owner, fx, fy, done);
     if (i < 0) return NO_ENTITY;
@@ -460,11 +535,13 @@ export class Sim implements SimContext {
 }
 
 /** a van b in promille, 0..1000 (b <= 0 telt als klaar). */
-const permille = (a: number, b: number): number => (b <= 0 ? 1000 : clampI(idiv(a * 1000, b), 0, 1000));
+const permille = (a: number, b: number): number =>
+  b <= 0 ? 1000 : clampI(idiv(a * 1000, b), 0, 1000);
 
 /** Maakt een nieuwe sim met startopstelling (tenzij opts.start === false). Valideert de invoer; gooit bij ongeldige invoer. */
 export function createSim(init: SimInit, opts: CreateSimOptions = {}): Sim {
-  if (!isInt(init.seed) || init.seed < 0 || init.seed > 0xffffffff) throw new Error(`SimInit ongeldig: seed ${init.seed}`);
+  if (!isInt(init.seed) || init.seed < 0 || init.seed > 0xffffffff)
+    throw new Error(`SimInit ongeldig: seed ${init.seed}`);
   const { seed, ...env } = init;
   const sim = new Sim(env, seed);
   if (opts.start !== false) sim.start();

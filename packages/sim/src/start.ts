@@ -1,4 +1,11 @@
-import { createBuilding, createClaimPoint, createScrapNode, createUnit, footprintFree, footprintOrigin } from './entities.js';
+import {
+  createBuilding,
+  createClaimPoint,
+  createScrapNode,
+  createUnit,
+  footprintFree,
+  footprintOrigin,
+} from './entities.js';
 import type { SimContext } from './systems/common.js';
 import { cellCenterOf, face, nthFreeCellAround } from './systems/common.js';
 import { spawnStartHero } from './systems/hero.js';
@@ -15,8 +22,10 @@ import { spawnStartHero } from './systems/hero.js';
 
 export function setupStart(ctx: SimContext): void {
   const map = ctx.map;
-  for (const n of map.scrapNodes) if (createScrapNode(ctx, n.x, n.y, n.amount) < 0) throw new Error('start: wereld vol');
-  for (const c of map.claimPoints) if (createClaimPoint(ctx, c.x, c.y) < 0) throw new Error('start: wereld vol');
+  for (const n of map.scrapNodes)
+    if (createScrapNode(ctx, n.x, n.y, n.amount) < 0) throw new Error('start: wereld vol');
+  for (const c of map.claimPoints)
+    if (createClaimPoint(ctx, c.x, c.y) < 0) throw new Error('start: wereld vol');
   const midX = map.w << 7;
   const midY = map.h << 7;
   for (let p = 0; p < ctx.playerCount; p++) {
@@ -25,7 +34,10 @@ export function setupStart(ctx: SimContext): void {
     const spawn = map.spawns[p]!;
     const bt = ctx.buildingType(faction.hqTypeId)!;
     const { fx, fy } = footprintOrigin(spawn.x, spawn.y, bt.footprintW, bt.footprintH);
-    if (!footprintFree(ctx, fx, fy, bt.footprintW, bt.footprintH)) throw new Error(`start: hoofdgebouw van speler ${p} past niet op spawn ${spawn.x},${spawn.y}`);
+    if (!footprintFree(ctx, fx, fy, bt.footprintW, bt.footprintH))
+      throw new Error(
+        `start: hoofdgebouw van speler ${p} past niet op spawn ${spawn.x},${spawn.y}`,
+      );
     if (createBuilding(ctx, bt, p, fx, fy, true) < 0) throw new Error('start: wereld vol');
     let k = 0;
     for (const su of faction.startUnits) {

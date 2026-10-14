@@ -9,7 +9,21 @@ import type { SimConfig, SimEnv } from '@crawlout/sim';
 // (browser/entry.ts) bouwen hem allebei hiermee, zodat de replay-set in elke runtime dezelfde SimEnv krijgt.
 
 /** SimEnv voor een replay of start-bericht: map, data, spelers en de lobby-override van de dominantie. */
-export function envFrom(data: GameData, config: SimConfig, def: MapDef, grid: MapGrid, players: readonly LobbyPlayer[], settings: MatchSettings): SimEnv {
-  const dominance = convertDominance({ pointsRequired: def.dominance.pointsRequired, minutes: settings.dominanceMinutes ?? def.dominance.minutes });
-  return { players: simPlayersFromLobby(data, players), map: simMapFromGrid({ ...grid, dominance }), config };
+export function envFrom(
+  data: GameData,
+  config: SimConfig,
+  def: MapDef,
+  grid: MapGrid,
+  players: readonly LobbyPlayer[],
+  settings: MatchSettings,
+): SimEnv {
+  const dominance = convertDominance({
+    pointsRequired: def.dominance.pointsRequired,
+    minutes: settings.dominanceMinutes ?? def.dominance.minutes,
+  });
+  return {
+    players: simPlayersFromLobby(data, players),
+    map: simMapFromGrid({ ...grid, dominance }),
+    config,
+  };
 }

@@ -1,6 +1,12 @@
 import { ENTITY_NONE, EVENT_TYPE, MAX_ENTITIES } from '@crawlout/protocol';
 import type { CommandPayload, HeroState, HeroStatus } from '@crawlout/protocol';
-import { AURA_SIDE_ENEMY, AURA_TARGET_TURRETS, AURA_TARGET_UNITS, MAX_ABILITIES, SPECIAL_COUNT } from '../config.js';
+import {
+  AURA_SIDE_ENEMY,
+  AURA_TARGET_TURRETS,
+  AURA_TARGET_UNITS,
+  MAX_ABILITIES,
+  SPECIAL_COUNT,
+} from '../config.js';
 import { BSTATE_DONE, C } from '../ecs/world.js';
 import {
   HERO_ALIVE,
@@ -70,7 +76,13 @@ export function createHero(ctx: SimContext, p: number, x: number, y: number): nu
 }
 
 /** Startopstelling: level 1 en de held op cel c naast het hoofdgebouw, kijkend naar (lookX, lookY). */
-export function spawnStartHero(ctx: SimContext, p: number, c: number, lookX: number, lookY: number): void {
+export function spawnStartHero(
+  ctx: SimContext,
+  p: number,
+  c: number,
+  lookX: number,
+  lookY: number,
+): void {
   if (heroOf(ctx, p) === undefined) return;
   ctx.ps.heroLevel[p] = 1;
   const at = cellCenterOf(ctx.map, c);
@@ -87,11 +99,20 @@ export function grantXp(ctx: SimContext, p: number, amount: number): void {
   if (h === undefined || st === HERO_NONE || st === HERO_EMPTY || amount <= 0) return;
   ps.heroXp[p] = ps.heroXp[p]! + amount;
   const w = ctx.world;
-  while (ps.heroLevel[p]! - 1 < h.xpThresholds.length && ps.heroXp[p]! >= h.xpThresholds[ps.heroLevel[p]! - 1]!) {
+  while (
+    ps.heroLevel[p]! - 1 < h.xpThresholds.length &&
+    ps.heroXp[p]! >= h.xpThresholds[ps.heroLevel[p]! - 1]!
+  ) {
     ps.heroLevel[p] = ps.heroLevel[p]! + 1;
     ps.heroPending[p] = ps.heroPending[p]! + 1;
     const e = w.resolve(ps.heroEnt[p]!);
-    ctx.events.push(EVENT_TYPE.heroLevel, ps.heroEnt[p]!, ps.heroLevel[p]!, e >= 0 ? w.x[e]! : 0, e >= 0 ? w.y[e]! : 0);
+    ctx.events.push(
+      EVENT_TYPE.heroLevel,
+      ps.heroEnt[p]!,
+      ps.heroLevel[p]!,
+      e >= 0 ? w.x[e]! : 0,
+      e >= 0 ? w.y[e]! : 0,
+    );
   }
 }
 
@@ -136,7 +157,8 @@ export function auraSystem(ctx: SimContext, auras: Auras): void {
   const ps = ctx.ps;
   const w = ctx.world;
   auras.any = false;
-  for (let k = 0; k < ctx.playerCount * MAX_ABILITIES; k++) if (ps.zoneTicks[k]! > 0) auras.any = true;
+  for (let k = 0; k < ctx.playerCount * MAX_ABILITIES; k++)
+    if (ps.zoneTicks[k]! > 0) auras.any = true;
   if (!auras.any) return;
   auras.speed.fill(0, 0, w.highWater);
   auras.damage.fill(0, 0, w.highWater);
@@ -180,7 +202,12 @@ export function applyPickPerk(ctx: SimContext, p: number, pl: CommandPayload<'Pi
   const st = ps.heroState[p]!;
   if (st === HERO_NONE || st === HERO_EMPTY || ps.heroPending[p]! <= 0) return false;
   const perk = ctx.config.perks[pl.perkId];
-  if (perk === undefined || !h.perkPool.includes(perk.perkId) || ((ps.heroPerks[p]! >>> perk.perkId) & 1) !== 0) return false;
+  if (
+    perk === undefined ||
+    !h.perkPool.includes(perk.perkId) ||
+    ((ps.heroPerks[p]! >>> perk.perkId) & 1) !== 0
+  )
+    return false;
   if (heroSpecial(ctx, p, perk.requiresStat) < perk.requiresMin) return false;
   ps.heroPerks[p] = (ps.heroPerks[p]! | (1 << perk.perkId)) >>> 0;
   ps.heroPending[p] = ps.heroPending[p]! - 1;
@@ -189,7 +216,11 @@ export function applyPickPerk(ctx: SimContext, p: number, pl: CommandPayload<'Pi
 }
 
 /** HeroAbility: abilityId is de index in de abilities van de held; doel is target, anders (x, y), anders de held zelf. */
-export function applyHeroAbility(ctx: SimContext, p: number, pl: CommandPayload<'HeroAbility'>): boolean {
+export function applyHeroAbility(
+  ctx: SimContext,
+  p: number,
+  pl: CommandPayload<'HeroAbility'>,
+): boolean {
   const ps = ctx.ps;
   const w = ctx.world;
   const h = heroOf(ctx, p);
@@ -231,7 +262,8 @@ export function applyRecruit(ctx: SimContext, p: number, pl: CommandPayload<'Rec
   const ps = ctx.ps;
   const w = ctx.world;
   const b = isInt(pl.buildingId) ? w.resolve(pl.buildingId) : -1;
-  if (b < 0 || !w.has(b, C.building) || w.owner[b] !== p || w.bstate[b] !== BSTATE_DONE) return false;
+  if (b < 0 || !w.has(b, C.building) || w.owner[b] !== p || w.bstate[b] !== BSTATE_DONE)
+    return false;
   const bt = ctx.buildingType(w.typeId[b]!);
   const h = heroOf(ctx, p);
   if (bt === undefined || (bt.provides & PROVIDES_HQ) === 0 || h === undefined) return false;
@@ -243,11 +275,22 @@ export function applyRecruit(ctx: SimContext, p: number, pl: CommandPayload<'Rec
 }
 
 /** Cancel op het hoofdgebouw tijdens het oplappen: terug naar dood, teruggave volgens refund. */
-export function cancelRevive(ctx: SimContext, p: number, b: number, refund: (cost: number) => number): boolean {
+export function cancelRevive(
+  ctx: SimContext,
+  p: number,
+  b: number,
+  refund: (cost: number) => number,
+): boolean {
   const ps = ctx.ps;
   const bt = ctx.buildingType(ctx.world.typeId[b]!);
   const h = heroOf(ctx, p);
-  if (bt === undefined || (bt.provides & PROVIDES_HQ) === 0 || h === undefined || ps.heroState[p] !== HERO_REVIVING) return false;
+  if (
+    bt === undefined ||
+    (bt.provides & PROVIDES_HQ) === 0 ||
+    h === undefined ||
+    ps.heroState[p] !== HERO_REVIVING
+  )
+    return false;
   ps.scrap[p] = ps.scrap[p]! + refund(h.reviveScrap);
   ps.heroState[p] = HERO_DEAD;
   ps.heroTimer[p] = 0;
@@ -264,12 +307,17 @@ export function heroStatus(ctx: SimContext, p: number): HeroStatus | null {
   const special: number[] = [];
   for (let k = 0; k < SPECIAL_COUNT; k++) special.push(heroSpecial(ctx, p, k));
   const perks: number[] = [];
-  for (const pk of ctx.config.perks) if (((ps.heroPerks[p]! >>> pk.perkId) & 1) !== 0) perks.push(pk.perkId);
+  for (const pk of ctx.config.perks)
+    if (((ps.heroPerks[p]! >>> pk.perkId) & 1) !== 0) perks.push(pk.perkId);
   // Op maxlevel is er geen volgende drempel: xpNext is dan de laatste drempel (die al gehaald is).
-  const xpNext = level - 1 < h.xpThresholds.length ? h.xpThresholds[level - 1]! : (h.xpThresholds[h.xpThresholds.length - 1] ?? xp);
+  const xpNext =
+    level - 1 < h.xpThresholds.length
+      ? h.xpThresholds[level - 1]!
+      : (h.xpThresholds[h.xpThresholds.length - 1] ?? xp);
   const st = ps.heroState[p]!;
   const abilityCooldownTicks: number[] = [];
-  for (let a = 0; a < h.abilities.length; a++) abilityCooldownTicks.push(ps.abCooldown[p * MAX_ABILITIES + a]!);
+  for (let a = 0; a < h.abilities.length; a++)
+    abilityCooldownTicks.push(ps.abCooldown[p * MAX_ABILITIES + a]!);
   return {
     heroId: h.heroId,
     level,
@@ -289,5 +337,11 @@ export function heroStatus(ctx: SimContext, p: number): HeroStatus | null {
 
 /** PlayerState.heroState naar HeroStatus.state (contract 1, besluit sprint 3). HERO_NONE komt hier niet (hero is dan null). */
 function heroStateName(st: number): HeroState {
-  return st === HERO_DEAD ? 'dead' : st === HERO_REVIVING ? 'reviving' : st === HERO_EMPTY ? 'empty' : 'alive';
+  return st === HERO_DEAD
+    ? 'dead'
+    : st === HERO_REVIVING
+      ? 'reviving'
+      : st === HERO_EMPTY
+        ? 'empty'
+        : 'alive';
 }

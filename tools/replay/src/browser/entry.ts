@@ -36,7 +36,8 @@ export function run(input: BrowserInput): { userAgent: string; results: BrowserR
     const t0 = performance.now();
     try {
       const r = Replay.parse(replay);
-      if (r.dataVersion !== data.dataVersion) throw new Error(`replay is voor data ${r.dataVersion}, de data is ${data.dataVersion}`);
+      if (r.dataVersion !== data.dataVersion)
+        throw new Error(`replay is voor data ${r.dataVersion}, de data is ${data.dataVersion}`);
       const src = input.maps[r.map];
       if (src === undefined) throw new Error(`map ${r.map} niet meegegeven`);
       const def = MapDef.parse(src.def);
@@ -63,7 +64,16 @@ export function run(input: BrowserInput): { userAgent: string; results: BrowserR
         ms: Math.round(performance.now() - t0),
       });
     } catch (e) {
-      results.push({ name, ok: false, frames: 0, checked: 0, mismatch: null, finalHash: 0, ms: Math.round(performance.now() - t0), error: e instanceof Error ? e.message : String(e) });
+      results.push({
+        name,
+        ok: false,
+        frames: 0,
+        checked: 0,
+        mismatch: null,
+        finalHash: 0,
+        ms: Math.round(performance.now() - t0),
+        error: e instanceof Error ? e.message : String(e),
+      });
     }
   }
   return { userAgent: navigator.userAgent, results };
