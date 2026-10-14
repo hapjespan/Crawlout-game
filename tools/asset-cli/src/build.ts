@@ -1,5 +1,5 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { basename, join, relative, sep } from 'node:path';
+import { basename, dirname, join, relative, sep } from 'node:path';
 import { BUDGETS } from './budgets.js';
 import { bakeAnimations } from './bake.js';
 import { EMPTY_CLIPMAP, parseClipmap, resolveClips, type Clipmap } from './clipmap.js';
@@ -25,6 +25,11 @@ export interface BuildOptions {
   clipmapPath?: string;
   /** Pad naar de rigmap; standaard `<srcDir>/rigmap.json`. Een ontbrekend bestand betekent: geen conform-stap. */
   rigmapPath?: string;
+  /**
+   * Alleen GLB's met een entry in de rigmap verwerken (lokale buis: assets/local bevat ook andere lokale bronnen,
+   * bijvoorbeeld voor terrein); de rest wordt overgeslagen met een melding.
+   */
+  onlyConfigured?: boolean;
 }
 
 export interface AssetReport {
@@ -48,6 +53,12 @@ export interface AssetDetails {
   clipsDropped: string[];
   extraUvSetsRemoved: number;
   scale: number | null;
+  /** Alleen bij lokale bronnen met extractie, fit, retarget, atlas of teammasker (rigmap-entry). */
+  meshesRemoved?: string[];
+  fit?: ConformInfo['fit'];
+  retarget?: ConformInfo['retarget'];
+  atlas?: ConformInfo['atlas'];
+  teamMask?: ConformInfo['teamMask'];
 }
 
 export interface BuildResult {
@@ -127,6 +138,7 @@ export async function buildAssets(options: BuildOptions): Promise<BuildResult> {
   const seen = new Map<string, string>();
   const validated: {
     id: string;
+    sourceId: string;
     buffer: Uint8Array;
     kind: 'character' | 'prop';
     conform: ConformInfo;
@@ -135,7 +147,13 @@ export async function buildAssets(options: BuildOptions): Promise<BuildResult> {
 
   for (const file of files) {
     const source = relative(srcDir, file).split(sep).join('/');
-    const id = toId(file);
+    if (options.onlyConfigured && !rigmap.assets[toId(file)]) {
+      notices.push(`${source} overgeslagen: geen entry in ${basename(rigmapSource)}.`);
+      continue;
+    }
+    // Rigmap en clipmap gebruiken de bestandsnaam-id; `id` in de rigmap publiceert onder een andere id.
+    const sourceId = toId(file);
+    const id = rigmap.assets[sourceId]?.id ?? sourceId;
     const report: AssetReport = { id, source, errors: [], warnings: [] };
     reports.push(report);
     const clash = seen.get(id);
@@ -149,13 +167,19 @@ export async function buildAssets(options: BuildOptions): Promise<BuildResult> {
     try {
       const document = await io.readBinary(new Uint8Array(readFileSync(file)));
       const sourceBones = maxBoneCount(document);
-      const conform = await conformDocument(document, { assetId: id, rigmap, clipmap });
-      const result = validateAsset(document, { clipmap, assetId: id });
+      const conform = await conformDocument(document, {
+        assetId: sourceId,
+        rigmap,
+        clipmap,
+        configDir: dirname(rigmapSource),
+      });
+      const result = validateAsset(document, { clipmap, assetId: sourceId });
       report.errors.push(...result.errors);
       report.warnings.push(...result.warnings);
       if (result.errors.length === 0)
         validated.push({
           id,
+          sourceId,
           buffer: await io.writeBinary(document),
           kind: result.kind,
           conform,
@@ -203,7 +227,7 @@ export async function buildAssets(options: BuildOptions): Promise<BuildResult> {
       continue;
     }
     for (const lod of lods) outputs.set(`${asset.id}/lod${lod.level}.glb`, lod.glb);
-    const validation = validateAsset(sourceDoc, { clipmap, assetId: asset.id });
+    const validation = validateAsset(sourceDoc, { clipmap, assetId: asset.sourceId });
     let baked: AssetEntry['baked'];
     if (asset.kind === 'character' && sourceDoc.getRoot().listAnimations().length > 0) {
       const names = sourceDoc
@@ -227,7 +251,7 @@ export async function buildAssets(options: BuildOptions): Promise<BuildResult> {
       const result = bakeAnimations({
         assetId: asset.id,
         document: sourceDoc,
-        clips: resolveClips(names, clipmap, asset.id).found,
+        clips: resolveClips(names, clipmap, asset.sourceId).found,
       });
       outputs.set(result.baked.path, result.data);
       baked = result.baked;
@@ -245,6 +269,11 @@ export async function buildAssets(options: BuildOptions): Promise<BuildResult> {
       clipsDropped: asset.conform.clipsDropped,
       extraUvSetsRemoved: asset.conform.extraUvSetsRemoved,
       scale: asset.conform.scale ?? null,
+      ...(asset.conform.meshesRemoved ? { meshesRemoved: asset.conform.meshesRemoved } : {}),
+      ...(asset.conform.fit ? { fit: asset.conform.fit } : {}),
+      ...(asset.conform.retarget ? { retarget: asset.conform.retarget } : {}),
+      ...(asset.conform.atlas ? { atlas: asset.conform.atlas } : {}),
+      ...(asset.conform.teamMask ? { teamMask: asset.conform.teamMask } : {}),
     };
     entries.push({
       id: asset.id,

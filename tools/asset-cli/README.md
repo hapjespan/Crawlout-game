@@ -34,7 +34,7 @@ assets/dist/<id>/<id>.anim.f32   (karakters met animaties)
 
 `validation-report.json` (deterministisch, geen tijdstempels) geeft per asset de bron en wat de buis eraan veranderd heeft: tris van bron en per LOD, bones van bron en uitvoer, gesnoeide bones, weggevallen animatiekanalen, behouden en vervallen clips, verwijderde UV-sets en schaal, plus waarschuwingen.
 
-Lege `assets/src` geeft groen met de melding "geen assets" en een lege manifest. Schendt een asset de brief, dan staat per asset een leesbare reden op het scherm, is de exit code 1 en wordt er niets naar `assets/dist` geschreven. Opties: `--src <map>` en `--dist <map>`.
+Lege `assets/src` geeft groen met de melding "geen assets" en een lege manifest. Schendt een asset de brief, dan staat per asset een leesbare reden op het scherm, is de exit code 1 en wordt er niets naar `assets/dist` geschreven. Opties: `--src <map>`, `--dist <map>` en `--local` (zie Lokale assets).
 
 ## Bronnen die niet aan de brief voldoen (conform-stap)
 
@@ -59,6 +59,37 @@ Vóór de validatie draait een conform-stap (`src/conform.ts`), alleen voor wat 
 - **Clips**: altijd (ook zonder entry) blijven alleen de via de clipmap of op naam gekoppelde clips over, met de canonieke naam; de rest vervalt uit het manifest en uit de bake. De LOD-GLB's bevatten geen animaties meer, die zitten in de bone-matrix-texture.
 
 Oriëntatie en schaal van de UAL-mannequin zijn gecontroleerd: 1,83 m, voeten op y = 0,002, gezicht naar +Z (de tenen staan +0,15 m voor de enkel), +Y omhoog. Er is dus geen correctie nodig; de enige transformatie is de statische `root`-node (-90 graden X, Blender naar glTF), die in de skin-matrices van de bake zit.
+
+## Lokale assets (`pnpm assets --local`)
+
+Voor bronnen die nooit in git mogen (fanart buiten de eigen IP, zie Spelfundament sectie 1) is er een tweede, lokale buis. `assets/local/` en `assets/dist-local/` staan in `.gitignore`; zet er nooit iets van in een commit, test of fixture.
+
+```
+npx -y pnpm@9 assets --local     # of: pnpm assets:local
+```
+
+- Bron: `assets/local/*.glb`, met een eigen `assets/local/rigmap.json` en `assets/local/clipmap.json` (zelfde formaat als in `assets/src`, ook buiten git). Alleen GLB's met een entry in die rigmap gaan erdoor; andere lokale bronnen (bijvoorbeeld voor terrein) worden overgeslagen met een melding.
+- Uitvoer: `assets/dist-local/` met een eigen `manifest.json` en `validation-report.json` in hetzelfde formaat. Ontbreekt `assets/local` of staat er geen GLB in, dan gebeurt er niets (exit 0, geen map); `pnpm assets` zonder `--local` is ongewijzigd.
+- De client (`apps/client/src/game/assets.ts`) leest `assets/dist-local/manifest.json` als die er is en geeft de ids daarin voorrang boven die van `assets/dist`; zonder dist-local gedraagt hij zich als voorheen. Een lokaal asset `hero_<key>` (bijvoorbeeld `hero_opziener`) tekent de held met die key (typeId 1000 + heroId, via `assets.bind` van render).
+
+Extra velden per entry in de rigmap (ook bruikbaar voor `assets/src`, maar bedoeld voor lokale bronnen), in de volgorde waarin de conform-stap ze uitvoert:
+
+| Veld | Wat |
+| --- | --- |
+| `id` | Publiceer onder deze id in plaats van de bestandsnaam, bijvoorbeeld `dweller_body_human` om het repo-asset lokaal te vervangen. Rigmap en clipmap blijven op de bestandsnaam-id. |
+| `meshes` | Alleen deze meshes (exacte namen) blijven over; de rest van een scène (deur, vloer) vervalt, met ongebruikte nodes, materialen en textures. |
+| `fit` | `{ height, yawDegrees? }`: het skelet wordt in zijn node-pose opnieuw gebonden (rustpose = bindpose), gedraaid om +Y, geschaald naar `height` meter, voeten op y = 0, midden op x = z = 0. Alle transformaties zijn daarna toegepast (joints star, mesh-nodes op de identiteit). De eigen clips van de bron vervallen. |
+| `rig` (met `merge`) | Zoals hierboven; `rigs.<naam>.merge` stuurt het gewicht van een gesnoeide bone naar een gekozen bone in plaats van de voorouder (bijvoorbeeld een twist-bone die onder de schouder hangt maar bij de bovenarm hoort). |
+| `retarget` | `{ from, rigmap, clipmap, bones?, alignRest? }`, paden relatief aan de rigmap: de clips van een ander karakter (de Quaternius-UAL) worden overgezet, zie hieronder. |
+| `emissiveAsBaseColor` | Een materiaal zonder diffuse maar met een emissive textuur (Sketchfab-unlit) krijgt die als diffuse. |
+| `atlas` | Alle diffuse textures in één vierkante PNG-atlas van maximaal deze maat (render tekent één atlas per draw). Elke textuur krijgt een cel (macht van 2); past het niet, dan halveert eerst de textuur met de hoogste texeldichtheid. UV's worden per primitive verschoven (een primitive die als geheel een geheel getal buiten [0, 1] ligt eerst terug), daarna is er één materiaal `atlas` en één primitive. |
+| `teamMask` | `{ hue: [van, tot], minSaturation?, minValue?, threshold? }`: driehoeken waarvan de textuur (7 monsters per driehoek) overwegend in dit kleurbereik valt, gaan naar een kopie van het materiaal met `_team` in de naam; render kleurt die in de teamkleur. Per driehoek, niet per texel. |
+
+Retargeten (`src/retarget.ts`): bron en doel staan na de conform-stap in hetzelfde assenstelsel (meters, +Y, gezicht +Z) met Mixamo-namen; koppeling op naam, of via `bones` (doel naar bron) waar ze verschillen. Per doelbone wordt de rotatie relatief aan de rustpose overgenomen: het verschil van de bronbone met zijn rustpose in de wereld, D = Q_bron(t) · Q_bron,rust⁻¹, wat voor een volledig gekoppelde keten gelijk is aan de lokale delta omgerekend naar de rustpose van het doel. Daarvoor komt een rustpose-uitlijning A (kortste rotatie van de botrichting van het doel in rust naar die van de bron in rust, voor bones met precies één gekoppeld kind; anders geërfd van de ouder), zodat een T-pose-clip goed op een model met hangende armen of in A-pose komt. Doel: Q_doel(t) = D · A · Q_doel,rust. De Hips-translatie is het verschil met de rustpositie, geschaald met beenlengte doel / bron. Doelbones zonder bron houden hun rustpose. De nieuwe clips (30 keyframes per seconde, LINEAR) worden daarna gebakken zoals elke andere clip.
+
+Reductie: haalt meshopt het doel niet omdat hij vastloopt op UV-naden (een atlas met veel eilanden), dan volgt een pass over naden heen (`Permissive`) en als laatste `simplifySloppy`. Alleen als de gewone passes het doel niet halen; de repo-assets veranderen daardoor niet.
+
+Afhankelijkheid: `sharp` (al in de lockfile via gltf-transform) voor de atlas en het teammasker; alleen geladen als die stappen in de config staan.
 
 ## Wat wordt gevalideerd
 

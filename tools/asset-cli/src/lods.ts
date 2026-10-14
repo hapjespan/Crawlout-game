@@ -59,6 +59,37 @@ export async function simplifyToTarget(document: Document, target: number): Prom
     if (now <= target) return;
     ratio = Math.max(0.01, (ratio * target) / now) * 0.9;
   }
+  // Vastgelopen op attribuutnaden (bijvoorbeeld een atlas met veel UV-eilanden): eerst over naden heen ('Permissive'),
+  // als laatste redmiddel simplifySloppy. Alleen als het doel na de gewone passes niet gehaald is.
+  for (const mode of ['permissive', 'sloppy'] as const) {
+    const now = countTriangles(document);
+    if (now <= target) return;
+    simplifyIndices(document, target / now, mode);
+  }
+}
+
+/** Reduceert de indexbuffer van elke primitive tot ongeveer `ratio`; vertices en attributen blijven ongewijzigd. */
+function simplifyIndices(document: Document, ratio: number, mode: 'permissive' | 'sloppy'): void {
+  for (const prim of document
+    .getRoot()
+    .listMeshes()
+    .flatMap((m) => m.listPrimitives())) {
+    const position = prim.getAttribute('POSITION');
+    const idx = prim.getIndices();
+    if (!position || !idx || prim.getMode() !== 4) continue;
+    const positions = new Float32Array(position.getCount() * 3);
+    const p = [0, 0, 0];
+    for (let i = 0; i < position.getCount(); i++) positions.set(position.getElement(i, p), i * 3);
+    const indices = new Uint32Array(idx.getCount());
+    for (let i = 0; i < indices.length; i++) indices[i] = idx.getScalar(i);
+    const targetCount = Math.max(3, Math.floor((indices.length * ratio) / 3) * 3);
+    const [out] =
+      mode === 'permissive'
+        ? MeshoptSimplifier.simplify(indices, positions, 3, targetCount, 1, ['Permissive'])
+        : MeshoptSimplifier.simplifySloppy(indices, positions, 3, null, targetCount, 1);
+    if (out.length === 0 || out.length >= indices.length) continue;
+    idx.setArray(position.getCount() > 65535 ? new Uint32Array(out) : new Uint16Array(out));
+  }
 }
 
 /** Bouwt LOD0..2 uit de bron-GLB, elk met meshopt-compressie (en KTX2 als toktx beschikbaar is). */

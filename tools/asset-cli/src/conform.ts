@@ -1,13 +1,18 @@
 // Brengt een bronasset binnen de brief voordat de validatie draait: bones snoeien en hernoemen, clips selecteren,
 // extra UV-sets weg, schaal bakken en een te zware mesh reduceren. Alles is config-gestuurd (assets/src/rigmap.json en
 // clipmap.json); een asset zonder entry blijft ongewijzigd, behalve dat niet-gemapte clips vervallen.
+import { readFileSync } from 'node:fs';
+import { basename, resolve } from 'node:path';
 import type { Document } from '@gltf-transform/core';
 import { transformMesh } from '@gltf-transform/functions';
 import { pruneBones, type PruneResult } from './bones.js';
-import { resolveClips, type Clipmap } from './clipmap.js';
+import { parseClipmap, resolveClips, type Clipmap } from './clipmap.js';
+import { extractMeshes, fitCharacter, mergeSkinnedPrimitives, type FitInfo } from './fit.js';
 import { countTriangles, hasSkin } from './inspect.js';
-import { simplifyToTarget } from './lods.js';
-import type { Rigmap } from './rigmap.js';
+import { createIO, simplifyToTarget } from './lods.js';
+import { retargetClips, type RetargetInfo } from './retarget.js';
+import { parseRigmap, type Rigmap } from './rigmap.js';
+import { buildAtlas, emissiveAsBaseColor, splitTeamMask, type AtlasInfo } from './textures.js';
 
 export interface ConformInfo {
   bones?: PruneResult;
@@ -20,6 +25,13 @@ export interface ConformInfo {
   trianglesAfter: number;
   /** Of de buis zelf gereduceerd heeft (dan geldt de ondergrens van de LOD0-band). */
   reduced: boolean;
+  /** Meshes die bij de extractie (`meshes`) vervallen zijn. */
+  meshesRemoved?: string[];
+  fit?: FitInfo;
+  retarget?: RetargetInfo & { from: string };
+  atlas?: AtlasInfo;
+  /** Driehoeken in het teammasker en in totaal (`teamMask`). */
+  teamMask?: { masked: number; total: number };
 }
 
 /** Bakt een uniforme schaal in de vertices van een statische asset; de nodes komen op de identiteit onder de scene. */
@@ -98,9 +110,37 @@ export function selectClips(
 }
 
 export interface ConformOptions {
+  /** Sleutel in rigmap en clipmap: de bestandsnaam-id van de bron. */
   assetId: string;
   rigmap: Rigmap;
   clipmap: Clipmap;
+  /** Map waartegen paden in de rigmap (retarget) gelden; standaard de werkmap. */
+  configDir?: string;
+}
+
+/** Leest de bron van een retarget en brengt hem naar Mixamo-namen en canonieke clips met zijn eigen rigmap en clipmap. */
+export async function loadRetargetSource(
+  from: string,
+  rigmapPath: string,
+  clipmapPath: string,
+): Promise<Document> {
+  const document = await createIO().readBinary(new Uint8Array(readFileSync(from)));
+  const rigmap = parseRigmap(JSON.parse(readFileSync(rigmapPath, 'utf8')));
+  const clipmap = parseClipmap(JSON.parse(readFileSync(clipmapPath, 'utf8')));
+  const id = basename(from)
+    .replace(/\.glb$/i, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '');
+  const rigName = rigmap.assets[id]?.rig;
+  const rig = rigName ? rigmap.rigs[rigName] : undefined;
+  if (rig) pruneBones(document, rig.bones, rig.merge);
+  const { kept } = selectClips(document, clipmap, id);
+  if (Object.keys(kept).length === 0)
+    throw new Error(
+      `retarget-bron ${basename(from)}: geen clips gekoppeld via ${basename(clipmapPath)}`,
+    );
+  return document;
 }
 
 export async function conformDocument(
@@ -118,10 +158,35 @@ export async function conformDocument(
     reduced: false,
   };
 
+  if (entry?.meshes) {
+    info.meshesRemoved = await extractMeshes(document, entry.meshes);
+  }
+  if (entry?.fit) info.fit = fitCharacter(document, entry.fit);
   if (entry?.rig) {
     const rig = options.rigmap.rigs[entry.rig];
     if (!rig) throw new Error(`rig "${entry.rig}" staat niet in rigmap.json`);
-    info.bones = pruneBones(document, rig.bones);
+    info.bones = pruneBones(document, rig.bones, rig.merge);
+  }
+  if (entry?.retarget) {
+    const dir = options.configDir ?? '.';
+    const r = entry.retarget;
+    const source = await loadRetargetSource(
+      resolve(dir, r.from),
+      resolve(dir, r.rigmap),
+      resolve(dir, r.clipmap),
+    );
+    info.retarget = {
+      from: r.from,
+      ...retargetClips(document, source, {
+        ...(r.bones ? { bones: r.bones } : {}),
+        ...(r.alignRest !== undefined ? { alignRest: r.alignRest } : {}),
+      }),
+    };
+  }
+  if (entry?.emissiveAsBaseColor) emissiveAsBaseColor(document);
+  if (entry?.atlas) {
+    info.atlas = await buildAtlas(document, entry.atlas);
+    mergeSkinnedPrimitives(document);
   }
   if (entry) info.extraUvSetsRemoved = stripExtraUvSets(document);
   if (entry?.scale !== undefined && entry.scale !== 1) {
@@ -133,7 +198,8 @@ export async function conformDocument(
     info.clipsKept = kept;
     info.clipsDropped = dropped;
   }
-  if (entry?.lod0Triangles !== undefined && trianglesBefore > entry.lod0Triangles) {
+  if (entry?.teamMask) info.teamMask = await splitTeamMask(document, entry.teamMask);
+  if (entry?.lod0Triangles !== undefined && countTriangles(document) > entry.lod0Triangles) {
     await simplifyToTarget(document, entry.lod0Triangles);
     info.reduced = true;
   }
