@@ -11,3 +11,8 @@ export { generateMap } from './gen/builder.js';
 export type { MapSpec, GeneratedMap } from './gen/builder.js';
 export { generateRustbelt, RUSTBELT_SPEC } from './gen/rustbelt.js';
 export { generateTestmap, TESTMAP_SPEC } from './gen/testmap.js';
+// Decoratieve props (puur visueel, buiten de sim en de envHash): loader voor de renderer en de scatter-generator.
+export { loadProps, parseProps, encodeProps, scatterProps, pathCorridor, PROPS_FORMAT, PROP_KINDS, PROP_CLEARANCE_M, PROP_SCALE_MIN, PROP_SCALE_MAX } from './props.js';
+export type { PropInstance, PropRecord, PropsFile, PropsSpec, PropQuota, PropKind } from './props.js';
+export { createRng } from './rng.js';
+export type { Rng } from './rng.js';

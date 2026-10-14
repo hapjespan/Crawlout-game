@@ -40,6 +40,7 @@ const expectedFiles = (name: string, g: GeneratedMap): Array<[string, string]> =
   [`maps/${name}.json`, JSON.stringify(g.def, null, 2) + '\n'],
   [`maps/${name}.passability.json`, g.passabilityFile + '\n'],
   [`maps/${name}.heightmap.json`, g.heightmapFile + '\n'],
+  ...(g.propsFile === undefined ? [] : ([[`maps/${name}.props.json`, g.propsFile + '\n']] as Array<[string, string]>)),
 ];
 
 // UPDATE_MAPS=1 pnpm --filter @crawlout/map gen schrijft data/maps/* opnieuw (voor de tests hieronder lezen).
