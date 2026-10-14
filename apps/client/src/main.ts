@@ -33,6 +33,7 @@ import {
 import type { SimWinner } from '@crawlout/sim';
 import { assetConfig } from './game/assets.js';
 import { propSource } from './render/props.js';
+import { terrainTextures } from './render/terrain.js';
 import { loadClientGameData, loadClientMap } from './game/content.js';
 import { startSession } from './game/session.js';
 import { createStatusOverlay } from './net/statusOverlay.js';
@@ -69,6 +70,7 @@ async function main(): Promise<void> {
   const params = new URLSearchParams(location.search);
   const perf = document.getElementById('perf') ?? true;
   const assets = assetConfig(params, data.heroes);
+  const textures = terrainTextures();
   const renderer = await createRenderer({
     canvas,
     forceWebGL: params.has('webgl'),
@@ -76,6 +78,7 @@ async function main(): Promise<void> {
     // A and S are HUD hotkeys (attack-move, stop); W, D, arrows and Q/E keep moving the camera.
     camera: { panKeys: { KeyA: null, KeyS: null } },
     ...(assets ? { assets } : {}),
+    ...(textures ? { terrainTextures: textures } : {}),
   });
   renderer.setTerrain(map.terrain);
   renderer.setGameData(data);
