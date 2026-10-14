@@ -9,6 +9,11 @@
 // Decorative props come from Rustbelt's props file (200 trees, rocks, bushes, grass) on the demo terrain: manifest
 // first, then the source GLBs in assets/src/props, then a placeholder per kind. ?props=0 hides them, ?props=src skips
 // the manifest, ?props=ph shows the placeholders only.
+// Buildings are the asset-cli's building assets (visuals.mesh in data/buildings.json) when the manifest has them;
+// ?buildings=ph keeps the placeholder blocks. Terrain: ?terrain=rock (default) is Rock Terrain 4 as the map agent's
+// greybox (rockTerrain.ts), ?terrain=map is the slice map's own greybox, ?terrain=wave the old synthetic hills; the
+// detail texture and tints come from assets/dist/terrain/terrain.json (?tex=0: tints only). ?detail=<n> sets the
+// render-only subdivision (0 draws the greybox as delivered). ?bench runs the measurement in window.crawloutBench().
 import { PROVIDES } from '@crawlout/data';
 import { MAX_ENTITIES, TICK_MS, UNITS_PER_METER } from '@crawlout/protocol';
 import {
@@ -19,8 +24,10 @@ import {
 } from '@crawlout/render';
 import { createGridTerrain, FakeSnapshotSource } from '@crawlout/render/dev';
 import { assetConfig } from '../game/assets.js';
-import { loadClientGameData } from '../game/content.js';
+import { loadClientGameData, loadClientMap } from '../game/content.js';
 import { loadMapProps, propSource } from './props.js';
+import { rockTerrainGreybox } from './rockTerrain.js';
+import { terrainTextures } from './terrain.js';
 
 const WORLD = 128;
 const PLAYER = 0;
@@ -67,12 +74,16 @@ async function main(): Promise<void> {
     data.buildings[typeId - buildingTypeId(0)]?.footprint ?? null;
   const assets = assetConfig(params, data.heroes);
 
+  const textures = params.get('tex') === '0' ? { albedoUrl: null } : terrainTextures();
+  const detail = params.get('detail');
   const renderer = await createRenderer({
     canvas,
     forceWebGL: params.has('webgl'),
     shadows: !params.has('noshadow'),
     dataTextures: params.has('half') ? 'half' : 'auto',
     ...(assets ? { assets } : {}),
+    buildingAssets: params.get('buildings') !== 'ph',
+    ...(detail !== null ? { terrainDetail: { subdivide: Number(detail) } } : {}),
   });
   renderer.setGameData(data);
   const backendEl = document.getElementById('backend');
@@ -81,7 +92,14 @@ async function main(): Promise<void> {
     backendEl.textContent =
       (renderer.backend === 'webgpu' ? 'WebGPU' : 'WebGL2-fallback') + precision;
   }
-  renderer.setTerrain(createGridTerrain(WORLD, WORLD, 1, wastelandHeight, wastelandColor));
+  const terrainMode = params.get('terrain') ?? 'rock';
+  const rock = terrainMode === 'rock' ? rockTerrainGreybox() : null;
+  renderer.setTerrain(
+    rock ??
+      (terrainMode === 'map'
+        ? loadClientMap('rustbelt').terrain
+        : createGridTerrain(WORLD, WORLD, 1, wastelandHeight, wastelandColor)),
+  );
 
   // Unit assets load in the background; show what the units are drawn with once they settle.
   const unitsEl = document.getElementById('units');
@@ -98,6 +116,31 @@ async function main(): Promise<void> {
             .join(' · ');
   };
   for (const delay of [500, 2000, 6000]) window.setTimeout(showUnits, delay);
+
+  const buildingsEl = document.getElementById('buildings');
+  const showBuildings = (): void => {
+    if (!buildingsEl) return;
+    const list = renderer.buildingAssets();
+    const ready = list.filter((b) => b.state === 'ready').length;
+    buildingsEl.textContent =
+      list.length === 0
+        ? 'placeholders'
+        : `${ready} van ${list.length} assets` +
+          list
+            .filter((b) => b.state !== 'ready' || b.reason)
+            .map((b) => ` · ${b.assetId}: ${b.state}${b.reason ? ` (${b.reason})` : ''}`)
+            .join('');
+  };
+  for (const delay of [500, 2000, 6000]) window.setTimeout(showBuildings, delay);
+  const terrainEl = document.getElementById('terrain');
+  if (terrainEl) terrainEl.textContent = rock ? 'Rock Terrain 4' : terrainMode;
+  if (textures)
+    void renderer.setTerrainTextures(textures).then((st) => {
+      if (terrainEl)
+        terrainEl.textContent += st.albedo
+          ? ' + albedo'
+          : ' (tints)' + (st.reason ? `: ${st.reason}` : '');
+    });
 
   const propsMode = params.get('props');
   const propsEl = document.getElementById('props');
