@@ -72,7 +72,9 @@ async function main(): Promise<void> {
   const data = loadClientGameData();
   const footprint = (typeId: number) =>
     data.buildings[typeId - buildingTypeId(0)]?.footprint ?? null;
-  const assets = assetConfig(params, data.heroes);
+  // Local fan art only in dev: a production build drops this import, so it never ships.
+  const localAssets = import.meta.env.DEV ? await import('../game/localAssets.js') : null;
+  const assets = assetConfig(params, data.heroes, localAssets);
 
   const textures = params.get('tex') === '0' ? { albedoUrl: null } : terrainTextures();
   const detail = params.get('detail');

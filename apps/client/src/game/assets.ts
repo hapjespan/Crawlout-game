@@ -3,14 +3,16 @@
 // so replacing a placeholder with a real asset is a data change, not a code change.
 //
 // Local assets: assets/dist-local (outside git, `pnpm assets --local`) has its own manifest.json in the same format.
-// When it is there, its ids take precedence over the repo's: the two manifests are merged into one (served as a blob
+// Only in dev (main.ts imports game/localAssets.ts behind import.meta.env.DEV). When it is there, its ids take precedence over the repo's: the two manifests are merged into one (served as a blob
 // URL), with the local paths under LOCAL_PREFIX so resolveUrl knows where each file lives. Without dist-local the
 // behaviour is exactly the old one. A local `hero_<key>` asset is bound to that hero's typeId (1000 + heroId).
 import { heroTypeId } from '@crawlout/data';
 import type { UnitAssetConfig } from '@crawlout/render';
 
+/** The dev-only local asset module (game/localAssets.ts), passed in so production never imports it. */
+export type LocalAssets = typeof import('./localAssets.js');
+
 const ASSET_DIR = '../../../../assets/dist/';
-const LOCAL_DIR = '../../../../assets/dist-local/';
 /** Prefix of local paths in the merged manifest. */
 export const LOCAL_PREFIX = 'dist-local/';
 const assetFiles = import.meta.glob('../../../../assets/dist/**/*', {
@@ -18,16 +20,6 @@ const assetFiles = import.meta.glob('../../../../assets/dist/**/*', {
   query: '?url',
   import: 'default',
 }) as Record<string, string>;
-// Empty when assets/dist-local does not exist (CI, a fresh checkout).
-const localFiles = import.meta.glob('../../../../assets/dist-local/**/*', {
-  eager: true,
-  query: '?url',
-  import: 'default',
-}) as Record<string, string>;
-const localManifests = import.meta.glob('../../../../assets/dist-local/manifest.json', {
-  eager: true,
-  import: 'default',
-}) as Record<string, unknown>;
 const repoManifests = import.meta.glob('../../../../assets/dist/manifest.json', {
   eager: true,
   import: 'default',
@@ -78,10 +70,11 @@ export function heroBindings(
 export function assetConfig(
   params: URLSearchParams,
   heroes: readonly { id: number; key: string }[] = [],
+  localAssets: LocalAssets | null = null,
 ): UnitAssetConfig | undefined {
   const unit = params.get('unit');
   const repoUrl = assetFiles[`${ASSET_DIR}manifest.json`];
-  const local = localManifests[`${LOCAL_DIR}manifest.json`] as ManifestLike | undefined;
+  const local = localAssets?.localManifests[`${localAssets.LOCAL_DIR}manifest.json`] as ManifestLike | undefined;
   if (!local) {
     if (!repoUrl) return undefined;
     return {
@@ -102,7 +95,7 @@ export function assetConfig(
     manifestUrl,
     resolveUrl: (path) =>
       path.startsWith(LOCAL_PREFIX)
-        ? (localFiles[LOCAL_DIR + path.slice(LOCAL_PREFIX.length)] ?? path)
+        ? (localAssets?.localFiles[localAssets.LOCAL_DIR + path.slice(LOCAL_PREFIX.length)] ?? path)
         : (assetFiles[ASSET_DIR + path] ?? path),
     ...(unit ? { defaultUnit: unit } : {}),
     ...(Object.keys(bind).length > 0 ? { bind } : {}),

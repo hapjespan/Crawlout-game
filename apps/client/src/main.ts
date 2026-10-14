@@ -70,7 +70,9 @@ async function main(): Promise<void> {
   const map = loadClientMap(SLICE_MAP);
   const params = new URLSearchParams(location.search);
   const perf = document.getElementById('perf') ?? true;
-  const assets = assetConfig(params, data.heroes);
+  // Local fan art only in dev: a production build drops this import, so it never ships.
+  const localAssets = import.meta.env.DEV ? await import('./game/localAssets.js') : null;
+  const assets = assetConfig(params, data.heroes, localAssets);
   const textures = terrainTextures();
   const renderer = await createRenderer({
     canvas,
