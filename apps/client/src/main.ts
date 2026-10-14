@@ -1,6 +1,7 @@
 // Composition: sim worker (packages/sim) + renderer (packages/render) + HUD (packages/ui) + loopback relay.
 // Local skirmish against the scripted AI on the slice map; the same session code drives the ws relay later.
 import {
+  ANIM,
   MAX_ENTITIES_PER_COMMAND,
   OWNER_NEUTRAL,
   type CommandPayload,
@@ -31,6 +32,10 @@ import { EVENT_TYPE, readSnapshot, type EntityRow } from './game/snapshot.js';
 
 const SLICE_MAP = 'rustbelt';
 const STATUS_POLL_MS = 250;
+/** A press that moves less than this is a click, not a drag: trackpad clicks often wobble a few pixels. */
+const DRAG_THRESHOLD_PX = 8;
+/** A drag this small that catches no unit counts as a click at the press point. */
+const SMALL_DRAG_PX = 24;
 /** Under-attack alerts are rate limited so a long fight is one toast, not a flood. */
 const ATTACK_ALERT_COOLDOWN_MS = 8000;
 
@@ -175,6 +180,11 @@ async function main(): Promise<void> {
       if (kind === 'scrapNode') {
         const scavengers = ids.filter((id) => loadoutOf(entities.get(id)!.typeId)?.role === roleIdx('scavenger'));
         if (scavengers.length > 0) return sendChunked('Gather', scavengers, { nodeId: target.id });
+      }
+      if (kind === 'building' && target.owner === session.playerId && target.anim === ANIM.build) {
+        // Unfinished own building: builders resume or help (Build on an own site of the same type helps).
+        const builders = ids.filter((id) => loadoutOf(entities.get(id)!.typeId)?.role === roleIdx('builder'));
+        if (builders.length > 0) return sendChunked('Build', builders, { typeId: target.typeId, x: target.x, y: target.y });
       }
       if (kind === 'claimPoint') {
         // Claim builds the faction's claim post next to the point: only builders can (sim contract 2).
@@ -346,7 +356,8 @@ async function main(): Promise<void> {
     return { x: e.clientX - r.left, y: e.clientY - r.top };
   };
   canvas.addEventListener('pointerdown', (e) => {
-    if (e.button !== 0) return;
+    // Ctrl+click is the Mac right click: the contextmenu event that follows gives the order.
+    if (e.button !== 0 || e.ctrlKey) return;
     const p = local(e);
     if (placing) {
       const at = placementAt(p.x, p.y);
@@ -375,7 +386,7 @@ async function main(): Promise<void> {
       return;
     }
     if (!drag) return;
-    if (!drag.moved && Math.hypot(p.x - drag.x, p.y - drag.y) < 4) return;
+    if (!drag.moved && Math.hypot(p.x - drag.x, p.y - drag.y) < DRAG_THRESHOLD_PX) return;
     drag.moved = true;
     marquee.style.display = 'block';
     marquee.style.left = `${Math.min(p.x, drag.x)}px`;
@@ -386,11 +397,10 @@ async function main(): Promise<void> {
   canvas.addEventListener('pointerup', (e) => {
     if (e.button !== 0 || !drag) return;
     const p = local(e);
-    let ids: number[];
-    if (drag.moved) {
-      ids = renderer.boxSelect({ x0: drag.x, y0: drag.y, x1: p.x, y1: p.y }, { owner: session.playerId });
-    } else {
-      const hit = renderer.pickAt(p.x, p.y).entityId;
+    let ids = drag.moved ? renderer.boxSelect({ x0: drag.x, y0: drag.y, x1: p.x, y1: p.y }, { owner: session.playerId }) : [];
+    if (ids.length === 0 && Math.hypot(p.x - drag.x, p.y - drag.y) < SMALL_DRAG_PX) {
+      // A click, or a tiny drag that caught nobody: pick where the press started.
+      const hit = renderer.pickAt(drag.x, drag.y).entityId;
       ids = hit === null ? [] : [hit];
     }
     selection = e.shiftKey ? new Set([...selection, ...ids]) : new Set(ids);
