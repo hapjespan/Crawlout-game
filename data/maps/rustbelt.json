@@ -9,45 +9,45 @@
   "props": "maps/rustbelt.props.json",
   "scrapNodes": [
     {
-      "x": 28,
+      "x": 46,
       "y": 14,
       "amount": 1500
     },
     {
-      "x": 99,
+      "x": 81,
       "y": 113,
       "amount": 1500
     },
     {
-      "x": 12,
-      "y": 30,
+      "x": 8,
+      "y": 36,
       "amount": 1500
     },
     {
-      "x": 115,
-      "y": 97,
+      "x": 119,
+      "y": 91,
       "amount": 1500
     },
     {
-      "x": 40,
-      "y": 38,
+      "x": 86,
+      "y": 28,
       "amount": 2500
     },
     {
-      "x": 87,
-      "y": 89,
+      "x": 41,
+      "y": 99,
       "amount": 2500
     }
   ],
   "claimPoints": [
     {
-      "x": 40,
-      "y": 34,
+      "x": 86,
+      "y": 24,
       "kind": "settlement"
     },
     {
-      "x": 87,
-      "y": 93,
+      "x": 41,
+      "y": 103,
       "kind": "settlement"
     },
     {
@@ -58,29 +58,29 @@
   ],
   "spawns": [
     {
-      "x": 20,
-      "y": 20
+      "x": 30,
+      "y": 22
     },
     {
-      "x": 107,
-      "y": 107
+      "x": 97,
+      "y": 105
     }
   ],
   "creepCamps": [
     {
-      "x": 52,
-      "y": 56,
+      "x": 40,
+      "y": 46,
       "tier": 1
     },
     {
-      "x": 75,
-      "y": 71,
+      "x": 87,
+      "y": 81,
       "tier": 1
     }
   ],
   "dominance": {
     "pointsRequired": 2,
-    "minutes": 12
+    "minutes": 8
   },
-  "_comment": "Slice-map Rustbelt. Gegenereerd door packages/map/src/gen/rustbelt.ts (pnpm --filter @crawlout/map gen); niet met de hand bewerken. Puntsymmetrisch voor eerlijk spel. dominance: 2 van de 3 claimpunten gedurende 12 minuten (balans speltest 14 oktober; was 3 minuten, waarmee AI tegen AI op ongeveer 11 minuten won, terwijl het Spelfundament potjes van 25 tot 35 minuten wil)."
+  "_comment": "Slice-map Rustbelt op Rock Terrain 4. Gegenereerd door packages/map/src/gen/rustbelt.ts uit assets/dist/terrain (pnpm --filter @crawlout/map gen); niet met de hand bewerken. Puntsymmetrisch (180 graden) voor eerlijk spel. dominance: 2 van de 3 claimpunten gedurende 8 minuten (besluit Martien, advies architect fase-0 sectie 17; was 3 en daarna 12 minuten)."
 }

@@ -18,14 +18,15 @@ export {
   TILE_GROUND,
   TILE_RUIN,
   TILE_CLIFF,
-  CLIFF_MIN_HEIGHT,
+  CLIFF_MIN_STEP,
+  ROCK_RGB,
   MARK_SCRAP_RGB,
   MARK_CLAIM_RGB,
 } from './greybox.js';
 export type { GreyboxMesh, TerrainTile } from './greybox.js';
 // Generatoren (build-tijd, voor data/maps/*): zie src/gen en test/gen.test.ts voor regenereren.
 export { generateMap } from './gen/builder.js';
-export type { MapSpec, GeneratedMap } from './gen/builder.js';
+export type { MapSpec, GeneratedMap, GenIo, TerrainSpec } from './gen/builder.js';
 export { generateRustbelt, RUSTBELT_SPEC } from './gen/rustbelt.js';
 export { generateTestmap, TESTMAP_SPEC } from './gen/testmap.js';
 // Decoratieve props (puur visueel, buiten de sim en de envHash): loader voor de renderer en de scatter-generator.

@@ -7,7 +7,9 @@ import {
   allConnected,
   decodeGrid,
   encodeGrid,
+  generateMap,
   generateRustbelt,
+  RUSTBELT_SPEC,
   generateTestmap,
   greyboxMesh,
   isPassable,
@@ -16,8 +18,10 @@ import {
   MARK_CLAIM_RGB,
   MARK_SCRAP_RGB,
   type GeneratedMap,
+  type MapSpec,
   type MapAssets,
 } from '../src/index.js';
+import { nodeGenIo } from '../src/gen/node.js';
 
 const dataDir = fileURLToPath(new URL('../../../data/', import.meta.url));
 const assets: MapAssets = { read: (ref) => readFileSync(dataDir + ref, 'utf8') };
@@ -36,7 +40,7 @@ const claimFootprint = (): { w: number; h: number } => {
 };
 
 const generated: Array<[string, () => GeneratedMap]> = [
-  ['rustbelt', generateRustbelt],
+  ['rustbelt', () => generateRustbelt(nodeGenIo)],
   ['testmap', generateTestmap],
 ];
 
@@ -206,8 +210,8 @@ describe('rustbelt', () => {
     expect(map.spawns[1]!.x).toBeGreaterThanOrEqual(64);
   });
 
-  it('heeft dominance uit de balans van de speltest van 14 oktober (2 van 3 punten, 12 minuten)', () => {
-    expect(readDominance('rustbelt')).toEqual({ pointsRequired: 2, minutes: 12 });
+  it('heeft dominance 2 van 3 punten gedurende 8 minuten (besluit Martien, advies architect sectie 17)', () => {
+    expect(readDominance('rustbelt')).toEqual({ pointsRequired: 2, minutes: 8 });
     expect(2).toBeLessThanOrEqual(def.claimPoints.length);
   });
 
@@ -218,7 +222,176 @@ describe('rustbelt', () => {
   });
 });
 
+describe('rustbelt: terrein, routes en bases', () => {
+  const def = readDef('rustbelt');
+  const map = loadMap(def, assets);
+  const heights = loadHeightmap(def, assets);
+  const N = 128;
+  const dist2 = (ax: number, ay: number, bx: number, by: number): number =>
+    (ax - bx) * (ax - bx) + (ay - by) * (ay - by);
+
+  /** BFS-pad (4-buren) van a naar b over begaanbare cellen, minus de cellen in `blocked`. null als er geen pad is. */
+  const path = (
+    a: { x: number; y: number },
+    b: { x: number; y: number },
+    blocked: Uint8Array,
+  ): number[] | null => {
+    const parent = new Int32Array(N * N).fill(-2);
+    const queue = [a.y * N + a.x];
+    parent[queue[0]!] = -1;
+    for (let head = 0; head < queue.length; head++) {
+      const i = queue[head]!;
+      if (i === b.y * N + b.x) {
+        const out: number[] = [];
+        for (let c = i; c >= 0; c = parent[c]!) out.push(c);
+        return out;
+      }
+      const x = i % N;
+      const y = (i - x) / N;
+      for (const [dx, dy] of [
+        [1, 0],
+        [0, 1],
+        [-1, 0],
+        [0, -1],
+      ] as const) {
+        const j = (y + dy) * N + x + dx;
+        if (!isPassable(map, x + dx, y + dy) || blocked[j] === 1 || parent[j] !== -2) continue;
+        parent[j] = i;
+        queue.push(j);
+      }
+    }
+    return null;
+  };
+
+  it('heeft de hoogteschaal van de spec: begaanbaar terrein van 0 tot ongeveer 7 m, een klifwand van meer dan 0,5 m per cel', () => {
+    let min = Infinity;
+    let max = -Infinity;
+    for (let i = 0; i < heights.data.length; i++) {
+      // Ruines (2,5 m boven het terrein) en de klifwand zelf tellen niet mee; het begaanbare terrein wel.
+      if (map.passable[i] !== 1) continue;
+      min = Math.min(min, heights.data[i]!);
+      max = Math.max(max, heights.data[i]!);
+    }
+    expect(min).toBeGreaterThanOrEqual(0);
+    expect(max).toBeGreaterThan(4 * 256);
+    expect(max).toBeLessThan(7 * 256);
+    // Grootste hoogteverschil over een klifwand: onbegaanbare terreincel naast een begaanbare cel, zonder ruines (die zitten er 2,5 m bovenop).
+    let wall = 0;
+    for (let y = 3; y < N - 3; y++)
+      for (let x = 3; x < N - 3; x++) {
+        if (map.passable[y * N + x] !== 0) continue;
+        for (const [dx, dy] of [
+          [1, 0],
+          [-1, 0],
+          [0, 1],
+          [0, -1],
+        ] as const)
+          wall = Math.max(
+            wall,
+            Math.abs(heights.data[y * N + x]! - heights.data[(y + dy) * N + x + dx]!),
+          );
+      }
+    expect(wall).toBeGreaterThan(0.5 * 256);
+  });
+
+  it('kliffen volgen de helling: open cellen naast open cellen zijn zelden steiler dan de drempel (32 graden)', () => {
+    // De generator ruimt klifspikkels op (minCliffCells), dus een enkele cel mag boven de drempel blijven.
+    const maxStep = 0.625 * 256 + 2; // 0,625 m per cel, in 1/256 m
+    let pairs = 0;
+    let over = 0;
+    for (let y = 0; y < N; y++)
+      for (let x = 0; x < N; x++) {
+        if (map.passable[y * N + x] !== 1) continue;
+        for (const [dx, dy] of [
+          [1, 0],
+          [0, 1],
+        ] as const) {
+          if (!isPassable(map, x + dx, y + dy)) continue;
+          pairs++;
+          const dh = Math.abs(heights.data[y * N + x]! - heights.data[(y + dy) * N + x + dx]!);
+          if (dh > maxStep) over++;
+        }
+      }
+    expect(over).toBeLessThan(pairs / 200);
+  });
+
+  it('heeft minstens twee onafhankelijke routes tussen de bases (geen flessenhals van minder dan 7 m breed)', () => {
+    const a = map.spawns[0]!;
+    const b = map.spawns[1]!;
+    const none = new Uint8Array(N * N);
+    const first = path(a, b, none);
+    expect(first).not.toBeNull();
+    // Blokkeer alles binnen 4 cellen van de eerste route, behalve rond de bases zelf (daar lopen alle routes uit).
+    const block = new Uint8Array(N * N);
+    for (const i of first!) {
+      const x = i % N;
+      const y = (i - x) / N;
+      if (dist2(x, y, a.x, a.y) < 20 * 20 || dist2(x, y, b.x, b.y) < 20 * 20) continue;
+      for (let dy = -4; dy <= 4; dy++)
+        for (let dx = -4; dx <= 4; dx++) {
+          const bx = x + dx;
+          const by = y + dy;
+          if (bx >= 0 && by >= 0 && bx < N && by < N) block[by * N + bx] = 1;
+        }
+    }
+    const second = path(a, b, block);
+    expect(second, 'tweede route').not.toBeNull();
+    // De tweede route is een echte omweg, maar geen labyrint.
+    expect(second!.length).toBeLessThan(first!.length * 3);
+  });
+
+  it('elke basis ligt op een vlak, open bouwvlak (hoofdgebouw 5x5 plus bouwruimte, straal 7 m)', () => {
+    for (const s of map.spawns) {
+      let lo = Infinity;
+      let hi = -Infinity;
+      for (let y = s.y - 7; y <= s.y + 7; y++)
+        for (let x = s.x - 7; x <= s.x + 7; x++) {
+          if (dist2(x, y, s.x, s.y) > 49) continue;
+          expect(isPassable(map, x, y), `(${x},${y}) bij spawn (${s.x},${s.y})`).toBe(true);
+          lo = Math.min(lo, heights.data[y * N + x]!);
+          hi = Math.max(hi, heights.data[y * N + x]!);
+        }
+      expect(hi - lo).toBeLessThanOrEqual(64); // 0,25 m
+    }
+  });
+
+  it('heeft 3 claimpunten waarvan een in het midden, 2 creep-kampen en 6 scrap-nodes, waarvan 2 bij de settlements', () => {
+    expect(map.claimPoints.filter((c) => c.x === 64 && c.y === 64)).toHaveLength(1);
+    expect(map.creepCamps).toHaveLength(2);
+    expect(map.scrapNodes).toHaveLength(6);
+    const radius = claimRadiusM();
+    const nearSettlement = map.scrapNodes.filter((n) =>
+      map.claimPoints.some(
+        (c) => c.kind === 'settlement' && Math.hypot(n.x - c.x, n.y - c.y) <= radius,
+      ),
+    );
+    expect(nearSettlement).toHaveLength(2);
+  });
+});
+
 describe('een tweede map is alleen data', () => {
+  it('een tweede terreinmap met dezelfde techniek is alleen een spec: andere oriëntatie, zelfde generator', () => {
+    const spec: MapSpec = {
+      ...RUSTBELT_SPEC,
+      props: undefined as never,
+      id: 'rustbelt-b',
+      terrain: { ...RUSTBELT_SPEC.terrain!, orientation: 6 },
+      ruins: [],
+      spawns: [],
+      scrapNodes: [],
+      claimPoints: [],
+      centerClaims: [],
+      creepCamps: [],
+    };
+    const g = generateMap(spec, nodeGenIo);
+    for (let y = 0; y < 128; y++)
+      for (let x = 0; x < 128; x++) {
+        expect(g.heights[y * 128 + x]).toBe(g.heights[(127 - y) * 128 + 127 - x]);
+        expect(g.passable[y * 128 + x]).toBe(g.passable[(127 - y) * 128 + 127 - x]);
+      }
+    expect(JSON.stringify(g.def)).not.toBe(JSON.stringify(readDef('rustbelt')));
+  });
+
   it('testmap laadt via dezelfde loader zonder codewijziging', () => {
     const def = readDef('testmap');
     const map = loadMap(def, assets);
