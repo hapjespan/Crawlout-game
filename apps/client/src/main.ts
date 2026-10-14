@@ -24,6 +24,7 @@ import {
 } from '@crawlout/ui';
 import type { SimWinner } from '@crawlout/sim';
 import { assetConfig } from './game/assets.js';
+import { propSource } from './render/props.js';
 import { loadClientGameData, loadClientMap } from './game/content.js';
 import { startSession } from './game/session.js';
 import { createStatusOverlay } from './net/statusOverlay.js';
@@ -69,6 +70,7 @@ async function main(): Promise<void> {
   });
   renderer.setTerrain(map.terrain);
   renderer.setGameData(data);
+  void renderer.setProps(map.props, propSource());
 
   // Selection is local UI state, never sim state: it is stamped into each snapshot's flags for the renderer.
   let selection = new Set<number>();
