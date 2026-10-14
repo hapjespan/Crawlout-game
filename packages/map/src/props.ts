@@ -128,6 +128,11 @@ export interface PropsSpec {
   seed: number;
   quotas: PropQuota[];
   comment: string;
+  /**
+   * Randstrook (in cellen) die geen kandidaat is voor props op onbegaanbare cellen, zodat bomen en rotsen op de
+   * kliffen en ruines komen en niet op de map-rand. Standaard 0.
+   */
+  edgeMargin?: number;
 }
 
 const KEY_POINT_CLEARANCE_U = PROP_CLEARANCE_M * UNITS_PER_METER;
@@ -236,8 +241,11 @@ export function scatterProps(
   for (let cy = 0; cy < h; cy++) {
     for (let cx = 0; cx < w; cx++) {
       const i = cy * w + cx;
-      if (passable[i] !== 1) onBlocked.push(i);
-      else if (corridor[i] === 0) {
+      const margin = spec.edgeMargin ?? 0;
+      const inMargin = cx < margin || cy < margin || cx >= w - margin || cy >= h - margin;
+      if (passable[i] !== 1) {
+        if (!inMargin) onBlocked.push(i);
+      } else if (corridor[i] === 0) {
         onOpen.push(i);
         if (nearBlocked(cx, cy, 1)) onEdge.push(i);
       }

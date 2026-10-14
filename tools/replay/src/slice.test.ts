@@ -7,14 +7,17 @@ import type { Sim } from '@crawlout/sim';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { buildEnv, gameData } from './env.js';
+import { buildEnv, gameData, mapGrid } from './env.js';
+import { centrePoint } from './bot.js';
 import { createReplaySim, parseReplay } from './run.js';
 
 // Eindcriterium van de sim-core-brief op de slice-map Rustbelt, met de echte data:
 //  - 50 bewoners per kant verzamelen, bouwen, wisselen van rol en vechten (fixture s4-rustbelt-fifty, binnen de regels);
 //  - turrets schieten en de AI onderzoekt de prereqTech van zijn bouworder (fixture s4-rustbelt-turrets);
 //  - de scripted AI tegen zichzelf levert een winnaar binnen een redelijk aantal ticks;
-//  - bouwers hervatten na een onderbreking, Stop houdt ze stil, vrije bouwers helpen (fixture s5-rustbelt-builder-resume).
+//  - bouwers hervatten na een onderbreking, Stop houdt ze stil, vrije bouwers helpen (fixture s5-rustbelt-builder-resume);
+//  - winroute B: een bot houdt twee punten tegen de AI en wint op dominantie (fixture s6-rustbelt-dominance), met
+//    PlayerStatus.dominance zoals de HUD hem leest.
 
 const FIXTURES_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'fixtures');
 const fixture = (name: string): Replay =>
@@ -169,6 +172,46 @@ describe('slice: Rustbelt met echte data', () => {
       expect(zones).toBeGreaterThan(0);
       const laser = gameData().data.tech.find((t) => t.key === 'lasergeleiding')!.id;
       expect(sim.researched(0)).toContain(laser);
+    },
+  );
+
+  it(
+    'winroute B: de bot houdt twee punten tegen de raids van de AI en wint op dominantie (fixture s6-rustbelt-dominance)',
+    { timeout: 60_000 },
+    () => {
+      const r = fixture('s6-rustbelt-dominance');
+      const required = mapGrid('rustbelt').def.dominance.minutes * 1200;
+      const centre = centrePoint(createReplaySim(r));
+      let prev = 0;
+      let raidShots = 0;
+      let lastStatus: ReturnType<Sim['playerStatus']>[] = [];
+      const sim = play(r, (s) => {
+        if (s.winner() === null) {
+          // de HUD-klok: elke tick een verder of terug naar 0, nooit een sprong
+          const d = s.playerStatus(0).dominance!;
+          expect(d.ticksHeld === prev + 1 || d.ticksHeld === 0).toBe(true);
+          expect(d.ticksRequired).toBe(required);
+          prev = d.ticksHeld;
+          lastStatus = [0, 1].map((p) => s.playerStatus(p));
+        }
+        for (let k = 0; k < s.events.count; k++) {
+          if (s.events.type[k] !== EVENT_TYPE.shotFired) continue;
+          const u = s.getUnit(s.events.a[k]!);
+          if (u?.owner === 1 && (u.x - centre.x) ** 2 + (u.y - centre.y) ** 2 < (15 * 256) ** 2)
+            raidShots++;
+        }
+      });
+      expect(sim.winner()).toMatchObject({ playerId: 0, reason: 'dominance' });
+      // in de tick van de winst bereikt de klok ticksRequired; daarvoor stond hij er één onder
+      const won = sim.playerStatus(0).dominance!;
+      expect(won.ticksHeld).toBe(required);
+      expect(won.pointsHeld).toBeGreaterThanOrEqual(won.pointsRequired);
+      expect(lastStatus[0]!.dominance!.ticksHeld).toBe(required - 1);
+      // de AI ziet de bot als leider, houdt zelf zijn settlement-punt en raidde het midden
+      const ai = lastStatus[1]!.dominance!;
+      expect(ai.pointsHeld).toBe(1);
+      expect(ai.leader).toEqual({ playerId: 0, pointsHeld: 2, ticksHeld: required - 1 });
+      expect(raidShots).toBeGreaterThan(0);
     },
   );
 

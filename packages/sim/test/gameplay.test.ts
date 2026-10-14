@@ -725,6 +725,38 @@ describe('claims en winroutes', () => {
     expect(sim.winner()).toEqual(w);
   });
 
+  it('PlayerStatus.dominance (protocol 0.6.0): eigen stand en de tegenstander die het dichtst bij dominantie is', () => {
+    const map = { ...createOpenMap(64, 64), dominance: { pointsRequired: 1, ticks: 100 } };
+    const sim = createSim(testInit(10, map));
+    const pt = kindOf(sim, 'claimPoint')[0]!;
+    const v = sim.getUnit(pt)!;
+    expect(sim.playerStatus(0).dominance).toEqual({
+      pointsHeld: 0,
+      pointsRequired: 1,
+      ticksHeld: 0,
+      ticksRequired: 100,
+      leader: { playerId: 1, pointsHeld: 0, ticksHeld: 0 },
+    });
+    sim.spawnBuilding(CLAIMPAAL, 1, (v.x >> 8) + 1, v.y >> 8);
+    play(sim, 40);
+    const own = sim.playerStatus(1).dominance!;
+    expect(own).toMatchObject({ pointsHeld: 1, ticksHeld: 40, ticksRequired: 100 });
+    expect(own.leader).toEqual({ playerId: 0, pointsHeld: 0, ticksHeld: 0 });
+    expect(sim.playerStatus(0).dominance!.leader).toEqual({
+      playerId: 1,
+      pointsHeld: 1,
+      ticksHeld: sim.dominanceTicks(1),
+    });
+    // de query verandert de state niet
+    const h = sim.hash();
+    sim.playerStatus(0);
+    expect(sim.hash()).toBe(h);
+    // zonder tegenstander die nog meedoet: geen leider (wie opgeeft, verliest ook zijn klok)
+    play(sim, 1, at(sim.frame, cmd(sim.frame, 1, 'Surrender', {})));
+    expect(sim.playerStatus(0).dominance!.leader).toBeNull();
+    expect(sim.playerStatus(1).dominance!.ticksHeld).toBe(0);
+  });
+
   it('winroute A: het hoofdgebouw van de tegenstander slopen', () => {
     const sim = createSim(testInit(11, createOpenMap(64, 64)));
     const hq1 = sim
@@ -831,6 +863,13 @@ describe('state', () => {
         },
         techs: [],
         queue: [],
+        dominance: {
+          pointsHeld: 0,
+          pointsRequired: createTestMap().dominance.pointsRequired,
+          ticksHeld: 0,
+          ticksRequired: createTestMap().dominance.ticks,
+          leader: { playerId: 0, pointsHeld: 0, ticksHeld: 0 },
+        },
       },
       winner: null,
     });

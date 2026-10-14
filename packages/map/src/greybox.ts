@@ -20,18 +20,38 @@ export const TILE_RUIN = 1;
 export const TILE_CLIFF = 2;
 export type TerrainTile = typeof TILE_GROUND | typeof TILE_RUIN | typeof TILE_CLIFF;
 
-/** Onbegaanbare cellen vanaf deze hoogte (1/256 m, ca. 3,75 m) zijn kliffen, lager zijn het ruines. */
-export const CLIFF_MIN_HEIGHT = 960;
+/** Hoogteverschil met een buurcel (1/256 m) vanaf waar een onbegaanbare cel een klifwand is (ca. 0,5 m per m, 27 graden); vlakker is een ruine. */
+export const CLIFF_MIN_STEP = 128;
+
+/** Grootste hoogteverschil (1/256 m) tussen cel (x, y) en een van de 8 buren. */
+function cellStep(heights: Heightmap, x: number, y: number): number {
+  const here = heights.data[y * heights.w + x] as number;
+  let step = 0;
+  for (let dy = -1; dy <= 1; dy++) {
+    for (let dx = -1; dx <= 1; dx++) {
+      const nx = x + dx;
+      const ny = y + dy;
+      if ((dx === 0 && dy === 0) || nx < 0 || ny < 0 || nx >= heights.w || ny >= heights.h)
+        continue;
+      const d = Math.abs((heights.data[ny * heights.w + nx] as number) - here);
+      if (d > step) step = d;
+    }
+  }
+  return step;
+}
 
 export function terrainTile(map: MapGrid, heights: Heightmap, x: number, y: number): TerrainTile {
   const i = y * map.w + x;
   if (map.passable[i] === 1) return TILE_GROUND;
-  return (heights.data[i] as number) >= CLIFF_MIN_HEIGHT ? TILE_CLIFF : TILE_RUIN;
+  return cellStep(heights, x, y) >= CLIFF_MIN_STEP ? TILE_CLIFF : TILE_RUIN;
 }
 
 /** Markeringskleuren voor cellen met een scrap-node of claimpunt (zichtbaar op het terrein; heeft voorrang op de terreinkleur). */
 export const MARK_SCRAP_RGB: readonly [number, number, number] = [235, 190, 40];
 export const MARK_CLAIM_RGB: readonly [number, number, number] = [60, 150, 230];
+
+/** Rots (grijs) voor steile of hoge begaanbare cellen; de eerste benadering tot de echte terreintextuur van render. */
+export const ROCK_RGB: readonly [number, number, number] = [104, 98, 92];
 
 const TILE_RGB: ReadonlyArray<readonly [number, number, number]> = [
   [150, 128, 94], // grond: woestijnzand
@@ -56,6 +76,22 @@ function cornerHeight(heights: Heightmap, cx: number, cy: number): number {
     }
   }
   return (sum * (RECIP[n] as number)) >> 16;
+}
+
+/**
+ * Begaanbare grond: zand, naar rots gemengd op helling (vanaf 0,25 m per m volledig rots bij 0,5) en op hoogte
+ * (hoger dan 2 m wordt tot ruim een derde rots, zoals de plateaus van Rock Terrain 4). Alleen integers.
+ */
+function groundRgb(heights: Heightmap, x: number, y: number): readonly [number, number, number] {
+  const slope = Math.min(256, cellStep(heights, x, y) * 2);
+  const high = Math.min(120, Math.max(0, ((heights.data[y * heights.w + x] as number) - 512) >> 3));
+  const f = Math.max(slope, high);
+  const g = TILE_RGB[TILE_GROUND] as readonly [number, number, number];
+  return [
+    (g[0] * (256 - f) + ROCK_RGB[0] * f) >> 8,
+    (g[1] * (256 - f) + ROCK_RGB[1] * f) >> 8,
+    (g[2] * (256 - f) + ROCK_RGB[2] * f) >> 8,
+  ];
 }
 
 /**
@@ -91,7 +127,9 @@ export function greyboxMesh(map: MapGrid, heights: Heightmap): GreyboxMesh {
           ? MARK_CLAIM_RGB
           : mark === 1
             ? MARK_SCRAP_RGB
-            : (TILE_RGB[tile] as readonly [number, number, number]);
+            : tile === TILE_GROUND
+              ? groundRgb(heights, x, y)
+              : (TILE_RGB[tile] as readonly [number, number, number]);
       // Lichte hoogte-arcering: 0..31 extra helderheid per ca. 2 m (alleen visuele hulp).
       const shade =
         mark !== 0 ? 0 : Math.min(31, Math.max(0, (heights.data[y * w + x] as number) >> 4));

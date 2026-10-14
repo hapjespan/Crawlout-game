@@ -1,4 +1,4 @@
-import type { FrameBundle, PlayerStatus, QueueItem } from '@crawlout/protocol';
+import type { DominanceStatus, FrameBundle, PlayerStatus, QueueItem } from '@crawlout/protocol';
 import { ENTITY_NONE, MAX_PLAYERS } from '@crawlout/protocol';
 import type {
   SimBuildingType,
@@ -31,7 +31,12 @@ import type { StateParts } from './state.js';
 import { StateHeader, deserializeState, hashState, serializeState } from './state.js';
 import { AiScratch, aiSystem } from './systems/ai.js';
 import { Census, takeCensus } from './systems/census.js';
-import { ClaimScratch, claimsSystem, updateClaimPoints } from './systems/claims.js';
+import {
+  ClaimScratch,
+  claimsSystem,
+  dominanceStatus,
+  updateClaimPoints,
+} from './systems/claims.js';
 import { cleanupSystem } from './systems/cleanup.js';
 import { combatSystem } from './systems/combat.js';
 import type { SimCommand } from './systems/commands.js';
@@ -306,7 +311,18 @@ export class Sim implements SimContext {
       hero: heroStatus(this, playerId),
       techs: this.researched(playerId), // besluit sprint 3 (architect): de HUD filtert bouwmenu en craft-opties op prereqTech
       queue: this.queue(playerId),
+      dominance: this.dominance(playerId), // protocol 0.6.0: winroute B voor de HUD
     };
+  }
+
+  /**
+   * Dominantie van een speler voor de HUD (PlayerStatus.dominance, protocol 0.6.0): claimpunten en ticks van de speler
+   * zelf, en de tegenstander die het dichtst bij dominantie is (null zonder tegenstander die nog meedoet).
+   */
+  dominance(playerId: number): DominanceStatus {
+    if (!isInt(playerId) || playerId < 0 || playerId >= this.playerCount)
+      throw new Error(`onbekende speler ${playerId}`);
+    return dominanceStatus(this, playerId);
   }
 
   /**

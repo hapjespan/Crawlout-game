@@ -194,20 +194,19 @@ function buildingKeys(sim: Sim): Map<number, string> {
   return out;
 }
 
-/** Woningen voor speler 0 (midden van de 2 bij 2 footprint, in cellen) in een blok links boven het hoofdgebouw. */
-const HOUSES: PlannedBuilding[] = [6, 9, 12].flatMap((cy) =>
-  [6, 9, 12, 15].map((cx) => ({ key: 'woning', cx, cy })),
-);
+/** Een woning bij het eigen hoofdgebouw (de plek volgt uit de map en de state, zie SitePlanner in bot.ts). */
+const HOUSE: PlannedBuilding = { key: 'woning', at: 'hq' };
+const houses = (n: number): PlannedBuilding[] => Array.from({ length: n }, () => HOUSE);
 
 /** Bot-plannen voor de balansmeting: passief zoals fixture s4-rustbelt-turrets, actief met omscholen boven een drempel. */
 export const BOT_PLANS: Record<'passief' | 'actief', BotPlan> = {
   passief: {
     builds: [
-      { key: 'werkplaats', cx: 26, cy: 20 },
-      HOUSES[0]!,
-      { key: 'turret', cx: 28, cy: 27 },
-      { key: 'lab', cx: 14, cy: 26 },
-      HOUSES[1]!,
+      { key: 'werkplaats', at: 'hq' },
+      HOUSE,
+      { key: 'turret', at: 'hq' },
+      { key: 'lab', at: 'hq' },
+      HOUSE,
     ],
     research: ['geweerrek', 'raffinage', 'lasergeleiding'],
     builders: 1,
@@ -219,11 +218,11 @@ export const BOT_PLANS: Record<'passief' | 'actief', BotPlan> = {
   },
   actief: {
     builds: [
-      { key: 'werkplaats', cx: 26, cy: 20 },
-      ...HOUSES.slice(0, 3),
-      { key: 'turret', cx: 28, cy: 27 },
-      { key: 'lab', cx: 14, cy: 26 },
-      ...HOUSES.slice(3),
+      { key: 'werkplaats', at: 'hq' },
+      ...houses(3),
+      { key: 'turret', at: 'hq' },
+      { key: 'lab', at: 'hq' },
+      ...houses(9),
     ],
     research: [
       'geweerrek',

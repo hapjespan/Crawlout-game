@@ -19,6 +19,7 @@ import {
   type MapAssets,
   type PropsFile,
 } from '../src/index.js';
+import { nodeGenIo } from '../src/gen/node.js';
 
 const dataDir = fileURLToPath(new URL('../../../data/', import.meta.url));
 const assets: MapAssets = { read: (ref) => readFileSync(dataDir + ref, 'utf8') };
@@ -154,7 +155,7 @@ describe('rustbelt props', () => {
   });
 
   it('is reproduceerbaar: dezelfde seed geeft dezelfde lijst, een andere seed een andere', () => {
-    const g = generateRustbelt();
+    const g = generateRustbelt(nodeGenIo);
     const spec = RUSTBELT_SPEC.props!;
     const again = scatterProps(g.def, g.passable, spec);
     expect(JSON.stringify(again.props)).toBe(JSON.stringify(file.props));

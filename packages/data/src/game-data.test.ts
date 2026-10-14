@@ -421,10 +421,10 @@ describe('balans speltest 14 oktober: AI-script', () => {
     ]);
     expect([ai.claimSafeRadiusU, ai.defendRadiusU, ai.rallyRadiusU]).toEqual([
       metersToUnits(30),
-      metersToUnits(14),
+      metersToUnits(38),
       metersToUnits(6),
     ]);
-    expect(AI_SITES[ai.rallySite]).toBe('claim');
+    expect(AI_SITES[ai.rallySite]).toBe('hq');
     expect(ai.allInWithoutNodes).toBe(true);
   });
 
