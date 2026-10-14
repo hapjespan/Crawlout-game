@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync
 import { basename, join, relative, sep } from 'node:path';
 import { BUDGETS } from './budgets.js';
 import { bakeAnimations } from './bake.js';
+import { buildBuildings, loadVariantsConfig, type BuildingDetails } from './buildings.js';
 import { EMPTY_CLIPMAP, parseClipmap, resolveClips, type Clipmap } from './clipmap.js';
 import { conformDocument, type ConformInfo } from './conform.js';
 import { animationIndex, findSockets, maxBoneCount } from './inspect.js';
@@ -15,6 +16,7 @@ import {
 } from './manifest.js';
 import { EMPTY_RIGMAP, parseRigmap, type Rigmap } from './rigmap.js';
 import { validateAsset } from './validate.js';
+import type { VariantsConfig } from './variants.js';
 
 export interface BuildOptions {
   srcDir: string;
@@ -25,6 +27,8 @@ export interface BuildOptions {
   clipmapPath?: string;
   /** Pad naar de rigmap; standaard `<srcDir>/rigmap.json`. Een ontbrekend bestand betekent: geen conform-stap. */
   rigmapPath?: string;
+  /** Pad naar de gebouwenconfig; standaard `<srcDir>/buildings/variants.json`. Ontbreekt hij, dan zijn er geen gebouwen. */
+  variantsPath?: string;
 }
 
 export interface AssetReport {
@@ -33,7 +37,7 @@ export interface AssetReport {
   errors: string[];
   warnings: string[];
   /** Wat de buis aan de bron veranderd heeft en wat eruit kwam; komt in validation-report.json. */
-  details?: AssetDetails;
+  details?: AssetDetails | BuildingDetails;
 }
 
 export interface AssetDetails {
@@ -85,7 +89,6 @@ function toId(file: string): string {
 /** Leest alle GLB's uit srcDir, valideert, bouwt LODs en schrijft distDir. Bij een schending wordt niets geschreven. */
 export async function buildAssets(options: BuildOptions): Promise<BuildResult> {
   const { srcDir, distDir } = options;
-  const files = listGlbs(srcDir);
   const notices: string[] = [];
   const toktx = options.toktx === undefined ? detectToktx() : options.toktx;
   if (!toktx)
@@ -121,6 +124,36 @@ export async function buildAssets(options: BuildOptions): Promise<BuildResult> {
       };
     }
   }
+
+  // Gebouwen (src/buildings.ts): de varianten komen uit variants.json; de bron-GLB's daarin zijn zelf geen asset.
+  const variantsSource = options.variantsPath ?? join(srcDir, 'buildings', 'variants.json');
+  let variants: VariantsConfig | null = null;
+  if (existsSync(variantsSource)) {
+    try {
+      variants = loadVariantsConfig(variantsSource);
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : String(error);
+      return {
+        ok: false,
+        reports: [
+          {
+            id: basename(variantsSource, '.json'),
+            source: relative(srcDir, variantsSource).split(sep).join('/'),
+            errors: [`ongeldige ${basename(variantsSource)}: ${reason}`],
+            warnings: [],
+          },
+        ],
+        notices,
+        manifest: null,
+      };
+    }
+  }
+  const variantSources = new Set(
+    Object.values(variants?.sources ?? {}).map((source) => source.file.split('\\').join('/')),
+  );
+  const files = listGlbs(srcDir).filter(
+    (file) => !variantSources.has(relative(srcDir, file).split(sep).join('/')),
+  );
 
   const io = createIO();
   const reports: AssetReport[] = [];
@@ -168,11 +201,21 @@ export async function buildAssets(options: BuildOptions): Promise<BuildResult> {
     }
   }
 
+  const buildings = variants
+    ? await buildBuildings(variants, srcDir, relative(srcDir, variantsSource).split(sep).join('/'))
+    : null;
+  for (const report of buildings?.reports ?? []) {
+    const clash = seen.get(report.id);
+    if (clash)
+      report.errors.push(`id "${report.id}" is al in gebruik door ${clash}; hernoem de variant.`);
+    reports.push(report);
+  }
+
   if (reports.some((r) => r.errors.length > 0))
     return { ok: false, reports, notices, manifest: null };
 
-  const entries: AssetEntry[] = [];
-  const outputs = new Map<string, Uint8Array | string>();
+  const entries: AssetEntry[] = [...(buildings?.entries ?? [])];
+  const outputs = new Map<string, Uint8Array | string>(buildings?.outputs);
   for (const asset of validated) {
     const lods = await buildLods(asset.buffer, asset.kind, { toktx });
     const sourceDoc = await io.readBinary(asset.buffer);
