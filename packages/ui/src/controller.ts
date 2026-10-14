@@ -6,6 +6,7 @@ import type {
   BuildingCard,
   CraftOption,
   HeroAbilityOption,
+  DominanceView,
   HudAlert,
   HudDeps,
   HudHandle,
@@ -152,6 +153,7 @@ export interface HudState {
   buildMenuOpen: boolean;
   confirmSurrender: boolean;
   minimap: MinimapData | null;
+  dominance: DominanceView | null;
   buildOptions: readonly BuildOption[];
   /** Gekozen bouwoptie in plaatsingsmodus. */
   placement: BuildOption | null;
@@ -172,6 +174,12 @@ export interface HudState {
   roster: readonly RosterGroup[];
   /** Uitgeklapte groep in de eenhedenbalk (key), of null. */
   rosterOpen: string | null;
+}
+
+/** De tegenstander die telt (genoeg punten, niet jijzelf), of null. */
+export function threatOf(d: DominanceView | null): NonNullable<DominanceView['leader']> | null {
+  const l = d?.leader;
+  return d && l && !l.isYou && l.pointsHeld >= d.pointsRequired ? l : null;
 }
 
 const NO_NETWORK: NetworkState = { desync: null, stall: null };
@@ -196,6 +204,8 @@ export class HudController implements HudHandle {
   private unsubscribeAlerts: (() => void) | null = null;
   private readonly toastTimers = new Map<number, ReturnType<typeof setTimeout>>();
   private toastSeq = 0;
+  /** Telde de tegenstander bij de vorige lezing al? Alleen de overgang geeft een toast. */
+  private opponentCounting = false;
 
   constructor(private readonly deps: HudDeps) {
     this.state = {
@@ -208,6 +218,7 @@ export class HudController implements HudHandle {
       buildMenuOpen: false,
       confirmSurrender: false,
       minimap: null,
+      dominance: null,
       buildOptions: [],
       placement: null,
       perkOptions: [],
@@ -223,6 +234,7 @@ export class HudController implements HudHandle {
       showLobby: false,
     };
     this.read();
+    this.opponentCounting = threatOf(this.state.dominance) !== null;
   }
 
   getState(): HudState {
@@ -255,6 +267,10 @@ export class HudController implements HudHandle {
 
   refresh(): void {
     this.read();
+    const counting = threatOf(this.state.dominance) !== null;
+    const started = counting && !this.opponentCounting;
+    this.opponentCounting = counting;
+    if (started) this.pushAlert({ kind: 'dominance', x: 0, y: 0 });
     this.emit();
   }
 
@@ -282,7 +298,7 @@ export class HudController implements HudHandle {
       case 'minimap':
         return this.deps.getMinimap !== undefined;
       case 'alert':
-        return this.state.toasts.length > 0;
+        return this.state.toasts.some((t) => t.kind !== 'dominance');
       case 'lobby':
         return this.deps.getLobby !== undefined;
       default:
@@ -509,6 +525,7 @@ export class HudController implements HudHandle {
   }
 
   focusAlert(alert: HudAlert): void {
+    if (alert.kind === 'dominance') return; // geen locatie
     this.deps.focusCamera?.(alert.x, alert.y);
   }
 
@@ -520,7 +537,7 @@ export class HudController implements HudHandle {
   }
 
   private focusLastAlert(): void {
-    const last = this.state.toasts[this.state.toasts.length - 1];
+    const last = this.state.toasts.filter((t) => t.kind !== 'dominance').pop();
     if (last) this.focusAlert(last);
   }
 
@@ -743,6 +760,7 @@ export class HudController implements HudHandle {
       status,
       selection,
       minimap: d.getMinimap?.() ?? null,
+      dominance: d.getDominance?.() ?? null,
       buildOptions: this.state.buildMenuOpen ? (d.getBuildOptions?.() ?? []) : [],
       placement,
       perkOptions: pendingPerks

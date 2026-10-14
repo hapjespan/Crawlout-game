@@ -106,6 +106,14 @@ export const HUD_CSS = `
 .co-card-progress>span{display:block;height:100%;background:#42a5f5}
 .co-card-cancel{font:inherit;font-size:11px;color:inherit;background:#2f353b;border:1px solid #4a5159;border-radius:4px;padding:1px 6px;cursor:pointer}
 .co-card-cancel:hover{background:#3b434b}
+.co-dominance{position:absolute;top:8px;left:50%;transform:translateX(-50%);width:300px;display:flex;flex-direction:column;gap:6px}
+.co-dom-row{display:flex;flex-direction:column;gap:3px}
+.co-dom-text{font-size:12px;font-variant-numeric:tabular-nums}
+.co-dom-bar{height:6px;background:#2b2f33;border-radius:3px;overflow:hidden}
+.co-dom-bar>span{display:block;height:100%;background:#64b5f6}
+.co-dom-warn .co-dom-text{color:#ffb74d;font-weight:700}
+.co-dom-warn .co-dom-bar>span{background:repeating-linear-gradient(45deg,#ff8a65 0 6px,#ffb74d 6px 12px)}
+.co-toast-dominance{background:#7a4a12;border-color:#ff8a65}
 .co-toasts{position:absolute;left:50%;top:104px;transform:translateX(-50%);display:flex;flex-direction:column;gap:4px;margin:0;padding:0;list-style:none;pointer-events:none}
 .co-toasts li{display:flex;gap:2px;pointer-events:auto}
 .co-toast{flex-direction:row;padding:6px 14px;font-weight:600}

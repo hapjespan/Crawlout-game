@@ -6,28 +6,28 @@ Preact-HUD als overlay op de 3D-scene. De HUD praat alleen via `HudDeps`: comman
 
 Toetsen werken niet in een tekstveld en niet met Ctrl, Cmd of Alt.
 
-| Toets | Actie | Voorwaarde |
-|---|---|---|
-| M | Verplaatsen (targeting) | selectie |
-| A | Aanvallen-verplaatsen (targeting) | selectie |
-| S | Stop | selectie |
-| G | Verzamelen (targeting op een node) | selectie |
-| 1, 2, 3 | Rol plunderaar, bouwer, militie | selectie |
-| B | Bouwmenu | |
-| 1 tot 9 | Gebouw kiezen | bouwmenu open |
-| K | Cijfertoetsen van de craftkaarten aan of uit | bewoners geselecteerd en `getBuildingCards` levert craftkaarten |
-| 1 tot 9 | Craftkaart starten | na K |
-| 1 tot 9 | Kaart starten (de `hotkey` van de kaart) | alleen gebouwen geselecteerd, met kaarten |
-| H | Held-paneel tonen of verbergen | held aanwezig |
-| F1, F2, F3 | Perk 1, 2, 3 kiezen | level-up open (`pendingPerks` > 0) |
-| Z, X, C | Held-ability 1, 2, 3 | held leeft, cooldown klaar; een ability met `needsTarget` vraagt daarna een wereldklik |
-| V | Oplappen | held dood en `revivesLeft` niet 0 |
-| N | Minimap tonen of verbergen | `getMinimap` |
-| Spatie | Camera naar de laatste waarschuwing | waarschuwing aanwezig |
-| . (punt) | Volgende unit zonder taak selecteren, camera erheen | eenhedenbalk aanwezig |
-| L | Lobby-paneel | `getLobby` |
-| R, O | Klaar, host-instellingen | lobby-paneel open |
-| Esc | Annuleren: opgeven-dialoog, targeting, plaatsing, menu's | |
+| Toets      | Actie                                                    | Voorwaarde                                                                             |
+| ---------- | -------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| M          | Verplaatsen (targeting)                                  | selectie                                                                               |
+| A          | Aanvallen-verplaatsen (targeting)                        | selectie                                                                               |
+| S          | Stop                                                     | selectie                                                                               |
+| G          | Verzamelen (targeting op een node)                       | selectie                                                                               |
+| 1, 2, 3    | Rol plunderaar, bouwer, militie                          | selectie                                                                               |
+| B          | Bouwmenu                                                 |                                                                                        |
+| 1 tot 9    | Gebouw kiezen                                            | bouwmenu open                                                                          |
+| K          | Cijfertoetsen van de craftkaarten aan of uit             | bewoners geselecteerd en `getBuildingCards` levert craftkaarten                        |
+| 1 tot 9    | Craftkaart starten                                       | na K                                                                                   |
+| 1 tot 9    | Kaart starten (de `hotkey` van de kaart)                 | alleen gebouwen geselecteerd, met kaarten                                              |
+| H          | Held-paneel tonen of verbergen                           | held aanwezig                                                                          |
+| F1, F2, F3 | Perk 1, 2, 3 kiezen                                      | level-up open (`pendingPerks` > 0)                                                     |
+| Z, X, C    | Held-ability 1, 2, 3                                     | held leeft, cooldown klaar; een ability met `needsTarget` vraagt daarna een wereldklik |
+| V          | Oplappen                                                 | held dood en `revivesLeft` niet 0                                                      |
+| N          | Minimap tonen of verbergen                               | `getMinimap`                                                                           |
+| Spatie     | Camera naar de laatste waarschuwing                      | waarschuwing aanwezig                                                                  |
+| . (punt)   | Volgende unit zonder taak selecteren, camera erheen      | eenhedenbalk aanwezig                                                                  |
+| L          | Lobby-paneel                                             | `getLobby`                                                                             |
+| R, O       | Klaar, host-instellingen                                 | lobby-paneel open                                                                      |
+| Esc        | Annuleren: opgeven-dialoog, targeting, plaatsing, menu's |                                                                                        |
 
 Volgorde bij cijfers: bouwmenu (als open), dan de kaarten (alleen gebouwen geselecteerd, of bewoners na K), anders de rolletoetsen. Een ontbrekende of niet-startbare kaart (vergrendeld, te duur, loopt, klaar) slikt het cijfer wel in, zodat het geen rol wisselt.
 
@@ -75,6 +75,22 @@ Elke kaart toont een symbool, naam, kosten (rood bij te duur), duur, effect, wat
 
 Wat de client levert: de `state` uit GameData, scrap en `PlayerStatus.queue` (`QueueItem` met kind, buildingId, id en progressPermille: `running` en `progressPct = progressPermille / 10`), `startCard` stuurt `Research { techId }`, `Craft { ids, loadoutId }` of `Recruit { buildingId }`, `cancelCard` stuurt `Cancel { ids: [buildingId] }`.
 
+## Dominantie-teller (winroute B)
+
+```ts
+getDominance?(): DominanceView | null; // null of ontbrekend: geen teller
+
+interface DominanceView {
+  pointsHeld: number;      // claimpunten die jij nu vasthoudt
+  pointsRequired: number;  // X: punten nodig om te tellen
+  secondsHeld: number;     // seconden dat jij genoeg punten vasthoudt (0 als te weinig)
+  secondsRequired: number; // Z in seconden
+  leader: { name: string; pointsHeld: number; secondsHeld: number; isYou: boolean } | null; // meeste punten
+}
+```
+
+De client vertaalt dit uit de sim (claims per speler en de dominantie-timer; seconden = ticks / 20). De HUD toont bovenin het midden "Dominantie: 1/2 punten" met een progressbar; heb je genoeg punten, dan loopt de balk over de tijd en staat er "nog m:ss". Heeft een tegenstander (`leader` met `isYou: false`) minstens `pointsRequired` punten, dan komt er een tweede regel in waarschuwingsstijl ("Let op: AI houdt 2/2 punten, nog 3:12", met icoon en tekst). De HUD stuurt zelf een toast (`AlertKind` 'dominance', "Tegenstander telt mee voor dominantie!") bij de overgang naar tellen; die toast heeft geen locatie, dus klikken of Spatie verplaatst de camera niet. De client hoeft hiervoor geen alert te sturen, al kan het ook via `subscribeAlerts` met kind 'dominance'. Lees de teller bij elke refresh en geef een stabiel object terug als niets verandert. De waarschuwing is bewust geen live-region (de tijd telt elke seconde); de toast wordt wel voorgelezen.
+
 ## Demo
 
-`apps/client/hud-demo.html` (via `pnpm dev`) draait de HUD met mock-deps, inclusief mock-kaarten in alle vijf de statussen (Y wisselt de selectie: gebouw geeft onderzoekskaarten, bewoners craftkaarten).
+`apps/client/hud-demo.html` (via `pnpm dev`) draait de HUD met mock-deps, inclusief mock-kaarten in alle vijf de statussen (T wisselt de mock-dominantie; Y wisselt de selectie: gebouw geeft onderzoekskaarten, bewoners craftkaarten).

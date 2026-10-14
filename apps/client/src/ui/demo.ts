@@ -3,6 +3,7 @@ import { mountHud } from '@crawlout/ui';
 import type {
   BuildOption,
   BuildingCard,
+  DominanceView,
   HudAlert,
   HudDeps,
   MinimapData,
@@ -47,6 +48,41 @@ let status: PlayerStatus = {
   queue: [],
 };
 let heroDead = false;
+// Mock-dominantie: T wisselt tussen niets, eigen voortgang, eigen telling en een tellende tegenstander.
+const DOM_STEPS = ['none', 'own', 'ownCounting', 'threat'] as const;
+let domStep = 0;
+let domSeconds = 0;
+const DOM_REQUIRED = 300;
+function mockDominance(): DominanceView | null {
+  switch (DOM_STEPS[domStep]) {
+    case 'own':
+      return {
+        pointsHeld: 1,
+        pointsRequired: 2,
+        secondsHeld: 0,
+        secondsRequired: DOM_REQUIRED,
+        leader: { name: 'Jij', pointsHeld: 1, secondsHeld: 0, isYou: true },
+      };
+    case 'ownCounting':
+      return {
+        pointsHeld: 2,
+        pointsRequired: 2,
+        secondsHeld: domSeconds,
+        secondsRequired: DOM_REQUIRED,
+        leader: { name: 'Jij', pointsHeld: 2, secondsHeld: domSeconds, isYou: true },
+      };
+    case 'threat':
+      return {
+        pointsHeld: 1,
+        pointsRequired: 2,
+        secondsHeld: 0,
+        secondsRequired: DOM_REQUIRED,
+        leader: { name: 'AI', pointsHeld: 2, secondsHeld: domSeconds, isYou: false },
+      };
+    default:
+      return null;
+  }
+}
 const abilities = [
   { abilityId: 1, naam: 'Schreeuw', needsTarget: false, readyAt: 0 },
   { abilityId: 2, naam: 'Vuurbal', needsTarget: true, readyAt: 0 },
@@ -316,6 +352,7 @@ const deps: HudDeps = {
   beginTargeting: (kind: TargetingKind) => log(`targeting: ${kind}`),
   endTargeting: () => log('targeting gestopt'),
   getMinimap: () => minimap,
+  getDominance: mockDominance,
   focusCamera: (x, y) => log(`camera -> ${x}, ${y}`),
   getBuildOptions: () =>
     buildOptions.map((o) => ({ ...o, affordable: status.scrap >= o.scrapCost })),
@@ -364,6 +401,7 @@ worldEl.addEventListener('click', (e) => {
 // Mock-gedrag: scrap loopt op; D = desync, W = stall, Y = selectie wisselen.
 setInterval(() => {
   status = { ...status, scrap: status.scrap + 3 };
+  domSeconds = Math.min(DOM_REQUIRED, domSeconds + 1);
   for (const m of [...researchMocks, ...craftMocks]) {
     if (m.elapsed === null) continue;
     m.elapsed += 1;
@@ -388,7 +426,10 @@ window.addEventListener('keydown', (e) => {
       x: Math.round(Math.random() * MAP_W) * U,
       y: Math.round(Math.random() * MAP_W) * U,
     });
-  else if (e.key === 'u')
+  else if (e.key === 't') {
+    domStep = (domStep + 1) % DOM_STEPS.length;
+    domSeconds = 90;
+  } else if (e.key === 'u')
     status = {
       ...status,
       hero: status.hero ? { ...status.hero, pendingPerks: status.hero.pendingPerks ? 0 : 1 } : null,
@@ -407,5 +448,5 @@ window.addEventListener('keydown', (e) => {
   notify();
 });
 log(
-  'Demo: D = desync, W = stall, Y = selectie (alles, gebouw, bewoners, niets; gebouw toont de onderzoekskaarten, bewoners de craftkaarten met K + cijfer), J = alert, U = level-up, O = held dood/levend; B = bouwen, cijfer kiest gebouw, klik plaatst',
+  'Demo: D = desync, W = stall, Y = selectie (alles, gebouw, bewoners, niets; gebouw toont de onderzoekskaarten, bewoners de craftkaarten met K + cijfer), J = alert, T = dominantie (niets, eigen punten, eigen telling, tegenstander telt), U = level-up, O = held dood/levend; B = bouwen, cijfer kiest gebouw, klik plaatst',
 );

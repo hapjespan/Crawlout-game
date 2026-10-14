@@ -153,15 +153,34 @@ export interface BuildingCard {
   hotkey: string;
 }
 
-export type AlertKind = 'attack' | 'settlerLost' | 'claimLost';
+export type AlertKind = 'attack' | 'settlerLost' | 'claimLost' | 'dominance';
 export interface HudAlert {
   kind: AlertKind;
-  /** Locatie in sim-eenheden. */
+  /** Locatie in sim-eenheden. Bij 'dominance' zonder betekenis (0): die toast heeft geen locatie en verplaatst de camera niet. */
   x: number;
   y: number;
 }
 export interface ToastAlert extends HudAlert {
   id: number;
+}
+
+/** Dominantie-stand (winroute B). De client vertaalt dit uit de sim; het type komt bewust niet uit protocol. */
+export interface DominanceView {
+  /** Claimpunten die jij nu vasthoudt. */
+  pointsHeld: number;
+  /** Aantal punten dat nodig is om te tellen (X). */
+  pointsRequired: number;
+  /** Seconden dat jij al genoeg punten vasthoudt (0 zolang je er te weinig hebt). */
+  secondsHeld: number;
+  /** Seconden vasthouden voor de winst (Z). */
+  secondsRequired: number;
+  /** De speler met de meeste punten, of null als niemand punten heeft. Mag jijzelf zijn; dan zijn de velden gelijk aan de bovenste vier. */
+  leader: {
+    name: string;
+    pointsHeld: number;
+    secondsHeld: number;
+    isYou: boolean;
+  } | null;
 }
 
 export interface LobbyPlayerView {
@@ -255,6 +274,11 @@ export interface HudDeps {
   getRecruitOptions?(buildingIds: readonly number[]): readonly RecruitOption[];
   /** @deprecated Gebruik getBuildingCards. Craft-opties voor de geselecteerde bewoners; leeg of ontbrekend als ze niet bij een werkplaats staan. */
   getCraftOptions?(): readonly CraftOption[];
+  /**
+   * Dominantie-teller (winroute B); null of ontbrekend: geen teller. De HUD toont een balk, en een toast (kind 'dominance')
+   * zodra een tegenstander genoeg punten heeft en begint te tellen. Houd het object stabiel als niets verandert.
+   */
+  getDominance?(): DominanceView | null;
   /** Waarschuwingen; geeft de afmelder terug. */
   subscribeAlerts?(cb: (alert: HudAlert) => void): () => void;
   /** Lobby-paneel (multiplayer). */

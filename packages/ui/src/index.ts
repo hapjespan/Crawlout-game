@@ -12,6 +12,7 @@ export type {
   CardKind,
   CardState,
   CraftOption,
+  DominanceView,
   HeroAbilityOption,
   RecruitOption,
   ResearchOption,

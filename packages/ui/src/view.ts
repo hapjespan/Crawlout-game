@@ -2,7 +2,7 @@ import { h } from 'preact';
 import type { ComponentChild } from 'preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import type { PlayerStatus } from '@crawlout/protocol';
-import { ABILITY_KEYS, ACTIONS, PERK_KEYS, ROLE_LABEL, keyLabel } from './controller.js';
+import { ABILITY_KEYS, ACTIONS, PERK_KEYS, ROLE_LABEL, keyLabel, threatOf } from './controller.js';
 import type { HudController, HudState } from './controller.js';
 import { CardPanel } from './cards.js';
 import { drawMinimap } from './minimap.js';
@@ -42,6 +42,74 @@ function Counters(props: { status: PlayerStatus | null }): ComponentChild {
     h(Counter, { label: 'Bewoners', value: fmt(s?.settlers) }),
     h(Counter, { label: 'Pop', value: s ? `${s.pop}/${s.popCap}` : '–', full }),
     h(Counter, { label: 'Bedden', value: fmt(s?.beds) }),
+  );
+}
+
+function mmss(totalSeconds: number): string {
+  const t = Math.max(0, Math.ceil(totalSeconds));
+  return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`;
+}
+
+function DominanceBar(props: {
+  label: string;
+  now: number;
+  max: number;
+  text: string;
+  warn?: boolean;
+}): ComponentChild {
+  const max = Math.max(1, props.max);
+  const now = Math.max(0, Math.min(max, props.now));
+  return h(
+    'div',
+    { class: props.warn ? 'co-dom-row co-dom-warn' : 'co-dom-row' },
+    h(
+      'span',
+      { class: 'co-dom-text' },
+      props.warn ? h('span', { class: 'co-dom-icon', 'aria-hidden': 'true' }, '⚠ ') : null,
+      props.text,
+    ),
+    h(
+      'div',
+      {
+        class: 'co-dom-bar',
+        role: 'progressbar',
+        'aria-label': props.label,
+        'aria-valuemin': 0,
+        'aria-valuemax': max,
+        'aria-valuenow': now,
+        'aria-valuetext': props.text,
+      },
+      h('span', { style: { width: `${(now / max) * 100}%` } }),
+    ),
+  );
+}
+
+function Dominance(props: { state: HudState }): ComponentChild {
+  const d = props.state.dominance;
+  if (!d) return null;
+  const threat = threatOf(d);
+  const own = d.pointsHeld >= d.pointsRequired;
+  const ownText = own
+    ? `Dominantie: ${d.pointsHeld}/${d.pointsRequired} punten, nog ${mmss(d.secondsRequired - d.secondsHeld)}`
+    : `Dominantie: ${d.pointsHeld}/${d.pointsRequired} punten`;
+  return h(
+    'div',
+    { class: 'co-panel co-dominance', role: 'group', 'aria-label': 'Dominantie' },
+    h(DominanceBar, {
+      label: own ? 'Dominantie, tijd vastgehouden' : 'Dominantie, punten vastgehouden',
+      now: own ? d.secondsHeld : d.pointsHeld,
+      max: own ? d.secondsRequired : d.pointsRequired,
+      text: ownText,
+    }),
+    threat
+      ? h(DominanceBar, {
+          label: `Dominantie van ${threat.name}, tijd vastgehouden`,
+          now: threat.secondsHeld,
+          max: d.secondsRequired,
+          text: `Let op: ${threat.name} houdt ${threat.pointsHeld}/${d.pointsRequired} punten, nog ${mmss(d.secondsRequired - threat.secondsHeld)}`,
+          warn: true,
+        })
+      : null,
   );
 }
 
@@ -438,6 +506,7 @@ const ALERT_TEXT: Record<AlertKind, string> = {
   attack: 'Aanval!',
   settlerLost: 'Bewoner verloren',
   claimLost: 'Claim verloren',
+  dominance: 'Tegenstander telt mee voor dominantie!',
 };
 
 function Toasts(props: { ctl: HudController; state: HudState }): ComponentChild {
@@ -455,7 +524,10 @@ function Toasts(props: { ctl: HudController; state: HudState }): ComponentChild 
             type: 'button',
             class: `co-btn co-toast co-toast-${t.kind}`,
             'data-alert': t.kind,
-            'aria-label': `${ALERT_TEXT[t.kind]}, ga naar de locatie`,
+            'aria-label':
+              t.kind === 'dominance'
+                ? ALERT_TEXT[t.kind]
+                : `${ALERT_TEXT[t.kind]}, ga naar de locatie`,
             onClick: () => ctl.focusAlert(t),
           },
           ALERT_TEXT[t.kind],
@@ -620,6 +692,7 @@ export function Hud(props: { ctl: HudController }): ComponentChild {
         )
       : null,
     h(PlacementBar, { ctl, state }),
+    h(Dominance, { state }),
     h(Minimap, { ctl, state }),
     h(HeroPanel, { ctl, state }),
     h(Toasts, { ctl, state }),
