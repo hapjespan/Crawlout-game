@@ -73,6 +73,27 @@ describe('held', () => {
     expect(sim.playerStatus(0).hero!.xp).toBe(10 * HERO.xpPerKill + HERO.xpPerDiscovery);
   });
 
+  it('xp per assist: een vijand die een eigen unit binnen xpAssistRadius van de held doodt, verder weg niets', () => {
+    const sim = open(44);
+    const hero = heroOf(sim, 0);
+    for (const id of sim.entityIds()) if (sim.getUnit(id)!.kind === 'unit') sim.destroyEntity(id);
+    const h = sim.getUnit(hero)!;
+    const r = HERO.xpAssistRadius;
+    expect(r).toBeGreaterThan(CONFIG.aggroRange + 256); // anders schiet de held zelf
+    // binnen de straal maar buiten het aggro-bereik van de held: de eigen militie schiet
+    const near = { x: h.x + CONFIG.aggroRange + 3 * 256, y: h.y };
+    expect(near.x - h.x).toBeLessThan(r);
+    const a = sim.spawnUnit({ typeId: SCAV, owner: 1, ...near });
+    sim.spawnUnit({ typeId: MILITIA, owner: 0, x: near.x + 3 * 256, y: near.y });
+    // buiten de straal
+    const far = { x: h.x, y: h.y + r + 6 * 256 };
+    const b = sim.spawnUnit({ typeId: SCAV, owner: 1, ...far });
+    sim.spawnUnit({ typeId: MILITIA, owner: 0, x: far.x, y: far.y + 3 * 256 });
+    play(sim, 400);
+    expect([sim.getUnit(a), sim.getUnit(b)]).toEqual([null, null]);
+    expect(sim.playerStatus(0).hero!.xp).toBe(HERO.xpPerAssist);
+  });
+
   it('PickPerk: alleen met een open keuze, uit de perkPool, met genoeg SPECIAL; het effect geldt meteen', () => {
     const sim = open(42);
     const hero = heroOf(sim, 0);

@@ -3,14 +3,16 @@ import { C, NO_ENTITY } from '../ecs/world.js';
 import { idiv } from '../math/int.js';
 import type { SimContext } from './common.js';
 import { distToRect2, face, isEnemy, withinReach } from './common.js';
-import { grantXp } from './hero.js';
+import { grantXp, heroIndex } from './hero.js';
 import { SPECIAL_L, heroOf, heroSpecial, scalePermille } from '../effects.js';
 
 // Systeem 5: gevecht. Elke unit met een doel in bereik en een lege cooldown schiet: schade (plus ability-zones) maal
 // de damage-matrix (promille) op het pantser van het doel. Hitscan, geen projectielen. Dood en opruimen gebeuren pas in
 // systeem 8, dus units die deze tick sneuvelen schieten deze tick nog terug: de volgorde van de ids geeft geen voordeel.
 // De held: een kans van L maal luckCritPermille op een kritiek schot (+critDamagePermille, via sim.rng), en
-// xpPerKill voor elke vijandelijke unit die door zijn schot onder 0 hp zakt.
+// xpPerKill voor elke vijandelijke unit die door zijn schot onder 0 hp zakt. Balans speltest 14 oktober: zakt een
+// vijandelijke unit onder 0 hp door een schot van een eigen unit of turret binnen xpAssistRadius van de levende held,
+// dan krijgt die held xpPerAssist (de held leert van het gevecht om hem heen, niet alleen van zijn eigen schoten).
 // Turrets (besluit 8, fase-0 sectie 14): een voltooid gebouw met een wapen heeft Combat. Het beweegt niet en heeft geen
 // orders: het houdt zijn doel zolang dat een vijand binnen range is, en kiest anders zelf de dichtstbijzijnde vijand
 // binnen range (units voor gebouwen, tiebreak laagste id; nooit iets neutraals). Het doel kiest hij alleen als hij kan
@@ -37,16 +39,32 @@ export function combatSystem(ctx: SimContext): void {
     }
     const before = w.hp[t]!;
     w.hp[t] = before - idiv(dmg * mult, 1000);
-    if (hero && before > 0 && w.hp[t]! <= 0 && (w.mask[t]! & C.unit) !== 0) {
-      const h = heroOf(ctx, w.owner[i]!);
-      if (h !== undefined) grantXp(ctx, w.owner[i]!, h.xpPerKill);
-    }
+    if (before > 0 && w.hp[t]! <= 0 && (w.mask[t]! & C.unit) !== 0) killXp(ctx, i, t, hero);
     w.cooldown[i] = w.cooldownMax[i]!;
     face(w, i, w.x[t]!, w.y[t]!);
     const sid = w.idOf(i);
     ctx.events.push(EVENT_TYPE.shotFired, sid, tid, w.x[i]!, w.y[i]!);
     ctx.events.push(EVENT_TYPE.hit, tid, sid, w.x[t]!, w.y[t]!);
   }
+}
+
+/** xp voor de held van de schutter i bij de dood van vijandelijke unit t: xpPerKill als hij zelf schoot, anders xpPerAssist binnen de straal. */
+function killXp(ctx: SimContext, i: number, t: number, hero: boolean): void {
+  const p = ctx.world.owner[i]!;
+  const h = heroOf(ctx, p);
+  if (h === undefined) return;
+  if (hero) {
+    grantXp(ctx, p, h.xpPerKill);
+    return;
+  }
+  const k = h.xpPerAssist > 0 ? heroIndex(ctx, p) : -1;
+  if (k < 0) return;
+  const w = ctx.world;
+  const r = h.xpAssistRadius;
+  const dx = w.x[t]! - w.x[k]!;
+  const dy = w.y[t]! - w.y[k]!;
+  if (dx > r || -dx > r || dy > r || -dy > r || dx * dx + dy * dy > r * r) return;
+  grantXp(ctx, p, h.xpPerAssist);
 }
 
 /** Turret i: doel houden of opnieuw kiezen (zie boven). Zet ook flags.inCombat voor de snapshot. */

@@ -197,11 +197,13 @@ describe('sprint 3: held, claims, cancel, militie', () => {
 
   it('rekent de xp-tabel per stap om naar cumulatieve integer-drempels', () => {
     expect(cumulate([100, 200, 300])).toEqual([100, 300, 600]);
-    expect(hero.xpThresholds).toEqual([100, 300, 600, 1000, 1500, 2100]);
+    expect(hero.xpThresholds).toEqual([100, 250, 450, 700, 1000, 1350]);
     expect(hero.xpThresholds.every((x, i) => Number.isInteger(x) && (i === 0 || x > hero.xpThresholds[i - 1]!))).toBe(true);
     expect(hero.naam).toBe('Opziener');
-    expect(hero.xpPerKill).toBe(10);
-    expect(hero.xpPerDiscovery).toBe(25);
+    expect(hero.xpPerKill).toBe(20);
+    expect(hero.xpPerAssist).toBe(10);
+    expect(hero.xpAssistRadiusU).toBe(15 * 256);
+    expect(hero.xpPerDiscovery).toBe(50);
     expect(hero.revivePenaltyPermille).toBe(200);
     expect(hero.maxRevives).toBe(4);
   });

@@ -15,14 +15,16 @@
     "naam": "Opziener",
     "xpPerLevel": [
       100,
+      150,
       200,
+      250,
       300,
-      400,
-      500,
-      600
+      350
     ],
-    "xpPerKill": 10,
-    "xpPerDiscovery": 25,
+    "xpPerKill": 20,
+    "xpPerDiscovery": 50,
+    "xpPerAssist": 10,
+    "xpAssistRadiusM": 15,
     "abilities": [
       {
         "id": "lockdown",
@@ -60,6 +62,6 @@
     "reviveS": 40,
     "revivePenaltyPct": 20,
     "maxRevives": 4,
-    "_comment": "startwaarde, geen balans. Opziener (Krijger-variant van de Dwellers): SPECIAL totaal 34, zwaar op S, E en A voor een vechter. Oplappen bij het hoofdgebouw kost 100 scrap en 40 s, en 20 procent van perks en health (Spelfundament sectie 5); na 4 keer is de held leeg (maxRevives). Sprint 3: naam voor de HUD; xpPerLevel is PER STAP (level 1 naar 2 kost 100, 2 naar 3 kost 200, enzovoort; 6 stappen = maxlevel 7, een perk-keuze per level voor de 6 perks); de loader levert cumulatieve drempels (100, 300, 600, 1000, 1500, 2100). xpPerKill 10 per gedode vijandelijke unit en xpPerDiscovery 25 per ontdekking (eerste keer een claimpunt of creep-kamp nemen); startwaarden, geen balans."
+    "_comment": "Balans speltest 14 oktober (held levelde nauwelijks; doel: level 3 tot 5 in een potje van 25 tot 35 minuten). Opziener (Krijger-variant van de Dwellers): SPECIAL totaal 34, zwaar op S, E en A voor een vechter (startwaarde). Oplappen bij het hoofdgebouw kost 100 scrap en 40 s, en 20 procent van perks en health (Spelfundament sectie 5); na 4 keer is de held leeg (maxRevives). xpPerLevel is PER STAP: 100, 150, 200, 250, 300, 350 (was 100 tot 600); de loader levert cumulatieve drempels 100, 250, 450, 700, 1000, 1350, dus level 3 bij 250 xp en level 5 bij 700 xp; 6 stappen = maxlevel 7, een perk-keuze per level voor de 6 perks. xp-bronnen: xpPerKill 20 per vijandelijke unit die hij zelf doodt (was 10); xpPerAssist 10 per vijandelijke unit die een eigen unit of turret doodt binnen xpAssistRadiusM 15 m van de levende held (nieuw: de held leert van het gevecht om hem heen, ook als hij het laatste schot niet lost); xpPerDiscovery 50 per ontdekking, de eerste keer dat zijn speler een claimpunt neemt (was 25)."
   }
 ]

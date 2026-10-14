@@ -161,6 +161,9 @@ export interface SimHero {
   readonly xpThresholds: readonly number[];
   readonly xpPerKill: number;
   readonly xpPerDiscovery: number;
+  /** xp per vijandelijke unit die een eigen unit of turret (niet de held zelf) doodt binnen xpAssistRadius van de levende held. */
+  readonly xpPerAssist: number;
+  readonly xpAssistRadius: number;
   readonly abilities: readonly SimAbility[];
   /** perkIds waaruit de held kiest. */
   readonly perkPool: readonly number[];
@@ -421,7 +424,8 @@ export function validateEnv(env: SimEnv): void {
     req(intIn(hr.factionId, 0, config.factions.length - 1) && unitIds.has(hr.baseTypeId), `${at}: factionId of baseTypeId`);
     req(hr.special.length === SPECIAL_COUNT && hr.special.every((v) => intIn(v, 0, 100)), `${at}: special`);
     req(hr.xpThresholds.every((v, j) => intIn(v, 1, I31) && (j === 0 || v > hr.xpThresholds[j - 1]!)), `${at}: xpThresholds`);
-    req(intIn(hr.xpPerKill, 0, I31) && intIn(hr.xpPerDiscovery, 0, I31), `${at}: xp`);
+    req(intIn(hr.xpPerKill, 0, I31) && intIn(hr.xpPerDiscovery, 0, I31) && intIn(hr.xpPerAssist, 0, I31), `${at}: xp`);
+    req(intIn(hr.xpAssistRadius, 0, MAX_MAP_CELLS_SIDE << 8), `${at}: xpAssistRadius`);
     req(hr.abilities.length <= MAX_ABILITIES, `${at}: meer dan ${MAX_ABILITIES} abilities`);
     for (const a of hr.abilities) {
       req(intIn(a.cooldownTicks, 0, I31) && intIn(a.durationTicks, 0, I31), `${at}: ability-tijden`);
@@ -518,7 +522,7 @@ export function envHash(env: SimEnv): number {
   }
   h = fnv1aInt(h, c.heroes.length);
   for (const hr of c.heroes) {
-    h = hashInts(h, [hr.heroId, hr.typeId, hr.factionId, hr.baseTypeId, hr.xpPerKill, hr.xpPerDiscovery]);
+    h = hashInts(h, [hr.heroId, hr.typeId, hr.factionId, hr.baseTypeId, hr.xpPerKill, hr.xpPerDiscovery, hr.xpPerAssist, hr.xpAssistRadius]);
     h = hashInts(h, [hr.reviveScrap, hr.reviveTicks, hr.revivePenaltyPermille, hr.maxRevives]);
     h = hashInts(h, hr.special);
     h = hashInts(h, hr.xpThresholds);

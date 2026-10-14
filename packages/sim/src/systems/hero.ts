@@ -24,7 +24,8 @@ import { cellCenterOf, face, inMap, nthFreeCellAround } from './common.js';
 // De held (Spelfundament 5, contract 1 HeroStatus). Eén per speler: de eerste held van zijn factie (SimFaction.heroId).
 //  - Hij spawnt in de startopstelling naast het hoofdgebouw, als unit met C.hero en typeId heroTypeId(heroId). Lichaam,
 //    wapen en basisstats komen van SimHero.baseTypeId; SPECIAL, perks en techs schalen ze (effects.ts).
-//  - xp: xpPerKill per vijandelijke unit die hij zelf doodt (systeem 5), xpPerDiscovery per claimpunt dat zijn speler
+//  - xp: xpPerKill per vijandelijke unit die hij zelf doodt (systeem 5), xpPerAssist per vijandelijke unit die een eigen
+//    unit of turret binnen xpAssistRadius van hem doodt (systeem 5), xpPerDiscovery per claimpunt dat zijn speler
 //    voor het eerst neemt (systeem 7). Elk level (xpThresholds) geeft een perk-keuze (pendingPerks) en event heroLevel.
 //  - PickPerk: een perk uit zijn perkPool die hij nog niet heeft en waarvoor zijn SPECIAL hoog genoeg is.
 //  - HeroAbility: een zone op een punt binnen rangeU (of op de held als rangeU 0 is); zolang de zone duurt geven de

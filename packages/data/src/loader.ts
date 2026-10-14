@@ -142,6 +142,9 @@ export interface HeroData {
   xpThresholds: number[];
   xpPerKill: number;
   xpPerDiscovery: number;
+  /** xp per vijandelijke unit die een eigen unit of turret doodt binnen xpAssistRadiusU van de levende held. */
+  xpPerAssist: number;
+  xpAssistRadiusU: number;
   abilities: AbilityData[];
   perkPool: number[]; // perk-ids
   reviveScrap: number;
@@ -418,6 +421,8 @@ export function loadGameData(raw: RawGameData): GameData {
       xpThresholds: cumulate(h.xpPerLevel),
       xpPerKill: h.xpPerKill,
       xpPerDiscovery: h.xpPerDiscovery,
+      xpPerAssist: h.xpPerAssist,
+      xpAssistRadiusU: metersToUnits(h.xpAssistRadiusM),
       abilities: h.abilities.map((a) => ({
         id: a.id,
         naam: a.naam,

@@ -140,6 +140,9 @@ export const Hero = z
     xpPerLevel: z.array(z.number().int().positive()).min(1),
     xpPerKill: z.number().int().nonnegative(), // xp voor de held per gedode vijandelijke unit
     xpPerDiscovery: z.number().int().nonnegative(), // xp voor de held per ontdekking (eerste keer een claimpunt of creep-kamp nemen)
+    // Balans speltest 14 oktober: xp voor de held per vijandelijke unit die een eigen unit of turret doodt binnen xpAssistRadiusM van de levende held
+    xpPerAssist: z.number().int().nonnegative(),
+    xpAssistRadiusM: nonneg,
     abilities: z.array(Ability),
     perkPool: z.array(id),
     reviveScrap: nonneg,

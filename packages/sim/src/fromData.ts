@@ -113,6 +113,8 @@ export function simConfigFromGameData(data: GameData): SimConfig {
       xpThresholds: [...h.xpThresholds],
       xpPerKill: h.xpPerKill,
       xpPerDiscovery: h.xpPerDiscovery,
+      xpPerAssist: h.xpPerAssist,
+      xpAssistRadius: h.xpAssistRadiusU,
       abilities: h.abilities.map((a) => ({
         cooldownTicks: a.cooldownTicks,
         rangeU: a.rangeU,
