@@ -30,14 +30,37 @@ export type EntityField = keyof typeof ENTITY_FIELDS;
 // selected zet de client (selectie is geen sim-state; de client stempelt hem in de buffer voor de renderer die
 // leest); dead, carrying en inCombat zet de sim. inCombat staat ook op een turret met doel (een voltooid gebouw
 // met Combat, besluit 8 in fase-0 sectie 14); dead en carrying komen alleen op units voor.
-export const ENTITY_FLAG = { selected: 1 << 0, dead: 1 << 1, carrying: 1 << 2, inCombat: 1 << 3 } as const;
+export const ENTITY_FLAG = {
+  selected: 1 << 0,
+  dead: 1 << 1,
+  carrying: 1 << 2,
+  inCombat: 1 << 3,
+} as const;
 
 // Animatie-ids in het veld `anim` (besluit sprint 1). De volgorde is de clipvolgorde uit de artist-brief
 // (Spelfundament sectie 9); de asset-cli bakt clips in deze volgorde en de renderer indexeert ermee.
-export const ANIM = { idle: 0, walk: 1, run: 2, attack1: 3, attack2: 4, gather: 5, build: 6, death: 7 } as const;
+export const ANIM = {
+  idle: 0,
+  walk: 1,
+  run: 2,
+  attack1: 3,
+  attack2: 4,
+  gather: 5,
+  build: 6,
+  death: 7,
+} as const;
 export type AnimName = keyof typeof ANIM;
 /** Clipnamen op index, voor manifest-validatie en bakken. */
-export const ANIM_NAMES: readonly AnimName[] = ['idle', 'walk', 'run', 'attack1', 'attack2', 'gather', 'build', 'death'];
+export const ANIM_NAMES: readonly AnimName[] = [
+  'idle',
+  'walk',
+  'run',
+  'attack1',
+  'attack2',
+  'gather',
+  'build',
+  'death',
+];
 
 // Events (besluit sprint 2): x, y is de positie van de entity in `a` op het moment van het event, in sim-eenheden.
 // `a` is altijd de entity waar het om gaat; `b` staat per type hieronder. Een entity die dezelfde tick verdwijnt
@@ -106,7 +129,12 @@ export interface SnapshotHeader {
 
 export function readSnapshotHeader(buf: ArrayBuffer): SnapshotHeader {
   const v = new DataView(buf);
-  return { tick: v.getUint32(0, true), hash: v.getUint32(4, true), entityCount: v.getUint16(8, true), eventCount: v.getUint16(10, true) };
+  return {
+    tick: v.getUint32(0, true),
+    hash: v.getUint32(4, true),
+    entityCount: v.getUint16(8, true),
+    eventCount: v.getUint16(10, true),
+  };
 }
 
 export function writeSnapshotHeader(buf: ArrayBuffer, h: SnapshotHeader): void {

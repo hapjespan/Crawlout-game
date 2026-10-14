@@ -69,9 +69,11 @@ export function propGeometryFromGltf(root: Object3D): PropMesh {
     if ((o as Mesh).isMesh) meshes.push(o as Mesh);
   });
   if (meshes.length === 0) throw new PropGeometryError('no mesh in the GLB');
-  if (meshes.some((m) => (m as { isSkinnedMesh?: boolean }).isSkinnedMesh)) throw new PropGeometryError('a prop must be static (the GLB is skinned)');
+  if (meshes.some((m) => (m as { isSkinnedMesh?: boolean }).isSkinnedMesh))
+    throw new PropGeometryError('a prop must be static (the GLB is skinned)');
 
-  const materialOf = (m: Mesh): MaterialLike => (Array.isArray(m.material) ? m.material[0] : m.material) as MaterialLike;
+  const materialOf = (m: Mesh): MaterialLike =>
+    (Array.isArray(m.material) ? m.material[0] : m.material) as MaterialLike;
   const atlas = meshes.map((m) => materialOf(m).map ?? null).find((t) => t !== null) ?? null;
 
   const pos: number[] = [];
@@ -95,7 +97,11 @@ export function propGeometryFromGltf(root: Object3D): PropMesh {
     const uv = g.getAttribute('uv');
     const material = materialOf(mesh);
     const map = material.map ?? null;
-    const textured = atlas !== null && map !== null && (map === atlas || map.source === atlas.source) && uv !== undefined;
+    const textured =
+      atlas !== null &&
+      map !== null &&
+      (map === atlas || map.source === atlas.source) &&
+      uv !== undefined;
     const base = material.color ?? new Color(1, 1, 1);
     normalMatrix.getNormalMatrix(mesh.matrixWorld);
     const first = pos.length / 3;
@@ -104,7 +110,12 @@ export function propGeometryFromGltf(root: Object3D): PropMesh {
       pos.push(v.x, v.y, v.z);
       v.fromBufferAttribute(n, i).applyMatrix3(normalMatrix).normalize();
       nrm.push(v.x, v.y, v.z);
-      col.push(base.r * (vc ? vc.getX(i) : 1), base.g * (vc ? vc.getY(i) : 1), base.b * (vc ? vc.getZ(i) : 1), 0);
+      col.push(
+        base.r * (vc ? vc.getX(i) : 1),
+        base.g * (vc ? vc.getY(i) : 1),
+        base.b * (vc ? vc.getZ(i) : 1),
+        0,
+      );
       if (atlas) {
         if (textured) uvs.push(uv.getX(i), uv.getY(i));
         else uvs.push(NO_UV, NO_UV);
@@ -121,7 +132,9 @@ export function propGeometryFromGltf(root: Object3D): PropMesh {
   geometry.setAttribute('color', new BufferAttribute(new Float32Array(col), 4));
   if (atlas) geometry.setAttribute('uv', new BufferAttribute(new Float32Array(uvs), 2));
   const vertexCount = pos.length / 3;
-  geometry.setIndex(new BufferAttribute(vertexCount > 65535 ? new Uint32Array(idx) : new Uint16Array(idx), 1));
+  geometry.setIndex(
+    new BufferAttribute(vertexCount > 65535 ? new Uint32Array(idx) : new Uint16Array(idx), 1),
+  );
   const { height, radius, minY } = measure(geometry);
   if (Math.abs(minY) > 1e-4) geometry.translate(0, -minY, 0); // stand on y = 0
   geometry.computeBoundingSphere();
@@ -142,20 +155,36 @@ export function createPlaceholderPropGeometry(kind: PropKind): PropMesh {
     case 'tree':
       b.add(new CylinderGeometry(0.12, 0.18, 1.6, 6, 1), { color: BARK, position: [0, 0.8, 0] });
       b.add(new ConeGeometry(1.25, 2.6, 7, 1), { color: LEAVES_DARK, position: [0, 2.3, 0] });
-      b.add(new ConeGeometry(0.95, 2.0, 7, 1), { color: LEAVES, position: [0, 3.5, 0], rotation: [0, 0.4, 0] });
+      b.add(new ConeGeometry(0.95, 2.0, 7, 1), {
+        color: LEAVES,
+        position: [0, 3.5, 0],
+        rotation: [0, 0.4, 0],
+      });
       break;
     case 'rock':
-      b.add(new DodecahedronGeometry(0.8, 0), { color: STONE, position: [0, 0.5, 0], scale: [1.2, 0.85, 1] });
+      b.add(new DodecahedronGeometry(0.8, 0), {
+        color: STONE,
+        position: [0, 0.5, 0],
+        scale: [1.2, 0.85, 1],
+      });
       break;
     case 'bush':
-      b.add(new IcosahedronGeometry(0.6, 0), { color: SHRUB, position: [0, 0.5, 0], scale: [1.1, 0.85, 1] });
+      b.add(new IcosahedronGeometry(0.6, 0), {
+        color: SHRUB,
+        position: [0, 0.5, 0],
+        scale: [1.1, 0.85, 1],
+      });
       break;
     case 'grass':
     case 'reed': {
       const h = kind === 'reed' ? 1.3 : 0.45;
       for (let k = 0; k < 3; k++) {
         const a = (k / 3) * Math.PI * 2;
-        b.add(new ConeGeometry(0.05, h, 3, 1), { color: STRAW, position: [Math.cos(a) * 0.08, h / 2, Math.sin(a) * 0.08], rotation: [Math.sin(a) * 0.15, 0, Math.cos(a) * 0.15] });
+        b.add(new ConeGeometry(0.05, h, 3, 1), {
+          color: STRAW,
+          position: [Math.cos(a) * 0.08, h / 2, Math.sin(a) * 0.08],
+          rotation: [Math.sin(a) * 0.15, 0, Math.cos(a) * 0.15],
+        });
       }
       break;
     }

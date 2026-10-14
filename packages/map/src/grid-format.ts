@@ -31,16 +31,29 @@ export function encodeGrid(w: number, h: number, type: GridType, cells: ArrayLik
 function parseGridFile(text: string): GridFile {
   const raw: unknown = JSON.parse(text);
   const f = raw as Partial<GridFile> | null;
-  if (!f || f.format !== GRID_FORMAT) throw new Error(`grid: onbekend formaat (verwacht ${GRID_FORMAT})`);
-  if (!Number.isInteger(f.w) || !Number.isInteger(f.h) || (f.w as number) <= 0 || (f.h as number) <= 0) throw new Error('grid: ongeldige afmetingen');
+  if (!f || f.format !== GRID_FORMAT)
+    throw new Error(`grid: onbekend formaat (verwacht ${GRID_FORMAT})`);
+  if (
+    !Number.isInteger(f.w) ||
+    !Number.isInteger(f.h) ||
+    (f.w as number) <= 0 ||
+    (f.h as number) <= 0
+  )
+    throw new Error('grid: ongeldige afmetingen');
   if (f.type !== 'u8' && f.type !== 'i16') throw new Error('grid: ongeldig type');
   if (!Array.isArray(f.rle) || (f.rle.length & 1) !== 0) throw new Error('grid: ongeldige rle');
   return f as GridFile;
 }
 
-export function decodeGrid(text: string, expectW: number, expectH: number, expectType: GridType): Int16Array | Uint8Array {
+export function decodeGrid(
+  text: string,
+  expectW: number,
+  expectH: number,
+  expectType: GridType,
+): Int16Array | Uint8Array {
   const f = parseGridFile(text);
-  if (f.w !== expectW || f.h !== expectH) throw new Error(`grid: ${f.w}x${f.h} past niet bij mapgrootte ${expectW}x${expectH}`);
+  if (f.w !== expectW || f.h !== expectH)
+    throw new Error(`grid: ${f.w}x${f.h} past niet bij mapgrootte ${expectW}x${expectH}`);
   if (f.type !== expectType) throw new Error(`grid: type ${f.type}, verwacht ${expectType}`);
   const total = f.w * f.h;
   const out = expectType === 'u8' ? new Uint8Array(total) : new Int16Array(total);
@@ -50,8 +63,10 @@ export function decodeGrid(text: string, expectW: number, expectH: number, expec
   for (let k = 0; k < f.rle.length; k += 2) {
     const value = f.rle[k] as number;
     const n = f.rle[k + 1] as number;
-    if (!Number.isInteger(value) || value < lo || value > hi) throw new Error('grid: waarde buiten bereik');
-    if (!Number.isInteger(n) || n <= 0 || pos + n > total) throw new Error('grid: ongeldige runlengte');
+    if (!Number.isInteger(value) || value < lo || value > hi)
+      throw new Error('grid: waarde buiten bereik');
+    if (!Number.isInteger(n) || n <= 0 || pos + n > total)
+      throw new Error('grid: ongeldige runlengte');
     out.fill(value, pos, pos + n);
     pos += n;
   }

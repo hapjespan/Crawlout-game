@@ -3,14 +3,64 @@ import { act } from 'preact/test-utils';
 import { COMMAND_PAYLOADS, CommandEnvelope } from '@crawlout/protocol';
 import type { CommandType, PlayerStatus } from '@crawlout/protocol';
 import { mountHud } from './index.js';
-import type { BuildOption, HudAlert, HudDeps, HudHandle, LobbyView, MinimapData, PerkOption, SelectedEntity } from './types.js';
+import type {
+  BuildOption,
+  HudAlert,
+  HudDeps,
+  HudHandle,
+  LobbyView,
+  MinimapData,
+  PerkOption,
+  SelectedEntity,
+} from './types.js';
 
-const hero = { heroId: 77, level: 3, xp: 150, xpNext: 300, pendingPerks: 0, revivesLeft: 4, special: [5, 4, 6, 3, 7, 5, 2] as [number, number, number, number, number, number, number], perks: [10], state: 'alive' as const, reviveTicksLeft: 0, entityId: 0, abilityCooldownTicks: [0] };
-const baseStatus: PlayerStatus = { playerId: 0, scrap: 120, settlers: 7, pop: 9, popCap: 12, beds: 10, hero: null };
-const unit = (id: number, role: SelectedEntity['role'] = 'builder'): SelectedEntity => ({ id, typeId: 3, loadoutName: 'Knuppel', hpPct: 80, role });
+const hero = {
+  heroId: 77,
+  level: 3,
+  xp: 150,
+  xpNext: 300,
+  pendingPerks: 0,
+  revivesLeft: 4,
+  special: [5, 4, 6, 3, 7, 5, 2] as [number, number, number, number, number, number, number],
+  perks: [10],
+  state: 'alive' as const,
+  reviveTicksLeft: 0,
+  entityId: 0,
+  abilityCooldownTicks: [0],
+};
+const baseStatus: PlayerStatus = {
+  playerId: 0,
+  scrap: 120,
+  settlers: 7,
+  pop: 9,
+  popCap: 12,
+  beds: 10,
+  hero: null,
+};
+const unit = (id: number, role: SelectedEntity['role'] = 'builder'): SelectedEntity => ({
+  id,
+  typeId: 3,
+  loadoutName: 'Knuppel',
+  hpPct: 80,
+  role,
+});
 const options: BuildOption[] = [
-  { buildingId: 1, typeId: 21, naam: 'Hut', scrapCost: 30, footprint: { w: 2, h: 2 }, affordable: true },
-  { buildingId: 2, typeId: 22, naam: 'Muur', scrapCost: 500, footprint: { w: 1, h: 1 }, affordable: false },
+  {
+    buildingId: 1,
+    typeId: 21,
+    naam: 'Hut',
+    scrapCost: 30,
+    footprint: { w: 2, h: 2 },
+    affordable: true,
+  },
+  {
+    buildingId: 2,
+    typeId: 22,
+    naam: 'Muur',
+    scrapCost: 500,
+    footprint: { w: 1, h: 1 },
+    affordable: false,
+  },
 ];
 const perks: PerkOption[] = [
   { perkId: 10, naam: 'Al gekozen' },
@@ -31,12 +81,30 @@ interface Sent {
   payload: unknown;
 }
 
-function setup(over: Partial<HudDeps> = {}, opts: { selection?: SelectedEntity[]; status?: PlayerStatus; pendingPerks?: number; noMinimap?: boolean } = {}) {
+function setup(
+  over: Partial<HudDeps> = {},
+  opts: {
+    selection?: SelectedEntity[];
+    status?: PlayerStatus;
+    pendingPerks?: number;
+    noMinimap?: boolean;
+  } = {},
+) {
   const sent: Sent[] = [];
-  const calls = { focus: [] as [number, number][], placement: [] as BuildOption[], endPlacement: 0, targeting: [] as string[] };
+  const calls = {
+    focus: [] as [number, number][],
+    placement: [] as BuildOption[],
+    endPlacement: 0,
+    targeting: [] as string[],
+  };
   const alertCbs = new Set<(a: HudAlert) => void>();
   const base = opts.status ?? baseStatus;
-  const state = { selection: opts.selection ?? [unit(5), unit(6)], status: base.hero ? { ...base, hero: { ...base.hero, pendingPerks: opts.pendingPerks ?? 0 } } : base };
+  const state = {
+    selection: opts.selection ?? [unit(5), unit(6)],
+    status: base.hero
+      ? { ...base, hero: { ...base.hero, pendingPerks: opts.pendingPerks ?? 0 } }
+      : base,
+  };
   const deps: HudDeps = {
     sendCommand: (type, payload) => void sent.push({ type, payload }),
     getStatus: () => state.status,
@@ -68,9 +136,13 @@ function setup(over: Partial<HudDeps> = {}, opts: { selection?: SelectedEntity[]
 
 function expectValid(s: Sent): void {
   expect(COMMAND_PAYLOADS[s.type].safeParse(s.payload).success).toBe(true);
-  expect(CommandEnvelope.safeParse({ frame: 0, playerId: 0, seq: 0, type: s.type, payload: s.payload }).success).toBe(true);
+  expect(
+    CommandEnvelope.safeParse({ frame: 0, playerId: 0, seq: 0, type: s.type, payload: s.payload })
+      .success,
+  ).toBe(true);
 }
-const press = (key: string): void => void act(() => void document.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true })));
+const press = (key: string): void =>
+  void act(() => void document.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true })));
 const click = (el: Element | null): void => void act(() => void (el as HTMLElement).click());
 
 let mounted: HudHandle | null = null;
@@ -107,7 +179,9 @@ describe('bouwmenu en plaatsing', () => {
       ok = t.handle.completePlacement({ x: 1280.4, y: 512 });
     });
     expect(ok).toBe(true);
-    expect(t.sent).toEqual([{ type: 'Build', payload: { ids: [5, 7], typeId: 21, x: 1280, y: 512 } }]);
+    expect(t.sent).toEqual([
+      { type: 'Build', payload: { ids: [5, 7], typeId: 21, x: 1280, y: 512 } },
+    ]);
     t.sent.forEach(expectValid);
     expect(t.handle.completePlacement({ x: 0, y: 0 })).toBe(false);
   });
@@ -207,8 +281,23 @@ describe('held-paneel en perks', () => {
 describe('minimap', () => {
   const clickAt = (t: ReturnType<typeof setup>, fx: number, fy: number): void => {
     const c = t.el.querySelector('canvas') as HTMLCanvasElement;
-    c.getBoundingClientRect = () => ({ left: 0, top: 0, width: 200, height: 200, right: 200, bottom: 200, x: 0, y: 0, toJSON: () => ({}) });
-    act(() => void c.dispatchEvent(new MouseEvent('click', { bubbles: true, clientX: fx * 200, clientY: fy * 200 })));
+    c.getBoundingClientRect = () => ({
+      left: 0,
+      top: 0,
+      width: 200,
+      height: 200,
+      right: 200,
+      bottom: 200,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    });
+    act(
+      () =>
+        void c.dispatchEvent(
+          new MouseEvent('click', { bubbles: true, clientX: fx * 200, clientY: fy * 200 }),
+        ),
+    );
   };
 
   it('klik verplaatst de camera in sim-eenheden', () => {
@@ -258,7 +347,11 @@ describe('waarschuwingen', () => {
     t.alert({ kind: 'settlerLost', x: 300, y: 400 });
     t.alert({ kind: 'claimLost', x: 500, y: 600 });
     const toasts = [...t.el.querySelectorAll('[data-alert]')];
-    expect(toasts.map((e) => e.getAttribute('data-alert'))).toEqual(['attack', 'settlerLost', 'claimLost']);
+    expect(toasts.map((e) => e.getAttribute('data-alert'))).toEqual([
+      'attack',
+      'settlerLost',
+      'claimLost',
+    ]);
     click(toasts[1] ?? null);
     expect(t.calls.focus).toEqual([[300, 400]]);
   });

@@ -103,7 +103,11 @@ export class RtsCameraController {
   private onWheel(e: WheelEvent): void {
     e.preventDefault();
     const steps = e.deltaMode === 1 ? e.deltaY / 3 : e.deltaY / 100;
-    this.targetDistance = MathUtils.clamp(this.targetDistance * Math.pow(1.12, steps), this.minDistance, this.maxDistance);
+    this.targetDistance = MathUtils.clamp(
+      this.targetDistance * Math.pow(1.12, steps),
+      this.minDistance,
+      this.maxDistance,
+    );
   }
 
   private onPointerMove(e: PointerEvent): void {

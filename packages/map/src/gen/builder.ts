@@ -140,7 +140,8 @@ export function generateMap(spec: MapSpec): GeneratedMap {
   }
 
   const mirror = (f: Feature): Feature => ({ x: w - 1 - f.x, y: h - 1 - f.y });
-  const both = <T extends Feature>(list: T[]): T[] => list.flatMap((f) => [f, { ...f, ...mirror(f) }]);
+  const both = <T extends Feature>(list: T[]): T[] =>
+    list.flatMap((f) => [f, { ...f, ...mirror(f) }]);
 
   const def: MapDef = {
     id: spec.id,
@@ -163,7 +164,8 @@ export function generateMap(spec: MapSpec): GeneratedMap {
     ['creepCamp', def.creepCamps],
   ] as const) {
     for (const f of list) {
-      if (passable[f.y * w + f.x] !== OPEN) throw new Error(`gen ${spec.id}: ${what} (${f.x},${f.y}) ligt op een onbegaanbare cel`);
+      if (passable[f.y * w + f.x] !== OPEN)
+        throw new Error(`gen ${spec.id}: ${what} (${f.x},${f.y}) ligt op een onbegaanbare cel`);
     }
   }
 
@@ -171,7 +173,9 @@ export function generateMap(spec: MapSpec): GeneratedMap {
     def,
     passabilityFile: encodeGrid(w, h, 'u8', passable),
     heightmapFile: encodeGrid(w, h, 'i16', heights),
-    ...(spec.props === undefined ? {} : { propsFile: encodeProps(scatterProps(def, passable, spec.props)) }),
+    ...(spec.props === undefined
+      ? {}
+      : { propsFile: encodeProps(scatterProps(def, passable, spec.props)) }),
     passable,
     heights,
   };

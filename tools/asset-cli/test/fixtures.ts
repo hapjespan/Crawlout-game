@@ -54,7 +54,12 @@ export function makePng(width: number, height: number): Uint8Array {
   ihdr[9] = 2; // RGB
   const raw = new Uint8Array((width * 3 + 1) * height).fill(128);
   for (let y = 0; y < height; y++) raw[y * (width * 3 + 1)] = 0;
-  const parts = [new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]), chunk('IHDR', ihdr), chunk('IDAT', deflateSync(raw)), chunk('IEND', new Uint8Array())];
+  const parts = [
+    new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]),
+    chunk('IHDR', ihdr),
+    chunk('IDAT', deflateSync(raw)),
+    chunk('IEND', new Uint8Array()),
+  ];
   const out = new Uint8Array(parts.reduce((n, p) => n + p.length, 0));
   let offset = 0;
   for (const part of parts) {
@@ -89,7 +94,16 @@ export interface HumanoidOptions {
 }
 
 export async function makeHumanoid(options: HumanoidOptions = {}): Promise<Uint8Array> {
-  const { segments = 40, rings = 36, height = 1.8, footY = 0, extraBones = 0, boneNamePrefix = 'mixamorig:', withSockets = false, clips = ['idle', 'walk', 'run', 'attack1', 'attack2', 'gather', 'build', 'death'] } = options;
+  const {
+    segments = 40,
+    rings = 36,
+    height = 1.8,
+    footY = 0,
+    extraBones = 0,
+    boneNamePrefix = 'mixamorig:',
+    withSockets = false,
+    clips = ['idle', 'walk', 'run', 'attack1', 'attack2', 'gather', 'build', 'death'],
+  } = options;
   const doc = new Document();
   const buffer = doc.createBuffer();
   const scene = doc.createScene('scene');
@@ -97,19 +111,30 @@ export async function makeHumanoid(options: HumanoidOptions = {}): Promise<Uint8
   const joints: ReturnType<Document['createNode']>[] = [];
 
   const defs: readonly (readonly [string, string | null, number])[] = [...MIXAMO];
-  const all = [...defs, ...Array.from({ length: extraBones }, (_, i) => [`Extra${i}`, 'Hips', 1] as const)];
+  const all = [
+    ...defs,
+    ...Array.from({ length: extraBones }, (_, i) => [`Extra${i}`, 'Hips', 1] as const),
+  ];
   for (const [name, parent, y] of all) {
     const node = doc.createNode(`${boneNamePrefix}${name}`);
     const parentNode = parent ? nodes.get(parent) : undefined;
     const parentY = parent ? (all.find((d) => d[0] === parent)?.[2] ?? 0) : 0;
-    node.setTranslation([name.startsWith('Left') ? 0.2 : name.startsWith('Right') ? -0.2 : 0, (y - parentY) * (height / 1.8) + (parent ? 0 : footY), 0]);
+    node.setTranslation([
+      name.startsWith('Left') ? 0.2 : name.startsWith('Right') ? -0.2 : 0,
+      (y - parentY) * (height / 1.8) + (parent ? 0 : footY),
+      0,
+    ]);
     if (parentNode) parentNode.addChild(node);
     else scene.addChild(node);
     nodes.set(name, node);
     joints.push(node);
   }
   if (withSockets) {
-    for (const [name, parent] of [['socket_hand', 'RightHand'], ['socket_back', 'Spine2'], ['socket_head', 'Head']] as const) {
+    for (const [name, parent] of [
+      ['socket_hand', 'RightHand'],
+      ['socket_back', 'Spine2'],
+      ['socket_head', 'Head'],
+    ] as const) {
       const node = doc.createNode(name);
       nodes.get(parent)?.addChild(node);
       joints.push(node);
@@ -127,7 +152,10 @@ export async function makeHumanoid(options: HumanoidOptions = {}): Promise<Uint8
       const i = r * segments + s;
       const angle = (s / segments) * Math.PI * 2;
       const radius = 0.25 + 0.08 * Math.sin((r / rings) * Math.PI * 3);
-      positions.set([Math.cos(angle) * radius, footY + (r / rings) * height, Math.sin(angle) * radius], i * 3);
+      positions.set(
+        [Math.cos(angle) * radius, footY + (r / rings) * height, Math.sin(angle) * radius],
+        i * 3,
+      );
       uvs.set([s / segments, r / rings], i * 2);
       jointIds[i * 4] = r < rings / 2 ? 0 : 3;
       weights[i * 4] = 1;
@@ -146,7 +174,8 @@ export async function makeHumanoid(options: HumanoidOptions = {}): Promise<Uint8
     }
   }
 
-  const accessor = (array: Float32Array | Uint16Array, type: 'VEC3' | 'VEC2' | 'VEC4' | 'SCALAR') => doc.createAccessor().setArray(array).setType(type).setBuffer(buffer);
+  const accessor = (array: Float32Array | Uint16Array, type: 'VEC3' | 'VEC2' | 'VEC4' | 'SCALAR') =>
+    doc.createAccessor().setArray(array).setType(type).setBuffer(buffer);
   const prim = doc
     .createPrimitive()
     .setAttribute('POSITION', accessor(positions, 'VEC3'))
@@ -157,12 +186,19 @@ export async function makeHumanoid(options: HumanoidOptions = {}): Promise<Uint8
   if (options.secondUv) prim.setAttribute('TEXCOORD_1', accessor(uvs, 'VEC2'));
 
   const texture = doc.createTexture('atlas').setMimeType('image/png');
-  texture.setImage(options.hugeTexture ? makePngHeaderOnly(options.hugeTexture, options.hugeTexture) : makePng(options.textureSize ?? 16, options.textureSize ?? 16));
+  texture.setImage(
+    options.hugeTexture
+      ? makePngHeaderOnly(options.hugeTexture, options.hugeTexture)
+      : makePng(options.textureSize ?? 16, options.textureSize ?? 16),
+  );
   prim.setMaterial(doc.createMaterial('mat').setBaseColorTexture(texture));
 
   const skin = doc.createSkin('skin');
   joints.forEach((j) => skin.addJoint(j));
-  const meshNode = doc.createNode('body').setMesh(doc.createMesh('body').addPrimitive(prim)).setSkin(skin);
+  const meshNode = doc
+    .createNode('body')
+    .setMesh(doc.createMesh('body').addPrimitive(prim))
+    .setSkin(skin);
   scene.addChild(meshNode);
 
   for (const name of clips) {
@@ -170,20 +206,29 @@ export async function makeHumanoid(options: HumanoidOptions = {}): Promise<Uint8
     const input = accessor(new Float32Array([0, 1, 2]), 'SCALAR');
     const output = accessor(new Float32Array([0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1]), 'VEC4');
     const sampler = doc.createAnimationSampler().setInput(input).setOutput(output);
-    const channel = doc.createAnimationChannel().setTargetNode(nodes.get('Hips') as never).setTargetPath('rotation').setSampler(sampler);
+    const channel = doc
+      .createAnimationChannel()
+      .setTargetNode(nodes.get('Hips') as never)
+      .setTargetPath('rotation')
+      .setSampler(sampler);
     animation.addSampler(sampler).addChannel(channel);
   }
   return new NodeIO().writeBinary(doc);
 }
 
 /** Statische prop: een gesloten buis zonder skin. */
-export async function makeProp(options: { segments?: number; rings?: number } = {}): Promise<Uint8Array> {
+export async function makeProp(
+  options: { segments?: number; rings?: number } = {},
+): Promise<Uint8Array> {
   const bytes = await makeHumanoid({ ...options, clips: [] });
   const io = new NodeIO();
   const doc = await io.readBinary(bytes);
   for (const skin of doc.getRoot().listSkins()) skin.dispose();
   for (const node of doc.getRoot().listNodes()) if (node.getMesh() === null) node.dispose();
-  for (const prim of doc.getRoot().listMeshes().flatMap((m) => m.listPrimitives())) {
+  for (const prim of doc
+    .getRoot()
+    .listMeshes()
+    .flatMap((m) => m.listPrimitives())) {
     prim.setAttribute('JOINTS_0', null);
     prim.setAttribute('WEIGHTS_0', null);
   }
@@ -218,19 +263,58 @@ const UE_BONES: readonly (readonly [string, string | null, number])[] = [
   ]),
 ] as const;
 
-export const UE_CLIPS = ['Idle_Loop', 'Walk_Loop', 'Jog_Fwd_Loop', 'Pistol_Shoot', 'Punch_Cross', 'Interact', 'Fixing_Kneeling', 'Death01', 'Dance_Loop', 'Roll'];
-export const UE_CLIPMAP = { Idle_Loop: 'idle', Walk_Loop: 'walk', Jog_Fwd_Loop: 'run', Pistol_Shoot: 'attack1', Punch_Cross: 'attack2', Interact: 'gather', Fixing_Kneeling: 'build', Death01: 'death' };
+export const UE_CLIPS = [
+  'Idle_Loop',
+  'Walk_Loop',
+  'Jog_Fwd_Loop',
+  'Pistol_Shoot',
+  'Punch_Cross',
+  'Interact',
+  'Fixing_Kneeling',
+  'Death01',
+  'Dance_Loop',
+  'Roll',
+];
+export const UE_CLIPMAP = {
+  Idle_Loop: 'idle',
+  Walk_Loop: 'walk',
+  Jog_Fwd_Loop: 'run',
+  Pistol_Shoot: 'attack1',
+  Punch_Cross: 'attack2',
+  Interact: 'gather',
+  Fixing_Kneeling: 'build',
+  Death01: 'death',
+};
 export const UE_TO_MIXAMO = {
-  pelvis: 'Hips', spine_01: 'Spine', spine_02: 'Spine1', spine_03: 'Spine2', neck_01: 'Neck', head: 'Head',
-  clavicle_l: 'LeftShoulder', upperarm_l: 'LeftArm', lowerarm_l: 'LeftForeArm', hand_l: 'LeftHand', thigh_l: 'LeftUpLeg', calf_l: 'LeftLeg', foot_l: 'LeftFoot',
-  clavicle_r: 'RightShoulder', upperarm_r: 'RightArm', lowerarm_r: 'RightForeArm', hand_r: 'RightHand', thigh_r: 'RightUpLeg', calf_r: 'RightLeg', foot_r: 'RightFoot',
+  pelvis: 'Hips',
+  spine_01: 'Spine',
+  spine_02: 'Spine1',
+  spine_03: 'Spine2',
+  neck_01: 'Neck',
+  head: 'Head',
+  clavicle_l: 'LeftShoulder',
+  upperarm_l: 'LeftArm',
+  lowerarm_l: 'LeftForeArm',
+  hand_l: 'LeftHand',
+  thigh_l: 'LeftUpLeg',
+  calf_l: 'LeftLeg',
+  foot_l: 'LeftFoot',
+  clavicle_r: 'RightShoulder',
+  upperarm_r: 'RightArm',
+  lowerarm_r: 'RightForeArm',
+  hand_r: 'RightHand',
+  thigh_r: 'RightUpLeg',
+  calf_r: 'RightLeg',
+  foot_r: 'RightFoot',
 };
 
 /**
  * Zware bron met een UE-skelet: elke vertex heeft invloeden van een hoofdbone, een vingerbone en een leaf, zodat het
  * snoeien gewichten moet optellen. De inverse-bindmatrix van joint i heeft translatie-x = i, om de herordening te toetsen.
  */
-export async function makeUeSource(options: { segments?: number; rings?: number } = {}): Promise<Uint8Array> {
+export async function makeUeSource(
+  options: { segments?: number; rings?: number } = {},
+): Promise<Uint8Array> {
   const { segments = 60, rings = 80 } = options;
   const doc = new Document();
   const buffer = doc.createBuffer();
@@ -239,7 +323,15 @@ export async function makeUeSource(options: { segments?: number; rings?: number 
   for (const [name, parent, y] of UE_BONES) {
     const node = doc.createNode(name);
     const parentY = parent ? (UE_BONES.find((b) => b[0] === parent)?.[2] ?? 0) : 0;
-    node.setTranslation([name.endsWith('_l') || name.includes('_l_') ? 0.2 : name.endsWith('_r') || name.includes('_r_') ? -0.2 : 0, y - parentY, 0]);
+    node.setTranslation([
+      name.endsWith('_l') || name.includes('_l_')
+        ? 0.2
+        : name.endsWith('_r') || name.includes('_r_')
+          ? -0.2
+          : 0,
+      y - parentY,
+      0,
+    ]);
     if (parent) nodes.get(parent)!.addChild(node);
     else scene.addChild(node);
     nodes.set(name, node);
@@ -275,7 +367,10 @@ export async function makeUeSource(options: { segments?: number; rings?: number 
       k += 6;
     }
   }
-  const accessor = (array: Float32Array | Uint16Array | Uint8Array, type: 'VEC3' | 'VEC2' | 'VEC4' | 'SCALAR' | 'MAT4') => doc.createAccessor().setArray(array).setType(type).setBuffer(buffer);
+  const accessor = (
+    array: Float32Array | Uint16Array | Uint8Array,
+    type: 'VEC3' | 'VEC2' | 'VEC4' | 'SCALAR' | 'MAT4',
+  ) => doc.createAccessor().setArray(array).setType(type).setBuffer(buffer);
   const prim = doc
     .createPrimitive()
     .setAttribute('POSITION', accessor(positions, 'VEC3'))
@@ -289,7 +384,9 @@ export async function makeUeSource(options: { segments?: number; rings?: number 
   names.forEach((_, i) => ibm.set([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, i, 0, 0, 1], i * 16));
   const skin = doc.createSkin('skin').setInverseBindMatrices(accessor(ibm, 'MAT4'));
   for (const name of names) skin.addJoint(nodes.get(name)!);
-  scene.addChild(doc.createNode('body').setMesh(doc.createMesh('body').addPrimitive(prim)).setSkin(skin));
+  scene.addChild(
+    doc.createNode('body').setMesh(doc.createMesh('body').addPrimitive(prim)).setSkin(skin),
+  );
 
   for (const name of UE_CLIPS) {
     const animation = doc.createAnimation(name);
@@ -297,7 +394,15 @@ export async function makeUeSource(options: { segments?: number; rings?: number 
     for (const bone of ['root', 'pelvis', 'index_01_l', 'index_02_l_leaf']) {
       const output = accessor(new Float32Array([0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1]), 'VEC4');
       const sampler = doc.createAnimationSampler().setInput(input).setOutput(output);
-      animation.addSampler(sampler).addChannel(doc.createAnimationChannel().setTargetNode(nodes.get(bone)!).setTargetPath('rotation').setSampler(sampler));
+      animation
+        .addSampler(sampler)
+        .addChannel(
+          doc
+            .createAnimationChannel()
+            .setTargetNode(nodes.get(bone)!)
+            .setTargetPath('rotation')
+            .setSampler(sampler),
+        );
     }
   }
   return new NodeIO().writeBinary(doc);

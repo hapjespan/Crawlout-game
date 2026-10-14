@@ -61,7 +61,11 @@ function multiply(a: ArrayLike<number>, b: ArrayLike<number>): Mat {
   return out;
 }
 
-function slerp(a: readonly number[], b: readonly number[], f: number): [number, number, number, number] {
+function slerp(
+  a: readonly number[],
+  b: readonly number[],
+  f: number,
+): [number, number, number, number] {
   let dot = a[0]! * b[0]! + a[1]! * b[1]! + a[2]! * b[2]! + a[3]! * b[3]!;
   const sign = dot < 0 ? -1 : 1;
   dot *= sign;
@@ -94,10 +98,18 @@ function readTracks(animation: Animation): Track[] {
     const sampler = channel.getSampler();
     const input = sampler?.getInput();
     const output = sampler?.getOutput();
-    if (!node || !sampler || !input || !output || (path !== 'translation' && path !== 'rotation' && path !== 'scale')) continue;
+    if (
+      !node ||
+      !sampler ||
+      !input ||
+      !output ||
+      (path !== 'translation' && path !== 'rotation' && path !== 'scale')
+    )
+      continue;
     const size = output.getElementSize();
     const values: number[][] = [];
-    for (let i = 0; i < output.getCount(); i++) values.push(output.getElement(i, new Array<number>(size).fill(0)));
+    for (let i = 0; i < output.getCount(); i++)
+      values.push(output.getElement(i, new Array<number>(size).fill(0)));
     const times: number[] = [];
     for (let i = 0; i < input.getCount(); i++) times.push(input.getScalar(i));
     tracks.push({ node, path, times, values, interpolation: sampler.getInterpolation() });
@@ -149,11 +161,18 @@ export function bakeAnimations(input: BakeInput): BakeResult {
     let duration = 0;
     for (const sampler of animation.listSamplers()) {
       const times = sampler.getInput();
-      if (times && times.getCount() > 0) duration = Math.max(duration, times.getScalar(times.getCount() - 1));
+      if (times && times.getCount() > 0)
+        duration = Math.max(duration, times.getScalar(times.getCount() - 1));
     }
     if (duration <= 0) throw new Error(`${input.assetId}: animatieclip "${name}" heeft duur 0.`);
     const frames = Math.max(2, Math.round(duration * fps));
-    clipInfo.push({ name, startRow: rows, frames, loop: !ONE_SHOT.has(name), durationSeconds: Math.round(duration * 1e6) / 1e6 });
+    clipInfo.push({
+      name,
+      startRow: rows,
+      frames,
+      loop: !ONE_SHOT.has(name),
+      durationSeconds: Math.round(duration * 1e6) / 1e6,
+    });
     rows += frames;
   }
 
@@ -163,7 +182,11 @@ export function bakeAnimations(input: BakeInput): BakeResult {
   const localPose = (node: Node): Pose => {
     let pose = bindLocal.get(node);
     if (!pose) {
-      pose = { t: [...node.getTranslation()], r: [...node.getRotation()], s: [...node.getScale()] } as Pose;
+      pose = {
+        t: [...node.getTranslation()],
+        r: [...node.getRotation()],
+        s: [...node.getScale()],
+      } as Pose;
       bindLocal.set(node, pose);
     }
     return pose;
@@ -200,7 +223,8 @@ export function bakeAnimations(input: BakeInput): BakeResult {
         return m;
       };
       const row = info.startRow + f;
-      for (let b = 0; b < boneCount; b++) data.set(multiply(world(joints[b]!), ibm[b]!), (row * width + b * 4) * 4);
+      for (let b = 0; b < boneCount; b++)
+        data.set(multiply(world(joints[b]!), ibm[b]!), (row * width + b * 4) * 4);
     }
   });
 

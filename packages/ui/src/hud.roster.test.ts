@@ -61,7 +61,8 @@ function setup(over: Partial<HudDeps> = {}, omit: (keyof HudDeps)[] = []) {
 
 const click = (el: Element | null, shiftKey = false): void =>
   void act(() => void el!.dispatchEvent(new MouseEvent('click', { bubbles: true, shiftKey })));
-const press = (key: string): void => void act(() => void document.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true })));
+const press = (key: string): void =>
+  void act(() => void document.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true })));
 const groups = (el: HTMLElement) => [...el.querySelectorAll('.co-roster-group')];
 
 let mounted: HudHandle | null = null;
@@ -91,7 +92,11 @@ describe('eenhedenbalk', () => {
     click(groups(t.el)[0]!);
     expect(t.selects).toEqual([{ ids: [11, 12, 13], add: false }]);
     const units = [...t.el.querySelectorAll('.co-roster-unit')];
-    expect(units.map((u) => u.getAttribute('data-activity'))).toEqual(['gathering', 'idle', 'carrying']);
+    expect(units.map((u) => u.getAttribute('data-activity'))).toEqual([
+      'gathering',
+      'idle',
+      'carrying',
+    ]);
     expect(units[1]?.textContent).toContain('Niets te doen');
     expect(groups(t.el)[0]?.getAttribute('aria-expanded')).toBe('true');
   });

@@ -15,13 +15,20 @@ export interface PruneResult {
 }
 
 /** Nieuwe JOINTS_0 en WEIGHTS_0 voor één vertex: gewichten opgeteld per doelbone, top 4, genormaliseerd. */
-function remapInfluences(joints: number[], weights: number[], target: Int32Array): [number[], number[]] {
+function remapInfluences(
+  joints: number[],
+  weights: number[],
+  target: Int32Array,
+): [number[], number[]] {
   const acc = new Map<number, number>();
   for (let k = 0; k < 4; k++) {
     const w = weights[k] ?? 0;
     if (w <= 0) continue;
     const t = target[joints[k] ?? 0] ?? -1;
-    if (t < 0) throw new Error(`joint ${joints[k]} heeft gewicht maar geen behouden voorouder om het naar over te dragen`);
+    if (t < 0)
+      throw new Error(
+        `joint ${joints[k]} heeft gewicht maar geen behouden voorouder om het naar over te dragen`,
+      );
     acc.set(t, (acc.get(t) ?? 0) + w);
   }
   const sorted = [...acc.entries()].sort((a, b) => b[1] - a[1] || a[0] - b[0]).slice(0, 4);
@@ -40,17 +47,28 @@ function remapInfluences(joints: number[], weights: number[], target: Int32Array
  * De joint-volgorde van de bron blijft behouden. Gooit een fout als de mapping geen enkele bone herkent of als twee
  * bones dezelfde doelnaam krijgen.
  */
-export function pruneBones(document: Document, mapping: Readonly<Record<string, string>>): PruneResult {
+export function pruneBones(
+  document: Document,
+  mapping: Readonly<Record<string, string>>,
+): PruneResult {
   const root = document.getRoot();
   const skins = root.listSkins();
-  if (skins.length !== 1) throw new Error(`bone-snoeien verwacht precies 1 skin, gevonden: ${skins.length}`);
+  if (skins.length !== 1)
+    throw new Error(`bone-snoeien verwacht precies 1 skin, gevonden: ${skins.length}`);
   const skin = skins[0]!;
   const joints = skin.listJoints();
-  const lookup = new Map(Object.entries(mapping).map(([source, target]) => [source.toLowerCase(), target]));
+  const lookup = new Map(
+    Object.entries(mapping).map(([source, target]) => [source.toLowerCase(), target]),
+  );
 
   const keep = joints.map((joint) => lookup.has(joint.getName().toLowerCase()));
-  if (!keep.some(Boolean)) throw new Error('de rigmap herkent geen enkele bone van het skelet; controleer de botnamen in assets/src/rigmap.json');
-  const targetNames = joints.flatMap((joint, i) => (keep[i] ? [lookup.get(joint.getName().toLowerCase())!] : []));
+  if (!keep.some(Boolean))
+    throw new Error(
+      'de rigmap herkent geen enkele bone van het skelet; controleer de botnamen in assets/src/rigmap.json',
+    );
+  const targetNames = joints.flatMap((joint, i) =>
+    keep[i] ? [lookup.get(joint.getName().toLowerCase())!] : [],
+  );
   const duplicate = targetNames.find((name, i) => targetNames.indexOf(name) !== i);
   if (duplicate) throw new Error(`twee bones krijgen dezelfde naam "${duplicate}" in de rigmap`);
 
@@ -80,11 +98,16 @@ export function pruneBones(document: Document, mapping: Readonly<Record<string, 
       const j = prim.getAttribute('JOINTS_0');
       const w = prim.getAttribute('WEIGHTS_0');
       if (!j || !w) continue;
-      if (prim.getAttribute('JOINTS_1')) throw new Error('meer dan 4 invloeden per vertex (JOINTS_1) wordt niet ondersteund');
+      if (prim.getAttribute('JOINTS_1'))
+        throw new Error('meer dan 4 invloeden per vertex (JOINTS_1) wordt niet ondersteund');
       const outJ: number[][] = [];
       const outW: number[][] = [];
       for (let v = 0; v < j.getCount(); v++) {
-        const [nj, nw] = remapInfluences(j.getElement(v, [0, 0, 0, 0]), w.getElement(v, [0, 0, 0, 0]), target);
+        const [nj, nw] = remapInfluences(
+          j.getElement(v, [0, 0, 0, 0]),
+          w.getElement(v, [0, 0, 0, 0]),
+          target,
+        );
         outJ.push(nj);
         outW.push(nw);
       }
@@ -107,7 +130,11 @@ export function pruneBones(document: Document, mapping: Readonly<Record<string, 
     if (oldIbm) ibm.set(oldIbm.getElement(i, row), newIndex[i]! * 16);
     else for (let d = 0; d < 4; d++) ibm[newIndex[i]! * 16 + d * 5] = 1;
   });
-  const newIbm = document.createAccessor().setType('MAT4').setArray(ibm).setBuffer(oldIbm?.getBuffer() ?? root.listBuffers()[0] ?? document.createBuffer());
+  const newIbm = document
+    .createAccessor()
+    .setType('MAT4')
+    .setArray(ibm)
+    .setBuffer(oldIbm?.getBuffer() ?? root.listBuffers()[0] ?? document.createBuffer());
   for (const joint of joints) skin.removeJoint(joint);
   joints.forEach((joint, i) => {
     if (keep[i]) skin.addJoint(joint);
@@ -128,12 +155,14 @@ export function pruneBones(document: Document, mapping: Readonly<Record<string, 
       if (node && prunedNodes.has(node)) {
         const sampler = channel.getSampler();
         channel.dispose();
-        if (sampler && sampler.listParents().every((p) => p.propertyType !== 'AnimationChannel')) sampler.dispose();
+        if (sampler && sampler.listParents().every((p) => p.propertyType !== 'AnimationChannel'))
+          sampler.dispose();
         channelsDropped++;
       }
     }
   }
-  const hasKeptBelow = (node: Node): boolean => joints.some((joint, i) => keep[i] && isDescendant(joint, node));
+  const hasKeptBelow = (node: Node): boolean =>
+    joints.some((joint, i) => keep[i] && isDescendant(joint, node));
   for (const node of prunedNodes) {
     if (hasKeptBelow(node)) continue;
     const subtree: Node[] = [];

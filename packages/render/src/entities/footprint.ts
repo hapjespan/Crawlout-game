@@ -47,7 +47,8 @@ export class FootprintTable {
     if (classifyTypeId(typeId) !== ENTITY_KIND.building) f = { w: 1, h: 1 };
     else {
       const found = this.lookup?.(typeId);
-      f = found && found.w > 0 && found.h > 0 ? { w: found.w, h: found.h } : { ...DEFAULT_FOOTPRINT };
+      f =
+        found && found.w > 0 && found.h > 0 ? { w: found.w, h: found.h } : { ...DEFAULT_FOOTPRINT };
     }
     this.cache.set(typeId, f);
     return f;
@@ -71,7 +72,12 @@ export function buildingRoofHeight(f: Footprint): number {
  * Snaps a footprint center (sim units, 1 m = 256) to the cell grid: odd sizes center on a cell, even sizes on a
  * cell corner. For the HUD's placement cursor; the renderer draws previews where it is told.
  */
-export function snapFootprintCenter(x: number, y: number, f: Footprint, unitsPerCell = 256): { x: number; y: number } {
+export function snapFootprintCenter(
+  x: number,
+  y: number,
+  f: Footprint,
+  unitsPerCell = 256,
+): { x: number; y: number } {
   const snap = (v: number, cells: number): number => {
     const half = (cells % 2) * (unitsPerCell / 2);
     return Math.round((v - half) / unitsPerCell) * unitsPerCell + half;

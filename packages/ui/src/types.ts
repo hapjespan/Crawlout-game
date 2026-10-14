@@ -1,4 +1,11 @@
-import type { CommandPayload, CommandType, DesyncEvent, PlayerStatus, Role, StallNotice } from '@crawlout/protocol';
+import type {
+  CommandPayload,
+  CommandType,
+  DesyncEvent,
+  PlayerStatus,
+  Role,
+  StallNotice,
+} from '@crawlout/protocol';
 
 /** Eén geselecteerde entity, zoals de client die uit snapshot en queryMessage samenstelt. */
 export interface SelectedEntity {
@@ -105,7 +112,21 @@ export type CardKind = 'research' | 'craft' | 'revive';
  */
 export type CardState = 'available' | 'tooExpensive' | 'locked' | 'running' | 'done';
 /** Bekende icoonnamen; een onbekende naam valt terug op een neutraal symbool. */
-export const CARD_ICON_IDS = ['research', 'craft', 'revive', 'shield', 'blade', 'gun', 'tower', 'patrol', 'wrench', 'heart', 'crate', 'bolt', 'gear'] as const;
+export const CARD_ICON_IDS = [
+  'research',
+  'craft',
+  'revive',
+  'shield',
+  'blade',
+  'gun',
+  'tower',
+  'patrol',
+  'wrench',
+  'heart',
+  'crate',
+  'bolt',
+  'gear',
+] as const;
 export type CardIconId = (typeof CARD_ICON_IDS)[number];
 
 /** Eén kaart in het gebouwpaneel: een onderzoek, een craft of het oplappen van de held. Alle teksten zijn kant-en-klaar Nederlands. */

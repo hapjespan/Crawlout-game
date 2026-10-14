@@ -28,7 +28,11 @@ export class FrameScheduler {
 
   /** Geeft het uitvoerframe terug, of null als het commando te ver vooruit ligt. */
   submit(cmd: CommandEnvelope): number | null {
-    const exec = Math.max(cmd.frame + this.delayFrames, this.next, this.lastExec.get(cmd.playerId) ?? 0);
+    const exec = Math.max(
+      cmd.frame + this.delayFrames,
+      this.next,
+      this.lastExec.get(cmd.playerId) ?? 0,
+    );
     if (exec > this.next + MAX_SCHEDULE_AHEAD) return null;
     this.lastExec.set(cmd.playerId, exec);
     let list = this.pending.get(exec);
@@ -41,7 +45,9 @@ export class FrameScheduler {
     const frame = this.next++;
     const list = this.pending.get(frame) ?? [];
     this.pending.delete(frame);
-    list.sort((a, b) => a.cmd.playerId - b.cmd.playerId || a.cmd.seq - b.cmd.seq || a.arrival - b.arrival);
+    list.sort(
+      (a, b) => a.cmd.playerId - b.cmd.playerId || a.cmd.seq - b.cmd.seq || a.arrival - b.arrival,
+    );
     return { frame, commands: list.map((p) => p.cmd) };
   }
 }

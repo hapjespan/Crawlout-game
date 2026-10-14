@@ -3,7 +3,13 @@ import { ANIM, ANIM_NAMES } from '@crawlout/protocol';
 import { manifestSchema } from '@crawlout/asset-cli/manifest';
 import { Matrix4, Scene, Vector3, type BufferAttribute, type SkinnedMesh } from 'three/webgpu';
 import { bakeAnimations } from './bake.js';
-import { applyCharacterFit, BakedManifestError, bakedAnimationsFromManifest, CHARACTER_HEIGHT, characterFit } from './bakedManifest.js';
+import {
+  applyCharacterFit,
+  BakedManifestError,
+  bakedAnimationsFromManifest,
+  CHARACTER_HEIGHT,
+  characterFit,
+} from './bakedManifest.js';
 import { dequantizationOf, TEAM_FALLBACK_BASE, unitGeometryFromGltf } from './gltfUnitGeometry.js';
 import { createGltfIO, resolveManifestPath, UnitAssetLoader } from './unitAssetLoader.js';
 import { UnitAssetRegistry } from './unitAssets.js';
@@ -21,11 +27,14 @@ import {
 } from './testing/skinnedFixture.js';
 
 const MANIFEST_URL = 'https://assets.test/dist/manifest.json';
-const encode = (value: unknown): ArrayBuffer => new TextEncoder().encode(JSON.stringify(value)).buffer as ArrayBuffer;
+const encode = (value: unknown): ArrayBuffer =>
+  new TextEncoder().encode(JSON.stringify(value)).buffer as ArrayBuffer;
 const copy = (bytes: Uint8Array): ArrayBuffer => bytes.slice().buffer as ArrayBuffer;
 
 /** In-memory "server" for the files of an asset-cli dist folder, with three's real GLTFLoader and meshopt decoder. */
-async function fakeDist(opts: { quantized?: boolean; manifest?: unknown; anim?: ArrayBuffer } = {}) {
+async function fakeDist(
+  opts: { quantized?: boolean; manifest?: unknown; anim?: ArrayBuffer } = {},
+) {
   const files = new Map<string, ArrayBuffer>();
   const glb = copy(await fixtureGlb({ quantized: opts.quantized ?? false }));
   const at = (path: string) => resolveManifestPath(MANIFEST_URL, path);
@@ -43,7 +52,14 @@ async function fakeDist(opts: { quantized?: boolean; manifest?: unknown; anim?: 
 }
 
 /** Skins a loaded vertex with the loaded bone texture: sum of weight * texel matrix * position. */
-function skinVertex(data: Float32Array, width: number, row: number, pos: Vector3, joints: number[], weights: number[]): Vector3 {
+function skinVertex(
+  data: Float32Array,
+  width: number,
+  row: number,
+  pos: Vector3,
+  joints: number[],
+  weights: number[],
+): Vector3 {
   const out = new Vector3();
   const m = new Matrix4();
   for (let k = 0; k < 4; k++) {
@@ -65,7 +81,13 @@ describe('bakedAnimationsFromManifest', () => {
       width: baked.width,
       height: baked.height,
       fps: 30,
-      clips: baked.clips.map((c) => ({ name: c.name, startRow: c.startRow, frames: c.frameCount, loop: c.loop, durationSeconds: c.duration })),
+      clips: baked.clips.map((c) => ({
+        name: c.name,
+        startRow: c.startRow,
+        frames: c.frameCount,
+        loop: c.loop,
+        durationSeconds: c.duration,
+      })),
     };
     const back = bakedAnimationsFromManifest(entry, baked.boneCount, bytes);
     expect(back.width).toBe(baked.width);
@@ -78,9 +100,16 @@ describe('bakedAnimationsFromManifest', () => {
   it('refuses a texture that does not fit its manifest entry', () => {
     const m = fixtureManifest().assets[0]!;
     const bytes = fixtureAnimF32();
-    expect(() => bakedAnimationsFromManifest(m.baked!, m.boneCount, bytes.slice(0, bytes.byteLength - 16))).toThrow(BakedManifestError);
-    expect(() => bakedAnimationsFromManifest(m.baked!, m.boneCount + 1, bytes)).toThrow(/boneCount/);
-    const swapped = { ...m.baked!, clips: [m.baked!.clips[1]!, m.baked!.clips[0]!, ...m.baked!.clips.slice(2)] };
+    expect(() =>
+      bakedAnimationsFromManifest(m.baked!, m.boneCount, bytes.slice(0, bytes.byteLength - 16)),
+    ).toThrow(BakedManifestError);
+    expect(() => bakedAnimationsFromManifest(m.baked!, m.boneCount + 1, bytes)).toThrow(
+      /boneCount/,
+    );
+    const swapped = {
+      ...m.baked!,
+      clips: [m.baked!.clips[1]!, m.baked!.clips[0]!, ...m.baked!.clips.slice(2)],
+    };
     expect(() => bakedAnimationsFromManifest(swapped, m.boneCount, bytes)).toThrow(/clips must be/);
   });
 });
@@ -101,7 +130,8 @@ describe('UnitAssetLoader', () => {
 
       const lod = asset.lods[0];
       const g = lod.geometry;
-      for (const name of ['position', 'normal', 'color', 'skinIndex', 'skinWeight']) expect(g.getAttribute(name)).toBeDefined();
+      for (const name of ['position', 'normal', 'color', 'skinIndex', 'skinWeight'])
+        expect(g.getAttribute(name)).toBeDefined();
       expect(g.getAttribute('uv')).toBeUndefined(); // no texture in this asset
       expect(lod.map).toBeNull();
       const source = sourceVertices();
@@ -117,19 +147,35 @@ describe('UnitAssetLoader', () => {
       for (let i = 0; i < p.count; i++) {
         pos.fromBufferAttribute(p, i);
         // Every loaded vertex is a source vertex in source bind space (dequantized when needed).
-        const match = source.find((s) => pos.distanceTo(new Vector3(...s.position)) < tol && s.team === (c.getW(i) === 1));
+        const match = source.find(
+          (s) => pos.distanceTo(new Vector3(...s.position)) < tol && s.team === (c.getW(i) === 1),
+        );
         expect(match, `vertex ${i} at ${pos.toArray().join(', ')}`).toBeDefined();
         const joints = [0, 1, 2, 3].map((k) => si.getComponent(i, k));
         const weights = [0, 1, 2, 3].map((k) => sw.getComponent(i, k));
-        for (let k = 0; k < 4; k++) if (match!.weights[k]! > 0) expect(weights[joints.indexOf(match!.joints[k]!)]).toBeCloseTo(match!.weights[k]!, 2);
+        for (let k = 0; k < 4; k++)
+          if (match!.weights[k]! > 0)
+            expect(weights[joints.indexOf(match!.joints[k]!)]).toBeCloseTo(match!.weights[k]!, 2);
         // The baked texture moves it where the analytic skin puts the source vertex.
         const clip = ANIM.walk;
         const frame = 2;
-        const got = skinVertex(asset.anims.data, asset.anims.width, clip * FRAMES_PER_CLIP + frame, pos, joints, weights);
+        const got = skinVertex(
+          asset.anims.data,
+          asset.anims.width,
+          clip * FRAMES_PER_CLIP + frame,
+          pos,
+          joints,
+          weights,
+        );
         const want = new Vector3();
         for (let k = 0; k < 4; k++) {
           const w = match!.weights[k]!;
-          if (w > 0) want.add(new Vector3(...match!.position).applyMatrix4(skinMatrix(clip, frame, match!.joints[k]!)).multiplyScalar(w));
+          if (w > 0)
+            want.add(
+              new Vector3(...match!.position)
+                .applyMatrix4(skinMatrix(clip, frame, match!.joints[k]!))
+                .multiplyScalar(w),
+            );
         }
         expect(got.distanceTo(want)).toBeLessThan(tol * 4);
         // Linear material color, team mask from the material name.
@@ -152,7 +198,10 @@ describe('UnitAssetLoader', () => {
 
   it('really reads quantized positions in the quantized fixture, and brings them back with the IBM transform', async () => {
     const io = createGltfIO(async () => new ArrayBuffer(0));
-    const scene = await io.parseGltf(copy(await fixtureGlb({ quantized: true })), 'https://assets.test/q.glb');
+    const scene = await io.parseGltf(
+      copy(await fixtureGlb({ quantized: true })),
+      'https://assets.test/q.glb',
+    );
     let mesh: SkinnedMesh | undefined;
     scene.traverse((o) => {
       if ((o as SkinnedMesh).isSkinnedMesh && !mesh) mesh = o as SkinnedMesh;
@@ -190,7 +239,11 @@ describe('UnitAssetRegistry', () => {
     const { loader } = await fakeDist();
     const units = layer();
     const warnings: string[] = [];
-    const registry = new UnitAssetRegistry(units, loader, { config: { manifestUrl: MANIFEST_URL }, maxTextureSize: 4096, warn: (m) => warnings.push(m) });
+    const registry = new UnitAssetRegistry(units, loader, {
+      config: { manifestUrl: MANIFEST_URL },
+      maxTextureSize: 4096,
+      warn: (m) => warnings.push(m),
+    });
     await registry.setLoadouts(loadouts);
     expect(units.rigCount).toBe(2);
     expect(units.rigName(units.rigFor(1))).toBe(FIXTURE_ID); // typeId 1 = loadout 0
@@ -200,13 +253,21 @@ describe('UnitAssetRegistry', () => {
     expect(units.rigName(units.rigFor(1000))).toBe(FIXTURE_ID);
     expect(warnings).toEqual([]);
     const [status] = registry.statuses();
-    expect(status).toMatchObject({ assetId: FIXTURE_ID, state: 'ready', typeIds: [1], triangles: [36, 36, 36] });
+    expect(status).toMatchObject({
+      assetId: FIXTURE_ID,
+      state: 'ready',
+      typeIds: [1],
+      triangles: [36, 36, 36],
+    });
   });
 
   it('makes the configured default unit the rig for everyone without an asset of their own', async () => {
     const { loader } = await fakeDist();
     const units = layer();
-    const registry = new UnitAssetRegistry(units, loader, { config: { manifestUrl: MANIFEST_URL, defaultUnit: FIXTURE_ID }, maxTextureSize: 4096 });
+    const registry = new UnitAssetRegistry(units, loader, {
+      config: { manifestUrl: MANIFEST_URL, defaultUnit: FIXTURE_ID },
+      maxTextureSize: 4096,
+    });
     await registry.start();
     expect(units.rigName(units.rigFor(2))).toBe(FIXTURE_ID);
     expect(units.rigName(units.rigFor(1000))).toBe(FIXTURE_ID);
@@ -218,7 +279,10 @@ describe('UnitAssetRegistry', () => {
     const { loader } = await fakeDist({ anim: new ArrayBuffer(32) });
     const units = layer();
     const warnings: string[] = [];
-    const registry = new UnitAssetRegistry(units, loader, { maxTextureSize: 4096, warn: (m) => warnings.push(m) });
+    const registry = new UnitAssetRegistry(units, loader, {
+      maxTextureSize: 4096,
+      warn: (m) => warnings.push(m),
+    });
     const status = await registry.load(MANIFEST_URL, FIXTURE_ID, { asDefault: true });
     expect(status.state).toBe('failed');
     expect(status.reason).toMatch(/anim.f32/);
@@ -233,7 +297,10 @@ describe('UnitAssetRegistry', () => {
 describe('real characters without a team material', () => {
   async function geometryWith(names: Record<string, string>) {
     const io = createGltfIO(async () => new ArrayBuffer(0));
-    const scene = await io.parseGltf(copy(await fixtureGlb({ materialNames: names })), 'https://assets.test/x.glb');
+    const scene = await io.parseGltf(
+      copy(await fixtureGlb({ materialNames: names })),
+      'https://assets.test/x.glb',
+    );
     return unitGeometryFromGltf(scene, { boneCount: JOINTS.length }).geometry;
   }
   const maskedColors = (g: Awaited<ReturnType<typeof geometryWith>>) => {
@@ -241,7 +308,8 @@ describe('real characters without a team material', () => {
     const masked = new Set<string>();
     let unmasked = 0;
     for (let i = 0; i < c.count; i++) {
-      if (c.getW(i) > 0.5) masked.add([c.getX(i), c.getY(i), c.getZ(i)].map((v) => v.toFixed(3)).join(','));
+      if (c.getW(i) > 0.5)
+        masked.add([c.getX(i), c.getY(i), c.getZ(i)].map((v) => v.toFixed(3)).join(','));
       else unmasked++;
     }
     return { masked, unmasked, total: c.count };
@@ -258,7 +326,11 @@ describe('real characters without a team material', () => {
   it('keeps an explicit team material as the only mask and its own color', async () => {
     const g = await geometryWith({ Team_Shirt: 'Team_Shirt', Skin: 'M_Main' });
     const { masked } = maskedColors(g);
-    expect([...masked]).toEqual([MATERIAL_COLORS.Team_Shirt.slice(0, 3).map((v) => v.toFixed(3)).join(',')]);
+    expect([...masked]).toEqual([
+      MATERIAL_COLORS.Team_Shirt.slice(0, 3)
+        .map((v) => v.toFixed(3))
+        .join(','),
+    ]);
   });
 
   it('masks nothing when no material is team or main', async () => {
@@ -269,7 +341,10 @@ describe('real characters without a team material', () => {
 
 describe('characterFit', () => {
   it('leaves a character in meters at a human height as authored (Quaternius: 1.83 m, feet at 2 mm)', () => {
-    expect(characterFit({ min: [-0.97, 0.002415, -0.16], max: [0.97, 1.827399, 0.2] })).toEqual({ scale: 1, lift: 0 });
+    expect(characterFit({ min: [-0.97, 0.002415, -0.16], max: [0.97, 1.827399, 0.2] })).toEqual({
+      scale: 1,
+      lift: 0,
+    });
   });
 
   it('scales centimeters to 1.8 m and puts the feet on y = 0', () => {
@@ -283,7 +358,11 @@ describe('characterFit', () => {
     const m0 = new Matrix4().fromArray(before, 0);
     const m1 = new Matrix4().fromArray(anims.data, 0);
     const p = new Vector3(0.3, 1.2, -0.4);
-    const want = p.clone().applyMatrix4(m0).multiplyScalar(fit.scale).add(new Vector3(0, fit.lift, 0));
+    const want = p
+      .clone()
+      .applyMatrix4(m0)
+      .multiplyScalar(fit.scale)
+      .add(new Vector3(0, fit.lift, 0));
     const got = p.clone().applyMatrix4(m1);
     expect(got.distanceTo(want)).toBeLessThan(1e-5);
   });

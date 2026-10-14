@@ -25,7 +25,9 @@ export interface RelayServer {
 }
 
 /** data/VERSION of this checkout; `pnpm relay` hands it to the rooms as dataVersion so clients can verify it. */
-export function readDataVersion(path: string = fileURLToPath(new URL('../../../data/VERSION', import.meta.url))): string {
+export function readDataVersion(
+  path: string = fileURLToPath(new URL('../../../data/VERSION', import.meta.url)),
+): string {
   const version = readFileSync(path, 'utf8').trim();
   if (version === '') throw new Error(`${path} is leeg`);
   return version;
@@ -47,10 +49,15 @@ export async function startRelayServer(options: RelayServerOptions = {}): Promis
     if (s && s.readyState === s.OPEN) s.send(JSON.stringify(msg));
   };
   const reject = (ws: WebSocket, message: string): void => {
-    if (ws.readyState === ws.OPEN) ws.send(JSON.stringify({ kind: 'error', message } satisfies ServerMessage));
+    if (ws.readyState === ws.OPEN)
+      ws.send(JSON.stringify({ kind: 'error', message } satisfies ServerMessage));
   };
 
-  const wss = new WebSocketServer({ port: port ?? Number(process.env['RELAY_PORT'] ?? 8787), host: host ?? '0.0.0.0', maxPayload: MAX_PAYLOAD });
+  const wss = new WebSocketServer({
+    port: port ?? Number(process.env['RELAY_PORT'] ?? 8787),
+    host: host ?? '0.0.0.0',
+    maxPayload: MAX_PAYLOAD,
+  });
   await new Promise<void>((resolve, reject2) => {
     wss.once('listening', resolve);
     wss.once('error', reject2);

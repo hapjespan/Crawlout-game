@@ -5,15 +5,38 @@
 // default rig with a hero flag per instance: bigger, and on the placeholder with cap, collar and pauldrons.
 import { heroIdOfTypeId } from '@crawlout/data';
 import { ANIM, ENTITY_FLAG } from '@crawlout/protocol';
-import { DynamicDrawUsage, Frustum, InstancedBufferAttribute, Matrix4, Mesh, Sphere, Vector3, type BufferGeometry, type Camera, type MeshBasicNodeMaterial, type Scene, type Texture } from 'three/webgpu';
-import { DECAL_COLOR, DECAL_SHAPE, type DecalLayer, type DecalStyle } from '../decals/decalLayer.js';
+import {
+  DynamicDrawUsage,
+  Frustum,
+  InstancedBufferAttribute,
+  Matrix4,
+  Mesh,
+  Sphere,
+  Vector3,
+  type BufferGeometry,
+  type Camera,
+  type MeshBasicNodeMaterial,
+  type Scene,
+  type Texture,
+} from 'three/webgpu';
+import {
+  DECAL_COLOR,
+  DECAL_SHAPE,
+  type DecalLayer,
+  type DecalStyle,
+} from '../decals/decalLayer.js';
 import { drawsAsUnit, TYPE_ID_BUILDING_FIRST } from '../entities/typeIds.js';
 import type { DataTexturePrecision } from '../gpu/dataTextures.js';
 import { teamIndex } from '../palette.js';
 import type { InterpolatedFrame } from '../snapshot/interpolate.js';
 import { bakeAnimations, type BakedAnimations } from './bake.js';
 import { createHumanoidGeometry, UNIT_LODS } from './humanoidGeometry.js';
-import { createUnitMaterial, HERO_INSTANCE_FLAG, HERO_SCALE, type UnitAlbedo } from './unitMaterial.js';
+import {
+  createUnitMaterial,
+  HERO_INSTANCE_FLAG,
+  HERO_SCALE,
+  type UnitAlbedo,
+} from './unitMaterial.js';
 
 export interface UnitLayerOptions {
   capacity: number;
@@ -57,7 +80,15 @@ const DECAL_HALF = 0.8; // meters
 const DEFAULT_RIG = 255;
 export const PLACEHOLDER_RIG = 0;
 
-const BLOB: DecalStyle = { shape: DECAL_SHAPE.circle, shadow: 1, ring: 0, ringWidth: 0.14, fill: 0, grid: 0, color: DECAL_COLOR.selection };
+const BLOB: DecalStyle = {
+  shape: DECAL_SHAPE.circle,
+  shadow: 1,
+  ring: 0,
+  ringWidth: 0.14,
+  fill: 0,
+  grid: 0,
+  color: DECAL_COLOR.selection,
+};
 const BLOB_SELECTED: DecalStyle = { ...BLOB, ring: 1 };
 
 function dynamic(capacity: number, size: number): InstancedBufferAttribute {
@@ -96,7 +127,11 @@ export class UnitLayer {
     const [d1, d2] = opts.lodDistances ?? [30, 70];
     this.lodDist2 = [d1 * d1, d2 * d2];
     const anims = opts.anims ?? bakeAnimations();
-    this.addRig({ name: 'placeholder', anims, lods: [createHumanoidGeometry(0), createHumanoidGeometry(1), createHumanoidGeometry(2)] });
+    this.addRig({
+      name: 'placeholder',
+      anims,
+      lods: [createHumanoidGeometry(0), createHumanoidGeometry(1), createHumanoidGeometry(2)],
+    });
   }
 
   /** Baked clips of the placeholder rig. */
@@ -121,7 +156,12 @@ export class UnitLayer {
   addRig(src: UnitRigSource): number {
     if (this.rigs.length >= DEFAULT_RIG) throw new Error('too many unit rigs');
     const index = this.rigs.length;
-    const bundle = createUnitMaterial(src.anims, { lightDir: this.lightDir }, this.precision, src.albedo ?? {});
+    const bundle = createUnitMaterial(
+      src.anims,
+      { lightDir: this.lightDir },
+      this.precision,
+      src.albedo ?? {},
+    );
     const geometries = [...src.lods];
     const lods = UNIT_LODS.map((lod) => {
       const geo = geometries[lod]!;
@@ -138,14 +178,22 @@ export class UnitLayer {
       return { mesh, pose, anim };
     });
     const textures = src.albedo?.map ? [...bundle.textures, src.albedo.map] : bundle.textures;
-    this.rigs.push({ name: src.name, anims: src.anims, material: bundle.material, textures, geometries, lods });
+    this.rigs.push({
+      name: src.name,
+      anims: src.anims,
+      material: bundle.material,
+      textures,
+      geometries,
+      lods,
+    });
     return index;
   }
 
   /** Draws these unit typeIds with `rig`; null hands them back to the default rig. */
   assignRig(typeIds: Iterable<number>, rig: number | null): void {
     if (rig !== null && !this.rigs[rig]) throw new Error(`no unit rig ${rig}`);
-    for (const t of typeIds) if (t > 0 && t < this.rigByType.length) this.rigByType[t] = rig ?? DEFAULT_RIG;
+    for (const t of typeIds)
+      if (t > 0 && t < this.rigByType.length) this.rigByType[t] = rig ?? DEFAULT_RIG;
   }
 
   /** The rig for unit typeIds without one of their own (the placeholder until an asset says otherwise). */
@@ -156,7 +204,8 @@ export class UnitLayer {
 
   /** Rig a typeId is drawn with. */
   rigFor(typeId: number): number {
-    const own = typeId > 0 && typeId < this.rigByType.length ? this.rigByType[typeId]! : DEFAULT_RIG;
+    const own =
+      typeId > 0 && typeId < this.rigByType.length ? this.rigByType[typeId]! : DEFAULT_RIG;
     return own === DEFAULT_RIG ? this.defaultRig : own;
   }
 

@@ -7,7 +7,12 @@ import { conformDocument, type ConformInfo } from './conform.js';
 import { animationIndex, findSockets, maxBoneCount } from './inspect.js';
 import { buildLods, createIO, lodMaxTris } from './lods.js';
 import { detectToktx } from './ktx2.js';
-import { MANIFEST_VERSION, manifestSchema, type AssetEntry, type AssetManifest } from './manifest.js';
+import {
+  MANIFEST_VERSION,
+  manifestSchema,
+  type AssetEntry,
+  type AssetManifest,
+} from './manifest.js';
 import { EMPTY_RIGMAP, parseRigmap, type Rigmap } from './rigmap.js';
 import { validateAsset } from './validate.js';
 
@@ -70,7 +75,11 @@ function listGlbs(dir: string): string[] {
 }
 
 function toId(file: string): string {
-  return basename(file).replace(/\.glb$/i, '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+  return basename(file)
+    .replace(/\.glb$/i, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '');
 }
 
 /** Leest alle GLB's uit srcDir, valideert, bouwt LODs en schrijft distDir. Bij een schending wordt niets geschreven. */
@@ -79,7 +88,10 @@ export async function buildAssets(options: BuildOptions): Promise<BuildResult> {
   const files = listGlbs(srcDir);
   const notices: string[] = [];
   const toktx = options.toktx === undefined ? detectToktx() : options.toktx;
-  if (!toktx) notices.push('toktx niet gevonden op PATH: textures blijven PNG (geen KTX2). Installeer KTX-Software om KTX2 te krijgen.');
+  if (!toktx)
+    notices.push(
+      'toktx niet gevonden op PATH: textures blijven PNG (geen KTX2). Installeer KTX-Software om KTX2 te krijgen.',
+    );
 
   const clipmapSource = options.clipmapPath ?? join(srcDir, 'clipmap.json');
   const rigmapSource = options.rigmapPath ?? join(srcDir, 'rigmap.json');
@@ -94,14 +106,32 @@ export async function buildAssets(options: BuildOptions): Promise<BuildResult> {
       load(JSON.parse(readFileSync(source, 'utf8')));
     } catch (error) {
       const reason = error instanceof Error ? error.message : String(error);
-      return { ok: false, reports: [{ id: basename(source, '.json'), source: basename(source), errors: [`ongeldige ${basename(source)}: ${reason}`], warnings: [] }], notices, manifest: null };
+      return {
+        ok: false,
+        reports: [
+          {
+            id: basename(source, '.json'),
+            source: basename(source),
+            errors: [`ongeldige ${basename(source)}: ${reason}`],
+            warnings: [],
+          },
+        ],
+        notices,
+        manifest: null,
+      };
     }
   }
 
   const io = createIO();
   const reports: AssetReport[] = [];
   const seen = new Map<string, string>();
-  const validated: { id: string; buffer: Uint8Array; kind: 'character' | 'prop'; conform: ConformInfo; sourceBones: number }[] = [];
+  const validated: {
+    id: string;
+    buffer: Uint8Array;
+    kind: 'character' | 'prop';
+    conform: ConformInfo;
+    sourceBones: number;
+  }[] = [];
 
   for (const file of files) {
     const source = relative(srcDir, file).split(sep).join('/');
@@ -110,7 +140,9 @@ export async function buildAssets(options: BuildOptions): Promise<BuildResult> {
     reports.push(report);
     const clash = seen.get(id);
     if (clash) {
-      report.errors.push(`id "${id}" is al in gebruik door ${clash}; hernoem een van beide bestanden.`);
+      report.errors.push(
+        `id "${id}" is al in gebruik door ${clash}; hernoem een van beide bestanden.`,
+      );
       continue;
     }
     seen.set(id, source);
@@ -121,13 +153,23 @@ export async function buildAssets(options: BuildOptions): Promise<BuildResult> {
       const result = validateAsset(document, { clipmap, assetId: id });
       report.errors.push(...result.errors);
       report.warnings.push(...result.warnings);
-      if (result.errors.length === 0) validated.push({ id, buffer: await io.writeBinary(document), kind: result.kind, conform, sourceBones });
+      if (result.errors.length === 0)
+        validated.push({
+          id,
+          buffer: await io.writeBinary(document),
+          kind: result.kind,
+          conform,
+          sourceBones,
+        });
     } catch (error) {
-      report.errors.push(`kan GLB niet verwerken: ${error instanceof Error ? error.message : String(error)}`);
+      report.errors.push(
+        `kan GLB niet verwerken: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
   }
 
-  if (reports.some((r) => r.errors.length > 0)) return { ok: false, reports, notices, manifest: null };
+  if (reports.some((r) => r.errors.length > 0))
+    return { ok: false, reports, notices, manifest: null };
 
   const entries: AssetEntry[] = [];
   const outputs = new Map<string, Uint8Array | string>();
@@ -138,11 +180,21 @@ export async function buildAssets(options: BuildOptions): Promise<BuildResult> {
     const maxTris = lodMaxTris(asset.kind);
     const problems = lods.flatMap((lod) => {
       const found: string[] = [];
-      if (lod.triangles > maxTris[lod.level] || lod.triangles === 0) found.push(`LOD${lod.level} heeft ${lod.triangles} driehoeken na simplificatie, budget ${maxTris[lod.level]}.`);
+      if (lod.triangles > maxTris[lod.level] || lod.triangles === 0)
+        found.push(
+          `LOD${lod.level} heeft ${lod.triangles} driehoeken na simplificatie, budget ${maxTris[lod.level]}.`,
+        );
       // Ondergrens van de brief, alleen waar de buis zelf gereduceerd heeft: een bron mag lichter zijn dan de band.
-      const reduced = lod.level === 0 ? asset.conform.reduced : lod.triangles < (lods[0]?.triangles ?? 0);
-      if (asset.kind === 'character' && reduced && lod.triangles < BUDGETS.characterMinTris[lod.level]) {
-        found.push(`LOD${lod.level} heeft ${lod.triangles} driehoeken na simplificatie, minimaal ${BUDGETS.characterMinTris[lod.level]} (brief).`);
+      const reduced =
+        lod.level === 0 ? asset.conform.reduced : lod.triangles < (lods[0]?.triangles ?? 0);
+      if (
+        asset.kind === 'character' &&
+        reduced &&
+        lod.triangles < BUDGETS.characterMinTris[lod.level]
+      ) {
+        found.push(
+          `LOD${lod.level} heeft ${lod.triangles} driehoeken na simplificatie, minimaal ${BUDGETS.characterMinTris[lod.level]} (brief).`,
+        );
       }
       return found;
     });
@@ -154,14 +206,29 @@ export async function buildAssets(options: BuildOptions): Promise<BuildResult> {
     const validation = validateAsset(sourceDoc, { clipmap, assetId: asset.id });
     let baked: AssetEntry['baked'];
     if (asset.kind === 'character' && sourceDoc.getRoot().listAnimations().length > 0) {
-      const names = sourceDoc.getRoot().listAnimations().map((a, i) => a.getName() || `animation_${i}`);
+      const names = sourceDoc
+        .getRoot()
+        .listAnimations()
+        .map((a, i) => a.getName() || `animation_${i}`);
       const lod0Doc = await io.readBinary(lods[0]!.glb);
-      const jointNames = (doc: typeof sourceDoc): string => doc.getRoot().listSkins()[0]?.listJoints().map((j) => j.getName()).join('|') ?? '';
+      const jointNames = (doc: typeof sourceDoc): string =>
+        doc
+          .getRoot()
+          .listSkins()[0]
+          ?.listJoints()
+          .map((j) => j.getName())
+          .join('|') ?? '';
       if (jointNames(lod0Doc) !== jointNames(sourceDoc)) {
-        report.errors.push('bone-volgorde van LOD0 wijkt af van de bron-GLB; de texture zou niet bij de mesh passen.');
+        report.errors.push(
+          'bone-volgorde van LOD0 wijkt af van de bron-GLB; de texture zou niet bij de mesh passen.',
+        );
         continue;
       }
-      const result = bakeAnimations({ assetId: asset.id, document: sourceDoc, clips: resolveClips(names, clipmap, asset.id).found });
+      const result = bakeAnimations({
+        assetId: asset.id,
+        document: sourceDoc,
+        clips: resolveClips(names, clipmap, asset.id).found,
+      });
       outputs.set(result.baked.path, result.data);
       baked = result.baked;
     }
@@ -183,7 +250,11 @@ export async function buildAssets(options: BuildOptions): Promise<BuildResult> {
       id: asset.id,
       kind: asset.kind,
       bounds: validation.bounds,
-      lods: [0, 1, 2].map((level) => ({ level, path: `${asset.id}/lod${level}.glb`, triangles: lods[level]?.triangles ?? 0 })) as AssetEntry['lods'],
+      lods: [0, 1, 2].map((level) => ({
+        level,
+        path: `${asset.id}/lod${level}.glb`,
+        triangles: lods[level]?.triangles ?? 0,
+      })) as AssetEntry['lods'],
       sockets: asset.kind === 'character' ? findSockets(sourceDoc) : {},
       animations: animationIndex(sourceDoc),
       boneCount,
@@ -191,14 +262,26 @@ export async function buildAssets(options: BuildOptions): Promise<BuildResult> {
     });
   }
 
-  if (reports.some((r) => r.errors.length > 0)) return { ok: false, reports, notices, manifest: null };
+  if (reports.some((r) => r.errors.length > 0))
+    return { ok: false, reports, notices, manifest: null };
 
-  const manifest = manifestSchema.parse({ version: MANIFEST_VERSION, assets: entries.sort((a, b) => a.id.localeCompare(b.id)) });
+  const manifest = manifestSchema.parse({
+    version: MANIFEST_VERSION,
+    assets: entries.sort((a, b) => a.id.localeCompare(b.id)),
+  });
   // Validatierapport naast het manifest: deterministisch (geen tijdstempels), assets gesorteerd op id.
   const validationReport = {
     version: 1,
     ok: true,
-    assets: [...reports].sort((a, b) => a.id.localeCompare(b.id)).map((r) => ({ id: r.id, source: r.source, errors: r.errors, warnings: r.warnings, ...r.details })),
+    assets: [...reports]
+      .sort((a, b) => a.id.localeCompare(b.id))
+      .map((r) => ({
+        id: r.id,
+        source: r.source,
+        errors: r.errors,
+        warnings: r.warnings,
+        ...r.details,
+      })),
   };
   outputs.set('validation-report.json', `${JSON.stringify(validationReport, null, 2)}\n`);
   rmSync(distDir, { recursive: true, force: true });

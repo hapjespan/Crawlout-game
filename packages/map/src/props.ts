@@ -64,18 +64,25 @@ const YAW_TO_RAD = 6.283185307179586 * 0.0000152587890625; // 2*pi/65536, de fac
 
 export function parseProps(text: string, w: number, h: number): PropsFile {
   const f = JSON.parse(text) as Partial<PropsFile> | null;
-  if (!f || f.format !== PROPS_FORMAT) throw new Error(`props: onbekend formaat (verwacht ${PROPS_FORMAT})`);
-  if (f.w !== w || f.h !== h) throw new Error(`props: ${String(f.w)}x${String(f.h)} past niet bij mapgrootte ${w}x${h}`);
+  if (!f || f.format !== PROPS_FORMAT)
+    throw new Error(`props: onbekend formaat (verwacht ${PROPS_FORMAT})`);
+  if (f.w !== w || f.h !== h)
+    throw new Error(`props: ${String(f.w)}x${String(f.h)} past niet bij mapgrootte ${w}x${h}`);
   if (!Array.isArray(f.props)) throw new Error('props: props ontbreekt');
   const maxX = w * UNITS_PER_METER;
   const maxY = h * UNITS_PER_METER;
   f.props.forEach((p, i) => {
     const where = `props[${i}]`;
-    if (typeof p.asset !== 'string' || p.asset.length === 0) throw new Error(`${where}: asset ontbreekt`);
-    if (!Number.isInteger(p.x) || p.x < 0 || p.x >= maxX) throw new Error(`${where}: x buiten de map`);
-    if (!Number.isInteger(p.y) || p.y < 0 || p.y >= maxY) throw new Error(`${where}: y buiten de map`);
-    if (!Number.isInteger(p.yaw) || p.yaw < 0 || p.yaw > 65535) throw new Error(`${where}: yaw buiten 0..65535`);
-    if (!Number.isInteger(p.scalePct) || p.scalePct < PROP_SCALE_MIN || p.scalePct > PROP_SCALE_MAX) throw new Error(`${where}: scalePct buiten ${PROP_SCALE_MIN}..${PROP_SCALE_MAX}`);
+    if (typeof p.asset !== 'string' || p.asset.length === 0)
+      throw new Error(`${where}: asset ontbreekt`);
+    if (!Number.isInteger(p.x) || p.x < 0 || p.x >= maxX)
+      throw new Error(`${where}: x buiten de map`);
+    if (!Number.isInteger(p.y) || p.y < 0 || p.y >= maxY)
+      throw new Error(`${where}: y buiten de map`);
+    if (!Number.isInteger(p.yaw) || p.yaw < 0 || p.yaw > 65535)
+      throw new Error(`${where}: yaw buiten 0..65535`);
+    if (!Number.isInteger(p.scalePct) || p.scalePct < PROP_SCALE_MIN || p.scalePct > PROP_SCALE_MAX)
+      throw new Error(`${where}: scalePct buiten ${PROP_SCALE_MIN}..${PROP_SCALE_MAX}`);
   });
   return f as PropsFile;
 }
@@ -96,8 +103,16 @@ export function loadProps(def: MapDef, assets: MapAssets): PropInstance[] {
 }
 
 export function encodeProps(file: PropsFile): string {
-  const head = JSON.stringify({ format: file.format, w: file.w, h: file.h, ...(file._comment === undefined ? {} : { _comment: file._comment }) });
-  const rows = file.props.map((p) => `    ${JSON.stringify({ asset: p.asset, x: p.x, y: p.y, yaw: p.yaw, scalePct: p.scalePct })}`);
+  const head = JSON.stringify({
+    format: file.format,
+    w: file.w,
+    h: file.h,
+    ...(file._comment === undefined ? {} : { _comment: file._comment }),
+  });
+  const rows = file.props.map(
+    (p) =>
+      `    ${JSON.stringify({ asset: p.asset, x: p.x, y: p.y, yaw: p.yaw, scalePct: p.scalePct })}`,
+  );
   return `${head.slice(0, -1)},"props":[\n${rows.join(',\n')}\n  ]}`;
 }
 
@@ -128,9 +143,14 @@ interface KeyPoint {
  * Cellen die vrij van tall props blijven: een kortste 4-verbonden pad van elke spawn naar elk ander belangrijk punt,
  * 1 cel verbreed, plus de spiegel ervan. Props op begaanbare cellen mogen er nooit op liggen.
  */
-export function pathCorridor(map: Pick<MapGrid, 'w' | 'h' | 'passable'>, spawns: KeyPoint[], targets: KeyPoint[]): Uint8Array {
+export function pathCorridor(
+  map: Pick<MapGrid, 'w' | 'h' | 'passable'>,
+  spawns: KeyPoint[],
+  targets: KeyPoint[],
+): Uint8Array {
   const { w, h, passable } = map;
-  if (w !== 128 || h !== 128) throw new Error('pathCorridor: alleen 128x128 (celindex via bitshift)');
+  if (w !== 128 || h !== 128)
+    throw new Error('pathCorridor: alleen 128x128 (celindex via bitshift)');
   const corridor = new Uint8Array(w * h);
   const mark = (cx: number, cy: number): void => {
     for (let dy = -1; dy <= 1; dy++) {
@@ -185,17 +205,28 @@ export function scatterProps(
   spec: PropsSpec,
 ): PropsFile {
   const { w, h } = def.size;
-  if (w !== 128 || h !== 128) throw new Error('scatterProps: alleen 128x128 (celindex via bitshift)');
+  if (w !== 128 || h !== 128)
+    throw new Error('scatterProps: alleen 128x128 (celindex via bitshift)');
   const rng = createRng(spec.seed);
-  const keyPoints: KeyPoint[] = [...def.spawns, ...def.scrapNodes, ...def.claimPoints, ...def.creepCamps].map((p) => ({ x: p.x, y: p.y }));
+  const keyPoints: KeyPoint[] = [
+    ...def.spawns,
+    ...def.scrapNodes,
+    ...def.claimPoints,
+    ...def.creepCamps,
+  ].map((p) => ({ x: p.x, y: p.y }));
   const corridor = pathCorridor({ w, h, passable }, def.spawns, keyPoints);
   // Sim-eenheden van de middens, voor de afstandscontrole.
-  const keyU = keyPoints.map((p) => ({ x: p.x * UNITS_PER_METER + (UNITS_PER_METER >> 1), y: p.y * UNITS_PER_METER + (UNITS_PER_METER >> 1) }));
+  const keyU = keyPoints.map((p) => ({
+    x: p.x * UNITS_PER_METER + (UNITS_PER_METER >> 1),
+    y: p.y * UNITS_PER_METER + (UNITS_PER_METER >> 1),
+  }));
   const maxU = w * UNITS_PER_METER - 1;
 
-  const blocked = (cx: number, cy: number): boolean => cx < 0 || cy < 0 || cx >= w || cy >= h || passable[cy * w + cx] !== 1;
+  const blocked = (cx: number, cy: number): boolean =>
+    cx < 0 || cy < 0 || cx >= w || cy >= h || passable[cy * w + cx] !== 1;
   const nearBlocked = (cx: number, cy: number, r: number): boolean => {
-    for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) if (blocked(cx + dx, cy + dy)) return true;
+    for (let dy = -r; dy <= r; dy++)
+      for (let dx = -r; dx <= r; dx++) if (blocked(cx + dx, cy + dy)) return true;
     return false;
   };
   // Kandidaatcellen per klasse, in rijvolgorde (deterministisch): onbegaanbaar, begaanbare rand (buiten het pad), open grond (buiten het pad).
@@ -272,7 +303,8 @@ export function scatterProps(
     let done = 0;
     let attempts = 0;
     while (done < q.perHalf) {
-      if (++attempts > MAX_ATTEMPTS) throw new Error(`scatterProps: quota ${q.asset} niet te halen`);
+      if (++attempts > MAX_ATTEMPTS)
+        throw new Error(`scatterProps: quota ${q.asset} niet te halen`);
       const i = pickCell(kind, rng);
       const cx = i & 127;
       const cy = i >> 7;
@@ -287,7 +319,12 @@ export function scatterProps(
       const a: PropRecord = { asset: q.asset, x, y, yaw, scalePct };
       const b: PropRecord = { asset: q.asset, x: mx, y: my, yaw: (yaw + 32768) & 65535, scalePct };
       if (!farFromKeyPoints(x, y) || !farFromKeyPoints(mx, my)) continue;
-      if (!spacedFromOthers(x, y, null) || !spacedFromOthers(mx, my, a) || !spacedFromOthers(x, y, b)) continue;
+      if (
+        !spacedFromOthers(x, y, null) ||
+        !spacedFromOthers(mx, my, a) ||
+        !spacedFromOthers(x, y, b)
+      )
+        continue;
       store(a);
       store(b);
       done++;

@@ -23,16 +23,23 @@ export function convertTexturesToKtx2(document: Document, toktx: string): number
   const dir = mkdtempSync(join(tmpdir(), 'asset-cli-ktx2-'));
   let converted = 0;
   try {
-    document.getRoot().listTextures().forEach((texture, index) => {
-      const image = texture.getImage();
-      if (!image || texture.getMimeType() !== 'image/png') return;
-      const input = join(dir, `t${index}.png`);
-      const output = join(dir, `t${index}.ktx2`);
-      writeFileSync(input, image);
-      execFileSync(toktx, ['--t2', '--encode', 'uastc', '--genmipmap', '--assign_oetf', 'srgb', output, input], { stdio: 'pipe' });
-      texture.setImage(new Uint8Array(readFileSync(output))).setMimeType('image/ktx2');
-      converted += 1;
-    });
+    document
+      .getRoot()
+      .listTextures()
+      .forEach((texture, index) => {
+        const image = texture.getImage();
+        if (!image || texture.getMimeType() !== 'image/png') return;
+        const input = join(dir, `t${index}.png`);
+        const output = join(dir, `t${index}.ktx2`);
+        writeFileSync(input, image);
+        execFileSync(
+          toktx,
+          ['--t2', '--encode', 'uastc', '--genmipmap', '--assign_oetf', 'srgb', output, input],
+          { stdio: 'pipe' },
+        );
+        texture.setImage(new Uint8Array(readFileSync(output))).setMimeType('image/ktx2');
+        converted += 1;
+      });
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

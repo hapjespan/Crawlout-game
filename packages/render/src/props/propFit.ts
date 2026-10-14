@@ -43,14 +43,21 @@ export function propKindOf(assetId: string): PropKind {
 }
 
 /** Target height (m) of an asset: `overrides`, then PROP_TARGET_HEIGHT, then the kind; null keeps the asset's size. */
-export function propTargetHeight(assetId: string, overrides?: Readonly<Record<string, number>>): number | null {
+export function propTargetHeight(
+  assetId: string,
+  overrides?: Readonly<Record<string, number>>,
+): number | null {
   const own = overrides?.[assetId] ?? PROP_TARGET_HEIGHT[assetId];
   if (own !== undefined) return own;
   return PROP_KIND_HEIGHT[propKindOf(assetId)];
 }
 
 /** Uniform scale that brings a mesh of `meshHeight` meters to its target height (1 without a target or height). */
-export function propFitScale(assetId: string, meshHeight: number, overrides?: Readonly<Record<string, number>>): number {
+export function propFitScale(
+  assetId: string,
+  meshHeight: number,
+  overrides?: Readonly<Record<string, number>>,
+): number {
   const target = propTargetHeight(assetId, overrides);
   if (target === null || !(meshHeight > 1e-4)) return 1;
   return target / meshHeight;

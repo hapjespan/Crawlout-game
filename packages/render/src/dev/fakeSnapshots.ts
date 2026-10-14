@@ -7,7 +7,14 @@
 // With `heroes` the first unit of every player is a hero (typeId 1000 + heroId) that casts an ability zone now and
 // then; with `turrets` the finished buildings of those typeIds shoot at enemy units in range.
 import { heroTypeId } from '@crawlout/data';
-import { ANGLE_FULL, ANIM, ENTITY_FLAG, EVENT_TYPE, TICK_MS, UNITS_PER_METER } from '@crawlout/protocol';
+import {
+  ANGLE_FULL,
+  ANIM,
+  ENTITY_FLAG,
+  EVENT_TYPE,
+  TICK_MS,
+  UNITS_PER_METER,
+} from '@crawlout/protocol';
 import type { Footprint } from '../entities/footprint.js';
 import { buildingTypeId, TYPE_ID_CLAIM, TYPE_ID_SCRAP_NODE } from '../entities/typeIds.js';
 import { CLIPS } from '../units/rig.js';
@@ -164,13 +171,27 @@ export class FakeSnapshotSource {
     const M = UNITS_PER_METER;
     const half = this.size >> 1;
     const fits = (x: number, y: number, f: Footprint): boolean => this.fits(x, y, f, 2);
-    const place = (typeId: number, owner: number, f: Footprint, x0: number, y0: number, span: number): void => {
+    const place = (
+      typeId: number,
+      owner: number,
+      f: Footprint,
+      x0: number,
+      y0: number,
+      span: number,
+    ): void => {
       for (let attempt = 0; attempt < 80; attempt++) {
         // Odd footprints center on a cell, even ones on a cell corner.
         const cx = Math.floor((x0 + this.rand() * span) / M) * M + (f.w % 2) * (M / 2);
         const cy = Math.floor((y0 + this.rand() * span) / M) * M + (f.h % 2) * (M / 2);
         if (!fits(cx, cy, f)) continue;
-        const s: FakeStructure = { id: this.nextStructureId++, typeId, owner, x: cx, y: cy, footprint: f };
+        const s: FakeStructure = {
+          id: this.nextStructureId++,
+          typeId,
+          owner,
+          x: cx,
+          y: cy,
+          footprint: f,
+        };
         if (typeId === TYPE_ID_SCRAP_NODE) s.stock = 40 + this.randInt(0, 61);
         this.structures.push(s);
         return;
@@ -184,9 +205,17 @@ export class FakeSnapshotSource {
       const team = k % this.players;
       place(typeId, team, f, (team & 1) * half, ((team >> 1) & 1) * half, half);
     }
-    for (let k = 0; k < (opts.scrapNodes ?? 0); k++) place(TYPE_ID_SCRAP_NODE, FAKE_NEUTRAL_OWNER, { w: 3, h: 3 }, 0, 0, this.size);
+    for (let k = 0; k < (opts.scrapNodes ?? 0); k++)
+      place(TYPE_ID_SCRAP_NODE, FAKE_NEUTRAL_OWNER, { w: 3, h: 3 }, 0, 0, this.size);
     for (let k = 0; k < (opts.claims ?? 0); k++) {
-      place(TYPE_ID_CLAIM, k % 2 === 0 ? FAKE_NEUTRAL_OWNER : k % this.players, { w: 5, h: 5 }, 0, 0, this.size);
+      place(
+        TYPE_ID_CLAIM,
+        k % 2 === 0 ? FAKE_NEUTRAL_OWNER : k % this.players,
+        { w: 5, h: 5 },
+        0,
+        0,
+        this.size,
+      );
     }
   }
 
@@ -198,14 +227,19 @@ export class FakeSnapshotSource {
     if (x - hx < 0 || y - hy < 0 || x + hx > this.size || y + hy > this.size) return false;
     const g2 = 2 * gap * M;
     return this.structures.every(
-      (s) => Math.abs(s.x - x) * 2 >= (f.w + s.footprint.w) * M + g2 || Math.abs(s.y - y) * 2 >= (f.h + s.footprint.h) * M + g2,
+      (s) =>
+        Math.abs(s.x - x) * 2 >= (f.w + s.footprint.w) * M + g2 ||
+        Math.abs(s.y - y) * 2 >= (f.h + s.footprint.h) * M + g2,
     );
   }
 
   /** Turns a building into a site: buildingPlaced next tick, anim build while it grows, buildingDone when finished. */
   private startSite(s: FakeStructure): void {
     s.site = { start: this.tick + 1, ticks: FAKE_BUILD_TICKS };
-    this.pending.push({ atTick: this.tick + 1, event: { type: EVENT_TYPE.buildingPlaced, a: s.id, b: s.typeId, x: s.x, y: s.y } });
+    this.pending.push({
+      atTick: this.tick + 1,
+      event: { type: EVENT_TYPE.buildingPlaced, a: s.id, b: s.typeId, x: s.x, y: s.y },
+    });
   }
 
   /** Mirrors a Build command: adds a building site and reports buildingPlaced, later buildingDone. */
@@ -221,8 +255,10 @@ export class FakeSnapshotSource {
   private startLeg(i: number, tx?: number, ty?: number): void {
     const margin = 4 * UNITS_PER_METER;
     const r = 24 * UNITS_PER_METER;
-    this.tx[i] = tx ?? Math.min(this.size - margin, Math.max(margin, this.x[i]! + this.randInt(-r, r)));
-    this.ty[i] = ty ?? Math.min(this.size - margin, Math.max(margin, this.y[i]! + this.randInt(-r, r)));
+    this.tx[i] =
+      tx ?? Math.min(this.size - margin, Math.max(margin, this.x[i]! + this.randInt(-r, r)));
+    this.ty[i] =
+      ty ?? Math.min(this.size - margin, Math.max(margin, this.y[i]! + this.randInt(-r, r)));
     this.mode[i] = this.rand() < 0.2 ? 'run' : 'walk';
     this.setAnim(i, this.mode[i] === 'run' ? ANIM.run : ANIM.walk);
   }
@@ -310,34 +346,61 @@ export class FakeSnapshotSource {
       return;
     }
     this.face(i, this.x[j]! - this.x[i]!, this.y[j]! - this.y[i]!);
-    events.push({ type: EVENT_TYPE.shotFired, a: id, b: this.ids[j]!, x: this.x[i]!, y: this.y[i]! });
+    events.push({
+      type: EVENT_TYPE.shotFired,
+      a: id,
+      b: this.ids[j]!,
+      x: this.x[i]!,
+      y: this.y[i]!,
+    });
     // The hit lands two ticks later, the way a sim with travel time would report it.
-    if (this.rand() < 0.75) this.pending.push({ atTick: this.tick + 2, event: { type: EVENT_TYPE.hit, a: this.ids[j]!, b: id, x: this.x[j]!, y: this.y[j]! } });
+    if (this.rand() < 0.75)
+      this.pending.push({
+        atTick: this.tick + 2,
+        event: { type: EVENT_TYPE.hit, a: this.ids[j]!, b: id, x: this.x[j]!, y: this.y[j]! },
+      });
   }
 
   private kill(i: number, events: EventRecord[]): void {
     this.mode[i] = 'dead';
     this.setAnim(i, ANIM.death);
     this.timer[i] = 4 * TICKS_PER_SECOND;
-    events.push({ type: EVENT_TYPE.death, a: this.ids[i]!, b: this.typeIdOf(i), x: this.x[i]!, y: this.y[i]! });
+    events.push({
+      type: EVENT_TYPE.death,
+      a: this.ids[i]!,
+      b: this.typeIdOf(i),
+      x: this.x[i]!,
+      y: this.y[i]!,
+    });
   }
 
   private respawn(i: number, events: EventRecord[]): void {
     this.placeInQuadrant(i);
     this.startLeg(i);
-    events.push({ type: EVENT_TYPE.spawn, a: this.ids[i]!, b: this.typeIdOf(i), x: this.x[i]!, y: this.y[i]! });
+    events.push({
+      type: EVENT_TYPE.spawn,
+      a: this.ids[i]!,
+      b: this.typeIdOf(i),
+      x: this.x[i]!,
+      y: this.y[i]!,
+    });
   }
 
   /** Finished turrets fire at the nearest enemy unit in range; the hit follows a tick later. */
   private turretFire(events: EventRecord[]): void {
     if (this.turrets.size === 0) return;
     for (const s of this.structures) {
-      if (!this.turrets.has(s.typeId) || s.site || (this.tick + s.id) % FAKE_TURRET_TICKS !== 0) continue;
+      if (!this.turrets.has(s.typeId) || s.site || (this.tick + s.id) % FAKE_TURRET_TICKS !== 0)
+        continue;
       const j = this.nearestEnemy(s.x, s.y, s.owner, TURRET_RANGE);
       if (j < 0) continue;
       const target = this.ids[j]!;
       events.push({ type: EVENT_TYPE.shotFired, a: s.id, b: target, x: s.x, y: s.y });
-      if (this.rand() < 0.8) this.pending.push({ atTick: this.tick + 1, event: { type: EVENT_TYPE.hit, a: target, b: s.id, x: this.x[j]!, y: this.y[j]! } });
+      if (this.rand() < 0.8)
+        this.pending.push({
+          atTick: this.tick + 1,
+          event: { type: EVENT_TYPE.hit, a: target, b: s.id, x: this.x[j]!, y: this.y[j]! },
+        });
     }
   }
 
@@ -351,7 +414,8 @@ export class FakeSnapshotSource {
       this.nextZoneHero = i + 1;
       const a = (this.yaw[i]! / ANGLE_FULL) * Math.PI * 2;
       const margin = 2 * UNITS_PER_METER;
-      const clamp = (v: number): number => Math.min(this.size - margin, Math.max(margin, Math.round(v)));
+      const clamp = (v: number): number =>
+        Math.min(this.size - margin, Math.max(margin, Math.round(v)));
       const x = clamp(this.x[i]! + Math.cos(a) * ZONE_AHEAD);
       const y = clamp(this.y[i]! + Math.sin(a) * ZONE_AHEAD);
       events.push({ type: EVENT_TYPE.abilityZone, a: this.ids[i]!, b: 0, x, y });
@@ -465,7 +529,12 @@ export class FakeSnapshotSource {
 
     const structures = this.structures;
     const total = n + structures.length;
-    const snap = allocSnapshot(this.tick, Math.imul(this.tick, 2654435761) >>> 0, total, events.length);
+    const snap = allocSnapshot(
+      this.tick,
+      Math.imul(this.tick, 2654435761) >>> 0,
+      total,
+      events.length,
+    );
     const e = snap.entities;
     for (let i = 0; i < n; i++) {
       const id = this.ids[i]!;
@@ -480,7 +549,10 @@ export class FakeSnapshotSource {
       const dead = this.mode[i] === 'dead';
       e.hpPct[i] = dead ? 0 : 100;
       const isFighting = this.mode[i] === 'attack1' || this.mode[i] === 'attack2';
-      e.flags[i] = (this.selected.has(id) ? ENTITY_FLAG.selected : 0) | (isFighting ? ENTITY_FLAG.inCombat : 0) | (dead ? ENTITY_FLAG.dead : 0);
+      e.flags[i] =
+        (this.selected.has(id) ? ENTITY_FLAG.selected : 0) |
+        (isFighting ? ENTITY_FLAG.inCombat : 0) |
+        (dead ? ENTITY_FLAG.dead : 0);
     }
     structures.forEach((s, k) => {
       const i = n + k;

@@ -15,9 +15,13 @@ const LITTLE_ENDIAN = new Uint8Array(new Uint32Array([1]).buffer)[0] === 1;
 /** Reads RGBA float32 little-endian texels, whatever the platform's byte order. */
 function readFloat32LE(bytes: ArrayBuffer | ArrayBufferView): Float32Array {
   const view = ArrayBuffer.isView(bytes) ? bytes : new Uint8Array(bytes);
-  if (view.byteLength % 4 !== 0) throw new BakedManifestError(`anim.f32 has ${view.byteLength} bytes, not a whole number of floats`);
+  if (view.byteLength % 4 !== 0)
+    throw new BakedManifestError(
+      `anim.f32 has ${view.byteLength} bytes, not a whole number of floats`,
+    );
   const n = view.byteLength / 4;
-  if (LITTLE_ENDIAN && view.byteOffset % 4 === 0) return new Float32Array(view.buffer, view.byteOffset, n).slice();
+  if (LITTLE_ENDIAN && view.byteOffset % 4 === 0)
+    return new Float32Array(view.buffer, view.byteOffset, n).slice();
   const dv = new DataView(view.buffer, view.byteOffset, view.byteLength);
   const out = new Float32Array(n);
   for (let i = 0; i < n; i++) out[i] = dv.getFloat32(i * 4, true);
@@ -28,25 +32,49 @@ function readFloat32LE(bytes: ArrayBuffer | ArrayBufferView): Float32Array {
  * Builds the clip table and bone texture data from a manifest `baked` entry and the bytes of its `.anim.f32`.
  * Throws BakedManifestError when the two do not fit together; the caller keeps the placeholder rig then.
  */
-export function bakedAnimationsFromManifest(baked: BakedAnimation, boneCount: number, bytes: ArrayBuffer | ArrayBufferView): BakedAnimations {
-  if (baked.width !== boneCount * 4) throw new BakedManifestError(`baked.width ${baked.width} does not match boneCount ${boneCount} * 4`);
+export function bakedAnimationsFromManifest(
+  baked: BakedAnimation,
+  boneCount: number,
+  bytes: ArrayBuffer | ArrayBufferView,
+): BakedAnimations {
+  if (baked.width !== boneCount * 4)
+    throw new BakedManifestError(
+      `baked.width ${baked.width} does not match boneCount ${boneCount} * 4`,
+    );
   const names = baked.clips.map((c) => c.name);
-  if (names.join(',') !== ANIM_NAMES.join(',')) throw new BakedManifestError(`clips must be ${ANIM_NAMES.join(', ')}; found ${names.join(', ')}`);
+  if (names.join(',') !== ANIM_NAMES.join(','))
+    throw new BakedManifestError(
+      `clips must be ${ANIM_NAMES.join(', ')}; found ${names.join(', ')}`,
+    );
   const data = readFloat32LE(bytes);
   const expected = baked.width * baked.height * 4;
-  if (data.length !== expected) throw new BakedManifestError(`anim.f32 holds ${data.length} floats, expected ${baked.width} x ${baked.height} x 4 = ${expected}`);
+  if (data.length !== expected)
+    throw new BakedManifestError(
+      `anim.f32 holds ${data.length} floats, expected ${baked.width} x ${baked.height} x 4 = ${expected}`,
+    );
   let row = 0;
   const clips: BakedClip[] = baked.clips.map((c) => {
-    if (c.startRow !== row) throw new BakedManifestError(`clip ${c.name} starts at row ${c.startRow}, expected ${row}`);
+    if (c.startRow !== row)
+      throw new BakedManifestError(`clip ${c.name} starts at row ${c.startRow}, expected ${row}`);
     row += c.frames;
-    return { name: c.name, startRow: c.startRow, frameCount: c.frames, loop: c.loop, duration: c.durationSeconds };
+    return {
+      name: c.name,
+      startRow: c.startRow,
+      frameCount: c.frames,
+      loop: c.loop,
+      duration: c.durationSeconds,
+    };
   });
-  if (row !== baked.height) throw new BakedManifestError(`clip frames add up to ${row}, height is ${baked.height}`);
+  if (row !== baked.height)
+    throw new BakedManifestError(`clip frames add up to ${row}, height is ${baked.height}`);
   for (let i = 0; i < data.length; i++) {
-    if (!Number.isFinite(data[i]!)) throw new BakedManifestError(`anim.f32 holds a non-finite value at float ${i}`);
+    if (!Number.isFinite(data[i]!))
+      throw new BakedManifestError(`anim.f32 holds a non-finite value at float ${i}`);
   }
   const clipTable = new Float32Array(clips.length * 4);
-  clips.forEach((c, i) => clipTable.set([c.startRow, c.frameCount, c.loop ? 1 : 0, c.duration], i * 4));
+  clips.forEach((c, i) =>
+    clipTable.set([c.startRow, c.frameCount, c.loop ? 1 : 0, c.duration], i * 4),
+  );
   return { boneCount, width: baked.width, height: baked.height, data, clips, clipTable };
 }
 
@@ -69,7 +97,10 @@ export interface CharacterFit {
  * height stays as it is; anything outside CHARACTER_HEIGHT_RANGE (centimeters, inches) is scaled to CHARACTER_HEIGHT,
  * and feet off y = 0 are moved onto it. Facing is not corrected: the asset-cli rejects a character facing -Z.
  */
-export function characterFit(bounds: { min: readonly number[]; max: readonly number[] }): CharacterFit {
+export function characterFit(bounds: {
+  min: readonly number[];
+  max: readonly number[];
+}): CharacterFit {
   const minY = bounds.min[1] ?? 0;
   const height = (bounds.max[1] ?? 0) - minY;
   if (!(height > 1e-6)) return { scale: 1, lift: 0 };

@@ -46,8 +46,10 @@ describe('10 s wegval en resync', () => {
     for (const c of [a, b]) expect(c.received.some((m) => m.kind === 'desync')).toBe(false);
   });
 
-  it('commando\'s van B na de terugkeer worden uitgevoerd', () => {
-    const afterBack = net.room.recordedBundles.filter((bundle) => bundle.frame >= relayWhenBack).flatMap((bundle) => bundle.commands);
+  it("commando's van B na de terugkeer worden uitgevoerd", () => {
+    const afterBack = net.room.recordedBundles
+      .filter((bundle) => bundle.frame >= relayWhenBack)
+      .flatMap((bundle) => bundle.commands);
     expect(afterBack.some((c) => c.playerId === b.playerId)).toBe(true);
   });
 });

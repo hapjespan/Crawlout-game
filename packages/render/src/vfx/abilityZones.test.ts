@@ -2,7 +2,14 @@ import { describe, expect, it } from 'vitest';
 import type { GameData } from '@crawlout/data';
 import { TICK_MS, UNITS_PER_METER } from '@crawlout/protocol';
 import { DECAL_SHAPE, type DecalStyle } from '../decals/decalLayer.js';
-import { abilitiesFromGameData, AbilityZones, ZONE_FADE_S, ZONE_OPEN_S, zoneFade, type DecalSink } from './abilityZones.js';
+import {
+  abilitiesFromGameData,
+  AbilityZones,
+  ZONE_FADE_S,
+  ZONE_OPEN_S,
+  zoneFade,
+  type DecalSink,
+} from './abilityZones.js';
 
 class Decals implements DecalSink {
   readonly items: { x: number; z: number; halfX: number; halfZ: number; style: DecalStyle }[] = [];
@@ -12,7 +19,10 @@ class Decals implements DecalSink {
 }
 
 function heroes(radiusU: number, durationTicks: number): Pick<GameData, 'heroes'> {
-  return { heroes: [{ abilities: [{ radiusU, durationTicks }] }] } as unknown as Pick<GameData, 'heroes'>;
+  return { heroes: [{ abilities: [{ radiusU, durationTicks }] }] } as unknown as Pick<
+    GameData,
+    'heroes'
+  >;
 }
 
 describe('abilitiesFromGameData', () => {

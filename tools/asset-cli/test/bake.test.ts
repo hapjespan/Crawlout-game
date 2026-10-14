@@ -12,7 +12,10 @@ import { validateAsset } from '../src/validate.js';
 import { makeHumanoid } from './fixtures.js';
 
 /** Twee bones (root op de grond, kind 1 m hoger met correcte inverse bind); elke clip draait de root 90 graden om Z. */
-function makeRig(durations: Partial<Record<string, number>> = {}, names: readonly string[] = ANIM_NAMES): Document {
+function makeRig(
+  durations: Partial<Record<string, number>> = {},
+  names: readonly string[] = ANIM_NAMES,
+): Document {
   const doc = new Document();
   const buffer = doc.createBuffer();
   const root = doc.createNode('root');
@@ -22,29 +25,59 @@ function makeRig(durations: Partial<Record<string, number>> = {}, names: readonl
   const ibm = new Float32Array(32);
   ibm.set([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], 0);
   ibm.set([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, -1, 0, 1], 16);
-  doc.createSkin().addJoint(root).addJoint(child).setInverseBindMatrices(doc.createAccessor().setArray(ibm).setType('MAT4').setBuffer(buffer));
+  doc
+    .createSkin()
+    .addJoint(root)
+    .addJoint(child)
+    .setInverseBindMatrices(doc.createAccessor().setArray(ibm).setType('MAT4').setBuffer(buffer));
   const q = Math.SQRT1_2;
   for (const name of names) {
-    const input = doc.createAccessor().setArray(new Float32Array([0, durations[name] ?? 1])).setType('SCALAR').setBuffer(buffer);
-    const output = doc.createAccessor().setArray(new Float32Array([0, 0, 0, 1, 0, 0, q, q])).setType('VEC4').setBuffer(buffer);
+    const input = doc
+      .createAccessor()
+      .setArray(new Float32Array([0, durations[name] ?? 1]))
+      .setType('SCALAR')
+      .setBuffer(buffer);
+    const output = doc
+      .createAccessor()
+      .setArray(new Float32Array([0, 0, 0, 1, 0, 0, q, q]))
+      .setType('VEC4')
+      .setBuffer(buffer);
     const sampler = doc.createAnimationSampler().setInput(input).setOutput(output);
-    const channel = doc.createAnimationChannel().setTargetNode(root).setTargetPath('rotation').setSampler(sampler);
+    const channel = doc
+      .createAnimationChannel()
+      .setTargetNode(root)
+      .setTargetPath('rotation')
+      .setSampler(sampler);
     doc.createAnimation(name).addSampler(sampler).addChannel(channel);
   }
   return doc;
 }
 
-const identityMap = (n: number): Map<(typeof ANIM_NAMES)[number], number> => new Map(ANIM_NAMES.map((name, i) => [name, i] as const).slice(0, n));
+const identityMap = (n: number): Map<(typeof ANIM_NAMES)[number], number> =>
+  new Map(ANIM_NAMES.map((name, i) => [name, i] as const).slice(0, n));
 
 describe('bakeAnimations', () => {
   it('schrijft afmetingen en clipblokken volgens sectie 12', () => {
-    const { baked, data } = bakeAnimations({ assetId: 'rig', document: makeRig({ death: 2 }), clips: identityMap(8) });
+    const { baked, data } = bakeAnimations({
+      assetId: 'rig',
+      document: makeRig({ death: 2 }),
+      clips: identityMap(8),
+    });
     expect(baked.width).toBe(8);
     expect(baked.fps).toBe(30);
     expect(baked.clips.map((c) => c.name)).toEqual([...ANIM_NAMES]);
     expect(baked.clips.map((c) => c.frames)).toEqual([30, 30, 30, 30, 30, 30, 30, 60]);
     expect(baked.clips.map((c) => c.startRow)).toEqual([0, 30, 60, 90, 120, 150, 180, 210]);
-    expect(baked.clips.map((c) => c.loop)).toEqual([true, true, true, true, true, true, true, false]);
+    expect(baked.clips.map((c) => c.loop)).toEqual([
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false,
+    ]);
     expect(baked.clips[7]!.durationSeconds).toBe(2);
     expect(baked.height).toBe(270);
     expect(baked.path).toBe('rig/rig.anim.f32');
@@ -52,7 +85,11 @@ describe('bakeAnimations', () => {
   });
 
   it('roundtrip: leest de skin-matrix van een bekende pose terug', () => {
-    const { baked, data } = bakeAnimations({ assetId: 'rig', document: makeRig({ death: 2 }), clips: identityMap(8) });
+    const { baked, data } = bakeAnimations({
+      assetId: 'rig',
+      document: makeRig({ death: 2 }),
+      clips: identityMap(8),
+    });
     const f32 = new Float32Array(data.buffer, data.byteOffset, data.byteLength / 4);
     const texel = (bone: number, c: number, row: number): number[] => {
       const at = (row * baked.width + bone * 4 + c) * 4;
@@ -80,7 +117,9 @@ describe('bakeAnimations', () => {
 
 describe('validatie van clips', () => {
   it('meldt precies welke clip ontbreekt', async () => {
-    const bytes = await makeHumanoid({ clips: ['idle', 'walk', 'run', 'attack1', 'gather', 'build', 'death'] });
+    const bytes = await makeHumanoid({
+      clips: ['idle', 'walk', 'run', 'attack1', 'gather', 'build', 'death'],
+    });
     const { NodeIO } = await import('@gltf-transform/core');
     const result = validateAsset(await new NodeIO().readBinary(bytes));
     expect(result.errors).toHaveLength(1);
@@ -89,7 +128,16 @@ describe('validatie van clips', () => {
 
   it('lost clipnamen op via de clipmap en meldt dubbelzinnigheid', () => {
     const map = parseClipmap({ clips: { Walk_Loop: 'walk', Jog_Fwd_Loop: 'run', Jog_Alt: 'run' } });
-    const names = ['idle', 'WALK_LOOP', 'Jog_Fwd_Loop', 'attack1', 'attack2', 'gather', 'build', 'death'];
+    const names = [
+      'idle',
+      'WALK_LOOP',
+      'Jog_Fwd_Loop',
+      'attack1',
+      'attack2',
+      'gather',
+      'build',
+      'death',
+    ];
     const ok = resolveClips(names, map);
     expect(ok.errors).toEqual([]);
     expect(ok.found.get('walk')).toBe(1);
@@ -111,11 +159,21 @@ describe('buis met baked', () => {
   afterEach(() => rmSync(root, { recursive: true, force: true }));
 
   it('schrijft <id>.anim.f32 en baked in het manifest, via clipmap voor afwijkende namen', async () => {
-    writeFileSync(join(src, 'hero.glb'), await makeHumanoid({ clips: ['Idle_Loop', 'Walk_Loop', 'run', 'attack1', 'attack2', 'gather', 'build', 'death'] }));
-    writeFileSync(join(src, 'clipmap.json'), JSON.stringify({ clips: { Idle_Loop: 'idle', Walk_Loop: 'walk' } }));
+    writeFileSync(
+      join(src, 'hero.glb'),
+      await makeHumanoid({
+        clips: ['Idle_Loop', 'Walk_Loop', 'run', 'attack1', 'attack2', 'gather', 'build', 'death'],
+      }),
+    );
+    writeFileSync(
+      join(src, 'clipmap.json'),
+      JSON.stringify({ clips: { Idle_Loop: 'idle', Walk_Loop: 'walk' } }),
+    );
     const result = await buildAssets({ srcDir: src, distDir: dist, toktx: null });
     expect(result.reports.flatMap((r) => r.errors)).toEqual([]);
-    const manifest = manifestSchema.parse(JSON.parse(readFileSync(join(dist, 'manifest.json'), 'utf8')));
+    const manifest = manifestSchema.parse(
+      JSON.parse(readFileSync(join(dist, 'manifest.json'), 'utf8')),
+    );
     const hero = manifest.assets[0]!;
     expect(hero.baked?.path).toBe('hero/hero.anim.f32');
     expect(hero.baked?.width).toBe(hero.boneCount * 4);
@@ -125,7 +183,12 @@ describe('buis met baked', () => {
   });
 
   it('faalt zonder clipmap met de naam van de ontbrekende clip en schrijft niets', async () => {
-    writeFileSync(join(src, 'hero.glb'), await makeHumanoid({ clips: ['Idle_Loop', 'walk', 'run', 'attack1', 'attack2', 'gather', 'build', 'death'] }));
+    writeFileSync(
+      join(src, 'hero.glb'),
+      await makeHumanoid({
+        clips: ['Idle_Loop', 'walk', 'run', 'attack1', 'attack2', 'gather', 'build', 'death'],
+      }),
+    );
     const result = await buildAssets({ srcDir: src, distDir: dist, toktx: null });
     expect(result.ok).toBe(false);
     expect(result.reports[0]!.errors.join()).toMatch(/animatieclip "idle" ontbreekt/);

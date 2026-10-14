@@ -7,7 +7,11 @@
 import type { AssetManifest } from '@crawlout/asset-cli/manifest';
 import type { BufferGeometry, Object3D, Texture } from 'three/webgpu';
 import { propFitScale, propKindOf } from './propFit.js';
-import { createPlaceholderPropGeometry, propGeometryFromGltf, type PropMesh } from './propGeometry.js';
+import {
+  createPlaceholderPropGeometry,
+  propGeometryFromGltf,
+  type PropMesh,
+} from './propGeometry.js';
 import type { PropVisual } from './propLayer.js';
 
 export interface PropSourceOptions {
@@ -92,18 +96,24 @@ export class PropAssetRegistry {
     return propGeometryFromGltf(await this.io.parseGltf(await this.io.fetchBytes(url), url));
   }
 
-  private async fromManifest(src: ResolvedSource, manifestUrl: string, assetId: string): Promise<MeshSet | null> {
+  private async fromManifest(
+    src: ResolvedSource,
+    manifestUrl: string,
+    assetId: string,
+  ): Promise<MeshSet | null> {
     const manifest = await this.io.manifest(manifestUrl);
     const entry = manifest.assets.find((a) => a.id === assetId);
     if (!entry) return null;
-    if (entry.kind !== 'prop') throw new Error(`"${assetId}" is a ${entry.kind} in the manifest, not a prop`);
+    if (entry.kind !== 'prop')
+      throw new Error(`"${assetId}" is a ${entry.kind} in the manifest, not a prop`);
     return this.loadOnce(`m|${manifestUrl}|${assetId}`, async () => {
       // Identical LODs (same file or same triangle count as the one before) share one mesh and so one draw.
       const meshes: PropMesh[] = [];
       for (let i = 0; i < 3; i++) {
         const lod = entry.lods[i]!;
         const prev = i > 0 ? entry.lods[i - 1]! : null;
-        if (prev && (prev.path === lod.path || prev.triangles === lod.triangles)) meshes.push(meshes[i - 1]!);
+        if (prev && (prev.path === lod.path || prev.triangles === lod.triangles))
+          meshes.push(meshes[i - 1]!);
         else meshes.push(await this.glb(src.resolveUrl(manifestUrl, lod.path)));
       }
       return { lods: meshes as MeshSet['lods'] };
@@ -148,7 +158,13 @@ export class PropAssetRegistry {
     const [l0, l1, l2] = set.lods;
     const fit = propFitScale(assetId, l0.height, src.heights);
     return {
-      visual: { lods: [l0.geometry, l1.geometry, l2.geometry], map: l0.map, fit, height: l0.height, radius: l0.radius },
+      visual: {
+        lods: [l0.geometry, l1.geometry, l2.geometry],
+        map: l0.map,
+        fit,
+        height: l0.height,
+        radius: l0.radius,
+      },
       origin,
       reasons,
       triangles: [l0.triangles, l1.triangles, l2.triangles],

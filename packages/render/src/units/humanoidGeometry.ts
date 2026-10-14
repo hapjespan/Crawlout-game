@@ -3,7 +3,15 @@
 // plus color: linear RGB albedo with the team mask (0..1) in alpha, standing in for the diffuse atlas and its alpha.
 // Hero parts (cap, collar, pauldrons) are in every placeholder unit but only drawn for a hero instance: their alpha is
 // HERO_PART_ALPHA plus the team mask, and the unit material collapses them for everyone else (unitMaterial.ts).
-import { BoxGeometry, BufferAttribute, BufferGeometry, Color, CylinderGeometry, IcosahedronGeometry, Matrix4 } from 'three/webgpu';
+import {
+  BoxGeometry,
+  BufferAttribute,
+  BufferGeometry,
+  Color,
+  CylinderGeometry,
+  IcosahedronGeometry,
+  Matrix4,
+} from 'three/webgpu';
 import { BONE } from './rig.js';
 
 export type UnitLod = 0 | 1 | 2;
@@ -36,31 +44,165 @@ const HERO_TRIM = 0xe6dfcf; // light base, so the team tint reads strongly on th
 
 const PARTS: readonly Part[] = [
   { bone: BONE.hips, shape: 'box', size: [0.34, 0.2, 0.21], center: [0, 0.93, 0], color: PANTS },
-  { bone: BONE.chest, shape: 'box', size: [0.44, 0.42, 0.25], center: [0, 1.25, 0], color: CLOTH, team: 1 },
-  { bone: BONE.chest, shape: 'box', size: [0.3, 0.34, 0.14], center: [0, 1.25, -0.19], color: PACK, minLod: 1 },
+  {
+    bone: BONE.chest,
+    shape: 'box',
+    size: [0.44, 0.42, 0.25],
+    center: [0, 1.25, 0],
+    color: CLOTH,
+    team: 1,
+  },
+  {
+    bone: BONE.chest,
+    shape: 'box',
+    size: [0.3, 0.34, 0.14],
+    center: [0, 1.25, -0.19],
+    color: PACK,
+    minLod: 1,
+  },
   { bone: BONE.head, shape: 'ball', size: [0.17, 0, 0], center: [0, 1.66, 0.01], color: SKIN },
-  { bone: BONE.head, shape: 'box', size: [0.3, 0.09, 0.3], center: [0, 1.79, -0.01], color: HAIR, minLod: 1 },
-  { bone: BONE.upperArmL, shape: 'limb', size: [0.065, 0.32, 0], center: [0.27, 1.26, 0], color: CLOTH, team: 1 },
-  { bone: BONE.upperArmR, shape: 'limb', size: [0.065, 0.32, 0], center: [-0.27, 1.26, 0], color: CLOTH, team: 1 },
-  { bone: BONE.foreArmL, shape: 'limb', size: [0.055, 0.3, 0], center: [0.27, 0.96, 0], color: SKIN },
-  { bone: BONE.foreArmR, shape: 'limb', size: [0.055, 0.3, 0], center: [-0.27, 0.96, 0], color: SKIN },
-  { bone: BONE.foreArmL, shape: 'box', size: [0.11, 0.12, 0.11], center: [0.27, 0.77, 0], color: SKIN, minLod: 1 },
-  { bone: BONE.foreArmR, shape: 'box', size: [0.11, 0.12, 0.11], center: [-0.27, 0.77, 0], color: SKIN, minLod: 1 },
-  { bone: BONE.thighL, shape: 'limb', size: [0.085, 0.46, 0], center: [0.1, 0.67, 0], color: PANTS },
-  { bone: BONE.thighR, shape: 'limb', size: [0.085, 0.46, 0], center: [-0.1, 0.67, 0], color: PANTS },
+  {
+    bone: BONE.head,
+    shape: 'box',
+    size: [0.3, 0.09, 0.3],
+    center: [0, 1.79, -0.01],
+    color: HAIR,
+    minLod: 1,
+  },
+  {
+    bone: BONE.upperArmL,
+    shape: 'limb',
+    size: [0.065, 0.32, 0],
+    center: [0.27, 1.26, 0],
+    color: CLOTH,
+    team: 1,
+  },
+  {
+    bone: BONE.upperArmR,
+    shape: 'limb',
+    size: [0.065, 0.32, 0],
+    center: [-0.27, 1.26, 0],
+    color: CLOTH,
+    team: 1,
+  },
+  {
+    bone: BONE.foreArmL,
+    shape: 'limb',
+    size: [0.055, 0.3, 0],
+    center: [0.27, 0.96, 0],
+    color: SKIN,
+  },
+  {
+    bone: BONE.foreArmR,
+    shape: 'limb',
+    size: [0.055, 0.3, 0],
+    center: [-0.27, 0.96, 0],
+    color: SKIN,
+  },
+  {
+    bone: BONE.foreArmL,
+    shape: 'box',
+    size: [0.11, 0.12, 0.11],
+    center: [0.27, 0.77, 0],
+    color: SKIN,
+    minLod: 1,
+  },
+  {
+    bone: BONE.foreArmR,
+    shape: 'box',
+    size: [0.11, 0.12, 0.11],
+    center: [-0.27, 0.77, 0],
+    color: SKIN,
+    minLod: 1,
+  },
+  {
+    bone: BONE.thighL,
+    shape: 'limb',
+    size: [0.085, 0.46, 0],
+    center: [0.1, 0.67, 0],
+    color: PANTS,
+  },
+  {
+    bone: BONE.thighR,
+    shape: 'limb',
+    size: [0.085, 0.46, 0],
+    center: [-0.1, 0.67, 0],
+    color: PANTS,
+  },
   { bone: BONE.shinL, shape: 'limb', size: [0.07, 0.4, 0], center: [0.1, 0.25, 0], color: PANTS },
   { bone: BONE.shinR, shape: 'limb', size: [0.07, 0.4, 0], center: [-0.1, 0.25, 0], color: PANTS },
-  { bone: BONE.shinL, shape: 'box', size: [0.14, 0.1, 0.25], center: [0.1, 0.05, 0.04], color: BOOTS, minLod: 1 },
-  { bone: BONE.shinR, shape: 'box', size: [0.14, 0.1, 0.25], center: [-0.1, 0.05, 0.04], color: BOOTS, minLod: 1 },
+  {
+    bone: BONE.shinL,
+    shape: 'box',
+    size: [0.14, 0.1, 0.25],
+    center: [0.1, 0.05, 0.04],
+    color: BOOTS,
+    minLod: 1,
+  },
+  {
+    bone: BONE.shinR,
+    shape: 'box',
+    size: [0.14, 0.1, 0.25],
+    center: [-0.1, 0.05, 0.04],
+    color: BOOTS,
+    minLod: 1,
+  },
   // Hero: an overseer's cap (the top-down camera sees it first), a collar and pauldrons, all in the team color.
-  { bone: BONE.head, shape: 'limb', size: [0.25, 0.035, 0], center: [0, 1.8, 0.02], color: HERO_TRIM, team: 1, heroOnly: true },
-  { bone: BONE.head, shape: 'limb', size: [0.17, 0.15, 0], center: [0, 1.89, -0.01], color: HERO_TRIM, team: 1, heroOnly: true },
-  { bone: BONE.chest, shape: 'limb', size: [0.2, 0.08, 0], center: [0, 1.48, 0], color: HERO_TRIM, team: 1, heroOnly: true, minLod: 1 },
-  { bone: BONE.upperArmL, shape: 'box', size: [0.17, 0.08, 0.22], center: [0.29, 1.43, 0], color: HERO_TRIM, team: 1, heroOnly: true, minLod: 1 },
-  { bone: BONE.upperArmR, shape: 'box', size: [0.17, 0.08, 0.22], center: [-0.29, 1.43, 0], color: HERO_TRIM, team: 1, heroOnly: true, minLod: 1 },
+  {
+    bone: BONE.head,
+    shape: 'limb',
+    size: [0.25, 0.035, 0],
+    center: [0, 1.8, 0.02],
+    color: HERO_TRIM,
+    team: 1,
+    heroOnly: true,
+  },
+  {
+    bone: BONE.head,
+    shape: 'limb',
+    size: [0.17, 0.15, 0],
+    center: [0, 1.89, -0.01],
+    color: HERO_TRIM,
+    team: 1,
+    heroOnly: true,
+  },
+  {
+    bone: BONE.chest,
+    shape: 'limb',
+    size: [0.2, 0.08, 0],
+    center: [0, 1.48, 0],
+    color: HERO_TRIM,
+    team: 1,
+    heroOnly: true,
+    minLod: 1,
+  },
+  {
+    bone: BONE.upperArmL,
+    shape: 'box',
+    size: [0.17, 0.08, 0.22],
+    center: [0.29, 1.43, 0],
+    color: HERO_TRIM,
+    team: 1,
+    heroOnly: true,
+    minLod: 1,
+  },
+  {
+    bone: BONE.upperArmR,
+    shape: 'box',
+    size: [0.17, 0.08, 0.22],
+    center: [-0.29, 1.43, 0],
+    color: HERO_TRIM,
+    team: 1,
+    heroOnly: true,
+    minLod: 1,
+  },
 ];
 
-function shapeGeometry(shape: Shape, size: readonly [number, number, number], lod: UnitLod): BufferGeometry {
+function shapeGeometry(
+  shape: Shape,
+  size: readonly [number, number, number],
+  lod: UnitLod,
+): BufferGeometry {
   if (shape === 'box') return new BoxGeometry(size[0], size[1], size[2]);
   if (shape === 'ball') return new IcosahedronGeometry(size[0], 2 - lod);
   if (lod === 2) return new BoxGeometry(size[0] * 1.8, size[1], size[0] * 1.8);
@@ -108,7 +250,9 @@ export function createHumanoidGeometry(lod: UnitLod): BufferGeometry {
   geo.setAttribute('skinIndex', new BufferAttribute(new Float32Array(skinIndex), 4));
   geo.setAttribute('skinWeight', new BufferAttribute(new Float32Array(skinWeight), 4));
   const vertexCount = pos.length / 3;
-  geo.setIndex(new BufferAttribute(vertexCount > 65535 ? new Uint32Array(idx) : new Uint16Array(idx), 1));
+  geo.setIndex(
+    new BufferAttribute(vertexCount > 65535 ? new Uint32Array(idx) : new Uint16Array(idx), 1),
+  );
   geo.computeBoundingSphere();
   return geo;
 }

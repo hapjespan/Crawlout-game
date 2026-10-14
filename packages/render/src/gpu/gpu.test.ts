@@ -4,7 +4,12 @@ import { MAX_PLAYERS } from '@crawlout/protocol';
 import { NEUTRAL_TEAM, teamIndex, teamPalette } from '../palette.js';
 import { createGridTerrain, TerrainHeightField } from '../terrain/heightField.js';
 import { bakeHeights } from '../terrain/heightTexture.js';
-import { createDataTexture, pickDataTexturePrecision, toHalfFloatArray, WEBGPU_DATA_TEXTURE_CAPS } from './dataTextures.js';
+import {
+  createDataTexture,
+  pickDataTexturePrecision,
+  toHalfFloatArray,
+  WEBGPU_DATA_TEXTURE_CAPS,
+} from './dataTextures.js';
 
 describe('data texture precision', () => {
   it('keeps float32 when supported and the texture fits', () => {

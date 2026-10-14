@@ -25,7 +25,10 @@ describe('LoopbackRelay.addAi', () => {
     expect(relay.addAi('dwellers')).toBe(1);
     me.send({ kind: 'ready', ready: true });
     const start = got.find((m) => m.kind === 'start');
-    expect(start?.kind === 'start' && start.players.map((p) => [p.playerId, p.ai])).toEqual([[0, false], [1, true]]);
+    expect(start?.kind === 'start' && start.players.map((p) => [p.playerId, p.ai])).toEqual([
+      [0, false],
+      [1, true],
+    ]);
     expect(relay.advance()?.frame).toBe(0);
   });
 });

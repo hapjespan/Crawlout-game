@@ -7,12 +7,25 @@ import { loadProps, type PropInstance } from '@crawlout/map';
 import type { PropSourceOptions } from '@crawlout/render';
 
 const DATA_PREFIX = '../../../../data/';
-const mapFiles = import.meta.glob('../../../../data/maps/*.json', { eager: true, query: '?raw', import: 'default' }) as Record<string, string>;
+const mapFiles = import.meta.glob('../../../../data/maps/*.json', {
+  eager: true,
+  query: '?raw',
+  import: 'default',
+}) as Record<string, string>;
 const SOURCE_DIR = '../../../../assets/src/props/';
-const sourceFiles = import.meta.glob('../../../../assets/src/props/*.glb', { eager: true, query: '?url', import: 'default' }) as Record<string, string>;
+const sourceFiles = import.meta.glob('../../../../assets/src/props/*.glb', {
+  eager: true,
+  query: '?url',
+  import: 'default',
+}) as Record<string, string>;
 
 /** Source GLB URL per asset id (the file name in lower case, as the asset-cli names it). */
-const sourceById = new Map(Object.entries(sourceFiles).map(([path, url]) => [path.slice(SOURCE_DIR.length, -'.glb'.length).toLowerCase(), url]));
+const sourceById = new Map(
+  Object.entries(sourceFiles).map(([path, url]) => [
+    path.slice(SOURCE_DIR.length, -'.glb'.length).toLowerCase(),
+    url,
+  ]),
+);
 
 /** The props of a map from data/maps, or [] when the map has none. */
 export function loadMapProps(mapId: string): PropInstance[] {
@@ -26,5 +39,8 @@ export function loadMapProps(mapId: string): PropInstance[] {
 
 /** Prop source for renderer.setProps: the renderer's manifest first, the source GLBs for ids it lacks. */
 export function propSource(opts: { manifest?: boolean } = {}): PropSourceOptions {
-  return { ...(opts.manifest === false ? { manifestUrl: null } : {}), sourceUrl: (id) => sourceById.get(id) };
+  return {
+    ...(opts.manifest === false ? { manifestUrl: null } : {}),
+    sourceUrl: (id) => sourceById.get(id),
+  };
 }

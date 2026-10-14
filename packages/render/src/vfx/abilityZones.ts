@@ -66,7 +66,16 @@ export function zoneFade(age: number, duration: number): number {
 /** Active ability zones; draw() pushes one decal per zone and forgets the ones that ended. */
 export class AbilityZones implements ZoneSink {
   private readonly zones: Zone[] = [];
-  private readonly style: DecalStyle = { shape: DECAL_SHAPE.circle, shadow: 0, ring: 0, ringWidth: RING_WIDTH, fill: 0, grid: 0, color: 0, fillEdge: 1 };
+  private readonly style: DecalStyle = {
+    shape: DECAL_SHAPE.circle,
+    shadow: 0,
+    ring: 0,
+    ringWidth: RING_WIDTH,
+    fill: 0,
+    grid: 0,
+    color: 0,
+    fillEdge: 1,
+  };
 
   get count(): number {
     return this.zones.length;

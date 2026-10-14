@@ -1,6 +1,12 @@
 // Building panel cards (research, craft, revive) for the HUD: names, effects in plain Dutch, what a card unlocks,
 // and its state from scrap, researched techs and the sim's work queue. The HUD only renders what this returns.
-import { ANIM, UNITS_PER_METER, TICK_HZ, type PlayerStatus, type QueueItem } from '@crawlout/protocol';
+import {
+  ANIM,
+  UNITS_PER_METER,
+  TICK_HZ,
+  type PlayerStatus,
+  type QueueItem,
+} from '@crawlout/protocol';
 import { PROVIDES, kindOfTypeId, type EffectData, type GameData } from '@crawlout/data';
 import type { BuildingCard, CardIconId, CardState } from '@crawlout/ui';
 import { LOADOUT_NAMES } from './roster.js';
@@ -42,9 +48,15 @@ const targetName = (target: string): string => {
 export function effectText(e: EffectData): string {
   const t = STAT_TEXT[e.stat];
   if (!t) return `${e.stat} ${e.delta > 0 ? '+' : ''}${e.delta} voor ${targetName(e.target)}`;
-  const value = t.unit === 'pct' ? e.delta / 10 : t.unit === 'm' ? e.delta / UNITS_PER_METER : e.delta;
+  const value =
+    t.unit === 'pct' ? e.delta / 10 : t.unit === 'm' ? e.delta / UNITS_PER_METER : e.delta;
   const sign = value > 0 ? '+' : '';
-  const amount = t.unit === 'pct' ? `${sign}${value}%` : t.unit === 'm' ? `${sign}${value} m` : `${sign}${value}`;
+  const amount =
+    t.unit === 'pct'
+      ? `${sign}${value}%`
+      : t.unit === 'm'
+        ? `${sign}${value} m`
+        : `${sign}${value}`;
   return `${amount} ${t.label} voor ${targetName(e.target)}`;
 }
 
@@ -60,16 +72,25 @@ export interface CardContext {
   heroDead: boolean;
 }
 
-const queueItem = (status: PlayerStatus | null, kind: QueueItem['kind'], id: number): QueueItem | undefined =>
-  status?.queue?.find((q) => q.kind === kind && q.id === id);
+const queueItem = (
+  status: PlayerStatus | null,
+  kind: QueueItem['kind'],
+  id: number,
+): QueueItem | undefined => status?.queue?.find((q) => q.kind === kind && q.id === id);
 
 export function buildingCards(ctx: CardContext): BuildingCard[] {
   const { data, factionId, status } = ctx;
   const researched = new Set(status?.techs ?? []);
   const scrap = status?.scrap ?? 0;
   const techName = (id: number): string => humanize(data.tech[id]?.key ?? String(id));
-  const missing = (prereq: readonly number[]): string[] => prereq.filter((t) => !researched.has(t)).map(techName);
-  const stateOf = (cost: number, prereq: readonly number[], running: boolean, done: boolean): CardState => {
+  const missing = (prereq: readonly number[]): string[] =>
+    prereq.filter((t) => !researched.has(t)).map(techName);
+  const stateOf = (
+    cost: number,
+    prereq: readonly number[],
+    running: boolean,
+    done: boolean,
+  ): CardState => {
     if (done) return 'done';
     if (running) return 'running';
     if (missing(prereq).length > 0) return 'locked';
@@ -86,7 +107,9 @@ export function buildingCards(ctx: CardContext): BuildingCard[] {
       if (t.factionId !== factionId || !buildingIds.has(t.buildingId)) continue;
       const running = queueItem(status, 'research', t.id);
       const unlocks = [
-        ...data.loadouts.filter((l) => l.prereqTech.includes(t.id)).map((l) => LOADOUT_NAMES[l.key] ?? humanize(l.key)),
+        ...data.loadouts
+          .filter((l) => l.prereqTech.includes(t.id))
+          .map((l) => LOADOUT_NAMES[l.key] ?? humanize(l.key)),
         ...data.buildings.filter((b) => b.prereqTech.includes(t.id)).map((b) => humanize(b.key)),
       ];
       const first = t.effects[0];
@@ -94,7 +117,11 @@ export function buildingCards(ctx: CardContext): BuildingCard[] {
         kind: 'research',
         id: t.id,
         naam: humanize(t.key),
-        icon: first ? (STAT_ICON[first.stat] ?? 'research') : unlocks.length > 0 ? 'gear' : 'research',
+        icon: first
+          ? (STAT_ICON[first.stat] ?? 'research')
+          : unlocks.length > 0
+            ? 'gear'
+            : 'research',
         scrapCost: t.scrapCost,
         seconds: Math.round(t.researchTicks / TICK_HZ),
         effects: t.effects.map(effectText),
@@ -105,7 +132,9 @@ export function buildingCards(ctx: CardContext): BuildingCard[] {
       });
     }
     const hqIdx = PROVIDES.indexOf('hq');
-    const hq = selectedBuildings.find((e) => data.buildings[kindOfTypeId(e.typeId).index]?.provides.includes(hqIdx));
+    const hq = selectedBuildings.find((e) =>
+      data.buildings[kindOfTypeId(e.typeId).index]?.provides.includes(hqIdx),
+    );
     const hero = data.heroes.find((h) => h.factionId === factionId);
     if (hq && hero && ctx.heroDead) {
       const reviving = status?.hero?.state === 'reviving';
@@ -116,7 +145,9 @@ export function buildingCards(ctx: CardContext): BuildingCard[] {
         icon: 'heart',
         scrapCost: hero.reviveScrap,
         seconds: Math.round(hero.reviveTicks / TICK_HZ),
-        effects: [`Nog ${status?.hero?.revivesLeft ?? 0} keer mogelijk; elke keer kost perks en leven`],
+        effects: [
+          `Nog ${status?.hero?.revivesLeft ?? 0} keer mogelijk; elke keer kost perks en leven`,
+        ],
         unlocks: [],
         requires: [],
         state: reviving ? 'running' : scrap >= hero.reviveScrap ? 'available' : 'tooExpensive',
@@ -127,7 +158,11 @@ export function buildingCards(ctx: CardContext): BuildingCard[] {
     const workshopIdx = PROVIDES.indexOf('werkplaats');
     const hasWorkshop = ctx.own.some((e) => {
       const k = kindOfTypeId(e.typeId);
-      return k.kind === 'building' && data.buildings[k.index]?.provides.includes(workshopIdx) && e.anim !== ANIM.build;
+      return (
+        k.kind === 'building' &&
+        data.buildings[k.index]?.provides.includes(workshopIdx) &&
+        e.anim !== ANIM.build
+      );
     });
     if (hasWorkshop) {
       for (const l of data.loadouts) {
@@ -137,7 +172,14 @@ export function buildingCards(ctx: CardContext): BuildingCard[] {
           kind: 'craft',
           id: l.id,
           naam: LOADOUT_NAMES[l.key] ?? humanize(l.key),
-          icon: l.key === 'patrol' ? 'patrol' : l.key === 'scavenger' ? 'crate' : l.key === 'bouwer' ? 'wrench' : 'gun',
+          icon:
+            l.key === 'patrol'
+              ? 'patrol'
+              : l.key === 'scavenger'
+                ? 'crate'
+                : l.key === 'bouwer'
+                  ? 'wrench'
+                  : 'gun',
           scrapCost: l.scrapCost,
           seconds: Math.round(l.craftTicks / TICK_HZ),
           effects: [`Uitrusting: ${humanize(l.weapon)}, ${l.hpI} leven, ${l.damage} schade`],

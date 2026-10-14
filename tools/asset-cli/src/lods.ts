@@ -8,10 +8,13 @@ import { convertTexturesToKtx2 } from './ktx2.js';
 import type { AssetKind } from './validate.js';
 
 export function createIO(): NodeIO {
-  return new NodeIO().setLogger(new Logger(Logger.Verbosity.WARN)).registerExtensions(ALL_EXTENSIONS).registerDependencies({
-    'meshopt.decoder': MeshoptDecoder,
-    'meshopt.encoder': MeshoptEncoder,
-  });
+  return new NodeIO()
+    .setLogger(new Logger(Logger.Verbosity.WARN))
+    .registerExtensions(ALL_EXTENSIONS)
+    .registerDependencies({
+      'meshopt.decoder': MeshoptDecoder,
+      'meshopt.encoder': MeshoptEncoder,
+    });
 }
 
 export interface LodOutput {
@@ -59,7 +62,11 @@ export async function simplifyToTarget(document: Document, target: number): Prom
 }
 
 /** Bouwt LOD0..2 uit de bron-GLB, elk met meshopt-compressie (en KTX2 als toktx beschikbaar is). */
-export async function buildLods(source: Uint8Array, kind: AssetKind, options: BuildLodsOptions): Promise<LodOutput[]> {
+export async function buildLods(
+  source: Uint8Array,
+  kind: AssetKind,
+  options: BuildLodsOptions,
+): Promise<LodOutput[]> {
   await Promise.all([MeshoptSimplifier.ready, MeshoptEncoder.ready, MeshoptDecoder.ready]);
   const sourceTris = countTriangles(await readFresh(source));
   const targets = lodTargets(kind, sourceTris);
@@ -75,10 +82,21 @@ export async function buildLods(source: Uint8Array, kind: AssetKind, options: Bu
       animation.dispose();
     }
     if (level > 0) await simplifyToTarget(document, targets[level]);
-    await document.transform(dedup(), prune({ keepSolidTextures: true }), reorder({ encoder: MeshoptEncoder }));
+    await document.transform(
+      dedup(),
+      prune({ keepSolidTextures: true }),
+      reorder({ encoder: MeshoptEncoder }),
+    );
     if (options.toktx) convertTexturesToKtx2(document, options.toktx);
-    document.createExtension(EXTMeshoptCompression).setRequired(true).setEncoderOptions({ method: EXTMeshoptCompression.EncoderMethod.QUANTIZE });
-    outputs.push({ level, glb: await io.writeBinary(document), triangles: countTriangles(document) });
+    document
+      .createExtension(EXTMeshoptCompression)
+      .setRequired(true)
+      .setEncoderOptions({ method: EXTMeshoptCompression.EncoderMethod.QUANTIZE });
+    outputs.push({
+      level,
+      glb: await io.writeBinary(document),
+      triangles: countTriangles(document),
+    });
   }
   return outputs;
 }

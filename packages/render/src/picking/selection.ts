@@ -96,8 +96,8 @@ export function pickNearestOnScreen(
     const z = frame.z[i]!;
     const w = m[3]! * x + m[7]! * y + m[11]! * z + m[15]!;
     if (w <= 0) continue;
-    const sx = (((m[0]! * x + m[4]! * y + m[8]! * z + m[12]!) / w + 1) * 0.5) * width;
-    const sy = ((1 - (m[1]! * x + m[5]! * y + m[9]! * z + m[13]!) / w) * 0.5) * height;
+    const sx = ((m[0]! * x + m[4]! * y + m[8]! * z + m[12]!) / w + 1) * 0.5 * width;
+    const sy = (1 - (m[1]! * x + m[5]! * y + m[9]! * z + m[13]!) / w) * 0.5 * height;
     const d2 = (sx - px) ** 2 + (sy - py) ** 2;
     if (d2 < bestD2) {
       bestD2 = d2;

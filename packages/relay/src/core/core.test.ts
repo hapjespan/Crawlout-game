@@ -1,9 +1,21 @@
 import { describe, expect, it } from 'vitest';
-import { DELAY_FRAMES_DEFAULT, HASH_INTERVAL_FRAMES, type ClientMessage, type CommandEnvelope, type ServerMessage } from '@crawlout/protocol';
+import {
+  DELAY_FRAMES_DEFAULT,
+  HASH_INTERVAL_FRAMES,
+  type ClientMessage,
+  type CommandEnvelope,
+  type ServerMessage,
+} from '@crawlout/protocol';
 import { FrameScheduler } from './scheduler.js';
 import { Room } from './room.js';
 
-const cmd = (playerId: number, seq: number, frame: number): CommandEnvelope => ({ frame, playerId, seq, type: 'Stop', payload: { ids: [1] } });
+const cmd = (playerId: number, seq: number, frame: number): CommandEnvelope => ({
+  frame,
+  playerId,
+  seq,
+  type: 'Stop',
+  payload: { ids: [1] },
+});
 
 describe('FrameScheduler', () => {
   it('geeft bundels in volgorde zonder gaten, ook leeg', () => {
@@ -59,7 +71,11 @@ function setup(opts: { hashExemptB?: boolean } = {}) {
     ['a', []],
     ['b', []],
   ]);
-  const room = new Room({ roomId: 'r', send: (id, m) => inbox.get(id)?.push(m), chooseSeed: () => 1234 });
+  const room = new Room({
+    roomId: 'r',
+    send: (id, m) => inbox.get(id)?.push(m),
+    chooseSeed: () => 1234,
+  });
   const say = (id: string, m: ClientMessage) => room.handle(id, m);
   say('a', { kind: 'join', roomId: 'r', name: 'A' });
   say('b', { kind: 'join', roomId: 'r', name: 'B' });
@@ -101,7 +117,8 @@ describe('Room bundels en hashes', () => {
     const { room, inbox, say } = setup();
     say('a', { kind: 'command', command: cmd(0, 0, 0) });
     for (let i = 0; i < 6; i++) room.advance();
-    const bundles = (id: string) => inbox.get(id)?.flatMap((m) => (m.kind === 'bundle' ? [m.bundle] : []));
+    const bundles = (id: string) =>
+      inbox.get(id)?.flatMap((m) => (m.kind === 'bundle' ? [m.bundle] : []));
     expect(bundles('a')).toEqual(bundles('b'));
     expect(bundles('a')?.map((b) => b.frame)).toEqual([0, 1, 2, 3, 4, 5]);
     expect(bundles('a')?.[DELAY_FRAMES_DEFAULT]?.commands).toHaveLength(1);
@@ -121,7 +138,10 @@ describe('Room bundels en hashes', () => {
     say('b', { kind: 'hash', report: { frame: HASH_INTERVAL_FRAMES, playerId: 1, hash: 2 } });
     for (const id of ['a', 'b']) {
       const ev = inbox.get(id)?.find((m) => m.kind === 'desync');
-      expect(ev).toEqual({ kind: 'desync', event: { frame: HASH_INTERVAL_FRAMES, hashes: { '0': 1, '1': 2 } } });
+      expect(ev).toEqual({
+        kind: 'desync',
+        event: { frame: HASH_INTERVAL_FRAMES, hashes: { '0': 1, '1': 2 } },
+      });
     }
     expect(room.advance()).toBeNull();
   });

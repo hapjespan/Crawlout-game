@@ -58,7 +58,8 @@ const props: RenderProp[] = [
   { asset: 'grass001', x: 30, y: 25, yaw: 0, scale: 1 },
 ];
 
-const overview = (): PerspectiveCamera => camera(new Vector3(30, 120, 30.01), new Vector3(30, 0, 30));
+const overview = (): PerspectiveCamera =>
+  camera(new Vector3(30, 120, 30.01), new Vector3(30, 0, 30));
 
 describe('PropLayer', () => {
   it('draws one instanced draw per prop asset when its LODs are identical', () => {
@@ -106,7 +107,10 @@ describe('PropLayer', () => {
 
   it('follows a new terrain after relayout', () => {
     let h = 0;
-    const l = new PropLayer(new Scene(), { heightAt: () => h, material: () => new MeshBasicNodeMaterial() });
+    const l = new PropLayer(new Scene(), {
+      heightAt: () => h,
+      material: () => new MeshBasicNodeMaterial(),
+    });
     l.setProps([{ asset: 'rock001', x: 5, y: 5, yaw: 0, scale: 1 }]);
     l.setVisual('rock001', visual());
     l.update(overview(), fakeDecals());
@@ -185,7 +189,10 @@ describe('prop fit', () => {
   it('fits the Gobkit sizes next to a 1.8 m character', () => {
     // Manifest heights (m) of the Gobkit Nature Kit after the asset-cli.
     expect(propFitScale('grass001', 3.842866) * 3.842866).toBeCloseTo(0.45, 6);
-    expect(propFitScale('treehigh001', 8.491107) * 8.491107).toBeCloseTo(PROP_TARGET_HEIGHT.treehigh001!, 6);
+    expect(propFitScale('treehigh001', 8.491107) * 8.491107).toBeCloseTo(
+      PROP_TARGET_HEIGHT.treehigh001!,
+      6,
+    );
     for (const h of Object.values(PROP_TARGET_HEIGHT)) expect(h).toBeLessThanOrEqual(6);
     expect(propTargetHeight('pine_big')).toBe(5); // kind fallback
     expect(propTargetHeight('rock001', { rock001: 2 })).toBe(2); // override
@@ -230,14 +237,22 @@ async function propGlb(quantized: boolean): Promise<ArrayBuffer> {
   const doc = new Document().setLogger(new Logger(Logger.Verbosity.WARN));
   const buffer = doc.createBuffer();
   const box = new BoxGeometry(2, 4, 2).translate(0, 2, 0);
-  const acc = (a: Float32Array | Uint16Array, type: 'VEC3' | 'SCALAR') => doc.createAccessor().setArray(a).setType(type).setBuffer(buffer);
+  const acc = (a: Float32Array | Uint16Array, type: 'VEC3' | 'SCALAR') =>
+    doc.createAccessor().setArray(a).setType(type).setBuffer(buffer);
   const prim = doc
     .createPrimitive()
     .setAttribute('POSITION', acc(new Float32Array(box.getAttribute('position').array), 'VEC3'))
     .setAttribute('NORMAL', acc(new Float32Array(box.getAttribute('normal').array), 'VEC3'))
     .setIndices(acc(new Uint16Array(box.getIndex()!.array), 'SCALAR'))
     .setMaterial(doc.createMaterial('material').setBaseColorFactor([0.5, 0.6, 0.3, 1]));
-  doc.createScene('scene').addChild(doc.createNode('prop').setMesh(doc.createMesh('prop').addPrimitive(prim)).setTranslation([-12, 0, 4]));
+  doc
+    .createScene('scene')
+    .addChild(
+      doc
+        .createNode('prop')
+        .setMesh(doc.createMesh('prop').addPrimitive(prim))
+        .setTranslation([-12, 0, 4]),
+    );
   if (quantized) await doc.transform(quantize());
   const bytes = await new NodeIO().registerExtensions(ALL_EXTENSIONS).writeBinary(doc);
   return bytes.slice().buffer as ArrayBuffer;
@@ -250,7 +265,11 @@ function manifest(entries: { id: string; kind: 'prop' | 'character' }[]): AssetM
       id,
       kind,
       bounds: { min: [-1, 0, -1], max: [1, 4, 1] },
-      lods: [0, 1, 2].map((level) => ({ level: level as 0 | 1 | 2, path: `${id}/lod${level}.glb`, triangles: 12 })) as AssetManifest['assets'][number]['lods'],
+      lods: [0, 1, 2].map((level) => ({
+        level: level as 0 | 1 | 2,
+        path: `${id}/lod${level}.glb`,
+        triangles: 12,
+      })) as AssetManifest['assets'][number]['lods'],
       sockets: {},
       animations: [],
       boneCount: 0,
@@ -259,7 +278,10 @@ function manifest(entries: { id: string; kind: 'prop' | 'character' }[]): AssetM
 }
 
 describe('PropAssetRegistry', () => {
-  async function setup(manifestEntries: { id: string; kind: 'prop' | 'character' }[], files: Record<string, ArrayBuffer>) {
+  async function setup(
+    manifestEntries: { id: string; kind: 'prop' | 'character' }[],
+    files: Record<string, ArrayBuffer>,
+  ) {
     const requested: string[] = [];
     const gltf = createGltfIO();
     const io: PropAssetIO = {
@@ -285,7 +307,9 @@ describe('PropAssetRegistry', () => {
 
   it('takes a manifest prop, fetches identical LODs once and fits it', async () => {
     const glb = await propGlb(true);
-    const { registry, requested } = await setup([{ id: 'rock001', kind: 'prop' }], { 'https://a.test/rock001/lod0.glb': glb });
+    const { registry, requested } = await setup([{ id: 'rock001', kind: 'prop' }], {
+      'https://a.test/rock001/lod0.glb': glb,
+    });
     const r = await registry.resolve('rock001', src());
     expect(r.origin).toBe('manifest');
     expect(requested).toEqual(['https://a.test/rock001/lod0.glb']);
@@ -301,8 +325,11 @@ describe('PropAssetRegistry', () => {
 
   it('falls back to the source GLB, then to a placeholder, and reports why', async () => {
     const glb = await propGlb(false);
-    const { registry } = await setup([{ id: 'dweller_body_human', kind: 'character' }], { 'https://src.test/Bush001.glb': glb });
-    const sourceUrl = (id: string) => (id === 'bush001' ? 'https://src.test/Bush001.glb' : undefined);
+    const { registry } = await setup([{ id: 'dweller_body_human', kind: 'character' }], {
+      'https://src.test/Bush001.glb': glb,
+    });
+    const sourceUrl = (id: string) =>
+      id === 'bush001' ? 'https://src.test/Bush001.glb' : undefined;
     const bush = await registry.resolve('bush001', src({ sourceUrl }));
     expect(bush.origin).toBe('source');
     expect(bush.reasons).toEqual(['not in the manifest']);

@@ -18,7 +18,8 @@ export function netOptionsFromSearch(search: string): WsNetOptions | null {
   const params = new URLSearchParams(search);
   const relayUrl = params.get('relay');
   if (relayUrl === null || relayUrl === '') return null;
-  if (!/^wss?:\/\//.test(relayUrl)) throw new Error(`relay moet met ws:// of wss:// beginnen, kreeg ${relayUrl}`);
+  if (!/^wss?:\/\//.test(relayUrl))
+    throw new Error(`relay moet met ws:// of wss:// beginnen, kreeg ${relayUrl}`);
   const name = (params.get('name') ?? '').trim().slice(0, MAX_NAME_LENGTH) || DEFAULT_NAME;
   return {
     relayUrl,
@@ -46,7 +47,10 @@ function randomId(): string {
 }
 
 /** The clientId lives in sessionStorage: it survives a reload of this tab (reconnect) but not a second tab. */
-export function getClientId(store: KeyValueStore | null, generate: () => string = randomId): string {
+export function getClientId(
+  store: KeyValueStore | null,
+  generate: () => string = randomId,
+): string {
   try {
     const existing = store?.getItem(CLIENT_ID_KEY);
     if (existing && existing.length >= 8 && existing.length <= 64) return existing;

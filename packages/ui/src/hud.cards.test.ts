@@ -4,9 +4,29 @@ import type { PlayerStatus } from '@crawlout/protocol';
 import { mountHud } from './index.js';
 import type { BuildingCard, CardState, HudDeps, HudHandle, SelectedEntity } from './index.js';
 
-const status: PlayerStatus = { playerId: 0, scrap: 100, settlers: 3, pop: 3, popCap: 8, beds: 4, hero: null };
-const unit = (id: number): SelectedEntity => ({ id, typeId: 3, loadoutName: 'Knuppel', hpPct: 80, role: 'scavenger' });
-const building = (id: number): SelectedEntity => ({ id, typeId: 1024 + 4, loadoutName: null, hpPct: 100, role: null });
+const status: PlayerStatus = {
+  playerId: 0,
+  scrap: 100,
+  settlers: 3,
+  pop: 3,
+  popCap: 8,
+  beds: 4,
+  hero: null,
+};
+const unit = (id: number): SelectedEntity => ({
+  id,
+  typeId: 3,
+  loadoutName: 'Knuppel',
+  hpPct: 80,
+  role: 'scavenger',
+});
+const building = (id: number): SelectedEntity => ({
+  id,
+  typeId: 1024 + 4,
+  loadoutName: null,
+  hpPct: 100,
+  role: null,
+});
 
 const card = (state: CardState, n: number, extra: Partial<BuildingCard> = {}): BuildingCard => ({
   kind: 'research',
@@ -30,7 +50,11 @@ const ALL: BuildingCard[] = [
   card('done', 5),
 ];
 
-function setup(cards: BuildingCard[] | (() => BuildingCard[]), selection: SelectedEntity[] = [building(9)], withCancel = true) {
+function setup(
+  cards: BuildingCard[] | (() => BuildingCard[]),
+  selection: SelectedEntity[] = [building(9)],
+  withCancel = true,
+) {
   const started: BuildingCard[] = [];
   const cancelled: BuildingCard[] = [];
   const queries: SelectedEntity[][] = [];
@@ -39,7 +63,10 @@ function setup(cards: BuildingCard[] | (() => BuildingCard[]), selection: Select
     getStatus: () => status,
     getSelection: () => selection,
     beginTargeting: () => undefined,
-    getBuildingCards: (sel) => (queries.push([...sel]), typeof cards === 'function' ? cards() : cards),
+    getBuildingCards: (sel) => (
+      queries.push([...sel]),
+      typeof cards === 'function' ? cards() : cards
+    ),
     startCard: (c) => void started.push(c),
     ...(withCancel ? { cancelCard: (c: BuildingCard) => void cancelled.push(c) } : {}),
   };
@@ -51,9 +78,11 @@ function setup(cards: BuildingCard[] | (() => BuildingCard[]), selection: Select
   });
   return { el, started, cancelled, queries, handle };
 }
-const press = (key: string): void => void act(() => void document.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true })));
+const press = (key: string): void =>
+  void act(() => void document.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true })));
 const click = (el: Element | null): void => void act(() => void (el as HTMLElement).click());
-const cardEl = (root: HTMLElement, id: number): HTMLElement => root.querySelector<HTMLElement>(`[data-card-id="${id}"]`)!;
+const cardEl = (root: HTMLElement, id: number): HTMLElement =>
+  root.querySelector<HTMLElement>(`[data-card-id="${id}"]`)!;
 
 let mounted: HudHandle | null = null;
 beforeEach(() => {
@@ -118,7 +147,9 @@ describe('gebouwpaneel met kaarten: weergave', () => {
     const bar = c.querySelector('[role="progressbar"]')!;
     expect(bar.getAttribute('aria-valuenow')).toBe('45');
     expect(c.textContent).toContain('45%');
-    expect(c.querySelector('.co-card-cancel')!.getAttribute('aria-label')).toBe('Annuleer onderzoek Kaart 4');
+    expect(c.querySelector('.co-card-cancel')!.getAttribute('aria-label')).toBe(
+      'Annuleer onderzoek Kaart 4',
+    );
   });
 
   it('done: Klaar met vinkje, geen voortgang of annuleren', () => {
@@ -134,7 +165,9 @@ describe('gebouwpaneel met kaarten: weergave', () => {
   it('elke kaartknop heeft een aria-label met de status als tekst', () => {
     const t = setup(ALL);
     mounted = t.handle;
-    const labels = [...t.el.querySelectorAll('.co-card-main')].map((b) => b.getAttribute('aria-label'));
+    const labels = [...t.el.querySelectorAll('.co-card-main')].map((b) =>
+      b.getAttribute('aria-label'),
+    );
     expect(labels[0]).toContain('Status: beschikbaar');
     expect(labels[1]).toContain('Status: te duur');
     expect(labels[2]).toContain('Status: vergrendeld');
@@ -220,7 +253,10 @@ describe('gebouwpaneel met kaarten: acties', () => {
 });
 
 describe('craftkaarten bij bewoners', () => {
-  const craft = [card('available', 1, { kind: 'craft', naam: 'Geweer' }), card('tooExpensive', 2, { kind: 'craft', naam: 'Zwaard' })];
+  const craft = [
+    card('available', 1, { kind: 'craft', naam: 'Geweer' }),
+    card('tooExpensive', 2, { kind: 'craft', naam: 'Zwaard' }),
+  ];
 
   it('paneel Craft zichtbaar; cijfers zijn rollen tot K; daarna start de kaart', () => {
     const t = setup(craft, [unit(1), unit(2)]);
@@ -248,7 +284,9 @@ describe('craftkaarten bij bewoners', () => {
     const rev = card('available', 6, { kind: 'revive', naam: 'Held oplappen', icon: 'revive' });
     const t = setup([ALL[0]!, rev]);
     mounted = t.handle;
-    expect(t.el.querySelector('[data-card-kind="revive"]')!.getAttribute('aria-label')).toContain('Oplappen Held oplappen');
+    expect(t.el.querySelector('[data-card-kind="revive"]')!.getAttribute('aria-label')).toContain(
+      'Oplappen Held oplappen',
+    );
     click(cardEl(t.el, 6));
     expect(t.started).toEqual([rev]);
   });
@@ -256,7 +294,12 @@ describe('craftkaarten bij bewoners', () => {
 
 describe('prestaties', () => {
   it('rendert negen kaarten in alle statussen ruim onder 2 ms per refresh', () => {
-    const cards = Array.from({ length: 9 }, (_, i) => card((['available', 'tooExpensive', 'locked', 'running', 'done'] as const)[i % 5]!, i + 1, { progressPct: i * 10, requires: ['Geweerrek'] }));
+    const cards = Array.from({ length: 9 }, (_, i) =>
+      card((['available', 'tooExpensive', 'locked', 'running', 'done'] as const)[i % 5]!, i + 1, {
+        progressPct: i * 10,
+        requires: ['Geweerrek'],
+      }),
+    );
     const t = setup(cards);
     mounted = t.handle;
     for (let i = 0; i < 20; i++) act(() => t.handle.refresh()); // opwarmen

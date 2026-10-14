@@ -28,12 +28,17 @@ describe('300 ms round-trip met adaptieve DELAY', () => {
     const late = afterWarmup.filter((c) => c.relayNext > c.frame + c.delay);
     expect(late).toEqual([]);
     // Vóór de opwarming (DELAY 4 tegen 6 frames round-trip) zijn er wel te late commando's: de test meet dus echt iets.
-    expect(net.commandLog.filter((c) => c.frame < WARMUP_FRAMES).some((c) => c.relayNext > c.frame + c.delay)).toBe(true);
+    expect(
+      net.commandLog
+        .filter((c) => c.frame < WARMUP_FRAMES)
+        .some((c) => c.relayNext > c.frame + c.delay),
+    ).toBe(true);
   });
 
-  it('beide clients houden het tempo bij en de commando\'s worden uitgevoerd', () => {
+  it("beide clients houden het tempo bij en de commando's worden uitgevoerd", () => {
     // Een client loopt de relay hooguit round-trip + 1 frame achter; hij staat niet stil te wachten.
-    for (const c of [a, b]) expect(net.relayNext - c.frame).toBeLessThanOrEqual(ROUND_TRIP_MS / TICK_MS / 2 + 2);
+    for (const c of [a, b])
+      expect(net.relayNext - c.frame).toBeLessThanOrEqual(ROUND_TRIP_MS / TICK_MS / 2 + 2);
     const executed = net.room.recordedBundles.reduce((n, bundle) => n + bundle.commands.length, 0);
     expect(executed).toBeGreaterThan(80);
   });

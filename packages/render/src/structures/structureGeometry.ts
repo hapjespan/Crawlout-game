@@ -1,7 +1,14 @@
 // Placeholder geometry for buildings, scrap heaps and claim flags, until the asset-cli delivers real meshes.
 // Buildings are modeled in footprint space: x and z in [-0.5, 0.5] (scaled by the footprint in meters), y in units of
 // the wall height (scaled per instance), with a foundation down to y = -0.3 so slopes do not show a gap.
-import { BoxGeometry, BufferAttribute, BufferGeometry, CylinderGeometry, IcosahedronGeometry, SphereGeometry } from 'three/webgpu';
+import {
+  BoxGeometry,
+  BufferAttribute,
+  BufferGeometry,
+  CylinderGeometry,
+  IcosahedronGeometry,
+  SphereGeometry,
+} from 'three/webgpu';
 import { BUILDING_ROOF_TOP } from '../entities/footprint.js';
 import { MeshBuilder } from './meshBuilder.js';
 
@@ -68,9 +75,13 @@ export function createScaffoldGeometry(): BufferGeometry {
   const b = new MeshBuilder();
   const t = 0.022; // member thickness in footprint space
   for (const x of [-0.5, 0, 0.5]) {
-    for (const z of [-0.5, 0.5]) b.add(new BoxGeometry(t, 1, t), { color: POLE, position: [x, 0.5, z] });
+    for (const z of [-0.5, 0.5])
+      b.add(new BoxGeometry(t, 1, t), { color: POLE, position: [x, 0.5, z] });
   }
-  b.add(new BoxGeometry(t, 1, t), { color: POLE, position: [-0.5, 0.5, 0] }).add(new BoxGeometry(t, 1, t), { color: POLE, position: [0.5, 0.5, 0] });
+  b.add(new BoxGeometry(t, 1, t), { color: POLE, position: [-0.5, 0.5, 0] }).add(
+    new BoxGeometry(t, 1, t),
+    { color: POLE, position: [0.5, 0.5, 0] },
+  );
   for (const y of [0.34, 0.67, 0.99]) {
     b.add(new BoxGeometry(1 + t, t, t), { color: TIMBER, position: [0, y, 0.5] })
       .add(new BoxGeometry(1 + t, t, t), { color: TIMBER, position: [0, y, -0.5] })
@@ -80,8 +91,16 @@ export function createScaffoldGeometry(): BufferGeometry {
   const brace = Math.hypot(0.5, 0.33);
   const angle = Math.atan2(0.33, 0.5);
   for (const z of [-0.5, 0.5]) {
-    for (const [x, y, dir] of [[-0.25, 0.17, 1], [0.25, 0.5, -1], [-0.25, 0.83, 1]] as const) {
-      b.add(new BoxGeometry(brace, t * 0.8, t * 0.8), { color: TIMBER, position: [x, y, z], rotation: [0, 0, angle * dir] });
+    for (const [x, y, dir] of [
+      [-0.25, 0.17, 1],
+      [0.25, 0.5, -1],
+      [-0.25, 0.83, 1],
+    ] as const) {
+      b.add(new BoxGeometry(brace, t * 0.8, t * 0.8), {
+        color: TIMBER,
+        position: [x, y, z],
+        rotation: [0, 0, angle * dir],
+      });
     }
   }
   b.add(new BoxGeometry(1.04, t, 0.16), { color: TIMBER, position: [0, 1, 0.43] })
@@ -104,7 +123,11 @@ function seq(seed: number): () => number {
 /** Scrap heap, about 2.6 m across and 1.2 m high, in meters. */
 export function createScrapHeapGeometry(): BufferGeometry {
   const rnd = seq(0x5c4a9);
-  const b = new MeshBuilder().add(new IcosahedronGeometry(1.15, 1), { color: 0x5e3b25, scale: [1, 0.42, 1], position: [0, 0.05, 0] });
+  const b = new MeshBuilder().add(new IcosahedronGeometry(1.15, 1), {
+    color: 0x5e3b25,
+    scale: [1, 0.42, 1],
+    position: [0, 0.05, 0],
+  });
   const colors = [0x8a4b2a, 0x9c6a3a, 0x6f6a60, 0x7d3f22, 0x4a4a46];
   for (let i = 0; i < 9; i++) {
     const a = rnd() * Math.PI * 2;
@@ -115,8 +138,16 @@ export function createScrapHeapGeometry(): BufferGeometry {
       rotation: [rnd() * 1.2 - 0.6, rnd() * Math.PI, rnd() * 1.2 - 0.6],
     });
   }
-  b.add(new CylinderGeometry(0.2, 0.2, 0.55, 8), { color: 0x7a2f1f, position: [0.75, 0.3, -0.4], rotation: [0.3, 0, 1.1] });
-  b.add(new BoxGeometry(1.1, 0.07, 0.07), { color: 0x4a4a46, position: [-0.3, 0.55, 0.2], rotation: [0, 0.7, 0.35] });
+  b.add(new CylinderGeometry(0.2, 0.2, 0.55, 8), {
+    color: 0x7a2f1f,
+    position: [0.75, 0.3, -0.4],
+    rotation: [0.3, 0, 1.1],
+  });
+  b.add(new BoxGeometry(1.1, 0.07, 0.07), {
+    color: 0x4a4a46,
+    position: [-0.3, 0.55, 0.2],
+    rotation: [0, 0.7, 0.35],
+  });
   return b.build();
 }
 
@@ -128,8 +159,15 @@ export const POLE_HEIGHT = 4.2;
 export function createClaimGeometry(): BufferGeometry {
   return new MeshBuilder()
     .add(new CylinderGeometry(0.42, 0.5, 0.35, 10), { color: 0x8c8577, position: [0, 0.1, 0] })
-    .add(new CylinderGeometry(0.055, 0.07, POLE_HEIGHT, 8), { color: 0x5b5b58, position: [0, POLE_HEIGHT / 2, 0] })
+    .add(new CylinderGeometry(0.055, 0.07, POLE_HEIGHT, 8), {
+      color: 0x5b5b58,
+      position: [0, POLE_HEIGHT / 2, 0],
+    })
     .add(new SphereGeometry(0.1, 8, 6), { color: 0xc9b26a, position: [0, POLE_HEIGHT + 0.05, 0] })
-    .add(new BoxGeometry(FLAG_LENGTH, 0.8, 0.035, 8, 1, 1), { color: 0xffffff, team: 1, position: [0.06 + FLAG_LENGTH / 2, POLE_HEIGHT - 0.45, 0] })
+    .add(new BoxGeometry(FLAG_LENGTH, 0.8, 0.035, 8, 1, 1), {
+      color: 0xffffff,
+      team: 1,
+      position: [0.06 + FLAG_LENGTH / 2, POLE_HEIGHT - 0.45, 0],
+    })
     .build();
 }

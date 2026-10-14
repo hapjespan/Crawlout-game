@@ -1,13 +1,25 @@
 import { describe, expect, it } from 'vitest';
 import { ANIM } from '@crawlout/protocol';
-import { Mesh, MeshBasicNodeMaterial, PerspectiveCamera, Scene, type InstancedBufferAttribute } from 'three/webgpu';
+import {
+  Mesh,
+  MeshBasicNodeMaterial,
+  PerspectiveCamera,
+  Scene,
+  type InstancedBufferAttribute,
+} from 'three/webgpu';
 import type { DecalLayer } from '../decals/decalLayer.js';
 import { buildingWallHeight, FootprintTable } from '../entities/footprint.js';
 import { buildingTypeId, TYPE_ID_SCRAP_NODE } from '../entities/typeIds.js';
 import { createInterpolatedFrame, type InterpolatedFrame } from '../snapshot/interpolate.js';
 import { createScaffoldGeometry } from './structureGeometry.js';
 import { StructureLayer } from './structureLayer.js';
-import { constructionHeight, constructionTint, SCAFFOLD_HEIGHT, SITE_MIN_HEIGHT, scrapHeapScale } from './structureVisuals.js';
+import {
+  constructionHeight,
+  constructionTint,
+  SCAFFOLD_HEIGHT,
+  SITE_MIN_HEIGHT,
+  scrapHeapScale,
+} from './structureVisuals.js';
 
 describe('structure visuals', () => {
   it('grows a site from a visible stub to the full height', () => {
@@ -21,7 +33,9 @@ describe('structure visuals', () => {
     const tint = [0.9, 0.8, 0.7] as const;
     const raw = constructionTint(0, tint, [0, 0, 0]);
     expect(raw[0]).toBeGreaterThan(1);
-    expect(constructionTint(1, tint, [0, 0, 0])).toEqual([0.9, 0.8, 0.7].map((v) => expect.closeTo(v, 6)));
+    expect(constructionTint(1, tint, [0, 0, 0])).toEqual(
+      [0.9, 0.8, 0.7].map((v) => expect.closeTo(v, 6)),
+    );
   });
 
   it('shrinks and flattens a scrap heap with its remaining stock', () => {
@@ -55,7 +69,12 @@ describe('StructureLayer', () => {
   const material = (): MeshBasicNodeMaterial => new MeshBasicNodeMaterial();
   const decals = { push() {} } as unknown as DecalLayer;
 
-  function setup(): { layer: StructureLayer; scene: Scene; frame: InterpolatedFrame; camera: PerspectiveCamera } {
+  function setup(): {
+    layer: StructureLayer;
+    scene: Scene;
+    frame: InterpolatedFrame;
+    camera: PerspectiveCamera;
+  } {
     const scene = new Scene();
     const footprints = new FootprintTable(() => ({ w: 4, h: 4 }));
     const layer = new StructureLayer(scene, {

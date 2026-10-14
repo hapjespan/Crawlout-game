@@ -4,8 +4,32 @@
 //
 // Per instance: pA (x0, y0, z0 meters, t0 seconds), pB (velocity m/s, life s), pC (size at birth, size at death,
 // gravity m/s², shape 0 = soft disc | 1 = streak along the velocity), pD (linear rgb, alpha).
-import { AdditiveBlending, DynamicDrawUsage, InstancedBufferAttribute, Mesh, MeshBasicNodeMaterial, NormalBlending, PlaneGeometry, type Scene, type Node } from 'three/webgpu';
-import { attribute, cameraPosition, clamp, cross, float, length, max, mix, normalize, select, vec3, vec4, vertexStage } from 'three/tsl';
+import {
+  AdditiveBlending,
+  DynamicDrawUsage,
+  InstancedBufferAttribute,
+  Mesh,
+  MeshBasicNodeMaterial,
+  NormalBlending,
+  PlaneGeometry,
+  type Scene,
+  type Node,
+} from 'three/webgpu';
+import {
+  attribute,
+  cameraPosition,
+  clamp,
+  cross,
+  float,
+  length,
+  max,
+  mix,
+  normalize,
+  select,
+  vec3,
+  vec4,
+  vertexStage,
+} from 'three/tsl';
 
 export const PARTICLE_SHAPE = { disc: 0, streak: 1 } as const;
 
@@ -31,7 +55,24 @@ export interface ParticleSpec {
 }
 
 export function createParticleSpec(): ParticleSpec {
-  return { x: 0, y: 0, z: 0, t0: 0, vx: 0, vy: 0, vz: 0, life: 1, size0: 1, size1: 1, gravity: 0, shape: 0, r: 1, g: 1, b: 1, a: 1 };
+  return {
+    x: 0,
+    y: 0,
+    z: 0,
+    t0: 0,
+    vx: 0,
+    vy: 0,
+    vz: 0,
+    life: 1,
+    size0: 1,
+    size1: 1,
+    gravity: 0,
+    shape: 0,
+    r: 1,
+    g: 1,
+    b: 1,
+    a: 1,
+  };
 }
 
 export interface ParticleSink {
@@ -60,7 +101,9 @@ function createParticleMaterial(time: Node<'float'>, additive: boolean): MeshBas
   const side = normalize(cross(along, view));
   const streak = pC.w.greaterThan(0.5);
   const disc = center.add(right.mul(corner.x.mul(size))).add(up.mul(corner.y.mul(size)));
-  const stretched = center.add(side.mul(corner.x.mul(size))).add(along.mul(corner.y.mul(size).mul(6)));
+  const stretched = center
+    .add(side.mul(corner.x.mul(size)))
+    .add(along.mul(corner.y.mul(size).mul(6)));
 
   const m = new MeshBasicNodeMaterial({ transparent: true, depthWrite: false });
   m.positionNode = select(streak, stretched, disc);
@@ -98,7 +141,12 @@ export class ParticlePool implements ParticleSink {
       geo.setAttribute(name, a);
       return a;
     });
-    this.arrays = this.attrs.map((x) => x.array as Float32Array) as [Float32Array, Float32Array, Float32Array, Float32Array];
+    this.arrays = this.attrs.map((x) => x.array as Float32Array) as [
+      Float32Array,
+      Float32Array,
+      Float32Array,
+      Float32Array,
+    ];
     // Born dead: t0 far in the future keeps unused slots invisible.
     for (let k = 0; k < capacity; k++) this.arrays[0][k * 4 + 3] = 1e9;
     this.material = createParticleMaterial(time, additive);

@@ -1,6 +1,15 @@
 // Terrain mesh from flat typed arrays (the map agent's greybox export), toon-shaded with vertex colors.
 // Receives building shadows when a shadow factor is given, and keeps a height texture for terrain-hugging decals.
-import { BufferAttribute, BufferGeometry, Color, Mesh, MeshBasicNodeMaterial, type Scene, type Vector3, type Node } from 'three/webgpu';
+import {
+  BufferAttribute,
+  BufferGeometry,
+  Color,
+  Mesh,
+  MeshBasicNodeMaterial,
+  type Scene,
+  type Vector3,
+  type Node,
+} from 'three/webgpu';
 import { attribute, dot, float, mix, normalWorld, uniform, vec4 } from 'three/tsl';
 import type { DataTexturePrecision } from '../gpu/dataTextures.js';
 import { toonRamp } from '../units/unitMaterial.js';
@@ -13,12 +22,16 @@ export interface TerrainLayerOptions {
   precision?: DataTexturePrecision;
 }
 
-function linearColors(src: Float32Array | Uint8Array | undefined, vertexCount: number): Float32Array {
+function linearColors(
+  src: Float32Array | Uint8Array | undefined,
+  vertexCount: number,
+): Float32Array {
   const out = new Float32Array(vertexCount * 3);
   const c = new Color();
   const scale = src instanceof Uint8Array ? 1 / 255 : 1;
   for (let i = 0; i < vertexCount; i++) {
-    if (src) c.setRGB(src[i * 3]! * scale, src[i * 3 + 1]! * scale, src[i * 3 + 2]! * scale, 'srgb');
+    if (src)
+      c.setRGB(src[i * 3]! * scale, src[i * 3 + 1]! * scale, src[i * 3 + 2]! * scale, 'srgb');
     else c.setRGB(0.55, 0.5, 0.42, 'srgb');
     out[i * 3] = c.r;
     out[i * 3 + 1] = c.g;

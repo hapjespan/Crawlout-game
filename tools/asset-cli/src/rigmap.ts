@@ -28,10 +28,17 @@ export const EMPTY_RIGMAP: Rigmap = { rigs: {}, assets: {} };
 export function parseRigmap(json: unknown): Rigmap {
   const map = rigmapSchema.parse(json);
   for (const [id, entry] of Object.entries(map.assets)) {
-    if (entry.rig && !map.rigs[entry.rig]) throw new Error(`asset "${id}" verwijst naar onbekende rig "${entry.rig}"`);
+    if (entry.rig && !map.rigs[entry.rig])
+      throw new Error(`asset "${id}" verwijst naar onbekende rig "${entry.rig}"`);
     const [min, max] = [BUDGETS.characterMinTris[0], BUDGETS.characterMaxTris[0]];
-    if (entry.rig && entry.lod0Triangles !== undefined && (entry.lod0Triangles < min || entry.lod0Triangles > max)) {
-      throw new Error(`asset "${id}": lod0Triangles ${entry.lod0Triangles} valt buiten de LOD0-band van de brief (${min} tot ${max})`);
+    if (
+      entry.rig &&
+      entry.lod0Triangles !== undefined &&
+      (entry.lod0Triangles < min || entry.lod0Triangles > max)
+    ) {
+      throw new Error(
+        `asset "${id}": lod0Triangles ${entry.lod0Triangles} valt buiten de LOD0-band van de brief (${min} tot ${max})`,
+      );
     }
   }
   return map;

@@ -4,8 +4,23 @@
 // their LOD changes, so a still camera costs no uploads. Height comes from the terrain at each prop (relayout() after
 // setTerrain). Props get a soft blob shadow decal near the camera (LOD 0 and 1 chunks), no real shadow: that keeps
 // the shadow pass at buildings only.
-import { Box3, Frustum, Matrix4, Vector3, type BufferGeometry, type Camera, type MeshBasicNodeMaterial, type Scene, type Texture } from 'three/webgpu';
-import { DECAL_COLOR, DECAL_SHAPE, type DecalLayer, type DecalStyle } from '../decals/decalLayer.js';
+import {
+  Box3,
+  Frustum,
+  Matrix4,
+  Vector3,
+  type BufferGeometry,
+  type Camera,
+  type MeshBasicNodeMaterial,
+  type Scene,
+  type Texture,
+} from 'three/webgpu';
+import {
+  DECAL_COLOR,
+  DECAL_SHAPE,
+  type DecalLayer,
+  type DecalStyle,
+} from '../decals/decalLayer.js';
 import { NEUTRAL_TEAM } from '../palette.js';
 import { simYawToRender } from '../snapshot/interpolate.js';
 import { InstanceBatch } from '../structures/instanceBatch.js';
@@ -48,7 +63,15 @@ export const PROP_CHUNK_SIZE = 16;
 const SINK = 0.06;
 /** Blob radius per mesh radius. */
 const BLOB_SCALE = 0.7;
-const BLOB: DecalStyle = { shape: DECAL_SHAPE.circle, shadow: 0.7, ring: 0, ringWidth: 0, fill: 0, grid: 0, color: DECAL_COLOR.selection };
+const BLOB: DecalStyle = {
+  shape: DECAL_SHAPE.circle,
+  shadow: 0.7,
+  ring: 0,
+  ringWidth: 0,
+  fill: 0,
+  grid: 0,
+  color: DECAL_COLOR.selection,
+};
 const STRIDE = 6; // x, y, z, yaw (render radians), scale, brightness
 
 interface Group {
@@ -118,7 +141,8 @@ export class PropLayer {
     const cs = this.chunkSize;
     const cols = props.length ? Math.floor((maxX - minX) / cs) + 1 : 0;
     const rows = props.length ? Math.floor((maxZ - minZ) / cs) + 1 : 0;
-    const chunkOf = (p: RenderProp): number => Math.floor((p.y - minZ) / cs) * cols + Math.floor((p.x - minX) / cs);
+    const chunkOf = (p: RenderProp): number =>
+      Math.floor((p.y - minZ) / cs) * cols + Math.floor((p.x - minX) / cs);
 
     const lists = new Map<string, { p: RenderProp; index: number }[]>();
     props.forEach((p, index) => {
@@ -141,14 +165,24 @@ export class PropLayer {
         chunk[k] = chunkOf(p);
       });
       const ranges: number[] = [];
-      for (let k = 0; k < list.length; ) {
+      for (let k = 0; k < list.length;) {
         let e = k + 1;
         while (e < list.length && chunk[e] === chunk[k]) e++;
         ranges.push(chunk[k]!, k, e);
         k = e;
       }
       const prev = old.get(id);
-      const g: Group = { id, count: list.length, data, chunk, ranges, visual: null, material: null, batches: [], lodBatch: [0, 0, 0] };
+      const g: Group = {
+        id,
+        count: list.length,
+        data,
+        chunk,
+        ranges,
+        visual: null,
+        material: null,
+        batches: [],
+        lodBatch: [0, 0, 0],
+      };
       this.groups.push(g);
       this.byId.set(id, g);
       if (prev?.visual) this.applyVisual(g, prev.visual, prev.material);
@@ -194,7 +228,13 @@ export class PropLayer {
       return i;
     }) as [number, number, number];
     g.batches = unique.map((geo, i) => {
-      const b = new InstanceBatch(this.scene, geo.clone(), g.material!, g.count, `props-${g.id}-${i}`);
+      const b = new InstanceBatch(
+        this.scene,
+        geo.clone(),
+        g.material!,
+        g.count,
+        `props-${g.id}-${i}`,
+      );
       b.mesh.raycast = () => {}; // props are never picked and never block a pick
       return b;
     });
@@ -240,7 +280,9 @@ export class PropLayer {
         box.expandByPoint(v.set(d[o]! + r * s, d[o + 1]! + top * s, d[o + 2]! + r * s));
       }
     }
-    this.chunkBoxes.forEach((b, i) => (b.isEmpty() ? this.chunkCenters[i]!.set(0, 0, 0) : b.getCenter(this.chunkCenters[i]!)));
+    this.chunkBoxes.forEach((b, i) =>
+      b.isEmpty() ? this.chunkCenters[i]!.set(0, 0, 0) : b.getCenter(this.chunkCenters[i]!),
+    );
   }
 
   /** Culls and LODs per chunk, rewrites the instance buffers when that changed, and pushes the blob decals. */

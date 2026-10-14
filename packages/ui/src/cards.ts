@@ -25,7 +25,19 @@ function Icon(props: { id: string }): ComponentChild {
   const d = ICON_PATHS[props.id] ?? ICON_PATHS.gear;
   return h(
     'svg',
-    { class: 'co-card-icon', viewBox: '0 0 24 24', width: 28, height: 28, fill: 'none', stroke: 'currentColor', 'stroke-width': 1.6, 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'aria-hidden': 'true', focusable: 'false' },
+    {
+      class: 'co-card-icon',
+      viewBox: '0 0 24 24',
+      width: 28,
+      height: 28,
+      fill: 'none',
+      stroke: 'currentColor',
+      'stroke-width': 1.6,
+      'stroke-linecap': 'round',
+      'stroke-linejoin': 'round',
+      'aria-hidden': 'true',
+      focusable: 'false',
+    },
     h('path', { d }),
   );
 }
@@ -42,12 +54,28 @@ const STATE_GLYPH: Record<CardState, string> = {
 function StateGlyph(props: { state: CardState }): ComponentChild {
   return h(
     'svg',
-    { class: 'co-card-glyph', viewBox: '0 0 24 24', width: 14, height: 14, fill: 'none', stroke: 'currentColor', 'stroke-width': 2.4, 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'aria-hidden': 'true', focusable: 'false' },
+    {
+      class: 'co-card-glyph',
+      viewBox: '0 0 24 24',
+      width: 14,
+      height: 14,
+      fill: 'none',
+      stroke: 'currentColor',
+      'stroke-width': 2.4,
+      'stroke-linecap': 'round',
+      'stroke-linejoin': 'round',
+      'aria-hidden': 'true',
+      focusable: 'false',
+    },
     h('path', { d: STATE_GLYPH[props.state] }),
   );
 }
 
-const KIND_LABEL: Record<CardKind, string> = { research: 'Onderzoek', craft: 'Craft', revive: 'Oplappen' };
+const KIND_LABEL: Record<CardKind, string> = {
+  research: 'Onderzoek',
+  craft: 'Craft',
+  revive: 'Oplappen',
+};
 
 /** Volledige tekst voor schermlezers: alles wat de kaart toont, in een zin. */
 export function cardLabel(card: BuildingCard, key: string | null): string {
@@ -56,7 +84,8 @@ export function cardLabel(card: BuildingCard, key: string | null): string {
   if (card.effects.length > 0) parts.push(`Effect: ${card.effects.join(', ')}`);
   if (card.unlocks.length > 0) parts.push(`Ontgrendelt: ${card.unlocks.join(', ')}`);
   let status = `Status: ${CARD_STATE_LABEL[card.state].toLowerCase()}`;
-  if (card.state === 'locked' && card.requires.length > 0) status += `, vereist: ${card.requires.join(', ')}`;
+  if (card.state === 'locked' && card.requires.length > 0)
+    status += `, vereist: ${card.requires.join(', ')}`;
   if (card.state === 'running') status += `, ${clampPct(card.progressPct)}%`;
   parts.push(status);
   if (key !== null && card.state === 'available') parts.push(`sneltoets ${key}`);
@@ -65,7 +94,11 @@ export function cardLabel(card: BuildingCard, key: string | null): string {
 
 const clampPct = (n: number | undefined): number => Math.max(0, Math.min(100, Math.round(n ?? 0)));
 
-function Card(props: { ctl: HudController; card: BuildingCard; keyActive: boolean }): ComponentChild {
+function Card(props: {
+  ctl: HudController;
+  card: BuildingCard;
+  keyActive: boolean;
+}): ComponentChild {
   const { ctl, card } = props;
   const startable = ctl.canStartCard(card);
   const key = props.keyActive ? card.hotkey : null;
@@ -97,12 +130,29 @@ function Card(props: { ctl: HudController; card: BuildingCard; keyActive: boolea
       h(
         'span',
         { class: 'co-card-meta', 'aria-hidden': 'true' },
-        h('span', { class: card.state === 'tooExpensive' ? 'co-card-cost co-full' : 'co-card-cost' }, `${card.scrapCost} scrap`),
+        h(
+          'span',
+          { class: card.state === 'tooExpensive' ? 'co-card-cost co-full' : 'co-card-cost' },
+          `${card.scrapCost} scrap`,
+        ),
         card.seconds > 0 ? h('span', { class: 'co-card-time' }, `${card.seconds} s`) : null,
       ),
-      card.effects.length > 0 ? h('span', { class: 'co-card-effects', 'aria-hidden': 'true' }, card.effects.join(' · ')) : null,
-      card.unlocks.length > 0 ? h('span', { class: 'co-card-unlocks', 'aria-hidden': 'true' }, `Ontgrendelt: ${card.unlocks.join(', ')}`) : null,
-      h('span', { class: 'co-card-status', 'aria-hidden': 'true' }, h(StateGlyph, { state: card.state }), statusText),
+      card.effects.length > 0
+        ? h('span', { class: 'co-card-effects', 'aria-hidden': 'true' }, card.effects.join(' · '))
+        : null,
+      card.unlocks.length > 0
+        ? h(
+            'span',
+            { class: 'co-card-unlocks', 'aria-hidden': 'true' },
+            `Ontgrendelt: ${card.unlocks.join(', ')}`,
+          )
+        : null,
+      h(
+        'span',
+        { class: 'co-card-status', 'aria-hidden': 'true' },
+        h(StateGlyph, { state: card.state }),
+        statusText,
+      ),
     ),
     card.state === 'running'
       ? h(
@@ -110,11 +160,27 @@ function Card(props: { ctl: HudController; card: BuildingCard; keyActive: boolea
           { class: 'co-card-run' },
           h(
             'div',
-            { class: 'co-card-progress', role: 'progressbar', 'aria-label': `Voortgang ${card.naam}`, 'aria-valuemin': 0, 'aria-valuemax': 100, 'aria-valuenow': pct },
+            {
+              class: 'co-card-progress',
+              role: 'progressbar',
+              'aria-label': `Voortgang ${card.naam}`,
+              'aria-valuemin': 0,
+              'aria-valuemax': 100,
+              'aria-valuenow': pct,
+            },
             h('span', { style: { width: `${pct}%` } }),
           ),
           ctl.canCancelCard(card)
-            ? h('button', { type: 'button', class: 'co-card-cancel', 'aria-label': `Annuleer ${KIND_LABEL[card.kind].toLowerCase()} ${card.naam}`, onClick: () => void ctl.cancelCard(card) }, 'Annuleer')
+            ? h(
+                'button',
+                {
+                  type: 'button',
+                  class: 'co-card-cancel',
+                  'aria-label': `Annuleer ${KIND_LABEL[card.kind].toLowerCase()} ${card.naam}`,
+                  onClick: () => void ctl.cancelCard(card),
+                },
+                'Annuleer',
+              )
             : null,
         )
       : null,
@@ -132,7 +198,13 @@ export function CardPanel(props: { ctl: HudController; state: HudState }): Compo
     'section',
     { class: 'co-panel co-cards', 'aria-label': title },
     h('h2', null, title),
-    !keyActive && ctl.hasCraftCardsForKeys() ? h('p', { class: 'co-empty co-cards-hint' }, 'Druk K om met de cijfertoetsen te kiezen') : null,
-    h('ul', { class: 'co-card-list' }, state.cards.map((c) => h(Card, { key: `${c.kind}:${c.id}`, ctl, card: c, keyActive }))),
+    !keyActive && ctl.hasCraftCardsForKeys()
+      ? h('p', { class: 'co-empty co-cards-hint' }, 'Druk K om met de cijfertoetsen te kiezen')
+      : null,
+    h(
+      'ul',
+      { class: 'co-card-list' },
+      state.cards.map((c) => h(Card, { key: `${c.kind}:${c.id}`, ctl, card: c, keyActive })),
+    ),
   );
 }

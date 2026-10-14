@@ -88,20 +88,61 @@ export const CARD_STATE_LABEL: Record<BuildingCard['state'], string> = {
 };
 
 /** Kaarten uit de oude deps (getResearchOptions, getRecruitOptions, getCraftOptions): zonder icoon, effecten of duur. */
-function legacyCards(research: readonly ResearchOption[], recruit: readonly RecruitOption[], craft: readonly CraftOption[]): BuildingCard[] {
+function legacyCards(
+  research: readonly ResearchOption[],
+  recruit: readonly RecruitOption[],
+  craft: readonly CraftOption[],
+): BuildingCard[] {
   const base = { seconds: 0, effects: [], unlocks: [], requires: [] } as const;
-  const state = (affordable: boolean): BuildingCard['state'] => (affordable ? 'available' : 'tooExpensive');
+  const state = (affordable: boolean): BuildingCard['state'] =>
+    affordable ? 'available' : 'tooExpensive';
   const all: Omit<BuildingCard, 'hotkey'>[] = [
-    ...research.map((o) => ({ ...base, kind: 'research' as const, id: o.techId, naam: o.naam, icon: 'research', scrapCost: o.scrapCost, state: state(o.affordable) })),
-    ...recruit.map((o) => ({ ...base, kind: 'revive' as const, id: o.buildingId, naam: o.naam, icon: 'revive', scrapCost: o.scrapCost, state: state(o.affordable) })),
-    ...craft.map((o) => ({ ...base, kind: 'craft' as const, id: o.loadoutId, naam: o.naam, icon: 'craft', scrapCost: o.scrapCost, state: state(o.affordable) })),
+    ...research.map((o) => ({
+      ...base,
+      kind: 'research' as const,
+      id: o.techId,
+      naam: o.naam,
+      icon: 'research',
+      scrapCost: o.scrapCost,
+      state: state(o.affordable),
+    })),
+    ...recruit.map((o) => ({
+      ...base,
+      kind: 'revive' as const,
+      id: o.buildingId,
+      naam: o.naam,
+      icon: 'revive',
+      scrapCost: o.scrapCost,
+      state: state(o.affordable),
+    })),
+    ...craft.map((o) => ({
+      ...base,
+      kind: 'craft' as const,
+      id: o.loadoutId,
+      naam: o.naam,
+      icon: 'craft',
+      scrapCost: o.scrapCost,
+      state: state(o.affordable),
+    })),
   ];
   return all.map((c, i) => ({ ...c, hotkey: String(i + 1) }));
 }
 
-export const ROLE_LABEL: Record<Role, string> = { scavenger: 'Plunderaar', builder: 'Bouwer', militia: 'Militie' };
-const ACTION_ROLE: Partial<Record<ActionId, Role>> = { roleScavenger: 'scavenger', roleBuilder: 'builder', roleMilitia: 'militia' };
-const ACTION_TARGETING: Partial<Record<ActionId, TargetingKind>> = { move: 'move', attackMove: 'attackMove', gather: 'gather' };
+export const ROLE_LABEL: Record<Role, string> = {
+  scavenger: 'Plunderaar',
+  builder: 'Bouwer',
+  militia: 'Militie',
+};
+const ACTION_ROLE: Partial<Record<ActionId, Role>> = {
+  roleScavenger: 'scavenger',
+  roleBuilder: 'builder',
+  roleMilitia: 'militia',
+};
+const ACTION_TARGETING: Partial<Record<ActionId, TargetingKind>> = {
+  move: 'move',
+  attackMove: 'attackMove',
+  gather: 'gather',
+};
 
 export interface HudState {
   status: PlayerStatus | null;
@@ -138,7 +179,12 @@ const NO_NETWORK: NetworkState = { desync: null, stall: null };
 function isTypingTarget(t: EventTarget | null): boolean {
   const el = t as HTMLElement | null;
   if (!el || typeof el.tagName !== 'string') return false;
-  return el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || el.isContentEditable === true;
+  return (
+    el.tagName === 'INPUT' ||
+    el.tagName === 'TEXTAREA' ||
+    el.tagName === 'SELECT' ||
+    el.isContentEditable === true
+  );
 }
 
 /** HUD-logica zonder Preact: state, sneltoetsen en commando-opbouw. De view tekent alleen de state. */
@@ -256,7 +302,12 @@ export class HudController implements HudHandle {
   /** Dode held met nog minstens een oplap-beurt (onbekend aantal telt als mogelijk). */
   canRevive(): boolean {
     const hero = this.state.status?.hero;
-    return hero != null && this.state.heroDead && this.deps.reviveHero !== undefined && (hero.revivesLeft ?? 1) > 0;
+    return (
+      hero != null &&
+      this.state.heroDead &&
+      this.deps.reviveHero !== undefined &&
+      (hero.revivesLeft ?? 1) > 0
+    );
   }
 
   /** Is een ability nu bruikbaar (held leeft, heeft id, cooldown klaar)? */
@@ -267,7 +318,10 @@ export class HudController implements HudHandle {
 
   /** Alleen gebouwen geselecteerd (en er is een selectie). */
   private buildingsOnly(): boolean {
-    return this.state.selection.length > 0 && this.state.selection.every((s) => kindOfTypeId(s.typeId).kind === 'building');
+    return (
+      this.state.selection.length > 0 &&
+      this.state.selection.every((s) => kindOfTypeId(s.typeId).kind === 'building')
+    );
   }
 
   hasCraftCardsForKeys(): boolean {
@@ -280,7 +334,10 @@ export class HudController implements HudHandle {
   }
 
   private hasCraftCards(): boolean {
-    return this.state.cards.some((c) => c.kind === 'craft') && this.state.selection.some((s) => kindOfTypeId(s.typeId).kind !== 'building');
+    return (
+      this.state.cards.some((c) => c.kind === 'craft') &&
+      this.state.selection.some((s) => kindOfTypeId(s.typeId).kind !== 'building')
+    );
   }
 
   /** Werken de cijfertoetsen nu voor de kaarten? Bij alleen gebouwen altijd; bij bewoners na K (craft). */
@@ -317,10 +374,16 @@ export class HudController implements HudHandle {
   useAbility(abilityId: number): boolean {
     const a = this.state.heroAbilities.find((x) => x.abilityId === abilityId);
     const heroId = this.state.status?.hero?.heroId;
-    if (!a || heroId === undefined || !this.canUseAbility(a) || this.state.confirmSurrender) return false;
+    if (!a || heroId === undefined || !this.canUseAbility(a) || this.state.confirmSurrender)
+      return false;
     if (a.needsTarget) {
       this.stopTargeting();
-      this.set({ targeting: 'heroAbility', pendingAbility: a, buildMenuOpen: false, craftMenuOpen: false });
+      this.set({
+        targeting: 'heroAbility',
+        pendingAbility: a,
+        buildMenuOpen: false,
+        craftMenuOpen: false,
+      });
       this.deps.beginTargeting('heroAbility');
     } else {
       this.stopTargeting();
@@ -337,7 +400,10 @@ export class HudController implements HudHandle {
 
   /** Bouwers uit de selectie: alleen units met rol builder bouwen. */
   selectedBuilders(): number[] {
-    return this.state.selection.filter((s) => s.role === 'builder').slice(0, MAX_ENTITIES_PER_COMMAND).map((s) => s.id);
+    return this.state.selection
+      .filter((s) => s.role === 'builder')
+      .slice(0, MAX_ENTITIES_PER_COMMAND)
+      .map((s) => s.id);
   }
 
   /** Is een bouwoptie nu kiesbaar (betaalbaar en er is een bouwer geselecteerd)? */
@@ -405,7 +471,12 @@ export class HudController implements HudHandle {
       this.cancelPlacement();
       return false;
     }
-    this.deps.sendCommand('Build', { ids, typeId: option.typeId, x: Math.round(pos.x), y: Math.round(pos.y) });
+    this.deps.sendCommand('Build', {
+      ids,
+      typeId: option.typeId,
+      x: Math.round(pos.x),
+      y: Math.round(pos.y),
+    });
     this.set({ placement: null });
     return true;
   }
@@ -416,7 +487,12 @@ export class HudController implements HudHandle {
 
   pickPerk(perkId: number): boolean {
     const heroId = this.state.status?.hero?.heroId;
-    if (heroId === undefined || this.pendingPerks() <= 0 || !this.state.perkOptions.some((p) => p.perkId === perkId)) return false;
+    if (
+      heroId === undefined ||
+      this.pendingPerks() <= 0 ||
+      !this.state.perkOptions.some((p) => p.perkId === perkId)
+    )
+      return false;
     this.deps.sendCommand('PickPerk', { heroId, perkId });
     return true;
   }
@@ -459,7 +535,10 @@ export class HudController implements HudHandle {
         this.toastTimers.delete(old.id);
       }
     }
-    this.toastTimers.set(id, setTimeout(() => this.dismissToast(id), TOAST_MS));
+    this.toastTimers.set(
+      id,
+      setTimeout(() => this.dismissToast(id), TOAST_MS),
+    );
     this.set({ toasts });
   }
 
@@ -474,7 +553,12 @@ export class HudController implements HudHandle {
         this.cancelTargeting();
         return false;
       }
-      this.deps.sendCommand('HeroAbility', { heroId, abilityId: a.abilityId, x: Math.round(target.x), y: Math.round(target.y) });
+      this.deps.sendCommand('HeroAbility', {
+        heroId,
+        abilityId: a.abilityId,
+        x: Math.round(target.x),
+        y: Math.round(target.y),
+      });
       this.set({ targeting: null, pendingAbility: null });
       return true;
     }
@@ -619,7 +703,9 @@ export class HudController implements HudHandle {
   }
 
   private selectedIds(includeBuildings = true): number[] {
-    const sel = includeBuildings ? this.state.selection : this.state.selection.filter((s) => kindOfTypeId(s.typeId).kind !== 'building');
+    const sel = includeBuildings
+      ? this.state.selection
+      : this.state.selection.filter((s) => kindOfTypeId(s.typeId).kind !== 'building');
     return sel.slice(0, MAX_ENTITIES_PER_COMMAND).map((s) => s.id);
   }
 
@@ -641,7 +727,13 @@ export class HudController implements HudHandle {
     const status = d.getStatus();
     const hero = status?.hero ?? null;
     const pendingPerks = hero !== null && (hero.pendingPerks ?? 0) > 0;
-    const buildingIds = [...new Set(selection.flatMap((s) => (kindOfTypeId(s.typeId).kind === 'building' ? [kindOfTypeId(s.typeId).index] : [])))];
+    const buildingIds = [
+      ...new Set(
+        selection.flatMap((s) =>
+          kindOfTypeId(s.typeId).kind === 'building' ? [kindOfTypeId(s.typeId).index] : [],
+        ),
+      ),
+    ];
     const units = selection.some((s) => kindOfTypeId(s.typeId).kind !== 'building');
     const cards = this.readCards(selection, buildingIds, units);
     const placement = selection.some((s) => s.role === 'builder') ? this.state.placement : null;
@@ -653,28 +745,40 @@ export class HudController implements HudHandle {
       minimap: d.getMinimap?.() ?? null,
       buildOptions: this.state.buildMenuOpen ? (d.getBuildOptions?.() ?? []) : [],
       placement,
-      perkOptions: pendingPerks ? (d.getPerkOptions?.() ?? []).filter((p) => !hero?.perks.includes(p.perkId)) : [],
+      perkOptions: pendingPerks
+        ? (d.getPerkOptions?.() ?? []).filter((p) => !hero?.perks.includes(p.perkId))
+        : [],
       heroAbilities: hero ? (d.getHeroAbilities?.() ?? []) : [],
       heroDead: hero !== null && (d.isHeroDead?.() ?? false),
       cards,
-      craftMenuOpen: cards.some((c) => c.kind === 'craft') && units ? this.state.craftMenuOpen : false,
+      craftMenuOpen:
+        cards.some((c) => c.kind === 'craft') && units ? this.state.craftMenuOpen : false,
       lobby: this.state.showLobby ? (d.getLobby?.() ?? null) : null,
       roster: d.getRoster?.() ?? [],
       network: this.deps.getNetwork?.() ?? NO_NETWORK,
       // Targeting zonder selectie heeft geen zin meer.
-      targeting: selection.length === 0 && this.state.targeting !== 'heroAbility' ? null : this.state.targeting,
+      targeting:
+        selection.length === 0 && this.state.targeting !== 'heroAbility'
+          ? null
+          : this.state.targeting,
     };
   }
 
   /** Kaarten voor de selectie: de nieuwe dep, of (tijdelijk) opgebouwd uit de oude deps. */
-  private readCards(selection: readonly SelectedEntity[], buildingIds: readonly number[], units: boolean): readonly BuildingCard[] {
+  private readCards(
+    selection: readonly SelectedEntity[],
+    buildingIds: readonly number[],
+    units: boolean,
+  ): readonly BuildingCard[] {
     const d = this.deps;
     if (selection.length === 0) return [];
     if (d.getBuildingCards) return d.getBuildingCards(selection);
     const research = buildingIds.length > 0 ? (d.getResearchOptions?.(buildingIds) ?? []) : [];
     const recruit = buildingIds.length > 0 ? (d.getRecruitOptions?.(buildingIds) ?? []) : [];
     const craft = units ? (d.getCraftOptions?.() ?? []) : [];
-    return research.length + recruit.length + craft.length > 0 ? legacyCards(research, recruit, craft) : [];
+    return research.length + recruit.length + craft.length > 0
+      ? legacyCards(research, recruit, craft)
+      : [];
   }
 
   private set(patch: Partial<HudState>): void {

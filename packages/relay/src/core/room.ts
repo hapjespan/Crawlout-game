@@ -100,7 +100,11 @@ export class Room {
     this.adaptiveDelay = options.adaptiveDelay ?? true;
     this.recording = options.recordReplay ? [] : null;
     // Geen spelregelgetallen hier: dominanceMinutes komt via setSettings of, als hij ontbreekt, uit de map.
-    this.settings = { mode: 'skirmish', ...options.settings, delayFrames: clampDelay(options.settings?.delayFrames ?? DELAY_FRAMES_DEFAULT) };
+    this.settings = {
+      mode: 'skirmish',
+      ...options.settings,
+      delayFrames: clampDelay(options.settings?.delayFrames ?? DELAY_FRAMES_DEFAULT),
+    };
     this.map = options.defaultMap ?? 'rustbelt';
   }
 
@@ -147,7 +151,14 @@ export class Room {
     if (this.started) return null;
     const playerId = this.freeSlot();
     if (playerId < 0) return null;
-    this.players.set(playerId, { playerId, name: `AI ${playerId + 1}`, faction, ready: true, online: true, ai: true });
+    this.players.set(playerId, {
+      playerId,
+      name: `AI ${playerId + 1}`,
+      faction,
+      ready: true,
+      online: true,
+      ai: true,
+    });
     this.unreadyHumans();
     this.broadcastLobby();
     return playerId;
@@ -187,7 +198,11 @@ export class Room {
       case 'setSettings': {
         if (!this.hostCheck(connId, playerId)) return;
         const { mode, delayFrames, dominanceMinutes } = msg.settings;
-        this.settings = { mode, delayFrames: clampDelay(delayFrames), ...(dominanceMinutes === undefined ? {} : { dominanceMinutes }) };
+        this.settings = {
+          mode,
+          delayFrames: clampDelay(delayFrames),
+          ...(dominanceMinutes === undefined ? {} : { dominanceMinutes }),
+        };
         this.unreadyHumans();
         return this.broadcastLobby();
       }
@@ -203,21 +218,26 @@ export class Room {
         return this.broadcast({ kind: 'chat', playerId, text: msg.text });
       case 'command': {
         if (!this.scheduler || this.halted) return this.error(connId, 'geen lopend potje');
-        if (msg.command.playerId !== playerId) return this.error(connId, 'playerId komt niet overeen met verbinding');
+        if (msg.command.playerId !== playerId)
+          return this.error(connId, 'playerId komt niet overeen met verbinding');
         this.sampleLag(playerId, this.scheduler.nextFrame - msg.command.frame);
-        if (this.scheduler.submit(msg.command) === null) this.error(connId, 'commando te ver vooruit');
+        if (this.scheduler.submit(msg.command) === null)
+          this.error(connId, 'commando te ver vooruit');
         return;
       }
       case 'hash': {
         if (!this.started || this.halted) return;
-        if (msg.report.playerId !== playerId) return this.error(connId, 'playerId komt niet overeen met verbinding');
+        if (msg.report.playerId !== playerId)
+          return this.error(connId, 'playerId komt niet overeen met verbinding');
         // Een hash voor frame f is gemeld na uitvoering van f: de client staat dan op frame f + 1.
-        if (this.scheduler) this.sampleLag(playerId, this.scheduler.nextFrame - (msg.report.frame + 1));
+        if (this.scheduler)
+          this.sampleLag(playerId, this.scheduler.nextFrame - (msg.report.frame + 1));
         return this.afterHash(this.comparator.report(msg.report, this.expectedFor));
       }
       case 'resyncRequest':
         if (!this.started) return this.error(connId, 'potje is nog niet gestart');
-        if (msg.request.playerId !== playerId) return this.error(connId, 'playerId komt niet overeen met verbinding');
+        if (msg.request.playerId !== playerId)
+          return this.error(connId, 'playerId komt niet overeen met verbinding');
         if (this.resyncs.has(playerId)) return; // loopt al (bijv. automatisch gestart bij reconnect)
         this.hashFrom.set(playerId, Infinity);
         return this.assignPeer(playerId, new Set(), msg.request.lastFrame);
@@ -239,7 +259,9 @@ export class Room {
       this.lastFrameOffline.set(playerId, Math.max(0, (this.scheduler?.nextFrame ?? 0) - 1));
       this.delay.forget(playerId);
       this.resyncs.delete(playerId);
-      for (const [target, r] of [...this.resyncs]) if (r.peer === playerId) this.assignPeer(target, new Set([...r.tried, playerId]), r.lastFrame);
+      for (const [target, r] of [...this.resyncs])
+        if (r.peer === playerId)
+          this.assignPeer(target, new Set([...r.tried, playerId]), r.lastFrame);
       if (!this.halted) this.afterHash(this.comparator.recheck(this.expectedFor));
       this.checkStall();
     } else {
@@ -255,7 +277,8 @@ export class Room {
     if (!this.scheduler || this.halted) return null;
     const bundle = this.scheduler.advance();
     this.history.push(bundle);
-    if (this.history.length > RESYNC_HISTORY_FRAMES + RESYNC_HISTORY_FRAMES / 4) this.history = this.history.slice(-RESYNC_HISTORY_FRAMES);
+    if (this.history.length > RESYNC_HISTORY_FRAMES + RESYNC_HISTORY_FRAMES / 4)
+      this.history = this.history.slice(-RESYNC_HISTORY_FRAMES);
     this.recording?.push(bundle);
     this.broadcast({ kind: 'bundle', bundle });
     if (this.adaptiveDelay && this.scheduler.nextFrame % DELAY_EVAL_INTERVAL_FRAMES === 0) {
@@ -270,7 +293,10 @@ export class Room {
 
   private join(connId: string, name: string, clientId: string | undefined): void {
     if (this.conns.has(connId)) return this.error(connId, 'al gejoind');
-    const known = clientId === undefined ? undefined : [...this.clientIds].find(([, id]) => id === clientId)?.[0];
+    const known =
+      clientId === undefined
+        ? undefined
+        : [...this.clientIds].find(([, id]) => id === clientId)?.[0];
     if (known !== undefined) return this.rejoin(connId, known);
     if (this.started) return this.error(connId, 'potje is al gestart');
     const playerId = this.freeSlot();
@@ -278,7 +304,14 @@ export class Room {
     this.conns.set(connId, playerId);
     this.connOf.set(playerId, connId);
     if (clientId !== undefined) this.clientIds.set(playerId, clientId);
-    this.players.set(playerId, { playerId, name, faction: this.defaultFaction, ready: false, online: true, ai: false });
+    this.players.set(playerId, {
+      playerId,
+      name,
+      faction: this.defaultFaction,
+      ready: false,
+      online: true,
+      ai: false,
+    });
     this.unreadyHumans();
     this.broadcastLobby();
   }
@@ -327,7 +360,8 @@ export class Room {
   /** De host is de laagste playerId die geen AI is. */
   private hostId(): number {
     let host = -1;
-    for (const p of this.players.values()) if (!p.ai && (host < 0 || p.playerId < host)) host = p.playerId;
+    for (const p of this.players.values())
+      if (!p.ai && (host < 0 || p.playerId < host)) host = p.playerId;
     return host;
   }
 
@@ -364,7 +398,13 @@ export class Room {
   /** Wie meldt voor frame f: online menselijke spelers, niet vrijgesteld, en met state van voor f. AI telt niet mee. */
   private readonly expectedFor = (frame: number): number[] =>
     this.sortedPlayers()
-      .filter((p) => p.online && !p.ai && !this.hashExempt.has(p.playerId) && frame >= (this.hashFrom.get(p.playerId) ?? 0))
+      .filter(
+        (p) =>
+          p.online &&
+          !p.ai &&
+          !this.hashExempt.has(p.playerId) &&
+          frame >= (this.hashFrom.get(p.playerId) ?? 0),
+      )
       .map((p) => p.playerId);
 
   /**
@@ -400,14 +440,24 @@ export class Room {
     const targetConn = this.connOf.get(target);
     if (targetConn === undefined) return void this.resyncs.delete(target);
     const peer = this.sortedPlayers().find(
-      (p) => p.online && !p.ai && p.playerId !== target && !tried.has(p.playerId) && (this.hashFrom.get(p.playerId) ?? 0) !== Infinity,
+      (p) =>
+        p.online &&
+        !p.ai &&
+        p.playerId !== target &&
+        !tried.has(p.playerId) &&
+        (this.hashFrom.get(p.playerId) ?? 0) !== Infinity,
     );
     const peerConn = peer && this.connOf.get(peer.playerId);
     if (!peer || peerConn === undefined) {
       this.resyncs.delete(target);
       return this.error(targetConn, 'geen peer beschikbaar voor resync');
     }
-    this.resyncs.set(target, { peer: peer.playerId, requestedAt: this.now(), lastFrame, tried: new Set(tried).add(peer.playerId) });
+    this.resyncs.set(target, {
+      peer: peer.playerId,
+      requestedAt: this.now(),
+      lastFrame,
+      tried: new Set(tried).add(peer.playerId),
+    });
     this.send(peerConn, { kind: 'resyncRequest', request: { playerId: target, lastFrame } });
   }
 
@@ -426,7 +476,10 @@ export class Room {
     this.resyncs.delete(target);
     if (targetConn === undefined) return;
     const bundles = this.history.filter((b) => b.frame >= response.frame);
-    this.send(targetConn, { kind: 'resyncResponse', response: { frame: response.frame, stateBase64: response.stateBase64, bundles } });
+    this.send(targetConn, {
+      kind: 'resyncResponse',
+      response: { frame: response.frame, stateBase64: response.stateBase64, bundles },
+    });
     this.hashFrom.set(target, response.frame);
     this.sampleAfter.set(target, next + SAMPLE_GRACE_FRAMES);
     this.delay.forget(target);
@@ -435,15 +488,24 @@ export class Room {
 
   private checkResyncTimeouts(): void {
     const t = this.now();
-    for (const [target, r] of [...this.resyncs]) if (t - r.requestedAt > RESYNC_TIMEOUT_MS) this.assignPeer(target, r.tried, r.lastFrame);
+    for (const [target, r] of [...this.resyncs])
+      if (t - r.requestedAt > RESYNC_TIMEOUT_MS) this.assignPeer(target, r.tried, r.lastFrame);
   }
 
   private sortedPlayers(): Player[] {
-    return [...this.players.values()].sort((a, b) => a.playerId - b.playerId).map((p) => ({ ...p }));
+    return [...this.players.values()]
+      .sort((a, b) => a.playerId - b.playerId)
+      .map((p) => ({ ...p }));
   }
 
   private broadcastLobby(): void {
-    this.broadcast({ kind: 'lobby', roomId: this.roomId, map: this.map, players: this.sortedPlayers(), settings: { ...this.settings } });
+    this.broadcast({
+      kind: 'lobby',
+      roomId: this.roomId,
+      map: this.map,
+      players: this.sortedPlayers(),
+      settings: { ...this.settings },
+    });
   }
 
   private broadcast(msg: ServerMessage): void {
@@ -458,4 +520,3 @@ export class Room {
 function clampDelay(n: number): number {
   return Math.min(DELAY_FRAMES_MAX, Math.max(DELAY_FRAMES_MIN, n));
 }
-

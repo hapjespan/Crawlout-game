@@ -42,7 +42,8 @@ describe('bakeAnimations', () => {
     const ankle = new Vector3(0.1, 0.05, 0);
     const walk = baked.clips[ANIM.walk]!;
     let minY = Infinity;
-    for (let f = 0; f < walk.frameCount; f++) minY = Math.min(minY, ankle.clone().applyMatrix4(skinAt(ANIM.walk, f, shinL)).y);
+    for (let f = 0; f < walk.frameCount; f++)
+      minY = Math.min(minY, ankle.clone().applyMatrix4(skinAt(ANIM.walk, f, shinL)).y);
     expect(minY).toBeGreaterThan(-0.1);
     expect(minY).toBeLessThan(0.2);
 

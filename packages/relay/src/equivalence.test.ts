@@ -1,5 +1,10 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { HASH_INTERVAL_FRAMES, type ClientMessage, type CommandEnvelope, type ServerMessage } from '@crawlout/protocol';
+import {
+  HASH_INTERVAL_FRAMES,
+  type ClientMessage,
+  type CommandEnvelope,
+  type ServerMessage,
+} from '@crawlout/protocol';
 import { LoopbackRelay } from './loopback.js';
 import { startRelayServer, type RelayServer } from './server.js';
 import { WsRelayClient } from './wsClient.js';
@@ -23,7 +28,8 @@ interface Driver {
   tick(n: number): Promise<void>;
 }
 
-const comparable = (msgs: ServerMessage[]) => msgs.filter((m) => m.kind === 'start' || m.kind === 'bundle' || m.kind === 'desync');
+const comparable = (msgs: ServerMessage[]) =>
+  msgs.filter((m) => m.kind === 'start' || m.kind === 'bundle' || m.kind === 'desync');
 
 async function script(d: Driver): Promise<[ServerMessage[], ServerMessage[]]> {
   const [a, b] = d.clients;
@@ -82,7 +88,10 @@ async function wsDriver(): Promise<Driver> {
     onMessage: (cb) => raw.onMessage(cb),
     close: () => raw.close(),
   });
-  const clients: [RelayTransport, RelayTransport] = [track(new WsRelayClient(url), 0), track(new WsRelayClient(url), 1)];
+  const clients: [RelayTransport, RelayTransport] = [
+    track(new WsRelayClient(url), 0),
+    track(new WsRelayClient(url), 1),
+  ];
   const inbox: [ServerMessage[], ServerMessage[]] = [[], []];
   clients.forEach((c, i) => c.onMessage((m) => inbox[i]?.push(m)));
   let barrier = 0;
@@ -101,8 +110,15 @@ async function wsDriver(): Promise<Driver> {
     settle: async () => {
       const tag = `b${barrier++}`;
       const active = clients.map((_, i) => joinSent[i] === true);
-      clients.forEach((c, i) => active[i] && c.send({ kind: 'chat', text: `${tag}-${i}` } satisfies ClientMessage));
-      await waitFor(() => inbox.every((box, i) => !active[i] || box.some((m) => m.kind === 'chat' && m.text === `${tag}-${i}`)));
+      clients.forEach(
+        (c, i) =>
+          active[i] && c.send({ kind: 'chat', text: `${tag}-${i}` } satisfies ClientMessage),
+      );
+      await waitFor(() =>
+        inbox.every(
+          (box, i) => !active[i] || box.some((m) => m.kind === 'chat' && m.text === `${tag}-${i}`),
+        ),
+      );
     },
     tick: async (n) => {
       const count = (box: ServerMessage[]) => box.filter((m) => m.kind === 'bundle').length;
@@ -121,7 +137,9 @@ describe('loopback en ws-relay geven dezelfde berichten', () => {
 
     const [a] = viaLoopback;
     const bundles = a.flatMap((m) => (m.kind === 'bundle' ? [m.bundle] : []));
-    expect(bundles.map((x) => x.frame)).toEqual(Array.from({ length: bundles.length }, (_, i) => i));
+    expect(bundles.map((x) => x.frame)).toEqual(
+      Array.from({ length: bundles.length }, (_, i) => i),
+    );
     // Frame 1 + delay 4 = 5: drie commando's, geordend op playerId dan seq.
     expect(bundles[5]?.commands.map((c) => [c.playerId, c.seq])).toEqual([
       [0, 0],
@@ -137,8 +155,12 @@ describe('loopback en ws-relay geven dezelfde berichten', () => {
     const got: ServerMessage[] = [];
     c.onMessage((m) => got.push(m));
     c.send({ kind: 'join', roomId: 'r', name: 'x' });
-    c.send({ kind: 'command', command: { frame: 0, playerId: 0, seq: 0, type: 'Move', payload: { nope: 1 } } } as unknown as ClientMessage);
-    for (let i = 0; i < 100 && !got.some((m) => m.kind === 'error'); i++) await new Promise((r) => setTimeout(r, 10));
+    c.send({
+      kind: 'command',
+      command: { frame: 0, playerId: 0, seq: 0, type: 'Move', payload: { nope: 1 } },
+    } as unknown as ClientMessage);
+    for (let i = 0; i < 100 && !got.some((m) => m.kind === 'error'); i++)
+      await new Promise((r) => setTimeout(r, 10));
     expect(got.some((m) => m.kind === 'error')).toBe(true);
     c.close();
   });

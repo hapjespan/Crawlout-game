@@ -20,5 +20,15 @@ export const BUDGETS = {
   feetTolerance: 0.05,
   requiredClips: ['idle', 'walk', 'run', 'attack1', 'attack2', 'gather', 'build', 'death'] as const,
   /** Bones die een Mixamo-skelet minimaal moet hebben (zonder prefix). */
-  mixamoCoreBones: ['Hips', 'Spine', 'Head', 'LeftArm', 'RightArm', 'LeftUpLeg', 'RightUpLeg', 'LeftFoot', 'RightFoot'] as const,
+  mixamoCoreBones: [
+    'Hips',
+    'Spine',
+    'Head',
+    'LeftArm',
+    'RightArm',
+    'LeftUpLeg',
+    'RightUpLeg',
+    'LeftFoot',
+    'RightFoot',
+  ] as const,
 } as const;

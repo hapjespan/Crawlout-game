@@ -6,7 +6,13 @@ import { ABILITY_KEYS, ACTIONS, PERK_KEYS, ROLE_LABEL, keyLabel } from './contro
 import type { HudController, HudState } from './controller.js';
 import { CardPanel } from './cards.js';
 import { drawMinimap } from './minimap.js';
-import type { AlertKind, RosterGroup, SelectedEntity, TargetingKind, UnitActivity } from './types.js';
+import type {
+  AlertKind,
+  RosterGroup,
+  SelectedEntity,
+  TargetingKind,
+  UnitActivity,
+} from './types.js';
 
 const TARGETING_TEXT: Record<TargetingKind, string> = {
   move: 'Kies een bestemming op de kaart (Esc om te annuleren)',
@@ -43,7 +49,14 @@ function HpBar(props: { pct: number }): ComponentChild {
   const pct = Math.max(0, Math.min(100, props.pct));
   return h(
     'div',
-    { class: pct < 30 ? 'co-hp co-low' : 'co-hp', role: 'meter', 'aria-label': 'Gezondheid', 'aria-valuemin': 0, 'aria-valuemax': 100, 'aria-valuenow': pct },
+    {
+      class: pct < 30 ? 'co-hp co-low' : 'co-hp',
+      role: 'meter',
+      'aria-label': 'Gezondheid',
+      'aria-valuemin': 0,
+      'aria-valuemax': 100,
+      'aria-valuenow': pct,
+    },
     h('span', { style: { width: `${pct}%` } }),
   );
 }
@@ -57,7 +70,11 @@ function SelectionPanel(props: { selection: readonly SelectedEntity[] }): Compon
     const u = sel[0];
     body = [
       h('p', { class: 'co-unit-name' }, u.loadoutName ?? `Type ${u.typeId}`),
-      h('p', { class: 'co-unit-meta' }, `Loadout: ${u.loadoutName ?? 'geen'} · Rol: ${u.role ? ROLE_LABEL[u.role] : 'geen'} · ${u.hpPct}%`),
+      h(
+        'p',
+        { class: 'co-unit-meta' },
+        `Loadout: ${u.loadoutName ?? 'geen'} · Rol: ${u.role ? ROLE_LABEL[u.role] : 'geen'} · ${u.hpPct}%`,
+      ),
       h(HpBar, { pct: u.hpPct }),
     ];
   } else {
@@ -67,7 +84,11 @@ function SelectionPanel(props: { selection: readonly SelectedEntity[] }): Compon
       sel.map((u) =>
         h(
           'li',
-          { class: 'co-cell', key: u.id, title: `Type ${u.typeId}, ${u.loadoutName ?? 'geen loadout'}, ${u.hpPct}%` },
+          {
+            class: 'co-cell',
+            key: u.id,
+            title: `Type ${u.typeId}, ${u.loadoutName ?? 'geen loadout'}, ${u.hpPct}%`,
+          },
           h('b', null, u.role ? ROLE_LABEL[u.role].slice(0, 1) : '?'),
           h(HpBar, { pct: u.hpPct }),
         ),
@@ -145,7 +166,13 @@ function RosterBar(props: { ctl: HudController; state: HudState }): ComponentChi
           },
           h('span', { class: 'co-roster-name' }, g.naam),
           h('span', { class: 'co-roster-count' }, String(g.units.length)),
-          idle > 0 ? h('span', { class: 'co-roster-idle', title: `${idle} zonder taak (punt-toets: volgende)` }, `${idle} vrij`) : null,
+          idle > 0
+            ? h(
+                'span',
+                { class: 'co-roster-idle', title: `${idle} zonder taak (punt-toets: volgende)` },
+                `${idle} vrij`,
+              )
+            : null,
         );
       }),
     ),
@@ -156,14 +183,24 @@ function CommandCard(props: { ctl: HudController; state: HudState }): ComponentC
   const { ctl, state } = props;
   return h(
     'section',
-    { class: 'co-panel co-commands', 'aria-label': 'Commando\'s' },
-    h('h2', null, 'Commando\'s'),
+    { class: 'co-panel co-commands', 'aria-label': "Commando's" },
+    h('h2', null, "Commando's"),
     h(
       'div',
       { class: 'co-buttons' },
       ACTIONS.filter((a) => ctl.isAvailable(a) || a.requires === undefined).map((a) => {
         const pressed =
-          a.id === 'build' ? state.buildMenuOpen || state.placement !== null : a.id === 'hero' ? state.showHero : a.id === 'craft' ? state.craftMenuOpen : a.id === 'minimap' ? state.showMinimap : a.id === 'lobby' ? state.showLobby : state.targeting === a.id;
+          a.id === 'build'
+            ? state.buildMenuOpen || state.placement !== null
+            : a.id === 'hero'
+              ? state.showHero
+              : a.id === 'craft'
+                ? state.craftMenuOpen
+                : a.id === 'minimap'
+                  ? state.showMinimap
+                  : a.id === 'lobby'
+                    ? state.showLobby
+                    : state.targeting === a.id;
         return h(
           'button',
           {
@@ -193,7 +230,9 @@ function BuildMenu(props: { ctl: HudController; state: HudState }): ComponentChi
     'div',
     { class: 'co-menu', role: 'group', 'aria-label': 'Bouwmenu' },
     noBuilder ? h('p', { class: 'co-empty' }, 'Selecteer een bouwer om te bouwen.') : null,
-    state.buildOptions.length === 0 ? h('p', { class: 'co-empty' }, 'Geen gebouwen beschikbaar.') : null,
+    state.buildOptions.length === 0
+      ? h('p', { class: 'co-empty' }, 'Geen gebouwen beschikbaar.')
+      : null,
     h(
       'ul',
       { class: 'co-build-list' },
@@ -212,7 +251,11 @@ function BuildMenu(props: { ctl: HudController; state: HudState }): ComponentChi
               onClick: () => ctl.chooseBuild(o.buildingId),
             },
             h('span', null, o.naam),
-            h('span', { class: o.affordable ? 'co-cost' : 'co-cost co-full' }, `${o.scrapCost} · ${o.footprint.w}x${o.footprint.h}`),
+            h(
+              'span',
+              { class: o.affordable ? 'co-cost' : 'co-cost co-full' },
+              `${o.scrapCost} · ${o.footprint.w}x${o.footprint.h}`,
+            ),
             h('span', { class: 'co-key', 'aria-hidden': 'true' }, String(i + 1)),
           ),
         ),
@@ -231,7 +274,15 @@ function PlacementBar(props: { ctl: HudController; state: HudState }): Component
   );
 }
 
-const SPECIAL_NAMES = ['Kracht', 'Perceptie', 'Uithoudingsvermogen', 'Charisma', 'Intelligentie', 'Behendigheid', 'Geluk'] as const;
+const SPECIAL_NAMES = [
+  'Kracht',
+  'Perceptie',
+  'Uithoudingsvermogen',
+  'Charisma',
+  'Intelligentie',
+  'Behendigheid',
+  'Geluk',
+] as const;
 
 function HeroAbilities(props: { ctl: HudController; state: HudState }): ComponentChild {
   const { ctl, state } = props;
@@ -256,7 +307,12 @@ function HeroAbilities(props: { ctl: HudController; state: HudState }): Componen
         },
         h('span', null, a.naam),
         key ? h('span', { class: 'co-key', 'aria-hidden': 'true' }, key.toUpperCase()) : null,
-        cooling ? h('span', { class: 'co-cooldown', style: { width: `${Math.min(100, a.cooldownPct)}%` } }) : null,
+        cooling
+          ? h('span', {
+              class: 'co-cooldown',
+              style: { width: `${Math.min(100, a.cooldownPct)}%` },
+            })
+          : null,
       );
     }),
   );
@@ -267,7 +323,10 @@ function HeroPanel(props: { ctl: HudController; state: HudState }): ComponentChi
   const hero = state.status?.hero;
   if (!hero || !state.showHero) return null;
   const naam = (hero.heroId !== undefined ? ctl.heroName(hero.heroId) : undefined) ?? 'Held';
-  const pct = hero.xpNext !== undefined && hero.xpNext > 0 ? Math.max(0, Math.min(100, Math.round((hero.xp / hero.xpNext) * 100))) : null;
+  const pct =
+    hero.xpNext !== undefined && hero.xpNext > 0
+      ? Math.max(0, Math.min(100, Math.round((hero.xp / hero.xpNext) * 100)))
+      : null;
   const pending = ctl.pendingPerks();
   return h(
     'section',
@@ -276,20 +335,43 @@ function HeroPanel(props: { ctl: HudController; state: HudState }): ComponentChi
     pct !== null
       ? h(
           'div',
-          { class: 'co-xp', role: 'meter', 'aria-label': 'Ervaring', 'aria-valuemin': 0, 'aria-valuemax': 100, 'aria-valuenow': pct, title: `${hero.xp} / ${hero.xpNext} xp` },
+          {
+            class: 'co-xp',
+            role: 'meter',
+            'aria-label': 'Ervaring',
+            'aria-valuemin': 0,
+            'aria-valuemax': 100,
+            'aria-valuenow': pct,
+            title: `${hero.xp} / ${hero.xpNext} xp`,
+          },
           h('span', { style: { width: `${pct}%` } }),
         )
       : null,
     h(
       'ul',
       { class: 'co-special', 'aria-label': 'SPECIAL' },
-      hero.special.map((v, i) => h('li', { key: i, title: SPECIAL_NAMES[i], 'aria-label': `${SPECIAL_NAMES[i]} ${v}` }, h('b', null, 'SPECIAL'[i]), h('span', null, String(v)))),
+      hero.special.map((v, i) =>
+        h(
+          'li',
+          { key: i, title: SPECIAL_NAMES[i], 'aria-label': `${SPECIAL_NAMES[i]} ${v}` },
+          h('b', null, 'SPECIAL'[i]),
+          h('span', null, String(v)),
+        ),
+      ),
     ),
-    hero.revivesLeft !== undefined ? h('p', { class: 'co-revives' }, `Oplappen: nog ${hero.revivesLeft}x`) : null,
+    hero.revivesLeft !== undefined
+      ? h('p', { class: 'co-revives' }, `Oplappen: nog ${hero.revivesLeft}x`)
+      : null,
     state.heroDead && ctl.canRevive()
       ? h(
           'button',
-          { type: 'button', class: 'co-btn co-revive', 'data-action': 'revive', 'aria-label': 'Held oplappen (sneltoets V)', onClick: () => ctl.revive() },
+          {
+            type: 'button',
+            class: 'co-btn co-revive',
+            'data-action': 'revive',
+            'aria-label': 'Held oplappen (sneltoets V)',
+            onClick: () => ctl.revive(),
+          },
           h('span', null, 'Oplappen'),
           h('span', { class: 'co-key', 'aria-hidden': 'true' }, 'V'),
         )
@@ -313,7 +395,9 @@ function HeroPanel(props: { ctl: HudController; state: HudState }): ComponentChi
                 onClick: () => ctl.pickPerk(p.perkId),
               },
               h('span', null, p.naam),
-              PERK_KEYS[i] ? h('span', { class: 'co-key', 'aria-hidden': 'true' }, PERK_KEYS[i]?.toUpperCase()) : null,
+              PERK_KEYS[i]
+                ? h('span', { class: 'co-key', 'aria-hidden': 'true' }, PERK_KEYS[i]?.toUpperCase())
+                : null,
             ),
           ),
         )
@@ -338,7 +422,15 @@ function Minimap(props: { ctl: HudController; state: HudState }): ComponentChild
   return h(
     'section',
     { class: 'co-panel co-minimap', 'aria-label': 'Minimap' },
-    h('canvas', { ref, class: 'co-minimap-canvas', width: 160, height: 160, role: 'img', 'aria-label': 'Minimap, klik om de camera te verplaatsen', onClick }),
+    h('canvas', {
+      ref,
+      class: 'co-minimap-canvas',
+      width: 160,
+      height: 160,
+      role: 'img',
+      'aria-label': 'Minimap, klik om de camera te verplaatsen',
+      onClick,
+    }),
   );
 }
 
@@ -359,10 +451,25 @@ function Toasts(props: { ctl: HudController; state: HudState }): ComponentChild 
         { key: t.id },
         h(
           'button',
-          { type: 'button', class: `co-btn co-toast co-toast-${t.kind}`, 'data-alert': t.kind, 'aria-label': `${ALERT_TEXT[t.kind]}, ga naar de locatie`, onClick: () => ctl.focusAlert(t) },
+          {
+            type: 'button',
+            class: `co-btn co-toast co-toast-${t.kind}`,
+            'data-alert': t.kind,
+            'aria-label': `${ALERT_TEXT[t.kind]}, ga naar de locatie`,
+            onClick: () => ctl.focusAlert(t),
+          },
           ALERT_TEXT[t.kind],
         ),
-        h('button', { type: 'button', class: 'co-toast-close', 'aria-label': 'Sluit waarschuwing', onClick: () => ctl.dismissToast(t.id) }, '×'),
+        h(
+          'button',
+          {
+            type: 'button',
+            class: 'co-toast-close',
+            'aria-label': 'Sluit waarschuwing',
+            onClick: () => ctl.dismissToast(t.id),
+          },
+          '×',
+        ),
       ),
     ),
   );
@@ -393,9 +500,28 @@ function LobbyPanel(props: { ctl: HudController; state: HudState }): ComponentCh
     h(
       'div',
       { class: 'co-actions' },
-      h('button', { type: 'button', class: 'co-btn', 'aria-label': 'Klaar (sneltoets R)', disabled: !ctl.canToggleReady(), onClick: () => ctl.toggleReady() }, 'Klaar (R)'),
+      h(
+        'button',
+        {
+          type: 'button',
+          class: 'co-btn',
+          'aria-label': 'Klaar (sneltoets R)',
+          disabled: !ctl.canToggleReady(),
+          onClick: () => ctl.toggleReady(),
+        },
+        'Klaar (R)',
+      ),
       ctl.isHost()
-        ? h('button', { type: 'button', class: 'co-btn', 'aria-label': 'Instellingen (sneltoets O)', onClick: () => ctl.openHostSettings() }, 'Instellingen (O)')
+        ? h(
+            'button',
+            {
+              type: 'button',
+              class: 'co-btn',
+              'aria-label': 'Instellingen (sneltoets O)',
+              onClick: () => ctl.openHostSettings(),
+            },
+            'Instellingen (O)',
+          )
         : null,
     ),
   );
@@ -409,13 +535,42 @@ function SurrenderDialog(props: { ctl: HudController }): ComponentChild {
   }, []);
   return h(
     'div',
-    { class: 'co-panel co-dialog', role: 'alertdialog', 'aria-modal': 'true', 'aria-labelledby': 'co-surrender-title' },
-    h('p', { id: 'co-surrender-title' }, 'Weet je zeker dat je wilt opgeven? Je verliest het potje.'),
+    {
+      class: 'co-panel co-dialog',
+      role: 'alertdialog',
+      'aria-modal': 'true',
+      'aria-labelledby': 'co-surrender-title',
+    },
+    h(
+      'p',
+      { id: 'co-surrender-title' },
+      'Weet je zeker dat je wilt opgeven? Je verliest het potje.',
+    ),
     h(
       'div',
       { class: 'co-actions' },
-      h('button', { ref: yes, type: 'button', class: 'co-btn co-danger', 'aria-label': 'Ja, opgeven', onClick: () => props.ctl.confirmSurrender() }, 'Ja, opgeven'),
-      h('button', { ref: no, type: 'button', class: 'co-btn', 'aria-label': 'Nee, doorspelen', onClick: () => props.ctl.cancelSurrender() }, 'Nee, doorspelen'),
+      h(
+        'button',
+        {
+          ref: yes,
+          type: 'button',
+          class: 'co-btn co-danger',
+          'aria-label': 'Ja, opgeven',
+          onClick: () => props.ctl.confirmSurrender(),
+        },
+        'Ja, opgeven',
+      ),
+      h(
+        'button',
+        {
+          ref: no,
+          type: 'button',
+          class: 'co-btn',
+          'aria-label': 'Nee, doorspelen',
+          onClick: () => props.ctl.cancelSurrender(),
+        },
+        'Nee, doorspelen',
+      ),
     ),
   );
 }
@@ -433,14 +588,37 @@ export function Hud(props: { ctl: HudController }): ComponentChild {
     h(
       'div',
       { class: 'co-top-right' },
-      h('button', { type: 'button', class: 'co-btn', 'aria-label': 'Opgeven', onClick: () => ctl.requestSurrender() }, 'Opgeven'),
+      h(
+        'button',
+        {
+          type: 'button',
+          class: 'co-btn',
+          'aria-label': 'Opgeven',
+          onClick: () => ctl.requestSurrender(),
+        },
+        'Opgeven',
+      ),
     ),
     desync
-      ? h('div', { class: 'co-panel co-banner co-desync', role: 'alert' }, `Desync gedetecteerd op frame ${desync.frame}. Het potje is gestopt.`)
+      ? h(
+          'div',
+          { class: 'co-panel co-banner co-desync', role: 'alert' },
+          `Desync gedetecteerd op frame ${desync.frame}. Het potje is gestopt.`,
+        )
       : stall && stall.waitingFor.length > 0
-        ? h('div', { class: 'co-panel co-banner co-stall', role: 'status' }, `Gepauzeerd: wachten op ${stall.waitingFor.map((id) => ctl.playerName(id)).join(', ')}…`)
+        ? h(
+            'div',
+            { class: 'co-panel co-banner co-stall', role: 'status' },
+            `Gepauzeerd: wachten op ${stall.waitingFor.map((id) => ctl.playerName(id)).join(', ')}…`,
+          )
         : null,
-    state.targeting ? h('div', { class: 'co-panel co-targeting', role: 'status' }, TARGETING_TEXT[state.targeting]) : null,
+    state.targeting
+      ? h(
+          'div',
+          { class: 'co-panel co-targeting', role: 'status' },
+          TARGETING_TEXT[state.targeting],
+        )
+      : null,
     h(PlacementBar, { ctl, state }),
     h(Minimap, { ctl, state }),
     h(HeroPanel, { ctl, state }),

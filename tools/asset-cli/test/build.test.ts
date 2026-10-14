@@ -36,17 +36,23 @@ describe('validatie', () => {
     expect(errors.join('\n')).toMatch(/4800 driehoeken in LOD0, maximaal 4000/);
   });
   it('weigert meer dan 28 bones', async () => {
-    expect((await violations(await makeHumanoid({ extraBones: 10 }))).join('\n')).toMatch(/30 bones, maximaal 28/);
+    expect((await violations(await makeHumanoid({ extraBones: 10 }))).join('\n')).toMatch(
+      /30 bones, maximaal 28/,
+    );
   });
   it('weigert niet-Mixamo botnamen', async () => {
     const errors = await violations(await makeHumanoid({ boneNamePrefix: 'Bone_' }));
     expect(errors.join('\n')).toMatch(/Mixamo/);
   });
   it('weigert een textuur boven 2048', async () => {
-    expect((await violations(await makeHumanoid({ hugeTexture: 4096 }))).join('\n')).toMatch(/4096x4096, maximaal 2048/);
+    expect((await violations(await makeHumanoid({ hugeTexture: 4096 }))).join('\n')).toMatch(
+      /4096x4096, maximaal 2048/,
+    );
   });
   it('weigert een tweede UV-set', async () => {
-    expect((await violations(await makeHumanoid({ secondUv: true }))).join('\n')).toMatch(/2 UV-sets/);
+    expect((await violations(await makeHumanoid({ secondUv: true }))).join('\n')).toMatch(
+      /2 UV-sets/,
+    );
   });
   it('weigert verkeerde schaal en voeten niet op y=0', async () => {
     const errors = (await violations(await makeHumanoid({ height: 180, footY: 1 }))).join('\n');
@@ -61,7 +67,9 @@ describe('buis', () => {
     const result = await buildAssets({ srcDir: src, distDir: dist, toktx: null });
     expect(result.ok).toBe(true);
     expect(result.reports).toEqual([]);
-    expect(manifestSchema.parse(JSON.parse(readFileSync(join(dist, 'manifest.json'), 'utf8'))).assets).toEqual([]);
+    expect(
+      manifestSchema.parse(JSON.parse(readFileSync(join(dist, 'manifest.json'), 'utf8'))).assets,
+    ).toEqual([]);
   });
 
   it('bouwt LODs, meshopt en manifest voor humanoid en prop', async () => {
@@ -71,11 +79,15 @@ describe('buis', () => {
     expect(result.reports.flatMap((r) => r.errors)).toEqual([]);
     expect(result.ok).toBe(true);
 
-    const manifest = manifestSchema.parse(JSON.parse(readFileSync(join(dist, 'manifest.json'), 'utf8')));
+    const manifest = manifestSchema.parse(
+      JSON.parse(readFileSync(join(dist, 'manifest.json'), 'utf8')),
+    );
     expect(manifest.assets.map((a) => a.id)).toEqual(['hero_dummy', 'rock']);
     const hero = manifest.assets[0]!;
     expect(hero.kind).toBe('character');
-    expect(hero.lods.map((l) => l.triangles).every((t, i) => t <= [4000, 1500, 600][i]!)).toBe(true);
+    expect(hero.lods.map((l) => l.triangles).every((t, i) => t <= [4000, 1500, 600][i]!)).toBe(
+      true,
+    );
     expect(hero.lods[1].triangles).toBeLessThan(hero.lods[0].triangles);
     expect(hero.lods[2].triangles).toBeLessThan(hero.lods[1].triangles);
     expect(hero.sockets.hand).toBeDefined();
@@ -94,8 +106,16 @@ describe('buis', () => {
     for (const lod of hero.lods) {
       const bytes = new Uint8Array(readFileSync(join(dist, lod.path)));
       expect(existsSync(join(dist, lod.path))).toBe(true);
-      const doc = await new NodeIO().registerExtensions(ALL_EXTENSIONS).registerDependencies({ 'meshopt.decoder': MeshoptDecoder }).readBinary(bytes);
-      expect(doc.getRoot().listExtensionsUsed().map((e) => e.extensionName)).toContain('EXT_meshopt_compression');
+      const doc = await new NodeIO()
+        .registerExtensions(ALL_EXTENSIONS)
+        .registerDependencies({ 'meshopt.decoder': MeshoptDecoder })
+        .readBinary(bytes);
+      expect(
+        doc
+          .getRoot()
+          .listExtensionsUsed()
+          .map((e) => e.extensionName),
+      ).toContain('EXT_meshopt_compression');
     }
     // Leesbaar door onze eigen IO (zoals render het laadt).
     await createIO().readBinary(new Uint8Array(readFileSync(join(dist, 'hero_dummy/lod2.glb'))));
@@ -103,7 +123,10 @@ describe('buis', () => {
 
   it('faalt met leesbare reden, exit-status ok=false en schrijft niets', async () => {
     writeFileSync(join(src, 'good.glb'), await makeHumanoid());
-    writeFileSync(join(src, 'zwaar.glb'), await makeHumanoid({ segments: 60, rings: 40, extraBones: 10 }));
+    writeFileSync(
+      join(src, 'zwaar.glb'),
+      await makeHumanoid({ segments: 60, rings: 40, extraBones: 10 }),
+    );
     const result = await buildAssets({ srcDir: src, distDir: dist, toktx: null });
     expect(result.ok).toBe(false);
     const bad = result.reports.find((r) => r.id === 'zwaar')!;

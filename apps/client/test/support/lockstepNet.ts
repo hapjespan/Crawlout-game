@@ -10,7 +10,13 @@ import { loadMap } from '@crawlout/map';
 import { HASH_INTERVAL_FRAMES, TICK_MS } from '@crawlout/protocol';
 import type { ClientMessage, FrameBundle, ServerMessage } from '@crawlout/protocol';
 import { Room } from '@crawlout/relay';
-import { createSim, deserialize, simConfigFromGameData, simMapFromGrid, simPlayersFromLobby } from '@crawlout/sim';
+import {
+  createSim,
+  deserialize,
+  simConfigFromGameData,
+  simMapFromGrid,
+  simPlayersFromLobby,
+} from '@crawlout/sim';
 import type { Sim, SimEnv } from '@crawlout/sim';
 import { BundleFeed, base64ToBuffer, bufferToBase64 } from '../../src/net/resync.js';
 
@@ -27,9 +33,20 @@ export function envFromStart(start: Extract<ServerMessage, { kind: 'start' }>): 
   const data = gameData();
   const def = MapDef.parse(JSON.parse(readFileSync(`${DATA_DIR}/maps/${start.map}.json`, 'utf8')));
   const grid = loadMap(def, { read: (ref) => readFileSync(`${DATA_DIR}/${ref}`, 'utf8') });
-  const dominance = convertDominance({ pointsRequired: def.dominance.pointsRequired, minutes: start.settings.dominanceMinutes ?? def.dominance.minutes });
-  const players = start.players.map((p) => ({ playerId: p.playerId, faction: p.faction, ai: p.ai }));
-  return { players: simPlayersFromLobby(data, players), map: simMapFromGrid({ ...grid, dominance }), config: simConfigFromGameData(data) };
+  const dominance = convertDominance({
+    pointsRequired: def.dominance.pointsRequired,
+    minutes: start.settings.dominanceMinutes ?? def.dominance.minutes,
+  });
+  const players = start.players.map((p) => ({
+    playerId: p.playerId,
+    faction: p.faction,
+    ai: p.ai,
+  }));
+  return {
+    players: simPlayersFromLobby(data, players),
+    map: simMapFromGrid({ ...grid, dominance }),
+    config: simConfigFromGameData(data),
+  };
 }
 
 interface Timed<T> {
@@ -90,7 +107,8 @@ export class TestClient {
 
   /** Reads what has arrived, runs up to ticksPerStep ticks, reports hashes and gives a scripted command. */
   pump(clock: number): void {
-    while (this.down.length > 0 && (this.down[0] as Timed<ServerMessage>).at <= clock) this.onServer((this.down.shift() as Timed<ServerMessage>).msg);
+    while (this.down.length > 0 && (this.down[0] as Timed<ServerMessage>).at <= clock)
+      this.onServer((this.down.shift() as Timed<ServerMessage>).msg);
     const sim = this.sim;
     if (sim === null || this.awaitingResync) return;
     for (const b of this.released.splice(0)) sim.applyBundle(b);
@@ -98,7 +116,8 @@ export class TestClient {
       const hash = sim.tick();
       const frame = sim.frame - 1;
       this.hashes.set(frame, hash);
-      if (frame % HASH_INTERVAL_FRAMES === 0) this.send({ kind: 'hash', report: { frame, playerId: this.playerId, hash } });
+      if (frame % HASH_INTERVAL_FRAMES === 0)
+        this.send({ kind: 'hash', report: { frame, playerId: this.playerId, hash } });
     }
     this.giveCommand(sim);
   }
@@ -117,7 +136,13 @@ export class TestClient {
     const cell = 30 + ((sim.frame * 7 + this.playerId * 13) % 60);
     this.send({
       kind: 'command',
-      command: { frame: sim.frame, playerId: this.playerId, seq: this.seq++, type: 'Move', payload: { ids, x: cell * 256 + 128, y: (127 - cell) * 256 + 128 } },
+      command: {
+        frame: sim.frame,
+        playerId: this.playerId,
+        seq: this.seq++,
+        type: 'Move',
+        payload: { ids, x: cell * 256 + 128, y: (127 - cell) * 256 + 128 },
+      },
     });
   }
 
@@ -145,7 +170,14 @@ export class TestClient {
         return;
       case 'resyncRequest': {
         if (this.sim === null || this.awaitingResync) return;
-        this.send({ kind: 'resyncResponse', response: { frame: this.sim.frame, stateBase64: bufferToBase64(this.sim.serialize()), bundles: [] } });
+        this.send({
+          kind: 'resyncResponse',
+          response: {
+            frame: this.sim.frame,
+            stateBase64: bufferToBase64(this.sim.serialize()),
+            bundles: [],
+          },
+        });
         return;
       }
       case 'resyncResponse': {
@@ -186,10 +218,19 @@ export class TestNet {
   addClients(count: number): TestClient[] {
     const added: TestClient[] = [];
     for (let i = 0; i < count; i++) {
-      const c = new TestClient(this, `c${this.clients.length}`, `client-${this.clients.length}-testtest`);
+      const c = new TestClient(
+        this,
+        `c${this.clients.length}`,
+        `client-${this.clients.length}-testtest`,
+      );
       this.clients.push(c);
       this.byConn.set(c.connId, c);
-      this.room.handle(c.connId, { kind: 'join', roomId: 'latency', name: c.name, clientId: c.clientId });
+      this.room.handle(c.connId, {
+        kind: 'join',
+        roomId: 'latency',
+        name: c.name,
+        clientId: c.clientId,
+      });
       added.push(c);
     }
     for (const c of added) this.room.handle(c.connId, { kind: 'ready', ready: true });
@@ -197,7 +238,8 @@ export class TestNet {
   }
 
   sendUp(client: TestClient, msg: ClientMessage): void {
-    if (client.online) this.up.push({ at: this.clock + this.oneWayMs, msg, client, connId: client.connId });
+    if (client.online)
+      this.up.push({ at: this.clock + this.oneWayMs, msg, client, connId: client.connId });
   }
 
   /** The connection drops: nothing in flight arrives, the relay sees a disconnect. */
@@ -205,7 +247,8 @@ export class TestNet {
     client.online = false;
     this.room.disconnect(client.connId);
     this.byConn.delete(client.connId);
-    for (let i = this.up.length - 1; i >= 0; i--) if ((this.up[i] as { client: TestClient }).client === client) this.up.splice(i, 1);
+    for (let i = this.up.length - 1; i >= 0; i--)
+      if ((this.up[i] as { client: TestClient }).client === client) this.up.splice(i, 1);
   }
 
   /** A new connection with the same clientId: the relay answers with `start` and starts the resync. */
@@ -219,10 +262,18 @@ export class TestNet {
   step(): void {
     this.clock += TICK_MS;
     while (this.up.length > 0 && (this.up[0] as Timed<ClientMessage>).at <= this.clock) {
-      const { msg, client, connId } = this.up.shift() as Timed<ClientMessage> & { client: TestClient; connId: string };
+      const { msg, client, connId } = this.up.shift() as Timed<ClientMessage> & {
+        client: TestClient;
+        connId: string;
+      };
       if (connId !== client.connId) continue;
       if (msg.kind === 'command') {
-        this.commandLog.push({ playerId: msg.command.playerId, frame: msg.command.frame, relayNext: this.relayNext, delay: this.room.delayFrames });
+        this.commandLog.push({
+          playerId: msg.command.playerId,
+          frame: msg.command.frame,
+          relayNext: this.relayNext,
+          delay: this.room.delayFrames,
+        });
       }
       this.room.handle(connId, msg);
     }
@@ -241,11 +292,16 @@ export class TestNet {
 }
 
 /** Frames both clients executed with differing hashes (empty = identical). */
-export function hashMismatches(a: TestClient, b: TestClient, fromFrame = 0): Array<{ frame: number; a: number; b: number }> {
+export function hashMismatches(
+  a: TestClient,
+  b: TestClient,
+  fromFrame = 0,
+): Array<{ frame: number; a: number; b: number }> {
   const out: Array<{ frame: number; a: number; b: number }> = [];
   for (const [frame, hash] of a.hashes) {
     const other = b.hashes.get(frame);
-    if (frame >= fromFrame && other !== undefined && other !== hash) out.push({ frame, a: hash, b: other });
+    if (frame >= fromFrame && other !== undefined && other !== hash)
+      out.push({ frame, a: hash, b: other });
   }
   return out;
 }

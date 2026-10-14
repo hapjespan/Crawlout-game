@@ -21,7 +21,14 @@ import {
   type StallNotice,
 } from '@crawlout/protocol';
 import { LoopbackRelay, type RelayTransport } from '@crawlout/relay/browser';
-import { simConfigFromGameData, simMapFromGrid, simPlayersFromLobby, type SimEnv, type SimInit, type SimWinner } from '@crawlout/sim';
+import {
+  simConfigFromGameData,
+  simMapFromGrid,
+  simPlayersFromLobby,
+  type SimEnv,
+  type SimInit,
+  type SimWinner,
+} from '@crawlout/sim';
 import type { SimWorkerInbound, SimWorkerOutbound } from '@crawlout/sim';
 import SimWorker from '@crawlout/sim/worker?worker';
 import type { ClientMap } from './content.js';
@@ -63,9 +70,15 @@ export interface Session {
   dispose(): void;
 }
 
-export function startSession(data: GameData, map: ClientMap, events: SessionEvents, net: WsNetOptions | null = netOptionsFromSearch(location.search)): Session {
+export function startSession(
+  data: GameData,
+  map: ClientMap,
+  events: SessionEvents,
+  net: WsNetOptions | null = netOptionsFromSearch(location.search),
+): Session {
   const worker = new SimWorker();
-  const post = (msg: SimWorkerInbound, transfer: Transferable[] = []): void => worker.postMessage(msg, transfer);
+  const post = (msg: SimWorkerInbound, transfer: Transferable[] = []): void =>
+    worker.postMessage(msg, transfer);
   const feed = new BundleFeed();
 
   let link: RelayTransport;
@@ -88,12 +101,21 @@ export function startSession(data: GameData, map: ClientMap, events: SessionEven
     resolveStarted = resolve;
   });
   // Worker answers to `dump` come back in order; each waiter takes one.
-  const dumpWaiters: Array<(state: { frame: number; hash: number; buffer: ArrayBuffer }) => void> = [];
+  const dumpWaiters: Array<(state: { frame: number; hash: number; buffer: ArrayBuffer }) => void> =
+    [];
 
   const emitStall = (): void => {
-    const local = started && !disposed && (!connected || awaitingResync || performance.now() - lastProgress > LOCAL_STALL_MS);
+    const local =
+      started &&
+      !disposed &&
+      (!connected || awaitingResync || performance.now() - lastProgress > LOCAL_STALL_MS);
     const others = roster.filter((p) => !p.ai && p.playerId !== you).map((p) => p.playerId);
-    const notice = relayStall && relayStall.waitingFor.length > 0 ? relayStall : local ? { waitingFor: others } : null;
+    const notice =
+      relayStall && relayStall.waitingFor.length > 0
+        ? relayStall
+        : local
+          ? { waitingFor: others }
+          : null;
     const key = JSON.stringify(notice);
     if (key === shownStall) return;
     shownStall = key;
@@ -107,13 +129,17 @@ export function startSession(data: GameData, map: ClientMap, events: SessionEven
       lastFrame = header.tick;
       lastProgress = performance.now();
       if (header.tick % HASH_INTERVAL_FRAMES === 0) {
-        link.send({ kind: 'hash', report: { frame: header.tick, playerId: you, hash: header.hash } });
+        link.send({
+          kind: 'hash',
+          report: { frame: header.tick, playerId: you, hash: header.hash },
+        });
       }
       events.onSnapshot(msg.buffer);
     } else if (msg.kind === 'hashes') {
       // Catch-up (resync, stall): the worker posts only the last snapshot of a beat and reports the hashes of the
       // frames in between here; the relay expects one per HASH_INTERVAL_FRAMES frames.
-      for (const r of msg.reports) link.send({ kind: 'hash', report: { frame: r.frame, playerId: you, hash: r.hash } });
+      for (const r of msg.reports)
+        link.send({ kind: 'hash', report: { frame: r.frame, playerId: you, hash: r.hash } });
     } else if (msg.kind === 'state') {
       dumpWaiters.shift()?.(msg);
     } else if (msg.kind === 'status') {
@@ -125,7 +151,11 @@ export function startSession(data: GameData, map: ClientMap, events: SessionEven
 
   /** The sim environment of this match from a start message; the seed travels separately. */
   const initFromStart = (msg: Extract<ServerMessage, { kind: 'start' }>): SimInit => {
-    const players = msg.players.map((p) => ({ playerId: p.playerId, faction: p.faction, ai: p.ai }));
+    const players = msg.players.map((p) => ({
+      playerId: p.playerId,
+      faction: p.faction,
+      ai: p.ai,
+    }));
     const dominance = convertDominance({
       pointsRequired: map.dominance.pointsRequired,
       minutes: msg.settings.dominanceMinutes ?? map.dominance.minutes,
@@ -150,8 +180,14 @@ export function startSession(data: GameData, map: ClientMap, events: SessionEven
     if (!net) return;
     roster = msg.players;
     const humans = msg.players.filter((p) => !p.ai);
-    events.onConnection?.(`Lobby ${msg.roomId}: ${humans.map((p) => p.name).join(', ')}${msg.players.length - humans.length > 0 ? ' + AI' : ''}. Het potje start zodra iedereen er is.`);
-    const key = JSON.stringify([msg.roomId, msg.map, msg.players.map((p) => [p.playerId, p.name, p.faction, p.ai])]);
+    events.onConnection?.(
+      `Lobby ${msg.roomId}: ${humans.map((p) => p.name).join(', ')}${msg.players.length - humans.length > 0 ? ' + AI' : ''}. Het potje start zodra iedereen er is.`,
+    );
+    const key = JSON.stringify([
+      msg.roomId,
+      msg.map,
+      msg.players.map((p) => [p.playerId, p.name, p.faction, p.ai]),
+    ]);
     if (key === lobbyKeyReadied) return;
     if (msg.map !== map.grid.id) {
       lobbyKeyReadied = key;
@@ -162,7 +198,11 @@ export function startSession(data: GameData, map: ClientMap, events: SessionEven
       aiRequested = true;
       // Only the host (lowest human playerId) may add an AI; the relay answers any other with an error.
       const mine = msg.players.find((p) => !p.ai)?.faction;
-      link.send({ kind: 'addAi', faction: data.factions.find((f) => f.key !== mine)?.key ?? data.factions[0]?.key ?? 'dwellers' });
+      link.send({
+        kind: 'addAi',
+        faction:
+          data.factions.find((f) => f.key !== mine)?.key ?? data.factions[0]?.key ?? 'dwellers',
+      });
       return;
     }
     lobbyKeyReadied = key;
@@ -223,7 +263,14 @@ export function startSession(data: GameData, map: ClientMap, events: SessionEven
         // Peer duty: answer with the worker's state; the relay fills in the bundles from its own history.
         if (!started || awaitingResync) return;
         dumpWaiters.push((state) => {
-          link.send({ kind: 'resyncResponse', response: { frame: state.frame, stateBase64: bufferToBase64(state.buffer), bundles: [] } });
+          link.send({
+            kind: 'resyncResponse',
+            response: {
+              frame: state.frame,
+              stateBase64: bufferToBase64(state.buffer),
+              bundles: [],
+            },
+          });
         });
         post({ kind: 'dump' });
         return;
@@ -234,7 +281,9 @@ export function startSession(data: GameData, map: ClientMap, events: SessionEven
         // The relay stops handing out bundles after a desync, so the sim halts within DELAY frames of this frame.
         const event = msg.event;
         dumpWaiters.push((state) => {
-          saveDesyncDump(buildDesyncDump(event, you, state, Date.now())).catch((err: unknown) => events.onError(`desync-dump mislukt: ${String(err)}`));
+          saveDesyncDump(buildDesyncDump(event, you, state, Date.now())).catch((err: unknown) =>
+            events.onError(`desync-dump mislukt: ${String(err)}`),
+          );
         });
         post({ kind: 'dump' });
         return;
@@ -275,7 +324,8 @@ export function startSession(data: GameData, map: ClientMap, events: SessionEven
         if (!up) {
           lobbyKeyReadied = '';
           events.onConnection?.('Verbinding met de relay verbroken, opnieuw verbinden…');
-        } else if (!reconnect) events.onConnection?.(`Verbonden met ${net.relayUrl}, lobby ${net.roomId}…`);
+        } else if (!reconnect)
+          events.onConnection?.(`Verbonden met ${net.relayUrl}, lobby ${net.roomId}…`);
         emitStall();
       },
     });
@@ -304,7 +354,10 @@ export function startSession(data: GameData, map: ClientMap, events: SessionEven
     },
     sendCommand(type, payload) {
       if (disposed || you < 0 || awaitingResync) return;
-      link.send({ kind: 'command', command: { frame: lastFrame + 1, playerId: you, seq: seq++, type, payload } });
+      link.send({
+        kind: 'command',
+        command: { frame: lastFrame + 1, playerId: you, seq: seq++, type, payload },
+      });
     },
     requestStatus() {
       if (started && !disposed && !awaitingResync) post({ kind: 'query', playerId: you });

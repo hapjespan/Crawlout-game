@@ -24,14 +24,19 @@ export interface ConformInfo {
 
 /** Bakt een uniforme schaal in de vertices van een statische asset; de nodes komen op de identiteit onder de scene. */
 export function applyUniformScale(document: Document, scale: number): void {
-  if (hasSkin(document)) throw new Error('een schaal in rigmap.json is alleen voor props; een karakter schaal je in de bron of met een root-transform in de bake');
+  if (hasSkin(document))
+    throw new Error(
+      'een schaal in rigmap.json is alleen voor props; een karakter schaal je in de bron of met een root-transform in de bake',
+    );
   const root = document.getRoot();
   const owners = new Map<unknown, number>();
   for (const node of root.listNodes()) {
     const mesh = node.getMesh();
     if (mesh) owners.set(mesh, (owners.get(mesh) ?? 0) + 1);
   }
-  for (const [, count] of owners) if (count > 1) throw new Error('een mesh die door meerdere nodes gedeeld wordt kan niet geschaald worden');
+  for (const [, count] of owners)
+    if (count > 1)
+      throw new Error('een mesh die door meerdere nodes gedeeld wordt kan niet geschaald worden');
   const scene = root.getDefaultScene() ?? root.listScenes()[0];
   if (!scene) return;
   for (const node of root.listNodes()) {
@@ -43,13 +48,17 @@ export function applyUniformScale(document: Document, scale: number): void {
     node.setTranslation([0, 0, 0]).setRotation([0, 0, 0, 1]).setScale([1, 1, 1]);
     scene.addChild(node);
   }
-  for (const node of root.listNodes()) if (!node.getMesh() && node.listChildren().length === 0) node.dispose();
+  for (const node of root.listNodes())
+    if (!node.getMesh() && node.listChildren().length === 0) node.dispose();
 }
 
 /** Verwijdert alle UV-sets behalve TEXCOORD_0 (de brief eist er precies één). */
 export function stripExtraUvSets(document: Document): number {
   let removed = 0;
-  for (const prim of document.getRoot().listMeshes().flatMap((m) => m.listPrimitives())) {
+  for (const prim of document
+    .getRoot()
+    .listMeshes()
+    .flatMap((m) => m.listPrimitives())) {
     for (const semantic of prim.listSemantics()) {
       if (/^TEXCOORD_(\d+)$/.test(semantic) && semantic !== 'TEXCOORD_0') {
         prim.setAttribute(semantic, null);
@@ -61,7 +70,11 @@ export function stripExtraUvSets(document: Document): number {
 }
 
 /** Behoudt alleen de gemapte clips en geeft ze de canonieke naam. Bij een mapfout blijft het document intact (de validatie meldt het). */
-export function selectClips(document: Document, clipmap: Clipmap, assetId: string): { kept: Record<string, string>; dropped: string[] } {
+export function selectClips(
+  document: Document,
+  clipmap: Clipmap,
+  assetId: string,
+): { kept: Record<string, string>; dropped: string[] } {
   const animations = document.getRoot().listAnimations();
   const names = animations.map((a, i) => a.getName() || `animation_${i}`);
   const { found, errors } = resolveClips(names, clipmap, assetId);
@@ -90,10 +103,20 @@ export interface ConformOptions {
   clipmap: Clipmap;
 }
 
-export async function conformDocument(document: Document, options: ConformOptions): Promise<ConformInfo> {
+export async function conformDocument(
+  document: Document,
+  options: ConformOptions,
+): Promise<ConformInfo> {
   const entry = options.rigmap.assets[options.assetId];
   const trianglesBefore = countTriangles(document);
-  const info: ConformInfo = { clipsKept: {}, clipsDropped: [], extraUvSetsRemoved: 0, trianglesBefore, trianglesAfter: trianglesBefore, reduced: false };
+  const info: ConformInfo = {
+    clipsKept: {},
+    clipsDropped: [],
+    extraUvSetsRemoved: 0,
+    trianglesBefore,
+    trianglesAfter: trianglesBefore,
+    reduced: false,
+  };
 
   if (entry?.rig) {
     const rig = options.rigmap.rigs[entry.rig];

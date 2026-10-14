@@ -14,7 +14,11 @@ export function constructionHeight(progress: number): number {
 /** Albedo multiplier of a building site: pale raw timber and concrete, warming to the building's own tint at the end. */
 const SITE_TINT: readonly [number, number, number] = [1.12, 1.06, 0.92];
 
-export function constructionTint(progress: number, tint: readonly [number, number, number], out: [number, number, number]): [number, number, number] {
+export function constructionTint(
+  progress: number,
+  tint: readonly [number, number, number],
+  out: [number, number, number],
+): [number, number, number] {
   const p = Math.min(1, Math.max(0, progress));
   const k = p * p; // stays raw most of the way, then catches up
   out[0] = SITE_TINT[0] + (tint[0] - SITE_TINT[0]) * k;

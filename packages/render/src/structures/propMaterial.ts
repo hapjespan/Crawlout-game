@@ -8,7 +8,26 @@
 // and an optional grade that pulls the art's colors towards the wasteland palette, so lush kit colors sit under the
 // same toon ramp as everything else.
 import { MeshBasicNodeMaterial, type Texture, type Vector3, type Node } from 'three/webgpu';
-import { attribute, cameraPosition, cos, dot, float, int, max, mix, normalize, select, sin, smoothstep, texture, uniform, uniformArray, vec3, vec4, vertexStage } from 'three/tsl';
+import {
+  attribute,
+  cameraPosition,
+  cos,
+  dot,
+  float,
+  int,
+  max,
+  mix,
+  normalize,
+  select,
+  sin,
+  smoothstep,
+  texture,
+  uniform,
+  uniformArray,
+  vec3,
+  vec4,
+  vertexStage,
+} from 'three/tsl';
 import { teamPalette } from '../palette.js';
 import { toonRamp } from '../units/unitMaterial.js';
 
@@ -45,13 +64,17 @@ export function createPropMaterial(opts: PropMaterialOptions): MeshBasicNodeMate
     // Flag wave: team-masked vertices sway along z, more towards the free end.
     const t = opts.time;
     const along = max(position.x.sub(0.06), 0);
-    const sway = sin(t.mul(5.2).sub(along.mul(4.5))).mul(along).mul(0.14).mul(color.w);
+    const sway = sin(t.mul(5.2).sub(along.mul(4.5)))
+      .mul(along)
+      .mul(0.14)
+      .mul(color.w);
     local = position.add(vec3(0, 0, sway));
   }
 
   const ca = cos(iPos.w);
   const sa = sin(iPos.w);
-  const rotY = (v: Node<'vec3'>): Node<'vec3'> => vec3(v.x.mul(ca).add(v.z.mul(sa)), v.y, v.z.mul(ca).sub(v.x.mul(sa)));
+  const rotY = (v: Node<'vec3'>): Node<'vec3'> =>
+    vec3(v.x.mul(ca).add(v.z.mul(sa)), v.y, v.z.mul(ca).sub(v.x.mul(sa)));
   const worldPos = rotY(local.mul(iScale.xyz)).add(iPos.xyz);
   const worldNrm = vertexStage(rotY(normal.div(iScale.xyz)));
   const vWorldPos = vertexStage(worldPos);
