@@ -223,6 +223,350 @@
       }
     },
     {
+      "id": "dweller_building_beacon",
+      "kind": "building",
+      "bounds": {
+        "min": [
+          -0.5,
+          0,
+          -0.5
+        ],
+        "max": [
+          0.5,
+          4.7,
+          0.5
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "dweller_building_beacon/lod0.glb",
+          "triangles": 140
+        },
+        {
+          "level": 1,
+          "path": "dweller_building_beacon/lod1.glb",
+          "triangles": 140
+        },
+        {
+          "level": 2,
+          "path": "dweller_building_beacon/lod2.glb",
+          "triangles": 119
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "footprint": {
+        "w": 1,
+        "h": 1
+      },
+      "teamMaterials": [
+        "team_trim"
+      ]
+    },
+    {
+      "id": "dweller_building_claim_post",
+      "kind": "building",
+      "bounds": {
+        "min": [
+          -0.5,
+          0,
+          -0.5
+        ],
+        "max": [
+          0.5,
+          2.72,
+          0.5
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "dweller_building_claim_post/lod0.glb",
+          "triangles": 88
+        },
+        {
+          "level": 1,
+          "path": "dweller_building_claim_post/lod1.glb",
+          "triangles": 88
+        },
+        {
+          "level": 2,
+          "path": "dweller_building_claim_post/lod2.glb",
+          "triangles": 67
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "footprint": {
+        "w": 1,
+        "h": 1
+      },
+      "teamMaterials": [
+        "team_trim"
+      ]
+    },
+    {
+      "id": "dweller_building_housing",
+      "kind": "building",
+      "bounds": {
+        "min": [
+          -1,
+          0,
+          -1
+        ],
+        "max": [
+          1,
+          2.495053,
+          1
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "dweller_building_housing/lod0.glb",
+          "triangles": 1474
+        },
+        {
+          "level": 1,
+          "path": "dweller_building_housing/lod1.glb",
+          "triangles": 483
+        },
+        {
+          "level": 2,
+          "path": "dweller_building_housing/lod2.glb",
+          "triangles": 122
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "footprint": {
+        "w": 2,
+        "h": 2
+      },
+      "teamMaterials": [
+        "team_trim"
+      ]
+    },
+    {
+      "id": "dweller_building_hq",
+      "kind": "building",
+      "bounds": {
+        "min": [
+          -2.5,
+          0,
+          -2.5
+        ],
+        "max": [
+          2.5,
+          5.9,
+          2.5
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "dweller_building_hq/lod0.glb",
+          "triangles": 2202
+        },
+        {
+          "level": 1,
+          "path": "dweller_building_hq/lod1.glb",
+          "triangles": 809
+        },
+        {
+          "level": 2,
+          "path": "dweller_building_hq/lod2.glb",
+          "triangles": 287
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "footprint": {
+        "w": 5,
+        "h": 5
+      },
+      "teamMaterials": [
+        "team_trim"
+      ]
+    },
+    {
+      "id": "dweller_building_lab",
+      "kind": "building",
+      "bounds": {
+        "min": [
+          -1.5,
+          0,
+          -1.5
+        ],
+        "max": [
+          1.5,
+          4.011904,
+          1.53
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "dweller_building_lab/lod0.glb",
+          "triangles": 1710
+        },
+        {
+          "level": 1,
+          "path": "dweller_building_lab/lod1.glb",
+          "triangles": 598
+        },
+        {
+          "level": 2,
+          "path": "dweller_building_lab/lod2.glb",
+          "triangles": 216
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "footprint": {
+        "w": 3,
+        "h": 3
+      },
+      "teamMaterials": [
+        "team_trim"
+      ]
+    },
+    {
+      "id": "dweller_building_training",
+      "kind": "building",
+      "bounds": {
+        "min": [
+          -1.5,
+          0,
+          -1.5
+        ],
+        "max": [
+          1.5,
+          2.13924,
+          1.5
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "dweller_building_training/lod0.glb",
+          "triangles": 1672
+        },
+        {
+          "level": 1,
+          "path": "dweller_building_training/lod1.glb",
+          "triangles": 587
+        },
+        {
+          "level": 2,
+          "path": "dweller_building_training/lod2.glb",
+          "triangles": 198
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "footprint": {
+        "w": 3,
+        "h": 3
+      },
+      "teamMaterials": [
+        "team_trim"
+      ]
+    },
+    {
+      "id": "dweller_building_turret",
+      "kind": "building",
+      "bounds": {
+        "min": [
+          -1,
+          0,
+          -1
+        ],
+        "max": [
+          1,
+          2.06688,
+          1
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "dweller_building_turret/lod0.glb",
+          "triangles": 156
+        },
+        {
+          "level": 1,
+          "path": "dweller_building_turret/lod1.glb",
+          "triangles": 156
+        },
+        {
+          "level": 2,
+          "path": "dweller_building_turret/lod2.glb",
+          "triangles": 135
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "footprint": {
+        "w": 2,
+        "h": 2
+      },
+      "teamMaterials": [
+        "team_trim"
+      ]
+    },
+    {
+      "id": "dweller_building_workshop",
+      "kind": "building",
+      "bounds": {
+        "min": [
+          -1.5,
+          0,
+          -1.5
+        ],
+        "max": [
+          1.5,
+          2.5,
+          1.5
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "dweller_building_workshop/lod0.glb",
+          "triangles": 1635
+        },
+        {
+          "level": 1,
+          "path": "dweller_building_workshop/lod1.glb",
+          "triangles": 556
+        },
+        {
+          "level": 2,
+          "path": "dweller_building_workshop/lod2.glb",
+          "triangles": 166
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "footprint": {
+        "w": 3,
+        "h": 3
+      },
+      "teamMaterials": [
+        "team_trim"
+      ]
+    },
+    {
       "id": "grass001",
       "kind": "prop",
       "bounds": {
