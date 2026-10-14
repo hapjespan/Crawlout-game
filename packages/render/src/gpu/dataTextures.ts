@@ -4,7 +4,14 @@
 // mobile and older integrated drivers reject it or cap the texture size, so the WebGL2 backend probes a throwaway
 // context first and falls back to RGBA16F (half-float) when float32 is refused or a texture would be too large.
 // Half precision is ~1/1000 relative: fine for the placeholder rig (sub-millimetre at 1.8 m) and for heights.
-import { DataTexture, DataUtils, FloatType, HalfFloatType, NearestFilter, RGBAFormat } from 'three/webgpu';
+import {
+  DataTexture,
+  DataUtils,
+  FloatType,
+  HalfFloatType,
+  NearestFilter,
+  RGBAFormat,
+} from 'three/webgpu';
 
 export type DataTexturePrecision = 'float' | 'half';
 
@@ -48,7 +55,11 @@ export function probeWebGL2DataTextureCaps(): DataTextureCaps | null {
  * Picks float32 when the backend supports it and the largest texture fits, else half-float.
  * `force` overrides the choice (debugging, `?half` in the demo).
  */
-export function pickDataTexturePrecision(caps: DataTextureCaps, largestEdge: number, force?: DataTexturePrecision): DataTexturePrecision {
+export function pickDataTexturePrecision(
+  caps: DataTextureCaps,
+  largestEdge: number,
+  force?: DataTexturePrecision,
+): DataTexturePrecision {
   if (force) return force;
   return caps.float32 && largestEdge <= caps.maxTextureSize ? 'float' : 'half';
 }
@@ -61,7 +72,12 @@ export function toHalfFloatArray(src: Float32Array): Uint16Array {
 }
 
 /** RGBA data texture for textureLoad: nearest filtering, no mipmaps. */
-export function createDataTexture(data: Float32Array, width: number, height: number, precision: DataTexturePrecision): DataTexture {
+export function createDataTexture(
+  data: Float32Array,
+  width: number,
+  height: number,
+  precision: DataTexturePrecision,
+): DataTexture {
   const tex =
     precision === 'float'
       ? new DataTexture(data, width, height, RGBAFormat, FloatType)

@@ -1,6 +1,14 @@
 // Merges primitive geometries into one indexed geometry with position, normal and color
 // (linear rgb plus team mask in alpha), the vertex layout of the prop material.
-import { BufferAttribute, BufferGeometry, Color, Euler, Matrix4, Quaternion, Vector3 } from 'three/webgpu';
+import {
+  BufferAttribute,
+  BufferGeometry,
+  Color,
+  Euler,
+  Matrix4,
+  Quaternion,
+  Vector3,
+} from 'three/webgpu';
 
 export interface PartOptions {
   /** sRGB hex. */
@@ -27,7 +35,11 @@ export class MeshBuilder {
     const [px, py, pz] = opts.position ?? [0, 0, 0];
     const [rx, ry, rz] = opts.rotation ?? [0, 0, 0];
     const [sx, sy, sz] = opts.scale ?? [1, 1, 1];
-    this.m.compose(new Vector3(px, py, pz), new Quaternion().setFromEuler(new Euler(rx, ry, rz)), new Vector3(sx, sy, sz));
+    this.m.compose(
+      new Vector3(px, py, pz),
+      new Quaternion().setFromEuler(new Euler(rx, ry, rz)),
+      new Vector3(sx, sy, sz),
+    );
     this.nm.copy(this.m).invert().transpose();
     if (!g.getAttribute('normal')) g.computeVertexNormals();
     const p = g.getAttribute('position');
@@ -54,7 +66,12 @@ export class MeshBuilder {
     geo.setAttribute('normal', new BufferAttribute(new Float32Array(this.nrm), 3));
     geo.setAttribute('color', new BufferAttribute(new Float32Array(this.col), 4));
     const vertexCount = this.pos.length / 3;
-    geo.setIndex(new BufferAttribute(vertexCount > 65535 ? new Uint32Array(this.idx) : new Uint16Array(this.idx), 1));
+    geo.setIndex(
+      new BufferAttribute(
+        vertexCount > 65535 ? new Uint32Array(this.idx) : new Uint16Array(this.idx),
+        1,
+      ),
+    );
     geo.computeBoundingBox();
     geo.computeBoundingSphere();
     return geo;

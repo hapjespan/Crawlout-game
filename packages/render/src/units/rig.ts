@@ -66,7 +66,15 @@ export interface ClipDef {
 const TAU = Math.PI * 2;
 
 // Positive X rotation swings a limb that hangs down backwards (-Z) and tilts the chest forwards (+Z).
-function gait(pose: Pose, p: number, legAmp: number, kneeAmp: number, armAmp: number, lean: number, bob: number): void {
+function gait(
+  pose: Pose,
+  p: number,
+  legAmp: number,
+  kneeAmp: number,
+  armAmp: number,
+  lean: number,
+  bob: number,
+): void {
   const ph = p * TAU;
   const s = Math.sin(ph);
   const c = Math.cos(ph);
@@ -108,8 +116,18 @@ const CLIP_DEFS: Record<AnimName, ClipDef> = {
       setRot(pose, BONE.shinR, 0.04);
     },
   },
-  walk: { name: 'walk', duration: 1.0, loop: true, sample: (p, pose) => gait(pose, p, 0.5, 0.75, 0.45, 0.06, 0.025) },
-  run: { name: 'run', duration: 0.6, loop: true, sample: (p, pose) => gait(pose, p, 0.85, 1.3, 0.9, 0.25, 0.05) },
+  walk: {
+    name: 'walk',
+    duration: 1.0,
+    loop: true,
+    sample: (p, pose) => gait(pose, p, 0.5, 0.75, 0.45, 0.06, 0.025),
+  },
+  run: {
+    name: 'run',
+    duration: 0.6,
+    loop: true,
+    sample: (p, pose) => gait(pose, p, 0.85, 1.3, 0.9, 0.25, 0.05),
+  },
   attack1: {
     name: 'attack1',
     duration: 0.8,

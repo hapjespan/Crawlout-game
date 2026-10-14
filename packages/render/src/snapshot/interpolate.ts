@@ -170,7 +170,13 @@ export class SnapshotInterpolator {
       out.count = 0;
       return false;
     }
-    interpolateInto(out, this.prev?.view ?? null, this.prev?.index ?? null, this.curr.view, this.alpha(now));
+    interpolateInto(
+      out,
+      this.prev?.view ?? null,
+      this.prev?.index ?? null,
+      this.curr.view,
+      this.alpha(now),
+    );
     return true;
   }
 

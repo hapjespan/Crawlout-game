@@ -6,7 +6,8 @@ const CHUNK = 0x8000;
 
 export function bytesToBase64(bytes: Uint8Array): string {
   let binary = '';
-  for (let i = 0; i < bytes.length; i += CHUNK) binary += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
+  for (let i = 0; i < bytes.length; i += CHUNK)
+    binary += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
   return btoa(binary);
 }
 
@@ -76,7 +77,8 @@ export class BundleFeed {
       out.push(bundle);
       this.lastReleased = next;
     }
-    for (const frame of this.store.keys()) if (frame < this.lastReleased - KEEP_FRAMES) this.store.delete(frame);
+    for (const frame of this.store.keys())
+      if (frame < this.lastReleased - KEEP_FRAMES) this.store.delete(frame);
     return out;
   }
 

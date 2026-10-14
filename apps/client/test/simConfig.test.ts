@@ -12,7 +12,9 @@ describe('toSimConfig', () => {
   const config = toSimConfig(data);
 
   it('produces a config the sim accepts', () => {
-    expect(() => validateEnv({ players: testPlayers(2), map: createOpenMap(), config })).not.toThrow();
+    expect(() =>
+      validateEnv({ players: testPlayers(2), map: createOpenMap(), config }),
+    ).not.toThrow();
   });
 
   it('maps every loadout to a unit type with its converted stats', () => {
@@ -28,7 +30,13 @@ describe('toSimConfig', () => {
     const run = (): number => {
       const sim = createSim({ seed: 7, players: testPlayers(2), map: createOpenMap(), config });
       for (const u of data.factions[0]!.startUnits) {
-        for (let i = 0; i < u.count; i++) sim.spawnUnit({ typeId: typeIdOfLoadout(u.loadoutId), owner: 0, x: 4096 + i * 512, y: 4096 });
+        for (let i = 0; i < u.count; i++)
+          sim.spawnUnit({
+            typeId: typeIdOfLoadout(u.loadoutId),
+            owner: 0,
+            x: 4096 + i * 512,
+            y: 4096,
+          });
       }
       for (let f = 0; f < 40; f++) {
         sim.applyBundle({ frame: f, commands: [] });

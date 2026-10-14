@@ -53,7 +53,13 @@ export function bakeAnimations(opts: BakeOptions = {}): BakedAnimations {
   let rows = 0;
   for (const clip of clips) {
     const frameCount = Math.max(2, Math.round(clip.duration * fps));
-    baked.push({ name: clip.name, startRow: rows, frameCount, loop: clip.loop, duration: clip.duration });
+    baked.push({
+      name: clip.name,
+      startRow: rows,
+      frameCount,
+      loop: clip.loop,
+      duration: clip.duration,
+    });
     rows += frameCount;
   }
 
@@ -95,6 +101,8 @@ export function bakeAnimations(opts: BakeOptions = {}): BakedAnimations {
   });
 
   const clipTable = new Float32Array(baked.length * 4);
-  baked.forEach((c, i) => clipTable.set([c.startRow, c.frameCount, c.loop ? 1 : 0, c.duration], i * 4));
+  baked.forEach((c, i) =>
+    clipTable.set([c.startRow, c.frameCount, c.loop ? 1 : 0, c.duration], i * 4),
+  );
   return { boneCount, width, height: rows, data, clips: baked, clipTable };
 }

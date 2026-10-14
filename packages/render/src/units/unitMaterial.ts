@@ -117,7 +117,11 @@ export function createUnitMaterial(
     const bone = int(skinIndex[k]).mul(4);
     const w = skinWeight[k];
     const col = (c: number) =>
-      mix(textureLoad(boneTex, ivec2(bone.add(c), row0)), textureLoad(boneTex, ivec2(bone.add(c), row1)), blend).xyz;
+      mix(
+        textureLoad(boneTex, ivec2(bone.add(c), row0)),
+        textureLoad(boneTex, ivec2(bone.add(c), row1)),
+        blend,
+      ).xyz;
     const c0 = col(0);
     const c1 = col(1);
     const c2 = col(2);
@@ -131,7 +135,8 @@ export function createUnitMaterial(
   // Yaw around +Y: Ry(a) * v = (x cos a + z sin a, y, -x sin a + z cos a); 0 keeps the model facing +Z.
   const ca = cos(iPose.w);
   const sa = sin(iPose.w);
-  const rotY = (v: Node<'vec3'>): Node<'vec3'> => vec3(v.x.mul(ca).add(v.z.mul(sa)), v.y, v.z.mul(ca).sub(v.x.mul(sa)));
+  const rotY = (v: Node<'vec3'>): Node<'vec3'> =>
+    vec3(v.x.mul(ca).add(v.z.mul(sa)), v.y, v.z.mul(ca).sub(v.x.mul(sa)));
   const worldPos = rotY(skinnedPos.mul(select(isHero, float(HERO_SCALE), float(1)))).add(iPose.xyz);
   const worldNrm = vertexStage(rotY(skinnedNrm));
   const vWorldPos = vertexStage(worldPos);

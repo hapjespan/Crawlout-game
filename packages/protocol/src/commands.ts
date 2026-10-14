@@ -44,13 +44,22 @@ export const COMMAND_PAYLOADS = {
   Recruit: z.object({ buildingId: uint }).strict(),
   Claim: z.object({ ids: EntityIds, pointId: uint }).strict(),
   HeroAbility: z
-    .object({ heroId: uint, abilityId: uint, x: int.optional(), y: int.optional(), target: uint.optional() })
+    .object({
+      heroId: uint,
+      abilityId: uint,
+      x: int.optional(),
+      y: int.optional(),
+      target: uint.optional(),
+    })
     .strict(),
   PickPerk: z.object({ heroId: uint, perkId: uint }).strict(),
   Surrender: z.object({}).strict(),
 } as const;
 
-const COMMAND_TYPE_NAMES = Object.keys(COMMAND_PAYLOADS) as [keyof typeof COMMAND_PAYLOADS, ...(keyof typeof COMMAND_PAYLOADS)[]];
+const COMMAND_TYPE_NAMES = Object.keys(COMMAND_PAYLOADS) as [
+  keyof typeof COMMAND_PAYLOADS,
+  ...(keyof typeof COMMAND_PAYLOADS)[],
+];
 export const CommandType = z.enum(COMMAND_TYPE_NAMES);
 export type CommandType = z.infer<typeof CommandType>;
 
@@ -67,7 +76,11 @@ export const CommandEnvelope = z
     const schema = COMMAND_PAYLOADS[cmd.type];
     const r = schema.safeParse(cmd.payload);
     if (!r.success) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: `payload ongeldig voor ${cmd.type}`, path: ['payload'] });
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `payload ongeldig voor ${cmd.type}`,
+        path: ['payload'],
+      });
     }
   });
 export type CommandEnvelope = z.infer<typeof CommandEnvelope>;

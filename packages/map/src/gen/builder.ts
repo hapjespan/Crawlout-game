@@ -1,5 +1,6 @@
 import type { MapDef } from '@crawlout/data';
 import { encodeGrid } from '../grid-format.js';
+import { encodeProps, scatterProps, type PropsSpec } from '../props.js';
 
 // Deterministische kaartgenerator, alleen integers. Puntsymmetrisch (180 graden): cel (x,y) spiegelt naar (w-1-x, h-1-y),
 // zodat beide spelers een identieke positie hebben. Draait bij build-tijd, de sim leest alleen de uitvoerbestanden.
@@ -44,6 +45,8 @@ export interface MapSpec {
   ruinHeight: number;
   cliffHeight: number;
   groundAmplitude: number; // 0..255 ruis wordt hiermee geschaald (>> 8)
+  /** Optioneel: decoratieve props (data/maps/<id>.props.json, MapDef.props). */
+  props?: PropsSpec;
 }
 
 /** Dominantie per map (menselijke eenheden; de data-loader rekent om naar ticks). */
@@ -56,6 +59,8 @@ export interface GeneratedMap {
   def: MapDef;
   passabilityFile: string;
   heightmapFile: string;
+  /** Alleen als de spec props heeft. */
+  propsFile?: string;
   passable: Uint8Array;
   heights: Int16Array;
 }
@@ -135,13 +140,15 @@ export function generateMap(spec: MapSpec): GeneratedMap {
   }
 
   const mirror = (f: Feature): Feature => ({ x: w - 1 - f.x, y: h - 1 - f.y });
-  const both = <T extends Feature>(list: T[]): T[] => list.flatMap((f) => [f, { ...f, ...mirror(f) }]);
+  const both = <T extends Feature>(list: T[]): T[] =>
+    list.flatMap((f) => [f, { ...f, ...mirror(f) }]);
 
   const def: MapDef = {
     id: spec.id,
     size: { w, h },
     heightmap: `maps/${spec.id}.heightmap.json`,
     passability: `maps/${spec.id}.passability.json`,
+    ...(spec.props === undefined ? {} : { props: `maps/${spec.id}.props.json` }),
     scrapNodes: both(spec.scrapNodes),
     claimPoints: [...both(spec.claimPoints), ...spec.centerClaims],
     spawns: both(spec.spawns),
@@ -157,7 +164,8 @@ export function generateMap(spec: MapSpec): GeneratedMap {
     ['creepCamp', def.creepCamps],
   ] as const) {
     for (const f of list) {
-      if (passable[f.y * w + f.x] !== OPEN) throw new Error(`gen ${spec.id}: ${what} (${f.x},${f.y}) ligt op een onbegaanbare cel`);
+      if (passable[f.y * w + f.x] !== OPEN)
+        throw new Error(`gen ${spec.id}: ${what} (${f.x},${f.y}) ligt op een onbegaanbare cel`);
     }
   }
 
@@ -165,6 +173,9 @@ export function generateMap(spec: MapSpec): GeneratedMap {
     def,
     passabilityFile: encodeGrid(w, h, 'u8', passable),
     heightmapFile: encodeGrid(w, h, 'i16', heights),
+    ...(spec.props === undefined
+      ? {}
+      : { propsFile: encodeProps(scatterProps(def, passable, spec.props)) }),
     passable,
     heights,
   };

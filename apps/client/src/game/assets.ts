@@ -4,12 +4,20 @@
 import type { UnitAssetConfig } from '@crawlout/render';
 
 const ASSET_DIR = '../../../../assets/dist/';
-const assetFiles = import.meta.glob('../../../../assets/dist/**/*', { eager: true, query: '?url', import: 'default' }) as Record<string, string>;
+const assetFiles = import.meta.glob('../../../../assets/dist/**/*', {
+  eager: true,
+  query: '?url',
+  import: 'default',
+}) as Record<string, string>;
 
 /** Asset config for createRenderer, or undefined when assets/dist has no manifest. `?unit=<id>` overrides the default unit. */
 export function assetConfig(params: URLSearchParams): UnitAssetConfig | undefined {
   const manifestUrl = assetFiles[`${ASSET_DIR}manifest.json`];
   if (!manifestUrl) return undefined;
   const unit = params.get('unit');
-  return { manifestUrl, resolveUrl: (path) => assetFiles[ASSET_DIR + path] ?? path, ...(unit ? { defaultUnit: unit } : {}) };
+  return {
+    manifestUrl,
+    resolveUrl: (path) => assetFiles[ASSET_DIR + path] ?? path,
+    ...(unit ? { defaultUnit: unit } : {}),
+  };
 }

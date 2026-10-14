@@ -2,8 +2,34 @@
 // in the owner's color, ability zones and the placement preview. The quad is a small grid that follows the terrain in the vertex
 // shader (terrain height texture), so large decals hug slopes.
 import { MAX_PLAYERS } from '@crawlout/protocol';
-import { Color, DynamicDrawUsage, InstancedBufferAttribute, Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector3, type Scene } from 'three/webgpu';
-import { abs, attribute, float, fract, int, length, max, min, mix, select, smoothstep, uniformArray, vec2, vec3, vec4, vertexStage } from 'three/tsl';
+import {
+  Color,
+  DynamicDrawUsage,
+  InstancedBufferAttribute,
+  Mesh,
+  MeshBasicNodeMaterial,
+  PlaneGeometry,
+  Vector3,
+  type Scene,
+} from 'three/webgpu';
+import {
+  abs,
+  attribute,
+  float,
+  fract,
+  int,
+  length,
+  max,
+  min,
+  mix,
+  select,
+  smoothstep,
+  uniformArray,
+  vec2,
+  vec3,
+  vec4,
+  vertexStage,
+} from 'three/tsl';
 import { teamPalette } from '../palette.js';
 import { terrainHeightNode, type HeightTexture } from '../terrain/heightTexture.js';
 
@@ -72,8 +98,13 @@ function createDecalMaterial(heights: HeightTexture | null): MeshBasicNodeMateri
   const edge = select(rect, edgeRect, edgeCircle); // meters inside the edge, negative outside
   const inside = smoothstep(-0.02, 0.02, edge);
   const width = vertexStage(iB.z);
-  const ring = smoothstep(-0.02, 0.03, edge).mul(float(1).sub(smoothstep(width.sub(0.03), width.add(0.02), edge))).mul(vertexStage(iB.y));
-  const shadow = float(1).sub(smoothstep(0.2, 0.65, radial)).mul(vertexStage(iB.x)).mul(0.42);
+  const ring = smoothstep(-0.02, 0.03, edge)
+    .mul(float(1).sub(smoothstep(width.sub(0.03), width.add(0.02), edge)))
+    .mul(vertexStage(iB.y));
+  const shadow = float(1)
+    .sub(smoothstep(0.2, 0.65, radial))
+    .mul(vertexStage(iB.x))
+    .mul(0.42);
   // Soft fill: with fill edge 1 it is 30 % at the center and full at the rim of a circle.
   const edgeWeight = mix(float(1), radial.mul(radial).mul(0.7).add(0.3), vertexStage(iC.w));
   const fill = inside.mul(vertexStage(iB.w)).mul(min(edgeWeight, 1));

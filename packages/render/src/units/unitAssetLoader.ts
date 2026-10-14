@@ -5,8 +5,12 @@
 import { manifestSchema, type AssetEntry, type AssetManifest } from '@crawlout/asset-cli/manifest';
 import type { Object3D } from 'three/webgpu';
 import type { BakedAnimations } from './bake.js';
-import { bakedAnimationsFromManifest } from './bakedManifest.js';
-import { unitGeometryFromGltf, type TeamMaskSource, type UnitGeometryResult } from './gltfUnitGeometry.js';
+import { applyCharacterFit, bakedAnimationsFromManifest, characterFit } from './bakedManifest.js';
+import {
+  unitGeometryFromGltf,
+  type TeamMaskSource,
+  type UnitGeometryResult,
+} from './gltfUnitGeometry.js';
 
 export class UnitAssetError extends Error {
   override name = 'UnitAssetError';
@@ -44,8 +48,12 @@ async function fetchBytes(url: string): Promise<ArrayBuffer> {
 }
 
 /** GLTFLoader with the meshopt decoder, loaded on first use so the renderer bundle stays lean without assets. */
-export function createGltfIO(fetcher: (url: string) => Promise<ArrayBuffer> = fetchBytes): UnitAssetIO {
-  let loader: Promise<{ parseAsync(data: ArrayBuffer, path: string): Promise<{ scene: Object3D }> }> | null = null;
+export function createGltfIO(
+  fetcher: (url: string) => Promise<ArrayBuffer> = fetchBytes,
+): UnitAssetIO {
+  let loader: Promise<{
+    parseAsync(data: ArrayBuffer, path: string): Promise<{ scene: Object3D }>;
+  }> | null = null;
   const getLoader = () =>
     (loader ??= (async () => {
       const [{ GLTFLoader }, { MeshoptDecoder }] = await Promise.all([
@@ -58,7 +66,9 @@ export function createGltfIO(fetcher: (url: string) => Promise<ArrayBuffer> = fe
   return {
     fetchBytes: fetcher,
     async parseGltf(bytes, url) {
-      const gltf = await (await getLoader()).parseAsync(bytes, url.slice(0, url.lastIndexOf('/') + 1));
+      const gltf = await (
+        await getLoader()
+      ).parseAsync(bytes, url.slice(0, url.lastIndexOf('/') + 1));
       return gltf.scene;
     },
   };
@@ -70,7 +80,10 @@ export class UnitAssetLoader {
   constructor(
     private readonly io: UnitAssetIO = createGltfIO(),
     /** Maps a manifest path to a URL; default resolves it next to manifest.json. */
-    private readonly resolveUrl: (manifestUrl: string, path: string) => string = resolveManifestPath,
+    private readonly resolveUrl: (
+      manifestUrl: string,
+      path: string,
+    ) => string = resolveManifestPath,
   ) {}
 
   /** The parsed manifest, fetched once per URL. */
@@ -80,7 +93,10 @@ export class UnitAssetLoader {
       m = (async () => {
         const bytes = await this.io.fetchBytes(manifestUrl);
         const parsed = manifestSchema.safeParse(JSON.parse(new TextDecoder().decode(bytes)));
-        if (!parsed.success) throw new UnitAssetError(`invalid manifest ${manifestUrl}: ${parsed.error.issues.map((i) => i.message).join('; ')}`);
+        if (!parsed.success)
+          throw new UnitAssetError(
+            `invalid manifest ${manifestUrl}: ${parsed.error.issues.map((i) => i.message).join('; ')}`,
+          );
         return parsed.data;
       })();
       m.catch(() => this.manifests.delete(manifestUrl));
@@ -92,15 +108,22 @@ export class UnitAssetLoader {
   /** True when the manifest lists `assetId` as a character with baked clips. */
   async has(manifestUrl: string, assetId: string): Promise<boolean> {
     const m = await this.manifest(manifestUrl);
-    return m.assets.some((a) => a.id === assetId && a.kind === 'character' && a.baked !== undefined);
+    return m.assets.some(
+      (a) => a.id === assetId && a.kind === 'character' && a.baked !== undefined,
+    );
   }
 
   /** Loads one character asset completely. Rejects (UnitAssetError and friends) when anything does not fit. */
-  async load(manifestUrl: string, assetId: string, opts: UnitAssetLoadOptions = {}): Promise<LoadedUnitAsset> {
+  async load(
+    manifestUrl: string,
+    assetId: string,
+    opts: UnitAssetLoadOptions = {},
+  ): Promise<LoadedUnitAsset> {
     const manifest = await this.manifest(manifestUrl);
     const entry = manifest.assets.find((a) => a.id === assetId);
     if (!entry) throw new UnitAssetError(`asset "${assetId}" is not in ${manifestUrl}`);
-    if (entry.kind !== 'character') throw new UnitAssetError(`asset "${assetId}" is a ${entry.kind}, not a character`);
+    if (entry.kind !== 'character')
+      throw new UnitAssetError(`asset "${assetId}" is a ${entry.kind}, not a character`);
     const baked = entry.baked;
     if (!baked) throw new UnitAssetError(`asset "${assetId}" has no baked animations`);
     const url = (path: string): string => this.resolveUrl(manifestUrl, path);
@@ -110,10 +133,14 @@ export class UnitAssetLoader {
       ...entry.lods.map((lod) => this.io.fetchBytes(url(lod.path))),
     ]);
     const anims = bakedAnimationsFromManifest(baked, entry.boneCount, animBytes!);
+    applyCharacterFit(anims, characterFit(entry.bounds)); // 1.8 m, feet on y = 0 (bakedManifest.ts)
     const lods = await Promise.all(
       entry.lods.map(async (lod, i) => {
         const scene = await this.io.parseGltf(glbs[i]!, url(lod.path));
-        return unitGeometryFromGltf(scene, { boneCount: entry.boneCount, ...(opts.teamMask ? { teamMask: opts.teamMask } : {}) });
+        return unitGeometryFromGltf(scene, {
+          boneCount: entry.boneCount,
+          ...(opts.teamMask ? { teamMask: opts.teamMask } : {}),
+        });
       }),
     );
     return { id: assetId, entry, anims, lods: lods as LoadedUnitAsset['lods'] };

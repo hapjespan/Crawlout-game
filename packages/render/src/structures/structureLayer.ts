@@ -4,15 +4,40 @@
 // interpolated frame, by typeId (entities/typeIds.ts). A site (anim build) grows with its progress in animT inside a
 // scaffold; a scrap heap shrinks with its remaining stock in hpPct (structureVisuals.ts).
 import { ANIM, ENTITY_FLAG } from '@crawlout/protocol';
-import { DynamicDrawUsage, Frustum, InstancedBufferAttribute, Matrix4, Mesh, Sphere, type BufferGeometry, type Camera, type MeshBasicNodeMaterial, type Scene } from 'three/webgpu';
-import { DECAL_COLOR, DECAL_SHAPE, type DecalLayer, type DecalStyle } from '../decals/decalLayer.js';
+import {
+  Frustum,
+  Matrix4,
+  Sphere,
+  type Camera,
+  type MeshBasicNodeMaterial,
+  type Scene,
+} from 'three/webgpu';
+import { InstanceBatch } from './instanceBatch.js';
+import {
+  DECAL_COLOR,
+  DECAL_SHAPE,
+  type DecalLayer,
+  type DecalStyle,
+} from '../decals/decalLayer.js';
 import { buildingWallHeight, type FootprintTable } from '../entities/footprint.js';
 import { buildingIdOf, classifyTypeId, ENTITY_KIND } from '../entities/typeIds.js';
 import { NEUTRAL_TEAM, teamIndex } from '../palette.js';
 import type { PickShape } from '../picking/selection.js';
 import type { InterpolatedFrame } from '../snapshot/interpolate.js';
-import { createBuildingGeometry, createClaimGeometry, createScaffoldGeometry, createScrapHeapGeometry, POLE_HEIGHT } from './structureGeometry.js';
-import { constructionHeight, constructionTint, SCAFFOLD_HEIGHT, SCAFFOLD_MARGIN, scrapHeapScale } from './structureVisuals.js';
+import {
+  createBuildingGeometry,
+  createClaimGeometry,
+  createScaffoldGeometry,
+  createScrapHeapGeometry,
+  POLE_HEIGHT,
+} from './structureGeometry.js';
+import {
+  constructionHeight,
+  constructionTint,
+  SCAFFOLD_HEIGHT,
+  SCAFFOLD_MARGIN,
+  scrapHeapScale,
+} from './structureVisuals.js';
 
 /** Wall color multipliers per building id, so the eight Dweller buildings read apart before real meshes exist. */
 const BUILDING_TINTS: readonly (readonly [number, number, number])[] = [
@@ -26,8 +51,24 @@ const BUILDING_TINTS: readonly (readonly [number, number, number])[] = [
   [0.9, 0.86, 0.96],
 ];
 
-const SCRAP_DECAL: DecalStyle = { shape: DECAL_SHAPE.circle, shadow: 1, ring: 0, ringWidth: 0, fill: 0, grid: 0, color: 0 };
-const BUILDING_SELECTED: DecalStyle = { shape: DECAL_SHAPE.rect, shadow: 0, ring: 1, ringWidth: 0.18, fill: 0.06, grid: 0, color: DECAL_COLOR.selection };
+const SCRAP_DECAL: DecalStyle = {
+  shape: DECAL_SHAPE.circle,
+  shadow: 1,
+  ring: 0,
+  ringWidth: 0,
+  fill: 0,
+  grid: 0,
+  color: 0,
+};
+const BUILDING_SELECTED: DecalStyle = {
+  shape: DECAL_SHAPE.rect,
+  shadow: 0,
+  ring: 1,
+  ringWidth: 0.18,
+  fill: 0.06,
+  grid: 0,
+  color: DECAL_COLOR.selection,
+};
 const CLAIM_RADIUS = 3.5; // meters, visual only
 /** Claim ring per palette slot (owner color, neutral grey when unclaimed). */
 const CLAIM_DECALS: readonly DecalStyle[] = Array.from({ length: NEUTRAL_TEAM + 1 }, (_, team) => ({
@@ -46,77 +87,6 @@ function hash01(id: number): number {
   h = Math.imul(h, 0xc2b2ae35);
   h ^= h >>> 16;
   return (h >>> 0) / 4294967296;
-}
-
-class Batch {
-  readonly mesh: Mesh;
-  private readonly pos: InstancedBufferAttribute;
-  private readonly scale: InstancedBufferAttribute;
-  private readonly tint: InstancedBufferAttribute;
-  count = 0;
-
-  constructor(scene: Scene, geometry: BufferGeometry, material: MeshBasicNodeMaterial, capacity: number, name: string) {
-    const attr = (): InstancedBufferAttribute => {
-      const a = new InstancedBufferAttribute(new Float32Array(capacity * 4), 4);
-      a.setUsage(DynamicDrawUsage);
-      return a;
-    };
-    this.pos = attr();
-    this.scale = attr();
-    this.tint = attr();
-    geometry.setAttribute('iPos', this.pos);
-    geometry.setAttribute('iScale', this.scale);
-    geometry.setAttribute('iTint', this.tint);
-    this.mesh = new Mesh(geometry, material);
-    this.mesh.name = name;
-    this.mesh.frustumCulled = false;
-    this.mesh.count = 0;
-    this.mesh.visible = false;
-    scene.add(this.mesh);
-  }
-
-  get capacity(): number {
-    return this.pos.count;
-  }
-
-  push(x: number, y: number, z: number, yaw: number, sx: number, sy: number, sz: number, team: number, tint: readonly [number, number, number]): void {
-    const k = this.count;
-    if (k >= this.capacity) return;
-    this.count = k + 1;
-    const o = k * 4;
-    const p = this.pos.array as Float32Array;
-    const s = this.scale.array as Float32Array;
-    const t = this.tint.array as Float32Array;
-    p[o] = x;
-    p[o + 1] = y;
-    p[o + 2] = z;
-    p[o + 3] = yaw;
-    s[o] = sx;
-    s[o + 1] = sy;
-    s[o + 2] = sz;
-    s[o + 3] = team;
-    t[o] = tint[0];
-    t[o + 1] = tint[1];
-    t[o + 2] = tint[2];
-    t[o + 3] = 1;
-  }
-
-  commit(): void {
-    const n = this.count;
-    this.mesh.count = n;
-    this.mesh.visible = n > 0;
-    if (n === 0) return;
-    for (const a of [this.pos, this.scale, this.tint]) {
-      a.clearUpdateRanges();
-      a.addUpdateRange(0, n * 4);
-      a.needsUpdate = true;
-    }
-  }
-
-  dispose(): void {
-    this.mesh.removeFromParent();
-    this.mesh.geometry.dispose();
-  }
 }
 
 export interface StructureMaterials {
@@ -138,10 +108,10 @@ export interface StructureLayerOptions {
 const WHITE: readonly [number, number, number] = [1, 1, 1];
 
 export class StructureLayer {
-  private readonly buildings: [Batch, Batch];
-  private readonly scaffolds: Batch;
-  private readonly scrap: Batch;
-  private readonly claims: Batch;
+  private readonly buildings: [InstanceBatch, InstanceBatch];
+  private readonly scaffolds: InstanceBatch;
+  private readonly scrap: InstanceBatch;
+  private readonly claims: InstanceBatch;
   private readonly footprints: FootprintTable;
   private readonly heightAt: (x: number, z: number) => number;
   private readonly lodDist2: number;
@@ -160,19 +130,32 @@ export class StructureLayer {
     const d = opts.lodDistance ?? 60;
     this.lodDist2 = d * d;
     this.buildings = [
-      new Batch(scene, createBuildingGeometry(0), m.building, cap, 'buildings-lod0'),
-      new Batch(scene, createBuildingGeometry(1), m.building, cap, 'buildings-lod1'),
+      new InstanceBatch(scene, createBuildingGeometry(0), m.building, cap, 'buildings-lod0'),
+      new InstanceBatch(scene, createBuildingGeometry(1), m.building, cap, 'buildings-lod1'),
     ];
-    this.scaffolds = new Batch(scene, createScaffoldGeometry(), m.building, cap, 'building-scaffolds');
-    for (const b of [...this.buildings, this.scaffolds]) b.mesh.castShadow = opts.castShadows ?? false;
-    this.scrap = new Batch(scene, createScrapHeapGeometry(), m.scrap, cap, 'scrap-nodes');
-    this.claims = new Batch(scene, createClaimGeometry(), m.claim, cap, 'claim-points');
+    this.scaffolds = new InstanceBatch(
+      scene,
+      createScaffoldGeometry(),
+      m.building,
+      cap,
+      'building-scaffolds',
+    );
+    for (const b of [...this.buildings, this.scaffolds])
+      b.mesh.castShadow = opts.castShadows ?? false;
+    this.scrap = new InstanceBatch(scene, createScrapHeapGeometry(), m.scrap, cap, 'scrap-nodes');
+    this.claims = new InstanceBatch(scene, createClaimGeometry(), m.claim, cap, 'claim-points');
   }
 
   /** Lowest terrain point under a footprint, so the building's foundation never floats. */
   private groundUnder(x: number, z: number, hx: number, hz: number): number {
     const h = this.heightAt;
-    return Math.min(h(x, z), h(x - hx, z - hz), h(x + hx, z - hz), h(x - hx, z + hz), h(x + hx, z + hz));
+    return Math.min(
+      h(x, z),
+      h(x - hx, z - hz),
+      h(x + hx, z - hz),
+      h(x - hx, z + hz),
+      h(x + hx, z + hz),
+    );
   }
 
   /** Pick sphere for a structure typeId, or null for units. */
@@ -231,13 +214,24 @@ export class StructureLayer {
         const tint = BUILDING_TINTS[buildingIdOf(typeId) % BUILDING_TINTS.length] ?? WHITE;
         if (frame.anim[i] === ANIM.build) {
           const progress = frame.animT[i]!;
-          batch.push(x, y, z, 0, f.w, wall * constructionHeight(progress), f.h, team, constructionTint(progress, tint, this.siteTint));
+          batch.push(
+            x,
+            y,
+            z,
+            0,
+            f.w,
+            wall * constructionHeight(progress),
+            f.h,
+            team,
+            constructionTint(progress, tint, this.siteTint),
+          );
           const m = 2 * SCAFFOLD_MARGIN;
           this.scaffolds.push(x, y, z, 0, f.w + m, wall * SCAFFOLD_HEIGHT, f.h + m, team, WHITE);
         } else {
           batch.push(x, y, z, 0, f.w, wall, f.h, team, tint);
         }
-        if ((flags & ENTITY_FLAG.selected) !== 0) decals.push(x, z, hx + 0.35, hz + 0.35, BUILDING_SELECTED);
+        if ((flags & ENTITY_FLAG.selected) !== 0)
+          decals.push(x, z, hx + 0.35, hz + 0.35, BUILDING_SELECTED);
         continue;
       }
 

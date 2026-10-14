@@ -63,7 +63,8 @@ function cornerHeight(heights: Heightmap, cx: number, cy: number): number {
  * celgrenzen heen gemiddeld zijn zodat het oppervlak aansluit. Kliffen en ruines zijn verhoogd in de heightmap.
  */
 export function greyboxMesh(map: MapGrid, heights: Heightmap): GreyboxMesh {
-  if (heights.w !== map.w || heights.h !== map.h) throw new Error('greyboxMesh: heightmap past niet bij de map');
+  if (heights.w !== map.w || heights.h !== map.h)
+    throw new Error('greyboxMesh: heightmap past niet bij de map');
   const { w, h } = map;
   const cells = w * h;
   const positions = new Int32Array(cells * 4 * 3);
@@ -71,7 +72,8 @@ export function greyboxMesh(map: MapGrid, heights: Heightmap): GreyboxMesh {
   const indices = new Uint32Array(cells * 6);
   // Hoekhoogtes eenmalig: (w+1) x (h+1).
   const corner = new Int32Array((w + 1) * (h + 1));
-  for (let cy = 0; cy <= h; cy++) for (let cx = 0; cx <= w; cx++) corner[cy * (w + 1) + cx] = cornerHeight(heights, cx, cy);
+  for (let cy = 0; cy <= h; cy++)
+    for (let cx = 0; cx <= w; cx++) corner[cy * (w + 1) + cx] = cornerHeight(heights, cx, cy);
 
   // Markering per cel: 0 = geen, 1 = scrap-node, 2 = claimpunt (claim wint bij overlap).
   const marks = new Uint8Array(cells);
@@ -84,9 +86,15 @@ export function greyboxMesh(map: MapGrid, heights: Heightmap): GreyboxMesh {
     for (let x = 0; x < w; x++) {
       const tile = terrainTile(map, heights, x, y);
       const mark = marks[y * w + x] as number;
-      const rgb = mark === 2 ? MARK_CLAIM_RGB : mark === 1 ? MARK_SCRAP_RGB : (TILE_RGB[tile] as readonly [number, number, number]);
+      const rgb =
+        mark === 2
+          ? MARK_CLAIM_RGB
+          : mark === 1
+            ? MARK_SCRAP_RGB
+            : (TILE_RGB[tile] as readonly [number, number, number]);
       // Lichte hoogte-arcering: 0..31 extra helderheid per ca. 2 m (alleen visuele hulp).
-      const shade = mark !== 0 ? 0 : Math.min(31, Math.max(0, (heights.data[y * w + x] as number) >> 4));
+      const shade =
+        mark !== 0 ? 0 : Math.min(31, Math.max(0, (heights.data[y * w + x] as number) >> 4));
       const base = v;
       const quad: ReadonlyArray<readonly [number, number]> = [
         [x, y],

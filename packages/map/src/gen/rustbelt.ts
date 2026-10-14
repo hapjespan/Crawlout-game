@@ -38,6 +38,24 @@ export const RUSTBELT_SPEC: MapSpec = {
   centerClaims: [{ x: 64, y: 64, kind: 'powerArmor' }],
   // Op de route basis -> midden, om de kliffenwand (x 44..47) heen, tussen het contested punt en het midden.
   creepCamps: [{ x: 52, y: 56, tier: 1 }],
+  // Decoratie, puur visueel (de sim leest ze niet). Aantallen per helft; de B-helft wordt gespiegeld (totaal 200).
+  props: {
+    seed: 4242,
+    comment:
+      'Decoratieve props voor Rustbelt, gegenereerd door packages/map/src/props.ts (pnpm --filter @crawlout/map gen); niet met de hand bewerken. x en y in sim-eenheden (1 m = 256), yaw 0..65535, scalePct 80..130. De sim leest dit bestand niet.',
+    quotas: [
+      { asset: 'treehigh001', perHalf: 8 },
+      { asset: 'treemed001', perHalf: 12 },
+      { asset: 'treelow001', perHalf: 12 },
+      { asset: 'rock001', perHalf: 8 },
+      { asset: 'rock002', perHalf: 8 },
+      { asset: 'rock003', perHalf: 8 },
+      { asset: 'bush001', perHalf: 5 },
+      { asset: 'bush002', perHalf: 5 },
+      { asset: 'grass001', perHalf: 24 },
+      { asset: 'reed001', perHalf: 10 },
+    ],
+  },
 };
 
 export function generateRustbelt(): GeneratedMap {

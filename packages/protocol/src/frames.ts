@@ -34,7 +34,9 @@ export const DesyncEvent = z.object({ frame: uint, hashes: z.record(z.string(), 
 export type DesyncEvent = z.infer<typeof DesyncEvent>;
 
 export const ResyncRequest = z.object({ playerId: uint, lastFrame: uint }).strict();
-export const ResyncResponse = z.object({ frame: uint, stateBase64: z.string(), bundles: z.array(FrameBundle) }).strict();
+export const ResyncResponse = z
+  .object({ frame: uint, stateBase64: z.string(), bundles: z.array(FrameBundle) })
+  .strict();
 export type ResyncRequest = z.infer<typeof ResyncRequest>;
 export type ResyncResponse = z.infer<typeof ResyncResponse>;
 

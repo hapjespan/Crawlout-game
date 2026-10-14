@@ -1,10 +1,30 @@
 import { describe, expect, it } from 'vitest';
-import { ANGLE_FULL, ANIM, ENTITY_FLAG, EVENT_TYPE, MAX_PLAYERS, TICK_MS, UNITS_PER_METER, readSnapshotHeader, snapshotLayout } from '@crawlout/protocol';
+import {
+  ANGLE_FULL,
+  ANIM,
+  ENTITY_FLAG,
+  EVENT_TYPE,
+  MAX_PLAYERS,
+  TICK_MS,
+  UNITS_PER_METER,
+  readSnapshotHeader,
+  snapshotLayout,
+} from '@crawlout/protocol';
 import { parseSnapshot } from '../snapshot/parse.js';
 import { CLIPS } from '../units/rig.js';
-import { buildingTypeId, classifyTypeId, ENTITY_KIND, TYPE_ID_SCRAP_NODE } from '../entities/typeIds.js';
+import {
+  buildingTypeId,
+  classifyTypeId,
+  ENTITY_KIND,
+  TYPE_ID_SCRAP_NODE,
+} from '../entities/typeIds.js';
 import { heroTypeId } from '@crawlout/data';
-import { FAKE_BUILD_TICKS, FakeSnapshotSource, FAKE_UNIT_TYPE_ID, FAKE_ZONE_TICKS } from './fakeSnapshots.js';
+import {
+  FAKE_BUILD_TICKS,
+  FakeSnapshotSource,
+  FAKE_UNIT_TYPE_ID,
+  FAKE_ZONE_TICKS,
+} from './fakeSnapshots.js';
 
 describe('FakeSnapshotSource', () => {
   it('produces contract-sized snapshots of 200 units with increasing ticks', () => {
@@ -43,7 +63,10 @@ describe('FakeSnapshotSource', () => {
     let moving = 0;
     for (let i = 0; i < a.entityCount; i++) {
       expect([ANIM.walk, ANIM.run]).toContain(a.entities.anim[i]);
-      const d = Math.hypot(b.entities.x[i]! - a.entities.x[i]!, b.entities.y[i]! - a.entities.y[i]!);
+      const d = Math.hypot(
+        b.entities.x[i]! - a.entities.x[i]!,
+        b.entities.y[i]! - a.entities.y[i]!,
+      );
       if (d > 0) moving++;
       // At most run speed (4.2 m/s) per tick, with rounding slack.
       expect(d).toBeLessThanOrEqual((4.3 * UNITS_PER_METER * TICK_MS) / 1000);
@@ -61,7 +84,8 @@ describe('FakeSnapshotSource', () => {
       const s = parseSnapshot(src.next());
       const i = s.entities.id.indexOf(id);
       const v = s.entities.animT[i]!;
-      if (s.entities.anim[i] === first.entities.anim[0] && v < seen[seen.length - 1]!) wrapped = true;
+      if (s.entities.anim[i] === first.entities.anim[0] && v < seen[seen.length - 1]!)
+        wrapped = true;
       seen.push(v);
     }
     expect(new Set(seen).size).toBeGreaterThan(10);
@@ -80,7 +104,9 @@ describe('FakeSnapshotSource', () => {
     const src = new FakeSnapshotSource({ count: 20 });
     src.setSelected([3, 4]);
     let s = parseSnapshot(src.next());
-    const sel = [...s.entities.id].filter((_, i) => (s.entities.flags[i]! & ENTITY_FLAG.selected) !== 0);
+    const sel = [...s.entities.id].filter(
+      (_, i) => (s.entities.flags[i]! & ENTITY_FLAG.selected) !== 0,
+    );
     expect(sel.sort((x, y) => x - y)).toEqual([3, 4]);
 
     const goal = { x: 64 * UNITS_PER_METER, y: 64 * UNITS_PER_METER };
@@ -109,7 +135,13 @@ describe('FakeSnapshotSource', () => {
 
   it('adds non-overlapping buildings, scrap nodes and claim points after the units', () => {
     const footprint = (typeId: number) => ({ w: 2 + (typeId % 4), h: 2 + (typeId % 3) });
-    const src = new FakeSnapshotSource({ count: 50, buildings: 40, scrapNodes: 6, claims: 3, footprint });
+    const src = new FakeSnapshotSource({
+      count: 50,
+      buildings: 40,
+      scrapNodes: 6,
+      claims: 3,
+      footprint,
+    });
     const s = parseSnapshot(src.next());
     expect(s.entityCount).toBe(50 + src.structures.length);
     const kinds = [...s.entities.typeId].map(classifyTypeId);
@@ -158,7 +190,15 @@ describe('FakeSnapshotSource', () => {
     }
     expect(targeted).toBeGreaterThan(0);
     expect(buildingDeaths).toBeGreaterThan(0);
-    for (const type of [EVENT_TYPE.shotFired, EVENT_TYPE.hit, EVENT_TYPE.death, EVENT_TYPE.spawn, EVENT_TYPE.buildingPlaced, EVENT_TYPE.buildingDone, EVENT_TYPE.claimTaken]) {
+    for (const type of [
+      EVENT_TYPE.shotFired,
+      EVENT_TYPE.hit,
+      EVENT_TYPE.death,
+      EVENT_TYPE.spawn,
+      EVENT_TYPE.buildingPlaced,
+      EVENT_TYPE.buildingDone,
+      EVENT_TYPE.claimTaken,
+    ]) {
       expect(seen.has(type)).toBe(true);
     }
   });
@@ -167,14 +207,17 @@ describe('FakeSnapshotSource', () => {
     const src = new FakeSnapshotSource({ count: 1, buildings: 0 });
     src.next();
     const typeId = buildingTypeId(0);
-    expect(src.placeBuilding(typeId, 0, 20 * UNITS_PER_METER, 20 * UNITS_PER_METER, { w: 3, h: 3 })).toBe(true);
+    expect(
+      src.placeBuilding(typeId, 0, 20 * UNITS_PER_METER, 20 * UNITS_PER_METER, { w: 3, h: 3 }),
+    ).toBe(true);
     const id = src.structures[0]!.id;
     let last = -1;
     let done = false;
     for (let t = 0; t < FAKE_BUILD_TICKS + 5; t++) {
       const s = parseSnapshot(src.next());
       const i = s.entities.id.indexOf(id);
-      for (let k = 0; k < s.eventCount; k++) if (s.events.type[k] === EVENT_TYPE.buildingDone && s.events.a[k] === id) done = true;
+      for (let k = 0; k < s.eventCount; k++)
+        if (s.events.type[k] === EVENT_TYPE.buildingDone && s.events.a[k] === id) done = true;
       if (done) {
         expect(s.entities.anim[i]).toBe(ANIM.idle);
         break;
@@ -190,13 +233,16 @@ describe('FakeSnapshotSource', () => {
   it('reports scrap stock in hpPct and refills a node after resourceDepleted', () => {
     const src = new FakeSnapshotSource({ count: 1, scrapNodes: 3 });
     const first = parseSnapshot(src.next());
-    const nodes = [...first.entities.typeId].map((t, i) => (t === TYPE_ID_SCRAP_NODE ? i : -1)).filter((i) => i >= 0);
+    const nodes = [...first.entities.typeId]
+      .map((t, i) => (t === TYPE_ID_SCRAP_NODE ? i : -1))
+      .filter((i) => i >= 0);
     expect(nodes.length).toBe(3);
     for (const i of nodes) expect(first.entities.hpPct[i]!).toBeLessThanOrEqual(100);
     let depleted = 0;
     for (let t = 0; t < 20 * 60; t++) {
       const s = parseSnapshot(src.next());
-      for (let k = 0; k < s.eventCount; k++) if (s.events.type[k] === EVENT_TYPE.resourceDepleted) depleted++;
+      for (let k = 0; k < s.eventCount; k++)
+        if (s.events.type[k] === EVENT_TYPE.resourceDepleted) depleted++;
     }
     expect(depleted).toBeGreaterThan(0);
   });
@@ -207,13 +253,22 @@ describe('FakeSnapshotSource', () => {
     let s = parseSnapshot(src.next());
     const heroIds = [...s.entities.id].filter((_, i) => s.entities.typeId[i] === heroTypeId(0));
     expect(heroIds).toHaveLength(4);
-    expect(new Set(heroIds.map((id) => s.entities.owner[s.entities.id.indexOf(id)]))).toEqual(new Set([0, 1, 2, 3]));
+    expect(new Set(heroIds.map((id) => s.entities.owner[s.entities.id.indexOf(id)]))).toEqual(
+      new Set([0, 1, 2, 3]),
+    );
     for (let t = 0; t < 3 * FAKE_ZONE_TICKS; t++) {
       s = parseSnapshot(src.next());
       for (let k = 0; k < s.eventCount; k++) {
         if (s.events.type[k] !== EVENT_TYPE.abilityZone) continue;
         const i = s.entities.id.indexOf(s.events.a[k]!);
-        zones.push({ a: s.events.a[k]!, b: s.events.b[k]!, x: s.events.x[k]!, y: s.events.y[k]!, hx: s.entities.x[i]!, hy: s.entities.y[i]! });
+        zones.push({
+          a: s.events.a[k]!,
+          b: s.events.b[k]!,
+          x: s.events.x[k]!,
+          y: s.events.y[k]!,
+          hx: s.entities.x[i]!,
+          hy: s.entities.y[i]!,
+        });
       }
     }
     expect(zones.length).toBeGreaterThanOrEqual(2);
@@ -229,7 +284,13 @@ describe('FakeSnapshotSource', () => {
 
   it('lets finished turrets shoot at enemy units, with the hit naming the turret as shooter', () => {
     const turret = buildingTypeId(5);
-    const src = new FakeSnapshotSource({ count: 200, buildings: 24, buildingTypes: 8, combat: true, turrets: [turret] });
+    const src = new FakeSnapshotSource({
+      count: 200,
+      buildings: 24,
+      buildingTypes: 8,
+      combat: true,
+      turrets: [turret],
+    });
     const turretIds = new Set(src.structures.filter((x) => x.typeId === turret).map((x) => x.id));
     expect(turretIds.size).toBeGreaterThan(0);
     let shots = 0;
@@ -239,16 +300,26 @@ describe('FakeSnapshotSource', () => {
       for (let k = 0; k < s.eventCount; k++) {
         const a = s.events.a[k]!;
         const b = s.events.b[k]!;
-        if (s.events.type[k] === EVENT_TYPE.shotFired && s.entities.typeId[s.entities.id.indexOf(a)] === turret) {
+        if (
+          s.events.type[k] === EVENT_TYPE.shotFired &&
+          s.entities.typeId[s.entities.id.indexOf(a)] === turret
+        ) {
           shots++;
           const shooter = s.entities.id.indexOf(a);
           expect(s.entities.anim[shooter]).toBe(ANIM.idle); // a finished building, not a site
-          expect([s.events.x[k], s.events.y[k]]).toEqual([s.entities.x[shooter], s.entities.y[shooter]]);
+          expect([s.events.x[k], s.events.y[k]]).toEqual([
+            s.entities.x[shooter],
+            s.entities.y[shooter],
+          ]);
           const target = s.entities.id.indexOf(b);
           expect(classifyTypeId(s.entities.typeId[target]!)).toBe(ENTITY_KIND.unit);
           expect(s.entities.owner[target]).not.toBe(s.entities.owner[shooter]);
         }
-        if (s.events.type[k] === EVENT_TYPE.hit && classifyTypeId(s.entities.typeId[s.entities.id.indexOf(b)] ?? 0) === ENTITY_KIND.building) hits++;
+        if (
+          s.events.type[k] === EVENT_TYPE.hit &&
+          classifyTypeId(s.entities.typeId[s.entities.id.indexOf(b)] ?? 0) === ENTITY_KIND.building
+        )
+          hits++;
       }
     }
     expect(shots).toBeGreaterThan(0);

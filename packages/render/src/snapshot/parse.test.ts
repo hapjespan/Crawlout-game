@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { ENTITY_FLAG, EVENT_TYPE, SNAPSHOT_HEADER_BYTES, snapshotLayout, writeSnapshotHeader } from '@crawlout/protocol';
+import {
+  ENTITY_FLAG,
+  EVENT_TYPE,
+  SNAPSHOT_HEADER_BYTES,
+  snapshotLayout,
+  writeSnapshotHeader,
+} from '@crawlout/protocol';
 import { encodeSnapshot } from '../dev/snapshotWriter.js';
 import { parseSnapshot, SnapshotParseError } from './parse.js';
 
@@ -9,8 +15,30 @@ describe('parseSnapshot', () => {
       42,
       0xdeadbeef,
       [
-        { id: 7, x: -2560, y: 1 << 20, typeId: 513, yaw: 65535, animT: 40000, owner: 3, anim: 2, hpPct: 55, flags: ENTITY_FLAG.selected | ENTITY_FLAG.carrying },
-        { id: 0xfffffff0, x: 2147483647, y: -2147483648, typeId: 1, yaw: 0, animT: 0, owner: 7, anim: 255, hpPct: 0, flags: ENTITY_FLAG.dead },
+        {
+          id: 7,
+          x: -2560,
+          y: 1 << 20,
+          typeId: 513,
+          yaw: 65535,
+          animT: 40000,
+          owner: 3,
+          anim: 2,
+          hpPct: 55,
+          flags: ENTITY_FLAG.selected | ENTITY_FLAG.carrying,
+        },
+        {
+          id: 0xfffffff0,
+          x: 2147483647,
+          y: -2147483648,
+          typeId: 1,
+          yaw: 0,
+          animT: 0,
+          owner: 7,
+          anim: 255,
+          hpPct: 0,
+          flags: ENTITY_FLAG.dead,
+        },
         { id: 9, x: 0, y: 0 },
       ],
       [{ type: EVENT_TYPE.shotFired, a: 7, b: 0xfffffff0, x: -1, y: 99 }],
@@ -27,7 +55,11 @@ describe('parseSnapshot', () => {
     expect([...e.owner]).toEqual([3, 7, 0]);
     expect([...e.anim]).toEqual([2, 255, 0]);
     expect([...e.hpPct]).toEqual([55, 0, 100]);
-    expect([...e.flags]).toEqual([ENTITY_FLAG.selected | ENTITY_FLAG.carrying, ENTITY_FLAG.dead, 0]);
+    expect([...e.flags]).toEqual([
+      ENTITY_FLAG.selected | ENTITY_FLAG.carrying,
+      ENTITY_FLAG.dead,
+      0,
+    ]);
     expect([...s.events.type]).toEqual([EVENT_TYPE.shotFired]);
     expect([...s.events.a]).toEqual([7]);
     expect([...s.events.b]).toEqual([0xfffffff0]);
@@ -53,7 +85,9 @@ describe('parseSnapshot', () => {
   });
 
   it('rejects buffers shorter than the header or than the header claims', () => {
-    expect(() => parseSnapshot(new ArrayBuffer(SNAPSHOT_HEADER_BYTES - 1))).toThrow(SnapshotParseError);
+    expect(() => parseSnapshot(new ArrayBuffer(SNAPSHOT_HEADER_BYTES - 1))).toThrow(
+      SnapshotParseError,
+    );
     const buf = new ArrayBuffer(SNAPSHOT_HEADER_BYTES + 8);
     writeSnapshotHeader(buf, { tick: 1, hash: 0, entityCount: 10, eventCount: 0 });
     expect(() => parseSnapshot(buf)).toThrow(/10 entities/);

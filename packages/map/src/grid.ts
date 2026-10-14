@@ -41,7 +41,10 @@ export function floodReachable(map: MapGrid, sx: number, sy: number): Uint8Array
 }
 
 /** True als alle opgegeven cellen in dezelfde begaanbare component liggen als de eerste. */
-export function allConnected(map: MapGrid, cells: ReadonlyArray<{ x: number; y: number }>): boolean {
+export function allConnected(
+  map: MapGrid,
+  cells: ReadonlyArray<{ x: number; y: number }>,
+): boolean {
   const first = cells[0];
   if (!first) return true;
   const seen = floodReachable(map, first.x, first.y);

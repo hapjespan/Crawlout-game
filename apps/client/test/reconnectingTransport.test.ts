@@ -58,7 +58,9 @@ describe('ReconnectingTransport', () => {
     const got: ServerMessage[] = [];
     t.onMessage((m) => got.push(m));
     sockets[0]!.open();
-    expect(sockets[0]!.sent).toEqual([{ kind: 'join', roomId: 'room', name: 'Rik', clientId: 'client-12345678' }]);
+    expect(sockets[0]!.sent).toEqual([
+      { kind: 'join', roomId: 'room', name: 'Rik', clientId: 'client-12345678' },
+    ]);
     t.send({ kind: 'ready', ready: true });
     expect(sockets[0]!.sent).toHaveLength(2);
     sockets[0]!.receive({ kind: 'error', message: 'hoi' });
@@ -70,8 +72,14 @@ describe('ReconnectingTransport', () => {
     vi.advanceTimersByTime(100);
     expect(sockets).toHaveLength(2);
     sockets[1]!.open();
-    expect(sockets[1]!.sent).toEqual([{ kind: 'join', roomId: 'room', name: 'Rik', clientId: 'client-12345678' }]);
-    expect(events).toEqual([[true, false], [false, true], [true, true]]);
+    expect(sockets[1]!.sent).toEqual([
+      { kind: 'join', roomId: 'room', name: 'Rik', clientId: 'client-12345678' },
+    ]);
+    expect(events).toEqual([
+      [true, false],
+      [false, true],
+      [true, true],
+    ]);
     sockets[1]!.receive({ kind: 'error', message: 'weer' });
     expect(got).toHaveLength(2);
     t.close();

@@ -59,17 +59,28 @@
   </head>
   <body>
     <div id="stage">
-      <canvas id="view" aria-label="Render-demo: 200 eenheden en 40 gebouwen zonder simulatie"></canvas>
+      <canvas
+        id="view"
+        aria-label="Render-demo: 200 eenheden en 40 gebouwen zonder simulatie"
+      ></canvas>
       <div id="marquee"></div>
       <div id="help">
         <b>Render-demo</b> (nep-snapshots, geen sim) · <span id="backend">…</span><br />
-        WASD of pijlen: pannen · muis naar de rand: scrollen · wiel: zoomen · Q/E of middelste muisknop: draaien<br />
+        WASD of pijlen: pannen · muis naar de rand: scrollen · wiel: zoomen · Q/E of middelste
+        muisknop: draaien<br />
         Klik of sleep: selecteren (shift voegt toe) · rechtsklik: geselecteerden laten lopen<br />
-        B: bouwmodus (<span id="build">uit</span>) · 1 tot 8: gebouw kiezen · klik: plaatsen · Esc of rechtsklik: stoppen<br />
-        <code>?webgl</code> forceert WebGL2 · <code>?half</code> half-float · <code>?noshadow</code> ·
-        <code>?n=400</code> eenheden · <code>?b=40</code> gebouwen · <code>?nodes=8</code> · <code>?claims=3</code> · <code>?combat=0</code> · <code>?nohero</code><br />
-        Per speler één held (pet, kraag en schouderstukken in de teamkleur) die af en toe een Lockdown-zone legt; turrets schieten vanaf het dak<br />
-        Eenheden: <span id="units">placeholder-rig</span> · <code>?unit=&lt;asset-id&gt;</code> kiest een asset uit assets/dist voor alle eenheden
+        B: bouwmodus (<span id="build">uit</span>) · 1 tot 8: gebouw kiezen · klik: plaatsen · Esc
+        of rechtsklik: stoppen<br />
+        <code>?webgl</code> forceert WebGL2 · <code>?half</code> half-float ·
+        <code>?noshadow</code> · <code>?n=400</code> eenheden · <code>?b=40</code> gebouwen ·
+        <code>?nodes=8</code> · <code>?claims=3</code> · <code>?combat=0</code> ·
+        <code>?nohero</code><br />
+        Per speler één held (pet, kraag en schouderstukken in de teamkleur) die af en toe een
+        Lockdown-zone legt; turrets schieten vanaf het dak<br />
+        Props (Rustbelt): <span id="props">laden…</span> · <code>?props=0</code> uit ·
+        <code>?props=src</code> bron-GLB's · <code>?props=ph</code> placeholders<br />
+        Eenheden: <span id="units">placeholder-rig</span> ·
+        <code>?unit=&lt;asset-id&gt;</code> kiest een asset uit assets/dist voor alle eenheden
       </div>
       <div id="error" role="alert"></div>
     </div>

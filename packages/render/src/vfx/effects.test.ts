@@ -17,7 +17,14 @@ class Collect implements ParticleSink {
 const M = UNITS_PER_METER;
 
 class Zones implements ZoneSink {
-  readonly items: { x: number; z: number; radius: number; team: number; t0: number; duration: number }[] = [];
+  readonly items: {
+    x: number;
+    z: number;
+    radius: number;
+    team: number;
+    t0: number;
+    duration: number;
+  }[] = [];
   addZone(x: number, z: number, radius: number, team: number, t0: number, duration: number): void {
     this.items.push({ x, z, radius, team, t0, duration });
   }
@@ -25,7 +32,10 @@ class Zones implements ZoneSink {
 
 const LOCKDOWN: AbilityShape = { radius: 6, duration: 8 };
 
-function context(entities: Record<number, EntityRef>, ability?: EffectContext['ability']): EffectContext {
+function context(
+  entities: Record<number, EntityRef>,
+  ability?: EffectContext['ability'],
+): EffectContext {
   return {
     ...(ability ? { ability } : {}),
     entity(id, out) {
@@ -72,7 +82,15 @@ describe('EffectSpawner', () => {
 
   it('fires a turret from its roof, with the tracer coming down onto the target', () => {
     const add = new Collect();
-    new EffectSpawner(add, new Collect(), seeded()).handle(EVENT_TYPE.shotFired, 3, 2, 30 * M, 30 * M, 0, ctx);
+    new EffectSpawner(add, new Collect(), seeded()).handle(
+      EVENT_TYPE.shotFired,
+      3,
+      2,
+      30 * M,
+      30 * M,
+      0,
+      ctx,
+    );
     const flash = add.items[0]!;
     const roof = 2 + buildingRoofHeight({ w: 5, h: 5 }); // terrain 2, footprint of building typeId 0 is 5x5
     expect(flash.y).toBeGreaterThan(roof);
@@ -87,7 +105,15 @@ describe('EffectSpawner', () => {
 
   it('keeps a unit muzzle flash at hand height', () => {
     const add = new Collect();
-    new EffectSpawner(add, new Collect(), seeded()).handle(EVENT_TYPE.shotFired, 1, 2, 0, 0, 0, ctx);
+    new EffectSpawner(add, new Collect(), seeded()).handle(
+      EVENT_TYPE.shotFired,
+      1,
+      2,
+      0,
+      0,
+      0,
+      ctx,
+    );
     expect(add.items[0]!.y).toBeCloseTo(3.35, 5); // terrain 2 + 1.35
   });
 
@@ -113,9 +139,33 @@ describe('EffectSpawner', () => {
     const hero: EntityRef = { x: 50, z: 50, yaw: 0, typeId: heroTypeId(0), owner: 1 };
     const fx = new EffectSpawner(new Collect(), new Collect(), seeded(), zones);
     fx.handle(EVENT_TYPE.abilityZone, 7, 0, 58 * M, 44 * M, 0, context({ 7: hero })); // no GameData
-    fx.handle(EVENT_TYPE.abilityZone, 7, 3, 58 * M, 44 * M, 0, context({ 7: hero }, () => null)); // no such ability
-    fx.handle(EVENT_TYPE.abilityZone, 1, 0, 58 * M, 44 * M, 0, context({ 1: { x: 0, z: 0, yaw: 0, typeId: 1, owner: 0 } }, () => LOCKDOWN));
-    fx.handle(EVENT_TYPE.abilityZone, 99, 0, 58 * M, 44 * M, 0, context({}, () => LOCKDOWN)); // hero not in the snapshot
+    fx.handle(
+      EVENT_TYPE.abilityZone,
+      7,
+      3,
+      58 * M,
+      44 * M,
+      0,
+      context({ 7: hero }, () => null),
+    ); // no such ability
+    fx.handle(
+      EVENT_TYPE.abilityZone,
+      1,
+      0,
+      58 * M,
+      44 * M,
+      0,
+      context({ 1: { x: 0, z: 0, yaw: 0, typeId: 1, owner: 0 } }, () => LOCKDOWN),
+    );
+    fx.handle(
+      EVENT_TYPE.abilityZone,
+      99,
+      0,
+      58 * M,
+      44 * M,
+      0,
+      context({}, () => LOCKDOWN),
+    ); // hero not in the snapshot
     expect(zones.items).toHaveLength(0);
   });
 
@@ -142,8 +192,24 @@ describe('EffectSpawner', () => {
   it('makes a bigger death cloud for buildings than for units', () => {
     const unit = new Collect();
     const building = new Collect();
-    new EffectSpawner(new Collect(), unit, seeded()).handle(EVENT_TYPE.death, 1, 1, 10 * M, 10 * M, 0, ctx);
-    new EffectSpawner(new Collect(), building, seeded()).handle(EVENT_TYPE.death, 3, buildingTypeId(0), 30 * M, 30 * M, 0, ctx);
+    new EffectSpawner(new Collect(), unit, seeded()).handle(
+      EVENT_TYPE.death,
+      1,
+      1,
+      10 * M,
+      10 * M,
+      0,
+      ctx,
+    );
+    new EffectSpawner(new Collect(), building, seeded()).handle(
+      EVENT_TYPE.death,
+      3,
+      buildingTypeId(0),
+      30 * M,
+      30 * M,
+      0,
+      ctx,
+    );
     expect(unit.items.length).toBeGreaterThan(0);
     expect(building.items.length).toBeGreaterThan(unit.items.length);
   });
@@ -151,9 +217,25 @@ describe('EffectSpawner', () => {
   it('sizes the death of a demolished building from event.b, although it left the snapshot', () => {
     const gone = context({}); // the building is no longer in the snapshot carrying its death event
     const fromB = new Collect();
-    new EffectSpawner(new Collect(), fromB, seeded()).handle(EVENT_TYPE.death, 77, buildingTypeId(0), 30 * M, 30 * M, 0, gone);
+    new EffectSpawner(new Collect(), fromB, seeded()).handle(
+      EVENT_TYPE.death,
+      77,
+      buildingTypeId(0),
+      30 * M,
+      30 * M,
+      0,
+      gone,
+    );
     const asUnit = new Collect();
-    new EffectSpawner(new Collect(), asUnit, seeded()).handle(EVENT_TYPE.death, 77, 1, 30 * M, 30 * M, 0, gone);
+    new EffectSpawner(new Collect(), asUnit, seeded()).handle(
+      EVENT_TYPE.death,
+      77,
+      1,
+      30 * M,
+      30 * M,
+      0,
+      gone,
+    );
     expect(fromB.items.length).toBeGreaterThan(asUnit.items.length);
     const spread = (items: ParticleSpec[]) => Math.max(...items.map((p) => p.size1));
     expect(spread(fromB.items)).toBeGreaterThan(spread(asUnit.items)); // a 5x5 footprint makes a wider cloud
@@ -162,15 +244,39 @@ describe('EffectSpawner', () => {
   it('still reads the typeId from the snapshot when b is 0', () => {
     const building = new Collect();
     const unit = new Collect();
-    new EffectSpawner(new Collect(), building, seeded()).handle(EVENT_TYPE.death, 3, 0, 30 * M, 30 * M, 0, ctx);
-    new EffectSpawner(new Collect(), unit, seeded()).handle(EVENT_TYPE.death, 1, 0, 10 * M, 10 * M, 0, ctx);
+    new EffectSpawner(new Collect(), building, seeded()).handle(
+      EVENT_TYPE.death,
+      3,
+      0,
+      30 * M,
+      30 * M,
+      0,
+      ctx,
+    );
+    new EffectSpawner(new Collect(), unit, seeded()).handle(
+      EVENT_TYPE.death,
+      1,
+      0,
+      10 * M,
+      10 * M,
+      0,
+      ctx,
+    );
     expect(building.items.length).toBeGreaterThan(unit.items.length);
   });
 
   it('rings a building footprint with dust on placement and adds sparks when done', () => {
     const placedAlpha = new Collect();
     const placedAdd = new Collect();
-    new EffectSpawner(placedAdd, placedAlpha, seeded()).handle(EVENT_TYPE.buildingPlaced, 3, buildingTypeId(0), 30 * M, 30 * M, 1, ctx);
+    new EffectSpawner(placedAdd, placedAlpha, seeded()).handle(
+      EVENT_TYPE.buildingPlaced,
+      3,
+      buildingTypeId(0),
+      30 * M,
+      30 * M,
+      1,
+      ctx,
+    );
     expect(placedAlpha.items.length).toBeGreaterThan(20);
     expect(placedAdd.items.length).toBe(0);
     for (const p of placedAlpha.items) {
@@ -178,7 +284,15 @@ describe('EffectSpawner', () => {
       expect(edge).toBeCloseTo(2.5, 5); // on the 5x5 footprint edge
     }
     const doneAdd = new Collect();
-    new EffectSpawner(doneAdd, new Collect(), seeded()).handle(EVENT_TYPE.buildingDone, 3, buildingTypeId(0), 0, 0, 1, ctx);
+    new EffectSpawner(doneAdd, new Collect(), seeded()).handle(
+      EVENT_TYPE.buildingDone,
+      3,
+      buildingTypeId(0),
+      0,
+      0,
+      1,
+      ctx,
+    );
     expect(doneAdd.items.length).toBeGreaterThan(0);
   });
 

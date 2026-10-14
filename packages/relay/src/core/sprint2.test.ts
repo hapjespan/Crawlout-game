@@ -12,12 +12,24 @@ import {
 import { DelayController } from './delay.js';
 import { RESYNC_HISTORY_FRAMES, RESYNC_TIMEOUT_MS, Room, type RoomOptions } from './room.js';
 
-const cmd = (playerId: number, seq: number, frame: number): CommandEnvelope => ({ frame, playerId, seq, type: 'Stop', payload: { ids: [1] } });
+const cmd = (playerId: number, seq: number, frame: number): CommandEnvelope => ({
+  frame,
+  playerId,
+  seq,
+  type: 'Stop',
+  payload: { ids: [1] },
+});
 
 function harness(options: Partial<RoomOptions> = {}) {
   const inbox = new Map<string, ServerMessage[]>();
   let clock = 0;
-  const room = new Room({ roomId: 'r', chooseSeed: () => 99, now: () => clock, send: (id, m) => inbox.get(id)?.push(m), ...options });
+  const room = new Room({
+    roomId: 'r',
+    chooseSeed: () => 99,
+    now: () => clock,
+    send: (id, m) => inbox.get(id)?.push(m),
+    ...options,
+  });
   const box = (id: string) => {
     let b = inbox.get(id);
     if (!b) inbox.set(id, (b = []));
@@ -27,7 +39,8 @@ function harness(options: Partial<RoomOptions> = {}) {
     box(id);
     room.handle(id, m);
   };
-  const of = <K extends ServerMessage['kind']>(id: string, kind: K) => box(id).filter((m): m is Extract<ServerMessage, { kind: K }> => m.kind === kind);
+  const of = <K extends ServerMessage['kind']>(id: string, kind: K) =>
+    box(id).filter((m): m is Extract<ServerMessage, { kind: K }> => m.kind === kind);
   /** n ticks van TICK_MS. */
   const run = (n: number) => {
     for (let i = 0; i < n; i++) {
@@ -57,12 +70,19 @@ describe('instellingen en AI', () => {
     h.say('b', { kind: 'join', roomId: 'r', name: 'B' });
     h.say('b', { kind: 'setSettings', settings: { mode: 'survival', delayFrames: 5 } });
     expect(h.of('b', 'error').at(-1)?.message).toMatch(/host/);
-    h.say('a', { kind: 'setSettings', settings: { mode: 'survival', delayFrames: 5, dominanceMinutes: 7 } });
+    h.say('a', {
+      kind: 'setSettings',
+      settings: { mode: 'survival', delayFrames: 5, dominanceMinutes: 7 },
+    });
     const lobby = h.of('b', 'lobby').at(-1);
     expect(lobby?.settings).toEqual({ mode: 'survival', delayFrames: 5, dominanceMinutes: 7 });
     h.say('a', { kind: 'ready', ready: true });
     h.say('b', { kind: 'ready', ready: true });
-    expect(h.of('a', 'start')[0]?.settings).toEqual({ mode: 'survival', delayFrames: 5, dominanceMinutes: 7 });
+    expect(h.of('a', 'start')[0]?.settings).toEqual({
+      mode: 'survival',
+      delayFrames: 5,
+      dominanceMinutes: 7,
+    });
     // Zonder dominanceMinutes blijft het veld weg: de waarde komt uit de map.
     const h2 = startTwo();
     expect(h2.of('a', 'start')[0]?.settings).not.toHaveProperty('dominanceMinutes');
@@ -84,7 +104,13 @@ describe('instellingen en AI', () => {
     h.say('a', { kind: 'join', roomId: 'r', name: 'A' });
     h.say('a', { kind: 'addAi', faction: 'wanderers' });
     const ai = h.of('a', 'lobby').at(-1)?.players[1];
-    expect(ai).toMatchObject({ playerId: 1, ai: true, ready: true, online: true, faction: 'wanderers' });
+    expect(ai).toMatchObject({
+      playerId: 1,
+      ai: true,
+      ready: true,
+      online: true,
+      faction: 'wanderers',
+    });
     h.say('a', { kind: 'ready', ready: true });
     expect(h.room.isStarted).toBe(true);
     expect(h.of('a', 'start')[0]?.players.map((p) => p.ai)).toEqual([false, true]);
@@ -123,7 +149,12 @@ describe('instellingen en AI', () => {
     expect(h.of('b', 'lobby').at(-1)?.settings?.delayFrames).toBe(3);
     h.say('b', { kind: 'leave' });
     h.say('c', { kind: 'join', roomId: 'r', name: 'C' });
-    expect(h.of('c', 'lobby').at(-1)?.players.map((p) => p.ai)).toEqual([false]);
+    expect(
+      h
+        .of('c', 'lobby')
+        .at(-1)
+        ?.players.map((p) => p.ai),
+    ).toEqual([false]);
   });
 });
 
@@ -153,7 +184,8 @@ describe('reconnect en resync', () => {
     for (let i = 0; i < 10 * 20; i++) {
       h.run(1);
       const frame = h.room.bundles.at(-1)?.frame ?? 0;
-      if (frame % HASH_INTERVAL_FRAMES === 0) h.say('a', { kind: 'hash', report: { frame, playerId: 0, hash: frame } });
+      if (frame % HASH_INTERVAL_FRAMES === 0)
+        h.say('a', { kind: 'hash', report: { frame, playerId: 0, hash: frame } });
     }
     expect(h.of('a', 'desync')).toHaveLength(0);
     h.say('a', { kind: 'command', command: cmd(0, 0, h.room.bundles.length - 1) }); // wordt na B's terugkeer uitgevoerd
@@ -168,15 +200,28 @@ describe('reconnect en resync', () => {
 
     // De bundels lopen intussen gewoon door, ook naar B.
     h.run(3);
-    expect(h.of('b2', 'bundle').map((m) => m.bundle.frame)).toEqual([frameAtReturn, frameAtReturn + 1, frameAtReturn + 2]);
+    expect(h.of('b2', 'bundle').map((m) => m.bundle.frame)).toEqual([
+      frameAtReturn,
+      frameAtReturn + 1,
+      frameAtReturn + 2,
+    ]);
 
     // A antwoordt met zijn (nep-)state op het moment van het verzoek; de relay vult de bundels aan.
-    const fakeState = Buffer.from(JSON.stringify({ units: 3, tick: frameAtReturn })).toString('base64');
-    h.say('a', { kind: 'resyncResponse', response: { frame: frameAtReturn, stateBase64: fakeState, bundles: [] } });
+    const fakeState = Buffer.from(JSON.stringify({ units: 3, tick: frameAtReturn })).toString(
+      'base64',
+    );
+    h.say('a', {
+      kind: 'resyncResponse',
+      response: { frame: frameAtReturn, stateBase64: fakeState, bundles: [] },
+    });
     const resp = h.of('b2', 'resyncResponse')[0]?.response;
     expect(resp?.stateBase64).toBe(fakeState);
     expect(resp?.frame).toBe(frameAtReturn);
-    expect(resp?.bundles.map((b) => b.frame)).toEqual([frameAtReturn, frameAtReturn + 1, frameAtReturn + 2]);
+    expect(resp?.bundles.map((b) => b.frame)).toEqual([
+      frameAtReturn,
+      frameAtReturn + 1,
+      frameAtReturn + 2,
+    ]);
     expect(h.room.pendingResyncs.size).toBe(0);
 
     // Na de resync meldt B hashes vanaf zijn state-frame; eerdere openstaande frames wachten niet op hem.
@@ -198,7 +243,10 @@ describe('reconnect en resync', () => {
     h.say('b', { kind: 'leave' });
     h.say('a', { kind: 'hash', report: { frame: 20, playerId: 0, hash: 1 } }); // B was al weg: alleen A nodig
     h.say('b2', { kind: 'join', roomId: 'r', name: 'B', clientId: 'client-bbbbbbbb' });
-    h.say('a', { kind: 'resyncResponse', response: { frame: 30, stateBase64: 'AA==', bundles: [] } });
+    h.say('a', {
+      kind: 'resyncResponse',
+      response: { frame: 30, stateBase64: 'AA==', bundles: [] },
+    });
     h.run(1);
     h.say('a', { kind: 'hash', report: { frame: 40, playerId: 0, hash: 7 } });
     h.say('b2', { kind: 'hash', report: { frame: 40, playerId: 1, hash: 7 } });
@@ -208,7 +256,17 @@ describe('reconnect en resync', () => {
 
   it('peer die niet antwoordt: na de timeout wijst de relay de volgende peer aan, daarna een fout', () => {
     const h = harness({ minPlayers: 3 });
-    for (const [c, n] of [['a', 'A'], ['b', 'B'], ['c', 'C']] as const) h.say(c, { kind: 'join', roomId: 'r', name: n, clientId: `client-${n}${n}${n}${n}${n}${n}${n}` });
+    for (const [c, n] of [
+      ['a', 'A'],
+      ['b', 'B'],
+      ['c', 'C'],
+    ] as const)
+      h.say(c, {
+        kind: 'join',
+        roomId: 'r',
+        name: n,
+        clientId: `client-${n}${n}${n}${n}${n}${n}${n}`,
+      });
     for (const c of ['a', 'b', 'c']) h.say(c, { kind: 'ready', ready: true });
     h.run(20);
     h.say('c', { kind: 'leave' });
@@ -217,7 +275,10 @@ describe('reconnect en resync', () => {
     h.tick(RESYNC_TIMEOUT_MS + 1);
     h.run(1);
     expect(h.of('b', 'resyncRequest')).toHaveLength(1);
-    h.say('b', { kind: 'resyncResponse', response: { frame: 15, stateBase64: 'AA==', bundles: [] } });
+    h.say('b', {
+      kind: 'resyncResponse',
+      response: { frame: 15, stateBase64: 'AA==', bundles: [] },
+    });
     expect(h.of('c2', 'resyncResponse')[0]?.response.bundles[0]?.frame).toBe(15);
   });
 
@@ -236,7 +297,10 @@ describe('reconnect en resync', () => {
     h.run(10);
     h.say('b', { kind: 'leave' });
     h.say('b2', { kind: 'join', roomId: 'r', name: 'B', clientId: 'client-bbbbbbbb' });
-    h.say('a', { kind: 'resyncResponse', response: { frame: 500, stateBase64: 'AA==', bundles: [] } });
+    h.say('a', {
+      kind: 'resyncResponse',
+      response: { frame: 500, stateBase64: 'AA==', bundles: [] },
+    });
     expect(h.of('a', 'error').at(-1)?.message).toMatch(/bewaarde/);
     expect(h.of('b2', 'resyncResponse')).toHaveLength(0);
   });
@@ -321,14 +385,22 @@ describe('adaptieve DELAY', () => {
     const delaySteps = opts.oneWayMs / TICK_MS;
     const toRelay: { at: number; conn: string; msg: ClientMessage }[] = [];
     const toClient: { at: number; conn: string; frame: number }[] = [];
-    const clients = ['a', 'b'].map((conn, playerId) => ({ conn, playerId, frame: 0, have: new Set<number>(), seq: 0, stalls: 0 }));
+    const clients = ['a', 'b'].map((conn, playerId) => ({
+      conn,
+      playerId,
+      frame: 0,
+      have: new Set<number>(),
+      seq: 0,
+      stalls: 0,
+    }));
     let step = 0;
     let late = 0;
     let lateAfterWarmup = 0;
     const h = harness({
       adaptiveDelay: opts.adaptive,
       send: (id, m) => {
-        if (m.kind === 'bundle') toClient.push({ at: step + delaySteps, conn: id, frame: m.bundle.frame });
+        if (m.kind === 'bundle')
+          toClient.push({ at: step + delaySteps, conn: id, frame: m.bundle.frame });
       },
     });
     h.say('a', { kind: 'join', roomId: 'r', name: 'A' });
@@ -337,7 +409,8 @@ describe('adaptieve DELAY', () => {
     h.say('b', { kind: 'ready', ready: true });
     const warmup = 200;
     for (; step < opts.steps; step++) {
-      for (const m of toClient.filter((x) => x.at <= step)) clients.find((c) => c.conn === m.conn)?.have.add(m.frame);
+      for (const m of toClient.filter((x) => x.at <= step))
+        clients.find((c) => c.conn === m.conn)?.have.add(m.frame);
       for (const m of toRelay.filter((x) => x.at <= step)) {
         if (m.msg.kind === 'command') {
           const isLate = m.msg.command.frame + h.room.delayFrames < h.room.bundles.length;
@@ -351,8 +424,18 @@ describe('adaptieve DELAY', () => {
       h.run(1); // relay: één bundel per stap
       for (const c of clients) {
         if (c.have.has(c.frame)) {
-          if (c.frame % 5 === 0) toRelay.push({ at: step + delaySteps, conn: c.conn, msg: { kind: 'command', command: cmd(c.playerId, c.seq++, c.frame) } });
-          if (c.frame % HASH_INTERVAL_FRAMES === 0) toRelay.push({ at: step + delaySteps, conn: c.conn, msg: { kind: 'hash', report: { frame: c.frame, playerId: c.playerId, hash: 1 } } });
+          if (c.frame % 5 === 0)
+            toRelay.push({
+              at: step + delaySteps,
+              conn: c.conn,
+              msg: { kind: 'command', command: cmd(c.playerId, c.seq++, c.frame) },
+            });
+          if (c.frame % HASH_INTERVAL_FRAMES === 0)
+            toRelay.push({
+              at: step + delaySteps,
+              conn: c.conn,
+              msg: { kind: 'hash', report: { frame: c.frame, playerId: c.playerId, hash: 1 } },
+            });
           c.frame++;
         } else c.stalls++;
       }
@@ -360,7 +443,7 @@ describe('adaptieve DELAY', () => {
     return { room: h.room, late, lateAfterWarmup, clients, of: h.of };
   }
 
-  it('300 ms round-trip: DELAY past zich aan en commando\'s komen op tijd; zonder adaptatie zijn ze te laat', () => {
+  it("300 ms round-trip: DELAY past zich aan en commando's komen op tijd; zonder adaptatie zijn ze te laat", () => {
     const fixed = simulate({ adaptive: false, oneWayMs: 150, steps: 600 });
     expect(fixed.lateAfterWarmup).toBeGreaterThan(50);
 
@@ -394,7 +477,9 @@ describe('history', () => {
     expect(h.room.bundles.length).toBeLessThan(total);
     expect(h.room.bundles.length).toBeGreaterThanOrEqual(RESYNC_HISTORY_FRAMES);
     expect(h.room.bundles.at(-1)?.frame).toBe(total - 1);
-    expect(h.room.bundles.map((b) => b.frame)).toEqual(Array.from({ length: h.room.bundles.length }, (_, i) => total - h.room.bundles.length + i));
+    expect(h.room.bundles.map((b) => b.frame)).toEqual(
+      Array.from({ length: h.room.bundles.length }, (_, i) => total - h.room.bundles.length + i),
+    );
     expect(full.room.recordedBundles).toHaveLength(total);
     expect(full.room.bundles.length).toBeLessThan(total);
   });

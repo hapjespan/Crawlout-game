@@ -56,7 +56,8 @@ export class HashComparator {
     if (!slot || need.length === 0 || !need.every((id) => slot.hashes.has(id))) return null;
     this.frames.delete(frame);
     const hashes: Record<string, number> = {};
-    for (const id of [...slot.hashes.keys()].sort((a, b) => a - b)) hashes[String(id)] = slot.hashes.get(id) as number;
+    for (const id of [...slot.hashes.keys()].sort((a, b) => a - b))
+      hashes[String(id)] = slot.hashes.get(id) as number;
     const values = need.map((id) => slot.hashes.get(id));
     return values.every((v) => v === values[0]) ? null : { frame, hashes };
   }

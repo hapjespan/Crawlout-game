@@ -1,4 +1,514 @@
 {
   "version": 1,
-  "assets": []
+  "assets": [
+    {
+      "id": "bush001",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -1.431485,
+          0,
+          -1.431485
+        ],
+        "max": [
+          1.431485,
+          1.395916,
+          1.431485
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "bush001/lod0.glb",
+          "triangles": 48
+        },
+        {
+          "level": 1,
+          "path": "bush001/lod1.glb",
+          "triangles": 48
+        },
+        {
+          "level": 2,
+          "path": "bush001/lod2.glb",
+          "triangles": 48
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0
+    },
+    {
+      "id": "bush002",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -1.689578,
+          0,
+          -1.599323
+        ],
+        "max": [
+          1.689578,
+          1.655947,
+          1.599323
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "bush002/lod0.glb",
+          "triangles": 48
+        },
+        {
+          "level": 1,
+          "path": "bush002/lod1.glb",
+          "triangles": 48
+        },
+        {
+          "level": 2,
+          "path": "bush002/lod2.glb",
+          "triangles": 48
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0
+    },
+    {
+      "id": "dweller_body_human",
+      "kind": "character",
+      "bounds": {
+        "min": [
+          -0.969676,
+          0.002415,
+          -0.162106
+        ],
+        "max": [
+          0.97012,
+          1.827399,
+          0.202271
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "dweller_body_human/lod0.glb",
+          "triangles": 3598
+        },
+        {
+          "level": 1,
+          "path": "dweller_body_human/lod1.glb",
+          "triangles": 1348
+        },
+        {
+          "level": 2,
+          "path": "dweller_body_human/lod2.glb",
+          "triangles": 492
+        }
+      ],
+      "sockets": {
+        "hand": [
+          -0.7389,
+          1.4408,
+          -0.0654
+        ],
+        "back": [
+          0,
+          1.3148,
+          -0.0049
+        ],
+        "head": [
+          0,
+          1.5687,
+          0.0051
+        ]
+      },
+      "animations": [
+        {
+          "name": "death",
+          "durationSeconds": 2.4
+        },
+        {
+          "name": "build",
+          "durationSeconds": 5.2
+        },
+        {
+          "name": "idle",
+          "durationSeconds": 2.5
+        },
+        {
+          "name": "gather",
+          "durationSeconds": 2
+        },
+        {
+          "name": "run",
+          "durationSeconds": 0.933333
+        },
+        {
+          "name": "attack1",
+          "durationSeconds": 0.633333
+        },
+        {
+          "name": "attack2",
+          "durationSeconds": 1
+        },
+        {
+          "name": "walk",
+          "durationSeconds": 1.333333
+        }
+      ],
+      "boneCount": 20,
+      "baked": {
+        "path": "dweller_body_human/dweller_body_human.anim.f32",
+        "width": 80,
+        "height": 480,
+        "fps": 30,
+        "clips": [
+          {
+            "name": "idle",
+            "startRow": 0,
+            "frames": 75,
+            "loop": true,
+            "durationSeconds": 2.5
+          },
+          {
+            "name": "walk",
+            "startRow": 75,
+            "frames": 40,
+            "loop": true,
+            "durationSeconds": 1.333333
+          },
+          {
+            "name": "run",
+            "startRow": 115,
+            "frames": 28,
+            "loop": true,
+            "durationSeconds": 0.933333
+          },
+          {
+            "name": "attack1",
+            "startRow": 143,
+            "frames": 19,
+            "loop": true,
+            "durationSeconds": 0.633333
+          },
+          {
+            "name": "attack2",
+            "startRow": 162,
+            "frames": 30,
+            "loop": true,
+            "durationSeconds": 1
+          },
+          {
+            "name": "gather",
+            "startRow": 192,
+            "frames": 60,
+            "loop": true,
+            "durationSeconds": 2
+          },
+          {
+            "name": "build",
+            "startRow": 252,
+            "frames": 156,
+            "loop": true,
+            "durationSeconds": 5.2
+          },
+          {
+            "name": "death",
+            "startRow": 408,
+            "frames": 72,
+            "loop": false,
+            "durationSeconds": 2.4
+          }
+        ]
+      }
+    },
+    {
+      "id": "grass001",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.562351,
+          0,
+          -0.125849
+        ],
+        "max": [
+          0.562351,
+          3.842866,
+          0.125849
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "grass001/lod0.glb",
+          "triangles": 3
+        },
+        {
+          "level": 1,
+          "path": "grass001/lod1.glb",
+          "triangles": 3
+        },
+        {
+          "level": 2,
+          "path": "grass001/lod2.glb",
+          "triangles": 3
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0
+    },
+    {
+      "id": "reed001",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.467562,
+          0,
+          -0.466203
+        ],
+        "max": [
+          0.467562,
+          4.07575,
+          0.466203
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "reed001/lod0.glb",
+          "triangles": 20
+        },
+        {
+          "level": 1,
+          "path": "reed001/lod1.glb",
+          "triangles": 20
+        },
+        {
+          "level": 2,
+          "path": "reed001/lod2.glb",
+          "triangles": 20
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0
+    },
+    {
+      "id": "rock001",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -2.025849,
+          0,
+          -2.340649
+        ],
+        "max": [
+          2.025849,
+          2.129443,
+          2.340649
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "rock001/lod0.glb",
+          "triangles": 16
+        },
+        {
+          "level": 1,
+          "path": "rock001/lod1.glb",
+          "triangles": 16
+        },
+        {
+          "level": 2,
+          "path": "rock001/lod2.glb",
+          "triangles": 16
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0
+    },
+    {
+      "id": "rock002",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -1.516739,
+          0,
+          -1.530138
+        ],
+        "max": [
+          1.516739,
+          2.188611,
+          1.530138
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "rock002/lod0.glb",
+          "triangles": 16
+        },
+        {
+          "level": 1,
+          "path": "rock002/lod1.glb",
+          "triangles": 16
+        },
+        {
+          "level": 2,
+          "path": "rock002/lod2.glb",
+          "triangles": 16
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0
+    },
+    {
+      "id": "rock003",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -2.401759,
+          0,
+          -2.056272
+        ],
+        "max": [
+          2.401759,
+          2.051249,
+          2.056272
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "rock003/lod0.glb",
+          "triangles": 16
+        },
+        {
+          "level": 1,
+          "path": "rock003/lod1.glb",
+          "triangles": 16
+        },
+        {
+          "level": 2,
+          "path": "rock003/lod2.glb",
+          "triangles": 16
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0
+    },
+    {
+      "id": "treehigh001",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -1.139134,
+          0,
+          -1.024837
+        ],
+        "max": [
+          1.139134,
+          8.491107,
+          1.024837
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "treehigh001/lod0.glb",
+          "triangles": 34
+        },
+        {
+          "level": 1,
+          "path": "treehigh001/lod1.glb",
+          "triangles": 34
+        },
+        {
+          "level": 2,
+          "path": "treehigh001/lod2.glb",
+          "triangles": 34
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0
+    },
+    {
+      "id": "treelow001",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.804691,
+          0,
+          -0.760175
+        ],
+        "max": [
+          0.804691,
+          4.322748,
+          0.760175
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "treelow001/lod0.glb",
+          "triangles": 34
+        },
+        {
+          "level": 1,
+          "path": "treelow001/lod1.glb",
+          "triangles": 34
+        },
+        {
+          "level": 2,
+          "path": "treelow001/lod2.glb",
+          "triangles": 34
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0
+    },
+    {
+      "id": "treemed001",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -2.437832,
+          0,
+          -2.239473
+        ],
+        "max": [
+          2.437832,
+          5.962622,
+          2.239473
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "treemed001/lod0.glb",
+          "triangles": 52
+        },
+        {
+          "level": 1,
+          "path": "treemed001/lod1.glb",
+          "triangles": 52
+        },
+        {
+          "level": 2,
+          "path": "treemed001/lod2.glb",
+          "triangles": 52
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0
+    }
+  ]
 }

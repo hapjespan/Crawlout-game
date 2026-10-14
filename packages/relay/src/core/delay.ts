@@ -46,7 +46,10 @@ export class DelayController {
   evaluate(current: number): number {
     const lag = this.slowestLag;
     if (lag === null) return current;
-    const target = Math.min(DELAY_FRAMES_MAX, Math.max(DELAY_FRAMES_MIN, Math.ceil(lag) + MARGIN_FRAMES));
+    const target = Math.min(
+      DELAY_FRAMES_MAX,
+      Math.max(DELAY_FRAMES_MIN, Math.ceil(lag) + MARGIN_FRAMES),
+    );
     if (target > current) {
       this.lowerStreak = 0;
       return target;

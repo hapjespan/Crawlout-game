@@ -6,7 +6,7 @@ import type { RosterGroup, RosterUnit, UnitActivity } from '@crawlout/ui';
 import type { EntityRow } from './snapshot.js';
 
 /** Display names per loadout key; loadouts.json has no name field yet, so unknown keys show as-is. */
-const LOADOUT_NAMES: Record<string, string> = {
+export const LOADOUT_NAMES: Record<string, string> = {
   scavenger: 'Plunderaar',
   bouwer: 'Bouwer',
   militie: 'Militie',
@@ -14,7 +14,8 @@ const LOADOUT_NAMES: Record<string, string> = {
 };
 
 export function activityOf(e: Pick<EntityRow, 'anim' | 'flags'>): UnitActivity {
-  if (e.anim === ANIM.attack1 || e.anim === ANIM.attack2 || (e.flags & ENTITY_FLAG.inCombat) !== 0) return 'fighting';
+  if (e.anim === ANIM.attack1 || e.anim === ANIM.attack2 || (e.flags & ENTITY_FLAG.inCombat) !== 0)
+    return 'fighting';
   if (e.anim === ANIM.gather) return 'gathering';
   if (e.anim === ANIM.build) return 'building';
   if ((e.flags & ENTITY_FLAG.carrying) !== 0) return 'carrying';
@@ -23,7 +24,12 @@ export function activityOf(e: Pick<EntityRow, 'anim' | 'flags'>): UnitActivity {
 }
 
 /** One group per loadout of the faction (also empty ones, in data order), plus the hero first when alive. */
-export function buildRoster(data: GameData, factionId: number | undefined, playerId: number, entities: Iterable<EntityRow>): RosterGroup[] {
+export function buildRoster(
+  data: GameData,
+  factionId: number | undefined,
+  playerId: number,
+  entities: Iterable<EntityRow>,
+): RosterGroup[] {
   const byKey = new Map<string, RosterUnit[]>();
   let hero: { naam: string; unit: RosterUnit } | null = null;
   for (const e of entities) {

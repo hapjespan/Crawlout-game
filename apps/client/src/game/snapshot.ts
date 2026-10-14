@@ -49,7 +49,16 @@ export function readSnapshot(buf: ArrayBuffer, selection: ReadonlySet<number>): 
     const id = ids[i]!;
     if (selection.has(id)) flags[i] = flags[i]! | ENTITY_FLAG.selected;
     if ((flags[i]! & ENTITY_FLAG.dead) !== 0) continue;
-    entities.set(id, { id, typeId: typeIds[i]!, owner: owners[i]!, x: xs[i]!, y: ys[i]!, hpPct: hp[i]!, anim: anims[i]!, flags: flags[i]! });
+    entities.set(id, {
+      id,
+      typeId: typeIds[i]!,
+      owner: owners[i]!,
+      x: xs[i]!,
+      y: ys[i]!,
+      hpPct: hp[i]!,
+      anim: anims[i]!,
+      flags: flags[i]!,
+    });
   }
 
   const evType = new Uint8Array(buf, layout.event.type, eventCount);
@@ -58,7 +67,8 @@ export function readSnapshot(buf: ArrayBuffer, selection: ReadonlySet<number>): 
   const evX = new Int32Array(buf, layout.event.x, eventCount);
   const evY = new Int32Array(buf, layout.event.y, eventCount);
   const events: SnapshotEvent[] = [];
-  for (let i = 0; i < eventCount; i++) events.push({ type: evType[i]!, a: evA[i]!, b: evB[i]!, x: evX[i]!, y: evY[i]! });
+  for (let i = 0; i < eventCount; i++)
+    events.push({ type: evType[i]!, a: evA[i]!, b: evB[i]!, x: evX[i]!, y: evY[i]! });
 
   return { tick, entities, events };
 }

@@ -3,9 +3,11 @@
 import { ANIM_NAMES, type AnimName } from '@crawlout/protocol';
 import { z } from 'zod';
 
-const animName = z.string().refine((n): n is AnimName => (ANIM_NAMES as readonly string[]).includes(n), {
-  message: `doelnaam moet een van ${ANIM_NAMES.join(', ')} zijn`,
-});
+const animName = z
+  .string()
+  .refine((n): n is AnimName => (ANIM_NAMES as readonly string[]).includes(n), {
+    message: `doelnaam moet een van ${ANIM_NAMES.join(', ')} zijn`,
+  });
 const clipTable = z.record(animName);
 
 export const clipmapSchema = z.object({
@@ -28,7 +30,11 @@ export interface ResolvedClips {
 }
 
 /** Vindt per canonieke clip precies een bronclip, via directe naam of via de clipmap. */
-export function resolveClips(sourceNames: string[], clipmap: Clipmap, assetId?: string): ResolvedClips {
+export function resolveClips(
+  sourceNames: string[],
+  clipmap: Clipmap,
+  assetId?: string,
+): ResolvedClips {
   const map = new Map<string, AnimName>();
   for (const table of [clipmap.clips, (assetId && clipmap.assets[assetId]) || {}]) {
     for (const [source, target] of Object.entries(table)) map.set(source.toLowerCase(), target);
@@ -41,9 +47,13 @@ export function resolveClips(sourceNames: string[], clipmap: Clipmap, assetId?: 
       return (map.get(key) ?? (key === target ? target : undefined)) === target ? [index] : [];
     });
     if (hits.length === 0) {
-      errors.push(`animatieclip "${target}" ontbreekt; voeg de clip toe of koppel een bestaande in assets/src/clipmap.json (aanwezig: ${sourceNames.join(', ') || 'geen'}).`);
+      errors.push(
+        `animatieclip "${target}" ontbreekt; voeg de clip toe of koppel een bestaande in assets/src/clipmap.json (aanwezig: ${sourceNames.join(', ') || 'geen'}).`,
+      );
     } else if (hits.length > 1) {
-      errors.push(`animatieclip "${target}" is dubbelzinnig: ${hits.map((i) => `"${sourceNames[i]}"`).join(' en ')} koppelen er allebei aan.`);
+      errors.push(
+        `animatieclip "${target}" is dubbelzinnig: ${hits.map((i) => `"${sourceNames[i]}"`).join(' en ')} koppelen er allebei aan.`,
+      );
     } else found.set(target, hits[0]!);
   }
   return { found, errors };

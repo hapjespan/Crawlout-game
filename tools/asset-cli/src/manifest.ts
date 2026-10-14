@@ -61,32 +61,43 @@ export const bakedAnimationSchema = z
     const issue = (message: string): void => ctx.addIssue({ code: z.ZodIssueCode.custom, message });
     if (baked.width % 4 !== 0) issue(`width ${baked.width} is geen veelvoud van 4`);
     const names = baked.clips.map((c) => c.name);
-    if (names.join(',') !== ANIM_NAMES.join(',')) issue(`clips moeten ${ANIM_NAMES.join(', ')} zijn, in die volgorde; gevonden: ${names.join(', ') || 'geen'}`);
+    if (names.join(',') !== ANIM_NAMES.join(','))
+      issue(
+        `clips moeten ${ANIM_NAMES.join(', ')} zijn, in die volgorde; gevonden: ${names.join(', ') || 'geen'}`,
+      );
     let row = 0;
     for (const clip of baked.clips) {
-      if (clip.startRow !== row) issue(`clip "${clip.name}" begint op rij ${clip.startRow}, verwacht ${row} (aaneengesloten blokken)`);
+      if (clip.startRow !== row)
+        issue(
+          `clip "${clip.name}" begint op rij ${clip.startRow}, verwacht ${row} (aaneengesloten blokken)`,
+        );
       row += clip.frames;
     }
     if (row !== baked.height) issue(`som van de frames is ${row}, maar height is ${baked.height}`);
   });
 
-export const assetEntrySchema = z.object({
-  id: z.string().min(1),
-  kind: z.enum(['character', 'prop']),
-  bounds: boundsSchema,
-  /** Altijd precies LOD 0, 1 en 2, in die volgorde. */
-  lods: z.tuple([lodSchema, lodSchema, lodSchema]),
-  sockets: socketsSchema,
-  animations: z.array(animationSchema),
-  /** Aantal bones van het skelet; 0 voor props. */
-  boneCount: z.number().int().nonnegative(),
-  /** Aanwezig voor karakters met animaties; props en karakters zonder clips hebben geen baked. */
-  baked: bakedAnimationSchema.optional(),
-}).superRefine((entry, ctx) => {
-  if (entry.baked && entry.baked.width !== entry.boneCount * 4) {
-    ctx.addIssue({ code: z.ZodIssueCode.custom, message: `baked.width ${entry.baked.width} komt niet overeen met boneCount ${entry.boneCount} * 4` });
-  }
-});
+export const assetEntrySchema = z
+  .object({
+    id: z.string().min(1),
+    kind: z.enum(['character', 'prop']),
+    bounds: boundsSchema,
+    /** Altijd precies LOD 0, 1 en 2, in die volgorde. */
+    lods: z.tuple([lodSchema, lodSchema, lodSchema]),
+    sockets: socketsSchema,
+    animations: z.array(animationSchema),
+    /** Aantal bones van het skelet; 0 voor props. */
+    boneCount: z.number().int().nonnegative(),
+    /** Aanwezig voor karakters met animaties; props en karakters zonder clips hebben geen baked. */
+    baked: bakedAnimationSchema.optional(),
+  })
+  .superRefine((entry, ctx) => {
+    if (entry.baked && entry.baked.width !== entry.boneCount * 4) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `baked.width ${entry.baked.width} komt niet overeen met boneCount ${entry.boneCount} * 4`,
+      });
+    }
+  });
 
 export const manifestSchema = z.object({
   version: z.literal(MANIFEST_VERSION),

@@ -6,12 +6,21 @@
 // zone now and then; the buildings that provide 'turret' shoot from their roof.
 // Character assets come from assets/dist (the asset-cli's output, bundled by Vite): the fake units are loadout 0, so
 // the body asset of that loadout in data/loadouts.json is used when the manifest has it; ?unit=<id> picks any other.
+// Decorative props come from Rustbelt's props file (200 trees, rocks, bushes, grass) on the demo terrain: manifest
+// first, then the source GLBs in assets/src/props, then a placeholder per kind. ?props=0 hides them, ?props=src skips
+// the manifest, ?props=ph shows the placeholders only.
 import { PROVIDES } from '@crawlout/data';
 import { MAX_ENTITIES, TICK_MS, UNITS_PER_METER } from '@crawlout/protocol';
-import { buildingTypeId, createRenderer, snapFootprintCenter, type PlacementPreview } from '@crawlout/render';
+import {
+  buildingTypeId,
+  createRenderer,
+  snapFootprintCenter,
+  type PlacementPreview,
+} from '@crawlout/render';
 import { createGridTerrain, FakeSnapshotSource } from '@crawlout/render/dev';
 import { assetConfig } from '../game/assets.js';
 import { loadClientGameData } from '../game/content.js';
+import { loadMapProps, propSource } from './props.js';
 
 const WORLD = 128;
 const PLAYER = 0;
@@ -25,7 +34,8 @@ function wastelandHeight(x: number, z: number): number {
 }
 
 function wastelandColor(x: number, z: number, y: number): readonly [number, number, number] {
-  const n = 0.5 + 0.5 * Math.sin(x * 0.21 + Math.sin(z * 0.17) * 2.1) * Math.cos(z * 0.19 - x * 0.07);
+  const n =
+    0.5 + 0.5 * Math.sin(x * 0.21 + Math.sin(z * 0.17) * 2.1) * Math.cos(z * 0.19 - x * 0.07);
   const low = Math.max(0, Math.min(1, (y + 2) / 4));
   const r = 0.46 + 0.16 * n + 0.08 * low;
   const g = 0.4 + 0.12 * n + 0.06 * low;
@@ -53,7 +63,8 @@ async function main(): Promise<void> {
   const params = new URLSearchParams(location.search);
   const count = Math.max(1, intParam(params, 'n', 200, MAX_ENTITIES));
   const data = loadClientGameData();
-  const footprint = (typeId: number) => data.buildings[typeId - buildingTypeId(0)]?.footprint ?? null;
+  const footprint = (typeId: number) =>
+    data.buildings[typeId - buildingTypeId(0)]?.footprint ?? null;
   const assets = assetConfig(params);
 
   const renderer = await createRenderer({
@@ -67,7 +78,8 @@ async function main(): Promise<void> {
   const backendEl = document.getElementById('backend');
   if (backendEl) {
     const precision = renderer.dataTexturePrecision === 'half' ? ', half-float' : '';
-    backendEl.textContent = (renderer.backend === 'webgpu' ? 'WebGPU' : 'WebGL2-fallback') + precision;
+    backendEl.textContent =
+      (renderer.backend === 'webgpu' ? 'WebGPU' : 'WebGL2-fallback') + precision;
   }
   renderer.setTerrain(createGridTerrain(WORLD, WORLD, 1, wastelandHeight, wastelandColor));
 
@@ -76,9 +88,33 @@ async function main(): Promise<void> {
   const showUnits = (): void => {
     if (!unitsEl) return;
     const list = renderer.unitAssets();
-    unitsEl.textContent = list.length === 0 ? (assets ? 'placeholder-rig (geen asset in het manifest)' : 'placeholder-rig (geen manifest)') : list.map((a) => `${a.assetId}: ${a.state}${a.reason ? ` (${a.reason})` : ''}`).join(' · ');
+    unitsEl.textContent =
+      list.length === 0
+        ? assets
+          ? 'placeholder-rig (geen asset in het manifest)'
+          : 'placeholder-rig (geen manifest)'
+        : list
+            .map((a) => `${a.assetId}: ${a.state}${a.reason ? ` (${a.reason})` : ''}`)
+            .join(' · ');
   };
   for (const delay of [500, 2000, 6000]) window.setTimeout(showUnits, delay);
+
+  const propsMode = params.get('props');
+  const propsEl = document.getElementById('props');
+  if (propsMode !== '0') {
+    const source =
+      propsMode === 'src'
+        ? propSource({ manifest: false })
+        : propsMode === 'ph'
+          ? { manifestUrl: null }
+          : propSource();
+    void renderer.setProps(loadMapProps('rustbelt'), source).then((list) => {
+      if (!propsEl) return;
+      const by = new Map<string, number>();
+      for (const p of list) by.set(p.origin, (by.get(p.origin) ?? 0) + p.instances);
+      propsEl.textContent = [...by].map(([origin, n]) => `${n} uit ${origin}`).join(', ');
+    });
+  } else if (propsEl) propsEl.textContent = 'uit';
 
   const source = new FakeSnapshotSource({
     count,
@@ -91,7 +127,9 @@ async function main(): Promise<void> {
     claims: intParam(params, 'claims', 3, 32),
     combat: params.get('combat') !== '0',
     ...(data.heroes.length > 0 && !params.has('nohero') ? { heroId: 0 } : {}),
-    turrets: data.buildings.filter((b) => b.provides.includes(PROVIDES.indexOf('turret'))).map((b) => buildingTypeId(b.id)),
+    turrets: data.buildings
+      .filter((b) => b.provides.includes(PROVIDES.indexOf('turret')))
+      .map((b) => buildingTypeId(b.id)),
   });
   renderer.pushSnapshot(source.next());
   const pump = window.setInterval(() => renderer.pushSnapshot(source.next()), TICK_MS);
@@ -119,7 +157,8 @@ async function main(): Promise<void> {
   };
   const setBuild = (id: number | null): void => {
     buildId = id;
-    if (buildEl) buildEl.textContent = id === null ? 'uit' : `${data.buildings[id]?.key ?? id} (${id + 1})`;
+    if (buildEl)
+      buildEl.textContent = id === null ? 'uit' : `${data.buildings[id]?.key ?? id} (${id + 1})`;
     updatePreview();
   };
   window.addEventListener('keydown', (e) => {

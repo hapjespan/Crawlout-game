@@ -75,7 +75,8 @@ export class TerrainHeightField {
       const c1 = this.colOf(Math.max(p[a]!, p[b]!, p[c]!));
       const r0 = this.rowOf(Math.min(p[a + 2]!, p[b + 2]!, p[c + 2]!));
       const r1 = this.rowOf(Math.max(p[a + 2]!, p[b + 2]!, p[c + 2]!));
-      for (let r = r0; r <= r1; r++) for (let col = c0; col <= c1; col++) fn(r * this.cols + col, t);
+      for (let r = r0; r <= r1; r++)
+        for (let col = c0; col <= c1; col++) fn(r * this.cols + col, t);
     }
   }
 
@@ -126,7 +127,9 @@ export function createGridTerrain(
   sizeZ: number,
   step: number,
   height: (x: number, z: number) => number = () => 0,
-  color: (x: number, z: number, y: number) => readonly [number, number, number] = () => [0.55, 0.5, 0.42],
+  color: (x: number, z: number, y: number) => readonly [number, number, number] = () => [
+    0.55, 0.5, 0.42,
+  ],
 ): TerrainGeometry {
   const nx = Math.round(sizeX / step) + 1;
   const nz = Math.round(sizeZ / step) + 1;

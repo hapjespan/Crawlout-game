@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { buildingWallHeight, DEFAULT_FOOTPRINT, FootprintTable, footprintsFromGameData, snapFootprintCenter } from './footprint.js';
+import {
+  buildingWallHeight,
+  DEFAULT_FOOTPRINT,
+  FootprintTable,
+  footprintsFromGameData,
+  snapFootprintCenter,
+} from './footprint.js';
 import {
   buildingIdOf,
   buildingTypeId,
@@ -35,7 +41,9 @@ describe('classifyTypeId', () => {
 });
 
 describe('FootprintTable', () => {
-  const data = { buildings: [{ footprint: { w: 5, h: 5 } }, { footprint: { w: 2, h: 3 } }] } as Parameters<typeof footprintsFromGameData>[0];
+  const data = {
+    buildings: [{ footprint: { w: 5, h: 5 } }, { footprint: { w: 2, h: 3 } }],
+  } as Parameters<typeof footprintsFromGameData>[0];
 
   it('reads footprints from GameData by building typeId and falls back to the default', () => {
     const table = new FootprintTable(footprintsFromGameData(data));
@@ -59,8 +67,17 @@ describe('FootprintTable', () => {
 
 describe('snapFootprintCenter', () => {
   it('centers odd footprints on a cell and even footprints on a cell corner', () => {
-    expect(snapFootprintCenter(10 * 256 + 40, 3 * 256 + 200, { w: 3, h: 3 })).toEqual({ x: 10 * 256 + 128, y: 3 * 256 + 128 });
-    expect(snapFootprintCenter(10 * 256 + 40, 3 * 256 + 200, { w: 2, h: 2 })).toEqual({ x: 10 * 256, y: 4 * 256 });
-    expect(snapFootprintCenter(10 * 256 + 40, 3 * 256 + 200, { w: 2, h: 1 })).toEqual({ x: 10 * 256, y: 3 * 256 + 128 });
+    expect(snapFootprintCenter(10 * 256 + 40, 3 * 256 + 200, { w: 3, h: 3 })).toEqual({
+      x: 10 * 256 + 128,
+      y: 3 * 256 + 128,
+    });
+    expect(snapFootprintCenter(10 * 256 + 40, 3 * 256 + 200, { w: 2, h: 2 })).toEqual({
+      x: 10 * 256,
+      y: 4 * 256,
+    });
+    expect(snapFootprintCenter(10 * 256 + 40, 3 * 256 + 200, { w: 2, h: 1 })).toEqual({
+      x: 10 * 256,
+      y: 3 * 256 + 128,
+    });
   });
 });

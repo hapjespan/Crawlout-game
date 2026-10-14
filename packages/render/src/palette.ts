@@ -3,7 +3,9 @@ import { MAX_PLAYERS } from '@crawlout/protocol';
 import { Color, Vector3 } from 'three/webgpu';
 
 /** Team colors per owner (sRGB), one per player slot. */
-export const TEAM_COLORS: readonly number[] = [0x2f7fe0, 0xd8402f, 0x3fae4a, 0xe0b52a, 0x9b4fd0, 0x2fc2c2, 0xe07a2a, 0xd0d0d0];
+export const TEAM_COLORS: readonly number[] = [
+  0x2f7fe0, 0xd8402f, 0x3fae4a, 0xe0b52a, 0x9b4fd0, 0x2fc2c2, 0xe07a2a, 0xd0d0d0,
+];
 /** Owners at or above MAX_PLAYERS (unowned scrap nodes, neutral claim points) use this slot. */
 export const NEUTRAL_COLOR = 0x9a948a;
 /** Palette slot for neutral owners. */

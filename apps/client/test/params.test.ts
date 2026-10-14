@@ -17,7 +17,12 @@ describe('netOptionsFromSearch', () => {
   });
 
   it('has defaults for room and name and ai off', () => {
-    expect(netOptionsFromSearch('?relay=wss://r.example')).toEqual({ relayUrl: 'wss://r.example', roomId: 'crawlout', name: 'Speler', ai: false });
+    expect(netOptionsFromSearch('?relay=wss://r.example')).toEqual({
+      relayUrl: 'wss://r.example',
+      roomId: 'crawlout',
+      name: 'Speler',
+      ai: false,
+    });
   });
 
   it('rejects a non-ws relay url', () => {

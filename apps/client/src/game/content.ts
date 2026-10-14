@@ -3,11 +3,22 @@
 // Node uses @crawlout/data/node instead; both end in the same loadGameData and loadMap.
 import { loadGameData, MapDef, type GameData, type RawGameData } from '@crawlout/data';
 import dataVersion from '../../../../data/VERSION?raw';
-import { greyboxMesh, loadHeightmap, loadMap, type MapGrid } from '@crawlout/map';
+import {
+  greyboxMesh,
+  loadHeightmap,
+  loadMap,
+  loadProps,
+  type MapGrid,
+  type PropInstance,
+} from '@crawlout/map';
 
 const json = import.meta.glob('../../../../data/*.json', { eager: true, import: 'default' });
 const ai = import.meta.glob('../../../../data/ai/*.json', { eager: true, import: 'default' });
-const mapFiles = import.meta.glob('../../../../data/maps/*.json', { eager: true, query: '?raw', import: 'default' });
+const mapFiles = import.meta.glob('../../../../data/maps/*.json', {
+  eager: true,
+  query: '?raw',
+  import: 'default',
+});
 
 const DATA_PREFIX = '../../../../data/';
 
@@ -40,6 +51,8 @@ export interface ClientMap {
   /** Dominance rule from maps/*.json (minutes); the session converts it with convertDominance. */
   dominance: { pointsRequired: number; minutes: number };
   terrain: { positions: Float32Array; indices: Uint32Array; colors: Uint8Array };
+  /** Decorative props (render only; the sim never reads them). */
+  props: PropInstance[];
 }
 
 export function loadClientMap(id: string): ClientMap {
@@ -55,5 +68,10 @@ export function loadClientMap(id: string): ClientMap {
   // The greybox is in sim units (Int32); the renderer wants meters as floats.
   const positions = new Float32Array(mesh.positions.length);
   for (let i = 0; i < positions.length; i++) positions[i] = mesh.positions[i]! / mesh.unitsPerMeter;
-  return { grid, dominance: def.dominance, terrain: { positions, indices: mesh.indices, colors: mesh.colors } };
+  return {
+    grid,
+    dominance: def.dominance,
+    terrain: { positions, indices: mesh.indices, colors: mesh.colors },
+    props: loadProps(def, assets),
+  };
 }

@@ -11,14 +11,19 @@ export function countTriangles(document: Document): number {
       if (prim.getMode() !== 4) continue;
       const indices = prim.getIndices();
       const position = prim.getAttribute('POSITION');
-      total += indices ? Math.floor(indices.getCount() / 3) : Math.floor((position?.getCount() ?? 0) / 3);
+      total += indices
+        ? Math.floor(indices.getCount() / 3)
+        : Math.floor((position?.getCount() ?? 0) / 3);
     }
   }
   return total;
 }
 
 export function maxBoneCount(document: Document): number {
-  return document.getRoot().listSkins().reduce((max, skin) => Math.max(max, skin.listJoints().length), 0);
+  return document
+    .getRoot()
+    .listSkins()
+    .reduce((max, skin) => Math.max(max, skin.listJoints().length), 0);
 }
 
 export function hasSkin(document: Document): boolean {
@@ -48,7 +53,12 @@ export function textureSizes(document: Document): TextureSize[] {
   for (const texture of document.getRoot().listTextures()) {
     const image = texture.getImage();
     const size = image ? ImageUtils.getSize(image, texture.getMimeType()) : null;
-    if (size) sizes.push({ name: texture.getName() || texture.getURI() || '(naamloos)', width: size[0], height: size[1] });
+    if (size)
+      sizes.push({
+        name: texture.getName() || texture.getURI() || '(naamloos)',
+        width: size[0],
+        height: size[1],
+      });
   }
   return sizes;
 }
@@ -67,7 +77,8 @@ export function uvSetCount(document: Document): number {
 
 export function boneNames(document: Document): string[] {
   const names = new Set<string>();
-  for (const skin of document.getRoot().listSkins()) for (const joint of skin.listJoints()) names.add(joint.getName());
+  for (const skin of document.getRoot().listSkins())
+    for (const joint of skin.listJoints()) names.add(joint.getName());
   return [...names];
 }
 
@@ -93,7 +104,10 @@ export function animationIndex(document: Document): AssetAnimation[] {
         if (!input || input.getCount() === 0) continue;
         duration = Math.max(duration, input.getScalar(input.getCount() - 1));
       }
-      return { name: animation.getName() || `animation_${index}`, durationSeconds: round6(duration) };
+      return {
+        name: animation.getName() || `animation_${index}`,
+        durationSeconds: round6(duration),
+      };
     });
 }
 
@@ -121,4 +135,43 @@ export function findSockets(document: Document): AssetSockets {
   if (back) sockets.back = back;
   if (head) sockets.head = head;
   return sockets;
+}
+
+/**
+ * Richting van het model langs Z: gemiddelde z van de zoolvertices (onderste 5 procent van de hoogte) min de z van de
+ * enkel-bones (LeftFoot en RightFoot, rustpose). Positief = voeten wijzen naar +Z. `null` als het niet te bepalen is.
+ */
+export function facingZ(document: Document): number | null {
+  const ankles = ['LeftFoot', 'RightFoot']
+    .map((name) =>
+      document
+        .getRoot()
+        .listNodes()
+        .find((n) => stripMixamoPrefix(n.getName()) === name),
+    )
+    .filter((n): n is Node => n !== undefined);
+  if (ankles.length === 0) return null;
+  const ankleZ = ankles.reduce((sum, n) => sum + n.getWorldTranslation()[2]!, 0) / ankles.length;
+  const { min, max } = computeBounds(document);
+  const limit = min[1] + (max[1] - min[1]) * 0.05;
+  let sum = 0;
+  let count = 0;
+  const p = [0, 0, 0];
+  for (const node of document.getRoot().listNodes()) {
+    const mesh = node.getMesh();
+    if (!mesh) continue;
+    const m = node.getWorldMatrix();
+    for (const prim of mesh.listPrimitives()) {
+      const position = prim.getAttribute('POSITION');
+      if (!position) continue;
+      for (let i = 0; i < position.getCount(); i++) {
+        position.getElement(i, p);
+        const y = m[1]! * p[0]! + m[5]! * p[1]! + m[9]! * p[2]! + m[13]!;
+        if (y > limit) continue;
+        sum += m[2]! * p[0]! + m[6]! * p[1]! + m[10]! * p[2]! + m[14]!;
+        count++;
+      }
+    }
+  }
+  return count === 0 ? null : sum / count - ankleZ;
 }

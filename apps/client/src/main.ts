@@ -2,6 +2,7 @@
 // Local skirmish against the scripted AI on the slice map; the same session code drives the ws relay later.
 import {
   ANIM,
+  ENTITY_NONE,
   MAX_ENTITIES_PER_COMMAND,
   OWNER_NEUTRAL,
   type CommandPayload,
@@ -10,7 +11,14 @@ import {
   type PlayerStatus,
   type StallNotice,
 } from '@crawlout/protocol';
-import { PROVIDES, ROLES, buildingTypeId, heroIdOfTypeId, kindOfTypeId, type BuildingData } from '@crawlout/data';
+import {
+  PROVIDES,
+  ROLES,
+  buildingTypeId,
+  heroIdOfTypeId,
+  kindOfTypeId,
+  type BuildingData,
+} from '@crawlout/data';
 import { createRenderer, snapFootprintCenter } from '@crawlout/render';
 import {
   mountHud,
@@ -24,9 +32,11 @@ import {
 } from '@crawlout/ui';
 import type { SimWinner } from '@crawlout/sim';
 import { assetConfig } from './game/assets.js';
+import { propSource } from './render/props.js';
 import { loadClientGameData, loadClientMap } from './game/content.js';
 import { startSession } from './game/session.js';
 import { createStatusOverlay } from './net/statusOverlay.js';
+import { buildingCards } from './game/cards.js';
 import { buildRoster } from './game/roster.js';
 import { EVENT_TYPE, readSnapshot, type EntityRow } from './game/snapshot.js';
 
@@ -51,7 +61,8 @@ async function main(): Promise<void> {
   const marquee = document.getElementById('marquee') as HTMLDivElement | null;
   const hudEl = document.getElementById('hud');
   const endEl = document.getElementById('end');
-  if (!canvas || !marquee || !hudEl || !endEl) throw new Error('index.html mist #view, #marquee, #hud of #end');
+  if (!canvas || !marquee || !hudEl || !endEl)
+    throw new Error('index.html mist #view, #marquee, #hud of #end');
 
   const data = loadClientGameData();
   const map = loadClientMap(SLICE_MAP);
@@ -68,6 +79,7 @@ async function main(): Promise<void> {
   });
   renderer.setTerrain(map.terrain);
   renderer.setGameData(data);
+  void renderer.setProps(map.props, propSource());
 
   // Selection is local UI state, never sim state: it is stamped into each snapshot's flags for the renderer.
   let selection = new Set<number>();
@@ -99,11 +111,13 @@ async function main(): Promise<void> {
     return id === undefined ? undefined : data.heroes[id];
   };
   /** Tech ids this player has researched (PlayerStatus.techs); prerequisites gate buildings, loadouts and techs. */
-  const unlocked = (prereq: readonly number[]): boolean => prereq.every((t) => status?.techs?.includes(t) ?? false);
-  const heroAlive = (): boolean => status?.hero?.state === 'alive';
+  const unlocked = (prereq: readonly number[]): boolean =>
+    prereq.every((t) => status?.techs?.includes(t) ?? false);
   const hqProvidesIdx = PROVIDES.indexOf('hq');
   const myHq = (): EntityRow | undefined =>
-    [...entities.values()].find((e) => e.owner === session.playerId && buildingOf(e.typeId)?.provides.includes(hqProvidesIdx));
+    [...entities.values()].find(
+      (e) => e.owner === session.playerId && buildingOf(e.typeId)?.provides.includes(hqProvidesIdx),
+    );
 
   const netStatus = createStatusOverlay();
   const session = startSession(data, map, {
@@ -116,12 +130,17 @@ async function main(): Promise<void> {
       for (const ev of snap.events) {
         if (ev.type === EVENT_TYPE.death) {
           const was = previous.get(ev.a);
-          if (was?.owner === session.playerId && loadoutOf(was.typeId)) alert({ kind: 'settlerLost', x: ev.x, y: ev.y });
+          if (was?.owner === session.playerId && loadoutOf(was.typeId))
+            alert({ kind: 'settlerLost', x: ev.x, y: ev.y });
         } else if (ev.type === EVENT_TYPE.claimTaken) {
-          if (previous.get(ev.a)?.owner === session.playerId && ev.b !== session.playerId) alert({ kind: 'claimLost', x: ev.x, y: ev.y });
+          if (previous.get(ev.a)?.owner === session.playerId && ev.b !== session.playerId)
+            alert({ kind: 'claimLost', x: ev.x, y: ev.y });
         } else if (ev.type === EVENT_TYPE.hit) {
           const now = performance.now();
-          if (previous.get(ev.a)?.owner === session.playerId && now - lastAttackAlert > ATTACK_ALERT_COOLDOWN_MS) {
+          if (
+            previous.get(ev.a)?.owner === session.playerId &&
+            now - lastAttackAlert > ATTACK_ALERT_COOLDOWN_MS
+          ) {
             lastAttackAlert = now;
             alert({ kind: 'attack', x: ev.x, y: ev.y });
           }
@@ -152,54 +171,82 @@ async function main(): Promise<void> {
     if (ended) return;
     ended = true;
     const won = winner.playerId === session.playerId;
-    const how = { destruction: 'vernietiging', dominance: 'dominantie', surrender: 'opgave' }[winner.reason];
+    const how = { destruction: 'vernietiging', dominance: 'dominantie', surrender: 'opgave' }[
+      winner.reason
+    ];
     endEl!.textContent = `${won ? 'Gewonnen' : 'Verloren'} door ${how}. Herlaad de pagina voor een nieuw potje.`;
     endEl!.style.display = 'grid';
   }
 
-  const mine = (ids: Iterable<number>): number[] => [...ids].filter((id) => entities.get(id)?.owner === session.playerId);
+  const mine = (ids: Iterable<number>): number[] =>
+    [...ids].filter((id) => entities.get(id)?.owner === session.playerId);
   const roleIdx = (role: string): number => ROLES.indexOf(role as (typeof ROLES)[number]);
 
   /** Commands carry at most 64 entity ids; larger selections are split. */
-  function sendChunked<T extends CommandType>(type: T, ids: number[], extra: Omit<CommandPayload<T>, 'ids'>): void {
+  function sendChunked<T extends CommandType>(
+    type: T,
+    ids: number[],
+    extra: Omit<CommandPayload<T>, 'ids'>,
+  ): void {
     for (let i = 0; i < ids.length; i += MAX_ENTITIES_PER_COMMAND) {
-      session.sendCommand(type, { ids: ids.slice(i, i + MAX_ENTITIES_PER_COMMAND), ...extra } as CommandPayload<T>);
+      session.sendCommand(type, {
+        ids: ids.slice(i, i + MAX_ENTITIES_PER_COMMAND),
+        ...extra,
+      } as CommandPayload<T>);
     }
   }
 
   /** Right click: attack an enemy, gather from a scrap node, claim a point, otherwise move. */
   function orderAt(px: number, py: number): void {
-    const ids = mine(selection).filter((id) => loadoutOf(entities.get(id)!.typeId) || heroOf(entities.get(id)!.typeId));
+    const ids = mine(selection).filter(
+      (id) => loadoutOf(entities.get(id)!.typeId) || heroOf(entities.get(id)!.typeId),
+    );
     if (ids.length === 0) return;
     const hit = renderer.pickAt(px, py);
     const target = hit.entityId === null ? undefined : entities.get(hit.entityId);
     if (target) {
       const kind = kindOfTypeId(target.typeId).kind;
       const hostile = target.owner !== session.playerId && target.owner !== OWNER_NEUTRAL;
-      if (hostile && (kind === 'unit' || kind === 'building')) return sendChunked('Attack', ids, { target: target.id });
+      if (hostile && (kind === 'unit' || kind === 'building'))
+        return sendChunked('Attack', ids, { target: target.id });
       if (kind === 'scrapNode') {
-        const scavengers = ids.filter((id) => loadoutOf(entities.get(id)!.typeId)?.role === roleIdx('scavenger'));
+        const scavengers = ids.filter(
+          (id) => loadoutOf(entities.get(id)!.typeId)?.role === roleIdx('scavenger'),
+        );
         if (scavengers.length > 0) return sendChunked('Gather', scavengers, { nodeId: target.id });
       }
       if (kind === 'building' && target.owner === session.playerId && target.anim === ANIM.build) {
         // Unfinished own building: builders resume or help (Build on an own site of the same type helps).
-        const builders = ids.filter((id) => loadoutOf(entities.get(id)!.typeId)?.role === roleIdx('builder'));
-        if (builders.length > 0) return sendChunked('Build', builders, { typeId: target.typeId, x: target.x, y: target.y });
+        const builders = ids.filter(
+          (id) => loadoutOf(entities.get(id)!.typeId)?.role === roleIdx('builder'),
+        );
+        if (builders.length > 0)
+          return sendChunked('Build', builders, {
+            typeId: target.typeId,
+            x: target.x,
+            y: target.y,
+          });
       }
       if (kind === 'claimPoint') {
         // Claim builds the faction's claim post next to the point: only builders can (sim contract 2).
-        const builders = ids.filter((id) => loadoutOf(entities.get(id)!.typeId)?.role === roleIdx('builder'));
+        const builders = ids.filter(
+          (id) => loadoutOf(entities.get(id)!.typeId)?.role === roleIdx('builder'),
+        );
         if (builders.length > 0) return sendChunked('Claim', builders, { pointId: target.id });
       }
     }
-    if (hit.ground) sendChunked('Move', ids, { x: Math.round(hit.ground.x), y: Math.round(hit.ground.y) });
+    if (hit.ground)
+      sendChunked('Move', ids, { x: Math.round(hit.ground.x), y: Math.round(hit.ground.y) });
   }
 
   // Build menu: this player's faction buildings that need no research yet (tech arrives later) and are not the HQ.
   const buildable = (): BuildingData[] => {
     const faction = data.factions.find((f) => f.key === session.faction);
     if (!faction) return [];
-    return data.buildings.filter((b) => b.factionId === faction.id && unlocked(b.prereqTech) && !b.provides.includes(hqProvidesIdx));
+    return data.buildings.filter(
+      (b) =>
+        b.factionId === faction.id && unlocked(b.prereqTech) && !b.provides.includes(hqProvidesIdx),
+    );
   };
   let placing: BuildOption | null = null;
 
@@ -210,7 +257,14 @@ async function main(): Promise<void> {
     const y0 = (cy >> 8) - (h >> 1);
     for (let y = y0; y < y0 + h; y++) {
       for (let x = x0; x < x0 + w; x++) {
-        if (x < 0 || y < 0 || x >= map.grid.w || y >= map.grid.h || map.grid.passable[y * map.grid.w + x] !== 1) return false;
+        if (
+          x < 0 ||
+          y < 0 ||
+          x >= map.grid.w ||
+          y >= map.grid.h ||
+          map.grid.passable[y * map.grid.w + x] !== 1
+        )
+          return false;
       }
     }
     for (const e of entities.values()) {
@@ -218,7 +272,8 @@ async function main(): Promise<void> {
       if (!b) continue;
       const bx0 = (e.x >> 8) - (b.footprint.w >> 1);
       const by0 = (e.y >> 8) - (b.footprint.h >> 1);
-      if (x0 < bx0 + b.footprint.w && bx0 < x0 + w && y0 < by0 + b.footprint.h && by0 < y0 + h) return false;
+      if (x0 < bx0 + b.footprint.w && bx0 < x0 + w && y0 < by0 + b.footprint.h && by0 < y0 + h)
+        return false;
     }
     return true;
   }
@@ -234,7 +289,8 @@ async function main(): Promise<void> {
   let targeting: TargetingKind | null = null;
 
   const deps: HudDeps = {
-    sendCommand: <T extends CommandType>(type: T, payload: CommandPayload<T>) => session.sendCommand(type, payload),
+    sendCommand: <T extends CommandType>(type: T, payload: CommandPayload<T>) =>
+      session.sendCommand(type, payload),
     getStatus: () => status,
     getSelection: () =>
       mine(selection).map((id): SelectedEntity => {
@@ -259,9 +315,16 @@ async function main(): Promise<void> {
       const claims: MinimapData['claims'][number][] = [];
       for (const e of entities.values()) {
         const kind = kindOfTypeId(e.typeId).kind;
-        if (kind === 'claimPoint') claims.push({ x: e.x, y: e.y, owner: e.owner === OWNER_NEUTRAL ? null : e.owner });
+        if (kind === 'claimPoint')
+          claims.push({ x: e.x, y: e.y, owner: e.owner === OWNER_NEUTRAL ? null : e.owner });
         else if (kind === 'scrapNode') blips.push({ x: e.x, y: e.y, owner: e.owner, kind: 'node' });
-        else blips.push({ x: e.x, y: e.y, owner: e.owner, kind: kind === 'building' ? 'building' : 'unit' });
+        else
+          blips.push({
+            x: e.x,
+            y: e.y,
+            owner: e.owner,
+            kind: kind === 'building' ? 'building' : 'unit',
+          });
       }
       return { w: map.grid.w, h: map.grid.h, passable: map.grid.passable, blips, claims };
     },
@@ -289,7 +352,8 @@ async function main(): Promise<void> {
     getHeroAbilities: () =>
       (myHero()?.abilities ?? []).map((a, i) => {
         const left = status?.hero?.abilityCooldownTicks?.[i] ?? 0;
-        const cooldownPct = a.cooldownTicks > 0 ? Math.min(100, Math.round((left * 100) / a.cooldownTicks)) : 0;
+        const cooldownPct =
+          a.cooldownTicks > 0 ? Math.min(100, Math.round((left * 100) / a.cooldownTicks)) : 0;
         return { abilityId: i, naam: a.naam, needsTarget: a.rangeU > 0, cooldownPct };
       }),
     isHeroDead: () => status?.hero?.state === 'dead',
@@ -297,35 +361,34 @@ async function main(): Promise<void> {
       const hq = myHq();
       if (hq) session.sendCommand('Recruit', { buildingId: hq.id });
     },
-    getResearchOptions: (buildingIds) =>
-      data.tech
-        .filter(
-          (t) =>
-            t.factionId === myFaction()?.id &&
-            buildingIds.includes(t.buildingId) &&
-            !(status?.techs?.includes(t.id) ?? false) &&
-            unlocked(t.prereqTech),
-        )
-        .map((t) => ({ techId: t.id, naam: t.key, scrapCost: t.scrapCost, affordable: (status?.scrap ?? 0) >= t.scrapCost })),
-    getRecruitOptions: (buildingIds) => {
-      const hero = myHero();
-      const hq = myHq();
-      const hqData = hq ? buildingOf(hq.typeId) : undefined;
-      if (!hero || !hq || !hqData || !buildingIds.includes(hqData.id) || heroAlive()) return [];
-      return [{ buildingId: hq.id, naam: `Oplappen: ${hero.naam}`, scrapCost: hero.reviveScrap, affordable: (status?.scrap ?? 0) >= hero.reviveScrap }];
+    getBuildingCards: () =>
+      buildingCards({
+        data,
+        factionId: myFaction()?.id,
+        playerId: session.playerId,
+        status,
+        selected: mine(selection).map((id) => entities.get(id)!),
+        own: [...entities.values()].filter((e) => e.owner === session.playerId),
+        heroDead: status?.hero?.state === 'dead' || status?.hero?.state === 'reviving',
+      }),
+    startCard: (card) => {
+      if (card.kind === 'research') session.sendCommand('Research', { techId: card.id });
+      else if (card.kind === 'revive') session.sendCommand('Recruit', { buildingId: card.id });
+      else {
+        const settlers = mine(selection).filter((id) => loadoutOf(entities.get(id)!.typeId));
+        if (settlers.length > 0) sendChunked('Craft', settlers, { loadoutId: card.id });
+      }
     },
-    getCraftOptions: () =>
-      data.loadouts
-        .filter((l) => l.factionId === myFaction()?.id && unlocked(l.prereqTech))
-        .map((l) => ({ loadoutId: l.id, naam: l.key, scrapCost: l.scrapCost, affordable: (status?.scrap ?? 0) >= l.scrapCost })),
-    getPerkOptions: () => {
-      const h = status?.hero;
-      const hero = h?.heroId === undefined ? undefined : data.heroes[h.heroId];
-      if (!h || !hero) return [];
-      return hero.perkPool
-        .map((id) => data.perks[id]!)
-        .filter((p) => (h.special[p.requires.stat] ?? 0) >= p.requires.min)
-        .map((p) => ({ perkId: p.id, naam: p.naam, beschrijving: p.flavourText }));
+    cancelCard: (card) => {
+      // Research and revive run in the building, craft runs on the settler (contract 1, QueueItem.unitId).
+      const items = status?.queue?.filter((q) => q.kind === card.kind && q.id === card.id) ?? [];
+      const ids =
+        card.kind === 'revive'
+          ? [card.id]
+          : card.kind === 'craft'
+            ? items.flatMap((q) => (q.unitId !== undefined && q.unitId !== ENTITY_NONE ? [q.unitId] : []))
+            : items.flatMap((q) => (q.buildingId !== ENTITY_NONE ? [q.buildingId] : []));
+      if (ids.length > 0) sendChunked('Cancel', ids, {});
     },
     getRoster: () => buildRoster(data, myFaction()?.id, session.playerId, entities.values()),
     selectUnits: (ids, add) => {
@@ -371,8 +434,10 @@ async function main(): Promise<void> {
     if (targeting) {
       const hit = renderer.pickAt(p.x, p.y);
       const node = hit.entityId === null ? undefined : entities.get(hit.entityId);
-      if (targeting === 'gather' && node && kindOfTypeId(node.typeId).kind === 'scrapNode') hud.completeTargeting({ nodeId: node.id });
-      else if (hit.ground) hud.completeTargeting({ x: Math.round(hit.ground.x), y: Math.round(hit.ground.y) });
+      if (targeting === 'gather' && node && kindOfTypeId(node.typeId).kind === 'scrapNode')
+        hud.completeTargeting({ nodeId: node.id });
+      else if (hit.ground)
+        hud.completeTargeting({ x: Math.round(hit.ground.x), y: Math.round(hit.ground.y) });
       return;
     }
     canvas.setPointerCapture(e.pointerId);
@@ -397,7 +462,12 @@ async function main(): Promise<void> {
   canvas.addEventListener('pointerup', (e) => {
     if (e.button !== 0 || !drag) return;
     const p = local(e);
-    let ids = drag.moved ? renderer.boxSelect({ x0: drag.x, y0: drag.y, x1: p.x, y1: p.y }, { owner: session.playerId }) : [];
+    let ids = drag.moved
+      ? renderer.boxSelect(
+          { x0: drag.x, y0: drag.y, x1: p.x, y1: p.y },
+          { owner: session.playerId },
+        )
+      : [];
     if (ids.length === 0 && Math.hypot(p.x - drag.x, p.y - drag.y) < SMALL_DRAG_PX) {
       // A click, or a tiny drag that caught nobody: pick where the press started.
       const hit = renderer.pickAt(drag.x, drag.y).entityId;
@@ -422,7 +492,12 @@ async function main(): Promise<void> {
     hud.unmount();
     renderer.dispose();
   });
-  (window as unknown as { crawlout: unknown }).crawlout = { renderer, session, entities: () => entities, status: () => status };
+  (window as unknown as { crawlout: unknown }).crawlout = {
+    renderer,
+    session,
+    entities: () => entities,
+    status: () => status,
+  };
 }
 
 main().catch((err: unknown) => {

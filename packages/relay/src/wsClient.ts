@@ -28,7 +28,12 @@ export class WsRelayClient implements RelayTransport {
   private readonly early: ServerMessage[] = [];
 
   constructor(url: string, options: WsRelayClientOptions = {}) {
-    const create = options.createSocket ?? ((u: string) => new (globalThis as unknown as { WebSocket: new (u: string) => WebSocketLike }).WebSocket(u));
+    const create =
+      options.createSocket ??
+      ((u: string) =>
+        new (globalThis as unknown as { WebSocket: new (u: string) => WebSocketLike }).WebSocket(
+          u,
+        ));
     this.socket = create(url);
     this.socket.onopen = () => {
       for (const data of this.queue.splice(0)) this.socket.send(data);

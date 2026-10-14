@@ -4,8 +4,30 @@
 // Per instance: iPos (x, y, z meters; yaw radians around +Y, 0 keeps +Z), iScale (x, y, z; team palette slot),
 // iTint (rgb multiplier on the albedo; w unused). An optional shadow factor (1 lit, 0 shadowed) drops the light to
 // the darkest band; an optional wave animates team-masked vertices (claim flags).
-import { MeshBasicNodeMaterial, type Vector3, type Node } from 'three/webgpu';
-import { attribute, cameraPosition, cos, dot, float, int, max, mix, normalize, sin, smoothstep, uniform, uniformArray, vec3, vec4, vertexStage } from 'three/tsl';
+// Decorative props (props/propLayer.ts) add a diffuse map sampled with uv (uv = (-1, -1) reads white, as on units)
+// and an optional grade that pulls the art's colors towards the wasteland palette, so lush kit colors sit under the
+// same toon ramp as everything else.
+import { MeshBasicNodeMaterial, type Texture, type Vector3, type Node } from 'three/webgpu';
+import {
+  attribute,
+  cameraPosition,
+  cos,
+  dot,
+  float,
+  int,
+  max,
+  mix,
+  normalize,
+  select,
+  sin,
+  smoothstep,
+  texture,
+  uniform,
+  uniformArray,
+  vec3,
+  vec4,
+  vertexStage,
+} from 'three/tsl';
 import { teamPalette } from '../palette.js';
 import { toonRamp } from '../units/unitMaterial.js';
 
@@ -16,7 +38,14 @@ export interface PropMaterialOptions {
   shadow?: Node<'float'> | undefined;
   /** Seconds (a uniform the renderer advances), drives the flag wave. */
   time?: Node<'float'>;
+  /** Diffuse map, sampled with the uv attribute; albedo = vertex color * map. */
+  map?: Texture | null;
+  /** 0..1: pulls the albedo towards a warm grey of the same brightness (0 keeps the art's colors). Default 0. */
+  grade?: number;
 }
+
+/** Warm grey the grade pulls towards (linear rgb, multiplied by the albedo's luminance). */
+const GRADE_TONE = [1.08, 1.0, 0.82] as const;
 
 /** The darkest toon band, what a surface in shadow gets. */
 const SHADOW_BAND = 0.52;
@@ -35,20 +64,33 @@ export function createPropMaterial(opts: PropMaterialOptions): MeshBasicNodeMate
     // Flag wave: team-masked vertices sway along z, more towards the free end.
     const t = opts.time;
     const along = max(position.x.sub(0.06), 0);
-    const sway = sin(t.mul(5.2).sub(along.mul(4.5))).mul(along).mul(0.14).mul(color.w);
+    const sway = sin(t.mul(5.2).sub(along.mul(4.5)))
+      .mul(along)
+      .mul(0.14)
+      .mul(color.w);
     local = position.add(vec3(0, 0, sway));
   }
 
   const ca = cos(iPos.w);
   const sa = sin(iPos.w);
-  const rotY = (v: Node<'vec3'>): Node<'vec3'> => vec3(v.x.mul(ca).add(v.z.mul(sa)), v.y, v.z.mul(ca).sub(v.x.mul(sa)));
+  const rotY = (v: Node<'vec3'>): Node<'vec3'> =>
+    vec3(v.x.mul(ca).add(v.z.mul(sa)), v.y, v.z.mul(ca).sub(v.x.mul(sa)));
   const worldPos = rotY(local.mul(iScale.xyz)).add(iPos.xyz);
   const worldNrm = vertexStage(rotY(normal.div(iScale.xyz)));
   const vWorldPos = vertexStage(worldPos);
 
   const palette = uniformArray<'vec3'>(teamPalette(), 'vec3');
   const team = palette.element(int(iScale.w));
-  const base = color.xyz.mul(iTint.xyz);
+  let base: Node<'vec3'> = color.xyz.mul(iTint.xyz);
+  if (opts.map) {
+    const uv = attribute('uv', 'vec2');
+    const texel = select(uv.x.lessThan(-0.5), vec4(1, 1, 1, 1), texture(opts.map, uv));
+    base = base.mul(texel.xyz);
+  }
+  if (opts.grade) {
+    const luma = dot(base, vec3(0.2126, 0.7152, 0.0722));
+    base = mix(base, vec3(...GRADE_TONE).mul(luma), opts.grade);
+  }
   const albedo = mix(base, team.mul(base.mul(0.6).add(0.55)), color.w);
   const N = normalize(worldNrm);
   let shade = toonRamp(dot(N, light));

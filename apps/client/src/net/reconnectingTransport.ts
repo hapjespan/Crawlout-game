@@ -38,7 +38,12 @@ export class ReconnectingTransport implements RelayTransport {
       this.options.onConnection?.(true, this.everOpen);
       this.everOpen = true;
     };
-    const create = this.options.createSocket ?? ((u: string) => new (globalThis as unknown as { WebSocket: new (u: string) => WebSocketLike }).WebSocket(u));
+    const create =
+      this.options.createSocket ??
+      ((u: string) =>
+        new (globalThis as unknown as { WebSocket: new (u: string) => WebSocketLike }).WebSocket(
+          u,
+        ));
     const client = new WsRelayClient(this.options.url, {
       createSocket: (u) => {
         const s = create(u);
@@ -90,7 +95,12 @@ export class ReconnectingTransport implements RelayTransport {
     this.client = client;
     client.onMessage((msg) => this.listener?.(msg));
     // Queued by WsRelayClient until the socket opens.
-    client.send({ kind: 'join', roomId: this.options.roomId, name: this.options.name, clientId: this.options.clientId });
+    client.send({
+      kind: 'join',
+      roomId: this.options.roomId,
+      name: this.options.name,
+      clientId: this.options.clientId,
+    });
   }
 
   get connected(): boolean {

@@ -21,12 +21,16 @@ import {
 
 const dataDir = fileURLToPath(new URL('../../../data/', import.meta.url));
 const assets: MapAssets = { read: (ref) => readFileSync(dataDir + ref, 'utf8') };
-const readDef = (name: string): MapDef => MapDef.parse(JSON.parse(assets.read(`maps/${name}.json`)));
+const readDef = (name: string): MapDef =>
+  MapDef.parse(JSON.parse(assets.read(`maps/${name}.json`)));
 const readDominance = (name: string): unknown => readDef(name).dominance;
 
-const claimRadiusM = (): number => (readDataDir(dataDir).sim as { claimRadiusM: number }).claimRadiusM;
+const claimRadiusM = (): number =>
+  (readDataDir(dataDir).sim as { claimRadiusM: number }).claimRadiusM;
 const claimFootprint = (): { w: number; h: number } => {
-  const b = (readDataDir(dataDir).buildings as Array<{ id: string; footprint: { w: number; h: number } }>).find((x) => x.id === 'claimpaal');
+  const b = (
+    readDataDir(dataDir).buildings as Array<{ id: string; footprint: { w: number; h: number } }>
+  ).find((x) => x.id === 'claimpaal');
   if (b === undefined) throw new Error('claimpaal ontbreekt in data/buildings.json');
   return b.footprint;
 };
@@ -40,17 +44,22 @@ const expectedFiles = (name: string, g: GeneratedMap): Array<[string, string]> =
   [`maps/${name}.json`, JSON.stringify(g.def, null, 2) + '\n'],
   [`maps/${name}.passability.json`, g.passabilityFile + '\n'],
   [`maps/${name}.heightmap.json`, g.heightmapFile + '\n'],
+  ...(g.propsFile === undefined
+    ? []
+    : ([[`maps/${name}.props.json`, g.propsFile + '\n']] as Array<[string, string]>)),
 ];
 
 // UPDATE_MAPS=1 pnpm --filter @crawlout/map gen schrijft data/maps/* opnieuw (voor de tests hieronder lezen).
 if (process.env['UPDATE_MAPS'] === '1') {
-  for (const [name, gen] of generated) for (const [ref, content] of expectedFiles(name, gen())) writeFileSync(dataDir + ref, content);
+  for (const [name, gen] of generated)
+    for (const [ref, content] of expectedFiles(name, gen())) writeFileSync(dataDir + ref, content);
 }
 
 describe('gegenereerde bestanden', () => {
   for (const [name, gen] of generated) {
     it(`${name}: data/maps komt overeen met de generator`, () => {
-      for (const [ref, content] of expectedFiles(name, gen())) expect(assets.read(ref)).toBe(content);
+      for (const [ref, content] of expectedFiles(name, gen()))
+        expect(assets.read(ref)).toBe(content);
     });
   }
 });
@@ -75,14 +84,16 @@ describe('rustbelt', () => {
   });
 
   it('alle spawns, scrap-nodes en claimpunten zijn met elkaar verbonden (flood fill)', () => {
-    expect(allConnected(map, [...map.spawns, ...map.scrapNodes, ...map.claimPoints, ...map.creepCamps])).toBe(true);
+    expect(
+      allConnected(map, [...map.spawns, ...map.scrapNodes, ...map.claimPoints, ...map.creepCamps]),
+    ).toBe(true);
   });
 
   it('heeft onbegaanbare ruines en kliffen, maar blijft grotendeels open', () => {
     let blocked = 0;
     for (const v of map.passable) if (v === 0) blocked++;
     expect(blocked).toBeGreaterThan(500);
-    expect(blocked).toBeLessThan(128 * 128 / 3);
+    expect(blocked).toBeLessThan((128 * 128) / 3);
   });
 
   it('is puntsymmetrisch (bitmap en hoogtes) en eerlijk', () => {
@@ -96,7 +107,9 @@ describe('rustbelt', () => {
       }
     }
     const mirrored = (list: Array<{ x: number; y: number }>): boolean =>
-      list.every((p) => list.some((q) => Math.abs(q.x - (127 - p.x)) <= 1 && Math.abs(q.y - (127 - p.y)) <= 1));
+      list.every((p) =>
+        list.some((q) => Math.abs(q.x - (127 - p.x)) <= 1 && Math.abs(q.y - (127 - p.y)) <= 1),
+      );
     expect(mirrored(map.spawns)).toBe(true);
     expect(mirrored(map.scrapNodes)).toBe(true);
     expect(mirrored(map.claimPoints)).toBe(true);
@@ -123,7 +136,8 @@ describe('rustbelt', () => {
         for (let fx = c.x - 8; fx <= c.x + 8 && !found; fx++) {
           let ok = true;
           for (let y = fy; y < fy + fh; y++) {
-            for (let x = fx; x < fx + fw; x++) if (!isPassable(map, x, y) || occupied.has(y * map.w + x)) ok = false;
+            for (let x = fx; x < fx + fw; x++)
+              if (!isPassable(map, x, y) || occupied.has(y * map.w + x)) ok = false;
           }
           // Afstand van het punt tot de footprint (dichtstbijzijnde cel), zoals de sim het rekent.
           const dx = Math.max(fx - c.x, 0, c.x - (fx + fw - 1));
@@ -137,14 +151,20 @@ describe('rustbelt', () => {
 
   it('claimpunten en nodes liggen op een cel met begaanbare buren (geen ingesloten punt)', () => {
     for (const p of [...map.claimPoints, ...map.scrapNodes]) {
-      const open = [[1, 0], [-1, 0], [0, 1], [0, -1]].filter(([dx, dy]) => isPassable(map, p.x + dx!, p.y + dy!)).length;
+      const open = [
+        [1, 0],
+        [-1, 0],
+        [0, 1],
+        [0, -1],
+      ].filter(([dx, dy]) => isPassable(map, p.x + dx!, p.y + dy!)).length;
       expect(open).toBeGreaterThanOrEqual(2);
     }
   });
 
   it('creep-kampen liggen op de route tussen een basis en het middenpunt (omweg hooguit 8 m)', () => {
     const center = map.claimPoints.find((c) => c.kind === 'powerArmor')!;
-    const spawnOf = (camp: { x: number }): { x: number; y: number } => (camp.x < 64 ? map.spawns[0]! : map.spawns[1]!);
+    const spawnOf = (camp: { x: number }): { x: number; y: number } =>
+      camp.x < 64 ? map.spawns[0]! : map.spawns[1]!;
     const distFrom = (sx: number, sy: number): Int32Array => {
       const d = new Int32Array(map.w * map.h).fill(-1);
       const q = [sy * map.w + sx];
@@ -153,7 +173,12 @@ describe('rustbelt', () => {
         const i = q[h]!;
         const x = i % map.w;
         const y = (i - x) / map.w;
-        for (const [dx, dy] of [[1, 0], [0, 1], [-1, 0], [0, -1]] as const) {
+        for (const [dx, dy] of [
+          [1, 0],
+          [0, 1],
+          [-1, 0],
+          [0, -1],
+        ] as const) {
           if (!isPassable(map, x + dx, y + dy)) continue;
           const j = (y + dy) * map.w + x + dx;
           if (d[j] !== -1) continue;
@@ -168,7 +193,9 @@ describe('rustbelt', () => {
       const fromSpawn = distFrom(s.x, s.y);
       const fromCenter = distFrom(center.x, center.y);
       const i = camp.y * map.w + camp.x;
-      expect(fromSpawn[i]! + fromCenter[i]!).toBeLessThanOrEqual(fromSpawn[center.y * map.w + center.x]! + 8);
+      expect(fromSpawn[i]! + fromCenter[i]!).toBeLessThanOrEqual(
+        fromSpawn[center.y * map.w + center.x]! + 8,
+      );
     }
   });
 
@@ -199,12 +226,17 @@ describe('een tweede map is alleen data', () => {
     expect(map.h).toBe(32);
     expect(map.spawns).toHaveLength(2);
     expect(readDominance('testmap')).toEqual({ pointsRequired: 1, minutes: 1 });
-    expect(allConnected(map, [...map.spawns, ...map.scrapNodes, ...map.claimPoints, ...map.creepCamps])).toBe(true);
+    expect(
+      allConnected(map, [...map.spawns, ...map.scrapNodes, ...map.claimPoints, ...map.creepCamps]),
+    ).toBe(true);
   });
 
   it('loader weigert een bitmap met verkeerde afmetingen', () => {
     const def = readDef('testmap');
-    const bad: MapAssets = { read: (ref) => (ref === def.passability ? encodeGrid(2, 2, 'u8', [1, 1, 1, 1]) : assets.read(ref)) };
+    const bad: MapAssets = {
+      read: (ref) =>
+        ref === def.passability ? encodeGrid(2, 2, 'u8', [1, 1, 1, 1]) : assets.read(ref),
+    };
     expect(() => loadMap(def, bad)).toThrow(/past niet/);
   });
 });
@@ -236,12 +268,14 @@ describe('greyboxMesh', () => {
   it('is deterministisch en tekent onbegaanbare cellen anders dan open grond', () => {
     const again = greyboxMesh(map, heights);
     expect(Array.from(again.positions)).toEqual(Array.from(mesh.positions));
-    const colorOf = (x: number, y: number): number[] => Array.from(mesh.colors.subarray((y * 32 + x) * 12, (y * 32 + x) * 12 + 3));
+    const colorOf = (x: number, y: number): number[] =>
+      Array.from(mesh.colors.subarray((y * 32 + x) * 12, (y * 32 + x) * 12 + 3));
     expect(colorOf(13, 7)).not.toEqual(colorOf(20, 20)); // ruine versus grond
   });
 
   it('markeert scrap-node- en claimpunt-cellen met eigen kleur', () => {
-    const colorAt = (x: number, y: number): number[] => Array.from(mesh.colors.subarray((y * 32 + x) * 12, (y * 32 + x) * 12 + 3));
+    const colorAt = (x: number, y: number): number[] =>
+      Array.from(mesh.colors.subarray((y * 32 + x) * 12, (y * 32 + x) * 12 + 3));
     const node = map.scrapNodes[0]!;
     const claim = map.claimPoints[0]!;
     expect(colorAt(node.x, node.y)).toEqual(Array.from(MARK_SCRAP_RGB));

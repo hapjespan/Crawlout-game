@@ -5,8 +5,22 @@ import type { CommandType, PlayerStatus } from '@crawlout/protocol';
 import { mountHud } from './index.js';
 import type { HudDeps, HudHandle, NetworkState, SelectedEntity, TargetingKind } from './types.js';
 
-const status: PlayerStatus = { playerId: 0, scrap: 120, settlers: 7, pop: 9, popCap: 12, beds: 10, hero: null };
-const unit = (id: number, role: SelectedEntity['role'] = 'scavenger'): SelectedEntity => ({ id, typeId: 3, loadoutName: 'Knuppel', hpPct: 80, role });
+const status: PlayerStatus = {
+  playerId: 0,
+  scrap: 120,
+  settlers: 7,
+  pop: 9,
+  popCap: 12,
+  beds: 10,
+  hero: null,
+};
+const unit = (id: number, role: SelectedEntity['role'] = 'scavenger'): SelectedEntity => ({
+  id,
+  typeId: 3,
+  loadoutName: 'Knuppel',
+  hpPct: 80,
+  role,
+});
 
 interface Sent {
   type: CommandType;
@@ -16,7 +30,11 @@ interface Sent {
 function setup(opts: { selection?: SelectedEntity[]; network?: NetworkState } = {}) {
   const sent: Sent[] = [];
   const targeting: TargetingKind[] = [];
-  const state = { selection: opts.selection ?? [unit(5), unit(6)], network: opts.network ?? { desync: null, stall: null }, status: status as PlayerStatus | null };
+  const state = {
+    selection: opts.selection ?? [unit(5), unit(6)],
+    network: opts.network ?? { desync: null, stall: null },
+    status: status as PlayerStatus | null,
+  };
   const deps: HudDeps = {
     sendCommand: (type, payload) => void sent.push({ type, payload }),
     getStatus: () => state.status,
@@ -37,7 +55,13 @@ function setup(opts: { selection?: SelectedEntity[]; network?: NetworkState } = 
 /** Elke verzonden payload moet als volledig commando door het protocol-schema komen. */
 function expectValid(s: Sent): void {
   expect(COMMAND_PAYLOADS[s.type].safeParse(s.payload).success).toBe(true);
-  const env = CommandEnvelope.safeParse({ frame: 0, playerId: 0, seq: 0, type: s.type, payload: s.payload });
+  const env = CommandEnvelope.safeParse({
+    frame: 0,
+    playerId: 0,
+    seq: 0,
+    type: s.type,
+    payload: s.payload,
+  });
   expect(env.success).toBe(true);
 }
 
@@ -141,7 +165,7 @@ describe('sneltoetsen', () => {
     expect(t.sent).toEqual([]);
   });
 
-  it('commando\'s zonder selectie worden niet gestuurd', () => {
+  it("commando's zonder selectie worden niet gestuurd", () => {
     const t = setup({ selection: [] });
     mounted = t.handle;
     press('s');
@@ -162,7 +186,9 @@ describe('sneltoetsen', () => {
   it('negeert toetsen met modifier en in invoervelden', () => {
     const t = setup();
     mounted = t.handle;
-    act(() => void document.dispatchEvent(new KeyboardEvent('keydown', { key: 's', ctrlKey: true })));
+    act(
+      () => void document.dispatchEvent(new KeyboardEvent('keydown', { key: 's', ctrlKey: true })),
+    );
     const input = document.createElement('input');
     document.body.appendChild(input);
     act(() => void input.dispatchEvent(new KeyboardEvent('keydown', { key: 's', bubbles: true })));
@@ -227,7 +253,9 @@ describe('opgeven', () => {
 
 describe('netwerkmeldingen', () => {
   it('toont de desync-melding', () => {
-    const t = setup({ network: { desync: { frame: 240, hashes: { '0': 1, '1': 2 } }, stall: null } });
+    const t = setup({
+      network: { desync: { frame: 240, hashes: { '0': 1, '1': 2 } }, stall: null },
+    });
     mounted = t.handle;
     const alert = t.el.querySelector('[role="alert"]');
     expect(alert?.textContent).toContain('Desync');

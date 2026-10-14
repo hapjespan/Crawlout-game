@@ -3,7 +3,12 @@ import { snapshotLayout, writeSnapshotHeader } from '@crawlout/protocol';
 import { parseSnapshot, type SnapshotView } from '../snapshot/parse.js';
 
 /** Allocates a zeroed snapshot with header filled in and returns writable SoA views into it. */
-export function allocSnapshot(tick: number, hash: number, entityCount: number, eventCount: number): SnapshotView {
+export function allocSnapshot(
+  tick: number,
+  hash: number,
+  entityCount: number,
+  eventCount: number,
+): SnapshotView {
   const buf = new ArrayBuffer(snapshotLayout(entityCount, eventCount).totalBytes);
   writeSnapshotHeader(buf, { tick, hash, entityCount, eventCount });
   return parseSnapshot(buf);
@@ -31,7 +36,12 @@ export interface EventRecord {
 }
 
 /** Encodes plain records into one snapshot buffer. */
-export function encodeSnapshot(tick: number, hash: number, entities: readonly EntityRecord[], events: readonly EventRecord[] = []): ArrayBuffer {
+export function encodeSnapshot(
+  tick: number,
+  hash: number,
+  entities: readonly EntityRecord[],
+  events: readonly EventRecord[] = [],
+): ArrayBuffer {
   const s = allocSnapshot(tick, hash, entities.length, events.length);
   const e = s.entities;
   entities.forEach((r, i) => {

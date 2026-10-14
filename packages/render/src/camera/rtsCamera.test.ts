@@ -20,8 +20,14 @@ describe('RtsCameraController keys', () => {
   afterEach(() => vi.unstubAllGlobals());
 
   /** How far the target moves (x, z) and turns while `code` is held for 0.1 s. */
-  function hold(code: string, opts: RtsCameraOptions = {}): { dx: number; dz: number; dyaw: number } {
-    const cam = new RtsCameraController(new PerspectiveCamera(), fakeDom(), { edgeMargin: 0, ...opts });
+  function hold(
+    code: string,
+    opts: RtsCameraOptions = {},
+  ): { dx: number; dz: number; dyaw: number } {
+    const cam = new RtsCameraController(new PerspectiveCamera(), fakeDom(), {
+      edgeMargin: 0,
+      ...opts,
+    });
     const x = cam.target.x;
     const z = cam.target.z;
     const yaw = cam.yaw;
@@ -34,7 +40,8 @@ describe('RtsCameraController keys', () => {
   const moved = (r: { dx: number; dz: number }): number => Math.hypot(r.dx, r.dz);
 
   it('pans with WASD and the arrows by default', () => {
-    for (const code of ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowLeft']) expect(moved(hold(code))).toBeGreaterThan(0.1);
+    for (const code of ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowLeft'])
+      expect(moved(hold(code))).toBeGreaterThan(0.1);
     expect(moved(hold('KeyX'))).toBe(0);
   });
 
@@ -67,7 +74,10 @@ describe('RtsCameraController edge scroll', () => {
   });
   afterEach(() => vi.unstubAllGlobals());
 
-  const move = (x: number, y: number): void => void window.dispatchEvent(Object.assign(new Event('pointermove'), { clientX: x, clientY: y, movementX: 0 }));
+  const move = (x: number, y: number): void =>
+    void window.dispatchEvent(
+      Object.assign(new Event('pointermove'), { clientX: x, clientY: y, movementX: 0 }),
+    );
 
   function panAfter(steps: () => void): number {
     const cam = new RtsCameraController(new PerspectiveCamera(), fakeDom());

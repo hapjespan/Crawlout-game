@@ -1,6 +1,11 @@
 // Snapshot parsing: typed-array views over one transferable ArrayBuffer (contract 1, packages/protocol/src/snapshot.ts).
 // No copies: every field is a view into the buffer, so parsing costs a few small allocations per tick.
-import { SNAPSHOT_HEADER_BYTES, readSnapshotHeader, snapshotLayout, type SnapshotHeader } from '@crawlout/protocol';
+import {
+  SNAPSHOT_HEADER_BYTES,
+  readSnapshotHeader,
+  snapshotLayout,
+  type SnapshotHeader,
+} from '@crawlout/protocol';
 
 export interface SnapshotEntities {
   id: Uint32Array;
@@ -36,14 +41,18 @@ export class SnapshotParseError extends Error {
 /** Reads a snapshot buffer into SoA views. Throws SnapshotParseError when the buffer is shorter than its header claims. */
 export function parseSnapshot(buf: ArrayBuffer): SnapshotView {
   if (buf.byteLength < SNAPSHOT_HEADER_BYTES) {
-    throw new SnapshotParseError(`snapshot is ${buf.byteLength} bytes, header alone needs ${SNAPSHOT_HEADER_BYTES}`);
+    throw new SnapshotParseError(
+      `snapshot is ${buf.byteLength} bytes, header alone needs ${SNAPSHOT_HEADER_BYTES}`,
+    );
   }
   const header = readSnapshotHeader(buf);
   const n = header.entityCount;
   const m = header.eventCount;
   const layout = snapshotLayout(n, m);
   if (buf.byteLength < layout.totalBytes) {
-    throw new SnapshotParseError(`snapshot is ${buf.byteLength} bytes, ${n} entities and ${m} events need ${layout.totalBytes}`);
+    throw new SnapshotParseError(
+      `snapshot is ${buf.byteLength} bytes, ${n} entities and ${m} events need ${layout.totalBytes}`,
+    );
   }
   const e = layout.entity;
   const v = layout.event;

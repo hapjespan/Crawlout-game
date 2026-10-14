@@ -59,7 +59,11 @@ export class UnitAssetRegistry {
   constructor(
     private readonly layer: RigTarget,
     private readonly loader: UnitAssetLoader,
-    private readonly opts: { config?: UnitAssetConfig | undefined; maxTextureSize: number; warn?: (message: string) => void },
+    private readonly opts: {
+      config?: UnitAssetConfig | undefined;
+      maxTextureSize: number;
+      warn?: (message: string) => void;
+    },
   ) {}
 
   /** Loads the configured default unit, if any. */
@@ -82,17 +86,29 @@ export class UnitAssetRegistry {
       this.typesByAsset.set(id, list);
     }
     const loads: Promise<unknown>[] = [];
+    // Without a configured default unit, the first loadout body (in loadout order) also draws the units and heroes
+    // without a body of their own, so no placeholder stands between real characters.
+    let first = !this.opts.config?.defaultUnit;
     for (const [assetId, typeIds] of this.typesByAsset) {
-      const loaded = [...this.entries.values()].find((e) => e.status.assetId === assetId && e.status.state !== 'failed');
+      const asDefault = first;
+      first = false;
+      const loaded = [...this.entries.values()].find(
+        (e) => e.status.assetId === assetId && e.status.state !== 'failed',
+      );
       if (loaded) {
-        loads.push(loaded.rig.then((rig) => this.assign(loaded.status, typeIds, rig)));
+        loads.push(
+          loaded.rig.then((rig) => {
+            this.assign(loaded.status, typeIds, rig);
+            if (asDefault && rig !== null && !this.disposed) this.layer.setDefaultRig(rig);
+          }),
+        );
         continue;
       }
       const c = this.opts.config;
       if (!c) continue;
       loads.push(
         this.loader.has(c.manifestUrl, assetId).then(
-          (has) => (has ? this.load(c.manifestUrl, assetId) : null),
+          (has) => (has ? this.load(c.manifestUrl, assetId, { asDefault }) : null),
           () => null, // no manifest yet: placeholder for everyone
         ),
       );
@@ -107,36 +123,51 @@ export class UnitAssetRegistry {
   }
 
   /** Loads (once per manifest and id) and puts it to use. Never rejects: a failure is a status, not an exception. */
-  load(manifestUrl: string, assetId: string, opts: UnitAssetOptions = {}): Promise<UnitAssetStatus> {
+  load(
+    manifestUrl: string,
+    assetId: string,
+    opts: UnitAssetOptions = {},
+  ): Promise<UnitAssetStatus> {
     const key = `${manifestUrl}#${assetId}`;
     let entry = this.entries.get(key);
     if (!entry || entry.status.state === 'failed') {
       const status: UnitAssetStatus = { assetId, manifestUrl, state: 'loading', typeIds: [] };
       const teamMask = opts.teamMask ?? this.opts.config?.teamMask;
-      const rig = this.loader.load(manifestUrl, assetId, teamMask ? { teamMask } : {}).then(
-        (asset) => {
+      const rig = this.loader
+        .load(manifestUrl, assetId, teamMask ? { teamMask } : {})
+        .then((asset) => {
           if (this.disposed) return null;
           const edge = Math.max(asset.anims.width, asset.anims.height);
-          if (edge > this.opts.maxTextureSize) throw new Error(`bone texture ${asset.anims.width} x ${asset.anims.height} exceeds the GPU limit of ${this.opts.maxTextureSize}`);
+          if (edge > this.opts.maxTextureSize)
+            throw new Error(
+              `bone texture ${asset.anims.width} x ${asset.anims.height} exceeds the GPU limit of ${this.opts.maxTextureSize}`,
+            );
           const lod0 = asset.lods[0];
           const rigIndex = this.layer.addRig({
             name: assetId,
             anims: asset.anims,
             lods: [lod0.geometry, asset.lods[1].geometry, asset.lods[2].geometry],
-            albedo: { map: lod0.map, maskFromMapAlpha: (teamMask ?? 'materialName') === 'diffuseAlpha' },
+            albedo: {
+              map: lod0.map,
+              maskFromMapAlpha: (teamMask ?? 'materialName') === 'diffuseAlpha',
+            },
           });
           status.state = 'ready';
           status.triangles = [lod0.triangles, asset.lods[1].triangles, asset.lods[2].triangles];
-          if (lod0.textureCount > 1) this.opts.warn?.(`unit asset "${assetId}": ${lod0.textureCount} diffuse textures, only the first is used (one atlas per draw)`);
+          if (lod0.textureCount > 1)
+            this.opts.warn?.(
+              `unit asset "${assetId}": ${lod0.textureCount} diffuse textures, only the first is used (one atlas per draw)`,
+            );
           return rigIndex;
-        },
-      );
+        });
       entry = {
         status,
         rig: rig.catch((err: unknown) => {
           status.state = 'failed';
           status.reason = err instanceof Error ? err.message : String(err);
-          this.opts.warn?.(`unit asset "${assetId}" not loaded, placeholder stays: ${status.reason}`);
+          this.opts.warn?.(
+            `unit asset "${assetId}" not loaded, placeholder stays: ${status.reason}`,
+          );
           return null;
         }),
       };

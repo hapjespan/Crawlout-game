@@ -3,12 +3,54 @@ import { act } from 'preact/test-utils';
 import { COMMAND_PAYLOADS, CommandEnvelope } from '@crawlout/protocol';
 import type { CommandType, HeroStatus, PlayerStatus } from '@crawlout/protocol';
 import { ACTIONS, mountHud } from './index.js';
-import type { CraftOption, HeroAbilityOption, HudDeps, HudHandle, PerkOption, RecruitOption, ResearchOption, SelectedEntity } from './index.js';
+import type {
+  CraftOption,
+  HeroAbilityOption,
+  HudDeps,
+  HudHandle,
+  PerkOption,
+  RecruitOption,
+  ResearchOption,
+  SelectedEntity,
+} from './index.js';
 
-const heroBase: HeroStatus = { heroId: 5, level: 4, xp: 200, xpNext: 400, special: [5, 5, 5, 5, 5, 5, 5], perks: [], pendingPerks: 0, revivesLeft: 3, state: 'alive', reviveTicksLeft: 0, entityId: 0, abilityCooldownTicks: [0] };
-const status = (hero: HeroStatus | null): PlayerStatus => ({ playerId: 0, scrap: 100, settlers: 3, pop: 3, popCap: 8, beds: 4, hero });
-const unit = (id: number): SelectedEntity => ({ id, typeId: 3, loadoutName: 'Knuppel', hpPct: 80, role: 'scavenger' });
-const building = (id: number, buildingId: number): SelectedEntity => ({ id, typeId: 1024 + buildingId, loadoutName: null, hpPct: 100, role: null });
+const heroBase: HeroStatus = {
+  heroId: 5,
+  level: 4,
+  xp: 200,
+  xpNext: 400,
+  special: [5, 5, 5, 5, 5, 5, 5],
+  perks: [],
+  pendingPerks: 0,
+  revivesLeft: 3,
+  state: 'alive',
+  reviveTicksLeft: 0,
+  entityId: 0,
+  abilityCooldownTicks: [0],
+};
+const status = (hero: HeroStatus | null): PlayerStatus => ({
+  playerId: 0,
+  scrap: 100,
+  settlers: 3,
+  pop: 3,
+  popCap: 8,
+  beds: 4,
+  hero,
+});
+const unit = (id: number): SelectedEntity => ({
+  id,
+  typeId: 3,
+  loadoutName: 'Knuppel',
+  hpPct: 80,
+  role: 'scavenger',
+});
+const building = (id: number, buildingId: number): SelectedEntity => ({
+  id,
+  typeId: 1024 + buildingId,
+  loadoutName: null,
+  hpPct: 100,
+  role: null,
+});
 const perks: PerkOption[] = [
   { perkId: 11, naam: 'Taai' },
   { perkId: 12, naam: 'Snel' },
@@ -34,7 +76,12 @@ interface Over {
 function setup(o: Over = {}) {
   const sent: Sent[] = [];
   const targeting: string[] = [];
-  const state = { hero: o.hero === undefined ? heroBase : o.hero, selection: o.selection ?? [unit(1)], abilities: o.abilities ?? [], dead: o.dead ?? false };
+  const state = {
+    hero: o.hero === undefined ? heroBase : o.hero,
+    selection: o.selection ?? [unit(1)],
+    abilities: o.abilities ?? [],
+    dead: o.dead ?? false,
+  };
   const reviveHero = vi.fn();
   const queries: { research: number[][]; recruit: number[][] } = { research: [], recruit: [] };
   const deps: HudDeps = {
@@ -61,11 +108,15 @@ function setup(o: Over = {}) {
   });
   return { el, sent, targeting, state, handle, reviveHero, queries };
 }
-const press = (key: string): void => void act(() => void document.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true })));
+const press = (key: string): void =>
+  void act(() => void document.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true })));
 const click = (el: Element | null): void => void act(() => void (el as HTMLElement).click());
 function expectValid(s: Sent): void {
   expect(COMMAND_PAYLOADS[s.type].safeParse(s.payload).success).toBe(true);
-  expect(CommandEnvelope.safeParse({ frame: 0, playerId: 0, seq: 0, type: s.type, payload: s.payload }).success).toBe(true);
+  expect(
+    CommandEnvelope.safeParse({ frame: 0, playerId: 0, seq: 0, type: s.type, payload: s.payload })
+      .success,
+  ).toBe(true);
 }
 
 let mounted: HudHandle | null = null;
@@ -175,7 +226,9 @@ describe('held-abilities', () => {
       ok = t.handle.completeTargeting({ x: 1000.6, y: 2000 });
     });
     expect(ok).toBe(true);
-    expect(t.sent).toEqual([{ type: 'HeroAbility', payload: { heroId: 5, abilityId: 2, x: 1001, y: 2000 } }]);
+    expect(t.sent).toEqual([
+      { type: 'HeroAbility', payload: { heroId: 5, abilityId: 2, x: 1001, y: 2000 } },
+    ]);
     expectValid(t.sent[0]!);
     expect(t.el.querySelector('.co-targeting')).toBeNull();
   });
@@ -212,12 +265,14 @@ describe('held-abilities', () => {
   });
 });
 
-describe('research en recruit voor geselecteerde gebouwen', () => {
+describe('verouderde deps: research en recruit worden kaarten', () => {
   const research: ResearchOption[] = [
     { techId: 7, naam: 'Pantser', scrapCost: 80, affordable: true },
     { techId: 8, naam: 'Vuurwapens', scrapCost: 900, affordable: false },
   ];
-  const recruit: RecruitOption[] = [{ buildingId: 4, naam: 'Strijder', scrapCost: 50, affordable: true }];
+  const recruit: RecruitOption[] = [
+    { buildingId: 4, naam: 'Strijder', scrapCost: 50, affordable: true },
+  ];
 
   it('toont het paneel met kosten en geeft de buildingIds aan de deps', () => {
     const t = setup({ selection: [building(9, 4), building(10, 4)], research, recruit });
@@ -225,19 +280,25 @@ describe('research en recruit voor geselecteerde gebouwen', () => {
     const panel = t.el.querySelector('[aria-label="Gebouw"]');
     expect(panel?.textContent).toContain('Pantser');
     expect(panel?.textContent).toContain('900');
-    expect(t.el.querySelector<HTMLButtonElement>('[data-research="8"]')?.disabled).toBe(true);
+    expect(
+      t.el
+        .querySelector<HTMLButtonElement>('[data-card-kind="research"][data-card-id="8"]')
+        ?.getAttribute('aria-disabled'),
+    ).toBe('true');
     expect(t.queries.research.at(-1)).toEqual([4]);
   });
 
   it('klik en cijfers sturen Research en Recruit; te duur stuurt niets', () => {
     const t = setup({ selection: [building(9, 4)], research, recruit });
     mounted = t.handle;
-    click(t.el.querySelector('[data-research="7"]'));
+    click(t.el.querySelector('[data-card-kind="research"][data-card-id="7"]'));
     press('3');
     press('2');
+    press('1');
     expect(t.sent).toEqual([
       { type: 'Research', payload: { techId: 7 } },
       { type: 'Recruit', payload: { buildingId: 4 } },
+      { type: 'Research', payload: { techId: 7 } },
     ]);
     t.sent.forEach(expectValid);
   });
@@ -257,32 +318,33 @@ describe('research en recruit voor geselecteerde gebouwen', () => {
   });
 });
 
-describe('craft voor geselecteerde bewoners', () => {
+describe('verouderde deps: craft wordt kaarten', () => {
   const craft: CraftOption[] = [
     { loadoutId: 2, naam: 'Knuppel', scrapCost: 20, affordable: true },
     { loadoutId: 3, naam: 'Geweer', scrapCost: 300, affordable: false },
   ];
 
-  it('K opent het menu; keuze stuurt Craft met alleen units', () => {
+  it('K activeert de cijfertoetsen; keuze stuurt Craft met alleen units', () => {
     const t = setup({ selection: [unit(1), unit(2), building(9, 1)], craft });
     mounted = t.handle;
-    expect(t.el.querySelector('[aria-label="Craftmenu"]')).toBeNull();
+    expect(t.el.querySelector('[aria-label="Gebouw"]')).toBeNull();
+    press('1'); // zonder K is 1 de rolletoets
+    expect(t.sent).toEqual([{ type: 'SetRole', payload: { ids: [1, 2, 9], role: 'scavenger' } }]);
+    t.sent.length = 0;
     press('k');
-    expect(t.el.querySelector('[aria-label="Craftmenu"]')).not.toBeNull();
-    expect(t.el.querySelector<HTMLButtonElement>('[data-craft="3"]')?.disabled).toBe(true);
+    click(t.el.querySelector('[data-card-id="3"]'));
     press('2');
     expect(t.sent).toEqual([]);
     press('1');
     expect(t.sent).toEqual([{ type: 'Craft', payload: { ids: [1, 2], loadoutId: 2 } }]);
     expectValid(t.sent[0]!);
-    expect(t.el.querySelector('[aria-label="Craftmenu"]')).toBeNull();
   });
 
   it('zonder opties (niet bij een werkplaats) is K uitgeschakeld', () => {
     const t = setup({ selection: [unit(1)] });
     mounted = t.handle;
     press('k');
-    expect(t.el.querySelector('[aria-label="Craftmenu"]')).toBeNull();
+    expect(t.el.querySelector('.co-cards')).toBeNull();
   });
 });
 

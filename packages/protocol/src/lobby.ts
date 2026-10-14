@@ -1,5 +1,12 @@
 import { z } from 'zod';
-import { FrameBundle, HashReport, DesyncEvent, ResyncRequest, ResyncResponse, StallNotice } from './frames.js';
+import {
+  FrameBundle,
+  HashReport,
+  DesyncEvent,
+  ResyncRequest,
+  ResyncResponse,
+  StallNotice,
+} from './frames.js';
 import { CommandEnvelope } from './commands.js';
 import { SEED_MAX } from './constants.js';
 
@@ -21,14 +28,31 @@ const clientId = z.string().min(8).max(64);
 // - Reconnect: een join met bekend clientId na start krijgt opnieuw `start` (zelfde seed, map en spelers) en de
 //   relay start de resync zelf (resyncRequest naar de laagste online menselijke peer). Een resyncRequest van de
 //   client blijft toegestaan en is dan een no-op zolang er een resync loopt.
-export const MatchSettings = z.object({ mode: z.enum(['skirmish', 'survival']), delayFrames: uint, dominanceMinutes: uint.optional() }).strict();
+export const MatchSettings = z
+  .object({
+    mode: z.enum(['skirmish', 'survival']),
+    delayFrames: uint,
+    dominanceMinutes: uint.optional(),
+  })
+  .strict();
 export type MatchSettings = z.infer<typeof MatchSettings>;
-export const LobbyPlayer = z.object({ playerId: uint, name, faction: z.string(), ready: z.boolean(), online: z.boolean(), ai: z.boolean() }).strict();
+export const LobbyPlayer = z
+  .object({
+    playerId: uint,
+    name,
+    faction: z.string(),
+    ready: z.boolean(),
+    online: z.boolean(),
+    ai: z.boolean(),
+  })
+  .strict();
 export type LobbyPlayer = z.infer<typeof LobbyPlayer>;
 
 export const ClientMessage = z.discriminatedUnion('kind', [
   // clientId: bij een reconnect na start koppelt de relay dezelfde playerId; daarna volgt resyncRequest.
-  z.object({ kind: z.literal('join'), roomId: z.string(), name, clientId: clientId.optional() }).strict(),
+  z
+    .object({ kind: z.literal('join'), roomId: z.string(), name, clientId: clientId.optional() })
+    .strict(),
   z.object({ kind: z.literal('leave') }).strict(),
   z.object({ kind: z.literal('ready'), ready: z.boolean() }).strict(),
   z.object({ kind: z.literal('setFaction'), faction: z.string() }).strict(),
@@ -46,8 +70,26 @@ export const ClientMessage = z.discriminatedUnion('kind', [
 export type ClientMessage = z.infer<typeof ClientMessage>;
 
 export const ServerMessage = z.discriminatedUnion('kind', [
-  z.object({ kind: z.literal('lobby'), roomId: z.string(), map: z.string(), players: z.array(LobbyPlayer), settings: MatchSettings.optional() }).strict(),
-  z.object({ kind: z.literal('start'), seed: uint.max(SEED_MAX), map: z.string(), players: z.array(LobbyPlayer), settings: MatchSettings, dataVersion: z.string(), you: uint }).strict(),
+  z
+    .object({
+      kind: z.literal('lobby'),
+      roomId: z.string(),
+      map: z.string(),
+      players: z.array(LobbyPlayer),
+      settings: MatchSettings.optional(),
+    })
+    .strict(),
+  z
+    .object({
+      kind: z.literal('start'),
+      seed: uint.max(SEED_MAX),
+      map: z.string(),
+      players: z.array(LobbyPlayer),
+      settings: MatchSettings,
+      dataVersion: z.string(),
+      you: uint,
+    })
+    .strict(),
   z.object({ kind: z.literal('bundle'), bundle: FrameBundle }).strict(),
   z.object({ kind: z.literal('desync'), event: DesyncEvent }).strict(),
   z.object({ kind: z.literal('stall'), notice: StallNotice }).strict(),

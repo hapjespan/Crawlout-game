@@ -13,7 +13,11 @@ import type { AssetManifest } from '@crawlout/asset-cli/manifest';
 
 export const FIXTURE_ID = 'dweller_body_test';
 /** Rest (= bind) world positions of the joints. */
-export const JOINTS: readonly { name: string; parent: number; world: readonly [number, number, number] }[] = [
+export const JOINTS: readonly {
+  name: string;
+  parent: number;
+  world: readonly [number, number, number];
+}[] = [
   { name: 'Hips', parent: -1, world: [0, 1, 0] },
   { name: 'Spine', parent: 0, world: [0, 1.5, 0] },
   { name: 'Head', parent: 1, world: [0, 1.85, 0] },
@@ -31,16 +35,40 @@ interface Part {
   size: [number, number, number];
   center: [number, number, number];
   /** Joint weights as a function of the vertex height. */
-  skin: (y: number) => { joints: [number, number, number, number]; weights: [number, number, number, number] };
+  skin: (y: number) => {
+    joints: [number, number, number, number];
+    weights: [number, number, number, number];
+  };
 }
 
 const PARTS: Part[] = [
-  { material: 'Team_Shirt', size: [0.5, 0.6, 0.3], center: [0, 1.4, 0], skin: (y) => (y < 1.3 ? { joints: [0, 1, 0, 0], weights: [0.5, 0.5, 0, 0] } : { joints: [1, 0, 0, 0], weights: [1, 0, 0, 0] }) },
-  { material: 'Skin', size: [0.4, 1, 0.25], center: [0, 0.5, 0], skin: () => ({ joints: [0, 0, 0, 0], weights: [1, 0, 0, 0] }) },
-  { material: 'Skin', size: [0.22, 0.25, 0.22], center: [0, 1.85, 0], skin: () => ({ joints: [2, 0, 0, 0], weights: [1, 0, 0, 0] }) },
+  {
+    material: 'Team_Shirt',
+    size: [0.5, 0.6, 0.3],
+    center: [0, 1.4, 0],
+    skin: (y) =>
+      y < 1.3
+        ? { joints: [0, 1, 0, 0], weights: [0.5, 0.5, 0, 0] }
+        : { joints: [1, 0, 0, 0], weights: [1, 0, 0, 0] },
+  },
+  {
+    material: 'Skin',
+    size: [0.4, 1, 0.25],
+    center: [0, 0.5, 0],
+    skin: () => ({ joints: [0, 0, 0, 0], weights: [1, 0, 0, 0] }),
+  },
+  {
+    material: 'Skin',
+    size: [0.22, 0.25, 0.22],
+    center: [0, 1.85, 0],
+    skin: () => ({ joints: [2, 0, 0, 0], weights: [1, 0, 0, 0] }),
+  },
 ];
 
-export const MATERIAL_COLORS = { Team_Shirt: [0.6, 0.6, 0.65, 1], Skin: [0.8, 0.5, 0.35, 1] } as const;
+export const MATERIAL_COLORS = {
+  Team_Shirt: [0.6, 0.6, 0.65, 1],
+  Skin: [0.8, 0.5, 0.35, 1],
+} as const;
 
 /** All source vertices, for comparing what the loader brings back. */
 export function sourceVertices(): SourceVertex[] {
@@ -50,14 +78,18 @@ export function sourceVertices(): SourceVertex[] {
     const p = g.getAttribute('position');
     for (let i = 0; i < p.count; i++) {
       const s = part.skin(p.getY(i));
-      out.push({ position: [p.getX(i), p.getY(i), p.getZ(i)], ...s, team: part.material === 'Team_Shirt' });
+      out.push({
+        position: [p.getX(i), p.getY(i), p.getZ(i)],
+        ...s,
+        team: part.material === 'Team_Shirt',
+      });
     }
     g.dispose();
   }
   return out;
 }
 
-function sourceDocument(): Document {
+function sourceDocument(rename: Readonly<Record<string, string>> = {}): Document {
   const doc = new Document().setLogger(new Logger(Logger.Verbosity.WARN));
   const buffer = doc.createBuffer();
   const scene = doc.createScene('scene');
@@ -65,14 +97,22 @@ function sourceDocument(): Document {
   for (const j of JOINTS) {
     const node = doc.createNode(j.name);
     const parent = j.parent >= 0 ? JOINTS[j.parent]!.world : [0, 0, 0];
-    node.setTranslation([j.world[0] - parent[0]!, j.world[1] - parent[1]!, j.world[2] - parent[2]!]);
+    node.setTranslation([
+      j.world[0] - parent[0]!,
+      j.world[1] - parent[1]!,
+      j.world[2] - parent[2]!,
+    ]);
     if (j.parent >= 0) nodes[j.parent]!.addChild(node);
     else scene.addChild(node);
     nodes.push(node);
   }
   const ibm = new Float32Array(JOINTS.length * 16);
-  JOINTS.forEach((j, i) => ibm.set(new Matrix4().makeTranslation(-j.world[0], -j.world[1], -j.world[2]).elements, i * 16));
-  const skin = doc.createSkin('skin').setInverseBindMatrices(doc.createAccessor().setArray(ibm).setType('MAT4').setBuffer(buffer));
+  JOINTS.forEach((j, i) =>
+    ibm.set(new Matrix4().makeTranslation(-j.world[0], -j.world[1], -j.world[2]).elements, i * 16),
+  );
+  const skin = doc
+    .createSkin('skin')
+    .setInverseBindMatrices(doc.createAccessor().setArray(ibm).setType('MAT4').setBuffer(buffer));
   for (const n of nodes) skin.addJoint(n);
 
   const mesh = doc.createMesh('body');
@@ -99,8 +139,11 @@ function sourceDocument(): Document {
       for (let i = 0; i < gi.count; i++) idx.push(base + gi.getX(i));
       g.dispose();
     }
-    const acc = (array: Float32Array | Uint16Array, type: 'VEC3' | 'VEC4' | 'SCALAR') => doc.createAccessor().setArray(array).setType(type).setBuffer(buffer);
-    const material = doc.createMaterial(name).setBaseColorFactor([...MATERIAL_COLORS[name]]);
+    const acc = (array: Float32Array | Uint16Array, type: 'VEC3' | 'VEC4' | 'SCALAR') =>
+      doc.createAccessor().setArray(array).setType(type).setBuffer(buffer);
+    const material = doc
+      .createMaterial(rename[name] ?? name)
+      .setBaseColorFactor([...MATERIAL_COLORS[name]]);
     mesh.addPrimitive(
       doc
         .createPrimitive()
@@ -117,17 +160,34 @@ function sourceDocument(): Document {
 }
 
 function io(): NodeIO {
-  return new NodeIO().setLogger(new Logger(Logger.Verbosity.WARN)).registerExtensions(ALL_EXTENSIONS).registerDependencies({ 'meshopt.decoder': MeshoptDecoder, 'meshopt.encoder': MeshoptEncoder });
+  return new NodeIO()
+    .setLogger(new Logger(Logger.Verbosity.WARN))
+    .registerExtensions(ALL_EXTENSIONS)
+    .registerDependencies({ 'meshopt.decoder': MeshoptDecoder, 'meshopt.encoder': MeshoptEncoder });
 }
 
 /** One LOD GLB as lods.ts writes it (dedup, prune, reorder, meshopt); `quantized` adds quantize() first. */
-export async function fixtureGlb(opts: { meshopt?: boolean; quantized?: boolean } = {}): Promise<Uint8Array> {
+/** `materialNames` renames the fixture's materials (Team_Shirt, Skin), e.g. to an asset without a "team" material. */
+export async function fixtureGlb(
+  opts: {
+    meshopt?: boolean;
+    quantized?: boolean;
+    materialNames?: Readonly<Record<string, string>>;
+  } = {},
+): Promise<Uint8Array> {
   await Promise.all([MeshoptEncoder.ready, MeshoptDecoder.ready]);
-  const doc = sourceDocument();
+  const doc = sourceDocument(opts.materialNames);
   if (opts.quantized) await doc.transform(quantize());
   if (opts.meshopt ?? true) {
-    await doc.transform(dedup(), prune({ keepSolidTextures: true }), reorder({ encoder: MeshoptEncoder }));
-    doc.createExtension(EXTMeshoptCompression).setRequired(true).setEncoderOptions({ method: EXTMeshoptCompression.EncoderMethod.QUANTIZE });
+    await doc.transform(
+      dedup(),
+      prune({ keepSolidTextures: true }),
+      reorder({ encoder: MeshoptEncoder }),
+    );
+    doc
+      .createExtension(EXTMeshoptCompression)
+      .setRequired(true)
+      .setEncoderOptions({ method: EXTMeshoptCompression.EncoderMethod.QUANTIZE });
   }
   return io().writeBinary(doc);
 }
@@ -138,7 +198,11 @@ export function jointWorlds(clip: number, frame: number): Matrix4[] {
   const q = new Quaternion();
   JOINTS.forEach((j, i) => {
     const parent = j.parent >= 0 ? JOINTS[j.parent]!.world : [0, 0, 0];
-    const local = new Vector3(j.world[0] - parent[0]!, j.world[1] - parent[1]!, j.world[2] - parent[2]!);
+    const local = new Vector3(
+      j.world[0] - parent[0]!,
+      j.world[1] - parent[1]!,
+      j.world[2] - parent[2]!,
+    );
     if (i === 0) local.y += 0.05 * frame;
     const angle = i === 0 ? 0.3 * clip : i === 1 ? 0.2 + 0.25 * frame : -0.1 * clip;
     q.setFromAxisAngle(i === 1 ? new Vector3(1, 0, 0) : new Vector3(0, 1, 0), angle);
@@ -151,7 +215,8 @@ export function jointWorlds(clip: number, frame: number): Matrix4[] {
 /** Skin matrix (joint world * IBM) of a joint in a frame. */
 export function skinMatrix(clip: number, frame: number, joint: number): Matrix4 {
   const w = JOINTS[joint]!.world;
-  return jointWorlds(clip, frame)[joint]!.clone().multiply(new Matrix4().makeTranslation(-w[0], -w[1], -w[2]));
+  const world = jointWorlds(clip, frame)[joint]!;
+  return world.clone().multiply(new Matrix4().makeTranslation(-w[0], -w[1], -w[2]));
 }
 
 export const FRAMES_PER_CLIP = 3;
@@ -165,7 +230,9 @@ export function fixtureAnimF32(): ArrayBuffer {
     for (let f = 0; f < FRAMES_PER_CLIP; f++) {
       const row = c * FRAMES_PER_CLIP + f;
       for (let j = 0; j < JOINTS.length; j++) {
-        skinMatrix(c, f, j).elements.forEach((v, k) => dv.setFloat32(((row * width + j * 4) * 4 + k) * 4, v, true));
+        skinMatrix(c, f, j).elements.forEach((v, k) =>
+          dv.setFloat32(((row * width + j * 4) * 4 + k) * 4, v, true),
+        );
       }
     }
   }
@@ -174,7 +241,11 @@ export function fixtureAnimF32(): ArrayBuffer {
 
 /** A manifest with the fixture as its only character, plus a prop. */
 export function fixtureManifest(id = FIXTURE_ID): AssetManifest {
-  const lods = [0, 1, 2].map((level) => ({ level, path: `${id}/lod${level}.glb`, triangles: 36 })) as AssetManifest['assets'][number]['lods'];
+  const lods = [0, 1, 2].map((level) => ({
+    level,
+    path: `${id}/lod${level}.glb`,
+    triangles: 36,
+  })) as AssetManifest['assets'][number]['lods'];
   return {
     version: 1,
     assets: [
@@ -191,14 +262,24 @@ export function fixtureManifest(id = FIXTURE_ID): AssetManifest {
           width: JOINTS.length * 4,
           height: ANIM_NAMES.length * FRAMES_PER_CLIP,
           fps: 30,
-          clips: ANIM_NAMES.map((name, i) => ({ name, startRow: i * FRAMES_PER_CLIP, frames: FRAMES_PER_CLIP, loop: name !== 'death', durationSeconds: 1 })),
+          clips: ANIM_NAMES.map((name, i) => ({
+            name,
+            startRow: i * FRAMES_PER_CLIP,
+            frames: FRAMES_PER_CLIP,
+            loop: name !== 'death',
+            durationSeconds: 1,
+          })),
         },
       },
       {
         id: 'crate',
         kind: 'prop',
         bounds: { min: [0, 0, 0], max: [1, 1, 1] },
-        lods: [0, 1, 2].map((level) => ({ level, path: `crate/lod${level}.glb`, triangles: 12 })) as AssetManifest['assets'][number]['lods'],
+        lods: [0, 1, 2].map((level) => ({
+          level,
+          path: `crate/lod${level}.glb`,
+          triangles: 12,
+        })) as AssetManifest['assets'][number]['lods'],
         sockets: {},
         animations: [],
         boneCount: 0,

@@ -4,7 +4,9 @@ import { ENTITY_FLAG } from '@crawlout/protocol';
 import { createInterpolatedFrame, type InterpolatedFrame } from '../snapshot/interpolate.js';
 import { pickEntity, pickNearestOnScreen, PICK_CENTER_HEIGHT, selectInRect } from './selection.js';
 
-function frameOf(units: { id: number; x: number; z: number; owner?: number; flags?: number }[]): InterpolatedFrame {
+function frameOf(
+  units: { id: number; x: number; z: number; owner?: number; flags?: number }[],
+): InterpolatedFrame {
   const f = createInterpolatedFrame(units.length);
   units.forEach((u, i) => {
     f.id[i] = u.id;
@@ -36,13 +38,35 @@ describe('selectInRect', () => {
   const { viewProj } = topDown();
 
   it('selects units whose center projects into the rectangle, in any corner order', () => {
-    expect(selectInRect(frame, viewProj.elements, 800, 800, { x0: 380, y0: 380, x1: 420, y1: 420 })).toEqual([1]);
-    expect(selectInRect(frame, viewProj.elements, 800, 800, { x0: 800, y0: 800, x1: 0, y1: 0 }).sort()).toEqual([1, 2, 3]);
+    expect(
+      selectInRect(frame, viewProj.elements, 800, 800, { x0: 380, y0: 380, x1: 420, y1: 420 }),
+    ).toEqual([1]);
+    expect(
+      selectInRect(frame, viewProj.elements, 800, 800, { x0: 800, y0: 800, x1: 0, y1: 0 }).sort(),
+    ).toEqual([1, 2, 3]);
   });
 
   it('filters on owner and skips dead units unless asked', () => {
-    expect(selectInRect(frame, viewProj.elements, 800, 800, { x0: 0, y0: 0, x1: 800, y1: 800 }, { owner: 1 })).toEqual([2]);
-    expect(selectInRect(frame, viewProj.elements, 800, 800, { x0: 0, y0: 0, x1: 800, y1: 800 }, { includeDead: true })).toContain(4);
+    expect(
+      selectInRect(
+        frame,
+        viewProj.elements,
+        800,
+        800,
+        { x0: 0, y0: 0, x1: 800, y1: 800 },
+        { owner: 1 },
+      ),
+    ).toEqual([2]);
+    expect(
+      selectInRect(
+        frame,
+        viewProj.elements,
+        800,
+        800,
+        { x0: 0, y0: 0, x1: 800, y1: 800 },
+        { includeDead: true },
+      ),
+    ).toContain(4);
   });
 });
 

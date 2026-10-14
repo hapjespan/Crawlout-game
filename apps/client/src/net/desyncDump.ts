@@ -18,8 +18,21 @@ export interface DesyncDump {
   state: ArrayBuffer;
 }
 
-export function buildDesyncDump(event: DesyncEvent, playerId: number, state: { frame: number; hash: number; buffer: ArrayBuffer }, savedAt: number): DesyncDump {
-  return { frame: event.frame, simFrame: state.frame, hash: state.hash, playerId, hashes: { ...event.hashes }, savedAt, state: state.buffer };
+export function buildDesyncDump(
+  event: DesyncEvent,
+  playerId: number,
+  state: { frame: number; hash: number; buffer: ArrayBuffer },
+  savedAt: number,
+): DesyncDump {
+  return {
+    frame: event.frame,
+    simFrame: state.frame,
+    hash: state.hash,
+    playerId,
+    hashes: { ...event.hashes },
+    savedAt,
+    state: state.buffer,
+  };
 }
 
 function request<T>(req: IDBRequest<T>): Promise<T> {
@@ -37,7 +50,10 @@ function openDb(factory: IDBFactory): Promise<IDBDatabase> {
   return request(open);
 }
 
-export async function saveDesyncDump(dump: DesyncDump, factory: IDBFactory = indexedDB): Promise<void> {
+export async function saveDesyncDump(
+  dump: DesyncDump,
+  factory: IDBFactory = indexedDB,
+): Promise<void> {
   const db = await openDb(factory);
   try {
     const tx = db.transaction(DESYNC_STORE, 'readwrite');
@@ -53,10 +69,15 @@ export async function saveDesyncDump(dump: DesyncDump, factory: IDBFactory = ind
   }
 }
 
-export async function readDesyncDump(frame: number, factory: IDBFactory = indexedDB): Promise<DesyncDump | undefined> {
+export async function readDesyncDump(
+  frame: number,
+  factory: IDBFactory = indexedDB,
+): Promise<DesyncDump | undefined> {
   const db = await openDb(factory);
   try {
-    return (await request(db.transaction(DESYNC_STORE, 'readonly').objectStore(DESYNC_STORE).get(frame))) as DesyncDump | undefined;
+    return (await request(
+      db.transaction(DESYNC_STORE, 'readonly').objectStore(DESYNC_STORE).get(frame),
+    )) as DesyncDump | undefined;
   } finally {
     db.close();
   }
