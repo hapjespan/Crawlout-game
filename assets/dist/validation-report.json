@@ -148,6 +148,195 @@
       "scale": null
     },
     {
+      "id": "dweller_building_beacon",
+      "source": "buildings/variants.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "building",
+      "sourceTriangles": 32,
+      "lodTriangles": [
+        140,
+        140,
+        119
+      ],
+      "materials": [
+        "metal",
+        "roof",
+        "team_trim"
+      ],
+      "textureSizes": [
+        512,
+        256,
+        128
+      ]
+    },
+    {
+      "id": "dweller_building_claim_post",
+      "source": "buildings/variants.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "building",
+      "sourceTriangles": 32,
+      "lodTriangles": [
+        88,
+        88,
+        67
+      ],
+      "materials": [
+        "metal",
+        "roof",
+        "team_trim"
+      ],
+      "textureSizes": [
+        512,
+        256,
+        128
+      ]
+    },
+    {
+      "id": "dweller_building_housing",
+      "source": "buildings/variants.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "building",
+      "sourceTriangles": 86,
+      "lodTriangles": [
+        1474,
+        483,
+        122
+      ],
+      "materials": [
+        "roof",
+        "team_trim",
+        "wall_proxy"
+      ],
+      "textureSizes": [
+        512,
+        256,
+        128
+      ]
+    },
+    {
+      "id": "dweller_building_hq",
+      "source": "buildings/variants.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "building",
+      "sourceTriangles": 172,
+      "lodTriangles": [
+        2202,
+        809,
+        287
+      ],
+      "materials": [
+        "metal",
+        "roof",
+        "team_trim",
+        "wall_proxy"
+      ],
+      "textureSizes": [
+        512,
+        256,
+        128
+      ]
+    },
+    {
+      "id": "dweller_building_lab",
+      "source": "buildings/variants.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "building",
+      "sourceTriangles": 86,
+      "lodTriangles": [
+        1710,
+        598,
+        216
+      ],
+      "materials": [
+        "metal",
+        "roof",
+        "team_trim",
+        "wall_proxy"
+      ],
+      "textureSizes": [
+        512,
+        256,
+        128
+      ]
+    },
+    {
+      "id": "dweller_building_training",
+      "source": "buildings/variants.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "building",
+      "sourceTriangles": 86,
+      "lodTriangles": [
+        1672,
+        587,
+        198
+      ],
+      "materials": [
+        "dirt",
+        "metal",
+        "roof",
+        "team_trim",
+        "wall_proxy"
+      ],
+      "textureSizes": [
+        512,
+        256,
+        128
+      ]
+    },
+    {
+      "id": "dweller_building_turret",
+      "source": "buildings/variants.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "building",
+      "sourceTriangles": 32,
+      "lodTriangles": [
+        156,
+        156,
+        135
+      ],
+      "materials": [
+        "metal",
+        "roof",
+        "team_trim"
+      ],
+      "textureSizes": [
+        512,
+        256,
+        128
+      ]
+    },
+    {
+      "id": "dweller_building_workshop",
+      "source": "buildings/variants.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "building",
+      "sourceTriangles": 86,
+      "lodTriangles": [
+        1635,
+        556,
+        166
+      ],
+      "materials": [
+        "metal",
+        "roof",
+        "team_trim",
+        "wall_proxy"
+      ],
+      "textureSizes": [
+        512,
+        256,
+        128
+      ]
+    },
+    {
       "id": "grass001",
       "source": "props/Grass001.glb",
       "errors": [],

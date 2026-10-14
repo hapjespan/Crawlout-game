@@ -12,6 +12,46 @@ export const BUDGETS = {
    * ongewijzigd, dus LOD1 en LOD2 zijn dan dezelfde geometrie als LOD0.
    */
   propMaxTris: [2000, 800, 300] as const,
+  /**
+   * Gebouwen (kind 'building', de varianten van assets/src/buildings/variants.json): absolute plafonds per LOD. De brief
+   * noemt alleen karakters; gebouwen staan stil en worden per type geinstanced, dus LOD0 mag ongeveer 1500 tot 2500
+   * driehoeken hebben bij de grote gebouwen (hoofdgebouw), de kleine blijven er ruim onder via `lod0Triangles` in de
+   * config. LOD1 is het werkpaard op middenafstand, LOD2 een silhouet voor de verte.
+   */
+  buildingMaxTris: [2500, 1000, 300] as const,
+  /** Verhouding van LOD1 en LOD2 tot het LOD0-doel van een gebouw (`lod0Triangles` in de config), begrensd door het plafond. */
+  buildingLodRatios: [1, 0.4, 0.12] as const,
+  /**
+   * Textuurmaat per LOD (maximale zijde, JPEG). De bron-textures (512 tot 1024) worden hier naartoe verkleind zodat de
+   * LOD-GLB's klein blijven; LOD0 mag tot `buildingMaxTextureSize`.
+   */
+  buildingTextureSizes: [512, 256, 128] as const,
+  buildingMaxTextureSize: 1024,
+  /**
+   * Vereenvoudiging van de bronmeshes van gebouwen (meshopt). `Prune` laat losse kleine onderdelen (de planken en
+   * spijlen van het huisje) vallen zodra het budget krap is; de gewichten houden uv-eilanden en vlakken bijeen.
+   */
+  buildingSimplify: { flags: ['Prune', 'Permissive'], uvWeight: 4, normalWeight: 0.5 } as {
+    flags: readonly ('Prune' | 'Permissive' | 'LockBorder' | 'Sparse')[];
+    uvWeight: number;
+    normalWeight: number;
+  },
+  /**
+   * Verdeling van het driehoekbudget over de materiaalmeshes van een huisonderdeel: aandeel ~ driehoeken^exponent.
+   * Onder 1 houden kleine meshes (het dak, 250 driehoeken) verhoudingsgewijs meer dan de grote (planken en spijlen).
+   */
+  buildingBudgetExponent: 0.5,
+  /** Afstand (in eenheden van het bronmodel) waarbinnen hoekpunten als hetzelfde punt tellen bij `select.components`. */
+  buildingWeldDistance: 0.1,
+  /**
+   * Per LOD: samenhangende delen van een bronmesh die samen minder dan dit deel van het oppervlak hebben (planken,
+   * spijlen, ramen) vallen weg. Op de verre LODs blijven zo de dakvlakken en wanden over in plaats van een brij.
+   */
+  buildingMinComponentArea: [0, 0.01, 0.05] as const,
+  /** Tolerantie (relatief) op de footprint: de bounds vullen w x h cellen van 1 m binnen 5 procent. */
+  buildingFootprintTolerance: 0.05,
+  /** De grond staat op y = 0, tolerantie in meter. */
+  buildingGroundTolerance: 0.01,
   maxBones: 28,
   maxTextureSize: 2048,
   characterHeight: 1.8,

@@ -110,6 +110,27 @@ Gezicht naar +Z wordt gecontroleerd aan de zolen: staan de zoolvertices meer dan
 
 Niet gecontroleerd: tris-only meshes, hand-painted stijl.
 
+## Gebouwen (`src/buildings.ts`, `assets/src/buildings/variants.json`)
+
+De acht Dweller-gebouwen zijn geen losse GLB's in `assets/src` maar varianten van een bron-huisje (`buildings/base_house.glb`, Low poly House van winwoods, CC-BY-4.0, de naamsvermelding staat in `assets/src/licenses` en in het veld `asset.copyright` van elke LOD-GLB). De bron zelf wordt geen asset: bestanden die in `variants.json` onder `sources` staan, slaat de buis over. Alle vormgetallen staan in `variants.json`, niet in code.
+
+De asset-id is de sleutel in `variants`, exact de `visuals.mesh` uit `data/buildings.json` (`dweller_building_hq` enzovoort). Per variant:
+
+- `footprint` `{ w, h }` in cellen van 1 m (zelfde als de data; een test vergelijkt ze). De bounds van het model vullen w x h in x en z binnen 5 procent, het midden van de footprint is de oorsprong in x en z, de grond is y = 0.
+- `lod0Triangles`: doel voor LOD0 (hooguit het plafond van `budgets.ts`); LOD1 en LOD2 volgen de verhoudingen `buildingLodRatios`.
+- `tints`: kleur per uitvoermateriaal (`#rrggbb`, sRGB), vermenigvuldigd met de basiskleur. `colors`: kleur per effen materiaal voor dit gebouw.
+- `parts`: onderdelen, positie (`position`) is de voet (midden onder) in meters, `rotation` in graden (volgorde Y, X, Z), `maxLod` laat fijn detail op LOD1 en LOD2 vallen.
+  - `house`: een kopie van het bron-huisje: `size` `[breedte x, diepte z]` in meters (een niet-uniforme schaal zodat de bounds van het deel precies dat vullen), `heightFactor` op de natuurlijke hoogte bij gelijkmatige schaal (gemiddelde van x en z), optioneel `select` (`materials` met bronnamen, `yFrom` en `yTo` als deel van de huishoogte, `components` voor de N grootste losse delen, bijvoorbeeld alleen de dakvlakken) en `weight` voor het aandeel in het driehoekbudget.
+  - `box` (`size`), `cylinder` (`radius`, `radiusTop`, `height`, `segments`), `cone` (`radius`, `height`, `segments`), elk met een effen `material` uit `flatMaterials`.
+
+Materialen: elk bronmateriaal (spec-gloss, `KHR_materials_pbrSpecularGlossiness`) wordt via `sourceMaterials` een effen basiskleur plus diffuse textuur onder een eigen naam (bronmaterialen met dezelfde naam moeten dezelfde textuur en kleur hebben en worden een materiaal; `color` vervangt de diffuse factor). De uitvoer heeft geen PBR-extensies, geen normal-, occlusion-, emissive- of metallic-roughness-textuur (metallic 0, roughness 1). Elk gebouw heeft een effen **team-materiaal** (`team_trim`: een banier, band of dakrand); de naam bevat "team", dus de teammasker-regel van render (`TEAM_MATERIAL`) herkent het, de basiskleur is het neutrale masker (lineair 0,8).
+
+Driehoeken en textures: de bronmeshes worden vereenvoudigd (meshopt met `Prune` en `Permissive`, uv en normaal gewogen, het budget over de materiaalmeshes verdeeld naar driehoeken^0,5 zodat het dak niet leegloopt); vormen (box, cylinder, cone) blijven heel. Budgetten per LOD (`buildingMaxTris`): 2500, 1000 en 300. Textures gaan naar JPEG (de bronnen hebben geen alfa) op 512, 256 en 128 per LOD (`buildingTextureSizes`, plafond 1024); texture-atlas samenvoegen kan niet omdat de bron-UV's herhalen (tegels buiten 0 tot 1), wel delen materialen met dezelfde textuur een materiaal. KTX2 geldt niet voor gebouwen (alleen PNG wordt omgezet).
+
+Validatie per LOD (faalt de build): footprint en midden binnen 5 procent, grond op y = 0 (1 cm), team-materiaal aanwezig, geen PBR-extensies of andere textures dan diffuse, tris onder het plafond, textuurmaat. In `validation-report.json` staat per gebouw de bron-driehoeken, de driehoeken per LOD, de materialen en de textuurmaten.
+
+Preview voor eigen controle: `tools/asset-cli/preview/buildings.html` (three.js, geen onderdeel van de buis) tekent de gebouwen uit `assets/dist` met footprint-raster, een maatstaf van 1,8 m en team-materialen in een spelerskleur; serveer de repo-root statisch en open `/tools/asset-cli/preview/buildings.html?manifest=/assets/dist/manifest.json&lod=0` (opties: `lod`, `only`, `az`, `el`, `debug=materials`).
+
 ## KTX2
 
 KTX2 is optioneel. Staat `toktx` (KTX-Software) op PATH, dan worden PNG-textures per LOD naar KTX2 (UASTC) omgezet. Ontbreekt hij, dan blijven textures PNG en meldt de CLI dat als waarschuwing. Dat is geen fout. De toktx-route is in sprint 1 niet getest (geen binary beschikbaar).
@@ -124,7 +145,9 @@ import { manifestSchema, type AssetManifest } from '@crawlout/asset-cli/manifest
 
 Dit pad is gedefinieerd in `exports` van `tools/asset-cli/package.json`; `@crawlout/asset-cli` zelf exporteert ook de CLI-API (`buildAssets`, `validateAsset`). Render moet `@crawlout/asset-cli` als devDependency toevoegen (`workspace:*`). Het manifest is deterministisch (geen tijdstempels, assets gesorteerd op id).
 
-Per asset: `id`, `kind` (`character` of `prop`), `bounds` (min en max, meter), `lods` (drie items met `level`, `path` relatief aan `manifest.json` en `triangles`), `sockets` (`hand`, `back`, `head`, rustpose in modelruimte, alleen aanwezig als gevonden), `animations` (canonieke namen van de behouden clips en `durationSeconds`), `boneCount` en, voor karakters met animaties, `baked`.
+Per asset: `id`, `kind` (`character`, `prop` of `building`), `bounds` (min en max, meter), `lods` (drie items met `level`, `path` relatief aan `manifest.json` en `triangles`), `sockets` (`hand`, `back`, `head`, rustpose in modelruimte, alleen aanwezig als gevonden), `animations` (canonieke namen van de behouden clips en `durationSeconds`), `boneCount` en, voor karakters met animaties, `baked`.
+
+Alleen voor `kind: 'building'`: `footprint` `{ w, h }` (cellen van 1 m) en `teamMaterials` (namen van de materialen die de spelerskleur krijgen). Een gebouw heeft `boneCount` 0, geen `baked` en geen `sockets`. Het model staat met het midden van de footprint op de oorsprong in x en z, de grond op y = 0, +Y omhoog; de LOD's hebben dezelfde bounds. Zonder deze velden zijn `footprint` en `teamMaterials` bij andere soorten verboden (het schema controleert dat).
 
 ### `baked` (fase-0 sectie 12)
 
@@ -207,5 +230,7 @@ const field = heightfieldSchema.parse(JSON.parse(read('assets/dist/terrain/rock_
 - Reliefoverzicht (kolom i = x, rij j = z): een plateau van 18 tot 26 m beslaat het westen en het midden (kolommen 0 tot 85, rijen 16 tot 100), met de hoogste top (26,25 m) bij (29, 82). Het oosten (kolommen vanaf 90) is laagland op 2 tot 4 m, gescheiden van het plateau door een steile klif van ongeveer 20 m op kolommen 80 tot 92 (rijen ongeveer 40 tot 100, het scherpst op rijen 56 tot 90, steilste punt bij (89, 83)); in het noordoosten loopt het plateau juist geleidelijk af. De noordrand (rijen 0 tot 15) loopt af van ongeveer 15 m in het westen naar 10 m in het midden en 2 m in het oosten, de zuidrand (rijen 104 en hoger) van ongeveer 18 naar 4 tot 5 m.
 
 ## Tests
+
+`test/buildings.test.ts` toetst de gebouwen: config tegen `data/buildings.json`, footprint-schaal per LOD, grond, team-materiaal, geen PBR, budgetten, determinisme (twee runs, gelijke bytes), het manifest-schema en de meshgereedschappen.
 
 `npx -y pnpm@9 test` (`test/bake.test.ts` voor de bakker, inclusief roundtrip van een bekende pose; `test/conform.test.ts` voor bone-snoeien, rigmap, simplify met skinning en een smoke-test op de echte UAL-GLB) genereert synthetische GLB's met gltf-transform (geldige humanoid-dummy, te zware en foute varianten) in `test/fixtures.ts`.

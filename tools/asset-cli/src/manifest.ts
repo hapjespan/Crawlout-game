@@ -79,7 +79,7 @@ export const bakedAnimationSchema = z
 export const assetEntrySchema = z
   .object({
     id: z.string().min(1),
-    kind: z.enum(['character', 'prop']),
+    kind: z.enum(['character', 'prop', 'building']),
     bounds: boundsSchema,
     /** Altijd precies LOD 0, 1 en 2, in die volgorde. */
     lods: z.tuple([lodSchema, lodSchema, lodSchema]),
@@ -87,10 +87,33 @@ export const assetEntrySchema = z
     animations: z.array(animationSchema),
     /** Aantal bones van het skelet; 0 voor props. */
     boneCount: z.number().int().nonnegative(),
+    /**
+     * Alleen gebouwen: footprint in cellen van 1 m (zoals data/buildings.json). Het model staat met het midden van de
+     * footprint op de oorsprong in x en z, de grond op y = 0, en de bounds vullen w x h binnen 5 procent.
+     */
+    footprint: z
+      .object({ w: z.number().int().positive(), h: z.number().int().positive() })
+      .optional(),
+    /** Alleen gebouwen: namen van de materialen die de spelerskleur krijgen (naam bevat "team"); altijd minstens een. */
+    teamMaterials: z.array(z.string().min(1)).optional(),
     /** Aanwezig voor karakters met animaties; props en karakters zonder clips hebben geen baked. */
     baked: bakedAnimationSchema.optional(),
   })
   .superRefine((entry, ctx) => {
+    if (entry.kind === 'building') {
+      if (!entry.footprint)
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'een gebouw heeft een footprint' });
+      if (!entry.teamMaterials || entry.teamMaterials.length === 0)
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'een gebouw heeft een team-materiaal',
+        });
+    } else if (entry.footprint || entry.teamMaterials) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'footprint en teamMaterials zijn alleen voor gebouwen',
+      });
+    }
     if (entry.baked && entry.baked.width !== entry.boneCount * 4) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
