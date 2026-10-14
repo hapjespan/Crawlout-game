@@ -12,6 +12,7 @@ const status: PlayerStatus = {
   popCap: 8,
   beds: 8,
   hero: null,
+  queue: [],
 };
 
 const roster: RosterGroup[] = [

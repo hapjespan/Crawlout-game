@@ -194,10 +194,10 @@ export interface PlayerStatus {
   techs?: number[];
   /**
    * Lopend werk (speltest 14 oktober, voor het gebouwpaneel met kaarten; architect-besluit sectie 16): onderzoek per
-   * gebouw en craft per bewoner, met voortgang. Oplopend op buildingId, dan unitId. Optioneel tot de sim het levert
-   * (balans-branch), daarna verplicht; de HUD toont zonder queue geen voortgang.
+   * gebouw en craft per bewoner, met voortgang. Oplopend op buildingId, dan unitId. Verplicht sinds de sim het levert
+   * (protocol 0.5.0, balans-ronde; Sim.queue in packages/sim/src/sim.ts); leeg zonder lopend werk.
    */
-  queue?: QueueItem[];
+  queue: QueueItem[];
 }
 
 /**
@@ -211,8 +211,8 @@ export interface QueueItem {
   kind: 'research' | 'craft';
   /** Entity-id van het gebouw waarin het werk loopt (craft onderweg: ENTITY_NONE). */
   buildingId: number;
-  /** Bij craft de bewoner die omgeschoold wordt; bij research ENTITY_NONE. Optioneel tot de sim het levert. */
-  unitId?: number;
+  /** Bij craft de bewoner die omgeschoold wordt; bij research ENTITY_NONE. Verplicht sinds protocol 0.5.0. */
+  unitId: number;
   /** techId bij research, loadoutId bij craft. */
   id: number;
   /** 0..1000; bij craft 0 zolang de bewoner nog onderweg is naar de werkplaats. */
