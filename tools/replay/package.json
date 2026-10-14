@@ -7,6 +7,7 @@
     "replay": "node --import tsx src/index.ts fixtures",
     "record": "node --import tsx src/record.ts fixtures",
     "replay:browsers": "node --import tsx src/browsers.ts fixtures",
+    "balance": "node --import tsx src/balance-report.ts",
     "test": "vitest run"
   },
   "dependencies": {

@@ -75,6 +75,12 @@ export interface BotPlan {
   /** Aanvallen (AttackMove naar het hoofdgebouw van de ander, held mee) zodra hij zoveel militie heeft, vanaf attackFrame. */
   readonly attackWithMilitia: number;
   readonly attackFrame?: number;
+  /**
+   * Uitgeven (balans speltest 14 oktober): boven aboveScrap schoolt hij een plunderaar om tot het eerste loadout uit
+   * army waarvoor de techs er zijn, zolang hij meer dan keepScavengers plunderaars heeft. Zonder spend geeft hij na zijn
+   * plan niets meer uit (een passieve speler).
+   */
+  readonly spend?: { readonly aboveScrap: number; readonly army: readonly string[]; readonly keepScavengers: number };
 }
 
 /** Midden van een footprint van `size` cellen, gespiegeld in het midden van een map van `side` cellen (puntsymmetrie). */
@@ -155,6 +161,13 @@ export function settlementBot(p: number, plan: BotPlan, every = 10): Controller 
     // onderzoek: de eerste tech die er nog niet is; de sim weigert zonder gebouw, prereqTech of scrap
     const todo = plan.research.map(techOf).find((t) => !techs.includes(t));
     if (todo !== undefined) add(p, 'Research', { techId: todo });
+
+    // uitgeven boven een drempel: omscholen tot het beste leger-loadout
+    const sp = plan.spend;
+    if (sp !== undefined && st.scrap >= sp.aboveScrap && done('werkplaats') && !crafting && scavs.length > sp.keepScavengers) {
+      const lo = sp.army.map((k) => data.loadouts.find((l) => l.key === k)!).find((l) => l.prereqTech.every((t) => techs.includes(t)));
+      if (lo !== undefined) add(p, 'Craft', { ids: [scavs[0]!.id], loadoutId: lo.id });
+    }
 
     // militie
     if (!militiaDone && (st.settlers >= plan.militiaAtSettlers || (plan.militiaFrame !== undefined && f >= plan.militiaFrame)) && done('werkplaats')) {

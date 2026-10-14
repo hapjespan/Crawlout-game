@@ -8,7 +8,12 @@ Headless replay-runner voor de lockstep-sim (werkstroom 1). Een replay is `{ dat
 pnpm replay                                        # de replay-set in Node (CI op elke PR)
 pnpm --filter @crawlout/replay run record          # fixtures opnieuw opnemen (alleen bij een bewuste gedragswijziging)
 pnpm --filter @crawlout/replay run replay:browsers # de replay-set in Chromium, Firefox en WebKit (Playwright)
+pnpm --filter @crawlout/replay run balance         # balansmeting: AI tegen AI over vijf seeds en een bot tegen de AI
 ```
+
+## Balansmeting
+
+`pnpm --filter @crawlout/replay run balance [-- seed ...]` (src/balance-report.ts, meting in src/balance.ts) speelt de scripted AI tegen zichzelf op Rustbelt, standaard over de seeds 1, 7, 42, 99 en 123, en daarna een bot-speler (src/bot.ts) tegen de AI: passief (geeft na zijn plan niets meer uit) en actief (schoolt boven een drempel om tot patrol). Per potje: winnaar, reden en lengte in minuten, en per speler het scrap-verloop (bank per drie minuten, piek, inkomen en uitgaven), bewoners en pop-cap, militie, claimpunten, gebouwen, techs, verliezen en het level van de held. Alleen lezen wat de sim publiek laat zien; de meting zelf mag floats gebruiken.
 
 De fixtures staan in `fixtures/`, hun definities in `src/fixtures-def.ts`. Fixtures die een speler nodig hebben die op de state reageert, worden opgenomen met de bot in `src/bot.ts`; die geeft alleen gewone commando's, en de fixture bevat de bundels die hij gaf. Afspelen gebeurt zonder bot.
 
