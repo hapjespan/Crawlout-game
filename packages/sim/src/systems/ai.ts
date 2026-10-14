@@ -30,6 +30,7 @@ import {
   nodeAllowed,
   scanRing,
 } from './common.js';
+import { pointsOf } from './claims.js';
 import { heroIndex } from './hero.js';
 import { ROLE_MILITIA } from './orders.js';
 
@@ -48,8 +49,10 @@ import { ROLE_MILITIA } from './orders.js';
 //  3b. na de bouwvolgorde, boven richScrap: de eerste richBuild waarvan er nog te weinig staan (een verloren gebouw
 //     komt zo terug);
 //  4. onderzoek: de eerste tech uit `research` die er nog niet is, vanaf researchFromTicks;
-//  5. claimen: vanaf claimFromTicks neemt een vrije bouwer het neutrale claimpunt het dichtst bij zijn hoofdgebouw;
-//     verder dan claimSafeRadius pas vanaf claimFarFromTicks, met de militie zonder taak als escorte;
+//  5. claimen: vanaf claimFromTicks neemt een vrije bouwer een neutraal claimpunt: eerst die aan de eigen kant (duidelijk
+//     dichter bij het eigen hoofdgebouw dan bij de spawn van de vijand), dan de rest, elk het dichtst bij huis. Verder
+//     dan claimSafeRadius gaat de militie zonder taak als escorte mee; een punt dat niet aan de eigen kant ligt (het
+//     midden) pas vanaf claimFarFromTicks;
 //  6. bouwers zonder werk helpen bij een eigen bouwplaats;
 //  7. plunderaars zonder werk gaan naar een node met minder dan scavengersPerNode plunderaars, nodes die door een
 //     eigen claimpunt exclusief zijn eerst, daarna de dichtstbijzijnde;
@@ -64,6 +67,8 @@ import { ROLE_MILITIA } from './orders.js';
 //     waveMinArmy. Vanaf pushFromTicks met minstens pushMinArmy militie is het een push op het vijandelijke hoofdgebouw.
 //     Anders is het een raid, maar alleen als de vijand genoeg claimpunten voor dominantie houdt: op zijn claimpunt het
 //     dichtst bij huis (dat breekt de dominantie en zijn exclusieve node); daarna keren ze terug naar het verzamelpunt.
+//     Een raid neemt een bouwer mee (een vrije als die er is) die naast het punt een claimgebouw zet; tot de AI dat
+//     kan betalen, wacht de raid en spaart hij (geen huisvesting, bouwvolgorde, onderzoek, claims of omscholing).
 //     Zonder push of raid vervalt de golf en spaart hij zijn leger. Alle
 //     militie en de held gaan mee. Zonder bruikbare scrap-node (allInWithoutNodes: geen inkomen meer) gaat elke golf,
 //     hoe klein ook, naar het hoofdgebouw en de plunderaars gaan mee;
@@ -106,6 +111,14 @@ export function aiSystem(ctx: SimContext, census: Census, scratch: AiScratch): v
 
 /** Geometrie: de escorte van een claim loopt naar een punt zoveel eenheden naast het claimpunt (zie raidOver). */
 const ESCORT_OFFSET = 1;
+
+/**
+ * Geometrie: een claimpunt ligt aan de eigen kant als zijn afstand tot het eigen hoofdgebouw onder ongeveer 87 procent
+ * (kwadraat 3/4) van die tot de spawn van de vijand ligt. Een punt in het midden van de map is zo van niemand, ook als
+ * het een cel naast het symmetriepunt ligt.
+ */
+const OWN_SIDE_NUM = 3;
+const OWN_SIDE_DEN = 4;
 
 /** Geometrie: een gebouw met een wapen zoekt zijn plek vanaf zoveel cellen voorbij de rand van zijn anker, richting de vijand. */
 const TURRET_FORWARD_CELLS = 3;
@@ -199,8 +212,10 @@ function findSite(
 }
 
 /**
- * Laat bouwer `builder` het neutrale claimpunt het dichtst bij het hoofdgebouw claimen (tiebreak laagste index). Ligt
- * het verder dan claimSafeRadius, dan pas vanaf claimFarFromTicks, en de militie zonder taak gaat als escorte mee.
+ * Laat bouwer `builder` een neutraal claimpunt claimen. Eerst de punten aan de eigen kant (dichter bij het eigen
+ * hoofdgebouw dan bij de spawn van de vijand, `enemySpawn`), daarna de rest; binnen elke groep het dichtst bij het
+ * hoofdgebouw (tiebreak laagste index). Een punt verder dan claimSafeRadius krijgt de militie zonder taak als escorte
+ * mee; ligt het niet aan de eigen kant, dan pas vanaf claimFarFromTicks.
  */
 function claimNext(
   ctx: SimContext,
@@ -209,25 +224,28 @@ function claimNext(
   builder: number,
   script: SimAiScript,
   idleMilitia: number[],
+  enemySpawn: { x: number; y: number } | null,
 ): boolean {
   const w = ctx.world;
-  const typeId = ctx.config.factions[ctx.players[p]!.factionId]!.claimTypeId;
-  const bt = typeId === 0 ? undefined : ctx.buildingType(typeId);
-  if (bt === undefined || !canPlaceType(ctx, p, typeId) || ctx.ps.scrap[p]! < bt.scrapCost)
+  const bt = claimType(ctx, p);
+  if (bt === undefined || !canPlaceType(ctx, p, bt.typeId) || ctx.ps.scrap[p]! < bt.scrapCost)
     return false;
   let best = -1;
   let bestD = 0;
+  let bestOwn = false;
   for (const pt of ctx.claimPoints) {
     if (w.owner[pt] !== OWNER_NEUTRAL) continue;
     const d = distToRect2(w.x[pt]!, w.y[pt]!, w.fx[hq]!, w.fy[hq]!, w.fw[hq]!, w.fh[hq]!);
-    if (best < 0 || d < bestD) {
+    const own = isOwnSide(ctx, hq, pt, enemySpawn);
+    if (best < 0 || (own && !bestOwn) || (own === bestOwn && d < bestD)) {
       best = pt;
       bestD = d;
+      bestOwn = own;
     }
   }
   if (best < 0) return false;
   const far = bestD > script.claimSafeRadius * script.claimSafeRadius;
-  if (far && ctx.frame < script.claimFarFromTicks) return false;
+  if (far && !bestOwn && ctx.frame < script.claimFarFromTicks) return false;
   if (
     !applyCommand(ctx, {
       playerId: p,
@@ -251,6 +269,25 @@ function claimNext(
     idleMilitia.length = 0;
   }
   return true;
+}
+
+/**
+ * Of claimpunt pt aan de eigen kant ligt: duidelijk dichter bij het midden van het eigen hoofdgebouw dan bij de spawn
+ * van de vijand (OWN_SIDE_NUM/DEN). Zonder vijand ligt alles aan de eigen kant.
+ */
+function isOwnSide(
+  ctx: SimContext,
+  hq: number,
+  pt: number,
+  enemySpawn: { x: number; y: number } | null,
+): boolean {
+  if (enemySpawn === null) return true;
+  const w = ctx.world;
+  const hx = w.x[pt]! - w.x[hq]!;
+  const hy = w.y[pt]! - w.y[hq]!;
+  const ex = w.x[pt]! - enemySpawn.x;
+  const ey = w.y[pt]! - enemySpawn.y;
+  return (hx * hx + hy * hy) * OWN_SIDE_DEN < (ex * ex + ey * ey) * OWN_SIDE_NUM;
 }
 
 /** Eerste tegenstander na p (cyclisch) die nog meedoet, of -1. */
@@ -390,11 +427,26 @@ function think(
     ps.heroState[p] === HERO_DEAD &&
     (nodes > 0 || ps.scrap[p]! >= h.reviveScrap);
 
+  // 9a is er een golf klaar? Vooraf bepaald: een raid neemt een bouwer mee die een claimgebouw zet, en tot de AI dat
+  // kan betalen, wacht de raid en spaart hij (geen huisvesting, bouwvolgorde, onderzoek, claims of omscholing).
+  const wave =
+    enemy >= 0 && enemySpawn !== null
+      ? waveReady(ctx, p, script, enemy, militia.length, nodes, hq)
+      : null;
+  const claimBt = claimType(ctx, p);
+  const raidWaits =
+    wave !== null &&
+    wave.raidPt >= 0 &&
+    builders.length > 0 &&
+    claimBt !== undefined &&
+    ps.scrap[p]! < claimBt.scrapCost;
+  const holdScrap = heroWaits || raidWaits;
+
   // 2 huisvesting zodra de pop-cap in zicht komt
   const popCap = census.popCap(ctx, p);
   const hbt = script.housingTypeId === 0 ? undefined : ctx.buildingType(script.housingTypeId);
   if (
-    !heroWaits &&
+    !holdScrap &&
     hq >= 0 &&
     hbt !== undefined &&
     !housingSite &&
@@ -423,8 +475,8 @@ function think(
   // 3 bouwvolgorde
   let bi = ps.aiBuild[p]!;
   const order = script.buildOrder;
-  let saving = heroWaits;
-  while (!heroWaits && hq >= 0 && bi < order.length && tick >= order[bi]!.atTick) {
+  let saving = holdScrap;
+  while (!holdScrap && hq >= 0 && bi < order.length && tick >= order[bi]!.atTick) {
     const typeId = order[bi]!.typeId;
     const bt = ctx.buildingType(typeId);
     if (bt === undefined || bt.factionId !== factionId || (bt.provides & PROVIDES_HQ) !== 0) {
@@ -510,7 +562,7 @@ function think(
 
   // 5 claimen
   if (!saving && hq >= 0 && tick >= script.claimFromTicks && idleBuilders.length > 0) {
-    if (claimNext(ctx, p, hq, idleBuilders[0]!, script, idleMilitia)) takeBuilder();
+    if (claimNext(ctx, p, hq, idleBuilders[0]!, script, idleMilitia, enemySpawn)) takeBuilder();
   }
 
   // 6 bouwers zonder werk helpen bij een bouwplaats
@@ -562,7 +614,7 @@ function think(
   const threat = hq >= 0 ? findThreat(ctx, p, hq, script.defendRadius) : -1;
 
   // 8 rolverdeling
-  if (workshop && scavs.length > 0 && !heroWaits) {
+  if (workshop && scavs.length > 0 && !holdScrap) {
     const minutes = idiv(tick, ctx.config.ticksPerMinute);
     let share = script.militiaPermille + minutes * script.militiaPermillePerMin;
     if (share > script.militiaPermilleMax) share = script.militiaPermilleMax;
@@ -594,41 +646,34 @@ function think(
   }
 
   // 9 golven (de held loopt mee)
-  if (enemy >= 0 && enemySpawn !== null) {
+  if (wave !== null && !raidWaits) {
     const k = ps.aiAttack[p]!;
-    const timers = script.attackTimersTicks;
-    const due = k < timers.length ? timers[k]! : ps.aiWaveAt[p]!;
-    const allIn = script.allInWithoutNodes && nodes === 0;
-    if (tick >= due) {
-      const need = allIn ? 1 : script.waveMinArmy + k * script.waveArmyGrowth;
-      const waited = tick >= due + script.waveMaxWaitTicks && militia.length >= script.waveMinArmy;
-      if ((militia.length > 0 || allIn) && (militia.length >= need || waited || allIn)) {
-        const push =
-          allIn || (tick >= script.pushFromTicks && militia.length >= script.pushMinArmy);
-        // een raid alleen tegen dominantie: houdt de vijand genoeg punten, dan zijn claimpunt het dichtst bij huis
-        const raid = !push && ownedBy(ctx, enemy) >= ctx.map.dominance.pointsRequired;
-        const target = push ? enemySpawn : raid ? waveTarget(ctx, hq, enemy, null) : null;
-        if (target === null) {
-          // geen push en geen dominantie te breken: deze golf overslaan, het leger blijft bij het verzamelpunt
-          ps.aiAttack[p] = k + 1;
-          ps.aiWaveAt[p] = tick + script.waveIntervalTicks;
-          return;
-        }
-        const send = allIn ? [...militia, ...scavs] : [...militia];
-        if (heroId >= 0) send.push(heroId);
-        for (const ids of chunks(send))
-          applyCommand(ctx, {
-            playerId: p,
-            seq: 0,
-            type: 'AttackMove',
-            payload: { ids, x: target.x, y: target.y },
-          });
-        ps.aiAttack[p] = k + 1;
-        const jitter = script.waveJitterTicks > 0 ? ctx.rng.nextInt(script.waveJitterTicks + 1) : 0;
-        ps.aiWaveAt[p] = tick + script.waveIntervalTicks + jitter;
-        return;
-      }
+    let target: { x: number; y: number } | null = null;
+    if (wave.push) target = enemySpawn;
+    else if (wave.raidPt >= 0) target = { x: w.x[wave.raidPt]!, y: w.y[wave.raidPt]! };
+    if (target === null) {
+      // geen push en geen dominantie te breken: deze golf overslaan, het leger blijft bij het verzamelpunt
+      ps.aiAttack[p] = k + 1;
+      ps.aiWaveAt[p] = tick + script.waveIntervalTicks;
+      return;
     }
+    const send = wave.allIn ? [...militia, ...scavs] : [...militia];
+    if (heroId >= 0) send.push(heroId);
+    // een raid neemt een bouwer mee (een vrije als die er is) die naast het punt een claimgebouw zet: valt het
+    // claimgebouw van de vijand, dan is het punt van hem in plaats van neutraal
+    if (wave.raidPt >= 0 && builders.length > 0)
+      claimAt(ctx, p, idleBuilders[0] ?? builders[0]!, wave.raidPt);
+    for (const ids of chunks(send))
+      applyCommand(ctx, {
+        playerId: p,
+        seq: 0,
+        type: 'AttackMove',
+        payload: { ids, x: target.x, y: target.y },
+      });
+    ps.aiAttack[p] = k + 1;
+    const jitter = script.waveJitterTicks > 0 ? ctx.rng.nextInt(script.waveJitterTicks + 1) : 0;
+    ps.aiWaveAt[p] = tick + script.waveIntervalTicks + jitter;
+    return;
   }
 
   // 10b verdedigen of verzamelen: militie (en de held) zonder taak
@@ -752,20 +797,45 @@ function findThreat(ctx: SimContext, p: number, hq: number, r: number): number {
   return best;
 }
 
-/** Aantal claimpunten van speler q. */
-function ownedBy(ctx: SimContext, q: number): number {
-  let n = 0;
-  for (const pt of ctx.claimPoints) if (ctx.world.owner[pt] === q) n++;
-  return n;
+interface Wave {
+  /** Op het vijandelijke hoofdgebouw (vanaf pushFromTicks met pushMinArmy, of all-in zonder nodes). */
+  readonly push: boolean;
+  /** Zonder bruikbare node: alles gaat mee, ook de plunderaars. */
+  readonly allIn: boolean;
+  /** Raid: het claimpunt van de vijand (alleen als hij genoeg punten voor dominantie houdt), anders -1. */
+  readonly raidPt: number;
 }
 
-/** Doel van een golf: het claimpunt van de vijand het dichtst bij het eigen hoofdgebouw, anders `spawn` (of null). */
-function waveTarget(
+/**
+ * De golf die nu kan vertrekken, of null. De eerste op attackTimersTicks, daarna op aiWaveAt; met minstens waveMinArmy
+ * + k maal waveArmyGrowth militie (golf k), of na waveMaxWaitTicks wachten met waveMinArmy; all-in zonder nodes.
+ */
+function waveReady(
   ctx: SimContext,
-  hq: number,
+  p: number,
+  script: SimAiScript,
   enemy: number,
-  spawn: { x: number; y: number } | null,
-): { x: number; y: number } | null {
+  militia: number,
+  nodes: number,
+  hq: number,
+): Wave | null {
+  const k = ctx.ps.aiAttack[p]!;
+  const timers = script.attackTimersTicks;
+  const due = k < timers.length ? timers[k]! : ctx.ps.aiWaveAt[p]!;
+  const allIn = script.allInWithoutNodes && nodes === 0;
+  const tick = ctx.frame;
+  if (tick < due) return null;
+  const need = allIn ? 1 : script.waveMinArmy + k * script.waveArmyGrowth;
+  const waited = tick >= due + script.waveMaxWaitTicks && militia >= script.waveMinArmy;
+  if (!((militia > 0 || allIn) && (militia >= need || waited || allIn))) return null;
+  const push = allIn || (tick >= script.pushFromTicks && militia >= script.pushMinArmy);
+  // een raid alleen tegen dominantie: houdt de vijand genoeg punten, dan zijn claimpunt het dichtst bij huis
+  const raid = !push && pointsOf(ctx, enemy) >= ctx.map.dominance.pointsRequired;
+  return { push, allIn, raidPt: raid ? enemyClaimNear(ctx, hq, enemy) : -1 };
+}
+
+/** Het claimpunt van de vijand het dichtst bij het eigen hoofdgebouw (tiebreak laagste index), of -1. */
+function enemyClaimNear(ctx: SimContext, hq: number, enemy: number): number {
   const w = ctx.world;
   let best = -1;
   let bestD = 0;
@@ -778,7 +848,26 @@ function waveTarget(
       bestD = d;
     }
   }
-  return best >= 0 ? { x: w.x[best]!, y: w.y[best]! } : spawn;
+  return best;
+}
+
+/** Het claimgebouw van de factie van speler p, of undefined. */
+function claimType(ctx: SimContext, p: number): SimBuildingType | undefined {
+  const typeId = ctx.config.factions[ctx.players[p]!.factionId]!.claimTypeId;
+  return typeId === 0 ? undefined : ctx.buildingType(typeId);
+}
+
+/** Bouwer `builder` zet een claimgebouw bij punt pt (Claim), als speler p het kan betalen. */
+function claimAt(ctx: SimContext, p: number, builder: number, pt: number): boolean {
+  const bt = claimType(ctx, p);
+  if (bt === undefined || !canPlaceType(ctx, p, bt.typeId) || ctx.ps.scrap[p]! < bt.scrapCost)
+    return false;
+  return applyCommand(ctx, {
+    playerId: p,
+    seq: 0,
+    type: 'Claim',
+    payload: { ids: [builder], pointId: ctx.world.idOf(pt) },
+  });
 }
 
 /** researchFor: er loopt al onderzoek in de keten, of het gebouw is bezet of nog niet af, of de scrap ontbreekt. */

@@ -1,4 +1,5 @@
 import { EVENT_TYPE, MAX_ENTITIES, MAX_PLAYERS, OWNER_NEUTRAL } from '@crawlout/protocol';
+import type { DominanceStatus } from '@crawlout/protocol';
 import { BSTATE_DONE, BSTATE_SITE, C } from '../ecs/world.js';
 import { PROGRESS_ONE } from '../entities.js';
 import { PROVIDES_CLAIM } from '../fromData.js';
@@ -137,4 +138,39 @@ function declare(ctx: SimContext, p: number, reason: number): void {
   ctx.globals.winner = p;
   ctx.globals.reason = reason;
   ctx.globals.frame = ctx.frame;
+}
+
+/** Aantal claimpunten van speler p. */
+export function pointsOf(ctx: SimContext, p: number): number {
+  let n = 0;
+  for (const pt of ctx.claimPoints) if (ctx.world.owner[pt] === p) n++;
+  return n;
+}
+
+/**
+ * Dominantie voor de HUD (PlayerStatus.dominance, protocol 0.6.0): de stand van speler p plus de tegenstander die het
+ * dichtst bij dominantie is (meeste ticksHeld, dan meeste pointsHeld, dan laagste playerId; alleen wie nog meedoet).
+ * Leest alleen state (eigenaar van de claimpunten, domTicks); verandert niets.
+ */
+export function dominanceStatus(ctx: SimContext, p: number): DominanceStatus {
+  const dom = ctx.map.dominance;
+  let leader: DominanceStatus['leader'] = null;
+  for (let q = 0; q < ctx.playerCount; q++) {
+    if (q === p || ctx.ps.defeated[q] !== 0) continue;
+    const pointsHeld = pointsOf(ctx, q);
+    const ticksHeld = ctx.ps.domTicks[q]!;
+    if (
+      leader === null ||
+      ticksHeld > leader.ticksHeld ||
+      (ticksHeld === leader.ticksHeld && pointsHeld > leader.pointsHeld)
+    )
+      leader = { playerId: q, pointsHeld, ticksHeld };
+  }
+  return {
+    pointsHeld: pointsOf(ctx, p),
+    pointsRequired: dom.pointsRequired,
+    ticksHeld: ctx.ps.domTicks[p]!,
+    ticksRequired: dom.ticks,
+    leader,
+  };
 }

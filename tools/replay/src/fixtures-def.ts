@@ -5,12 +5,21 @@ import type { Sim } from '@crawlout/sim';
 import { gameData } from './env.js';
 import { createReplaySim } from './run.js';
 import type { BotPlan, PlannedBuilding } from './bot.js';
-import { recordControlled, settlementBot } from './bot.js';
+import {
+  SitePlanner,
+  centrePoint,
+  recordControlled,
+  settlementBot,
+  settlementPoint,
+  toward,
+} from './bot.js';
 
 // Definities van de replay-fixtures in tools/replay/fixtures. `pnpm --filter @crawlout/replay record` draait ze
 // en schrijft de JSON met verwachte hashes. Een fixture opnieuw opnemen mag alleen bij een bewuste
 // gedragswijziging in de sim, met uitleg in de CHANGELOG. Alles draait op de echte data (data/) en de echte maps
-// (data/maps); de startopstelling volgt uit map, data en spelers (contract 2).
+// (data/maps); de startopstelling volgt uit map, data en spelers (contract 2). Plekken en doelen op Rustbelt komen uit
+// de map (spawns, claimpunten) en de state (SitePlanner in bot.ts), niet uit vaste cellen: een nieuwe Rustbelt vraagt
+// alleen een nieuwe opname.
 
 export interface FixtureDef {
   readonly name: string;
@@ -182,34 +191,38 @@ const FIXTURES_UP_TO_S3: FixtureDef[] = [
       const st = startOf(r);
       const sim = st.sim;
       const s = new Script();
-      const spawns = [cell(20, 20), cell(107, 107)];
-      const toward = [cell(30, 30), cell(97, 97)]; // bouwplekken richting het midden
+      const plan = new SitePlanner(sim);
+      const spawns = sim.map.spawns;
       for (let p = 0; p < 2; p++) {
         const node = nearest(sim, st.nodes, spawns[p]!.x, spawns[p]!.y);
         s.add(4, p, 'Gather', { ids: st.scav[p]!, nodeId: node });
-        s.add(6, p, 'Build', { ids: st.builder[p]!, typeId: building('woning'), ...toward[p]! });
+        s.add(6, p, 'Build', {
+          ids: st.builder[p]!,
+          typeId: building('woning'),
+          ...plan.take(p, 'woning', 'hq'),
+        });
       }
       // speler 0 bouwt meteen een werkplaats (hij heeft genoeg scrap na een paar ritten), speler 1 later
       s.add(700, 0, 'Build', {
         ids: st.builder[0]!,
         typeId: building('werkplaats'),
-        ...cell(28, 20),
+        ...plan.take(0, 'werkplaats', 'hq'),
       });
       s.add(1000, 1, 'Build', {
         ids: st.builder[1]!,
         typeId: building('werkplaats'),
-        ...cell(99, 107),
+        ...plan.take(1, 'werkplaats', 'hq'),
       });
       // cancel: speler 1 zet een radiobaken neer en trekt het terug
       s.add(1010, 1, 'Build', {
         ids: st.builder[1]!,
         typeId: building('radiobaken'),
-        ...cell(104, 100),
+        ...plan.take(1, 'radiobaken', 'hq'),
       });
       // omscholen: twee scavengers van speler 0 worden militie
       s.add(1800, 0, 'SetRole', { ids: st.scav[0]!.slice(0, 2), role: 'militia' });
       // claim: de bouwer van speler 1 zet een claimpaal bij het punt aan zijn kant (na de werkplaats); de militie mag niet
-      const claim1 = nearest(sim, st.claims, spawns[1]!.x, spawns[1]!.y);
+      const claim1 = settlementPoint(sim, 1).id;
       s.add(300, 1, 'Claim', { ids: st.militia[1]!, pointId: claim1 }); // ongeldig: geen bouwers
       s.add(2000, 1, 'Claim', { ids: st.builder[1]!, pointId: claim1 });
       // gevecht: militie van speler 0 op AttackMove naar dat claimpunt
@@ -242,17 +255,10 @@ const FIXTURES_UP_TO_S3: FixtureDef[] = [
       const st = startOf(r);
       const sim = st.sim;
       const s = new Script();
-      const spawns = [cell(20, 20), cell(107, 107)];
-      const centre = nearest(sim, st.claims, cell(64, 64).x, cell(64, 64).y);
+      const spawns = sim.map.spawns;
+      const centre = centrePoint(sim).id;
       // het settlement-punt aan de eigen kant (sinds data 0.7.0 bij de 2500-node, besluit 9)
-      const own = spawns.map((s) =>
-        nearest(
-          sim,
-          st.claims.filter((id) => id !== centre),
-          s.x,
-          s.y,
-        ),
-      );
+      const own = [0, 1].map((p) => settlementPoint(sim, p).id);
       const hero = data.heroes[0]!.id;
       for (let p = 0; p < 2; p++) {
         const node = nearest(sim, st.nodes, spawns[p]!.x, spawns[p]!.y);
@@ -290,7 +296,7 @@ const FIXTURES_UP_TO_S3: FixtureDef[] = [
       s.add(1200, 0, 'Build', {
         ids: st.builder[0]!,
         typeId: building('werkplaats'),
-        ...cell(28, 20),
+        ...new SitePlanner(sim).take(0, 'werkplaats', 'hq'),
       });
       s.add(2400, 0, 'Research', { techId: tech('geweerrek') });
       s.add(2410, 0, 'Cancel', { ids: [st.hq[0]!] }); // stopt het oplappen als dat loopt (teruggave)
@@ -303,7 +309,8 @@ const FIXTURES_UP_TO_S3: FixtureDef[] = [
         .entityIds()
         .filter((id) => later.getUnit(id)!.kind === 'hero' && later.getUnit(id)!.owner === 1);
       s.add(3400, 1, 'AttackMove', { ids: [...hero1, ...st.militia[1]!], ...spawns[0]! });
-      s.add(3410, 0, 'Move', { ids: st.militia[0]!, ...cell(30, 40) }); // de militie van speler 0 laat de basis open
+      // de militie van speler 0 laat de basis open: 20 m richting het midden
+      s.add(3410, 0, 'Move', { ids: st.militia[0]!, ...toward(spawns[0]!, c, 20) });
       r.bundles = s.bundles();
       r.hashes = [{ frame: 7999, hash: 0 }];
       return r;
@@ -333,31 +340,30 @@ const FIXTURES_UP_TO_S3: FixtureDef[] = [
   },
 ];
 
-/** Woningen voor speler 0 (midden van de 2 bij 2 footprint, in cellen) in een blok links boven het hoofdgebouw. */
-const HOUSES: PlannedBuilding[] = [6, 9, 12].flatMap((cy) =>
-  [6, 9, 12, 15].map((cx) => ({ key: 'woning', cx, cy })),
-);
+/** Een woning bij het eigen hoofdgebouw (de plek volgt uit map en state, zie SitePlanner in bot.ts). */
+const HOUSE: PlannedBuilding = { key: 'woning', at: 'hq' };
+const houses = (n: number): PlannedBuilding[] => Array.from({ length: n }, () => HOUSE);
 
 const FIXTURES_S4: FixtureDef[] = [
   {
     // Turrets en onderzoek op Rustbelt, mens tegen AI. Speler 0 (een bot die gewone commando's geeft): werkplaats,
     // geweerrek, claimpalen bij zijn settlement-punt en in het midden met een turret ernaast, lab, raffinage en
-    // lasergeleiding (turret +20% schade, +1 m), daarna een kleine aanval met held op de AI. De AI (speler 1) onderzoekt
-    // geweerrek voor zijn turret (besluit 8), claimt het midden niet zolang het van de bot is en stuurt een raid op het
-    // midden omdat de bot genoeg punten voor dominantie houdt (balans speltest 14 oktober). Beide turrets schieten;
-    // Lockdown, dood en oplappen komen voor.
+    // lasergeleiding (turret +20% schade, +1 m), daarna een kleine aanval met held op het settlement-punt van de AI,
+    // waar zijn turret aan het front staat. De AI (speler 1) onderzoekt geweerrek voor zijn turret (besluit 8), claimt
+    // het midden niet zolang het van de bot is en stuurt een raid met een bouwer op het midden omdat de bot genoeg
+    // punten voor dominantie houdt. Beide turrets schieten; Lockdown, dood en oplappen komen voor.
     name: 's4-rustbelt-turrets',
     build() {
       const r = base('rustbelt', 404, [false, true]);
       const plan: BotPlan = {
         builds: [
-          { key: 'werkplaats', cx: 26, cy: 20 },
-          HOUSES[0]!,
-          { key: 'claimpaal', cx: 42, cy: 33 },
-          { key: 'claimpaal', cx: 62, cy: 63 },
-          { key: 'turret', cx: 61, cy: 60 },
-          { key: 'lab', cx: 14, cy: 26 },
-          HOUSES[1]!,
+          { key: 'werkplaats', at: 'hq' },
+          HOUSE,
+          { key: 'claimpaal', at: 'settlement' },
+          { key: 'claimpaal', at: 'centre' },
+          { key: 'turret', at: 'centre', homewardM: 3 },
+          { key: 'lab', at: 'hq' },
+          HOUSE,
         ],
         research: ['geweerrek', 'raffinage', 'lasergeleiding'],
         builders: 1,
@@ -365,9 +371,10 @@ const FIXTURES_S4: FixtureDef[] = [
         militiaFrame: 2500,
         militiaCount: 4,
         attackWithMilitia: 4,
-        attackFrame: 6400,
+        attackFrame: 10000,
+        attackTarget: 'settlement',
       };
-      recordControlled(r, 14000, [settlementBot(0, plan)]);
+      recordControlled(r, 20000, [settlementBot(0, plan)]);
       return r;
     },
   },
@@ -380,7 +387,7 @@ const FIXTURES_S4: FixtureDef[] = [
     build() {
       const r = base('rustbelt', 50, [false, false]);
       const plan: BotPlan = {
-        builds: [{ key: 'werkplaats', cx: 26, cy: 20 }, ...HOUSES.slice(0, 11)],
+        builds: [{ key: 'werkplaats', at: 'hq' }, ...houses(11)],
         research: [],
         builders: 3,
         militiaAtSettlers: 50,
@@ -413,13 +420,27 @@ const FIXTURES_S5: FixtureDef[] = [
       const s = new Script();
       const b0 = st.builder[0]!;
       const b1 = st.builder[1]!;
-      s.add(6, 0, 'Build', { ids: b0, typeId: building('werkplaats'), ...cell(28, 20) });
-      s.move(250, 0, b0, 30, 40);
-      s.add(1300, 0, 'Build', { ids: b0, typeId: building('woning'), ...cell(12, 9) });
+      const plan = new SitePlanner(st.sim);
+      const centre = centrePoint(st.sim);
+      const workshop = plan.take(0, 'werkplaats', 'hq');
+      s.add(6, 0, 'Build', { ids: b0, typeId: building('werkplaats'), ...workshop });
+      // ver weg: 25 m van de werkplaats richting het midden, buiten builderAutoHelpRadius
+      s.add(250, 0, 'Move', { ids: b0, ...toward(workshop, centre, 25) });
+      s.add(1300, 0, 'Build', {
+        ids: b0,
+        typeId: building('woning'),
+        ...plan.take(0, 'woning', 'hq'),
+      });
       s.add(1400, 0, 'Stop', { ids: b0 });
-      s.add(6, 1, 'Build', { ids: b1, typeId: building('woning'), ...cell(99, 107) });
-      s.add(8, 1, 'Build', { ids: b1, typeId: building('woning'), ...cell(104, 100) });
-      s.move(700, 1, b1, 100, 84);
+      // woning A en B naast elkaar bij het hoofdgebouw (binnen builderAutoHelpRadius van elkaar)
+      const a1 = plan.take(1, 'woning', 'hq');
+      s.add(6, 1, 'Build', { ids: b1, typeId: building('woning'), ...a1 });
+      s.add(8, 1, 'Build', {
+        ids: b1,
+        typeId: building('woning'),
+        ...plan.take(1, 'woning', 'hq'),
+      });
+      s.add(700, 1, 'Move', { ids: b1, ...toward(a1, centre, 20) });
       r.bundles = s.bundles();
       // de rechtsklik: Build met het typeId en het midden van de bouwplaats zoals de client die uit de snapshot leest
       const sim = stateAt(r, 1800);
@@ -439,10 +460,50 @@ const FIXTURES_S5: FixtureDef[] = [
   },
 ];
 
+const FIXTURES_S6: FixtureDef[] = [
+  {
+    // Winroute B op Rustbelt (fase-0 sectie 17, advies 3): speler 0 is een bot die zijn settlement-punt en het midden
+    // claimt, bij het midden twee turrets zet (geweerrek in de werkplaats) en zijn militie het midden laat houden; de
+    // scripted AI (speler 1, de echte data) claimt zijn eigen punt en raidt het midden zodra de bot twee punten houdt.
+    // De bot houdt ze dominance.minutes vast en wint op dominantie; de fixture loopt tot net na de winst.
+    name: 's6-rustbelt-dominance',
+    build() {
+      const r = base('rustbelt', 606, [false, true]);
+      const plan: BotPlan = {
+        builds: [
+          { key: 'werkplaats', at: 'hq' },
+          { key: 'claimpaal', at: 'settlement' },
+          HOUSE,
+          { key: 'claimpaal', at: 'centre' },
+          { key: 'turret', at: 'centre', homewardM: 3 },
+          { key: 'turret', at: 'centre', homewardM: 3 },
+          HOUSE,
+          HOUSE,
+        ],
+        research: ['geweerrek'],
+        builders: 2,
+        militiaAtSettlers: 10,
+        militiaCount: 4,
+        attackWithMilitia: 999,
+        spend: { aboveScrap: 100, army: ['militie'], keepScavengers: 6 },
+        guard: 'centre',
+      };
+      let end = -1;
+      recordControlled(r, 30000, [settlementBot(0, plan)], (sim, f) => {
+        const w = sim.winner();
+        if (w !== null && end < 0) end = w.frame + 20;
+        return end >= 0 && f >= end;
+      });
+      return r;
+    },
+  },
+];
+
 export const FIXTURES: readonly FixtureDef[] = [
   ...FIXTURES_UP_TO_S3,
   ...FIXTURES_S4,
   ...FIXTURES_S5,
+  ...FIXTURES_S6,
 ];
 
 /** De sim na het uitvoeren van de frames 0 tot `frame` (exclusief) met de bundels die de replay tot dan heeft. */

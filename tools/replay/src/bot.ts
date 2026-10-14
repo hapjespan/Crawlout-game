@@ -60,11 +60,184 @@ export const buildingType = (key: string): number =>
   buildingTypeId(gameData().data.buildings.find((b) => b.key === key)!.id);
 export const techOf = (key: string): number => gameData().data.tech.find((t) => t.key === key)!.id;
 
-/** Gebouw in de bouwlijst: type en het midden (cellen) van de footprint voor speler 0; speler 1 krijgt het spiegelbeeld. */
+/**
+ * Waar een gebouw van de bot komt, afgeleid uit de map en de state (nooit vaste cellen): bij het eigen hoofdgebouw, bij
+ * het eigen settlement-punt (het claimpunt aan de eigen kant, buiten het midden) of bij het middenpunt (het claimpunt
+ * het dichtst bij het midden van de map).
+ */
+export type SiteAnchor = 'hq' | 'settlement' | 'centre';
+
+/** Gebouw in de bouwlijst: type en plaats. homewardM schuift het anker zoveel meter op naar het eigen hoofdgebouw. */
 export interface PlannedBuilding {
   readonly key: string;
-  readonly cx: number;
-  readonly cy: number;
+  readonly at: SiteAnchor;
+  readonly homewardM?: number;
+}
+
+/** Het claimpunt het dichtst bij het midden van de map (tiebreak laagste id). */
+export function centrePoint(sim: Sim): UnitView {
+  const mx = sim.map.w * 128;
+  const my = sim.map.h * 128;
+  return nearestOf(
+    sim
+      .entityIds()
+      .map((id) => sim.getUnit(id)!)
+      .filter((u) => u.kind === 'claimPoint'),
+    mx,
+    my,
+  )!;
+}
+
+/** Het claimpunt aan de kant van speler p: buiten het middenpunt, het dichtst bij zijn spawn. */
+export function settlementPoint(sim: Sim, p: number): UnitView {
+  const centre = centrePoint(sim);
+  const spawn = sim.map.spawns[p]!;
+  return nearestOf(
+    sim
+      .entityIds()
+      .map((id) => sim.getUnit(id)!)
+      .filter((u) => u.kind === 'claimPoint' && u.id !== centre.id),
+    spawn.x,
+    spawn.y,
+  )!;
+}
+
+/** Het hoofdgebouw van speler p, of zijn spawn als het er niet (meer) staat. */
+function hqOf(sim: Sim, p: number): { x: number; y: number } {
+  const hq = sim
+    .entityIds()
+    .map((id) => sim.getUnit(id)!)
+    .find(
+      (u) => u.kind === 'building' && u.owner === p && u.typeId === buildingType('hoofdgebouw'),
+    );
+  return hq ?? sim.map.spawns[p]!;
+}
+
+function nearestOf<T extends { x: number; y: number; id?: number }>(
+  list: readonly T[],
+  x: number,
+  y: number,
+): T | undefined {
+  let best: T | undefined;
+  let bestD = Infinity;
+  for (const u of list) {
+    const d = (u.x - x) ** 2 + (u.y - y) ** 2;
+    if (d < bestD) {
+      best = u;
+      bestD = d;
+    }
+  }
+  return best;
+}
+
+/** Een punt `m` meter van `from` in de richting van `to` (eenheden). */
+export function toward(
+  from: { x: number; y: number },
+  to: { x: number; y: number },
+  m: number,
+): { x: number; y: number } {
+  const dx = to.x - from.x;
+  const dy = to.y - from.y;
+  const len = Math.hypot(dx, dy) || 1;
+  return {
+    x: Math.round(from.x + (dx * m * 256) / len),
+    y: Math.round(from.y + (dy * m * 256) / len),
+  };
+}
+
+/** Het anker van een plaats voor speler p, in eenheden. */
+export function anchorOf(
+  sim: Sim,
+  p: number,
+  at: SiteAnchor,
+  homewardM = 0,
+): { x: number; y: number } {
+  const home = hqOf(sim, p);
+  const a = at === 'hq' ? home : at === 'centre' ? centrePoint(sim) : settlementPoint(sim, p);
+  return homewardM > 0 ? toward(a, home, homewardM) : { x: a.x, y: a.y };
+}
+
+/**
+ * Zoekt bouwplekken zoals een speler dat op zijn scherm doet: de vrije plek het dichtst bij het anker waar de footprint
+ * plus een rand van één cel op begaanbare grond ligt, zonder gebouwen, scrap-nodes of claimpunten. Plekken die al
+ * gekozen zijn (take) tellen als bezet, zodat een reeks gebouwen uit één startstate niet op dezelfde plek valt.
+ */
+export class SitePlanner {
+  private readonly taken: { x0: number; y0: number; x1: number; y1: number }[] = [];
+
+  constructor(private readonly sim: Sim) {}
+
+  /** Midden (eenheden) van een vrije plek voor gebouw `key` van speler p bij het anker, of null. */
+  find(p: number, key: string, at: SiteAnchor, homewardM = 0): { x: number; y: number } | null {
+    const sim = this.sim;
+    const bt = sim.config.buildingTypes.find((b) => b.typeId === buildingType(key))!;
+    const fw = bt.footprintW;
+    const fh = bt.footprintH;
+    const a = anchorOf(sim, p, at, homewardM);
+    const blocked = this.blocked();
+    const ax = a.x >> 8;
+    const ay = a.y >> 8;
+    let best: { x: number; y: number } | null = null;
+    let bestD = Infinity;
+    const R = 24;
+    for (let cy = ay - R; cy <= ay + R; cy++) {
+      for (let cx = ax - R; cx <= ax + R; cx++) {
+        const fx = cx - (fw >> 1);
+        const fy = cy - (fh >> 1);
+        // het midden van de footprint zoals de sim het zet (createBuilding)
+        const x = fx * 256 + fw * 128;
+        const y = fy * 256 + fh * 128;
+        const d = (x - a.x) ** 2 + (y - a.y) ** 2;
+        if (d >= bestD || !this.free(blocked, fx - 1, fy - 1, fw + 2, fh + 2)) continue;
+        best = { x, y };
+        bestD = d;
+      }
+    }
+    return best;
+  }
+
+  /** Zoals find, en de plek telt daarna als bezet. */
+  take(p: number, key: string, at: SiteAnchor, homewardM = 0): { x: number; y: number } {
+    const bt = this.sim.config.buildingTypes.find((b) => b.typeId === buildingType(key))!;
+    const at2 = this.find(p, key, at, homewardM);
+    if (at2 === null) throw new Error(`geen plek voor ${key} bij ${at} voor speler ${p}`);
+    const fx = (at2.x - bt.footprintW * 128) >> 8;
+    const fy = (at2.y - bt.footprintH * 128) >> 8;
+    this.taken.push({ x0: fx, y0: fy, x1: fx + bt.footprintW, y1: fy + bt.footprintH });
+    return at2;
+  }
+
+  private blocked(): Uint8Array {
+    const sim = this.sim;
+    const { w, h } = sim.map;
+    const b = new Uint8Array(w * h);
+    for (let i = 0; i < w * h; i++) b[i] = sim.map.passable[i] === 1 ? 0 : 1;
+    const mark = (x0: number, y0: number, x1: number, y1: number): void => {
+      for (let y = Math.max(0, y0); y < Math.min(h, y1); y++)
+        for (let x = Math.max(0, x0); x < Math.min(w, x1); x++) b[y * w + x] = 1;
+    };
+    for (const id of sim.entityIds()) {
+      const u = sim.getUnit(id)!;
+      if (u.kind === 'building') {
+        const bt = sim.config.buildingTypes.find((t) => t.typeId === u.typeId)!;
+        const fx = (u.x - bt.footprintW * 128) >> 8;
+        const fy = (u.y - bt.footprintH * 128) >> 8;
+        mark(fx, fy, fx + bt.footprintW, fy + bt.footprintH);
+      } else if (u.kind === 'scrapNode' || u.kind === 'claimPoint') {
+        mark(u.x >> 8, u.y >> 8, (u.x >> 8) + 1, (u.y >> 8) + 1);
+      }
+    }
+    for (const t of this.taken) mark(t.x0, t.y0, t.x1, t.y1);
+    return b;
+  }
+
+  private free(b: Uint8Array, x0: number, y0: number, fw: number, fh: number): boolean {
+    const { w, h } = this.sim.map;
+    if (x0 < 0 || y0 < 0 || x0 + fw > w || y0 + fh > h) return false;
+    for (let y = y0; y < y0 + fh; y++)
+      for (let x = x0; x < x0 + fw; x++) if (b[y * w + x] === 1) return false;
+    return true;
+  }
 }
 
 export interface BotPlan {
@@ -81,6 +254,10 @@ export interface BotPlan {
   /** Aanvallen (AttackMove naar het hoofdgebouw van de ander, held mee) zodra hij zoveel militie heeft, vanaf attackFrame. */
   readonly attackWithMilitia: number;
   readonly attackFrame?: number;
+  /** Doel van de aanval: het hoofdgebouw van de ander (standaard) of zijn settlement-punt. */
+  readonly attackTarget?: 'hq' | 'settlement';
+  /** Militie zonder taak en de held houden deze plek (AttackMove erheen zodra ze verder dan 6 m weg zijn). */
+  readonly guard?: SiteAnchor;
   /**
    * Uitgeven (balans speltest 14 oktober): boven aboveScrap schoolt hij een plunderaar om tot het eerste loadout uit
    * army waarvoor de techs er zijn, zolang hij meer dan keepScavengers plunderaars heeft. Zonder spend geeft hij na zijn
@@ -93,10 +270,6 @@ export interface BotPlan {
   };
 }
 
-/** Midden van een footprint van `size` cellen, gespiegeld in het midden van een map van `side` cellen (puntsymmetrie). */
-export const mirror = (c: number, size: number, side: number): number =>
-  size % 2 === 1 ? side - 1 - c : side - c;
-
 /** Een bot voor speler p volgens plan. Kijkt elke `every` frames. */
 export function settlementBot(p: number, plan: BotPlan, every = 10): Controller {
   const data = gameData().data;
@@ -106,7 +279,6 @@ export function settlementBot(p: number, plan: BotPlan, every = 10): Controller 
   let next = 0;
   return (sim, f, add) => {
     if (f % every !== p % every || sim.isDefeated(p)) return;
-    const side = sim.map.w;
     const all = sim.entityIds().map((id) => sim.getUnit(id)!);
     const mine = all.filter((u) => u.owner === p);
     const units = mine.filter((u) => u.kind === 'unit');
@@ -156,25 +328,15 @@ export function settlementBot(p: number, plan: BotPlan, every = 10): Controller 
       add(p, 'SetRole', { ids: [scavs[scavs.length - 1]!.id], role: 'builder' });
     }
 
-    // bouwen: bouwplaatsen afmaken, daarna het volgende gebouw uit de lijst
+    // bouwen: bouwplaatsen afmaken, daarna het volgende gebouw uit de lijst. Gebouw k van type T staat zodra er
+    // (af of in aanbouw) minstens zoveel T zijn als er T in de lijst staan tot en met k.
     const builders = idle(role(ROLE_BUILDER)).map((u) => u.id);
     const site = mine.find((u) => u.kind === 'building' && u.buildState === 1);
-    const at = (b: PlannedBuilding): { typeId: number; x: number; y: number } => {
-      const def = data.buildings.find((x) => x.key === b.key)!;
-      const cx = p === 0 ? b.cx : mirror(b.cx, def.footprint.w, side);
-      const cy = p === 0 ? b.cy : mirror(b.cy, def.footprint.h, side);
-      return { typeId: buildingType(b.key), x: cx * 256 + 128, y: cy * 256 + 128 };
-    };
     while (next < plan.builds.length) {
-      const t = at(plan.builds[next]!);
-      const placed = mine.some(
-        (u) =>
-          u.kind === 'building' &&
-          u.typeId === t.typeId &&
-          Math.abs(u.x - t.x) <= 128 &&
-          Math.abs(u.y - t.y) <= 128,
-      );
-      if (!placed) break;
+      const t = buildingType(plan.builds[next]!.key);
+      const want = plan.builds.slice(0, next + 1).filter((b) => buildingType(b.key) === t).length;
+      const have = mine.filter((u) => u.kind === 'building' && u.typeId === t).length;
+      if (have < want) break;
       next++;
     }
     if (builders.length > 0) {
@@ -183,8 +345,10 @@ export function settlementBot(p: number, plan: BotPlan, every = 10): Controller 
       else if (next < plan.builds.length) {
         const b = plan.builds[next]!;
         const def = data.buildings.find((x) => x.key === b.key)!;
-        if (def.prereqTech.every((t) => techs.includes(t)) && st.scrap >= def.scrapCost)
-          send('Build', builders, at(b));
+        if (def.prereqTech.every((t) => techs.includes(t)) && st.scrap >= def.scrapCost) {
+          const at = new SitePlanner(sim).find(p, b.key, b.at, b.homewardM);
+          if (at !== null) send('Build', builders, { typeId: buildingType(b.key), ...at });
+        }
       }
     }
 
@@ -222,6 +386,15 @@ export function settlementBot(p: number, plan: BotPlan, every = 10): Controller 
       );
     }
     const militia = role(ROLE_MILITIA);
+    if (plan.guard !== undefined) {
+      const g = anchorOf(sim, p, plan.guard);
+      const guards =
+        hero !== undefined && hero.order === ORDER_NONE ? [...idle(militia), hero] : idle(militia);
+      const go = guards
+        .filter((u) => (u.x - g.x) ** 2 + (u.y - g.y) ** 2 > (6 * 256) ** 2)
+        .map((u) => u.id);
+      if (go.length > 0) send('AttackMove', go, g);
+    }
     const enemyHq = all.find(
       (u) =>
         u.kind === 'building' &&
@@ -237,7 +410,9 @@ export function settlementBot(p: number, plan: BotPlan, every = 10): Controller 
       if (!attacked || f - lastAttack >= 400) {
         const ids = (attacked ? idle(militia) : militia).map((u) => u.id);
         if (hero !== undefined && (!attacked || hero.order === ORDER_NONE)) ids.push(hero.id);
-        if (ids.length > 0) send('AttackMove', ids, { x: enemyHq.x, y: enemyHq.y });
+        const goal =
+          plan.attackTarget === 'settlement' ? settlementPoint(sim, enemyHq.owner) : enemyHq;
+        if (ids.length > 0) send('AttackMove', ids, { x: goal.x, y: goal.y });
         attacked = true;
         lastAttack = f;
       }

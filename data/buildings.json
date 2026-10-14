@@ -24,10 +24,10 @@
     "_comment": "startwaarde, geen balans. Radiobaken: trekt bewoners aan en is het vangnet van de Dwellers (Spelfundament sectie 4). 80 scrap, 25 s, kwetsbaar (250 hp), 1x1 cel."
   },
   {
-    "id": "claimpaal", "faction": "dwellers", "hp": 400, "armorType": "medium", "scrapCost": 50, "buildS": 15,
+    "id": "claimpaal", "faction": "dwellers", "hp": 800, "armorType": "medium", "scrapCost": 50, "buildS": 15,
     "footprint": { "w": 1, "h": 1 }, "beds": 0, "provides": ["claim"], "prereqTech": [],
     "visuals": { "mesh": "dweller_building_claim_post" },
-    "_comment": "startwaarde, geen balans. Claimpaal: markeert een claimpunt op de map. Goedkoop (50 scrap, 15 s) zodat uitbreiden een afweging van tempo is, niet van kosten."
+    "_comment": "startwaarde, geen balans. Claimpaal: markeert een claimpunt op de map. Goedkoop (50 scrap, 15 s) zodat uitbreiden een afweging van tempo is, niet van kosten. hp 800 (data 0.10.0, was 400): op de nieuwe Rustbelt ligt het midden 54 m van beide hoofdgebouwen; met 400 hp viel een paal binnen 5 s voor een raid en was een claim nooit te verdedigen."
   },
   {
     "id": "turret", "faction": "dwellers", "hp": 500, "armorType": "heavy", "scrapCost": 120, "buildS": 25,

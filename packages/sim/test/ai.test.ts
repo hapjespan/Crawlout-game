@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { EVENT_TYPE, OWNER_NEUTRAL } from '@crawlout/protocol';
-import { ORDER_ATTACK_MOVE, ORDER_CRAFT, ORDER_GATHER, createSim } from '../src/index.js';
+import {
+  ORDER_ATTACK_MOVE,
+  ORDER_BUILD,
+  ORDER_CRAFT,
+  ORDER_GATHER,
+  createSim,
+} from '../src/index.js';
 import type { Sim, SimAiScript, SimConfig, SimMap } from '../src/index.js';
 import { cellCenter, createOpenMap, testPlayers } from '../src/testing.js';
 import { CONFIG, DATA, MILITIA, SCAV, bundle, cmd, typeByKey } from './helpers.js';
@@ -191,6 +197,83 @@ describe('scripted AI (balans speltest 14 oktober)', () => {
     expect(raid.sim.world.ordX[back]).not.toBe(cellCenter(40, 40).x);
     const push = run(0);
     expect(push.target).toEqual(map.spawns[1]);
+  });
+
+  it('claimt eerst het punt aan de eigen kant, ook ver weg en met escorte; het midden pas vanaf claimFarFromTicks', () => {
+    // het midden (32,32) ligt dichter bij het hoofdgebouw (8,8) dan het punt aan de eigen kant (8,44), maar is van niemand
+    const own = cellCenter(8, 44);
+    const map: SimMap = {
+      ...createOpenMap(64, 64),
+      claimPoints: [
+        { ...cellCenter(32, 32), kind: 1 },
+        { ...own, kind: 0 },
+      ],
+    };
+    const posts = (sim: Sim): { x: number; y: number }[] =>
+      sim
+        .entityIds()
+        .map((id) => sim.getUnit(id)!)
+        .filter((u) => u.typeId === CLAIMPAAL && u.owner === 0);
+    const near = (u: { x: number; y: number }, c: { x: number; y: number }): boolean =>
+      Math.abs(u.x - c.x) <= 6 * 256 && Math.abs(u.y - c.y) <= 6 * 256;
+    const players = testPlayers(2, false).map((p, i) => ({ ...p, ai: i === 0 }));
+    const sim = aiSim({ claimFromTicks: 0, claimSafeRadius: 10 * 256 }, map, players);
+    play(sim, 2);
+    const p = posts(sim);
+    expect(p).toHaveLength(1);
+    expect(near(p[0]!, own)).toBe(true);
+    // verder dan claimSafeRadius: de militie zonder taak gaat als escorte mee
+    expect(
+      unitsOf(sim, 0)
+        .filter((u) => u.typeId === MILITIA)
+        .every((u) => u.order === ORDER_ATTACK_MOVE),
+    ).toBe(true);
+    // het midden komt pas na claimFarFromTicks
+    play(sim, 600);
+    expect(posts(sim).some((u) => near(u, cellCenter(32, 32)))).toBe(false);
+    const later = aiSim({ claimFromTicks: 0, claimFarFromTicks: 0, builders: 1 }, map, players);
+    play(later, 2);
+    play(later, 1200);
+    expect(posts(later).some((u) => near(u, cellCenter(32, 32)))).toBe(true);
+  });
+
+  it('een raid neemt een bouwer mee die een claimpaal bij het punt zet, en wacht en spaart tot hij die kan betalen', () => {
+    const map: SimMap = {
+      ...createOpenMap(64, 64),
+      claimPoints: [{ ...cellCenter(40, 40), kind: 1 }],
+    };
+    const sim = aiSim(
+      { attackTimersTicks: [10], waveMinArmy: 2, waveArmyGrowth: 0, allInWithoutNodes: false },
+      map,
+      testPlayers(2, false).map((p, i) => ({ ...p, ai: i === 0 })),
+    );
+    const army = [0, 1].map((k) =>
+      sim.spawnUnit({ typeId: MILITIA, owner: 0, ...cellCenter(20 + k, 20) }),
+    );
+    sim.spawnBuilding(CLAIMPAAL, 1, 41, 40, true);
+    sim.setScrap(0, 0);
+    const goal = (): number => {
+      const i = sim.world.resolve(army[0]!);
+      return sim.getUnit(army[0]!)!.order === ORDER_ATTACK_MOVE
+        ? sim.world.ordX[sim.world.currentOrder(i)]!
+        : -1;
+    };
+    play(sim, 20);
+    // geen scrap voor een claimpaal: de raid wacht (de militie verzamelt bij het hoofdgebouw)
+    expect(goal()).not.toBe(cellCenter(40, 40).x);
+    sim.setScrap(0, CONFIG.buildingTypes.find((b) => b.typeId === CLAIMPAAL)!.scrapCost);
+    play(sim, 1);
+    expect(goal()).toBe(cellCenter(40, 40).x);
+    const site = sim
+      .entityIds()
+      .map((id) => sim.getUnit(id)!)
+      .find((u) => u.typeId === CLAIMPAAL && u.owner === 0);
+    expect(site).toBeDefined();
+    expect(Math.abs(site!.x - cellCenter(40, 40).x)).toBeLessThanOrEqual(6 * 256);
+    expect(unitsOf(sim, 0).some((u) => u.order === ORDER_BUILD && u.orderTarget === site!.id)).toBe(
+      true,
+    );
+    expect(sim.playerStatus(0).scrap).toBe(0);
   });
 
   it('spaart voor het oplappen van een gesneuvelde held en lapt hem op zodra het kan', () => {
