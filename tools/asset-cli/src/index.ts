@@ -5,3 +5,4 @@ export { validateAsset, type ValidationResult, type AssetKind } from './validate
 export { buildAssets, type BuildOptions, type BuildResult, type AssetReport } from './build.js';
 export { bakeAnimations, BAKE_FPS, type BakeInput, type BakeResult } from './bake.js';
 export { clipmapSchema, parseClipmap, resolveClips, type Clipmap } from './clipmap.js';
+export * from './heightfield.js';
