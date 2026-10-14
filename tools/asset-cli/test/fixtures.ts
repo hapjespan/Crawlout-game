@@ -189,3 +189,116 @@ export async function makeProp(options: { segments?: number; rings?: number } = 
   }
   return io.writeBinary(doc);
 }
+
+/** Bronskelet in UE-stijl met vingers en `*_leaf`-bones, zoals de Quaternius-bronnen (53 bones in het echt, hier 36). */
+const UE_BONES: readonly (readonly [string, string | null, number])[] = [
+  ['root', null, 0],
+  ['pelvis', 'root', 0.95],
+  ['spine_01', 'pelvis', 1.05],
+  ['spine_02', 'spine_01', 1.2],
+  ['spine_03', 'spine_02', 1.35],
+  ['neck_01', 'spine_03', 1.5],
+  ['head', 'neck_01', 1.65],
+  ['head_leaf', 'head', 1.8],
+  ...(['l', 'r'] as const).flatMap((side): (readonly [string, string | null, number])[] => [
+    [`clavicle_${side}`, 'spine_03', 1.4],
+    [`upperarm_${side}`, `clavicle_${side}`, 1.4],
+    [`lowerarm_${side}`, `upperarm_${side}`, 1.15],
+    [`hand_${side}`, `lowerarm_${side}`, 0.95],
+    [`index_01_${side}`, `hand_${side}`, 0.9],
+    [`index_02_${side}`, `index_01_${side}`, 0.85],
+    [`index_02_${side}_leaf`, `index_02_${side}`, 0.8],
+    [`thumb_01_${side}`, `hand_${side}`, 0.9],
+    [`thumb_01_${side}_leaf`, `thumb_01_${side}`, 0.85],
+    [`thigh_${side}`, 'pelvis', 0.9],
+    [`calf_${side}`, `thigh_${side}`, 0.5],
+    [`foot_${side}`, `calf_${side}`, 0.1],
+    [`ball_${side}`, `foot_${side}`, 0.03],
+    [`ball_${side}_leaf`, `ball_${side}`, 0.0],
+  ]),
+] as const;
+
+export const UE_CLIPS = ['Idle_Loop', 'Walk_Loop', 'Jog_Fwd_Loop', 'Pistol_Shoot', 'Punch_Cross', 'Interact', 'Fixing_Kneeling', 'Death01', 'Dance_Loop', 'Roll'];
+export const UE_CLIPMAP = { Idle_Loop: 'idle', Walk_Loop: 'walk', Jog_Fwd_Loop: 'run', Pistol_Shoot: 'attack1', Punch_Cross: 'attack2', Interact: 'gather', Fixing_Kneeling: 'build', Death01: 'death' };
+export const UE_TO_MIXAMO = {
+  pelvis: 'Hips', spine_01: 'Spine', spine_02: 'Spine1', spine_03: 'Spine2', neck_01: 'Neck', head: 'Head',
+  clavicle_l: 'LeftShoulder', upperarm_l: 'LeftArm', lowerarm_l: 'LeftForeArm', hand_l: 'LeftHand', thigh_l: 'LeftUpLeg', calf_l: 'LeftLeg', foot_l: 'LeftFoot',
+  clavicle_r: 'RightShoulder', upperarm_r: 'RightArm', lowerarm_r: 'RightForeArm', hand_r: 'RightHand', thigh_r: 'RightUpLeg', calf_r: 'RightLeg', foot_r: 'RightFoot',
+};
+
+/**
+ * Zware bron met een UE-skelet: elke vertex heeft invloeden van een hoofdbone, een vingerbone en een leaf, zodat het
+ * snoeien gewichten moet optellen. De inverse-bindmatrix van joint i heeft translatie-x = i, om de herordening te toetsen.
+ */
+export async function makeUeSource(options: { segments?: number; rings?: number } = {}): Promise<Uint8Array> {
+  const { segments = 60, rings = 80 } = options;
+  const doc = new Document();
+  const buffer = doc.createBuffer();
+  const scene = doc.createScene('scene');
+  const nodes = new Map<string, ReturnType<Document['createNode']>>();
+  for (const [name, parent, y] of UE_BONES) {
+    const node = doc.createNode(name);
+    const parentY = parent ? (UE_BONES.find((b) => b[0] === parent)?.[2] ?? 0) : 0;
+    node.setTranslation([name.endsWith('_l') || name.includes('_l_') ? 0.2 : name.endsWith('_r') || name.includes('_r_') ? -0.2 : 0, y - parentY, 0]);
+    if (parent) nodes.get(parent)!.addChild(node);
+    else scene.addChild(node);
+    nodes.set(name, node);
+  }
+  const names = UE_BONES.map((b) => b[0]);
+  const id = (name: string): number => names.indexOf(name);
+
+  const vertexCount = segments * (rings + 1);
+  const positions = new Float32Array(vertexCount * 3);
+  const uvs = new Float32Array(vertexCount * 2);
+  const jointIds = new Uint8Array(vertexCount * 4);
+  const weights = new Float32Array(vertexCount * 4);
+  const bands = ['pelvis', 'spine_02', 'head', 'hand_l'];
+  for (let r = 0; r <= rings; r++) {
+    for (let s = 0; s < segments; s++) {
+      const i = r * segments + s;
+      const angle = (s / segments) * Math.PI * 2;
+      const radius = 0.25 + 0.08 * Math.sin((r / rings) * Math.PI * 3);
+      positions.set([Math.cos(angle) * radius, (r / rings) * 1.8, Math.sin(angle) * radius], i * 3);
+      uvs.set([s / segments, r / rings], i * 2);
+      const main = bands[Math.floor((r / (rings + 1)) * bands.length)]!;
+      jointIds.set([id(main), id('index_01_l'), id('index_02_l_leaf'), id('ball_l_leaf')], i * 4);
+      weights.set([0.4, 0.3, 0.2, 0.1], i * 4);
+    }
+  }
+  const indices = new Uint16Array(segments * rings * 6);
+  let k = 0;
+  for (let r = 0; r < rings; r++) {
+    for (let s = 0; s < segments; s++) {
+      const a = r * segments + s;
+      const b = r * segments + ((s + 1) % segments);
+      indices.set([a, b, a + segments, b, b + segments, a + segments], k);
+      k += 6;
+    }
+  }
+  const accessor = (array: Float32Array | Uint16Array | Uint8Array, type: 'VEC3' | 'VEC2' | 'VEC4' | 'SCALAR' | 'MAT4') => doc.createAccessor().setArray(array).setType(type).setBuffer(buffer);
+  const prim = doc
+    .createPrimitive()
+    .setAttribute('POSITION', accessor(positions, 'VEC3'))
+    .setAttribute('TEXCOORD_0', accessor(uvs, 'VEC2'))
+    .setAttribute('TEXCOORD_1', accessor(uvs, 'VEC2'))
+    .setAttribute('JOINTS_0', accessor(jointIds, 'VEC4'))
+    .setAttribute('WEIGHTS_0', accessor(weights, 'VEC4'))
+    .setIndices(accessor(indices, 'SCALAR'))
+    .setMaterial(doc.createMaterial('M_Main'));
+  const ibm = new Float32Array(names.length * 16);
+  names.forEach((_, i) => ibm.set([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, i, 0, 0, 1], i * 16));
+  const skin = doc.createSkin('skin').setInverseBindMatrices(accessor(ibm, 'MAT4'));
+  for (const name of names) skin.addJoint(nodes.get(name)!);
+  scene.addChild(doc.createNode('body').setMesh(doc.createMesh('body').addPrimitive(prim)).setSkin(skin));
+
+  for (const name of UE_CLIPS) {
+    const animation = doc.createAnimation(name);
+    const input = accessor(new Float32Array([0, 1, 2]), 'SCALAR');
+    for (const bone of ['root', 'pelvis', 'index_01_l', 'index_02_l_leaf']) {
+      const output = accessor(new Float32Array([0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1]), 'VEC4');
+      const sampler = doc.createAnimationSampler().setInput(input).setOutput(output);
+      animation.addSampler(sampler).addChannel(doc.createAnimationChannel().setTargetNode(nodes.get(bone)!).setTargetPath('rotation').setSampler(sampler));
+    }
+  }
+  return new NodeIO().writeBinary(doc);
+}

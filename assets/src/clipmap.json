@@ -1,23 +1,16 @@
 {
-  "_comment": "Koppelt clipnamen uit bron-GLB's aan de canonieke namen idle, walk, run, attack1, attack2, gather, build, death. Sleutels zijn hoofdletterongevoelig. Controleer de namen tegen de echte Quaternius-GLB's bij het toevoegen; de waarden hieronder zijn een eerste inschatting.",
-  "clips": {
-    "Idle": "idle",
-    "Idle_Loop": "idle",
-    "Walk": "walk",
-    "Walk_Loop": "walk",
-    "Run": "run",
-    "Jog_Fwd_Loop": "run",
-    "Sprint_Loop": "run",
-    "Sword_Attack": "attack1",
-    "Punch_Jab": "attack1",
-    "Punch_Cross": "attack2",
-    "Sword_Attack_Alt": "attack2",
-    "Interact": "gather",
-    "Pickup": "gather",
-    "Work": "build",
-    "Hammer": "build",
-    "Death": "death",
-    "Death01": "death"
-  },
-  "assets": {}
+  "_comment": "Koppelt clipnamen uit bron-GLB's aan de canonieke namen idle, walk, run, attack1, attack2, gather, build, death. Sleutels zijn hoofdletterongevoelig. Clips die niet gemapt zijn vallen weg uit de output. Mappen staan per asset, omdat de UAL meer dan een clip per doel heeft (bijvoorbeeld Jog_Fwd_Loop en Sprint_Loop).",
+  "clips": {},
+  "assets": {
+    "dweller_body_human": {
+      "Idle_Loop": "idle",
+      "Walk_Loop": "walk",
+      "Jog_Fwd_Loop": "run",
+      "Pistol_Shoot": "attack1",
+      "Punch_Cross": "attack2",
+      "Interact": "gather",
+      "Fixing_Kneeling": "build",
+      "Death01": "death"
+    }
+  }
 }

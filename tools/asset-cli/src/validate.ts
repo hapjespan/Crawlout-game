@@ -1,8 +1,11 @@
 import type { Document } from '@gltf-transform/core';
 import { BUDGETS } from './budgets.js';
-import { boneNames, computeBounds, countTriangles, findSockets, hasSkin, maxBoneCount, missingMixamoBones, textureSizes, uvSetCount, animationIndex } from './inspect.js';
+import { boneNames, computeBounds, facingZ, countTriangles, findSockets, hasSkin, maxBoneCount, missingMixamoBones, textureSizes, uvSetCount, animationIndex } from './inspect.js';
 import { EMPTY_CLIPMAP, resolveClips, type Clipmap } from './clipmap.js';
 import type { AssetBounds } from './manifest.js';
+
+/** Zolen die minder dan dit achter de enkel uitsteken tellen niet als bewijs van een verkeerde richting. */
+const FACING_TOLERANCE = 0.02;
 
 export type AssetKind = 'character' | 'prop';
 
@@ -26,8 +29,8 @@ export function validateAsset(document: Document, options: { clipmap?: Clipmap; 
 
   if (triangles === 0) errors.push('geen driehoeken gevonden in de mesh.');
 
-  const lod0Max = kind === 'character' ? BUDGETS.characterMaxTris[0] : BUDGETS.propMaxTris0;
-  if (triangles > lod0Max) errors.push(`${triangles} driehoeken in LOD0, maximaal ${lod0Max} (brief: 3000 tot 4000 voor karakters).`);
+  const lod0Max = kind === 'character' ? BUDGETS.characterMaxTris[0] : BUDGETS.propMaxTris[0];
+  if (triangles > lod0Max) errors.push(`${triangles} driehoeken in LOD0, maximaal ${lod0Max} (brief: 3000 tot 4000 voor karakters; props: zie budgets.ts).`);
 
   for (const size of textureSizes(document)) {
     if (size.width > BUDGETS.maxTextureSize || size.height > BUDGETS.maxTextureSize) {
@@ -52,6 +55,11 @@ export function validateAsset(document: Document, options: { clipmap?: Clipmap; 
     }
     if (Math.abs(bounds.min[1]) > BUDGETS.feetTolerance) {
       errors.push(`voeten staan op y=${bounds.min[1].toFixed(2)}, verwacht rond 0 (oorsprong op de grond, Y omhoog).`);
+    }
+
+    const facing = facingZ(document);
+    if (facing !== null && facing < -FACING_TOLERANCE) {
+      errors.push(`het model lijkt naar -Z te kijken (voeten wijzen ${facing.toFixed(2)} m achter de enkel); de brief eist gezicht naar +Z.`);
     }
 
     const sockets = findSockets(document);

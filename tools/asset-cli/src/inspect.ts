@@ -122,3 +122,37 @@ export function findSockets(document: Document): AssetSockets {
   if (head) sockets.head = head;
   return sockets;
 }
+
+/**
+ * Richting van het model langs Z: gemiddelde z van de zoolvertices (onderste 5 procent van de hoogte) min de z van de
+ * enkel-bones (LeftFoot en RightFoot, rustpose). Positief = voeten wijzen naar +Z. `null` als het niet te bepalen is.
+ */
+export function facingZ(document: Document): number | null {
+  const ankles = ['LeftFoot', 'RightFoot']
+    .map((name) => document.getRoot().listNodes().find((n) => stripMixamoPrefix(n.getName()) === name))
+    .filter((n): n is Node => n !== undefined);
+  if (ankles.length === 0) return null;
+  const ankleZ = ankles.reduce((sum, n) => sum + n.getWorldTranslation()[2]!, 0) / ankles.length;
+  const { min, max } = computeBounds(document);
+  const limit = min[1] + (max[1] - min[1]) * 0.05;
+  let sum = 0;
+  let count = 0;
+  const p = [0, 0, 0];
+  for (const node of document.getRoot().listNodes()) {
+    const mesh = node.getMesh();
+    if (!mesh) continue;
+    const m = node.getWorldMatrix();
+    for (const prim of mesh.listPrimitives()) {
+      const position = prim.getAttribute('POSITION');
+      if (!position) continue;
+      for (let i = 0; i < position.getCount(); i++) {
+        position.getElement(i, p);
+        const y = m[1]! * p[0]! + m[5]! * p[1]! + m[9]! * p[2]! + m[13]!;
+        if (y > limit) continue;
+        sum += m[2]! * p[0]! + m[6]! * p[1]! + m[10]! * p[2]! + m[14]!;
+        count++;
+      }
+    }
+  }
+  return count === 0 ? null : sum / count - ankleZ;
+}
