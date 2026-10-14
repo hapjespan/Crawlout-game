@@ -12,7 +12,16 @@ export interface TerrainGeometry {
   normals?: Float32Array;
 }
 
+/** Result of TerrainHeightField.locate. */
+export interface TerrainHit {
+  tri: number;
+  u: number;
+  v: number;
+  y: number;
+}
+
 export class TerrainHeightField {
+  private readonly scratch: TerrainHit = { tri: 0, u: 0, v: 0, y: 0 };
   readonly minX: number;
   readonly minZ: number;
   readonly maxX: number;
@@ -90,7 +99,15 @@ export class TerrainHeightField {
 
   /** Highest terrain point at (x, z), or `fallback` outside the terrain. */
   heightAt(x: number, z: number, fallback = 0): number {
-    if (x < this.minX || x > this.maxX || z < this.minZ || z > this.maxZ) return fallback;
+    return this.locate(x, z, this.scratch) ? this.scratch.y : fallback;
+  }
+
+  /**
+   * The topmost triangle over (x, z): its index, the barycentric weights of its second and third corner (u, v) and
+   * the height there. False outside the terrain. For sampling per-vertex attributes (terrain/terrainRefine.ts).
+   */
+  locate(x: number, z: number, out: TerrainHit): boolean {
+    if (x < this.minX || x > this.maxX || z < this.minZ || z > this.maxZ) return false;
     const cellIdx = this.rowOf(z) * this.cols + this.colOf(x);
     const p = this.positions;
     const idx = this.indices;
@@ -115,9 +132,33 @@ export class TerrainHeightField {
       const eps = -1e-6;
       if (u < eps || v < eps || u + v > 1 - eps) continue;
       const h = p[a + 1]! + u * (p[b + 1]! - p[a + 1]!) + v * (p[c + 1]! - p[a + 1]!);
-      if (h > best) best = h;
+      if (h > best) {
+        best = h;
+        out.tri = t;
+        out.u = u;
+        out.v = v;
+        out.y = h;
+      }
     }
-    return best === -Infinity ? fallback : best;
+    return best !== -Infinity;
+  }
+
+  /** Vertex indices of triangle `tri`. */
+  corners(tri: number): [number, number, number] {
+    const idx = this.indices;
+    return [idx[tri * 3]!, idx[tri * 3 + 1]!, idx[tri * 3 + 2]!];
+  }
+
+  /** Lowest and highest vertex height, meters. */
+  heightRange(): [number, number] {
+    let lo = Infinity;
+    let hi = -Infinity;
+    for (let i = 1; i < this.positions.length; i += 3) {
+      const y = this.positions[i]!;
+      if (y < lo) lo = y;
+      if (y > hi) hi = y;
+    }
+    return Number.isFinite(lo) ? [lo, hi] : [0, 0];
   }
 }
 

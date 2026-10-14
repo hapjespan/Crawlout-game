@@ -7,6 +7,9 @@
 // Decorative props (props/propLayer.ts) add a diffuse map sampled with uv (uv = (-1, -1) reads white, as on units)
 // and an optional grade that pulls the art's colors towards the wasteland palette, so lush kit colors sit under the
 // same toon ramp as everything else.
+// Building assets (buildingAssets.ts) use a texture array instead: attribute uvl = (u, v, layer), layer -1 reads
+// white, so one material serves every building whatever its number of materials. With `reveal`, a vertex above
+// iTint.w (model space) is pulled down onto that height: a building site rises out of the ground as it is built.
 import { MeshBasicNodeMaterial, type Texture, type Vector3, type Node } from 'three/webgpu';
 import {
   attribute,
@@ -16,6 +19,7 @@ import {
   float,
   int,
   max,
+  min,
   mix,
   normalize,
   select,
@@ -40,6 +44,10 @@ export interface PropMaterialOptions {
   time?: Node<'float'>;
   /** Diffuse map, sampled with the uv attribute; albedo = vertex color * map. */
   map?: Texture | null;
+  /** Diffuse texture array, sampled with the uvl attribute (u, v, layer; layer < 0 reads white). */
+  layers?: Texture | null;
+  /** Cut the model at iTint.w (model-space y), for buildings under construction. */
+  reveal?: boolean;
   /** 0..1: pulls the albedo towards a warm grey of the same brightness (0 keeps the art's colors). Default 0. */
   grade?: number;
 }
@@ -60,6 +68,7 @@ export function createPropMaterial(opts: PropMaterialOptions): MeshBasicNodeMate
   const light = uniform(opts.lightDir.clone().normalize());
 
   let local: Node<'vec3'> = position;
+  if (opts.reveal) local = vec3(position.x, min(position.y, iTint.w), position.z);
   if (opts.time) {
     // Flag wave: team-masked vertices sway along z, more towards the free end.
     const t = opts.time;
@@ -85,6 +94,16 @@ export function createPropMaterial(opts: PropMaterialOptions): MeshBasicNodeMate
   if (opts.map) {
     const uv = attribute('uv', 'vec2');
     const texel = select(uv.x.lessThan(-0.5), vec4(1, 1, 1, 1), texture(opts.map, uv));
+    base = base.mul(texel.xyz);
+  }
+  if (opts.layers) {
+    const uvl = attribute('uvl', 'vec3');
+    const layer = int(max(uvl.z, 0).add(0.5));
+    const texel = select(
+      uvl.z.lessThan(-0.5),
+      vec4(1, 1, 1, 1),
+      texture(opts.layers, uvl.xy).depth(layer),
+    );
     base = base.mul(texel.xyz);
   }
   if (opts.grade) {

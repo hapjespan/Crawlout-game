@@ -1,6 +1,7 @@
 // One instanced draw of a static mesh with the prop material's per-instance attributes (propMaterial.ts): iPos
-// (x, y, z meters, yaw radians), iScale (x, y, z, team palette slot) and iTint (rgb multiplier). Shared by the
-// structure layer (buildings, scrap heaps, claims) and the prop layer (trees, rocks, bushes).
+// (x, y, z meters, yaw radians), iScale (x, y, z, team palette slot) and iTint (rgb multiplier; w: the model-space
+// height a building under construction is cut at, NO_CUT otherwise). Shared by the structure layer (buildings, scrap
+// heaps, claims) and the prop layer (trees, rocks, bushes).
 import {
   DynamicDrawUsage,
   InstancedBufferAttribute,
@@ -9,6 +10,9 @@ import {
   type MeshBasicNodeMaterial,
   type Scene,
 } from 'three/webgpu';
+
+/** iTint.w of an instance that is not cut (far above any model). */
+export const NO_CUT = 1e5;
 
 export class InstanceBatch {
   readonly mesh: Mesh;
@@ -57,6 +61,7 @@ export class InstanceBatch {
     sz: number,
     team: number,
     tint: readonly [number, number, number],
+    cut = NO_CUT,
   ): void {
     const k = this.count;
     if (k >= this.capacity) return;
@@ -76,7 +81,7 @@ export class InstanceBatch {
     t[o] = tint[0];
     t[o + 1] = tint[1];
     t[o + 2] = tint[2];
-    t[o + 3] = 1;
+    t[o + 3] = cut;
   }
 
   commit(): void {

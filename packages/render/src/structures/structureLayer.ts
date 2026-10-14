@@ -1,17 +1,22 @@
-// Buildings, scrap heaps and claim points: one instanced draw call per kind per LOD (buildings have two LODs), plus
-// one for the scaffolds around building sites. Buildings cast real shadows (when the renderer enables them); scrap
+// Buildings, scrap heaps and claim points: one instanced draw call per kind per LOD, plus one for the scaffolds around
+// building sites. A building type with an asset from the manifest (setBuildingAssets) is drawn with it: one instanced
+// draw per asset per LOD (three LODs, identical LODs share a draw; every material of the asset sits in that one draw
+// through the shared texture array); the others keep the placeholder block (two LODs). Buildings cast real shadows (when the renderer enables them); scrap
 // heaps get a blob shadow decal and claim points a ring decal in the owner's color. Everything is read from the
 // interpolated frame, by typeId (entities/typeIds.ts). A site (anim build) grows with its progress in animT inside a
-// scaffold; a scrap heap shrinks with its remaining stock in hpPct (structureVisuals.ts).
+// scaffold (a placeholder scales up, an asset rises out of the ground: the material cuts it at the built height); a
+// scrap heap shrinks with its remaining stock in hpPct (structureVisuals.ts).
 import { ANIM, ENTITY_FLAG } from '@crawlout/protocol';
 import {
   Frustum,
   Matrix4,
   Sphere,
+  type BufferGeometry,
   type Camera,
   type MeshBasicNodeMaterial,
   type Scene,
 } from 'three/webgpu';
+import type { BuildingVisual } from './buildingAssets.js';
 import { InstanceBatch } from './instanceBatch.js';
 import {
   DECAL_COLOR,
@@ -19,7 +24,11 @@ import {
   type DecalLayer,
   type DecalStyle,
 } from '../decals/decalLayer.js';
-import { buildingWallHeight, type FootprintTable } from '../entities/footprint.js';
+import {
+  buildingRoofHeight,
+  buildingWallHeight,
+  type FootprintTable,
+} from '../entities/footprint.js';
 import { buildingIdOf, classifyTypeId, ENTITY_KIND } from '../entities/typeIds.js';
 import { NEUTRAL_TEAM, teamIndex } from '../palette.js';
 import type { PickShape } from '../picking/selection.js';
@@ -100,9 +109,24 @@ export interface StructureLayerOptions {
   footprints: FootprintTable;
   heightAt: (x: number, z: number) => number;
   materials: StructureMaterials;
-  /** Camera distance (m) where buildings switch to LOD1. */
+  /** Camera distance (m) where placeholder buildings switch to LOD1. */
   lodDistance?: number;
+  /** Camera distances (m) where building assets switch to LOD1 and LOD2. */
+  assetLodDistances?: readonly [number, number];
   castShadows?: boolean;
+}
+
+/** Instances per building-asset batch: more of one type than this in view is not a game. */
+const ASSET_BATCH_CAPACITY = 1024;
+/** Scaffold height around an asset site, times the model height (capped by the placeholder's scaffold). */
+const ASSET_SCAFFOLD_HEIGHT = 1.05;
+
+interface AssetDraw {
+  visual: BuildingVisual;
+  /** One batch per distinct LOD geometry. */
+  batches: InstanceBatch[];
+  /** Batch index per LOD. */
+  lodBatch: [number, number, number];
 }
 
 const WHITE: readonly [number, number, number] = [1, 1, 1];
@@ -121,9 +145,23 @@ export class StructureLayer {
   private readonly materials: StructureMaterials;
   private readonly siteTint: [number, number, number] = [1, 1, 1];
   private readonly heap: [number, number] = [1, 1];
+  private readonly scene: Scene;
+  private readonly capacity: number;
+  private readonly castShadows: boolean;
+  private readonly assetLodDist2: [number, number];
+  private assetDraws: AssetDraw[] = [];
+  /** Building id (index in buildings.json) to its asset draw. */
+  private readonly assetByBuilding = new Map<number, AssetDraw>();
+  private assetMaterial: MeshBasicNodeMaterial | null = null;
+  private camPos: { x: number; y: number; z: number } = { x: 0, y: 0, z: 0 };
 
   constructor(scene: Scene, opts: StructureLayerOptions) {
     const cap = opts.capacity;
+    this.scene = scene;
+    this.capacity = cap;
+    this.castShadows = opts.castShadows ?? false;
+    const [a1, a2] = opts.assetLodDistances ?? [55, 110];
+    this.assetLodDist2 = [a1 * a1, a2 * a2];
     const m = (this.materials = opts.materials);
     this.footprints = opts.footprints;
     this.heightAt = opts.heightAt;
@@ -146,6 +184,85 @@ export class StructureLayer {
     this.claims = new InstanceBatch(scene, createClaimGeometry(), m.claim, cap, 'claim-points');
   }
 
+  /**
+   * Draws the building ids in `byBuilding` with their asset, all with `material` (the layer takes ownership of it and
+   * of nothing else: the geometries are cloned per batch, the textures stay the caller's). Replaces earlier assets;
+   * an empty map brings every building back to the placeholder.
+   */
+  setBuildingAssets(
+    byBuilding: ReadonlyMap<number, BuildingVisual>,
+    material: MeshBasicNodeMaterial | null,
+  ): void {
+    this.clearAssets();
+    if (byBuilding.size === 0 || !material) {
+      material?.dispose();
+      return;
+    }
+    this.assetMaterial = material;
+    const byVisual = new Map<BuildingVisual, AssetDraw>();
+    for (const [buildingId, visual] of byBuilding) {
+      let draw = byVisual.get(visual);
+      if (!draw) {
+        const unique: BufferGeometry[] = [];
+        const lodBatch = visual.lods.map((geo) => {
+          let i = unique.indexOf(geo);
+          if (i < 0) i = unique.push(geo) - 1;
+          return i;
+        }) as [number, number, number];
+        const batches = unique.map((geo, i) => {
+          const b = new InstanceBatch(
+            this.scene,
+            geo.clone(),
+            material,
+            Math.min(this.capacity, ASSET_BATCH_CAPACITY),
+            `building-${visual.assetId}-${i}`,
+          );
+          b.mesh.castShadow = this.castShadows;
+          return b;
+        });
+        draw = { visual, batches, lodBatch };
+        byVisual.set(visual, draw);
+        this.assetDraws.push(draw);
+      }
+      this.assetByBuilding.set(buildingId, draw);
+    }
+  }
+
+  private clearAssets(): void {
+    for (const d of this.assetDraws) for (const b of d.batches) b.dispose();
+    this.assetDraws = [];
+    this.assetByBuilding.clear();
+    this.assetMaterial?.dispose();
+    this.assetMaterial = null;
+  }
+
+  /** The asset a building typeId is drawn with, or undefined for the placeholder. */
+  assetOf(typeId: number): BuildingVisual | undefined {
+    return this.assetByBuilding.get(buildingIdOf(typeId))?.visual;
+  }
+
+  /** Height (m above its ground) of the top of a drawn building: the asset's bounds or the placeholder's ridge. */
+  buildingTop(typeId: number): number {
+    const v = this.assetOf(typeId);
+    return v ? v.height : buildingRoofHeight(this.footprints.get(typeId));
+  }
+
+  /** Instanced draws the buildings take this frame (placeholders, assets and scaffolds), before the shadow pass. */
+  buildingDrawCount(): number {
+    let n = 0;
+    for (const b of [...this.buildings, this.scaffolds]) if (b.mesh.visible) n++;
+    for (const d of this.assetDraws) for (const b of d.batches) if (b.mesh.visible) n++;
+    return n;
+  }
+
+  /** The building meshes in the scene (tests, debugging). */
+  buildingMeshes(): readonly InstanceBatch['mesh'][] {
+    return [
+      ...this.buildings.map((b) => b.mesh),
+      ...this.assetDraws.flatMap((d) => d.batches.map((b) => b.mesh)),
+    ];
+  }
+
   /** Lowest terrain point under a footprint, so the building's foundation never floats. */
   private groundUnder(x: number, z: number, hx: number, hz: number): number {
     const h = this.heightAt;
@@ -163,8 +280,10 @@ export class StructureLayer {
     switch (classifyTypeId(typeId)) {
       case ENTITY_KIND.building: {
         const f = this.footprints.get(typeId);
+        const asset = this.assetOf(typeId);
         out.radius = 0.5 * Math.max(f.w, f.h);
-        out.height = 0.5 * buildingWallHeight(f);
+        out.height =
+          0.5 * (asset ? Math.min(asset.height, buildingWallHeight(f)) : buildingWallHeight(f));
         return out;
       }
       case ENTITY_KIND.scrapNode:
@@ -184,8 +303,10 @@ export class StructureLayer {
     this.projView.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
     this.frustum.setFromProjectionMatrix(this.projView);
     const cam = camera.position;
+    this.camPos = cam;
     const [lod0, lod1] = this.buildings;
     lod0.count = lod1.count = this.scaffolds.count = this.scrap.count = this.claims.count = 0;
+    for (const d of this.assetDraws) for (const b of d.batches) b.count = 0;
     const center = this.sphere.center;
 
     for (let i = 0; i < frame.count; i++) {
@@ -204,6 +325,13 @@ export class StructureLayer {
         const hz = f.h * 0.5;
         const wall = buildingWallHeight(f);
         const y = this.groundUnder(x, z, hx, hz);
+        const asset = this.assetByBuilding.get(buildingIdOf(typeId));
+        if (asset) {
+          this.pushAsset(asset, frame, i, x, y, z, f.w, f.h, wall, team);
+          if ((flags & ENTITY_FLAG.selected) !== 0)
+            decals.push(x, z, hx + 0.35, hz + 0.35, BUILDING_SELECTED);
+          continue;
+        }
         center.set(x, y + wall * 0.5, z);
         this.sphere.radius = Math.hypot(hx, hz, wall);
         if (!this.frustum.intersectsSphere(this.sphere)) continue;
@@ -251,12 +379,50 @@ export class StructureLayer {
     }
     lod0.commit();
     lod1.commit();
+    for (const d of this.assetDraws) for (const b of d.batches) b.commit();
     this.scaffolds.commit();
     this.scrap.commit();
     this.claims.commit();
   }
 
+  /** One building drawn with its asset: culled on its bounds, LOD by camera distance, cut while under construction. */
+  private pushAsset(
+    asset: AssetDraw,
+    frame: InterpolatedFrame,
+    i: number,
+    x: number,
+    y: number,
+    z: number,
+    w: number,
+    h: number,
+    wall: number,
+    team: number,
+  ): void {
+    const v = asset.visual;
+    const top = v.height;
+    const sx = w / v.footprint.w;
+    const sz = h / v.footprint.h;
+    this.sphere.center.set(x, y + top * 0.5, z);
+    this.sphere.radius = Math.hypot(w * 0.5, h * 0.5, top * 0.5);
+    if (!this.frustum.intersectsSphere(this.sphere)) return;
+    const cam = this.camPos;
+    const d2 = (x - cam.x) ** 2 + (y - cam.y) ** 2 + (z - cam.z) ** 2;
+    const lod = d2 < this.assetLodDist2[0] ? 0 : d2 < this.assetLodDist2[1] ? 1 : 2;
+    const batch = asset.batches[asset.lodBatch[lod]]!;
+    if (frame.anim[i] === ANIM.build) {
+      const progress = frame.animT[i]!;
+      const tint = constructionTint(progress, WHITE, this.siteTint);
+      batch.push(x, y, z, 0, sx, 1, sz, team, tint, top * constructionHeight(progress));
+      const m = 2 * SCAFFOLD_MARGIN;
+      const scaffold = Math.min(wall * SCAFFOLD_HEIGHT, top * ASSET_SCAFFOLD_HEIGHT);
+      this.scaffolds.push(x, y, z, 0, w + m, scaffold, h + m, team, WHITE);
+    } else {
+      batch.push(x, y, z, 0, sx, 1, sz, team, WHITE);
+    }
+  }
+
   dispose(): void {
+    this.clearAssets();
     for (const b of [...this.buildings, this.scaffolds, this.scrap, this.claims]) b.dispose();
     this.materials.building.dispose();
     this.materials.scrap.dispose();

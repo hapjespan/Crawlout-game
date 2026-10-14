@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ANIM } from '@crawlout/protocol';
 import {
+  BoxGeometry,
   Mesh,
   MeshBasicNodeMaterial,
   PerspectiveCamera,
@@ -8,9 +9,11 @@ import {
   type InstancedBufferAttribute,
 } from 'three/webgpu';
 import type { DecalLayer } from '../decals/decalLayer.js';
-import { buildingWallHeight, FootprintTable } from '../entities/footprint.js';
+import { BUILDING_ROOF_TOP, buildingWallHeight, FootprintTable } from '../entities/footprint.js';
 import { buildingTypeId, TYPE_ID_SCRAP_NODE } from '../entities/typeIds.js';
 import { createInterpolatedFrame, type InterpolatedFrame } from '../snapshot/interpolate.js';
+import type { BuildingVisual } from './buildingAssets.js';
+import { NO_CUT } from './instanceBatch.js';
 import { createScaffoldGeometry } from './structureGeometry.js';
 import { StructureLayer } from './structureLayer.js';
 import {
@@ -145,5 +148,95 @@ describe('StructureLayer', () => {
     expect(instance(heaps, 'iScale', 0)[0]).toBeCloseTo(1);
     expect(instance(heaps, 'iScale', 1)[0]).toBeCloseTo(scrapHeapScale(20, [0, 0])[0]);
     expect(instance(heaps, 'iScale', 1)[1]).toBeCloseTo(scrapHeapScale(20, [0, 0])[1]);
+  });
+
+  describe('with building assets', () => {
+    function visual(id: string, shared: boolean): BuildingVisual {
+      const g0 = new BoxGeometry(4, 3, 4).translate(0, 1.5, 0);
+      const g2 = new BoxGeometry(4, 3, 4).translate(0, 1.5, 0);
+      return {
+        assetId: id,
+        lods: [g0, shared ? g0 : g0.clone(), g2],
+        footprint: { w: 2, h: 2 },
+        height: 3,
+        triangles: [12, 12, 12],
+      };
+    }
+
+    function place(frame: InterpolatedFrame, entries: [number, number, number][]): void {
+      frame.count = entries.length;
+      entries.forEach(([typeId, x, z], i) => {
+        frame.id[i] = 300 + i;
+        frame.typeId[i] = typeId;
+        frame.x[i] = x;
+        frame.z[i] = z;
+        frame.owner[i] = 1;
+        frame.anim[i] = ANIM.idle;
+        frame.animT[i] = 0;
+        frame.hpPct[i] = 100;
+        frame.flags[i] = 0;
+      });
+    }
+
+    it('draws a building type with its asset, one batch per distinct LOD, and the rest as placeholders', () => {
+      const { layer, scene, frame, camera } = setup();
+      const hq = visual('hq', true);
+      layer.setBuildingAssets(new Map([[0, hq]]), material());
+      // Two LOD batches: LOD 0 and 1 share a geometry.
+      expect(scene.children.filter((o) => o.name.startsWith('building-hq-')).length).toBe(2);
+      place(frame, [
+        [buildingTypeId(0), -4, 0],
+        [buildingTypeId(0), 4, 0],
+        [buildingTypeId(3), 0, 6],
+      ]);
+      layer.update(frame, camera, decals);
+      const near = batch(scene, 'building-hq-0');
+      expect(near.count).toBe(2);
+      // Footprint from the data (4 x 4) over the model's own (2 x 2): scale 2 in x and z, 1 in y.
+      expect(instance(near, 'iScale', 0)).toEqual([2, 1, 2, 1]);
+      expect(instance(near, 'iTint', 0)[3]).toBe(NO_CUT);
+      expect(batch(scene, 'buildings-lod0').count).toBe(1); // the type without an asset
+      expect(layer.buildingDrawCount()).toBe(2);
+      expect(layer.buildingTop(buildingTypeId(0))).toBe(3);
+      expect(layer.buildingTop(buildingTypeId(3))).toBeCloseTo(
+        BUILDING_ROOF_TOP * buildingWallHeight({ w: 4, h: 4 }),
+      );
+    });
+
+    it('cuts a site at its built height inside a scaffold, and switches LOD with distance', () => {
+      const { layer, scene, frame, camera } = setup();
+      layer.setBuildingAssets(new Map([[0, visual('hq', false)]]), material());
+      place(frame, [[buildingTypeId(0), 0, 0]]);
+      frame.anim[0] = ANIM.build;
+      frame.animT[0] = 0.5;
+      layer.update(frame, camera, decals);
+      const near = batch(scene, 'building-hq-0');
+      const far = batch(scene, 'building-hq-2');
+      expect(near.count).toBe(1);
+      expect(far.count).toBe(0);
+      expect(instance(near, 'iTint', 0)[3]).toBeCloseTo(3 * constructionHeight(0.5));
+      const scaffolds = batch(scene, 'building-scaffolds');
+      expect(scaffolds.count).toBe(1);
+      expect(instance(scaffolds, 'iScale', 0)[1]).toBeLessThanOrEqual(3 * 1.05 + 1e-6);
+      camera.position.set(0, 120, 120);
+      camera.lookAt(0, 0, 0);
+      camera.updateMatrixWorld();
+      layer.update(frame, camera, decals);
+      expect(near.count).toBe(0);
+      expect(far.count).toBe(1);
+    });
+
+    it('picks an asset building and goes back to placeholders on an empty set', () => {
+      const { layer, scene, frame, camera } = setup();
+      layer.setBuildingAssets(new Map([[0, visual('hq', true)]]), material());
+      const shape = layer.pickShape(buildingTypeId(0), { radius: 0, height: 0 })!;
+      expect(shape.radius).toBe(2);
+      expect(shape.height).toBeCloseTo(1.5);
+      layer.setBuildingAssets(new Map(), null);
+      expect(scene.getObjectByName('building-hq-0')).toBeUndefined();
+      place(frame, [[buildingTypeId(0), 0, 0]]);
+      layer.update(frame, camera, decals);
+      expect(batch(scene, 'buildings-lod0').count).toBe(1);
+    });
   });
 });

@@ -27,7 +27,18 @@ export {
   TerrainHeightField,
   createGridTerrain,
   type TerrainGeometry,
+  type TerrainHit,
 } from './terrain/heightField.js';
+export {
+  refineTerrain,
+  heightFieldNormals,
+  type TerrainDetailOptions,
+} from './terrain/terrainRefine.js';
+export {
+  type TerrainTextureOptions,
+  type TerrainTextureStatus,
+} from './terrain/terrainTextures.js';
+export { type BuildingAssetStatus } from './structures/buildingAssets.js';
 export {
   selectInRect,
   pickEntity,
