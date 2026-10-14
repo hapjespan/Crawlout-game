@@ -30,7 +30,7 @@ describe('browser-runner in Node', () => {
   it('meldt een afwijkende hash en een ontbrekende map', () => {
     const name = 's2-testmap-move-stop.json';
     const replay = parseReplay(JSON.parse(readFileSync(join(fixturesDir, name), 'utf8')));
-    replay.hashes[3]!.hash ^= 1;
+    replay.hashes[3]!.hash = (replay.hashes[3]!.hash ^ 1) >>> 0; // uint32 blijven (het schema weigert negatieve hashes)
     const out = run({ raw: readDataDir(DATA_DIR), maps: { testmap: mapSources('testmap') }, replays: [{ name, replay }, { name: 'zonder-map', replay: { ...replay, map: 'rustbelt' } }] });
     expect(out.results[0]).toMatchObject({ ok: false, mismatch: { frame: replay.hashes[3]!.frame, reloaded: false } });
     expect(out.results[1]!.error).toMatch(/map rustbelt/);

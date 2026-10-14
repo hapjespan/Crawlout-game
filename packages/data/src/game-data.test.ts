@@ -1,6 +1,6 @@
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { convertDelta, convertDominance, cumulate, loadGameData, PROVIDES, type RawGameData } from './loader.js';
+import { AI_SITES, convertDelta, convertDominance, cumulate, loadGameData, PROVIDES, type RawGameData } from './loader.js';
 import { EffectStat, MapDef } from './schemas.js';
 import { readDataDir } from './node.js';
 import { metersToUnits, secondsToTicks } from './units.js';
@@ -80,10 +80,10 @@ describe('omrekening naar sim-eenheden', () => {
 describe('sprint 2: gather, maxRevives, dominance, effect-stats', () => {
   const data = loadGameData(raw());
 
-  it('rekent gather om: 10 scrap per 6 s wordt 120 ticks', () => {
+  it('rekent gather om: 6 scrap per 13 s wordt 260 ticks (balans speltest 14 oktober)', () => {
     const scavenger = data.loadouts.find((l) => l.key === 'scavenger')!;
-    expect(scavenger.gatherAmount).toBe(10);
-    expect(scavenger.gatherTicks).toBe(120);
+    expect(scavenger.gatherAmount).toBe(6);
+    expect(scavenger.gatherTicks).toBe(260);
     for (const l of data.loadouts.filter((x) => x.key !== 'scavenger')) {
       expect(l.gatherAmount).toBe(0);
       expect(l.gatherTicks).toBe(0);
@@ -197,11 +197,11 @@ describe('sprint 3: held, claims, cancel, militie', () => {
 
   it('rekent de xp-tabel per stap om naar cumulatieve integer-drempels', () => {
     expect(cumulate([100, 200, 300])).toEqual([100, 300, 600]);
-    expect(hero.xpThresholds).toEqual([100, 250, 450, 700, 1000, 1350]);
+    expect(hero.xpThresholds).toEqual([80, 200, 360, 560, 810, 1110]);
     expect(hero.xpThresholds.every((x, i) => Number.isInteger(x) && (i === 0 || x > hero.xpThresholds[i - 1]!))).toBe(true);
     expect(hero.naam).toBe('Opziener');
-    expect(hero.xpPerKill).toBe(20);
-    expect(hero.xpPerAssist).toBe(10);
+    expect(hero.xpPerKill).toBe(25);
+    expect(hero.xpPerAssist).toBe(15);
     expect(hero.xpAssistRadiusU).toBe(15 * 256);
     expect(hero.xpPerDiscovery).toBe(50);
     expect(hero.revivePenaltyPermille).toBe(200);
@@ -222,7 +222,7 @@ describe('sprint 3: held, claims, cancel, militie', () => {
 
   it('levert cancelRefundPermille en militiaPermille', () => {
     expect(data.sim.cancelRefundPermille).toBe(1000);
-    expect(data.aiScripts[0]!.militiaPermille).toBe(500);
+    expect(data.aiScripts[0]!.militiaPermille).toBe(200);
     expect('aiMilitiaPermille' in data.sim).toBe(false); // vervallen in 0.6.0
     expect('claimTicks' in data.sim).toBe(false);
   });
@@ -304,5 +304,42 @@ describe('sprint 4: turrets in data (besluit 8)', () => {
       delete t[field];
       expect(() => loadGameData(r), field).toThrow();
     }
+  });
+});
+
+describe('balans speltest 14 oktober: AI-script', () => {
+  const data = loadGameData(raw());
+  const ai = data.aiScripts[0]!;
+  const ix = <T extends { key: string; id: number }>(list: T[], key: string): number => list.find((x) => x.key === key)!.id;
+
+  it('rekent het script om naar sim-eenheden en numerieke ids', () => {
+    expect(ai.buildOrder.map((o) => AI_SITES[o.site])).toEqual(['hq', 'hq', 'claim', 'front', 'hq', 'claim']);
+    expect(ai.buildOrder[2]).toEqual({ atTick: secondsToTicks(150), buildingId: ix(data.buildings, 'werkplaats'), site: AI_SITES.indexOf('claim') });
+    expect(ai.research).toEqual(['geweerrek', 'raffinage', 'composiet_pantser', 'snelle_voeten', 'bouwrobots', 'lasergeleiding'].map((k) => ix(data.tech, k)));
+    expect(ai.armyLoadouts).toEqual([ix(data.loadouts, 'patrol'), ix(data.loadouts, 'militie')]);
+    expect(ai.housingBuildingId).toBe(ix(data.buildings, 'woning'));
+    expect(ai.richBuilds.every((o) => o.buildingId === ix(data.buildings, 'turret'))).toBe(true);
+    expect({ min: ai.militiaPermille, max: ai.militiaPermilleMax, perMin: ai.militiaPermillePerMin, threat: ai.threatMilitiaPermille }).toEqual({ min: 200, max: 600, perMin: 25, threat: 500 });
+    expect(ai.attackTimersTicks).toEqual([secondsToTicks(480), secondsToTicks(720)]);
+    expect([ai.waveIntervalTicks, ai.waveJitterTicks, ai.waveMaxWaitTicks, ai.pushFromTicks]).toEqual([3600, 600, 1800, 33600]);
+    expect([ai.claimFromTicks, ai.claimFarFromTicks, ai.researchFromTicks]).toEqual([1200, 9600, 3600]);
+    expect([ai.claimSafeRadiusU, ai.defendRadiusU, ai.rallyRadiusU]).toEqual([metersToUnits(30), metersToUnits(14), metersToUnits(6)]);
+    expect(AI_SITES[ai.rallySite]).toBe('claim');
+    expect(ai.allInWithoutNodes).toBe(true);
+  });
+
+  it('weigert een onbekende tech, loadout of plaats en een leeg leger', () => {
+    const badTech = clone(raw());
+    (badTech.ai[0] as { research: string[] }).research.push('teleporter');
+    expect(() => loadGameData(badTech)).toThrow(/onbekende tech 'teleporter'/);
+    const badLoadout = clone(raw());
+    (badLoadout.ai[0] as { armyLoadouts: string[] }).armyLoadouts = ['raketman'];
+    expect(() => loadGameData(badLoadout)).toThrow(/onbekende loadout 'raketman'/);
+    const noArmy = clone(raw());
+    (noArmy.ai[0] as { armyLoadouts: string[] }).armyLoadouts = [];
+    expect(() => loadGameData(noArmy)).toThrow(/armyLoadouts/);
+    const badSite = clone(raw());
+    (badSite.ai[0] as { buildOrder: { site?: string }[] }).buildOrder[0]!.site = 'dak';
+    expect(() => loadGameData(badSite)).toThrow(/site/);
   });
 });

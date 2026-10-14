@@ -179,8 +179,8 @@ describe('rustbelt', () => {
     expect(map.spawns[1]!.x).toBeGreaterThanOrEqual(64);
   });
 
-  it('heeft dominance als startwaarde (2 van 3 punten, 3 minuten)', () => {
-    expect(readDominance('rustbelt')).toEqual({ pointsRequired: 2, minutes: 3 });
+  it('heeft dominance uit de balans van de speltest van 14 oktober (2 van 3 punten, 12 minuten)', () => {
+    expect(readDominance('rustbelt')).toEqual({ pointsRequired: 2, minutes: 12 });
     expect(2).toBeLessThanOrEqual(def.claimPoints.length);
   });
 

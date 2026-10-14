@@ -3,39 +3,90 @@
   "faction": "dwellers",
   "buildOrder": [
     {
-      "atS": 10,
+      "atS": 5,
       "buildingId": "woning"
     },
     {
-      "atS": 45,
+      "atS": 30,
       "buildingId": "werkplaats"
     },
     {
-      "atS": 90,
-      "buildingId": "woning"
-    },
-    {
       "atS": 150,
-      "buildingId": "radiobaken"
+      "buildingId": "werkplaats",
+      "site": "claim"
     },
     {
       "atS": 240,
-      "buildingId": "turret"
+      "buildingId": "turret",
+      "site": "front"
     },
     {
       "atS": 300,
       "buildingId": "lab"
+    },
+    {
+      "atS": 540,
+      "buildingId": "turret",
+      "site": "claim"
     }
   ],
   "attackTimersS": [
-    420,
-    720,
-    1020
+    480,
+    720
   ],
   "rallyPoint": {
     "x": 64,
     "y": 64
   },
-  "_comment": "startwaarde, geen balans. Eenvoudige Dweller-AI: woning, werkplaats, tweede woning, radiobaken, turret en lab op vaste tijden. Aanvalsgolven op 7, 12 en 17 minuten. Rallypunt (64,64) in cellen van 1 m is een placeholder tot de map er is. militiaPct 50: de AI schoolt de helft van zijn bewoners om tot militie zodra hij een werkplaats heeft (startwaarde, geen balans; verhuisd uit sim.json aiMilitiaPct).",
-  "militiaPct": 50
+  "militiaPct": 20,
+  "militiaPctMax": 60,
+  "militiaPctPerMin": 2.5,
+  "threatMilitiaPct": 50,
+  "builders": 2,
+  "housingBuildingId": "woning",
+  "housingFreeBeds": 2,
+  "research": [
+    "geweerrek",
+    "raffinage",
+    "composiet_pantser",
+    "snelle_voeten",
+    "bouwrobots",
+    "lasergeleiding"
+  ],
+  "researchFromS": 180,
+  "armyLoadouts": [
+    "patrol",
+    "militie"
+  ],
+  "richScrap": 400,
+  "richBuilds": [
+    {
+      "buildingId": "turret",
+      "site": "front"
+    },
+    {
+      "buildingId": "turret",
+      "site": "claim"
+    },
+    {
+      "buildingId": "turret",
+      "site": "front"
+    }
+  ],
+  "scavengersPerNode": 5,
+  "claimFromS": 60,
+  "claimSafeRadiusM": 30,
+  "claimFarFromS": 480,
+  "defendRadiusM": 14,
+  "rallySite": "claim",
+  "rallyRadiusM": 6,
+  "waveIntervalS": 180,
+  "waveJitterS": 30,
+  "waveMinArmy": 5,
+  "waveArmyGrowth": 3,
+  "waveMaxWaitS": 90,
+  "pushMinArmy": 12,
+  "pushFromS": 1680,
+  "allInWithoutNodes": true,
+  "_comment": "Balans speltest 14 oktober (de AI was te zwak: twee woningen, pop-cap rond 14, kleine legers, exclusieve nodes nauwelijks gedolven). Alle getallen sturen de AI in packages/sim/src/systems/ai.ts; hij geeft gewone commando's, geen cheats. Bouwvolgorde (buildOrder, site hq tenzij anders): woning op 5 s, werkplaats op 30 s, een tweede werkplaats als depot bij het eigen claimpunt naast de exclusieve node op 150 s (site claim), een turret aan het front op 240 s (site front: bij het eigen claimpunt het dichtst bij de vijand), lab op 300 s en een turret bij het eigen claimpunt op 540 s; het radiobaken is eruit, het doet nog niets in de sim. Huisvesting: een woning (housingBuildingId) zodra er 2 of minder vrije bedden zijn (housingFreeBeds), tot popCapMax. Onderzoek (research): alle zes techs in deze volgorde vanaf 180 s, zodra hij ze kan betalen. Leger (armyLoadouts): patrol zodra geweerrek er is, anders militie. Militie-aandeel militiaPct 20 procent, plus militiaPctPerMin 2,5 procentpunt per minuut tot militiaPctMax 60; staat er een vijand binnen defendRadiusM 14 m van een eigen gebouw, dan minstens threatMilitiaPct 50 en gaat de vrije militie erop af. Hij houdt 2 bouwers (builders). Plunderaars: hoogstens 5 per node (scavengersPerNode), nodes die een eigen claimpunt exclusief maakt eerst; wie geen plek heeft, wordt militie. Boven 400 scrap (richScrap) schoolt hij militie om naar patrol en bouwt hij richBuilds (turrets aan het front en bij het claimpunt; een verloren turret komt terug). Claimen: vanaf 60 s (claimFromS) het neutrale punt het dichtst bij het hoofdgebouw; punten verder dan 30 m (claimSafeRadiusM, het midden) pas vanaf 480 s (claimFarFromS), met de vrije militie als escorte. Verzamelpunt tussen de golven: het eigen claimpunt het dichtst bij huis (rallySite claim), binnen 6 m (rallyRadiusM). Golven: op 480 en 720 s (attackTimersS), daarna elke 180 s (waveIntervalS) plus 0 tot 30 s via sim.rng (waveJitterS); minstens 5 militie (waveMinArmy) plus 3 per eerdere golf (waveArmyGrowth), of na 90 s wachten (waveMaxWaitS) met 5. Vóór 1680 s (pushFromS, minuut 28) of met minder dan 12 militie (pushMinArmy) is een golf een raid, en alleen als de vijand genoeg claimpunten voor dominantie houdt: op zijn claimpunt het dichtst bij huis, daarna terug; anders vervalt de golf en spaart hij zijn leger. Daarna een push op het hoofdgebouw. allInWithoutNodes: zonder bruikbare scrap-node (de map is leeg) gaat elke golf met de plunderaars mee naar het hoofdgebouw, zodat een potje zonder inkomen niet stil blijft staan. rallyPoint is een ongebruikte placeholder uit sprint 1 (het verzamelpunt komt uit rallySite). Gemeten met pnpm --filter @crawlout/replay balance (seeds 1, 7, 42, 99, 123): AI tegen AI eindigt tussen 28,1 en 28,9 minuten, scrap op de bank piekt rond 240."
 }

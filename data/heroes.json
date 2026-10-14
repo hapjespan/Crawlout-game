@@ -14,16 +14,16 @@
     },
     "naam": "Opziener",
     "xpPerLevel": [
-      100,
-      150,
+      80,
+      120,
+      160,
       200,
       250,
-      300,
-      350
+      300
     ],
-    "xpPerKill": 20,
+    "xpPerKill": 25,
     "xpPerDiscovery": 50,
-    "xpPerAssist": 10,
+    "xpPerAssist": 15,
     "xpAssistRadiusM": 15,
     "abilities": [
       {
@@ -62,6 +62,6 @@
     "reviveS": 40,
     "revivePenaltyPct": 20,
     "maxRevives": 4,
-    "_comment": "Balans speltest 14 oktober (held levelde nauwelijks; doel: level 3 tot 5 in een potje van 25 tot 35 minuten). Opziener (Krijger-variant van de Dwellers): SPECIAL totaal 34, zwaar op S, E en A voor een vechter (startwaarde). Oplappen bij het hoofdgebouw kost 100 scrap en 40 s, en 20 procent van perks en health (Spelfundament sectie 5); na 4 keer is de held leeg (maxRevives). xpPerLevel is PER STAP: 100, 150, 200, 250, 300, 350 (was 100 tot 600); de loader levert cumulatieve drempels 100, 250, 450, 700, 1000, 1350, dus level 3 bij 250 xp en level 5 bij 700 xp; 6 stappen = maxlevel 7, een perk-keuze per level voor de 6 perks. xp-bronnen: xpPerKill 20 per vijandelijke unit die hij zelf doodt (was 10); xpPerAssist 10 per vijandelijke unit die een eigen unit of turret doodt binnen xpAssistRadiusM 15 m van de levende held (nieuw: de held leert van het gevecht om hem heen, ook als hij het laatste schot niet lost); xpPerDiscovery 50 per ontdekking, de eerste keer dat zijn speler een claimpunt neemt (was 25)."
+    "_comment": "Balans speltest 14 oktober (held levelde nauwelijks; doel: level 3 tot 5 in een potje van 25 tot 35 minuten). Opziener (Krijger-variant van de Dwellers): SPECIAL totaal 34, zwaar op S, E en A voor een vechter (startwaarde). Oplappen bij het hoofdgebouw kost 100 scrap en 40 s, en 20 procent van perks en health (Spelfundament sectie 5); na 4 keer is de held leeg (maxRevives). xpPerLevel is PER STAP: 80, 120, 160, 200, 250, 300 (was 100 tot 600); de loader levert cumulatieve drempels 80, 200, 360, 560, 810, 1110, dus level 3 bij 200 xp en level 5 bij 560 xp; 6 stappen = maxlevel 7, een perk-keuze per level voor de 6 perks. xp-bronnen: xpPerKill 25 per vijandelijke unit die hij zelf doodt (was 10); xpPerAssist 15 per vijandelijke unit die een eigen unit of turret doodt binnen xpAssistRadiusM 15 m van de levende held (nieuw: de held leert van het gevecht om hem heen, ook als hij het laatste schot niet lost); xpPerDiscovery 50 per ontdekking, de eerste keer dat zijn speler een claimpunt neemt (was 25). Gemeten bij AI tegen AI (vijf seeds): de held van de winnaar haalt level 4 tot 6, die van de verliezer 2 tot 4."
   }
 ]

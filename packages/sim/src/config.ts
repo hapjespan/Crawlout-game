@@ -207,11 +207,53 @@ export interface SimFaction {
   readonly heroId: number;
 }
 
+/** Plaats van een gebouw uit de AI-bouwvolgorde (AI_SITES in packages/data). */
+export const AI_SITE_HQ = 0;
+export const AI_SITE_CLAIM = 1;
+export const AI_SITE_FRONT = 2;
+
+/** Scripted AI (ai/*.json, balans speltest 14 oktober). Tijden in ticks, afstanden in eenheden, aandelen in promille. */
 export interface SimAiScript {
-  readonly buildOrder: readonly { readonly atTick: number; readonly typeId: number }[];
+  /** site: AI_SITE_*. */
+  readonly buildOrder: readonly { readonly atTick: number; readonly typeId: number; readonly site?: number }[];
+  /** De eerste aanvalsgolven; daarna elke waveIntervalTicks (plus 0..waveJitterTicks via sim.rng). */
   readonly attackTimersTicks: readonly number[];
-  /** Deel van de bewoners dat de AI tot militie omschoolt, in promille (ai/*.json militiaPct). */
+  /** Deel van de bewoners dat de AI tot militie omschoolt aan het begin, in promille (ai/*.json militiaPct). */
   readonly militiaPermille: number;
+  readonly militiaPermilleMax: number;
+  readonly militiaPermillePerMin: number;
+  readonly threatMilitiaPermille: number;
+  readonly builders: number;
+  /** Gebouwtype voor extra bedden; 0 = geen. */
+  readonly housingTypeId: number;
+  readonly housingFreeBeds: number;
+  readonly research: readonly number[];
+  readonly researchFromTicks: number;
+  /** Unit-typeIds voor het leger, in voorkeursvolgorde. */
+  readonly armyTypeIds: readonly number[];
+  /** Boven deze voorraad: militie omscholen naar armyTypeIds[0] en richBuilds bouwen. */
+  readonly richScrap: number;
+  readonly richBuilds: readonly { readonly typeId: number; readonly site: number }[];
+  readonly scavengersPerNode: number;
+  readonly claimFromTicks: number;
+  /** Een claimpunt verder dan claimSafeRadius van het hoofdgebouw neemt hij pas vanaf claimFarFromTicks, met escorte. */
+  readonly claimSafeRadius: number;
+  readonly claimFarFromTicks: number;
+  readonly defendRadius: number;
+  /** AI_SITE_*: verzamelpunt tussen de golven. */
+  readonly rallySite: number;
+  readonly rallyRadius: number;
+  readonly waveIntervalTicks: number;
+  readonly waveJitterTicks: number;
+  readonly waveMinArmy: number;
+  readonly waveArmyGrowth: number;
+  readonly waveMaxWaitTicks: number;
+  /** Een golf met minder militie is een raid op claimpunten; vanaf pushMinArmy gaat hij naar het vijandelijke hoofdgebouw. */
+  readonly pushMinArmy: number;
+  /** Vóór dit frame is elke golf een raid. */
+  readonly pushFromTicks: number;
+  /** Zonder bruikbare scrap-node gaat elke golf naar het vijandelijke hoofdgebouw, met de plunderaars mee. */
+  readonly allInWithoutNodes: boolean;
 }
 
 export interface SimConfig {
@@ -440,9 +482,22 @@ export function validateEnv(env: SimEnv): void {
   });
   config.factions.forEach((f, k) => req(intIn(f.heroId, -1, config.heroes.length - 1), `factie ${k}: heroId`));
   for (const s of config.aiScripts) {
-    for (const o of s.buildOrder) req(intIn(o.atTick, 0, I31) && buildingIds.has(o.typeId), 'aiScript buildOrder');
+    for (const o of s.buildOrder) req(intIn(o.atTick, 0, I31) && buildingIds.has(o.typeId) && intIn(o.site ?? 0, AI_SITE_HQ, AI_SITE_FRONT), 'aiScript buildOrder');
     for (const t of s.attackTimersTicks) req(intIn(t, 0, I31), 'aiScript attackTimersTicks');
-    req(intIn(s.militiaPermille, 0, 1000), 'aiScript militiaPermille');
+    for (const v of [s.militiaPermille, s.militiaPermilleMax, s.militiaPermillePerMin, s.threatMilitiaPermille]) req(intIn(v, 0, 1000), 'aiScript militie-aandeel');
+    req(s.housingTypeId === 0 || buildingIds.has(s.housingTypeId), 'aiScript housingTypeId');
+    for (const t of s.research) req(intIn(t, 0, config.techs.length - 1), 'aiScript research');
+    req(s.armyTypeIds.length > 0 && s.armyTypeIds.every((t) => unitIds.has(t)), 'aiScript armyTypeIds');
+    req(intIn(s.builders, 0, 1024) && intIn(s.housingFreeBeds, 0, 4096) && intIn(s.scavengersPerNode, 1, 4096), 'aiScript aantallen');
+    req(intIn(s.waveMinArmy, 0, 4096) && intIn(s.waveArmyGrowth, 0, 4096) && intIn(s.richScrap, 0, I31), 'aiScript golven');
+    for (const o of s.richBuilds) req(buildingIds.has(o.typeId) && intIn(o.site, AI_SITE_HQ, AI_SITE_FRONT), 'aiScript richBuilds');
+    for (const t of [s.researchFromTicks, s.claimFromTicks, s.waveJitterTicks, s.waveMaxWaitTicks]) req(intIn(t, 0, I31), 'aiScript tijden');
+    req(intIn(s.waveIntervalTicks, 1, I31), 'aiScript waveIntervalTicks');
+    req(intIn(s.defendRadius, 0, MAX_MAP_CELLS_SIDE << 8) && intIn(s.rallyRadius, 0, MAX_MAP_CELLS_SIDE << 8), 'aiScript afstanden');
+    req(intIn(s.rallySite, AI_SITE_HQ, AI_SITE_FRONT), 'aiScript rallySite');
+    req(intIn(s.pushFromTicks, 0, I31), 'aiScript pushFromTicks');
+    req(intIn(s.pushMinArmy, 0, 4096) && typeof s.allInWithoutNodes === 'boolean', 'aiScript pushMinArmy of allInWithoutNodes');
+    req(intIn(s.claimSafeRadius, 0, MAX_MAP_CELLS_SIDE << 8) && intIn(s.claimFarFromTicks, 0, I31), 'aiScript claim-escorte');
   }
   for (const p of players) {
     req(intIn(p.factionId, 0, config.factions.length - 1), `speler met onbekende factie ${p.factionId}`);
@@ -505,9 +560,16 @@ export function envHash(env: SimEnv): number {
   h = fnv1aInt(h, c.aiScripts.length);
   for (const s of c.aiScripts) {
     h = fnv1aInt(h, s.buildOrder.length);
-    for (const o of s.buildOrder) h = hashInts(h, [o.atTick, o.typeId]);
+    for (const o of s.buildOrder) h = hashInts(h, [o.atTick, o.typeId, o.site ?? AI_SITE_HQ]);
     h = hashInts(h, s.attackTimersTicks);
-    h = fnv1aInt(h, s.militiaPermille);
+    h = hashInts(h, [s.militiaPermille, s.militiaPermilleMax, s.militiaPermillePerMin, s.threatMilitiaPermille, s.builders]);
+    h = hashInts(h, [s.housingTypeId, s.housingFreeBeds, s.researchFromTicks, s.richScrap, s.scavengersPerNode, s.claimFromTicks]);
+    h = fnv1aInt(h, s.richBuilds.length);
+    for (const o of s.richBuilds) h = hashInts(h, [o.typeId, o.site]);
+    h = hashInts(h, s.research);
+    h = hashInts(h, s.armyTypeIds);
+    h = hashInts(h, [s.claimSafeRadius, s.claimFarFromTicks, s.pushMinArmy, s.pushFromTicks, s.allInWithoutNodes ? 1 : 0]);
+    h = hashInts(h, [s.defendRadius, s.rallySite, s.rallyRadius, s.waveIntervalTicks, s.waveJitterTicks, s.waveMinArmy, s.waveArmyGrowth, s.waveMaxWaitTicks]);
   }
   h = fnv1aInt(h, c.techs.length);
   for (const t of c.techs) {

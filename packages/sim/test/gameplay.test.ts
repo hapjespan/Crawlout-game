@@ -65,22 +65,22 @@ describe('economie', () => {
   it('scavengers verzamelen per rit gatherAmount en leveren af bij het hoofdgebouw', () => {
     const map = createTestMap();
     // een node naast het hoofdgebouw
-    const s2 = createSim(testInit(1, { ...map, scrapNodes: [{ ...cellCenter(14, 8), amount: 25 }] }));
+    const g = scavType.gatherAmount;
+    const s2 = createSim(testInit(1, { ...map, scrapNodes: [{ ...cellCenter(14, 8), amount: 2 * g + (g >> 1) }] }));
     const n = kindOf(s2, 'scrapNode')[0]!;
     const scavs = s2.entityIds().filter((id) => {
       const u = s2.getUnit(id)!;
       return u.kind === 'unit' && u.owner === 0 && u.typeId === SCAV;
     });
     const before = s2.playerStatus(0).scrap;
-    const ev = play(s2, 600, at(0, cmd(0, 0, 'Gather', { ids: scavs.slice(0, 2), nodeId: n })));
-    // 25 scrap: twee ritten van 10 en een rest van 5, daarna is de node op
-    expect(s2.playerStatus(0).scrap).toBe(before + 25);
+    const ev = play(s2, 6 * scavType.gatherTicks, at(0, cmd(0, 0, 'Gather', { ids: scavs.slice(0, 2), nodeId: n })));
+    // twee ritten van gatherAmount en een rest van de helft, daarna is de node op
+    expect(s2.playerStatus(0).scrap).toBe(before + 2 * g + (g >> 1));
     expect(s2.getUnit(n)).toBeNull();
     expect(ev.filter((e) => e.type === EVENT_TYPE.resourceDepleted)).toEqual([{ type: EVENT_TYPE.resourceDepleted, a: n, b: 0 }]);
     // zonder nodes in de map zijn de scavengers klaar
     const left = scavs.slice(0, 2).map((id) => s2.getUnit(id)!.order);
     expect(left).toEqual([0, 0]);
-    expect(scavType.gatherAmount).toBe(10);
   });
 
   it('een rit duurt gatherTicks en zet de unit op anim gather', () => {
@@ -89,12 +89,12 @@ describe('economie', () => {
     const scav = sim.entityIds().find((id) => sim.getUnit(id)!.typeId === SCAV && sim.getUnit(id)!.owner === 0)!;
     play(sim, 1, at(0, cmd(0, 0, 'Gather', { ids: [scav], nodeId: n })));
     let first = -1;
-    for (let f = 1; f < 400 && first < 0; f++) {
+    for (let f = 1; f < 2 * scavType.gatherTicks + 200 && first < 0; f++) {
       play(sim, 1);
       if (sim.getUnit(scav)!.carry > 0) first = f;
     }
     expect(first).toBeGreaterThan(scavType.gatherTicks);
-    expect(sim.getUnit(n)!.amount).toBe(490);
+    expect(sim.getUnit(n)!.amount).toBe(500 - scavType.gatherAmount);
     const snapAnim = (): number => {
       const buf = sim.writeSnapshot();
       const h = readSnapshotHeader(buf);
@@ -104,12 +104,12 @@ describe('economie', () => {
       return new Uint8Array(buf, L.entity.flags, h.entityCount)[k]!;
     };
     expect(snapAnim() & ENTITY_FLAG.carrying).toBe(ENTITY_FLAG.carrying);
-    // hpPct van een scrap-node is de resterende voorraad in procenten van de startvoorraad: 490 van 500 = 98
+    // hpPct van een scrap-node is de resterende voorraad in procenten van de startvoorraad (afgerond naar beneden)
     const buf = sim.writeSnapshot();
     const h = readSnapshotHeader(buf);
     const L = snapshotLayout(h.entityCount, h.eventCount);
     const k = Array.from(new Uint32Array(buf, L.entity.id, h.entityCount)).indexOf(n);
-    expect(new Uint8Array(buf, L.entity.hpPct, h.entityCount)[k]).toBe(98);
+    expect(new Uint8Array(buf, L.entity.hpPct, h.entityCount)[k]).toBe(Math.trunc(((500 - scavType.gatherAmount) * 100) / 500));
     expect(new Uint8Array(buf, L.entity.owner, h.entityCount)[k]).toBe(OWNER_NEUTRAL);
   });
 

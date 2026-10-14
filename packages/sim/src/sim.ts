@@ -13,7 +13,7 @@ import { writeSnapshot } from './snapshot.js';
 import { setupStart } from './start.js';
 import type { StateParts } from './state.js';
 import { StateHeader, deserializeState, hashState, serializeState } from './state.js';
-import { aiSystem } from './systems/ai.js';
+import { AiScratch, aiSystem } from './systems/ai.js';
 import { Census, takeCensus } from './systems/census.js';
 import { ClaimScratch, claimsSystem, updateClaimPoints } from './systems/claims.js';
 import { cleanupSystem } from './systems/cleanup.js';
@@ -117,6 +117,7 @@ export class Sim implements SimContext {
   private readonly ordersScratch = new OrdersScratch();
   private readonly claimScratch = new ClaimScratch();
   private readonly census = new Census();
+  private readonly aiScratch = new AiScratch();
   private readonly unitTypes: (SimUnitType | undefined)[] = [];
   private readonly buildingTypes: (SimBuildingType | undefined)[] = [];
   private readonly pending = new Map<number, readonly SimCommand[]>();
@@ -206,7 +207,7 @@ export class Sim implements SimContext {
       applyCommands(this, cmds);
     }
     // 2 orders en AI
-    aiSystem(this, this.census);
+    aiSystem(this, this.census, this.aiScratch);
     ordersSystem(this, this.ordersScratch);
     // 3 flow fields, gebudgetteerd
     this.flow.step(this.config.flowFieldBudget);

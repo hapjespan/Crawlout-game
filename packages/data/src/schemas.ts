@@ -176,14 +176,46 @@ export const MapDef = z
   })
   .strict();
 
+const pct = z.number().min(0).max(100);
+/** Waar de AI een gebouw uit de bouwvolgorde neerzet: bij het hoofdgebouw, bij zijn eigen claimpunt het dichtst bij huis, of bij zijn claimpunt het dichtst bij de vijand. */
+export const AiSite = z.enum(['hq', 'claim', 'front']);
+
 export const AiScript = z
   .object({
     id,
     faction: id,
-    buildOrder: z.array(z.object({ atS: nonneg, buildingId: id }).strict()),
-    attackTimersS: z.array(nonneg),
+    // site (balans speltest 14 oktober): optioneel, standaard hq
+    buildOrder: z.array(z.object({ atS: nonneg, buildingId: id, site: AiSite.optional() }).strict()),
+    attackTimersS: z.array(nonneg), // de eerste aanvalsgolven; daarna elke waveIntervalS
     rallyPoint: z.object({ x: z.number().int(), y: z.number().int() }).strict(),
-    militiaPct: z.number().min(0).max(100), // deel van de bewoners dat de AI tot militie omschoolt (besluit sprint 2: uit sim.json)
+    militiaPct: pct, // deel van de bewoners dat de AI tot militie omschoolt aan het begin (besluit sprint 2: uit sim.json)
+    // Balans speltest 14 oktober: een AI die bijbouwt, onderzoekt, claimt, verdedigt en in groeiende golven aanvalt.
+    militiaPctMax: pct, // bovengrens van het militie-aandeel
+    militiaPctPerMin: nonneg, // het militie-aandeel stijgt zoveel procentpunt per minuut speeltijd, tot militiaPctMax
+    threatMilitiaPct: pct, // minimaal militie-aandeel zolang er vijanden bij een eigen gebouw staan
+    builders: z.number().int().nonnegative(), // zoveel bouwers houdt hij (omscholen in de werkplaats)
+    housingBuildingId: id, // het gebouw voor extra bedden
+    housingFreeBeds: z.number().int().nonnegative(), // bouwt bij als er zoveel of minder vrije bedden zijn (tot popCapMax)
+    research: z.array(id), // techs in volgorde, vanaf researchFromS, zodra hij ze kan betalen
+    researchFromS: nonneg,
+    armyLoadouts: z.array(id).min(1), // loadouts voor het leger in voorkeursvolgorde; de eerste waarvoor de techs er zijn
+    richScrap: nonneg, // boven deze voorraad schoolt hij bestaande militie om naar het eerste loadout uit armyLoadouts en bouwt hij richBuilds
+    richBuilds: z.array(z.object({ buildingId: id, site: AiSite }).strict()), // extra gebouwen bij genoeg scrap, in volgorde; een verloren gebouw bouwt hij opnieuw
+    scavengersPerNode: z.number().int().positive(), // hoogstens zoveel plunderaars per scrap-node; de rest wordt militie
+    claimFromS: nonneg, // vanaf dan neemt een vrije bouwer neutrale claimpunten (dichtstbij eerst)
+    claimSafeRadiusM: nonneg, // een claimpunt verder dan dit van het hoofdgebouw neemt hij pas vanaf claimFarFromS, met zijn vrije militie als escorte
+    claimFarFromS: nonneg,
+    defendRadiusM: nonneg, // vijandelijke units binnen deze afstand van een eigen gebouw zijn een dreiging
+    rallySite: AiSite, // verzamelpunt tussen de golven: hoofdgebouw, eigen claimpunt het dichtst bij huis, of het dichtst bij de vijand
+    rallyRadiusM: nonneg, // militie zonder taak verder dan dit van het verzamelpunt loopt erheen
+    waveIntervalS: z.number().positive(), // na de laatste attackTimersS komt er elke zoveel seconden een golf
+    waveJitterS: nonneg, // plus een willekeurige 0..waveJitterS seconden (sim.rng), zodat de AI niet voorspelbaar is
+    waveMinArmy: z.number().int().nonnegative(), // de eerste golf vertrekt pas met zoveel militie
+    waveArmyGrowth: z.number().int().nonnegative(), // elke volgende golf vraagt zoveel militie meer
+    waveMaxWaitS: nonneg, // na zoveel seconden wachten vertrekt de golf ook met waveMinArmy
+    pushMinArmy: z.number().int().nonnegative(), // een golf van minder militie valt alleen claimpunten aan (een raid); vanaf zoveel gaat hij naar het hoofdgebouw
+    pushFromS: nonneg, // en dat pas vanaf deze speeltijd; daarvoor is elke golf een raid
+    allInWithoutNodes: z.boolean(), // zonder bruikbare scrap-node (geen inkomen meer) gaan elke golf naar het hoofdgebouw, met de plunderaars mee
     _comment: comment,
   })
   .strict();

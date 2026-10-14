@@ -61,9 +61,14 @@ describe('held', () => {
     for (let k = 0; k < 10; k++) sim.spawnUnit({ typeId: SCAV, owner: 1, x: h.x + 4 * 256 + (k % 5) * 100, y: h.y + (k >> 1) * 60 });
     const ev = play(sim, 2000);
     // de held is militie: hij kiest zelf een doel en schiet de scavengers neer
-    expect(sim.playerStatus(0).hero!.xp).toBe(10 * HERO.xpPerKill);
-    expect(sim.playerStatus(0).hero).toMatchObject({ level: 2, pendingPerks: 1, xpNext: HERO.xpThresholds[1] });
-    expect(ev.filter((e) => e.type === EVENT_TYPE.heroLevel)).toEqual([{ type: EVENT_TYPE.heroLevel, a: hero, b: 2 }]);
+    const xp = 10 * HERO.xpPerKill;
+    expect(sim.playerStatus(0).hero!.xp).toBe(xp);
+    // level uit de drempels: 1 plus het aantal gehaalde drempels; elk level één perk-keuze en één heroLevel-event
+    const level = 1 + HERO.xpThresholds.filter((t) => t <= xp).length;
+    expect(level).toBeGreaterThan(1);
+    expect(sim.playerStatus(0).hero).toMatchObject({ level, pendingPerks: level - 1, xpNext: HERO.xpThresholds[level - 1] });
+    const levels = Array.from({ length: level - 1 }, (_, k) => ({ type: EVENT_TYPE.heroLevel, a: hero, b: k + 2 }));
+    expect(ev.filter((e) => e.type === EVENT_TYPE.heroLevel)).toEqual(levels);
     // ontdekking: een claimpunt voor het eerst nemen
     const pt = sim.entityIds().find((id) => sim.getUnit(id)!.kind === 'claimPoint')!;
     const v = sim.getUnit(pt)!;

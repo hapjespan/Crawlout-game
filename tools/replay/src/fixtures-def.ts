@@ -240,10 +240,10 @@ const FIXTURES_UP_TO_S3: FixtureDef[] = [
     name: 's2-rustbelt-ai-vs-ai',
     build() {
       const r = base('rustbelt', 42, [true, true]);
-      // tot net na de winst (dominantie of vernietiging), hoogstens 30 minuten speeltijd
+      // tot net na de winst (dominantie of vernietiging), hoogstens 40 minuten speeltijd
       const sim = createReplaySim(r);
-      let end = 35999;
-      for (let f = 0; f < 36000; f++) {
+      let end = 47999;
+      for (let f = 0; f < 48000; f++) {
         sim.applyBundle({ frame: f, commands: [] });
         sim.tick();
         const w = sim.winner();
@@ -264,14 +264,24 @@ const HOUSES: PlannedBuilding[] = [6, 9, 12].flatMap((cy) => [6, 9, 12, 15].map(
 const FIXTURES_S4: FixtureDef[] = [
   {
     // Turrets en onderzoek op Rustbelt, mens tegen AI. Speler 0 (een bot die gewone commando's geeft): werkplaats,
-    // geweerrek, een turret voor zijn basis, lab, raffinage en lasergeleiding (turret +20% schade, +1 m), daarna een
-    // kleine aanval met held op de AI. De AI (speler 1) onderzoekt geweerrek voor zijn turret (besluit 8) en valt aan
-    // op zijn timers. Beide turrets schieten; Lockdown, dood en oplappen komen voor.
+    // geweerrek, claimpalen bij zijn settlement-punt en in het midden met een turret ernaast, lab, raffinage en
+    // lasergeleiding (turret +20% schade, +1 m), daarna een kleine aanval met held op de AI. De AI (speler 1) onderzoekt
+    // geweerrek voor zijn turret (besluit 8), claimt het midden niet zolang het van de bot is en stuurt een raid op het
+    // midden omdat de bot genoeg punten voor dominantie houdt (balans speltest 14 oktober). Beide turrets schieten;
+    // Lockdown, dood en oplappen komen voor.
     name: 's4-rustbelt-turrets',
     build() {
       const r = base('rustbelt', 404, [false, true]);
       const plan: BotPlan = {
-        builds: [{ key: 'werkplaats', cx: 26, cy: 20 }, HOUSES[0]!, { key: 'turret', cx: 28, cy: 27 }, { key: 'lab', cx: 14, cy: 26 }, HOUSES[1]!],
+        builds: [
+          { key: 'werkplaats', cx: 26, cy: 20 },
+          HOUSES[0]!,
+          { key: 'claimpaal', cx: 42, cy: 33 },
+          { key: 'claimpaal', cx: 62, cy: 63 },
+          { key: 'turret', cx: 61, cy: 60 },
+          { key: 'lab', cx: 14, cy: 26 },
+          HOUSES[1]!,
+        ],
         research: ['geweerrek', 'raffinage', 'lasergeleiding'],
         builders: 1,
         militiaAtSettlers: 99,
@@ -280,7 +290,7 @@ const FIXTURES_S4: FixtureDef[] = [
         attackWithMilitia: 4,
         attackFrame: 6400,
       };
-      recordControlled(r, 11000, [settlementBot(0, plan)]);
+      recordControlled(r, 14000, [settlementBot(0, plan)]);
       return r;
     },
   },

@@ -6,10 +6,10 @@
     "_comment": "startwaarde, geen balans. Hoofdgebouw (hq): staat bij de start, dus 0 scrap en 0 s. 1500 hp en heavy pantser, 5x5 cellen. 6 bedden als startcapaciteit. Hier lapt de held zich op."
   },
   {
-    "id": "woning", "faction": "dwellers", "hp": 300, "armorType": "light", "scrapCost": 60, "buildS": 20,
+    "id": "woning", "faction": "dwellers", "hp": 300, "armorType": "light", "scrapCost": 75, "buildS": 20,
     "footprint": { "w": 2, "h": 2 }, "beds": 4, "provides": ["huisvesting"], "prereqTech": [],
     "visuals": { "mesh": "dweller_building_housing" },
-    "_comment": "startwaarde, geen balans. Woning: 4 bedden voor 60 scrap (richtwaarde contract 3). 20 s bouwtijd, 300 hp, 2x2 cellen. Geen bed, geen groei (Spelfundament sectie 2)."
+    "_comment": "Balans speltest 14 oktober voor scrapCost, de rest startwaarde. Woning: 4 bedden voor 75 scrap (was 60, de richtwaarde uit contract 3): elf woningen naar de pop-cap van 50 kosten nu 825 scrap, een echte uitgave naast het leger. 20 s bouwtijd, 300 hp, 2x2 cellen. Geen bed, geen groei (Spelfundament sectie 2)."
   },
   {
     "id": "werkplaats", "faction": "dwellers", "hp": 600, "armorType": "medium", "scrapCost": 120, "buildS": 35,
@@ -30,11 +30,11 @@
     "_comment": "startwaarde, geen balans. Claimpaal: markeert een claimpunt op de map. Goedkoop (50 scrap, 15 s) zodat uitbreiden een afweging van tempo is, niet van kosten."
   },
   {
-    "id": "turret", "faction": "dwellers", "hp": 500, "armorType": "heavy", "scrapCost": 90, "buildS": 25,
+    "id": "turret", "faction": "dwellers", "hp": 500, "armorType": "heavy", "scrapCost": 120, "buildS": 25,
     "footprint": { "w": 2, "h": 2 }, "beds": 0, "provides": ["turret"], "prereqTech": ["geweerrek"],
     "visuals": { "mesh": "dweller_building_turret" },
     "damage": 12, "damageType": "ballistic", "rangeM": 12, "cooldownS": 1,
-    "_comment": "startwaarde, geen balans. Turret: kern van het Dweller-turretnetwerk. 90 scrap, 25 s, 500 hp heavy. Vraagt tech geweerrek. Wapen (besluit 8): 12 ballistic schade per 1,0 s op 12 m, iets sterker per schot dan militie (8 schade, 8 m) en met meer bereik; de turret beweegt niet."
+    "_comment": "Balans speltest 14 oktober voor scrapCost, de rest startwaarde. Turret: kern van het Dweller-turretnetwerk. 120 scrap (was 90: het turretnetwerk is waar een rijke Dweller zijn scrap in steekt), 25 s, 500 hp heavy. Vraagt tech geweerrek. Wapen (besluit 8): 12 ballistic schade per 1,0 s op 12 m, iets sterker per schot dan militie (8 schade, 8 m) en met meer bereik; de turret beweegt niet."
   },
   {
     "id": "lab", "faction": "dwellers", "hp": 450, "armorType": "medium", "scrapCost": 150, "buildS": 40,

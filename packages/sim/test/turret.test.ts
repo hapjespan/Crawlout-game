@@ -144,7 +144,21 @@ describe('turrets', () => {
 describe('AI onderzoekt de prereqTech van zijn bouworder', () => {
   const aiConfig = (order: { atTick: number; typeId: number }[]): SimConfig => ({
     ...CONFIG,
-    aiScripts: [{ ...CONFIG.aiScripts[0]!, buildOrder: order, attackTimersTicks: [] }],
+    // alleen de bouwvolgorde: de rest van het script (balans speltest 14 oktober) staat uit
+    aiScripts: [
+      {
+        ...CONFIG.aiScripts[0]!,
+        buildOrder: order,
+        attackTimersTicks: [],
+        waveIntervalTicks: 1 << 30,
+        builders: 1,
+        housingTypeId: 0,
+        research: [],
+        richBuilds: [],
+        claimFromTicks: 1 << 30,
+        claimFarFromTicks: 1 << 30,
+      },
+    ],
   });
 
   it('geweerrek in de werkplaats zodra hij het kan betalen, daarna bouwt hij de turret', () => {

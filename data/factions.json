@@ -8,12 +8,12 @@
       { "loadoutId": "bouwer", "count": 1 },
       { "loadoutId": "militie", "count": 1 }
     ],
-    "startScrap": 200,
-    "housingGrowthPerMin": 3,
+    "startScrap": 300,
+    "housingGrowthPerMin": 2,
     "safetyNet": { "threshold": 3, "action": "radiobaken_instroom" },
     "uniqueUnits": [],
     "uniqueBuildings": ["radiobaken", "trainingsfaciliteit"],
     "specialChannel": "training",
-    "_comment": "startwaarde, geen balans. Start: 4 scavengers, 1 bouwer, 1 militie en 200 scrap is genoeg voor een woning plus werkplaats. housingGrowthPerMin 3 bewoners per minuut (basisgroei, alleen met vrije bedden). safetyNet: onder 3 vechters trekt het radiobaken bewoners aan (Spelfundament sectie 4). uniqueUnits blijft leeg in de slice (robots, drone en sentinel komen later). specialChannel training: Dwellers trainen SPECIAL in de trainingsfaciliteit."
+    "_comment": "Balans speltest 14 oktober voor startScrap en housingGrowthPerMin, de rest startwaarde. Start: 4 scavengers, 1 bouwer, 1 militie en 300 scrap (was 200): met het tragere verzamelen (scavenger 6 per 13 s) blijft de opening even snel, een woning en een werkplaats meteen. housingGrowthPerMin 2 bewoners per minuut (was 3; basisgroei, alleen met vrije bedden): legers groeien trager, zodat het beslissende gevecht later valt en een potje 25 tot 35 minuten duurt. safetyNet: onder 3 vechters trekt het radiobaken bewoners aan (Spelfundament sectie 4). uniqueUnits blijft leeg in de slice (robots, drone en sentinel komen later). specialChannel training: Dwellers trainen SPECIAL in de trainingsfaciliteit."
   }
 ]

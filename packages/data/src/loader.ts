@@ -1,5 +1,5 @@
 import { ZodError, type ZodTypeAny, type z } from 'zod';
-import { AiScript, ArmorType, EffectStat, Building, DamageMatrix, DamageType, Faction, Hero, Loadout, Perk, Role, SimTuning, Stat, Tech, BodyType, Provides, Archetype } from './schemas.js';
+import { AiScript, AiSite, ArmorType, EffectStat, Building, DamageMatrix, DamageType, Faction, Hero, Loadout, Perk, Role, SimTuning, Stat, Tech, BodyType, Provides, Archetype } from './schemas.js';
 import { metersToUnits, mpsToUnitsPerTick, pctToPermille, secondsToTicks } from './units.js';
 
 // De loader: PUUR. Geen fs, geen IO, geen klok. Krijgt geparste JSON, valideert met de zod-schema's,
@@ -163,15 +163,50 @@ export interface PerkData {
   effects: EffectData[];
 }
 
+/** Plaats van een AI-gebouw (AiSite): index in AI_SITES. */
+export const AI_SITES = AiSite.options;
+
 export interface AiScriptData {
   id: number;
   key: string;
   factionId: number;
-  buildOrder: { atTick: number; buildingId: number }[];
+  /** site: index in AI_SITES (0 = hq). */
+  buildOrder: { atTick: number; buildingId: number; site: number }[];
   attackTimersTicks: number[];
   rallyPointU: { x: number; y: number };
-  /** Deel van de bewoners dat de AI omschoolt tot militie, in promille. */
+  /** Deel van de bewoners dat de AI omschoolt tot militie, in promille (aan het begin). */
   militiaPermille: number;
+  militiaPermilleMax: number;
+  /** Stijging van het militie-aandeel per minuut speeltijd, in promille. */
+  militiaPermillePerMin: number;
+  threatMilitiaPermille: number;
+  builders: number;
+  housingBuildingId: number;
+  housingFreeBeds: number;
+  /** tech-ids in volgorde. */
+  research: number[];
+  researchFromTicks: number;
+  /** loadout-ids in voorkeursvolgorde. */
+  armyLoadouts: number[];
+  richScrap: number;
+  /** site: index in AI_SITES. */
+  richBuilds: { buildingId: number; site: number }[];
+  scavengersPerNode: number;
+  claimFromTicks: number;
+  claimSafeRadiusU: number;
+  claimFarFromTicks: number;
+  defendRadiusU: number;
+  /** index in AI_SITES. */
+  rallySite: number;
+  rallyRadiusU: number;
+  waveIntervalTicks: number;
+  waveJitterTicks: number;
+  waveMinArmy: number;
+  waveArmyGrowth: number;
+  waveMaxWaitTicks: number;
+  pushMinArmy: number;
+  pushFromTicks: number;
+  allInWithoutNodes: boolean;
 }
 
 /** Sim-tuning in sim-eenheden (integers). */
@@ -455,10 +490,40 @@ export function loadGameData(raw: RawGameData): GameData {
       id,
       key: a.id,
       factionId: ref(factionIx, 'factie', where, a.faction),
-      buildOrder: a.buildOrder.map((o) => ({ atTick: secondsToTicks(o.atS), buildingId: ref(buildingIx, 'gebouw', where, o.buildingId) })),
+      buildOrder: a.buildOrder.map((o) => ({
+        atTick: secondsToTicks(o.atS),
+        buildingId: ref(buildingIx, 'gebouw', where, o.buildingId),
+        site: AI_SITES.indexOf(o.site ?? 'hq'),
+      })),
       attackTimersTicks: a.attackTimersS.map((s) => secondsToTicks(s)),
       rallyPointU: { x: metersToUnits(a.rallyPoint.x), y: metersToUnits(a.rallyPoint.y) },
       militiaPermille: pctToPermille(a.militiaPct),
+      militiaPermilleMax: pctToPermille(a.militiaPctMax),
+      militiaPermillePerMin: pctToPermille(a.militiaPctPerMin),
+      threatMilitiaPermille: pctToPermille(a.threatMilitiaPct),
+      builders: a.builders,
+      housingBuildingId: ref(buildingIx, 'gebouw', where, a.housingBuildingId),
+      housingFreeBeds: a.housingFreeBeds,
+      research: a.research.map((t) => ref(techIx, 'tech', where, t)),
+      researchFromTicks: secondsToTicks(a.researchFromS),
+      armyLoadouts: a.armyLoadouts.map((l) => ref(loadoutIx, 'loadout', where, l)),
+      richScrap: Math.trunc(a.richScrap),
+      richBuilds: a.richBuilds.map((o) => ({ buildingId: ref(buildingIx, 'gebouw', where, o.buildingId), site: AI_SITES.indexOf(o.site) })),
+      scavengersPerNode: a.scavengersPerNode,
+      claimFromTicks: secondsToTicks(a.claimFromS),
+      claimSafeRadiusU: metersToUnits(a.claimSafeRadiusM),
+      claimFarFromTicks: secondsToTicks(a.claimFarFromS),
+      defendRadiusU: metersToUnits(a.defendRadiusM),
+      rallySite: AI_SITES.indexOf(a.rallySite),
+      rallyRadiusU: metersToUnits(a.rallyRadiusM),
+      waveIntervalTicks: secondsToTicks(a.waveIntervalS),
+      waveJitterTicks: secondsToTicks(a.waveJitterS),
+      waveMinArmy: a.waveMinArmy,
+      waveArmyGrowth: a.waveArmyGrowth,
+      waveMaxWaitTicks: secondsToTicks(a.waveMaxWaitS),
+      pushMinArmy: a.pushMinArmy,
+      pushFromTicks: secondsToTicks(a.pushFromS),
+      allInWithoutNodes: a.allInWithoutNodes,
     };
   });
 

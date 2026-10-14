@@ -143,7 +143,7 @@ describe('slice: Rustbelt met echte data', () => {
   it('scripted AI tegen scripted AI levert een winnaar', { timeout: 60_000 }, () => {
     const env = buildEnv('rustbelt', lobby(true), settings);
     const sim = createSim({ seed: 42, ...env });
-    const limit = 36_000; // 30 minuten speeltijd
+    const limit = 42_000; // 35 minuten speeltijd (Spelfundament 2.6; de lengte per seed staat in match-length.test.ts)
     const claims = [0, 0];
     let lockdowns = 0;
     let turretShots = 0;
@@ -168,7 +168,8 @@ describe('slice: Rustbelt met echte data', () => {
     for (let p = 0; p < 2; p++) expect(sim.researched(p)).toContain(geweerrek);
     expect(turretShots).toBeGreaterThan(0);
     for (let p = 0; p < 2; p++) expect(sim.playerStatus(p).hero).not.toBeNull();
-    // de AI zit in de sim: een andere seed geeft dezelfde partij (de sim gebruikt nog geen toeval), andere hash
+    // de AI zit in de sim: een andere seed geeft vanaf frame 0 een andere hash (sim.rng: kritieke schoten van de held
+    // en de jitter op de golven van de AI)
     const other = createSim({ seed: 43, ...env });
     expect(other.hash()).not.toBe(createSim({ seed: 42, ...env }).hash());
   });

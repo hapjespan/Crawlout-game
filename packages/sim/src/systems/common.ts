@@ -24,6 +24,8 @@ export class PlayerState {
   /** Scripted AI: index van de volgende bouworder en de volgende aanvalsgolf. */
   readonly aiBuild = new Int32Array(MAX_PLAYERS);
   readonly aiAttack = new Int32Array(MAX_PLAYERS);
+  /** Scripted AI: vanaf dit frame mag de volgende golf na de attackTimers vertrekken (balans speltest 14 oktober). */
+  readonly aiWaveAt = new Int32Array(MAX_PLAYERS);
   /** Onderzochte techs als bitset (bit k = techId k, MAX_TECHS). */
   readonly tech = new Uint32Array(MAX_PLAYERS);
   // Held (één per speler; systems/hero.ts). De held-entity draagt C.hero; dit blijft bestaan als hij dood is.
