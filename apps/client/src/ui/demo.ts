@@ -46,6 +46,7 @@ let status: PlayerStatus = {
     abilityCooldownTicks: [0, 0],
   },
   queue: [],
+  dominance: { pointsHeld: 0, pointsRequired: 2, ticksHeld: 0, ticksRequired: 9600, leader: null },
 };
 let heroDead = false;
 // Mock-dominantie: T wisselt tussen niets, eigen voortgang, eigen telling en een tellende tegenstander.

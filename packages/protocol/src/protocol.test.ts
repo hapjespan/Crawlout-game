@@ -143,10 +143,11 @@ describe('besluiten sprint 3', () => {
       hero: full,
       techs: [1],
       queue: [],
+      dominance: { pointsHeld: 0, pointsRequired: 2, ticksHeld: 0, ticksRequired: 9600, leader: null },
     };
     expect(status.hero?.state).toBe('reviving');
   });
-  it('PlayerStatus.dominance (protocol 0.6.0): eigen stand plus de hoogste tegenstander, optioneel tot de HUD hem leest', () => {
+  it('PlayerStatus.dominance (protocol 0.6.0, verplicht sinds 0.7.0): eigen stand plus de tegenstander die het dichtst bij dominantie is', () => {
     const status: PlayerStatus = {
       playerId: 0,
       scrap: 0,

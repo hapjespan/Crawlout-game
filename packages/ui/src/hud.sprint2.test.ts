@@ -37,6 +37,7 @@ const baseStatus: PlayerStatus = {
   beds: 10,
   hero: null,
   queue: [],
+  dominance: { pointsHeld: 0, pointsRequired: 2, ticksHeld: 0, ticksRequired: 9600, leader: null },
 };
 const unit = (id: number, role: SelectedEntity['role'] = 'builder'): SelectedEntity => ({
   id,

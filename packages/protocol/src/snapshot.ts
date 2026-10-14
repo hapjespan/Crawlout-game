@@ -199,11 +199,12 @@ export interface PlayerStatus {
    */
   queue: QueueItem[];
   /**
-   * Winroute B, dominantie (protocol 0.6.0, voorstel architect fase-0 sectie 17, ter bevestiging): de eigen stand plus
-   * de hoogste tegenstander, zodat de HUD "nog 4:12" en "de vijand houdt 2 van 3" kan tonen. Optioneel tot de HUD hem
-   * leest; de sim levert hem altijd (Sim.dominance in packages/sim/src/sim.ts).
+   * Winroute B, dominantie (protocol 0.6.0 als voorstel van sim-core naar fase-0 sectie 17; verplicht sinds protocol
+   * 0.7.0, architect-review van de nachtronde, sectie 18): de eigen stand plus de tegenstander die het dichtst bij
+   * dominantie is, zodat de HUD "nog 4:12" en "de vijand houdt 2 van 3" kan tonen. De sim levert hem altijd
+   * (Sim.dominance in packages/sim/src/sim.ts), de client leest hem (apps/client/src/game/dominance.ts).
    */
-  dominance?: DominanceStatus;
+  dominance: DominanceStatus;
 }
 
 /**

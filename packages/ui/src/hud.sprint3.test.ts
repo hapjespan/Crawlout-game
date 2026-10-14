@@ -37,6 +37,7 @@ const status = (hero: HeroStatus | null): PlayerStatus => ({
   beds: 4,
   hero,
   queue: [],
+  dominance: { pointsHeld: 0, pointsRequired: 2, ticksHeld: 0, ticksRequired: 9600, leader: null },
 });
 const unit = (id: number): SelectedEntity => ({
   id,
