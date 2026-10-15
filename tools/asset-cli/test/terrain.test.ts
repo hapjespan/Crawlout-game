@@ -16,6 +16,7 @@ import {
 import {
   bakeAlbedo,
   buildTerrain,
+  fillHolesPullPush,
   chooseCrop,
   formatHeightfield,
   heightfieldFromSurface,
@@ -288,6 +289,29 @@ describe('texturedOnly en bakeAlbedo', () => {
     expect(pixel(3, 3)).toEqual([255, 255, 255]);
   });
 
+  it('vult gaten met pull-push: zacht tussen de randen, gedekte pixels blijven gelijk', () => {
+    const n = 16;
+    const linear = new Float32Array(n * n * 3);
+    const known = new Uint8Array(n * n);
+    for (let y = 0; y < n; y++)
+      for (let x = 0; x < n; x++) {
+        const i = y * n + x;
+        const hole = x >= 4 && x < 12 && y >= 4 && y < 12;
+        if (hole) continue;
+        known[i] = 1;
+        linear.fill(x < 8 ? 0.2 : 0.6, i * 3, i * 3 + 3);
+      }
+    const before = linear.slice();
+    fillHolesPullPush(linear, known, n);
+    for (let i = 0; i < n * n; i++) if (known[i]) expect(linear[i * 3]).toBe(before[i * 3]);
+    // In het gat loopt de waarde van links (0,2) naar rechts (0,6), zonder sprongen per pixel.
+    const row = Array.from({ length: 8 }, (_, k) => linear[(8 * n + 4 + k) * 3] as number);
+    for (const v of row) expect(v).toBeGreaterThanOrEqual(0.19);
+    for (const v of row) expect(v).toBeLessThanOrEqual(0.61);
+    expect(row[7]! - row[0]!).toBeGreaterThan(0.1);
+    for (let k = 1; k < 8; k++) expect(Math.abs(row[k]! - row[k - 1]!)).toBeLessThan(0.15);
+  });
+
   it('vult een gat in de albedo op met de gekleurde buren', () => {
     const mesh = texturedOnly(twoMaterials());
     const surface = rasterizeTopSurface(mesh, { minX: 0, minZ: 0, sizeM: 8, resolution: 8 }); // rechterhelft is leeg
@@ -364,5 +388,18 @@ describe('buildTerrain (synthetische GLB)', () => {
     const manifest = terrainManifestSchema.parse(JSON.parse(readFileSync(join(dir, 'a', 'terrain.json'), 'utf8')));
     expect(manifest.heightfield.path).toBe('slope.height.json');
     expect(second.files.map((f) => f.path)).toEqual(['slope.height.json', 'slope.albedo.jpg', 'terrain.json']);
+  });
+
+  it('bakt het albedo op een eigen maat (albedoSize) zonder het hoogteveld te veranderen', async () => {
+    const source = join(dir, 'slope.glb');
+    await writeSlopeGlb(source);
+    const options = { source, id: 'slope', attribution: 'test', cropSizeM: 16, rotationsDeg: [0], cells: 16, sub: 2 };
+    const plain = await buildTerrain({ ...options, outDir: join(dir, 'a') });
+    const big = await buildTerrain({ ...options, outDir: join(dir, 'b'), albedoSize: 64 });
+    expect(plain.manifest.albedo.width).toBe(32);
+    expect(big.manifest.albedo).toMatchObject({ width: 64, height: 64 });
+    expect(readFileSync(join(dir, 'a', 'slope.height.json')).equals(readFileSync(join(dir, 'b', 'slope.height.json')))).toBe(true);
+    expect(big.manifest.rockTint).toBe(plain.manifest.rockTint);
+    await expect(buildTerrain({ ...options, outDir: join(dir, 'c'), albedoSize: 3.5 })).rejects.toThrow(/albedoSize/);
   });
 });

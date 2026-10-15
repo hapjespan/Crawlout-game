@@ -1,5 +1,5 @@
 // `pnpm --filter @crawlout/asset-cli run terrain`: hoogteveld en albedo uit assets/local/rock_terrain_4.glb naar
-// assets/dist/terrain. Zonder bronbestand (het zit niet in git) meldt de CLI dat en stopt hij met exit 0.
+// assets/dist/terrain (`--albedo-size <px>` voor een albedo van een andere maat dan 1024). Zonder bronbestand (het zit niet in git) meldt de CLI dat en stopt hij met exit 0.
 import { execFileSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
@@ -29,6 +29,8 @@ const source = argValue('--src') ?? defaultSource();
 const outDir = argValue('--out') ?? `${repoRoot}assets/dist/terrain`;
 const cropArg = argValue('--crop-size');
 const rotationArg = argValue('--rotation');
+// --albedo-size 2048: albedo op 2048 x 2048 (16 px per meter op de map) in plaats van 1024; het hoogteveld blijft gelijk.
+const albedoSizeArg = argValue('--albedo-size');
 
 if (!existsSync(source)) {
   console.log(`terrain: bron ${source} ontbreekt (staat niet in git); de gecommitte afgeleide data in ${outDir} blijft ongewijzigd.`);
@@ -44,6 +46,7 @@ const result = await buildTerrain({
     '"Rock Terrain 4" by Lassi Kaukonen (https://sketchfab.com/thesidekick), CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/). Source: https://sketchfab.com/3d-models/rock-terrain-4-3a0e4dec66154901bf905384622183dd',
   cropSizeM: cropArg ? Number(cropArg) : undefined,
   rotationsDeg: rotationArg ? [Number(rotationArg)] : undefined,
+  albedoSize: albedoSizeArg ? Number(albedoSizeArg) : undefined,
 });
 
 const { crop, field } = result;

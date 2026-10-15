@@ -256,8 +256,8 @@ export interface AlbedoResult {
 /**
  * Bakt de kleur van het bovenste oppervlak naar een bovenaanzicht: per monster de diffuse (sRGB naar lineair,
  * maal de basiskleur-factor, terug naar sRGB). Monsters zonder dekking (gaten, bijvoorbeeld waar een zwevend deel is
- * weggehaald) worden ring voor ring opgevuld met het gemiddelde van hun gedekte buren; wat dan nog overblijft
- * (geen enkel gedekt monster in de buurt) krijgt de gemiddelde kleur.
+ * weggehaald) worden opgevuld met pull-push (fillHolesPullPush): een zachte overgang tussen de gedekte randen, zonder
+ * de kruis- en streepvormen van ring-voor-ring opvullen met vier buren. Zonder enige dekking: de gemiddelde kleur.
  */
 export function bakeAlbedo(mesh: TerrainMesh, surface: TopSurface): AlbedoResult {
   const n = surface.resolution;
@@ -288,30 +288,9 @@ export function bakeAlbedo(mesh: TerrainMesh, surface: TopSurface): AlbedoResult
     covered ? (sum[2] as number) / covered : 0,
   ];
 
-  let open = count - covered;
-  for (let pass = 0; open > 0 && pass < 256; pass++) {
-    const grown: number[] = [];
-    for (let j = 0; j < n; j++) {
-      for (let i = 0; i < n; i++) {
-        const index = j * n + i;
-        if (known[index]) continue;
-        let found = 0;
-        const acc = [0, 0, 0];
-        for (const [di, dj] of [[-1, 0], [1, 0], [0, -1], [0, 1]] as const) {
-          const ni = i + di;
-          const nj = j + dj;
-          if (ni < 0 || nj < 0 || ni >= n || nj >= n || !known[nj * n + ni]) continue;
-          found++;
-          for (let c = 0; c < 3; c++) acc[c] = (acc[c] as number) + (linear[(nj * n + ni) * 3 + c] as number);
-        }
-        if (found === 0) continue;
-        for (let c = 0; c < 3; c++) linear[index * 3 + c] = (acc[c] as number) / found;
-        grown.push(index);
-      }
-    }
-    for (const index of grown) known[index] = 1;
-    open -= grown.length;
-    if (grown.length === 0) break;
+  if (covered > 0 && covered < count) {
+    fillHolesPullPush(linear, known, n);
+    known.fill(1);
   }
 
   const rgb = new Uint8Array(count * 3);
@@ -321,6 +300,74 @@ export function bakeAlbedo(mesh: TerrainMesh, surface: TopSurface): AlbedoResult
     }
   }
   return { rgb, meanLinear: mean, coveredFraction: covered / count };
+}
+
+/**
+ * Vult de gaten (known 0) van een n x n RGB-raster (lineair, 3 floats per pixel) met pull-push: een piramide van
+ * gemiddelden van de gedekte pixels (pull), daarna van grof naar fijn elk gat bilineair uit het niveau erboven (push).
+ * Gedekte pixels blijven exact gelijk. Vraagt minstens één gedekte pixel.
+ */
+export function fillHolesPullPush(linear: Float32Array, known: Uint8Array, n: number): void {
+  const levels: { size: number; rgb: Float32Array; w: Float32Array }[] = [];
+  const w0 = new Float32Array(n * n);
+  for (let i = 0; i < n * n; i++) w0[i] = known[i] ? 1 : 0;
+  levels.push({ size: n, rgb: linear, w: w0 });
+  // Pull: elk niveau het gewogen gemiddelde van 2 x 2 pixels van het niveau eronder.
+  while ((levels[levels.length - 1] as { size: number }).size > 1) {
+    const fine = levels[levels.length - 1] as { size: number; rgb: Float32Array; w: Float32Array };
+    const size = Math.ceil(fine.size / 2);
+    const rgb = new Float32Array(size * size * 3);
+    const w = new Float32Array(size * size);
+    for (let y = 0; y < size; y++)
+      for (let x = 0; x < size; x++) {
+        let sw = 0;
+        const acc = [0, 0, 0];
+        for (let dy = 0; dy < 2; dy++)
+          for (let dx = 0; dx < 2; dx++) {
+            const fx = 2 * x + dx;
+            const fy = 2 * y + dy;
+            if (fx >= fine.size || fy >= fine.size) continue;
+            const fi = fy * fine.size + fx;
+            const fw = fine.w[fi] as number;
+            if (fw <= 0) continue;
+            sw += fw;
+            for (let c = 0; c < 3; c++) acc[c] = (acc[c] as number) + (fine.rgb[fi * 3 + c] as number) * fw;
+          }
+        const i = y * size + x;
+        if (sw > 0) for (let c = 0; c < 3; c++) rgb[i * 3 + c] = (acc[c] as number) / sw;
+        w[i] = Math.min(1, sw);
+      }
+    levels.push({ size, rgb, w });
+  }
+  // Push: van grof naar fijn; een gat krijgt het bilineaire monster van het (al gevulde) niveau erboven.
+  for (let l = levels.length - 2; l >= 0; l--) {
+    const fine = levels[l] as { size: number; rgb: Float32Array; w: Float32Array };
+    const coarse = levels[l + 1] as { size: number; rgb: Float32Array; w: Float32Array };
+    const at = (x: number, y: number, c: number): number => {
+      const cx = Math.min(coarse.size - 1, Math.max(0, x));
+      const cy = Math.min(coarse.size - 1, Math.max(0, y));
+      return coarse.rgb[(cy * coarse.size + cx) * 3 + c] as number;
+    };
+    for (let y = 0; y < fine.size; y++)
+      for (let x = 0; x < fine.size; x++) {
+        const i = y * fine.size + x;
+        if ((fine.w[i] as number) >= 1) continue;
+        const gx = (x + 0.5) / 2 - 0.5;
+        const gy = (y + 0.5) / 2 - 0.5;
+        const x0 = Math.floor(gx);
+        const y0 = Math.floor(gy);
+        const tx = gx - x0;
+        const ty = gy - y0;
+        const own = fine.w[i] as number;
+        for (let c = 0; c < 3; c++) {
+          const up =
+            (at(x0, y0, c) * (1 - tx) + at(x0 + 1, y0, c) * tx) * (1 - ty) +
+            (at(x0, y0 + 1, c) * (1 - tx) + at(x0 + 1, y0 + 1, c) * tx) * ty;
+          fine.rgb[i * 3 + c] = own > 0 ? (fine.rgb[i * 3 + c] as number) * own + up * (1 - own) : up;
+        }
+        fine.w[i] = 1;
+      }
+  }
 }
 
 /**
@@ -646,6 +693,11 @@ export interface BuildTerrainOptions {
   metersPerCell?: number;
   /** Monsters per cel per zijde (hoogte wordt het gemiddelde van sub x sub monsters; het albedo is cells * sub pixels). */
   sub?: number;
+  /**
+   * Zijde van het albedo in pixels, los van het hoogteveld (standaard cells * sub, 1024). De kleur wordt dan op een
+   * eigen raster van die maat gebakken; het hoogteveld blijft gelijk. 2048 geeft 16 px per meter op de map.
+   */
+  albedoSize?: number | undefined;
   jpegQuality?: number;
 }
 
@@ -686,8 +738,16 @@ export async function buildTerrain(options: BuildTerrainOptions): Promise<BuildT
   const { field, scale, heightOffsetM, filledCells } = heightfieldFromSurface(surface, { cells, metersPerCell });
   heightfieldSchema.parse(field);
 
-  const albedo = bakeAlbedo(mesh, surface);
-  const albedoBytes = await sharp(albedo.rgb, { raw: { width: surface.resolution, height: surface.resolution, channels: 3 } })
+  // Het albedo op een eigen raster als de gevraagde maat afwijkt; het hoogteveld blijft op het grove raster.
+  const albedoSize = options.albedoSize ?? surface.resolution;
+  if (!Number.isInteger(albedoSize) || albedoSize < 16 || albedoSize > 8192)
+    throw new Error(`albedoSize ${albedoSize}: verwacht een geheel getal van 16 tot 8192`);
+  const albedoSurface =
+    albedoSize === surface.resolution
+      ? surface
+      : rasterizeTopSurface(mesh, { minX: crop.minX, minZ: crop.minZ, sizeM: crop.sizeM, resolution: albedoSize });
+  const albedo = bakeAlbedo(mesh, albedoSurface);
+  const albedoBytes = await sharp(albedo.rgb, { raw: { width: albedoSize, height: albedoSize, channels: 3 } })
     .jpeg({ quality: options.jpegQuality ?? 85, chromaSubsampling: '4:4:4', mozjpeg: false })
     .toBuffer();
 
@@ -698,7 +758,7 @@ export async function buildTerrain(options: BuildTerrainOptions): Promise<BuildT
     id: options.id,
     attribution: options.attribution,
     heightfield: { path: heightPath, w: field.w, h: field.h, metersPerCell, minM: field.minM, maxM: field.maxM },
-    albedo: { path: albedoPath, width: surface.resolution, height: surface.resolution, mime: 'image/jpeg' },
+    albedo: { path: albedoPath, width: albedoSize, height: albedoSize, mime: 'image/jpeg' },
     rockTint: hexOfLinear(albedo.meanLinear),
     groundTint: hexOfLinear(groundMaterial.factor),
     crop: {
