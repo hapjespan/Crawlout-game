@@ -40,6 +40,7 @@ import { startSession } from './game/session.js';
 import { createStatusOverlay } from './net/statusOverlay.js';
 import { buildingCards } from './game/cards.js';
 import { dominanceView } from './game/dominance.js';
+import { minimapLayers } from './game/minimapLayers.js';
 import { buildRoster } from './game/roster.js';
 import { EVENT_TYPE, readSnapshot, type EntityRow } from './game/snapshot.js';
 
@@ -89,6 +90,7 @@ async function main(): Promise<void> {
   void renderer.setProps(map.props, propSource());
   const water = loadClientMapWater(SLICE_MAP);
   if (water) renderer.setWater(water);
+  const minimapStatic = minimapLayers(map.grid.w, map.grid.h, map.grid.passable, map.props, water);
 
   // Selection is local UI state, never sim state: it is stamped into each snapshot's flags for the renderer.
   let selection = new Set<number>();
@@ -335,7 +337,7 @@ async function main(): Promise<void> {
             kind: kind === 'building' ? 'building' : 'unit',
           });
       }
-      return { w: map.grid.w, h: map.grid.h, passable: map.grid.passable, blips, claims };
+      return { w: map.grid.w, h: map.grid.h, passable: map.grid.passable, ...minimapStatic, blips, claims };
     },
     focusCamera: (x, y) => renderer.focus(x, y),
     getBuildOptions: () =>
