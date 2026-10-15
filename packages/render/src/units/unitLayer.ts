@@ -72,6 +72,8 @@ interface Rig {
   lods: LodBatch[];
 }
 
+/** Anisotropic filtering of a unit asset's diffuse atlas. */
+export const UNIT_ATLAS_ANISOTROPY = 8;
 const UNIT_RADIUS = 1.0; // culling sphere around a unit's chest, meters
 const SELECTED = ENTITY_FLAG.selected;
 const DEAD = ENTITY_FLAG.dead;
@@ -156,6 +158,10 @@ export class UnitLayer {
   addRig(src: UnitRigSource): number {
     if (this.rigs.length >= DEFAULT_RIG) throw new Error('too many unit rigs');
     const index = this.rigs.length;
+    // GLTFLoader leaves anisotropy at 1: the atlas on a unit's sides, seen 50 to 74 degrees from above, blurred to a
+    // smear in the mip chain. Same level as the terrain albedo.
+    const map = src.albedo?.map;
+    if (map) map.anisotropy = Math.max(map.anisotropy, UNIT_ATLAS_ANISOTROPY);
     const bundle = createUnitMaterial(
       src.anims,
       { lightDir: this.lightDir },
