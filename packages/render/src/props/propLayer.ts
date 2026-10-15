@@ -317,6 +317,11 @@ export class PropLayer {
     return this.groups.map((g) => g.id);
   }
 
+  /** The category an asset is drawn as (the manifest's once its visual is set, else from the id); null for an unknown id. */
+  categoryOf(assetId: string): PropCategory | null {
+    return this.byId.get(assetId)?.category ?? null;
+  }
+
   instanceCount(assetId: string): number {
     return this.byId.get(assetId)?.count ?? 0;
   }
@@ -510,7 +515,8 @@ export class PropLayer {
         const n = g.ranges[q + 2]! - k0;
         const keep = Math.round((this.density[g.tier * chunks + c]! * n) / DENSITY_STEPS);
         // Ground cover never grows: it keeps its real size (a 0.6 m grass patch stays 0.6 m).
-        const grow = keep < n && g.tier > 0 ? Math.min(SPARSE_MAX, Math.pow(n / keep, SPARSE_GROW)) : 1;
+        const grow =
+          keep < n && g.tier > 0 ? Math.min(SPARSE_MAX, Math.pow(n / keep, SPARSE_GROW)) : 1;
         for (let k = k0; k < k0 + keep; k++) {
           const o = k * STRIDE;
           const sc = d[o + 4]! * fit * grow;

@@ -44,18 +44,18 @@ Hybride map: vrij bewegen met fog of war, met claimbare punten die zowel de econ
 
 Drie facties op dezelfde economie, 70% gedeelde kern en asymmetrie via instroom, doctrine en 3 unieke units per factie. Bouwvolgorde: Dwellers, dan Raiders, dan Garde.
 
-|  | Dwellers (werknaam De Kluis) | Raiders | Garde (Brotherhood-achtig) |
-| --- | --- | --- | --- |
-| Tempo en pantser | Snel, leer en composiet | Midden, staal | Traag, zwaar |
-| Instroom bewoners | Trekken aan: huisvesting, radiobakens, settlements. Robots uit de Robotfabriek hebben geen bed nodig, 1 technicus per 4 robots | Roven: zwervers en verslagen vijandelijke bewoners worden slaven. Vechters komen uit tenten. Raiders werken nooit | Werven voor veel scrap, matige huisvestingsgroei. Initiate promoveert via gevechtservaring naar Knight en Paladin |
-| Economie | Raffinage-upgrades, meer scrap per bewoner | Plunderen van depots, tribute van neutrale nederzettingen zolang bezet | Tech-salvage uit pre-war nodes, alles kost meer scrap |
-| Militair | Turret-netwerk, lasers die schalen met lab-upgrades, robots, veel lichte units | Zwermen, pipe guns, melee, chems, molotovs, honden | Zwaar pantser, laser en plasma, eigen power armor, 3 pop per gevechtsunit |
-| Unieke units | Beveiligingsrobot (tank), Reparatiedrone (support), Sentinel (siege, laat) | Slaver (capture), Chem-dealer (buff-aura), Buggy (harass) | Power armor frame, Vertibird (transport en strafe, laat), Klerk (repair, research, PA-sabotage) |
-| Held, Krijger-variant | Opziener: upgrades goedkoper, turrets sterker, Lockdown | Warlord: intimidatie-aura, Raid, levelt het snelst | Paladin-Commander: pantser-aura, Charge |
-| SPECIAL-kanaal | Trainingsfaciliteit | Chems | Tech |
-| Vangnet | Radiobaken trekt bewoners aan | Tenten leveren instroom zolang er minder dan 5 vechters zijn | Hoofdgebouw levert gratis een Initiate per 90 s zolang er minder dan 3 gevechtsunits zijn |
-| Natuurlijke winroute | Bouwproject | Dominantie | Vernietiging |
-| Zwakte | Traag, weinig mensen, robots kunnen niet werven of roven | Fragiel, geen late schaal zonder loot, garnizoen nodig tegen opstand | Elk verlies is duur, zwak vroeg, traag |
+|                       | Dwellers (werknaam De Kluis)                                                                                                   | Raiders                                                                                                           | Garde (Brotherhood-achtig)                                                                                        |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| Tempo en pantser      | Snel, leer en composiet                                                                                                        | Midden, staal                                                                                                     | Traag, zwaar                                                                                                      |
+| Instroom bewoners     | Trekken aan: huisvesting, radiobakens, settlements. Robots uit de Robotfabriek hebben geen bed nodig, 1 technicus per 4 robots | Roven: zwervers en verslagen vijandelijke bewoners worden slaven. Vechters komen uit tenten. Raiders werken nooit | Werven voor veel scrap, matige huisvestingsgroei. Initiate promoveert via gevechtservaring naar Knight en Paladin |
+| Economie              | Raffinage-upgrades, meer scrap per bewoner                                                                                     | Plunderen van depots, tribute van neutrale nederzettingen zolang bezet                                            | Tech-salvage uit pre-war nodes, alles kost meer scrap                                                             |
+| Militair              | Turret-netwerk, lasers die schalen met lab-upgrades, robots, veel lichte units                                                 | Zwermen, pipe guns, melee, chems, molotovs, honden                                                                | Zwaar pantser, laser en plasma, eigen power armor, 3 pop per gevechtsunit                                         |
+| Unieke units          | Beveiligingsrobot (tank), Reparatiedrone (support), Sentinel (siege, laat)                                                     | Slaver (capture), Chem-dealer (buff-aura), Buggy (harass)                                                         | Power armor frame, Vertibird (transport en strafe, laat), Klerk (repair, research, PA-sabotage)                   |
+| Held, Krijger-variant | Opziener: upgrades goedkoper, turrets sterker, Lockdown                                                                        | Warlord: intimidatie-aura, Raid, levelt het snelst                                                                | Paladin-Commander: pantser-aura, Charge                                                                           |
+| SPECIAL-kanaal        | Trainingsfaciliteit                                                                                                            | Chems                                                                                                             | Tech                                                                                                              |
+| Vangnet               | Radiobaken trekt bewoners aan                                                                                                  | Tenten leveren instroom zolang er minder dan 5 vechters zijn                                                      | Hoofdgebouw levert gratis een Initiate per 90 s zolang er minder dan 3 gevechtsunits zijn                         |
+| Natuurlijke winroute  | Bouwproject                                                                                                                    | Dominantie                                                                                                        | Vernietiging                                                                                                      |
+| Zwakte                | Traag, weinig mensen, robots kunnen niet werven of roven                                                                       | Fragiel, geen late schaal zonder loot, garnizoen nodig tegen opstand                                              | Elk verlies is duur, zwak vroeg, traag                                                                            |
 
 Driehoek: Raiders verslaan Dwellers vroeg (voor de turrets), Garde verslaat Raiders mid (pantser negeert pipe guns), Dwellers verslaan Garde laat (robots raken niet op, upgrades schalen door).
 
@@ -141,15 +141,15 @@ Placeholders eerst, want de renderbuis is het moeilijke deel. Handwerk kopen we 
 
 **Technische brief (gaat letterlijk naar de artist)**
 
-| Onderdeel | Eis |
-| --- | --- |
-| Tris | LOD0 3000 tot 4000, LOD1 1200 tot 1500 (werkpaard), LOD2 400 tot 600 |
-| Textuur | 1 atlas van 2048 per factie voor body plus uitrusting, 1 diffuse, teammasker in het alfakanaal, geen normal-, roughness- of metalmap |
-| Rig | Humanoid, maximaal 28 bones, geen vingers, Mixamo-botnamen, T- of A-pose, socket-bones voor hand, rug, hoofd |
-| Animaties | idle, walk, run, attack1, attack2, gather, build, death; 30 fps; alles op één gedeeld skelet |
-| Schaal | 1 unit is 1 meter, poppetje 1,8 m, voeten op y=0, Y omhoog, gezicht naar +Z |
-| Meshes | body, gear\_head, gear\_back, weapon\_r; 1 UV-set binnen 0 tot 1; alleen tris en quads; transformaties toegepast |
-| Export | GLB met meshopt (gltfpack), KTX2-textures; Draco alleen voor statische props; .blend als bronbestand welkom |
+| Onderdeel | Eis                                                                                                                                  |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| Tris      | LOD0 3000 tot 4000, LOD1 1200 tot 1500 (werkpaard), LOD2 400 tot 600                                                                 |
+| Textuur   | 1 atlas van 2048 per factie voor body plus uitrusting, 1 diffuse, teammasker in het alfakanaal, geen normal-, roughness- of metalmap |
+| Rig       | Humanoid, maximaal 28 bones, geen vingers, Mixamo-botnamen, T- of A-pose, socket-bones voor hand, rug, hoofd                         |
+| Animaties | idle, walk, run, attack1, attack2, gather, build, death; 30 fps; alles op één gedeeld skelet                                         |
+| Schaal    | 1 unit is 1 meter, poppetje 1,8 m, voeten op y=0, Y omhoog, gezicht naar +Z                                                          |
+| Meshes    | body, gear\_head, gear\_back, weapon\_r; 1 UV-set binnen 0 tot 1; alleen tris en quads; transformaties toegepast                     |
+| Export    | GLB met meshopt (gltfpack), KTX2-textures; Draco alleen voor statische props; .blend als bronbestand welkom                          |
 
 Inventaris, ruw: 2 rigs (mens, robot), 9 helden waarvan 3 in de eerste speelbare, circa 15 uitrustingssets, 24 gebouwen (3 facties keer 8), circa 60 props. Dat is ongeveer een maand artist voor het handwerk; de rest loopt door de asset-CLI.
 
@@ -157,26 +157,26 @@ Inventaris, ruw: 2 rigs (mens, robot), 9 helden waarvan 3 in de eerste speelbare
 
 Uit de analyse van [threejsresources.com](https://threejsresources.com/category/games) (games plus de rankings animatie, modellen, performance, physics, environment en multiplayer). Bevestigd gat: er bestaat geen kant-en-klare lockstep voor three.js, dus de relay bouwen we zelf.
 
-| Tool | Rol in dit project | Besluit |
-| --- | --- | --- |
-| [Gobkit](https://gobkit.com/freebies) | Nature Kit met 41 CC0 props; de 8 vrije minions hebben 5 bones zonder benen en zijn ongeschikt als humanoid | Alleen props |
-| Quaternius (Universal Animation Library, basiskarakters), Kenney, Poly Pizza | CC0 placeholder-humanoids op een universele rig met 120+ animaties (Mixamo-compatibel), plus props en omgeving | Overnemen |
-| [NixieFX](https://nixiefx.com/) | Lokale particle-editor plus MIT-runtime: mondingsvuur, explosies, laser, radstorm, stof | Overnemen |
-| three.ez/instanced-mesh | InstancedMesh met frustum culling, per-instance LOD en BVH, voor gebouwen en props | Overnemen |
-| Mixamo | Aanvulling op Quaternius; Mixamo zit in onderhoudsmodus | Overnemen |
-| Cascadeur, DeepMotion | Custom animaties voor helden, mocap uit video | Kandidaat |
-| GLTF Space, GLB-inspector | Asset-QA: tris, bones, textures, animaties | Overnemen |
-| gltfpack, KTX2 | Asset-CLI: meshopt-compressie, LOD-generatie, GPU-textures | Overnemen |
-| Three Scatter, [Procedural Terrains](https://github.com/ZyFou/ProceduralTerrains) | Map-tooling: terreintegels en props verspreiden | Kandidaat |
-| Stats.js, Spector.js | Prestatiemeting en WebGL-debugging | Overnemen |
-| [webgamedev.com](https://www.webgamedev.com) | Kennisbank, referentie voor de agents | Overnemen |
-| GLSL-naar-TSL-converter | Shadersnippets porten naar WebGPU | Overnemen |
-| Mavon Engine | Authoritative-server-engine op Rapier en geckos.io, neemt het project over | Afwijzen, wel afkijken voor entity-beheer en state machines |
-| Rapier, Jolt, Ammo, Cannon | Physics-engines, determinisme-risico in de sim | Afwijzen in de sim; hooguit later cosmetisch puin buiten de sim |
-| Path tracers, raytracers | Fotorealisme | Afwijzen |
-| Bmap, Viverse, PLAYTEX, Vibe Games, Convrse | Echte steden, platforms, AI-editors, optimalisatiedienst | Afwijzen |
-| Meshy, Tripo | AI-generatie | Alleen props met cleanup, nooit units |
-| YouTube Playables | Distributiekanaal | Parkeren bij de platformbeslissing |
+| Tool                                                                              | Rol in dit project                                                                                             | Besluit                                                         |
+| --------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| [Gobkit](https://gobkit.com/freebies)                                             | Nature Kit met 41 CC0 props; de 8 vrije minions hebben 5 bones zonder benen en zijn ongeschikt als humanoid    | Alleen props                                                    |
+| Quaternius (Universal Animation Library, basiskarakters), Kenney, Poly Pizza      | CC0 placeholder-humanoids op een universele rig met 120+ animaties (Mixamo-compatibel), plus props en omgeving | Overnemen                                                       |
+| [NixieFX](https://nixiefx.com/)                                                   | Lokale particle-editor plus MIT-runtime: mondingsvuur, explosies, laser, radstorm, stof                        | Overnemen                                                       |
+| three.ez/instanced-mesh                                                           | InstancedMesh met frustum culling, per-instance LOD en BVH, voor gebouwen en props                             | Overnemen                                                       |
+| Mixamo                                                                            | Aanvulling op Quaternius; Mixamo zit in onderhoudsmodus                                                        | Overnemen                                                       |
+| Cascadeur, DeepMotion                                                             | Custom animaties voor helden, mocap uit video                                                                  | Kandidaat                                                       |
+| GLTF Space, GLB-inspector                                                         | Asset-QA: tris, bones, textures, animaties                                                                     | Overnemen                                                       |
+| gltfpack, KTX2                                                                    | Asset-CLI: meshopt-compressie, LOD-generatie, GPU-textures                                                     | Overnemen                                                       |
+| Three Scatter, [Procedural Terrains](https://github.com/ZyFou/ProceduralTerrains) | Map-tooling: terreintegels en props verspreiden                                                                | Kandidaat                                                       |
+| Stats.js, Spector.js                                                              | Prestatiemeting en WebGL-debugging                                                                             | Overnemen                                                       |
+| [webgamedev.com](https://www.webgamedev.com)                                      | Kennisbank, referentie voor de agents                                                                          | Overnemen                                                       |
+| GLSL-naar-TSL-converter                                                           | Shadersnippets porten naar WebGPU                                                                              | Overnemen                                                       |
+| Mavon Engine                                                                      | Authoritative-server-engine op Rapier en geckos.io, neemt het project over                                     | Afwijzen, wel afkijken voor entity-beheer en state machines     |
+| Rapier, Jolt, Ammo, Cannon                                                        | Physics-engines, determinisme-risico in de sim                                                                 | Afwijzen in de sim; hooguit later cosmetisch puin buiten de sim |
+| Path tracers, raytracers                                                          | Fotorealisme                                                                                                   | Afwijzen                                                        |
+| Bmap, Viverse, PLAYTEX, Vibe Games, Convrse                                       | Echte steden, platforms, AI-editors, optimalisatiedienst                                                       | Afwijzen                                                        |
+| Meshy, Tripo                                                                      | AI-generatie                                                                                                   | Alleen props met cleanup, nooit units                           |
+| YouTube Playables                                                                 | Distributiekanaal                                                                                              | Parkeren bij de platformbeslissing                              |
 
 Zelf bouwen: lockstep-relay, instanced-skinning-materiaal in TSL, asset-CLI, map-editor op basis van Three Scatter.
 
@@ -184,22 +184,22 @@ Zelf bouwen: lockstep-relay, instanced-skinning-materiaal in TSL, asset-CLI, map
 
 Gerangschikt op hoe hard het pijn doet. De drie zwaarste: doodsspiraal, determinisme, de later-lijst.
 
-| Pijnpunt | Mitigatie |
-| --- | --- |
-| Doodsspiraal: bewoners zijn economie en leger tegelijk | Vangnet per factie (sectie 4), bevrijdbare slaven, opgeven-knop |
-| Micro-overload bij 100 units met loadouts en held-abilities | Cap 50 pop, geen squads, auto-rol voor bewoners, rally points |
-| Raiders te sterk of te zwak in het roven | Roven alleen buiten de basisradius, kooien aan de rand, opstand bij te klein garnizoen, bevrijde slaaf geeft tempo |
-| Vault-turtle plus bouwproject wordt een patstelling | Scrap-nodes eindig, bouwproject zichtbaar met countdown en zwakke plek |
-| Fallout-DNA te dun, het wordt een generieke post-apoc RTS | Perk-keuzes met smaak, random encounters, settlement-events, humor in unit-barks, eigen naam en lore in de art-fase |
-| Power armor op minuut 3 is een muntje opgooien | Spawn na minuut 10, centraal, aangekondigd, core apart |
-| Held sterft en het potje is beslist | Oplappen met 20% verlies per keer, maximaal 4 keer |
-| Determinisme in JavaScript: één float geeft een desync na 20 minuten | Fixed-point, seeded RNG, state-hash per tick vanaf commit 1, reviewgate op elke sim-wijziging |
-| Pathfinding voor 200 units en survival-golven van 300 ghouls | Sim en flow fields in een Web Worker, typed arrays, geen garbage per tick |
-| Skinned instancing bestaat niet uit de doos in three.js | Eigen TSL-materiaal met bone-matrix textures, eerste onderdeel met expert-review |
-| Browser-tab op de achtergrond stopt de lockstep | Timer in de worker, reconnect met state-resync |
-| Agents kunnen niet voelen of het leuk is | Testgroep van 5 tot 8 mensen vanaf de slice, elke twee weken een sessie |
-| Stijlbreuk tussen packs, AI-gen en artist | Stijlbijbel voor het eerste blijvende asset, elk asset erlangs |
-| De later-lijst is een studioproject van 3 tot 5 jaar | De slice is 1 factie, 1 held, 1 map, 2 winroutes, tegen AI. Alles daarbuiten bestaat pas als de slice leuk is |
+| Pijnpunt                                                             | Mitigatie                                                                                                           |
+| -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| Doodsspiraal: bewoners zijn economie en leger tegelijk               | Vangnet per factie (sectie 4), bevrijdbare slaven, opgeven-knop                                                     |
+| Micro-overload bij 100 units met loadouts en held-abilities          | Cap 50 pop, geen squads, auto-rol voor bewoners, rally points                                                       |
+| Raiders te sterk of te zwak in het roven                             | Roven alleen buiten de basisradius, kooien aan de rand, opstand bij te klein garnizoen, bevrijde slaaf geeft tempo  |
+| Vault-turtle plus bouwproject wordt een patstelling                  | Scrap-nodes eindig, bouwproject zichtbaar met countdown en zwakke plek                                              |
+| Fallout-DNA te dun, het wordt een generieke post-apoc RTS            | Perk-keuzes met smaak, random encounters, settlement-events, humor in unit-barks, eigen naam en lore in de art-fase |
+| Power armor op minuut 3 is een muntje opgooien                       | Spawn na minuut 10, centraal, aangekondigd, core apart                                                              |
+| Held sterft en het potje is beslist                                  | Oplappen met 20% verlies per keer, maximaal 4 keer                                                                  |
+| Determinisme in JavaScript: één float geeft een desync na 20 minuten | Fixed-point, seeded RNG, state-hash per tick vanaf commit 1, reviewgate op elke sim-wijziging                       |
+| Pathfinding voor 200 units en survival-golven van 300 ghouls         | Sim en flow fields in een Web Worker, typed arrays, geen garbage per tick                                           |
+| Skinned instancing bestaat niet uit de doos in three.js              | Eigen TSL-materiaal met bone-matrix textures, eerste onderdeel met expert-review                                    |
+| Browser-tab op de achtergrond stopt de lockstep                      | Timer in de worker, reconnect met state-resync                                                                      |
+| Agents kunnen niet voelen of het leuk is                             | Testgroep van 5 tot 8 mensen vanaf de slice, elke twee weken een sessie                                             |
+| Stijlbreuk tussen packs, AI-gen en artist                            | Stijlbijbel voor het eerste blijvende asset, elk asset erlangs                                                      |
+| De later-lijst is een studioproject van 3 tot 5 jaar                 | De slice is 1 factie, 1 held, 1 map, 2 winroutes, tegen AI. Alles daarbuiten bestaat pas als de slice leuk is       |
 
 ## 12. Faseplan en agentindeling
 
@@ -211,17 +211,17 @@ Fase 1 is de enige fase die nu bestaat; fase 2 tot 4 zijn richting, geen belofte
 
 **Werkstromen in fase 1, parallel na gate 0**
 
-| Werkstroom | Inhoud | Model en effort | Review |
-| --- | --- | --- | --- |
-| 0 Contracten | Snapshotformaat, commandoprotocol, dataschema | Fable 5.1, hoog | Is zelf de review |
-| 1 Sim-core | Lockstep, fixed-point, ECS, flow fields in een worker, state-hash | Opus 5.5, hoog | Fable |
-| 2 Renderbuis | WebGPU met WebGL2-fallback, TSL toon-materiaal, instanced skinning, LOD | Opus 5.5, hoog | Fable |
-| 3 Asset-CLI | gltfpack, KTX2, LOD-generatie, animatietextures, Gobkit-import | Sonnet 5.5, midden | Sonnet |
-| 4 Dweller-content | Units, gebouwen, tech-tree, balansdata als JSON | Sonnet 5.5, midden | Sonnet, Fable steekproef |
-| 5 HUD | Minimap, scrap- en bewonersteller, selectiepaneel, commandokaart | Sonnet 5.5, midden | Sonnet |
-| 6 Relay en lobby | Node WebSocket, commando-uitwisseling, reconnect, resync | Sonnet 5.5, midden | Fable |
-| 7 Terrein en map | Terreintegels, scatter, de ene slice-map | Sonnet 5.5, midden | Sonnet |
-| Bulk | Conversies, lint, fixtures, log-triage, docs | Haiku 5.5, laag | Geen |
+| Werkstroom        | Inhoud                                                                  | Model en effort    | Review                   |
+| ----------------- | ----------------------------------------------------------------------- | ------------------ | ------------------------ |
+| 0 Contracten      | Snapshotformaat, commandoprotocol, dataschema                           | Fable 5.1, hoog    | Is zelf de review        |
+| 1 Sim-core        | Lockstep, fixed-point, ECS, flow fields in een worker, state-hash       | Opus 5.5, hoog     | Fable                    |
+| 2 Renderbuis      | WebGPU met WebGL2-fallback, TSL toon-materiaal, instanced skinning, LOD | Opus 5.5, hoog     | Fable                    |
+| 3 Asset-CLI       | gltfpack, KTX2, LOD-generatie, animatietextures, Gobkit-import          | Sonnet 5.5, midden | Sonnet                   |
+| 4 Dweller-content | Units, gebouwen, tech-tree, balansdata als JSON                         | Sonnet 5.5, midden | Sonnet, Fable steekproef |
+| 5 HUD             | Minimap, scrap- en bewonersteller, selectiepaneel, commandokaart        | Sonnet 5.5, midden | Sonnet                   |
+| 6 Relay en lobby  | Node WebSocket, commando-uitwisseling, reconnect, resync                | Sonnet 5.5, midden | Fable                    |
+| 7 Terrein en map  | Terreintegels, scatter, de ene slice-map                                | Sonnet 5.5, midden | Sonnet                   |
+| Bulk              | Conversies, lint, fixtures, log-triage, docs                            | Haiku 5.5, laag    | Geen                     |
 
 **Werkwijze**
 

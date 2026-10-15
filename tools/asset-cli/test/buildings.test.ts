@@ -49,9 +49,9 @@ function deepCopy(value: VariantsConfig): VariantsConfig {
 }
 
 describe('variants.json', () => {
-  it('valideert en dekt alle tien Dweller-gebouwen uit data/buildings.json', () => {
+  it('valideert en dekt alle acht Dweller-gebouwen uit data/buildings.json', () => {
     const dwellers = buildingsJson.filter((b) => b.visuals.mesh.startsWith('dweller_building_'));
-    expect(dwellers).toHaveLength(10);
+    expect(dwellers).toHaveLength(8);
     expect(ids).toEqual(dwellers.map((b) => b.visuals.mesh).sort());
     for (const b of dwellers)
       expect(config.variants[b.visuals.mesh]?.footprint, b.visuals.mesh).toEqual(b.footprint);
@@ -120,10 +120,10 @@ describe('budgetten voor kind building', () => {
 });
 
 describe('gebouwen uit de generator', () => {
-  it('bouwt alle tien zonder fouten', () => {
+  it('bouwt alle acht zonder fouten', () => {
     expect(built.reports.map((r) => r.id).sort()).toEqual(ids);
     for (const report of built.reports) expect(report.errors, report.id).toEqual([]);
-    expect(built.entries).toHaveLength(10);
+    expect(built.entries).toHaveLength(8);
   });
 
   it('staat binnen de footprint en vult hem grotendeels (geen grondplaat), midden bij de oorsprong, grond op y=0 (alle LODs)', async () => {

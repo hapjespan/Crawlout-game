@@ -62,7 +62,9 @@
     "gatherS": 0,
     "popCost": 1,
     "prereqTech": [],
-    "visuals": { "meshSlots": { "body": "dweller_body_human", "weapon": "dweller_weapon_pipe_pistol" } },
+    "visuals": {
+      "meshSlots": { "body": "dweller_body_human", "weapon": "dweller_weapon_pipe_pistol" }
+    },
     "_comment": "Balans speltest 14 oktober voor scrapCost, de rest startwaarde. Militie met pipe pistol: 8 schade per 1,0 s op 8 m (richtwaarde contract 3), 60 hp. 30 scrap (was 25) en 5 s craft in de werkplaats. De goedkope kern van het leger (lichte units, 50 pop)."
   },
   {
@@ -84,7 +86,9 @@
     "gatherS": 0,
     "popCost": 1,
     "prereqTech": ["geweerrek"],
-    "visuals": { "meshSlots": { "body": "dweller_body_human", "weapon": "dweller_weapon_patrol_rifle" } },
+    "visuals": {
+      "meshSlots": { "body": "dweller_body_human", "weapon": "dweller_weapon_patrol_rifle" }
+    },
     "_comment": "Balans speltest 14 oktober voor scrapCost, de rest startwaarde. Patrol: geweer en composiet-pantser (medium), 14 schade per 1,25 s op 11 m. Duurder (75 scrap, was 60; 8 s) en trager (2,75 m/s): het betere tier-loadout is een echte uitgave, ook om bestaande militie naar om te scholen. Vraagt tech geweerrek. Zelfde 60 hp body, het pantser maakt het verschil."
   },
   {
@@ -106,7 +110,7 @@
     "gatherS": 0,
     "popCost": 1,
     "prereqTech": ["geweerrek"],
-    "visuals": {"meshSlots": {"body": "dweller_body_human", "weapon": "dweller_weapon_rifle"}},
+    "visuals": { "meshSlots": { "body": "dweller_body_human", "weapon": "dweller_weapon_rifle" } },
     "_comment": "startwaarde, geen balans. Geweerschutter in leer (geen pantser): zelfde geweer als patrol (14 schade per 1,25 s op 11 m) maar zonder composiet: sneller (3 m/s tegen 2,75) en goedkoper (55 scrap, 6 s tegen 75 en 8 s). Vraagt geweerrek (zoals patrol). Uitrusting in tiers (data 0.15.0): een unit is een loadout, dus wapen en pantser zitten samen in één loadout; omschakelen is een omscholing in de werkplaats (scrapCost en craftS) en kost looptijd. Wapentiers: pijppistool (militie, tier 1), geweer, shotgun en slagwapen (tier 2). Pantsertiers: leer (armorType none) en composiet (medium); pijppistool heeft geen composiet-variant. Een bestaande loadout is niet gewijzigd: militie (light) en patrol (geweer plus composiet, vraagt alleen geweerrek) blijven zoals ze waren."
   },
   {
@@ -128,7 +132,9 @@
     "gatherS": 0,
     "popCost": 1,
     "prereqTech": ["shotgun_ontwerp"],
-    "visuals": {"meshSlots": {"body": "dweller_body_human", "weapon": "dweller_weapon_shotgun"}},
+    "visuals": {
+      "meshSlots": { "body": "dweller_body_human", "weapon": "dweller_weapon_shotgun" }
+    },
     "_comment": "startwaarde, geen balans. Shotgun in leer: 22 schade per 1,6 s op 4,5 m (13,75 schade per seconde tegen 8 voor het pijppistool), dus sterk van dichtbij en zwak op afstand; 3 m/s. 50 scrap en 6 s. Vraagt tech shotgun_ontwerp (werkplaats). Uitrusting in tiers (data 0.15.0): een unit is een loadout, dus wapen en pantser zitten samen in één loadout; omschakelen is een omscholing in de werkplaats (scrapCost en craftS) en kost looptijd. Wapentiers: pijppistool (militie, tier 1), geweer, shotgun en slagwapen (tier 2). Pantsertiers: leer (armorType none) en composiet (medium); pijppistool heeft geen composiet-variant. Een bestaande loadout is niet gewijzigd: militie (light) en patrol (geweer plus composiet, vraagt alleen geweerrek) blijven zoals ze waren."
   },
   {
@@ -150,7 +156,13 @@
     "gatherS": 0,
     "popCost": 1,
     "prereqTech": ["shotgun_ontwerp", "composiet_pantser"],
-    "visuals": {"meshSlots": {"body": "dweller_body_human", "weapon": "dweller_weapon_shotgun", "armor": "dweller_armor_composite"}},
+    "visuals": {
+      "meshSlots": {
+        "body": "dweller_body_human",
+        "weapon": "dweller_weapon_shotgun",
+        "armor": "dweller_armor_composite"
+      }
+    },
     "_comment": "startwaarde, geen balans. Shotgun in composiet (medium pantser): dezelfde shotgun (22 schade per 1,6 s op 4,5 m) met composietpantser, trager (2,75 m/s) en duurder (90 scrap, 8 s). Vraagt shotgun_ontwerp en composiet_pantser. Uitrusting in tiers (data 0.15.0): een unit is een loadout, dus wapen en pantser zitten samen in één loadout; omschakelen is een omscholing in de werkplaats (scrapCost en craftS) en kost looptijd. Wapentiers: pijppistool (militie, tier 1), geweer, shotgun en slagwapen (tier 2). Pantsertiers: leer (armorType none) en composiet (medium); pijppistool heeft geen composiet-variant. Een bestaande loadout is niet gewijzigd: militie (light) en patrol (geweer plus composiet, vraagt alleen geweerrek) blijven zoals ze waren."
   },
   {
@@ -172,7 +184,7 @@
     "gatherS": 0,
     "popCost": 1,
     "prereqTech": ["slagwapen_ontwerp"],
-    "visuals": {"meshSlots": {"body": "dweller_body_human", "weapon": "dweller_weapon_club"}},
+    "visuals": { "meshSlots": { "body": "dweller_body_human", "weapon": "dweller_weapon_club" } },
     "_comment": "startwaarde, geen balans. Slagwapen (knuppel met pijp) in leer: 16 melee-schade per 1,1 s op 1,8 m, de snelste strijder (3,5 m/s), goedkoop (40 scrap, 5 s). Melee breekt licht en onbeschermd pantser (damage-matrix) en kan niets doen tegen heavy en robots (40 en 30 procent). Vraagt tech slagwapen_ontwerp (werkplaats). Uitrusting in tiers (data 0.15.0): een unit is een loadout, dus wapen en pantser zitten samen in één loadout; omschakelen is een omscholing in de werkplaats (scrapCost en craftS) en kost looptijd. Wapentiers: pijppistool (militie, tier 1), geweer, shotgun en slagwapen (tier 2). Pantsertiers: leer (armorType none) en composiet (medium); pijppistool heeft geen composiet-variant. Een bestaande loadout is niet gewijzigd: militie (light) en patrol (geweer plus composiet, vraagt alleen geweerrek) blijven zoals ze waren."
   },
   {
@@ -194,7 +206,13 @@
     "gatherS": 0,
     "popCost": 1,
     "prereqTech": ["slagwapen_ontwerp", "composiet_pantser"],
-    "visuals": {"meshSlots": {"body": "dweller_body_human", "weapon": "dweller_weapon_club", "armor": "dweller_armor_composite"}},
+    "visuals": {
+      "meshSlots": {
+        "body": "dweller_body_human",
+        "weapon": "dweller_weapon_club",
+        "armor": "dweller_armor_composite"
+      }
+    },
     "_comment": "startwaarde, geen balans. Slagwapen in composiet (medium pantser): 16 melee-schade per 1,1 s op 1,8 m, 3,25 m/s, 80 scrap en 8 s. Vraagt slagwapen_ontwerp en composiet_pantser. Uitrusting in tiers (data 0.15.0): een unit is een loadout, dus wapen en pantser zitten samen in één loadout; omschakelen is een omscholing in de werkplaats (scrapCost en craftS) en kost looptijd. Wapentiers: pijppistool (militie, tier 1), geweer, shotgun en slagwapen (tier 2). Pantsertiers: leer (armorType none) en composiet (medium); pijppistool heeft geen composiet-variant. Een bestaande loadout is niet gewijzigd: militie (light) en patrol (geweer plus composiet, vraagt alleen geweerrek) blijven zoals ze waren."
   },
   {
@@ -216,7 +234,7 @@
     "gatherS": 0,
     "popCost": 1,
     "prereqTech": ["robotica"],
-    "visuals": {"meshSlots": {"body": "dweller_body_human", "tool": "dweller_tool_multitool"}},
+    "visuals": { "meshSlots": { "body": "dweller_body_human", "tool": "dweller_tool_multitool" } },
     "_comment": "startwaarde, geen balans. Technicus (data 0.15.0): bewoner met de rol technician, de onderhoudsman van de robots. Eén technicus (of een bouwer, factions.json robotRules.technicianRoles) dekt 4 robots; zonder dekking werken robots op half tempo. Omscholen in de werkplaats voor 40 scrap en 5 s, vraagt tech robotica. Een bewoner dus: hij heeft een bed nodig en kost pop 1. Zwak in gevecht (4 melee-schade per 1,5 s op 1,5 m, 60 hp). Geen standaard-omscholing voor SetRole: hij heeft een prereqTech."
   },
   {
@@ -239,7 +257,7 @@
     "popCost": 2,
     "prereqTech": ["robotica"],
     "producedAt": "robotfabriek",
-    "visuals": {"meshSlots": {"body": "dweller_robot_guard"}},
+    "visuals": { "meshSlots": { "body": "dweller_robot_guard" } },
     "_comment": "startwaarde, geen balans. Beveiligingsrobot: de tank van de Dwellers (unieke unit, Spelfundament 4). armorType robot (ballistic doet 60 procent, melee 30, energy 150), traag (2 m/s) en veel hp (450, ruim zeven keer een bewoner). Wapen: 10 ballistic per 0,8 s op 6 m (12,5 schade per seconde), een korte actieradius: hij staat vooraan en trekt vuur. Robot (data 0.15.0): bodyType robot, rol robot, geen bed nodig (robots tellen wel voor pop: popCost) en een technicus per 4 robots (factions.json robotRules); producedAt robotfabriek: een robot wordt nieuw gebouwd in de Robotfabriek (scrapCost en craftS, de unit verschijnt naast het gebouw), er gaat geen bewoner voor verloren en hij is niet omschoolbaar. Geen verzamelaar, bouwer of militie. 150 scrap, 20 s, pop 2. Vraagt tech robotica."
   },
   {
@@ -262,8 +280,13 @@
     "popCost": 1,
     "prereqTech": ["robotica"],
     "producedAt": "robotfabriek",
-    "repair": {"repairRateHpPerS": 10, "rangeM": 4, "seekRangeM": 14, "targets": ["building", "robot"]},
-    "visuals": {"meshSlots": {"body": "dweller_robot_drone"}},
+    "repair": {
+      "repairRateHpPerS": 10,
+      "rangeM": 4,
+      "seekRangeM": 14,
+      "targets": ["building", "robot"]
+    },
+    "visuals": { "meshSlots": { "body": "dweller_robot_drone" } },
     "_comment": "startwaarde, geen balans. Reparatiedrone: de support van de Dwellers (unieke unit, Spelfundament 4). Geen wapen (damage 0, rangeM 0). Mechaniek (veld repair): repairRateHpPerS 10 hp per seconde op één doel binnen repair.rangeM (4 m, gemeten tot het midden van een unit of de rand van een footprint); doelen (repair.targets) zijn eigen voltooide gebouwen (building) en eigen robots (robot, niet hijzelf), nooit bewoners of de held; hij repareert zonder scrap en kiest bij een vrije drone zelf het beschadigde doel (laagste hp-percentage, dan laagste entity-id) binnen repair.seekRangeM (14 m) en loopt erheen. Repareren stopt bij volle hp. Snel (4 m/s) en fragiel (70 hp). Een ongedekte drone (geen technicus) repareert op half tempo (factions.json robotPenaltyPct). Robot (data 0.15.0): bodyType robot, rol robot, geen bed nodig (robots tellen wel voor pop: popCost) en een technicus per 4 robots (factions.json robotRules); producedAt robotfabriek: een robot wordt nieuw gebouwd in de Robotfabriek (scrapCost en craftS, de unit verschijnt naast het gebouw), er gaat geen bewoner voor verloren en hij is niet omschoolbaar. Geen verzamelaar, bouwer of militie. 90 scrap, 12 s, pop 1. Vraagt tech robotica."
   },
   {
@@ -286,8 +309,8 @@
     "popCost": 4,
     "prereqTech": ["sentinel_protocol"],
     "producedAt": "robotfabriek",
-    "siege": {"vsBuildingsDamagePct": 150, "buildingsFirst": true},
-    "visuals": {"meshSlots": {"body": "dweller_robot_sentinel"}},
+    "siege": { "vsBuildingsDamagePct": 150, "buildingsFirst": true },
+    "visuals": { "meshSlots": { "body": "dweller_robot_sentinel" } },
     "_comment": "startwaarde, geen balans. Sentinel: de belegeringsunit van de Dwellers, laat in het potje (unieke unit, Spelfundament 4). Zeer groot bereik (30 m, ruim boven de 12 m van een turret) en langzaam (1,5 m/s, 4 s cooldown): 34 energy per schot. Mechaniek (veld siege): vsBuildingsDamagePct 150 betekent 150 procent extra schade tegen gebouwen bovenop de damage-matrix (dus 250 procent in totaal; tegen het hoofdgebouw, heavy: 34 maal 1,25 maal 2,5 is 106 schade per schot); buildingsFirst true: hij kiest zelf eerst het dichtstbijzijnde vijandelijke gebouw (met wapen of zonder) binnen aggro-bereik, en pas daarna units. Fragiel (220 hp) en duur: 280 scrap, 35 s, pop 4. Robot (data 0.15.0): bodyType robot, rol robot, geen bed nodig (robots tellen wel voor pop: popCost) en een technicus per 4 robots (factions.json robotRules); producedAt robotfabriek: een robot wordt nieuw gebouwd in de Robotfabriek (scrapCost en craftS, de unit verschijnt naast het gebouw), er gaat geen bewoner voor verloren en hij is niet omschoolbaar. Geen verzamelaar, bouwer of militie. Vraagt tech sentinel_protocol (late tech: robotica en lasergeleiding eerst), dus pas laat in het potje."
   }
 ]

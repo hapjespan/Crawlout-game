@@ -13,14 +13,7 @@
       "L": 3
     },
     "naam": "Opziener",
-    "xpPerLevel": [
-      80,
-      120,
-      160,
-      200,
-      250,
-      300
-    ],
+    "xpPerLevel": [80, 120, 160, 200, 250, 300],
     "xpPerKill": 25,
     "xpPerDiscovery": 50,
     "xpPerAssist": 15,

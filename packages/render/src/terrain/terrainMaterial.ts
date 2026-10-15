@@ -103,6 +103,9 @@ const ALBEDO_VERTEX_WEIGHT = 0.2;
 /** Strength of the triplanar variation on cliffs and of the fine grain near the camera. */
 const CLIFF_DETAIL = 0.75;
 const GRAIN = 0.3;
+/** Multiplier on the ground color where the grass mask is full (greener, a little darker), and how far it goes there. */
+export const GRASS_TINT = [0.78, 1.12, 0.66] as const;
+export const GRASS_TINT_STRENGTH = 0.85;
 /** Default tile size (m) before terrain.json says otherwise: Rock Terrain 4 at 1 m per cell. */
 export const DEFAULT_ALBEDO_TILE = 128;
 
@@ -129,6 +132,11 @@ export interface TerrainMaterialBundle {
   setLayout(layout: TerrainAlbedoLayout): void;
   /** Tints as sRGB hex strings (#rrggbb), e.g. rockTint and groundTint of terrain.json. */
   setTints(rockTint: string, groundTint: string): void;
+  /** Grass density mask (grassMask.ts) that tints the ground green under grass; null for none. The caller keeps the texture. */
+  setGrassMask(
+    map: Texture | null,
+    rect?: { minX: number; minZ: number; sizeX: number; sizeZ: number },
+  ): void;
   /** Height range of the terrain, meters: drives the lowland-to-plateau variation. */
   setHeightRange(min: number, max: number): void;
   dispose(): void;
@@ -160,6 +168,14 @@ export function createTerrainMaterial(opts: TerrainMaterialOptions): TerrainMate
   );
   const minY = uniform(0);
   const invRange = uniform(1);
+  // Grass mask: world rectangle (min x, min z, 1 / size x, 1 / size z); strength 0 without a mask.
+  const grassRect = uniform(new Vector4(0, 0, 1, 1));
+  const grassOn = uniform(0);
+  const grassPlaceholder = placeholderTexture();
+  const grassSampler = texture(
+    grassPlaceholder,
+    positionWorld.xz.sub(grassRect.xy).mul(grassRect.zw),
+  );
 
   const placeholder = placeholderTexture();
   const samplers: TextureNode[] = [];
@@ -327,7 +343,9 @@ export function createTerrainMaterial(opts: TerrainMaterialOptions): TerrainMate
     }).Else(() => {
       out.assign(tintAlbedo());
     });
-    return out;
+    // Grass: one plain sample of the density mask (outside the branches), the ground mixes towards a soft green.
+    const grass = grassSampler.x.mul(grassOn).mul(GRASS_TINT_STRENGTH);
+    return mix(out, out.mul(vec3(...GRASS_TINT)), grass);
   });
   const albedo = terrainAlbedo();
 
@@ -389,6 +407,11 @@ export function createTerrainMaterial(opts: TerrainMaterialOptions): TerrainMate
         );
       });
     },
+    setGrassMask(map, rect) {
+      grassSampler.value = map ?? grassPlaceholder;
+      grassOn.value = map && rect ? 1 : 0;
+      if (rect) grassRect.value.set(rect.minX, rect.minZ, 1 / rect.sizeX, 1 / rect.sizeZ);
+    },
     setHeightRange(lo, hi) {
       minY.value = lo;
       invRange.value = 1 / Math.max(0.5, hi - lo);
@@ -396,6 +419,7 @@ export function createTerrainMaterial(opts: TerrainMaterialOptions): TerrainMate
     dispose() {
       m.dispose();
       placeholder.dispose();
+      grassPlaceholder.dispose();
     },
   };
 }

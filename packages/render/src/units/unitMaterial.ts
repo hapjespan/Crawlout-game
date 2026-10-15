@@ -34,7 +34,6 @@ import {
   mix,
   mod,
   normalize,
-  pow,
   select,
   sin,
   smoothstep,
@@ -57,6 +56,10 @@ import { HERO_PART_ALPHA } from './humanoidGeometry.js';
 export const HERO_INSTANCE_FLAG = 256;
 /** A hero stands this much taller and wider than a regular unit of the same rig. */
 export const HERO_SCALE = 1.15;
+/** iAnim.z = team slot + TEAM_SLOTS * variation seed (animVariation.ts, 12 bits); the team slot is below TEAM_SLOTS. */
+export const TEAM_SLOTS = 16;
+/** Static per-instance variation: lean (shear of the body over its height, +-) and height scale (+-). */
+export const VARIATION = { lean: 0.03, height: 0.03 } as const;
 
 export interface ToonLighting {
   /** Direction towards the light, world space. */
@@ -166,17 +169,17 @@ const LUMA = [0.2126, 0.7152, 0.0722] as const;
 
 /**
  * Team color under the mask: the team color times the albedo's luminance relative to the mean under the mask
- * (`pivot`), raised to TEAM.contrast, clamped to TEAM.min..TEAM.max and times TEAM.gain. On average the mask
+ * (`pivot`) (linear, so no pow), clamped to TEAM.min..TEAM.max and times TEAM.gain. On average the mask
  * shows the team color (a little under full, as the former curve did on a mid base), and the texture's light and dark (folds, seams, a painted pattern) stay in it: the former 0.6 * l + 0.55
  * kept only about a third of the texture's contrast and flattened a textured jumpsuit into one even color. A flat
  * base (the fallback team material, l = pivot) shows the team color times TEAM.gain. Only the luminance counts, so a colored
  * base (a blue jumpsuit masked by hue) is not tinted twice.
  */
-export const TEAM = { contrast: 1, min: 0.3, max: 1.6, gain: 0.85 } as const;
+export const TEAM = { min: 0.3, max: 1.6, gain: 0.85 } as const;
 
 /** CPU form of the team shade factor (same constants), for tests and tuning. */
 export function teamShade(luma: number, pivot: number): number {
-  const f = Math.pow(Math.max(luma, 1e-4) / Math.max(pivot, 1e-4), TEAM.contrast);
+  const f = Math.max(luma, 1e-4) / Math.max(pivot, 1e-4);
   return Math.min(TEAM.max, Math.max(TEAM.min, f)) * TEAM.gain;
 }
 
@@ -187,7 +190,7 @@ export function teamAlbedo(
   pivot: Node<'float'> | number,
 ): Node<'vec3'> {
   const l = max(dot(base, vec3(...LUMA)), 1e-4);
-  const f = clamp(pow(l.div(pivot), TEAM.contrast), TEAM.min, TEAM.max).mul(TEAM.gain);
+  const f = clamp(l.div(pivot), TEAM.min, TEAM.max).mul(TEAM.gain);
   return mix(base, team.mul(f), mask);
 }
 
@@ -250,6 +253,18 @@ export function createUnitMaterial(
   const row0 = int(clip.x.add(f0));
   const row1 = int(clip.x.add(f1));
 
+  // Per-instance variation: iAnim.z carries the seed above the team slot; three 4-bit fields give a small static lean in
+  // x and z and a height scale, so idle units do not stand like clones.
+  const seed = floor(iAnim.z.div(TEAM_SLOTS));
+  const field = (shift: number): Node<'float'> =>
+    mod(floor(seed.div(shift)), 16)
+      .div(7.5)
+      .sub(1);
+  const leanX = field(1).mul(VARIATION.lean);
+  const leanZ = field(16).mul(VARIATION.lean);
+  const heightScale = field(256).mul(VARIATION.height).add(1);
+  const teamSlot = int(mod(iAnim.z, TEAM_SLOTS));
+
   // Linear blend skinning over 4 influences; each matrix is 4 column texels, blended between two frames.
   let skinnedPos: Node<'vec3'> = vec3(0, 0, 0);
   let skinnedNrm: Node<'vec3'> = vec3(0, 0, 0);
@@ -273,6 +288,13 @@ export function createUnitMaterial(
     skinnedNrm = skinnedNrm.add(n.mul(w));
   }
 
+  // Static variation on the skinned pose: shear with height (feet stay put), then the height scale.
+  skinnedPos = vec3(
+    skinnedPos.x.add(skinnedPos.y.mul(leanX)),
+    skinnedPos.y.mul(heightScale),
+    skinnedPos.z.add(skinnedPos.y.mul(leanZ)),
+  );
+
   // Yaw around +Y: Ry(a) * v = (x cos a + z sin a, y, -x sin a + z cos a); 0 keeps the model facing +Z.
   const ca = cos(iPose.w);
   const sa = sin(iPose.w);
@@ -294,7 +316,7 @@ export function createUnitMaterial(
   }
   const gain = albedoSource.gain ?? 1;
   if (gain !== 1) base = base.mul(gain);
-  const iTeam = palette.element(int(iAnim.z));
+  const iTeam = palette.element(teamSlot);
   const albedo = teamAlbedo(
     base,
     iTeam,

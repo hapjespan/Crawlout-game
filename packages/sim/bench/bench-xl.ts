@@ -37,10 +37,11 @@ export interface BenchXlResult {
   mapCells: number;
   units: number;
   ticks: number;
+  /** Som en maximum van tick 1 en verder. */
   totalMs: number;
   maxMs: number;
-  /** Maximum zonder de eerste tick (koude JIT plus de eerste zoekopdrachten van alle bevelen op frame 0). */
-  maxLaterMs: number;
+  /** Tick 0 apart: koude JIT plus de eerste zoekopdrachten van alle bevelen op frame 0. */
+  firstMs: number;
   finalHash: number;
   shots: number;
   deaths: number;
@@ -176,7 +177,7 @@ export function runBenchXl(clock: () => number): BenchXlResult {
 
   let total = 0;
   let max = 0;
-  let maxLater = 0;
+  let firstMs = 0;
   let units = 0;
   let shots = 0;
   let deaths = 0;
@@ -193,9 +194,11 @@ export function runBenchXl(clock: () => number): BenchXlResult {
     const t0 = clock();
     sim.tick();
     const dt = clock() - t0;
-    total += dt;
-    if (dt > max) max = dt;
-    if (f > 0 && dt > maxLater) maxLater = dt;
+    if (f === 0) firstMs = dt;
+    else {
+      total += dt;
+      if (dt > max) max = dt;
+    }
     for (let k = 0; k < sim.events.count; k++) {
       if (sim.events.type[k] === EVENT_TYPE.shotFired) shots++;
       else if (sim.events.type[k] === EVENT_TYPE.death) deaths++;
@@ -240,7 +243,7 @@ export function runBenchXl(clock: () => number): BenchXlResult {
     ticks: TICKS,
     totalMs: total,
     maxMs: max,
-    maxLaterMs: maxLater,
+    firstMs,
     finalHash: sim.hash(),
     shots,
     deaths,
@@ -261,6 +264,7 @@ export interface BenchXlAiResult {
   ticks: number;
   totalMs: number;
   maxMs: number;
+  firstMs: number;
   units: number;
   buildings: number;
   finalHash: number;
@@ -278,13 +282,17 @@ export function runAiXl(clock: () => number, ticks = 12_000): BenchXlAiResult {
   });
   let total = 0;
   let max = 0;
+  let firstMs = 0;
   for (let f = 0; f < ticks; f++) {
     sim.applyBundle({ frame: f, commands: [] });
     const t0 = clock();
     sim.tick();
     const dt = clock() - t0;
-    total += dt;
-    if (dt > max) max = dt;
+    if (f === 0) firstMs = dt;
+    else {
+      total += dt;
+      if (dt > max) max = dt;
+    }
   }
   let units = 0;
   let buildings = 0;
@@ -293,14 +301,14 @@ export function runAiXl(clock: () => number, ticks = 12_000): BenchXlAiResult {
     if (k === 'unit' || k === 'hero') units++;
     else if (k === 'building') buildings++;
   }
-  return { ticks, totalMs: total, maxMs: max, units, buildings, finalHash: sim.hash() };
+  return { ticks, totalMs: total, maxMs: max, firstMs, units, buildings, finalHash: sim.hash() };
 }
 
 export function reportBenchXl(r: BenchXlResult): void {
-  const avg = r.totalMs / r.ticks;
+  const avg = r.totalMs / (r.ticks - 1);
   console.log(
     `bench-xl: ${r.mapCells} cellen, ${r.units} units, ${r.ticks} ticks, gemiddeld ${avg.toFixed(3)} ms/tick, ` +
-      `max ${r.maxMs.toFixed(2)} ms (na tick 0: ${r.maxLaterMs.toFixed(2)} ms), eindhash 0x${r.finalHash.toString(16).padStart(8, '0')} ` +
+      `max ${r.maxMs.toFixed(2)} ms (zonder tick 0; tick 0 apart: ${r.firstMs.toFixed(2)} ms), eindhash 0x${r.finalHash.toString(16).padStart(8, '0')} ` +
       `(budget 5 ms: ${avg < 5 ? 'binnen' : 'BOVEN'})`,
   );
   console.log(

@@ -1,5 +1,6 @@
 # @crawlout/sim
 
+- Opvolging architect-review (sectie 19): bench en bench --xl melden tick 0 (graafbouw, koude JIT) apart; gemiddelde en max tellen tick 1 en verder.
 - 0.11.0 (echte schaal, data 0.14.0; STATE_FORMAT_VERSION ongewijzigd; ter review door de architect): gebouwen tot 21 x 21 cellen.
   1. `MAX_FOOTPRINT` 32 (was 16; fw en fh passen nog in Uint8, de ringzoekers rond een gebouw werken vanaf de rand en hangen niet van de maat af).
   2. AI-bouwplek (`findSite`): eigen zoekstraal `AI_SITE_RING` 56 cellen (was `MAX_FREE_RING` 24, dat bleef voor de vrije cel rond een gebouw), zodat negen woningen van 13 x 19, een werkplaats en een lab rond het hoofdgebouw passen; de vrije-plek-test loopt over een somtabel van de begaanbaarheid (`walkSums`, afgeleid, geen state) in plaats van per kandidaat de hele footprint te scannen. Het verzamelpunt blijft vrij zoals in 0.10.1. Gedrag verder gelijk: dezelfde ringen, tiebreaks en lokale padafstand.

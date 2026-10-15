@@ -863,39 +863,39 @@
       "kind": "building",
       "bounds": {
         "min": [
-          -9.297614,
+          -7.4,
           0,
-          -8.661815
+          -6.4
         ],
         "max": [
-          9.39,
-          9.3,
-          8.7
+          7.4,
+          9.599999,
+          6.575
         ]
       },
       "lods": [
         {
           "level": 0,
           "path": "dweller_building_robotfactory/lod0.glb",
-          "triangles": 1877
+          "triangles": 400
         },
         {
           "level": 1,
           "path": "dweller_building_robotfactory/lod1.glb",
-          "triangles": 755
+          "triangles": 220
         },
         {
           "level": 2,
           "path": "dweller_building_robotfactory/lod2.glb",
-          "triangles": 96
+          "triangles": 136
         }
       ],
       "sockets": {},
       "animations": [],
       "boneCount": 0,
       "footprint": {
-        "w": 19,
-        "h": 19
+        "w": 15,
+        "h": 13
       },
       "teamMaterials": [
         "team_trim"
@@ -998,25 +998,25 @@
         ],
         "max": [
           1.5,
-          2.72,
-          1.5
+          3.17,
+          1.57
         ]
       },
       "lods": [
         {
           "level": 0,
           "path": "dweller_building_turret_laser/lod0.glb",
-          "triangles": 248
+          "triangles": 442
         },
         {
           "level": 1,
           "path": "dweller_building_turret_laser/lod1.glb",
-          "triangles": 248
+          "triangles": 322
         },
         {
           "level": 2,
           "path": "dweller_building_turret_laser/lod2.glb",
-          "triangles": 248
+          "triangles": 244
         }
       ],
       "sockets": {},
@@ -1072,6 +1072,130 @@
       "teamMaterials": [
         "team_trim"
       ]
+    },
+    {
+      "id": "dweller_robot_drone",
+      "kind": "rigid-unit",
+      "bounds": {
+        "min": [
+          -0.415,
+          1.3,
+          -0.415
+        ],
+        "max": [
+          0.46,
+          2.14,
+          0.78
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "dweller_robot_drone/lod0.glb",
+          "triangles": 434
+        },
+        {
+          "level": 1,
+          "path": "dweller_robot_drone/lod1.glb",
+          "triangles": 252
+        },
+        {
+          "level": 2,
+          "path": "dweller_robot_drone/lod2.glb",
+          "triangles": 228
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMaterials": [
+        "team_trim"
+      ],
+      "teamMask": "materialName",
+      "rigid": true,
+      "hover": 1.3
+    },
+    {
+      "id": "dweller_robot_guard",
+      "kind": "rigid-unit",
+      "bounds": {
+        "min": [
+          -1.45,
+          0,
+          -1.775
+        ],
+        "max": [
+          1.45,
+          2.2,
+          1.85
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "dweller_robot_guard/lod0.glb",
+          "triangles": 832
+        },
+        {
+          "level": 1,
+          "path": "dweller_robot_guard/lod1.glb",
+          "triangles": 372
+        },
+        {
+          "level": 2,
+          "path": "dweller_robot_guard/lod2.glb",
+          "triangles": 296
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMaterials": [
+        "team_trim"
+      ],
+      "teamMask": "materialName",
+      "rigid": true
+    },
+    {
+      "id": "dweller_robot_sentinel",
+      "kind": "rigid-unit",
+      "bounds": {
+        "min": [
+          -1.97,
+          0,
+          -2.2
+        ],
+        "max": [
+          1.97,
+          3.5,
+          4.2
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "dweller_robot_sentinel/lod0.glb",
+          "triangles": 940
+        },
+        {
+          "level": 1,
+          "path": "dweller_robot_sentinel/lod1.glb",
+          "triangles": 424
+        },
+        {
+          "level": 2,
+          "path": "dweller_robot_sentinel/lod2.glb",
+          "triangles": 284
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMaterials": [
+        "team_trim"
+      ],
+      "teamMask": "materialName",
+      "rigid": true
     },
     {
       "id": "grass_patch_01",

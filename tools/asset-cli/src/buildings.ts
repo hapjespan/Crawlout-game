@@ -675,6 +675,7 @@ export async function buildBuildings(
         boneCount: 0,
         footprint: variant.footprint,
         teamMaterials,
+        ...(variant.albedoGain !== undefined ? { albedoGain: variant.albedoGain } : {}),
       });
     } catch (error) {
       report.errors.push(
