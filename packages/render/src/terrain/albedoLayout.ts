@@ -148,7 +148,9 @@ function tileTaps(
   const fv = foldUnit(v);
   const m = tile.pointMirror;
   // packages/map: weight of the kept side is smoothstep((d2 + 2W) / 4W), d2 twice the cell distance to the seam.
-  const keep = m ? smoothstep01((seamDistance(m.seam, fu, fv, tileSize) + m.halfWidth) / (2 * m.halfWidth)) : 1;
+  const keep = m
+    ? smoothstep01((seamDistance(m.seam, fu, fv, tileSize) + m.halfWidth) / (2 * m.halfWidth))
+    : 1;
   if (keep > 0) {
     const [a, b] = orientUv(tile.orientation, fu, fv);
     out.push({ u: a, v: b, w: weight * keep });

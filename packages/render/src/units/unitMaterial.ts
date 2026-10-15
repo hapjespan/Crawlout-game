@@ -295,7 +295,12 @@ export function createUnitMaterial(
   const gain = albedoSource.gain ?? 1;
   if (gain !== 1) base = base.mul(gain);
   const iTeam = palette.element(int(iAnim.z));
-  const albedo = teamAlbedo(base, iTeam, mask, (albedoSource.teamPivot ?? TEAM_PIVOT_DEFAULT) * gain);
+  const albedo = teamAlbedo(
+    base,
+    iTeam,
+    mask,
+    (albedoSource.teamPivot ?? TEAM_PIVOT_DEFAULT) * gain,
+  );
   const N = normalize(worldNrm);
   const shade = toonRamp(dot(N, lightDir));
   const V = normalize(cameraPosition.sub(vWorldPos));

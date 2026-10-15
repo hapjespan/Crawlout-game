@@ -5,7 +5,11 @@ import type { DominanceView } from '@crawlout/ui';
 
 let last: { key: string; view: DominanceView | null } = { key: '', view: null };
 
-export function dominanceView(status: PlayerStatus | null, playerName: (id: number) => string, you: number): DominanceView | null {
+export function dominanceView(
+  status: PlayerStatus | null,
+  playerName: (id: number) => string,
+  you: number,
+): DominanceView | null {
   const d = status?.dominance;
   const key = d ? JSON.stringify(d) : '';
   if (key === last.key) return last.view;
@@ -17,7 +21,12 @@ export function dominanceView(status: PlayerStatus | null, playerName: (id: numb
         secondsHeld: seconds(d.ticksHeld),
         secondsRequired: seconds(d.ticksRequired),
         leader: d.leader
-          ? { name: playerName(d.leader.playerId), pointsHeld: d.leader.pointsHeld, secondsHeld: seconds(d.leader.ticksHeld), isYou: d.leader.playerId === you }
+          ? {
+              name: playerName(d.leader.playerId),
+              pointsHeld: d.leader.pointsHeld,
+              secondsHeld: seconds(d.leader.ticksHeld),
+              isYou: d.leader.playerId === you,
+            }
           : null,
       }
     : null;

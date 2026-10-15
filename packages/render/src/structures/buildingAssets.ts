@@ -92,7 +92,13 @@ export async function loadBuildingAssets(
     buildingIds: buildingIds.sort((a, b) => a - b),
     state: 'loading',
   }));
-  const result: BuildingAssetSet = { visuals: new Map(), layers: null, layerSize: 0, layerLuma: [], statuses };
+  const result: BuildingAssetSet = {
+    visuals: new Map(),
+    layers: null,
+    layerSize: 0,
+    layerLuma: [],
+    statuses,
+  };
   let manifest: AssetManifest;
   try {
     manifest = await io.manifest(manifestUrl);

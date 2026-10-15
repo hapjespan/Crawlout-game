@@ -22,7 +22,13 @@ function field(n: number): Int32Array {
 }
 
 /** The layout's value at the middle of map cell (x, y): the weighted source cells its taps land on. */
-function sampled(layout: TerrainAlbedoLayout, cm: Int32Array, n: number, x: number, y: number): number {
+function sampled(
+  layout: TerrainAlbedoLayout,
+  cm: Int32Array,
+  n: number,
+  x: number,
+  y: number,
+): number {
   let v = 0;
   for (const t of albedoUv(layout, x + 0.5, y + 0.5)) {
     const i = Math.min(n - 1, Math.max(0, Math.round(t.u * n - 0.5)));
@@ -50,7 +56,10 @@ describe('albedo layout of a map', () => {
     let worst = 0;
     for (let y = 0; y < size; y++)
       for (let x = 0; x < size; x++)
-        worst = Math.max(worst, Math.abs(sampled(layout, cm, n, x, y) - composed.cm[y * size + x]!));
+        worst = Math.max(
+          worst,
+          Math.abs(sampled(layout, cm, n, x, y) - composed.cm[y * size + x]!),
+        );
     // The map blends with integer weights (1/256); values run 0..1000 cm.
     expect(worst).toBeLessThan(8);
   });

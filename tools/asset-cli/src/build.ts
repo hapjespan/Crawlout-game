@@ -17,7 +17,13 @@ import {
   type AssetEntry,
   type AssetManifest,
 } from './manifest.js';
-import { buildPacks, findPacksDir, loadPacksConfig, type PackPropDetails, type PacksConfig } from './packs.js';
+import {
+  buildPacks,
+  findPacksDir,
+  loadPacksConfig,
+  type PackPropDetails,
+  type PacksConfig,
+} from './packs.js';
 import { EMPTY_RIGMAP, parseRigmap, type Rigmap } from './rigmap.js';
 import { validateAsset } from './validate.js';
 import type { VariantsConfig } from './variants.js';
@@ -278,7 +284,8 @@ export async function buildAssets(options: BuildOptions): Promise<BuildResult> {
     : null;
   for (const report of packs?.reports ?? []) {
     const clash = seen.get(report.id);
-    if (clash) report.errors.push(`id "${report.id}" is al in gebruik door ${clash}; hernoem het prop.`);
+    if (clash)
+      report.errors.push(`id "${report.id}" is al in gebruik door ${clash}; hernoem het prop.`);
     seen.set(report.id, `packs/${report.id}`);
     reports.push(report);
   }
@@ -412,7 +419,8 @@ export async function buildAssets(options: BuildOptions): Promise<BuildResult> {
   // Clear previous output, but keep what other commands own (`terrain` writes assets/dist/terrain).
   mkdirSync(distDir, { recursive: true });
   for (const entry of readdirSync(distDir)) {
-    if (!PRESERVED_DIST_ENTRIES.has(entry)) rmSync(join(distDir, entry), { recursive: true, force: true });
+    if (!PRESERVED_DIST_ENTRIES.has(entry))
+      rmSync(join(distDir, entry), { recursive: true, force: true });
   }
   for (const [path, data] of outputs) {
     mkdirSync(join(distDir, path, '..'), { recursive: true });

@@ -29,10 +29,18 @@ import {
 import { makePng } from './fixtures.js';
 
 /** Regelmatig raster x in [x0, x0 + size], z in [z0, z0 + size] met y = f(x, z); twee driehoeken per vierkantje. */
-function gridMesh(f: (x: number, z: number) => number, size: number, step = 0.5, x0 = 0, z0 = 0): TerrainMesh {
+function gridMesh(
+  f: (x: number, z: number) => number,
+  size: number,
+  step = 0.5,
+  x0 = 0,
+  z0 = 0,
+): TerrainMesh {
   const n = Math.round(size / step);
   const positions: number[] = [];
-  for (let b = 0; b <= n; b++) for (let a = 0; a <= n; a++) positions.push(x0 + a * step, f(x0 + a * step, z0 + b * step), z0 + b * step);
+  for (let b = 0; b <= n; b++)
+    for (let a = 0; a <= n; a++)
+      positions.push(x0 + a * step, f(x0 + a * step, z0 + b * step), z0 + b * step);
   const indices: number[] = [];
   for (let b = 0; b < n; b++) {
     for (let a = 0; a < n; a++) {
@@ -49,10 +57,19 @@ function pyramid(): TerrainMesh {
   const indices = Uint32Array.from([0, 1, 4, 1, 2, 4, 2, 3, 4, 3, 0, 4]);
   return { positions, indices };
 }
-const pyramidHeight = (x: number, z: number): number => Math.max(0, 10 * (1 - Math.max(Math.abs(x - 8), Math.abs(z - 8)) / 8));
+const pyramidHeight = (x: number, z: number): number =>
+  Math.max(0, 10 * (1 - Math.max(Math.abs(x - 8), Math.abs(z - 8)) / 8));
 
 describe('heightfieldSchema', () => {
-  const valid: Heightfield = { format: HEIGHTFIELD_FORMAT, w: 2, h: 2, metersPerCell: 1, minM: 0, maxM: 3.5, heights: [0, 1.25, 3.5, 2] };
+  const valid: Heightfield = {
+    format: HEIGHTFIELD_FORMAT,
+    w: 2,
+    h: 2,
+    metersPerCell: 1,
+    minM: 0,
+    maxM: 3.5,
+    heights: [0, 1.25, 3.5, 2],
+  };
 
   it('accepteert een geldig veld', () => {
     expect(heightfieldSchema.parse(valid)).toEqual(valid);
@@ -61,7 +78,9 @@ describe('heightfieldSchema', () => {
     expect(() => heightfieldSchema.parse({ ...valid, format: 'crawlout-heightfield/2' })).toThrow();
   });
   it('weigert een verkeerd aantal waarden', () => {
-    expect(() => heightfieldSchema.parse({ ...valid, heights: [0, 1, 2] })).toThrow(/verwacht w\*h = 4/);
+    expect(() => heightfieldSchema.parse({ ...valid, heights: [0, 1, 2] })).toThrow(
+      /verwacht w\*h = 4/,
+    );
   });
   it('weigert minM en maxM die niet bij de heights passen', () => {
     expect(() => heightfieldSchema.parse({ ...valid, maxM: 9 })).toThrow(/komen niet overeen/);
@@ -86,7 +105,14 @@ describe('terrainManifestSchema', () => {
     format: TERRAIN_MANIFEST_FORMAT,
     id: 'rock_terrain_4',
     attribution: 'Rock Terrain 4 by Lassi Kaukonen, CC-BY-4.0',
-    heightfield: { path: 'rock_terrain_4.height.json', w: 128, h: 128, metersPerCell: 1, minM: 0, maxM: 26.25 },
+    heightfield: {
+      path: 'rock_terrain_4.height.json',
+      w: 128,
+      h: 128,
+      metersPerCell: 1,
+      minM: 0,
+      maxM: 26.25,
+    },
     albedo: { path: 'rock_terrain_4.albedo.jpg', width: 1024, height: 1024, mime: 'image/jpeg' },
     rockTint: '#464340',
     groundTint: '#2b2b2b',
@@ -104,10 +130,14 @@ describe('rasterizeTopSurface en heightfieldFromSurface', () => {
     const mesh = gridMesh((x) => 0.5 * x, 16, 1);
     const surface = rasterizeTopSurface(mesh, { minX: 0, minZ: 0, sizeM: 16, resolution: 64 });
     expect(surface.height.every((value) => !Number.isNaN(value))).toBe(true);
-    const { field, scale, heightOffsetM } = heightfieldFromSurface(surface, { cells: 16, metersPerCell: 1 });
+    const { field, scale, heightOffsetM } = heightfieldFromSurface(surface, {
+      cells: 16,
+      metersPerCell: 1,
+    });
     expect(scale).toBe(1);
     expect(heightOffsetM).toBeCloseTo(0.25, 5); // het gemiddelde van cel 0 (x 0 tot 1)
-    for (let j = 0; j < 16; j++) for (let i = 0; i < 16; i++) expect(field.heights[j * 16 + i]).toBeCloseTo(0.5 * i, 2);
+    for (let j = 0; j < 16; j++)
+      for (let i = 0; i < 16; i++) expect(field.heights[j * 16 + i]).toBeCloseTo(0.5 * i, 2);
     expect(field.minM).toBe(0);
     expect(field.maxM).toBe(7.5);
     heightfieldSchema.parse(field);
@@ -121,7 +151,8 @@ describe('rasterizeTopSurface en heightfieldFromSurface', () => {
     for (let j = 0; j < 16; j++) {
       for (let i = 0; i < 16; i++) {
         let sum = 0;
-        for (let b = 0; b < 4; b++) for (let a = 0; a < 4; a++) sum += pyramidHeight(i + (a + 0.5) / 4, j + (b + 0.5) / 4);
+        for (let b = 0; b < 4; b++)
+          for (let a = 0; a < 4; a++) sum += pyramidHeight(i + (a + 0.5) / 4, j + (b + 0.5) / 4);
         expected.push(sum / 16);
       }
     }
@@ -140,7 +171,10 @@ describe('rasterizeTopSurface en heightfieldFromSurface', () => {
     const high = gridMesh(() => 5, 4, 2, 2, 2);
     const mesh: TerrainMesh = {
       positions: Float32Array.from([...low.positions, ...high.positions]),
-      indices: Uint32Array.from([...low.indices, ...Array.from(high.indices, (i) => i + low.positions.length / 3)]),
+      indices: Uint32Array.from([
+        ...low.indices,
+        ...Array.from(high.indices, (i) => i + low.positions.length / 3),
+      ]),
     };
     const surface = rasterizeTopSurface(mesh, { minX: 0, minZ: 0, sizeM: 8, resolution: 8 });
     expect(surface.height[0]).toBeCloseTo(1, 5);
@@ -163,13 +197,21 @@ describe('rasterizeTopSurface en heightfieldFromSurface', () => {
     const keep: number[] = [];
     const centre = (t: number): [number, number] => {
       const ids = [0, 1, 2].map((k) => (mesh.indices[t * 3 + k] as number) * 3);
-      return [ids.reduce((s, i) => s + (mesh.positions[i] as number), 0) / 3, ids.reduce((s, i) => s + (mesh.positions[i + 2] as number), 0) / 3];
+      return [
+        ids.reduce((s, i) => s + (mesh.positions[i] as number), 0) / 3,
+        ids.reduce((s, i) => s + (mesh.positions[i + 2] as number), 0) / 3,
+      ];
     };
     for (let t = 0; t < mesh.indices.length / 3; t++) {
       const [cx, cz] = centre(t);
       if (!(cx > 2.9 && cx < 5.1 && cz > 2.9 && cz < 4.1)) keep.push(t);
     }
-    const holed: TerrainMesh = { positions: mesh.positions, indices: Uint32Array.from(keep.flatMap((t) => [0, 1, 2].map((k) => mesh.indices[t * 3 + k] as number))) };
+    const holed: TerrainMesh = {
+      positions: mesh.positions,
+      indices: Uint32Array.from(
+        keep.flatMap((t) => [0, 1, 2].map((k) => mesh.indices[t * 3 + k] as number)),
+      ),
+    };
     const surface = rasterizeTopSurface(holed, { minX: 0, minZ: 0, sizeM: 8, resolution: 8 });
     expect(Number.isNaN(surface.height[3 * 8 + 3])).toBe(true);
     const { field, filledCells } = heightfieldFromSurface(surface, { cells: 8, metersPerCell: 1 });
@@ -178,14 +220,27 @@ describe('rasterizeTopSurface en heightfieldFromSurface', () => {
   });
 
   it('weigert een resolutie die geen veelvoud van het aantal cellen is', () => {
-    const surface = rasterizeTopSurface(gridMesh(() => 0, 4, 1), { minX: 0, minZ: 0, sizeM: 4, resolution: 6 });
-    expect(() => heightfieldFromSurface(surface, { cells: 4, metersPerCell: 1 })).toThrow(/geen veelvoud/);
+    const surface = rasterizeTopSurface(
+      gridMesh(() => 0, 4, 1),
+      { minX: 0, minZ: 0, sizeM: 4, resolution: 6 },
+    );
+    expect(() => heightfieldFromSurface(surface, { cells: 4, metersPerCell: 1 })).toThrow(
+      /geen veelvoud/,
+    );
   });
 });
 
 describe('formatHeightfield', () => {
   it('schrijft geldige JSON met één rij per regel die het schema doorstaat', () => {
-    const field: Heightfield = { format: HEIGHTFIELD_FORMAT, w: 3, h: 2, metersPerCell: 1, minM: 0, maxM: 12, heights: [0, 1.5, 12, 3.25, 10, 0.07] };
+    const field: Heightfield = {
+      format: HEIGHTFIELD_FORMAT,
+      w: 3,
+      h: 2,
+      metersPerCell: 1,
+      minM: 0,
+      maxM: 12,
+      heights: [0, 1.5, 12, 3.25, 10, 0.07],
+    };
     const text = formatHeightfield(field);
     expect(heightfieldSchema.parse(JSON.parse(text))).toEqual(field);
     expect(text.trim().split('\n')).toHaveLength(5);
@@ -196,16 +251,28 @@ describe('removeFloaters', () => {
   it('haalt een zwevend schijfje weg en laat brede vormen staan', () => {
     const ground = gridMesh((x) => 0.25 * x, 40, 0.5);
     const plate = gridMesh(() => 14, 2, 0.5, 20, 20); // 2 x 2 m, 14 m boven de grond
-    const wall = gridMesh((x, z) => (x > 5 && x < 15 && z > 5 && z < 15 ? 3 + 0.25 * x : 0.25 * x), 40, 0.5); // brede verhoging (10 m)
+    const wall = gridMesh(
+      (x, z) => (x > 5 && x < 15 && z > 5 && z < 15 ? 3 + 0.25 * x : 0.25 * x),
+      40,
+      0.5,
+    ); // brede verhoging (10 m)
     const withPlate: TerrainMesh = {
       positions: Float32Array.from([...ground.positions, ...plate.positions]),
-      indices: Uint32Array.from([...ground.indices, ...Array.from(plate.indices, (i) => i + ground.positions.length / 3)]),
+      indices: Uint32Array.from([
+        ...ground.indices,
+        ...Array.from(plate.indices, (i) => i + ground.positions.length / 3),
+      ]),
     };
     const before = rasterizeTopSurface(withPlate, { minX: 0, minZ: 0, sizeM: 40, resolution: 40 });
     expect(before.height[21 * 40 + 21]).toBeGreaterThan(13);
     const cleaned = removeFloaters(withPlate, { cellM: 0.5, radiusM: 3, thresholdM: 4 });
     expect(cleaned.removedTriangles).toBeGreaterThan(0);
-    const after = rasterizeTopSurface(cleaned.mesh, { minX: 0, minZ: 0, sizeM: 40, resolution: 40 });
+    const after = rasterizeTopSurface(cleaned.mesh, {
+      minX: 0,
+      minZ: 0,
+      sizeM: 40,
+      resolution: 40,
+    });
     expect(after.height[21 * 40 + 21]).toBeCloseTo(0.25 * 21.5, 0); // grond eronder
     // De brede verhoging blijft behouden.
     const kept = removeFloaters(wall, { cellM: 0.5, radiusM: 3, thresholdM: 4 });
@@ -215,7 +282,10 @@ describe('removeFloaters', () => {
 
 describe('rotateMeshY en chooseCrop', () => {
   it('draait x en z om de y-as en laat y staan', () => {
-    const mesh: TerrainMesh = { positions: Float32Array.from([1, 7, 0]), indices: new Uint32Array(0) };
+    const mesh: TerrainMesh = {
+      positions: Float32Array.from([1, 7, 0]),
+      indices: new Uint32Array(0),
+    };
     const turned = rotateMeshY(mesh, 90);
     expect(turned.positions[0]).toBeCloseTo(0, 5);
     expect(turned.positions[1]).toBe(7);
@@ -235,7 +305,12 @@ describe('rotateMeshY en chooseCrop', () => {
   });
 
   it('weigert een uitsnede die groter is dan de dekking', () => {
-    expect(() => chooseCrop(gridMesh(() => 0, 8, 1), { sizeM: 20, rotationsDeg: [0], minCoverage: 0.99 })).toThrow(/dekt/);
+    expect(() =>
+      chooseCrop(
+        gridMesh(() => 0, 8, 1),
+        { sizeM: 20, rotationsDeg: [0], minCoverage: 0.99 },
+      ),
+    ).toThrow(/dekt/);
   });
 
   it('kiest bij een gedraaide strook de draaihoek die erin past', () => {
@@ -246,11 +321,22 @@ describe('rotateMeshY en chooseCrop', () => {
       const i = (strip.indices[t * 3] as number) * 3;
       if ((strip.positions[i + 2] as number) < 10) kept.push(t);
     }
-    const band: TerrainMesh = { positions: strip.positions, indices: Uint32Array.from(kept.flatMap((t) => [0, 1, 2].map((k) => strip.indices[t * 3 + k] as number))) };
+    const band: TerrainMesh = {
+      positions: strip.positions,
+      indices: Uint32Array.from(
+        kept.flatMap((t) => [0, 1, 2].map((k) => strip.indices[t * 3 + k] as number)),
+      ),
+    };
     const turned = rotateMeshY(band, 45);
-    const crop = chooseCrop(turned, { sizeM: 9, rotationsDeg: [0, 45, 90, 135, 315], minCoverage: 0.99 });
+    const crop = chooseCrop(turned, {
+      sizeM: 9,
+      rotationsDeg: [0, 45, 90, 135, 315],
+      minCoverage: 0.99,
+    });
     expect([45, 315]).toContain(crop.rotationDeg); // terugdraaien van de 45 graden, of een kwartslag verder
-    expect(() => chooseCrop(turned, { sizeM: 9, rotationsDeg: [0], minCoverage: 0.99 })).toThrow(/dekt/);
+    expect(() => chooseCrop(turned, { sizeM: 9, rotationsDeg: [0], minCoverage: 0.99 })).toThrow(
+      /dekt/,
+    );
   });
 });
 
@@ -266,7 +352,10 @@ describe('texturedOnly en bakeAlbedo', () => {
       uvs: Float32Array.from(uvs),
       indices: Uint32Array.from(indices),
       triMaterial: Uint16Array.from([0, 0, 1, 1]),
-      materials: [{ factor: [1, 1, 1], texture: { width: 2, height: 2, data: texture } }, { factor: [1, 1, 1] }],
+      materials: [
+        { factor: [1, 1, 1], texture: { width: 2, height: 2, data: texture } },
+        { factor: [1, 1, 1] },
+      ],
     };
   }
 
@@ -281,7 +370,8 @@ describe('texturedOnly en bakeAlbedo', () => {
     const surface = rasterizeTopSurface(mesh, { minX: 0, minZ: 0, sizeM: 4, resolution: 4 });
     const { rgb, coveredFraction } = bakeAlbedo(mesh, surface);
     expect(coveredFraction).toBe(1);
-    const pixel = (x: number, z: number): number[] => Array.from(rgb.subarray((z * 4 + x) * 3, (z * 4 + x) * 3 + 3));
+    const pixel = (x: number, z: number): number[] =>
+      Array.from(rgb.subarray((z * 4 + x) * 3, (z * 4 + x) * 3 + 3));
     // v loopt met z (uv-origine linksboven): z klein is de bovenste textuurrij (rood, groen).
     expect(pixel(0, 0)).toEqual([255, 0, 0]);
     expect(pixel(3, 0)).toEqual([0, 255, 0]);
@@ -340,29 +430,40 @@ describe('buildTerrain (synthetische GLB)', () => {
     const positions: number[] = [];
     const uvs: number[] = [];
     // Mesh-ruimte (Z omhoog): (x, y, z = 0,5 x), y loopt 0 tot 20.
-    for (let b = 0; b <= n; b++) for (let a = 0; a <= n; a++) {
-      positions.push(a, b, 0.5 * a);
-      uvs.push(a / n, b / n);
-    }
+    for (let b = 0; b <= n; b++)
+      for (let a = 0; a <= n; a++) {
+        positions.push(a, b, 0.5 * a);
+        uvs.push(a / n, b / n);
+      }
     const indices: number[] = [];
-    for (let b = 0; b < n; b++) for (let a = 0; a < n; a++) {
-      const i = b * (n + 1) + a;
-      indices.push(i, i + 1, i + n + 1, i + 1, i + n + 2, i + n + 1);
-    }
-    const accessor = (array: Float32Array | Uint32Array, type: 'VEC3' | 'VEC2' | 'SCALAR') => doc.createAccessor().setType(type).setArray(array).setBuffer(buffer);
-    const surface = doc.createPrimitive()
+    for (let b = 0; b < n; b++)
+      for (let a = 0; a < n; a++) {
+        const i = b * (n + 1) + a;
+        indices.push(i, i + 1, i + n + 1, i + 1, i + n + 2, i + n + 1);
+      }
+    const accessor = (array: Float32Array | Uint32Array, type: 'VEC3' | 'VEC2' | 'SCALAR') =>
+      doc.createAccessor().setType(type).setArray(array).setBuffer(buffer);
+    const surface = doc
+      .createPrimitive()
       .setAttribute('POSITION', accessor(Float32Array.from(positions), 'VEC3'))
       .setAttribute('TEXCOORD_0', accessor(Float32Array.from(uvs), 'VEC2'))
       .setIndices(accessor(Uint32Array.from(indices), 'SCALAR'))
       .setMaterial(rock);
     // Een Base-vlak ver boven de helling (y = 50 in Y-up); moet genegeerd worden.
-    const foot = doc.createPrimitive()
-      .setAttribute('POSITION', accessor(Float32Array.from([0, 0, 50, 20, 0, 50, 0, 20, 50]), 'VEC3'))
+    const foot = doc
+      .createPrimitive()
+      .setAttribute(
+        'POSITION',
+        accessor(Float32Array.from([0, 0, 50, 20, 0, 50, 0, 20, 50]), 'VEC3'),
+      )
       .setIndices(accessor(Uint32Array.from([0, 1, 2]), 'SCALAR'))
       .setMaterial(base);
     const mesh = doc.createMesh('terrain').addPrimitive(surface).addPrimitive(foot);
     const child = doc.createNode('Object').setMesh(mesh);
-    const root = doc.createNode('Sketchfab_model').setRotation([-Math.SQRT1_2, 0, 0, Math.SQRT1_2]).addChild(child);
+    const root = doc
+      .createNode('Sketchfab_model')
+      .setRotation([-Math.SQRT1_2, 0, 0, Math.SQRT1_2])
+      .addChild(child);
     doc.createScene().addChild(root);
     await new NodeIO().write(path, doc);
   }
@@ -370,36 +471,69 @@ describe('buildTerrain (synthetische GLB)', () => {
   it('past node-transformaties en Z-up naar Y-up toe, negeert Base en is reproduceerbaar', async () => {
     const source = join(dir, 'slope.glb');
     await writeSlopeGlb(source);
-    const options = { source, id: 'slope', attribution: 'test', cropSizeM: 16, rotationsDeg: [0], cells: 16, sub: 2 };
+    const options = {
+      source,
+      id: 'slope',
+      attribution: 'test',
+      cropSizeM: 16,
+      rotationsDeg: [0],
+      cells: 16,
+      sub: 2,
+    };
     const first = await buildTerrain({ ...options, outDir: join(dir, 'a') });
     const second = await buildTerrain({ ...options, outDir: join(dir, 'b') });
 
     expect(first.manifest.crop.scale).toBe(1);
     expect(first.manifest.groundTint).toBe('#272727'); // 0,02 lineair
-    const field = heightfieldSchema.parse(JSON.parse(readFileSync(join(dir, 'a', 'slope.height.json'), 'utf8')));
+    const field = heightfieldSchema.parse(
+      JSON.parse(readFileSync(join(dir, 'a', 'slope.height.json'), 'utf8')),
+    );
     // Mesh-y wordt wereld -z (kolom = x, rij = z). De uitsnede ligt over z van -20 tot 0: de helling hangt aan x, dus
     // elke rij heeft dezelfde hoogtes 0,5 * i en niets uit het Base-vlak (50 m) komt erin.
     expect(field.maxM).toBeCloseTo(7.5, 1);
-    for (let j = 0; j < 16; j++) for (let i = 0; i < 16; i++) expect(field.heights[j * 16 + i]).toBeCloseTo(0.5 * i, 1);
+    for (let j = 0; j < 16; j++)
+      for (let i = 0; i < 16; i++) expect(field.heights[j * 16 + i]).toBeCloseTo(0.5 * i, 1);
 
     for (const name of ['slope.height.json', 'slope.albedo.jpg', 'terrain.json']) {
-      expect(readFileSync(join(dir, 'a', name)).equals(readFileSync(join(dir, 'b', name)))).toBe(true);
+      expect(readFileSync(join(dir, 'a', name)).equals(readFileSync(join(dir, 'b', name)))).toBe(
+        true,
+      );
     }
-    const manifest = terrainManifestSchema.parse(JSON.parse(readFileSync(join(dir, 'a', 'terrain.json'), 'utf8')));
+    const manifest = terrainManifestSchema.parse(
+      JSON.parse(readFileSync(join(dir, 'a', 'terrain.json'), 'utf8')),
+    );
     expect(manifest.heightfield.path).toBe('slope.height.json');
-    expect(second.files.map((f) => f.path)).toEqual(['slope.height.json', 'slope.albedo.jpg', 'terrain.json']);
+    expect(second.files.map((f) => f.path)).toEqual([
+      'slope.height.json',
+      'slope.albedo.jpg',
+      'terrain.json',
+    ]);
   });
 
   it('bakt het albedo op een eigen maat (albedoSize) zonder het hoogteveld te veranderen', async () => {
     const source = join(dir, 'slope.glb');
     await writeSlopeGlb(source);
-    const options = { source, id: 'slope', attribution: 'test', cropSizeM: 16, rotationsDeg: [0], cells: 16, sub: 2 };
+    const options = {
+      source,
+      id: 'slope',
+      attribution: 'test',
+      cropSizeM: 16,
+      rotationsDeg: [0],
+      cells: 16,
+      sub: 2,
+    };
     const plain = await buildTerrain({ ...options, outDir: join(dir, 'a') });
     const big = await buildTerrain({ ...options, outDir: join(dir, 'b'), albedoSize: 64 });
     expect(plain.manifest.albedo.width).toBe(32);
     expect(big.manifest.albedo).toMatchObject({ width: 64, height: 64 });
-    expect(readFileSync(join(dir, 'a', 'slope.height.json')).equals(readFileSync(join(dir, 'b', 'slope.height.json')))).toBe(true);
+    expect(
+      readFileSync(join(dir, 'a', 'slope.height.json')).equals(
+        readFileSync(join(dir, 'b', 'slope.height.json')),
+      ),
+    ).toBe(true);
     expect(big.manifest.rockTint).toBe(plain.manifest.rockTint);
-    await expect(buildTerrain({ ...options, outDir: join(dir, 'c'), albedoSize: 3.5 })).rejects.toThrow(/albedoSize/);
+    await expect(
+      buildTerrain({ ...options, outDir: join(dir, 'c'), albedoSize: 3.5 }),
+    ).rejects.toThrow(/albedoSize/);
   });
 });

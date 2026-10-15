@@ -164,11 +164,7 @@ export function createTerrainMaterial(opts: TerrainMaterialOptions): TerrainMate
   const placeholder = placeholderTexture();
   const samplers: TextureNode[] = [];
   /** A sample of the albedo with explicit gradients (also valid inside the layout's branches). */
-  const sampleGrad = (
-    uv: Node<'vec2'>,
-    gx: Node<'vec2'>,
-    gy: Node<'vec2'>,
-  ): Node<'vec3'> => {
+  const sampleGrad = (uv: Node<'vec2'>, gx: Node<'vec2'>, gy: Node<'vec2'>): Node<'vec3'> => {
     const t = texture(placeholder, uv).grad(gx, gy);
     samplers.push(t);
     return t.xyz;
@@ -209,9 +205,7 @@ export function createTerrainMaterial(opts: TerrainMaterialOptions): TerrainMate
     const rockMask = smoothstep(0.12, 0.29, slope);
     const rock = rockColor.mul(mix(float(0.86), float(1.1), h01));
     const heightTone = mix(vec3(1.1, 1.0, 0.86), vec3(0.86, 0.9, 0.97), h01);
-    const ground = groundColor
-      .mul(mix(vec3(1, 1, 1), vcRatio, VERTEX_WEIGHT))
-      .mul(heightTone);
+    const ground = groundColor.mul(mix(vec3(1, 1, 1), vcRatio, VERTEX_WEIGHT)).mul(heightTone);
     const a = mix(ground, rock, rockMask);
     return mix(a, vec3(lumaOf(a), lumaOf(a), lumaOf(a)), 0.12);
   };
@@ -248,11 +242,7 @@ export function createTerrainMaterial(opts: TerrainMaterialOptions): TerrainMate
         select(
           kind.lessThan(1.5),
           float(0.5).sub(fu),
-          select(
-            kind.lessThan(2.5),
-            float(1).sub(fu).sub(fv).mul(0.5),
-            fu.sub(fv).mul(0.5),
-          ),
+          select(kind.lessThan(2.5), float(1).sub(fu).sub(fv).mul(0.5), fu.sub(fv).mul(0.5)),
         ),
       );
       const keep = smoothstep(0, 1, dist.add(p.z).div(p.z.mul(2)));
@@ -299,7 +289,11 @@ export function createTerrainMaterial(opts: TerrainMaterialOptions): TerrainMate
     const rawLuma = max(lumaOf(raw), 1e-4);
     // Calmer than the photo: brightness pulled towards the mean, so units read against it.
     const calmLuma = mix(float(ALBEDO_TARGET_LUMA), rawLuma, ALBEDO_CONTRAST);
-    const photo = mix(raw.mul(calmLuma.div(rawLuma)), vec3(calmLuma, calmLuma, calmLuma), ALBEDO_DESATURATE)
+    const photo = mix(
+      raw.mul(calmLuma.div(rawLuma)),
+      vec3(calmLuma, calmLuma, calmLuma),
+      ALBEDO_DESATURATE,
+    )
       .mul(vec3(...ALBEDO_WARMTH))
       .mul(mix(vec3(1, 1, 1), vcRatio, ALBEDO_VERTEX_WEIGHT))
       .mul(mix(vec3(1.04, 1.0, 0.95), vec3(0.96, 0.98, 1.02), h01))

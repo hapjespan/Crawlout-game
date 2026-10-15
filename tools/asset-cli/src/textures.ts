@@ -387,7 +387,10 @@ export async function buildAtlas(
     const pixels = Buffer.alloc(used * used * 4);
     for (let i = 0; i < pixels.length; i += 4) pixels.set([128, 128, 128, 0], i);
     for (const layer of layers) {
-      const raw = await sharp(layer.input).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+      const raw = await sharp(layer.input)
+        .ensureAlpha()
+        .raw()
+        .toBuffer({ resolveWithObject: true });
       for (let row = 0; row < raw.info.height; row++)
         raw.data.copy(
           pixels,

@@ -17,7 +17,11 @@ import {
 /** Een bronmateriaal: lineaire basiskleur-factor (glTF) en eventueel een sRGB-diffuse. */
 export interface TerrainMaterial {
   factor: [number, number, number];
-  texture?: { width: number; height: number; /** RGB, 3 bytes per pixel, sRGB. */ data: Uint8Array };
+  texture?: {
+    width: number;
+    height: number;
+    /** RGB, 3 bytes per pixel, sRGB. */ data: Uint8Array;
+  };
 }
 
 /**
@@ -110,7 +114,10 @@ export function rasterizeTopSurface(mesh: TerrainMesh, grid: SampleGrid): TopSur
           const j1 = (indices[t * 3 + 1] as number) * 2;
           const j2 = (indices[t * 3 + 2] as number) * 2;
           u[index] = l0 * (uvs[j0] as number) + l1 * (uvs[j1] as number) + l2 * (uvs[j2] as number);
-          v[index] = l0 * (uvs[j0 + 1] as number) + l1 * (uvs[j1 + 1] as number) + l2 * (uvs[j2 + 1] as number);
+          v[index] =
+            l0 * (uvs[j0 + 1] as number) +
+            l1 * (uvs[j1 + 1] as number) +
+            l2 * (uvs[j2 + 1] as number);
         }
       }
     }
@@ -174,7 +181,12 @@ export function heightfieldFromSurface(surface: TopSurface, options: FieldOption
         if (!Number.isNaN(mean[j * cells + i] as number)) continue;
         let sum = 0;
         let count = 0;
-        for (const [di, dj] of [[-1, 0], [1, 0], [0, -1], [0, 1]] as const) {
+        for (const [di, dj] of [
+          [-1, 0],
+          [1, 0],
+          [0, -1],
+          [0, 1],
+        ] as const) {
           const ni = i + di;
           const nj = j + dj;
           if (ni < 0 || nj < 0 || ni >= cells || nj >= cells) continue;
@@ -193,7 +205,8 @@ export function heightfieldFromSurface(surface: TopSurface, options: FieldOption
     mean = next;
     if (remaining === 0) break;
   }
-  if (mean.some((value) => Number.isNaN(value))) throw new Error('het terrein dekt de uitsnede niet (geen enkele cel)');
+  if (mean.some((value) => Number.isNaN(value)))
+    throw new Error('het terrein dekt de uitsnede niet (geen enkele cel)');
 
   let low = Infinity;
   for (const value of mean) if (value < low) low = value;
@@ -206,7 +219,15 @@ export function heightfieldFromSurface(surface: TopSurface, options: FieldOption
     if (rounded < min) min = rounded;
     if (rounded > max) max = rounded;
   }
-  const field: Heightfield = { format: HEIGHTFIELD_FORMAT, w: cells, h: cells, metersPerCell, minM: min, maxM: max, heights };
+  const field: Heightfield = {
+    format: HEIGHTFIELD_FORMAT,
+    w: cells,
+    h: cells,
+    metersPerCell,
+    minM: min,
+    maxM: max,
+    heights,
+  };
   return { field, scale, heightOffsetM: low, filledCells };
 }
 
@@ -238,7 +259,10 @@ function sampleBilinearLinear(
   const tx = width > 1 ? fx - x0 : 0;
   const ty = height > 1 ? fy - y0 : 0;
   for (let c = 0; c < 3; c++) {
-    const px = (x: number, y: number): number => SRGB_TO_LINEAR[data[(Math.min(y, height - 1) * width + Math.min(x, width - 1)) * 3 + c] as number] as number;
+    const px = (x: number, y: number): number =>
+      SRGB_TO_LINEAR[
+        data[(Math.min(y, height - 1) * width + Math.min(x, width - 1)) * 3 + c] as number
+      ] as number;
     const top = px(x0, y0) * (1 - tx) + px(x0 + 1, y0) * tx;
     const bottom = px(x0, y0 + 1) * (1 - tx) + px(x0 + 1, y0 + 1) * tx;
     out[c] = top * (1 - ty) + bottom * ty;
@@ -272,7 +296,13 @@ export function bakeAlbedo(mesh: TerrainMesh, surface: TopSurface): AlbedoResult
     if (t < 0) continue;
     const material = mesh.materials?.[mesh.triMaterial?.[t] ?? 0];
     const factor = material?.factor ?? [1, 1, 1];
-    if (material?.texture && mesh.uvs) sampleBilinearLinear(material.texture, surface.u[index] as number, surface.v[index] as number, colour);
+    if (material?.texture && mesh.uvs)
+      sampleBilinearLinear(
+        material.texture,
+        surface.u[index] as number,
+        surface.v[index] as number,
+        colour,
+      );
     else colour.fill(1);
     for (let c = 0; c < 3; c++) {
       const value = (colour[c] as number) * (factor[c] as number);
@@ -296,7 +326,9 @@ export function bakeAlbedo(mesh: TerrainMesh, surface: TopSurface): AlbedoResult
   const rgb = new Uint8Array(count * 3);
   for (let index = 0; index < count; index++) {
     for (let c = 0; c < 3; c++) {
-      rgb[index * 3 + c] = linearToSrgbByte(known[index] ? (linear[index * 3 + c] as number) : (mean[c] as number));
+      rgb[index * 3 + c] = linearToSrgbByte(
+        known[index] ? (linear[index * 3 + c] as number) : (mean[c] as number),
+      );
     }
   }
   return { rgb, meanLinear: mean, coveredFraction: covered / count };
@@ -331,7 +363,8 @@ export function fillHolesPullPush(linear: Float32Array, known: Uint8Array, n: nu
             const fw = fine.w[fi] as number;
             if (fw <= 0) continue;
             sw += fw;
-            for (let c = 0; c < 3; c++) acc[c] = (acc[c] as number) + (fine.rgb[fi * 3 + c] as number) * fw;
+            for (let c = 0; c < 3; c++)
+              acc[c] = (acc[c] as number) + (fine.rgb[fi * 3 + c] as number) * fw;
           }
         const i = y * size + x;
         if (sw > 0) for (let c = 0; c < 3; c++) rgb[i * 3 + c] = (acc[c] as number) / sw;
@@ -363,7 +396,8 @@ export function fillHolesPullPush(linear: Float32Array, known: Uint8Array, n: nu
           const up =
             (at(x0, y0, c) * (1 - tx) + at(x0 + 1, y0, c) * tx) * (1 - ty) +
             (at(x0, y0 + 1, c) * (1 - tx) + at(x0 + 1, y0 + 1, c) * tx) * ty;
-          fine.rgb[i * 3 + c] = own > 0 ? (fine.rgb[i * 3 + c] as number) * own + up * (1 - own) : up;
+          fine.rgb[i * 3 + c] =
+            own > 0 ? (fine.rgb[i * 3 + c] as number) * own + up * (1 - own) : up;
         }
         fine.w[i] = 1;
       }
@@ -429,11 +463,19 @@ export function removeFloaters(mesh: TerrainMesh, options: FloaterOptions): Floa
   const { cellM, radiusM, thresholdM } = options;
   const nx = Math.ceil((maxX - minX) / cellM) + 1;
   const nz = Math.ceil((maxZ - minZ) / cellM) + 1;
-  const top = rasterizeTopSurface(mesh, { minX, minZ, sizeM: Math.max(nx, nz) * cellM, resolution: Math.max(nx, nz) });
+  const top = rasterizeTopSurface(mesh, {
+    minX,
+    minZ,
+    sizeM: Math.max(nx, nz) * cellM,
+    resolution: Math.max(nx, nz),
+  });
   const n = top.resolution;
   const r = Math.max(1, Math.round(radiusM / cellM));
 
-  const windowFilter = (input: Float32Array, pick: (a: number, b: number) => number): Float32Array => {
+  const windowFilter = (
+    input: Float32Array,
+    pick: (a: number, b: number) => number,
+  ): Float32Array => {
     const horizontal = new Float32Array(n * n).fill(NaN);
     const output = new Float32Array(n * n).fill(NaN);
     for (let j = 0; j < n; j++) {
@@ -476,7 +518,8 @@ export function removeFloaters(mesh: TerrainMesh, options: FloaterOptions): Floa
   for (let v = 0; v < floating.length; v++) {
     const cell = cellOf(mesh.positions[v * 3] as number, mesh.positions[v * 3 + 2] as number);
     const reference = opened[cell] as number;
-    if (Number.isNaN(reference) || (mesh.positions[v * 3 + 1] as number) <= reference + thresholdM) continue;
+    if (Number.isNaN(reference) || (mesh.positions[v * 3 + 1] as number) <= reference + thresholdM)
+      continue;
     floating[v] = 1;
     const ci = cell % n;
     const cj = (cell - ci) / n;
@@ -491,12 +534,21 @@ export function removeFloaters(mesh: TerrainMesh, options: FloaterOptions): Floa
   for (let v = 0; v < floating.length; v++) {
     if (floating[v]) continue;
     const cell = cellOf(mesh.positions[v * 3] as number, mesh.positions[v * 3 + 2] as number);
-    if (flagged[cell] && (mesh.positions[v * 3 + 1] as number) > (opened[cell] as number) + thresholdM / 4) floating[v] = 1;
+    if (
+      flagged[cell] &&
+      (mesh.positions[v * 3 + 1] as number) > (opened[cell] as number) + thresholdM / 4
+    )
+      floating[v] = 1;
   }
   const keep: number[] = [];
   const triCount = mesh.indices.length / 3;
   for (let t = 0; t < triCount; t++) {
-    if (floating[mesh.indices[t * 3] as number] || floating[mesh.indices[t * 3 + 1] as number] || floating[mesh.indices[t * 3 + 2] as number]) continue;
+    if (
+      floating[mesh.indices[t * 3] as number] ||
+      floating[mesh.indices[t * 3 + 1] as number] ||
+      floating[mesh.indices[t * 3 + 2] as number]
+    )
+      continue;
     keep.push(t);
   }
   return { mesh: selectTriangles(mesh, keep), removedTriangles: triCount - keep.length };
@@ -545,7 +597,11 @@ export interface CropSearch {
  * De dekking wordt gemeten op `footprint` (standaard dezelfde mesh): gaten die later worden opgevuld, zoals waar een
  * zwevend deel is weggehaald, tellen dan niet als "buiten het terrein".
  */
-export function chooseCrop(mesh: TerrainMesh, search: CropSearch, footprint: TerrainMesh = mesh): CropChoice {
+export function chooseCrop(
+  mesh: TerrainMesh,
+  search: CropSearch,
+  footprint: TerrainMesh = mesh,
+): CropChoice {
   const size = Math.round(search.sizeM);
   let best: CropChoice | undefined;
   for (const rotationDeg of search.rotationsDeg) {
@@ -565,7 +621,10 @@ export function chooseCrop(mesh: TerrainMesh, search: CropSearch, footprint: Ter
     const z0 = Math.floor(minZ);
     const n = Math.ceil(Math.max(maxX - x0, maxZ - z0));
     const overview = rasterizeTopSurface(rotated, { minX: x0, minZ: z0, sizeM: n, resolution: n });
-    const outline = rotatedFootprint === rotated ? overview : rasterizeTopSurface(rotatedFootprint, { minX: x0, minZ: z0, sizeM: n, resolution: n });
+    const outline =
+      rotatedFootprint === rotated
+        ? overview
+        : rasterizeTopSurface(rotatedFootprint, { minX: x0, minZ: z0, sizeM: n, resolution: n });
     const stride = n + 1;
     const cover = new Float64Array(stride * stride);
     const valid = new Float64Array(stride * stride);
@@ -580,14 +639,27 @@ export function chooseCrop(mesh: TerrainMesh, search: CropSearch, footprint: Ter
         const up = b * stride + a + 1;
         const left = (b + 1) * stride + a;
         const diagonal = b * stride + a;
-        cover[at] = (cover[up] as number) + (cover[left] as number) - (cover[diagonal] as number) + inside;
-        valid[at] = (valid[up] as number) + (valid[left] as number) - (valid[diagonal] as number) + ok;
-        sum[at] = (sum[up] as number) + (sum[left] as number) - (sum[diagonal] as number) + (ok ? value : 0);
-        sumSq[at] = (sumSq[up] as number) + (sumSq[left] as number) - (sumSq[diagonal] as number) + (ok ? value * value : 0);
+        cover[at] =
+          (cover[up] as number) + (cover[left] as number) - (cover[diagonal] as number) + inside;
+        valid[at] =
+          (valid[up] as number) + (valid[left] as number) - (valid[diagonal] as number) + ok;
+        sum[at] =
+          (sum[up] as number) +
+          (sum[left] as number) -
+          (sum[diagonal] as number) +
+          (ok ? value : 0);
+        sumSq[at] =
+          (sumSq[up] as number) +
+          (sumSq[left] as number) -
+          (sumSq[diagonal] as number) +
+          (ok ? value * value : 0);
       }
     }
     const box = (table: Float64Array, ox: number, oz: number): number =>
-      (table[(oz + size) * stride + ox + size] as number) - (table[oz * stride + ox + size] as number) - (table[(oz + size) * stride + ox] as number) + (table[oz * stride + ox] as number);
+      (table[(oz + size) * stride + ox + size] as number) -
+      (table[oz * stride + ox + size] as number) -
+      (table[(oz + size) * stride + ox] as number) +
+      (table[oz * stride + ox] as number);
     for (let oz = 0; oz + size <= n; oz++) {
       for (let ox = 0; ox + size <= n; ox++) {
         const covered = box(cover, ox, oz);
@@ -596,11 +668,15 @@ export function chooseCrop(mesh: TerrainMesh, search: CropSearch, footprint: Ter
         if (count === 0) continue;
         const mean = box(sum, ox, oz) / count;
         const score = Math.sqrt(Math.max(0, box(sumSq, ox, oz) / count - mean * mean));
-        if (!best || score > best.score + 1e-9) best = { rotationDeg, minX: x0 + ox, minZ: z0 + oz, sizeM: size, score };
+        if (!best || score > best.score + 1e-9)
+          best = { rotationDeg, minX: x0 + ox, minZ: z0 + oz, sizeM: size, score };
       }
     }
   }
-  if (!best) throw new Error(`geen vierkant van ${size} m dat de mesh voor ${search.minCoverage * 100}% dekt`);
+  if (!best)
+    throw new Error(
+      `geen vierkant van ${size} m dat de mesh voor ${search.minCoverage * 100}% dekt`,
+    );
   return best;
 }
 
@@ -618,11 +694,17 @@ export async function readTerrainMesh(glbPath: string): Promise<TerrainMesh> {
   async function materialOf(primitiveMaterial: Material | null): Promise<number> {
     if (materialIndex.has(primitiveMaterial)) return materialIndex.get(primitiveMaterial) as number;
     const factor = primitiveMaterial ? primitiveMaterial.getBaseColorFactor() : [1, 1, 1, 1];
-    const entry: TerrainMaterial = { factor: [factor[0] as number, factor[1] as number, factor[2] as number] };
+    const entry: TerrainMaterial = {
+      factor: [factor[0] as number, factor[1] as number, factor[2] as number],
+    };
     const image = primitiveMaterial?.getBaseColorTexture()?.getImage();
     if (image) {
       const decoded = await sharp(image).removeAlpha().raw().toBuffer({ resolveWithObject: true });
-      entry.texture = { width: decoded.info.width, height: decoded.info.height, data: new Uint8Array(decoded.data) };
+      entry.texture = {
+        width: decoded.info.width,
+        height: decoded.info.height,
+        data: new Uint8Array(decoded.data),
+      };
     }
     materials.push(entry);
     materialIndex.set(primitiveMaterial, materials.length - 1);
@@ -662,7 +744,7 @@ export async function readTerrainMesh(glbPath: string): Promise<TerrainMesh> {
       const material = await materialOf(primitive.getMaterial());
       const triangles = index.getCount() / 3;
       for (let t = 0; t < triangles; t++) {
-        for (let k = 0; k < 3; k++) indices.push(base + (index.getScalar(t * 3 + k)));
+        for (let k = 0; k < 3; k++) indices.push(base + index.getScalar(t * 3 + k));
         triMaterial.push(material);
       }
     }
@@ -719,7 +801,9 @@ export async function buildTerrain(options: BuildTerrainOptions): Promise<BuildT
   const metersPerCell = options.metersPerCell ?? 1;
   const sub = options.sub ?? 8;
   const raw = await readTerrainMesh(options.source);
-  const groundMaterial = raw.materials?.find((m) => !m.texture) ?? { factor: [0.05, 0.05, 0.05] as [number, number, number] };
+  const groundMaterial = raw.materials?.find((m) => !m.texture) ?? {
+    factor: [0.05, 0.05, 0.05] as [number, number, number],
+  };
 
   const surfaceMesh = texturedOnly(raw);
   const cleaned = removeFloaters(surfaceMesh, FLOATER_DEFAULTS);
@@ -734,8 +818,16 @@ export async function buildTerrain(options: BuildTerrainOptions): Promise<BuildT
   );
   const mesh = rotateMeshY(cleaned.mesh, crop.rotationDeg);
 
-  const surface = rasterizeTopSurface(mesh, { minX: crop.minX, minZ: crop.minZ, sizeM: crop.sizeM, resolution: cells * sub });
-  const { field, scale, heightOffsetM, filledCells } = heightfieldFromSurface(surface, { cells, metersPerCell });
+  const surface = rasterizeTopSurface(mesh, {
+    minX: crop.minX,
+    minZ: crop.minZ,
+    sizeM: crop.sizeM,
+    resolution: cells * sub,
+  });
+  const { field, scale, heightOffsetM, filledCells } = heightfieldFromSurface(surface, {
+    cells,
+    metersPerCell,
+  });
   heightfieldSchema.parse(field);
 
   // Het albedo op een eigen raster als de gevraagde maat afwijkt; het hoogteveld blijft op het grove raster.
@@ -745,9 +837,16 @@ export async function buildTerrain(options: BuildTerrainOptions): Promise<BuildT
   const albedoSurface =
     albedoSize === surface.resolution
       ? surface
-      : rasterizeTopSurface(mesh, { minX: crop.minX, minZ: crop.minZ, sizeM: crop.sizeM, resolution: albedoSize });
+      : rasterizeTopSurface(mesh, {
+          minX: crop.minX,
+          minZ: crop.minZ,
+          sizeM: crop.sizeM,
+          resolution: albedoSize,
+        });
   const albedo = bakeAlbedo(mesh, albedoSurface);
-  const albedoBytes = await sharp(albedo.rgb, { raw: { width: albedoSize, height: albedoSize, channels: 3 } })
+  const albedoBytes = await sharp(albedo.rgb, {
+    raw: { width: albedoSize, height: albedoSize, channels: 3 },
+  })
     .jpeg({ quality: options.jpegQuality ?? 85, chromaSubsampling: '4:4:4', mozjpeg: false })
     .toBuffer();
 
@@ -757,7 +856,14 @@ export async function buildTerrain(options: BuildTerrainOptions): Promise<BuildT
     format: TERRAIN_MANIFEST_FORMAT,
     id: options.id,
     attribution: options.attribution,
-    heightfield: { path: heightPath, w: field.w, h: field.h, metersPerCell, minM: field.minM, maxM: field.maxM },
+    heightfield: {
+      path: heightPath,
+      w: field.w,
+      h: field.h,
+      metersPerCell,
+      minM: field.minM,
+      maxM: field.maxM,
+    },
     albedo: { path: albedoPath, width: albedoSize, height: albedoSize, mime: 'image/jpeg' },
     rockTint: hexOfLinear(albedo.meanLinear),
     groundTint: hexOfLinear(groundMaterial.factor),
@@ -779,16 +885,33 @@ export async function buildTerrain(options: BuildTerrainOptions): Promise<BuildT
   ];
   const files = outputs.map(([name, data]) => {
     writeFileSync(join(options.outDir, name), data);
-    return { path: name, bytes: typeof data === 'string' ? Buffer.byteLength(data) : data.byteLength };
+    return {
+      path: name,
+      bytes: typeof data === 'string' ? Buffer.byteLength(data) : data.byteLength,
+    };
   });
-  return { manifest, crop, field, filledCells, removedTriangles: cleaned.removedTriangles, coveredFraction: albedo.coveredFraction, files };
+  return {
+    manifest,
+    crop,
+    field,
+    filledCells,
+    removedTriangles: cleaned.removedTriangles,
+    coveredFraction: albedo.coveredFraction,
+    files,
+  };
 }
 
 /** JSON met één rij per regel: klein en leesbaar in diffs. */
 export function formatHeightfield(field: Heightfield): string {
   const rows: string[] = [];
   for (let j = 0; j < field.h; j++) {
-    rows.push('    ' + field.heights.slice(j * field.w, (j + 1) * field.w).map((value) => String(value)).join(','));
+    rows.push(
+      '    ' +
+        field.heights
+          .slice(j * field.w, (j + 1) * field.w)
+          .map((value) => String(value))
+          .join(','),
+    );
   }
   return (
     `{"format":"${field.format}","w":${field.w},"h":${field.h},"metersPerCell":${field.metersPerCell},` +

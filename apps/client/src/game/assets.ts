@@ -74,7 +74,8 @@ export function assetConfig(
 ): UnitAssetConfig | undefined {
   const unit = params.get('unit');
   const repoUrl = assetFiles[`${ASSET_DIR}manifest.json`];
-  const local = localAssets?.localManifests[`${localAssets.LOCAL_DIR}manifest.json`] as ManifestLike | undefined;
+  const local = localAssets?.localManifests[`${localAssets.LOCAL_DIR}manifest.json`] as
+    ManifestLike | undefined;
   if (!local) {
     if (!repoUrl) return undefined;
     return {

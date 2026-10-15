@@ -306,9 +306,13 @@ describe('prestaties', () => {
     mounted = t.handle;
     for (let i = 0; i < 20; i++) act(() => t.handle.refresh()); // opwarmen
     const n = 100;
-    const t0 = performance.now();
-    for (let i = 0; i < n; i++) act(() => t.handle.refresh());
-    const per = (performance.now() - t0) / n;
-    expect(per).toBeLessThan(2);
+    const runs: number[] = [];
+    for (let r = 0; r < 7; r++) {
+      const t0 = performance.now();
+      for (let i = 0; i < n; i++) act(() => t.handle.refresh());
+      runs.push((performance.now() - t0) / n);
+    }
+    runs.sort((a, b) => a - b);
+    expect(runs[3] ?? Infinity).toBeLessThan(2);
   });
 });

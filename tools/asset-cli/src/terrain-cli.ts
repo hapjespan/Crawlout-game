@@ -18,7 +18,10 @@ function defaultSource(): string {
   const local = `${repoRoot}assets/local/rock_terrain_4.glb`;
   if (existsSync(local)) return local;
   try {
-    const common = execFileSync('git', ['rev-parse', '--git-common-dir'], { cwd: repoRoot, encoding: 'utf8' }).trim();
+    const common = execFileSync('git', ['rev-parse', '--git-common-dir'], {
+      cwd: repoRoot,
+      encoding: 'utf8',
+    }).trim();
     return resolve(dirname(resolve(repoRoot, common)), 'assets/local/rock_terrain_4.glb');
   } catch {
     return local;
@@ -33,7 +36,9 @@ const rotationArg = argValue('--rotation');
 const albedoSizeArg = argValue('--albedo-size');
 
 if (!existsSync(source)) {
-  console.log(`terrain: bron ${source} ontbreekt (staat niet in git); de gecommitte afgeleide data in ${outDir} blijft ongewijzigd.`);
+  console.log(
+    `terrain: bron ${source} ontbreekt (staat niet in git); de gecommitte afgeleide data in ${outDir} blijft ongewijzigd.`,
+  );
   process.exit(0);
 }
 
@@ -53,7 +58,12 @@ const { crop, field } = result;
 console.log(
   `uitsnede ${crop.sizeM} m, draaiing ${crop.rotationDeg} graden, vanaf x=${crop.minX}, z=${crop.minZ} (reliefscore ${crop.score.toFixed(2)}), schaal ${result.manifest.crop.scale}, ${result.removedTriangles} zwevende driehoeken verwijderd`,
 );
-console.log(`hoogteveld ${field.w}x${field.h}, ${field.minM} tot ${field.maxM} m, ${result.filledCells} cellen opgevuld`);
-console.log(`albedo-dekking ${(result.coveredFraction * 100).toFixed(1)}%, rockTint ${result.manifest.rockTint}, groundTint ${result.manifest.groundTint}`);
-for (const file of result.files) console.log(`  ${file.path}  ${(file.bytes / 1024).toFixed(1)} kB`);
+console.log(
+  `hoogteveld ${field.w}x${field.h}, ${field.minM} tot ${field.maxM} m, ${result.filledCells} cellen opgevuld`,
+);
+console.log(
+  `albedo-dekking ${(result.coveredFraction * 100).toFixed(1)}%, rockTint ${result.manifest.rockTint}, groundTint ${result.manifest.groundTint}`,
+);
+for (const file of result.files)
+  console.log(`  ${file.path}  ${(file.bytes / 1024).toFixed(1)} kB`);
 console.log(`klaar in ${((Date.now() - started) / 1000).toFixed(1)} s`);

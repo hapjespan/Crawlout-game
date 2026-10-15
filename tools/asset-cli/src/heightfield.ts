@@ -58,7 +58,8 @@ export function heightAt(field: Heightfield, xM: number, zM: number): number {
   const j0 = Math.min(Math.floor(fz), field.h - 2 < 0 ? 0 : field.h - 2);
   const tx = field.w > 1 ? fx - i0 : 0;
   const tz = field.h > 1 ? fz - j0 : 0;
-  const at = (i: number, j: number): number => field.heights[Math.min(j, field.h - 1) * field.w + Math.min(i, field.w - 1)] as number;
+  const at = (i: number, j: number): number =>
+    field.heights[Math.min(j, field.h - 1) * field.w + Math.min(i, field.w - 1)] as number;
   const top = at(i0, j0) * (1 - tx) + at(i0 + 1, j0) * tx;
   const bottom = at(i0, j0 + 1) * (1 - tx) + at(i0 + 1, j0 + 1) * tx;
   return top * (1 - tz) + bottom * tz;

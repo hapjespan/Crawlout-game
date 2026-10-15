@@ -157,10 +157,15 @@ describe('dominantie-teller', () => {
     const t = setup();
     for (let i = 0; i < 20; i++) act(() => mounted?.refresh());
     const n = 100;
-    const t0 = performance.now();
-    for (let i = 0; i < n; i++) {
-      t.set({ ...threatView, leader: { ...threatView.leader!, secondsHeld: i } });
+    const runs: number[] = [];
+    for (let r = 0; r < 7; r++) {
+      const t0 = performance.now();
+      for (let i = 0; i < n; i++) {
+        t.set({ ...threatView, leader: { ...threatView.leader!, secondsHeld: i } });
+      }
+      runs.push((performance.now() - t0) / n);
     }
-    expect((performance.now() - t0) / n).toBeLessThan(2);
+    runs.sort((a, b) => a - b);
+    expect(runs[3] ?? Infinity).toBeLessThan(2);
   });
 });

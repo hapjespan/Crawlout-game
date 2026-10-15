@@ -100,7 +100,9 @@ describe('albedo layout', () => {
   });
 
   it('refuses layouts it cannot draw', () => {
-    expect(() => validateAlbedoLayout({ ...map, tiles: map.tiles.slice(1) })).toThrow(AlbedoLayoutError);
+    expect(() => validateAlbedoLayout({ ...map, tiles: map.tiles.slice(1) })).toThrow(
+      AlbedoLayoutError,
+    );
     expect(() => validateAlbedoLayout({ ...map, cols: 6, rows: 6 })).toThrow(/at most/);
     expect(() =>
       validateAlbedoLayout({ ...map, tiles: map.tiles.map(() => ({ orientation: 9 })) }),

@@ -143,7 +143,13 @@ describe('besluiten sprint 3', () => {
       hero: full,
       techs: [1],
       queue: [],
-      dominance: { pointsHeld: 0, pointsRequired: 2, ticksHeld: 0, ticksRequired: 9600, leader: null },
+      dominance: {
+        pointsHeld: 0,
+        pointsRequired: 2,
+        ticksHeld: 0,
+        ticksRequired: 9600,
+        leader: null,
+      },
     };
     expect(status.hero?.state).toBe('reviving');
   });

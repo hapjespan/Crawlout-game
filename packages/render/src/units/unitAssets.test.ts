@@ -391,7 +391,9 @@ describe('real characters without a team material', () => {
   }
 
   it('reads the team mask from the atlas alpha when it holds one (auto), per texel instead of per material', async () => {
-    const r = await textured({ Team_Shirt: 'M_Main', Skin: 'M_Joints' }, (x) => (x < 0.5 ? 255 : 0));
+    const r = await textured({ Team_Shirt: 'M_Main', Skin: 'M_Joints' }, (x) =>
+      x < 0.5 ? 255 : 0,
+    );
     expect(r.teamMask).toBe('diffuseAlpha');
     expect(maskedColors(r.geometry).masked.size).toBe(0); // no vertex mask: the alpha decides
     // The masked texels' luminance (0.216) times the mean material color of the textured primitives (shirt, skin).

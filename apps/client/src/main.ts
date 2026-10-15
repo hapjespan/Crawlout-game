@@ -338,7 +338,14 @@ async function main(): Promise<void> {
             kind: kind === 'building' ? 'building' : 'unit',
           });
       }
-      return { w: map.grid.w, h: map.grid.h, passable: map.grid.passable, ...minimapStatic, blips, claims };
+      return {
+        w: map.grid.w,
+        h: map.grid.h,
+        passable: map.grid.passable,
+        ...minimapStatic,
+        blips,
+        claims,
+      };
     },
     focusCamera: (x, y) => renderer.focus(x, y),
     getBuildOptions: () =>
@@ -398,7 +405,9 @@ async function main(): Promise<void> {
         card.kind === 'revive'
           ? [card.id]
           : card.kind === 'craft'
-            ? items.flatMap((q) => (q.unitId !== undefined && q.unitId !== ENTITY_NONE ? [q.unitId] : []))
+            ? items.flatMap((q) =>
+                q.unitId !== undefined && q.unitId !== ENTITY_NONE ? [q.unitId] : [],
+              )
             : items.flatMap((q) => (q.buildingId !== ENTITY_NONE ? [q.buildingId] : []));
       if (ids.length > 0) sendChunked('Cancel', ids, {});
     },

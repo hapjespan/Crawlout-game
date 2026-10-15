@@ -284,7 +284,8 @@ export function unitGeometryFromGltf(
         else uvs.push(NO_UV, NO_UV);
       }
       if (mask) {
-        const t = textured && atlasPx ? texelLuma(atlasPx, STATS_SIZE, uv!.getX(i), uv!.getY(i)) : 1;
+        const t =
+          textured && atlasPx ? texelLuma(atlasPx, STATS_SIZE, uv!.getX(i), uv!.getY(i)) : 1;
         pivotSum += lumaOf(base.r * r, base.g * gg, base.b * b) * t;
         pivotCount++;
       } else if (textured && teamMask === 'diffuseAlpha') {

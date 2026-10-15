@@ -193,7 +193,8 @@ export class UnitLayer {
     const lod0 = geometries[0]!;
     if (!lod0.boundingBox) lod0.computeBoundingBox();
     const box = lod0.boundingBox!;
-    const height = Number.isFinite(box.max.y - box.min.y) && box.max.y > box.min.y ? box.max.y - box.min.y : 1.8;
+    const height =
+      Number.isFinite(box.max.y - box.min.y) && box.max.y > box.min.y ? box.max.y - box.min.y : 1.8;
     this.rigs.push({
       name: src.name,
       height: Math.min(4, Math.max(1, height)),
@@ -225,7 +226,6 @@ export class UnitLayer {
       typeId > 0 && typeId < this.rigByType.length ? this.rigByType[typeId]! : DEFAULT_RIG;
     return own === DEFAULT_RIG ? this.defaultRig : own;
   }
-
 
   /** Distributes the units in the frame over the rig and LOD batches. `frame.y` must already hold terrain heights. */
   update(frame: InterpolatedFrame, camera: Camera, decals: DecalLayer): void {

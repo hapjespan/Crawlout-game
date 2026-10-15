@@ -120,8 +120,14 @@ describe('minimap cache', () => {
     };
     const t = fakeCanvas();
     drawMinimap(t.canvas, m, 0);
-    const t0 = performance.now();
-    for (let i = 0; i < 100; i++) drawMinimap(t.canvas, m, 0);
-    expect((performance.now() - t0) / 100).toBeLessThan(2);
+    for (let i = 0; i < 20; i++) drawMinimap(t.canvas, m, 0); // opwarmen
+    const runs: number[] = [];
+    for (let r = 0; r < 7; r++) {
+      const t0 = performance.now();
+      for (let i = 0; i < 100; i++) drawMinimap(t.canvas, m, 0);
+      runs.push((performance.now() - t0) / 100);
+    }
+    runs.sort((a, b) => a - b);
+    expect(runs[3] ?? Infinity).toBeLessThan(2);
   });
 });

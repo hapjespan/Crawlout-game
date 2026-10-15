@@ -87,7 +87,8 @@ describe('unit shading', () => {
     expect(up[2]).toBeGreaterThan(up[0]); // sky: blue over red
     expect(down[0]).toBeGreaterThan(down[2]); // ground bounce: red over blue
     for (const c of [0, 1, 2]) expect(wall[c]).toBeCloseTo((up[c]! + down[c]!) / 2, 6);
-    for (const v of [...SKY_FILL.sky, ...SKY_FILL.ground]) expect(v).toBeLessThan(TOON_BANDS.dark / 4);
+    for (const v of [...SKY_FILL.sky, ...SKY_FILL.ground])
+      expect(v).toBeLessThan(TOON_BANDS.dark / 4);
     // A dark coat (albedo 0.03) in shadow stays dark: under 0.02 linear.
     expect(0.03 * (TOON_BANDS.dark + Math.max(...wall))).toBeLessThan(0.02);
   });
