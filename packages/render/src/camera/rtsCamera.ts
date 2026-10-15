@@ -1,7 +1,7 @@
 // RTS camera: orbits a ground target. Pan with WASD/arrows and screen-edge scroll, zoom with the wheel,
 // rotate with Q/E or by dragging with the middle mouse button. Pan speed grows with the zoom distance. Without an
 // explicit maxDistance the zoom-out limit follows the map (bounds): 140 m, or the longer side when that is more, so a
-// 384 m map fits on screen in the overview, also turned 45 degrees. The pitch runs from 50 to 68 degrees over 10..140 m as before
+// 384 m map fits on screen in the overview, also turned 45 degrees. The pitch runs from 50 to 68 degrees over 10..140 m as before (the closest zoom is 26 m, so it starts at about 52)
 // and on to 74 degrees at the furthest zoom.
 import { MathUtils, type PerspectiveCamera } from 'three/webgpu';
 
@@ -44,6 +44,14 @@ export const DEFAULT_PAN_KEYS: Readonly<Record<string, PanDirection>> = {
   ArrowRight: [1, 0],
 };
 
+/**
+ * Default closest zoom, meters: a unit and its surroundings still fit in view. The 21 m compound of the headquarters
+ * is no longer entered at the former 10 m; the house and its yard stay in frame.
+ */
+export const DEFAULT_MIN_DISTANCE = 26;
+/** The pitch curve starts here (50 degrees), where the camera used to stop: the curve itself did not move with the new minimum. */
+export const PITCH_CURVE_START = 10;
+
 /** Default furthest zoom, and the zoom where the pitch curve of a small map ends. */
 export const BASE_MAX_DISTANCE = 140;
 /** Furthest zoom per meter of the longer map side, when that is more than the default. */
@@ -81,7 +89,7 @@ export class RtsCameraController {
     private readonly dom: HTMLElement,
     opts: RtsCameraOptions = {},
   ) {
-    this.minDistance = opts.minDistance ?? 10;
+    this.minDistance = opts.minDistance ?? DEFAULT_MIN_DISTANCE;
     this.autoMax = opts.maxDistance === undefined;
     this.maxZoom = opts.maxDistance ?? BASE_MAX_DISTANCE;
     this.edgeMargin = opts.edgeMargin ?? 16;
@@ -273,12 +281,13 @@ export class RtsCameraController {
   }
 
   /**
-   * Degrees above the horizon: 50 to 68 from the closest zoom to 140 m (or the furthest zoom if that is closer), then
+   * Degrees above the horizon: 50 to 68 from 10 m (the curve's start) to 140 m (or the furthest zoom if that is closer), then
    * on to 74 at the furthest zoom of a large map, so the overview looks down on it.
    */
   pitchDegrees(): number {
     const ref = Math.min(BASE_MAX_DISTANCE, this.maxZoom);
-    const t = (this.distance - this.minDistance) / Math.max(1e-6, ref - this.minDistance);
+    const start = Math.min(PITCH_CURVE_START, this.minDistance);
+    const t = (this.distance - start) / Math.max(1e-6, ref - start);
     if (this.distance <= ref || this.maxZoom <= ref) return 50 + 18 * MathUtils.clamp(t, 0, 1);
     const u = (this.distance - ref) / (this.maxZoom - ref);
     return 68 + 6 * MathUtils.clamp(u, 0, 1);

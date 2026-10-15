@@ -20,14 +20,18 @@ import {
 import type { BuildingVisual } from './buildingAssets.js';
 import { InstanceBatch } from './instanceBatch.js';
 import {
+  CONTACT_MASK_SIZE,
   DECAL_COLOR,
   DECAL_SHAPE,
   type DecalLayer,
   type DecalStyle,
 } from '../decals/decalLayer.js';
+import { buildingContact } from '../decals/contact.js';
+import { bakeContactField } from '../decals/contactMask.js';
 import {
   buildingRoofHeight,
   buildingWallHeight,
+  type Footprint,
   type FootprintTable,
 } from '../entities/footprint.js';
 import { buildingIdOf, classifyTypeId, ENTITY_KIND } from '../entities/typeIds.js';
@@ -159,6 +163,9 @@ export class StructureLayer {
   /** Building id (index in buildings.json) to its asset draw. */
   private readonly assetByBuilding = new Map<number, AssetDraw>();
   private assetMaterial: MeshBasicNodeMaterial | null = null;
+  /** Contact mask layer per building id (decals/contactMask.ts), baked on first sight; reset with the assets. */
+  private readonly contactLayers = new Map<number, number>();
+  private contactDecals: DecalLayer | null = null;
   private camPos: { x: number; y: number; z: number } = { x: 0, y: 0, z: 0 };
   private readonly scrapDecal: DecalStyle;
 
@@ -241,6 +248,8 @@ export class StructureLayer {
     for (const d of this.assetDraws) for (const b of d.batches) b.dispose();
     this.assetDraws = [];
     this.assetByBuilding.clear();
+    this.contactLayers.clear();
+    this.contactDecals?.clearContactMasks();
     this.assetMaterial?.dispose();
     this.assetMaterial = null;
   }
@@ -282,6 +291,59 @@ export class StructureLayer {
       h(x - hx, z + hz),
       h(x + hx, z + hz),
     );
+  }
+
+  /**
+   * Contact decal around a footprint (decals/contact.ts), when it is in view: the building sits in the ground. A
+   * finished building with an asset gets its own ground-contact distance field (decals/contactMask.ts, baked from the
+   * lowest LOD on first sight), so a house with a water tower in a 21 m footprint darkens at the walls and legs, not
+   * the whole yard; sites and placeholders use the footprint box.
+   */
+  private pushContact(
+    decals: DecalLayer,
+    x: number,
+    y: number,
+    z: number,
+    typeId: number,
+    f: Footprint,
+    underConstruction: boolean,
+  ): void {
+    const c = buildingContact(f.w, f.h, underConstruction);
+    this.sphere.center.set(x, y, z);
+    this.sphere.radius = Math.hypot(f.w, f.h) * 0.5 + c.margin;
+    if (!this.frustum.intersectsSphere(this.sphere)) return;
+    let layer = -1;
+    const draw = underConstruction ? undefined : this.assetByBuilding.get(buildingIdOf(typeId));
+    if (draw) {
+      if (this.contactDecals !== decals) {
+        this.contactDecals?.clearContactMasks();
+        this.contactLayers.clear();
+        this.contactDecals = decals;
+      }
+      const id = buildingIdOf(typeId);
+      let known = this.contactLayers.get(id);
+      if (known === undefined) {
+        known = decals.addContactMask(this.bakeContact(draw.visual, f, c.margin));
+        this.contactLayers.set(id, known);
+      }
+      layer = known;
+    }
+    decals.pushContact(x, z, f.w * 0.5, f.h * 0.5, c.margin, c.style, layer);
+  }
+
+  private bakeContact(v: BuildingVisual, f: Footprint, margin: number): Uint8Array {
+    const geo = v.lods[2];
+    const index = geo.getIndex();
+    return bakeContactField({
+      positions: geo.getAttribute('position').array,
+      indices: index ? index.array : null,
+      scaleX: f.w / v.footprint.w,
+      scaleZ: f.h / v.footprint.h,
+      halfX: f.w * 0.5 + margin,
+      halfZ: f.h * 0.5 + margin,
+      size: CONTACT_MASK_SIZE,
+      maxDistance: margin,
+    });
   }
 
   /** Pick sphere for a structure typeId, or null for units. */
@@ -334,6 +396,7 @@ export class StructureLayer {
         const hz = f.h * 0.5;
         const wall = buildingWallHeight(f);
         const y = this.groundUnder(x, z, hx, hz);
+        this.pushContact(decals, x, y, z, typeId, f, frame.anim[i] === ANIM.build);
         const asset = this.assetByBuilding.get(buildingIdOf(typeId));
         if (asset) {
           this.pushAsset(asset, frame, i, x, y, z, f.w, f.h, wall, team);

@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { Vector3, type BufferAttribute } from 'three/webgpu';
-import { buildSkirtGeometry, SKIRT_RINGS, skirtPerimeter } from './terrainSkirt.js';
+import {
+  buildSkirtGeometry,
+  SKIRT_RINGS,
+  skirtHeight,
+  skirtHills,
+  skirtPerimeter,
+} from './terrainSkirt.js';
 
 const bounds = { minX: 0, maxX: 64, minZ: 0, maxZ: 32 };
 
@@ -51,5 +57,43 @@ describe('terrain skirt', () => {
       const n = b.clone().sub(a).cross(c.clone().sub(a));
       expect(n.y).toBeGreaterThan(0);
     }
+  });
+
+  it('carries the vertex colors of the terrain material and open-sky occlusion', () => {
+    const geo = buildSkirtGeometry(bounds, () => 0);
+    const color = geo.getAttribute('color') as BufferAttribute;
+    const occlusion = geo.getAttribute('occlusion') as BufferAttribute;
+    const pos = geo.getAttribute('position') as BufferAttribute;
+    expect(color.count).toBe(pos.count);
+    expect(color.itemSize).toBe(3);
+    expect(occlusion.count).toBe(pos.count);
+    for (let i = 0; i < occlusion.count; i++) expect(occlusion.getX(i)).toBe(1);
+  });
+
+  it('continues the edge heights, then loosens into hills around the median', () => {
+    // At the edge: the clamped edge height (plus a vanishing swell). Far out: the base plus hills, not the edge.
+    expect(skirtHeight(10, 4, 0, 5, 5)).toBeCloseTo(10, 6);
+    expect(Math.abs(skirtHeight(10, 4, 3, 5, 5) - 10)).toBeLessThan(0.5);
+    const far = skirtHeight(10, 4, 600, 300, -200);
+    expect(Math.abs(far - 4)).toBeLessThan(9);
+    expect(far).not.toBeCloseTo(10, 0);
+    // Hills stay in a bounded band and are not flat.
+    const samples = Array.from({ length: 200 }, (_, i) => skirtHills(i * 13.7, i * 7.1));
+    expect(Math.max(...samples)).toBeLessThanOrEqual(1.22);
+    expect(Math.min(...samples)).toBeGreaterThanOrEqual(-1.22);
+    expect(Math.max(...samples) - Math.min(...samples)).toBeGreaterThan(0.8);
+  });
+
+  it('lets the ground rise and fall gently: no step between neighbouring rings', () => {
+    const geo = buildSkirtGeometry({ minX: 0, maxX: 384, minZ: 0, maxZ: 384 }, (x) => 5 + x * 0.01);
+    const pos = geo.getAttribute('position') as BufferAttribute;
+    const n = pos.count / SKIRT_RINGS.length;
+    for (let r = 1; r < SKIRT_RINGS.length; r++)
+      for (let i = 0; i < n; i++) {
+        const gap = SKIRT_RINGS[r]! - SKIRT_RINGS[r - 1]!;
+        const dy = Math.abs(pos.getY(r * n + i) - pos.getY((r - 1) * n + i));
+        // Slope along the ring step stays under about 40 percent.
+        expect(dy).toBeLessThan(gap * 0.4 + 0.3);
+      }
   });
 });

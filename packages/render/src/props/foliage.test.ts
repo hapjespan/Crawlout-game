@@ -40,7 +40,7 @@ const LIGHT = new Vector3(0.4, 1, 0.3);
 const heightAt = (): number => 0;
 
 function fakeDecals(): DecalLayer {
-  return { push: () => {} } as unknown as DecalLayer;
+  return { push: () => {}, pushContact: () => {} } as unknown as DecalLayer;
 }
 
 function camera(at: Vector3, lookAt: Vector3): PerspectiveCamera {

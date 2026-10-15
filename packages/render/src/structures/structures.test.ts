@@ -70,7 +70,23 @@ describe('structure visuals', () => {
 
 describe('StructureLayer', () => {
   const material = (): MeshBasicNodeMaterial => new MeshBasicNodeMaterial();
-  const decals = { push() {} } as unknown as DecalLayer;
+  const contacts: { halfX: number; halfZ: number; margin: number; layer: number }[] = [];
+  const decals = {
+    push() {},
+    pushContact(
+      _x: number,
+      _z: number,
+      halfX: number,
+      halfZ: number,
+      margin: number,
+      _style: unknown,
+      layer = -1,
+    ) {
+      contacts.push({ halfX, halfZ, margin, layer });
+    },
+    addContactMask: () => 3,
+    clearContactMasks() {},
+  } as unknown as DecalLayer;
 
   function setup(): {
     layer: StructureLayer;
@@ -225,6 +241,27 @@ describe('StructureLayer', () => {
       layer.update(frame, camera, decals);
       expect(near.count).toBe(0);
       expect(far.count).toBe(1);
+    });
+
+    it('gives every building a contact decal: the mesh mask for a finished asset, the footprint box for sites and placeholders', () => {
+      const { layer, frame, camera } = setup();
+      layer.setBuildingAssets(new Map([[0, visual('hq', true)]]), material());
+      place(frame, [
+        [buildingTypeId(0), -4, 0], // asset, finished
+        [buildingTypeId(0), 4, 0], // asset, under construction
+        [buildingTypeId(3), 0, 6], // placeholder
+      ]);
+      frame.anim[1] = ANIM.build;
+      frame.animT[1] = 0.5;
+      contacts.length = 0;
+      layer.update(frame, camera, decals);
+      expect(contacts.length).toBe(3);
+      expect(contacts[0]!.layer).toBe(3); // addContactMask of the fake
+      expect(contacts[1]!.layer).toBe(-1);
+      expect(contacts[2]!.layer).toBe(-1);
+      // Footprint halves are the data footprint (4 x 4), the margin comes on top; a site's ring is wider.
+      expect(contacts[0]!.halfX).toBe(2);
+      expect(contacts[1]!.margin).toBeGreaterThan(contacts[0]!.margin);
     });
 
     it('brightens an asset by its albedo gain through the instance tint', () => {

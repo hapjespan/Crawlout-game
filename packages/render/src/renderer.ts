@@ -393,7 +393,7 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
     ...(opts.terrainChunks ? { chunks: opts.terrainChunks } : {}),
   });
   const water = new WaterLayer(scene, { lightDir: DEFAULT_LIGHT_DIR, time, shadow: sun?.factor });
-  const skirt = new TerrainSkirt(scene, DEFAULT_LIGHT_DIR);
+  const skirt = new TerrainSkirt(scene, terrain.material);
   /** The terrain's height range: the slab the shadow camera is fitted over. */
   let groundLo = 0;
   let groundHi = 0;

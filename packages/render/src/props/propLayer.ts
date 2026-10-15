@@ -33,6 +33,7 @@ import {
   type DecalLayer,
   type DecalStyle,
 } from '../decals/decalLayer.js';
+import { propContact } from '../decals/contact.js';
 import { PROP_LOD_PX, ScreenLod, type ScreenLodThresholds } from '../lod/screenLod.js';
 import { NEUTRAL_TEAM } from '../palette.js';
 import { simYawToRender } from '../snapshot/interpolate.js';
@@ -504,8 +505,13 @@ export class PropLayer {
         for (let k = s0; k < s0 + keep; k++) {
           if (blobs >= this.maxBlobs) return;
           const o = k * STRIDE;
-          const half = r * d[o + 4]!;
-          decals.push(d[o]!, d[o + 2]!, half, half, this.blob);
+          const scale = d[o + 4]!;
+          const half = r * scale;
+          // Large rocks, crates and the like sit in the ground with a contact decal instead of the round blob.
+          const contact = propContact(g.category, g.visual.radius * g.visual.fit * scale);
+          if (contact)
+            decals.pushContact(d[o]!, d[o + 2]!, half, half, contact.margin, contact.style);
+          else decals.push(d[o]!, d[o + 2]!, half, half, this.blob);
           blobs++;
         }
       }
