@@ -58,7 +58,9 @@
       scene.add(sun);
 
       const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
-      const palette = [0xff0000, 0x00aa00, 0x3060ff, 0xffd000, 0xff00ff, 0x00cccc, 0xff8800, 0x8800ff, 0x888888];
+      const palette = [
+        0xff0000, 0x00aa00, 0x3060ff, 0xffd000, 0xff00ff, 0x00cccc, 0xff8800, 0x8800ff, 0x888888,
+      ];
 
       function prepare(gltf, debug) {
         let i = 0;
@@ -86,7 +88,12 @@
         for (let z = -h / 2; z <= h / 2 + 1e-6; z += 1) pts.push(-w / 2, 0.01, z, w / 2, 0.01, z);
         const geo = new THREE.BufferGeometry();
         geo.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
-        g.add(new THREE.LineSegments(geo, new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.35 })));
+        g.add(
+          new THREE.LineSegments(
+            geo,
+            new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.35 }),
+          ),
+        );
         const edge = new THREE.LineLoop(
           new THREE.BufferGeometry().setFromPoints([
             new THREE.Vector3(-w / 2, 0.02, -h / 2),
@@ -106,7 +113,9 @@
         q.get('glb')
           .split(',')
           .forEach((url, i) => {
-            const [w, h] = (fps[i] ?? `${q.get('fw') ?? 0}x${q.get('fh') ?? 0}`).split('x').map(Number);
+            const [w, h] = (fps[i] ?? `${q.get('fw') ?? 0}x${q.get('fh') ?? 0}`)
+              .split('x')
+              .map(Number);
             items.push({ id: url, url, w, h });
           });
       } else {
@@ -119,7 +128,14 @@
           if (a.kind !== 'building') continue;
           if (q.get('only') && q.get('only') !== a.id) continue;
           const f = bySlug.get(a.id) ?? { w: 0, h: 0 };
-          items.push({ id: a.id, url: dir + a.lods[lod].path, w: f.w, h: f.h, tris: a.lods[lod].triangles, bounds: a.bounds });
+          items.push({
+            id: a.id,
+            url: dir + a.lods[lod].path,
+            w: f.w,
+            h: f.h,
+            tris: a.lods[lod].triangles,
+            bounds: a.bounds,
+          });
         }
       }
 
@@ -148,7 +164,9 @@
         }
         scene.add(root);
         const box = new THREE.Box3().setFromObject(gltf.scene);
-        info.push(`${item.id}${item.tris ? ' tris ' + item.tris : ''} bbox ${box.min.toArray().map((v) => v.toFixed(2))} .. ${box.max.toArray().map((v) => v.toFixed(2))}`);
+        info.push(
+          `${item.id}${item.tris ? ' tris ' + item.tris : ''} bbox ${box.min.toArray().map((v) => v.toFixed(2))} .. ${box.max.toArray().map((v) => v.toFixed(2))}`,
+        );
         idx++;
       }
       document.getElementById('info').textContent = info.join('\n');
@@ -158,7 +176,11 @@
       const sphere = new THREE.Box3().setFromObject(scene).getBoundingSphere(new THREE.Sphere());
       const target = sphere.center.clone();
       const aspectFit = Math.max(1, 1 / Math.min(1, W / H));
-      const dist = (sphere.radius / Math.sin((camera.fov * Math.PI) / 360)) * 0.95 * (items.length === 1 ? 1 : 0.8) * aspectFit;
+      const dist =
+        (sphere.radius / Math.sin((camera.fov * Math.PI) / 360)) *
+        0.95 *
+        (items.length === 1 ? 1 : 0.8) *
+        aspectFit;
       camera.position.set(
         target.x + Math.sin(az) * Math.cos(el) * dist,
         target.y + Math.sin(el) * dist,

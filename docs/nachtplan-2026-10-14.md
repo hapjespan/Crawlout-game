@@ -4,16 +4,16 @@ Doel: de punten uit de speltest van 14 oktober afmaken. Dat zijn echte assets, r
 
 ## Model en effort per taak
 
-| Taak | Agent | Model, effort | Waarom |
-| --- | --- | --- | --- |
-| Balans, AI, onderzoeksvoortgang in de status | sim-core en content | Opus, hoog | Determinisme en lange meetlussen in de sim |
-| Gebouwpaneel met kaarten | hud | Sonnet, midden | Afgebakende UI met een duidelijke interface |
-| Echte assets door de buis (vingers snoeien, LODs, clipmap) | asset-cli | Sonnet, hoog | Lastige geometrie, maar wel mechanisch toetsbaar |
-| Props verspreiden over Rustbelt (decoratie, deterministisch) | map | Sonnet, midden | Data en een generator |
-| Echte karakters en props in de renderer, meting | render-pipeline | Opus, hoog | Shader-reviewgate en het prestatiebudget |
-| Review van alle gates en contracten | architect | Fable, hoog | Contracten en determinisme |
-| Opmaak (prettier), CHANGELOGs, docs | bulk | Haiku, laag | Mechanisch werk |
-| Integratie in de client, browsertest, merge en push | hoofdsessie | Opus | Ziet het geheel |
+| Taak                                                         | Agent               | Model, effort  | Waarom                                           |
+| ------------------------------------------------------------ | ------------------- | -------------- | ------------------------------------------------ |
+| Balans, AI, onderzoeksvoortgang in de status                 | sim-core en content | Opus, hoog     | Determinisme en lange meetlussen in de sim       |
+| Gebouwpaneel met kaarten                                     | hud                 | Sonnet, midden | Afgebakende UI met een duidelijke interface      |
+| Echte assets door de buis (vingers snoeien, LODs, clipmap)   | asset-cli           | Sonnet, hoog   | Lastige geometrie, maar wel mechanisch toetsbaar |
+| Props verspreiden over Rustbelt (decoratie, deterministisch) | map                 | Sonnet, midden | Data en een generator                            |
+| Echte karakters en props in de renderer, meting              | render-pipeline     | Opus, hoog     | Shader-reviewgate en het prestatiebudget         |
+| Review van alle gates en contracten                          | architect           | Fable, hoog    | Contracten en determinisme                       |
+| Opmaak (prettier), CHANGELOGs, docs                          | bulk                | Haiku, laag    | Mechanisch werk                                  |
+| Integratie in de client, browsertest, merge en push          | hoofdsessie         | Opus           | Ziet het geheel                                  |
 
 ## Golven
 

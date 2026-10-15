@@ -151,15 +151,13 @@ export class UnitAssetLoader {
       teamMask,
       rasterize,
     });
-    const rest = scenes
-      .slice(1)
-      .map((scene) =>
-        unitGeometryFromGltf(scene, {
-          boneCount: entry.boneCount,
-          teamMask: lod0.teamMask,
-          rasterize,
-        }),
-      );
+    const rest = scenes.slice(1).map((scene) =>
+      unitGeometryFromGltf(scene, {
+        boneCount: entry.boneCount,
+        teamMask: lod0.teamMask,
+        rasterize,
+      }),
+    );
     return { id: assetId, entry, anims, lods: [lod0, rest[0]!, rest[1]!] };
   }
 }

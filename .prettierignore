@@ -1,0 +1,8 @@
+# Generated or vendored files: not formatted by Prettier
+tools/replay/fixtures/
+data/maps/*.json
+assets/
+pnpm-lock.yaml
+**/dist/
+.claude/
+node_modules/

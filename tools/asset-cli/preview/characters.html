@@ -101,10 +101,11 @@
           } else if (debug === 'mask') {
             o.material = new THREE.ShaderMaterial({
               uniforms: { map: { value: source.map } },
-              vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * skinning_vertex_placeholder; }'.replace(
-                'skinning_vertex_placeholder',
-                'vec4(position, 1.0)',
-              ),
+              vertexShader:
+                'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * skinning_vertex_placeholder; }'.replace(
+                  'skinning_vertex_placeholder',
+                  'vec4(position, 1.0)',
+                ),
               fragmentShader:
                 'uniform sampler2D map; varying vec2 vUv; void main(){ gl_FragColor = vec4(vec3(texture2D(map, vUv).a), 1.0); }',
             });
@@ -120,7 +121,9 @@
       const manifest = await (await fetch(base)).json();
       const dir = base.slice(0, base.lastIndexOf('/') + 1);
       const only = q.get('only') ? new Set(q.get('only').split(',')) : null;
-      const items = manifest.assets.filter((a) => a.kind === 'character' && (!only || only.has(a.id)));
+      const items = manifest.assets.filter(
+        (a) => a.kind === 'character' && (!only || only.has(a.id)),
+      );
       const spacing = Number(q.get('spacing') ?? 1.4);
       const info = [];
       let idx = 0;
