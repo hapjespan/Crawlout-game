@@ -11,7 +11,8 @@
 // the team mask from the color alpha or, for 'diffuseAlpha' assets, from the atlas alpha; uv = (-1, -1) marks a
 // primitive without the atlas (reads white). Vertex skinning reads 4 influences, blends two adjacent frames, then
 // rotates by yaw.
-// Shading: 3-step toon ramp plus rimlight, team color through the team mask. No PBR.
+// Shading: 3-step toon ramp (soft band edges) plus rimlight on the screen silhouette, team color through the team
+// mask on the albedo's luminance. No PBR.
 // Hero (typeId 1000 + heroId): the unit layer adds HERO_INSTANCE_FLAG to the flags in iAnim.w. A hero is drawn
 // HERO_SCALE times bigger, and only a hero shows the hero parts of the placeholder (color alpha >= HERO_PART_ALPHA,
 // humanoidGeometry.ts); for other instances those vertices collapse onto their bone and rasterize nothing.
@@ -25,6 +26,7 @@ import {
   floor,
   int,
   ivec2,
+  length,
   max,
   min,
   mix,
@@ -34,10 +36,10 @@ import {
   sin,
   smoothstep,
   texture,
-  step,
   textureLoad,
   uniform,
   uniformArray,
+  vec2,
   vec3,
   vec4,
   vertexStage,
@@ -70,10 +72,103 @@ export interface UnitMaterialBundle {
   lightDir: { value: Vector3 };
 }
 
-/** Shared 3-step toon ramp: half-lambert quantized to three bands. */
+/**
+ * The 3-step toon ramp: half-lambert in three bands (0.52, 0.78, 1.0), band edges at 0.42 and 0.7. Each edge is spread
+ * over +-TOON_EDGE_SOFT of half-lambert (as the terrain does): a hard step follows the interpolated normal across
+ * every triangle, so on a 1500-tri unit the band border stair-steps along the edges and the model looks faceted.
+ */
+export const TOON_BANDS = {
+  dark: 0.52,
+  mid: 0.26,
+  light: 0.22,
+  midAt: 0.42,
+  lightAt: 0.7,
+} as const;
+export const TOON_EDGE_SOFT = 0.03;
+
+/** Shared 3-step toon ramp (see TOON_BANDS). */
 export function toonRamp(ndl: Node<'float'>): Node<'float'> {
   const h = ndl.mul(0.5).add(0.5);
-  return float(0.52).add(step(0.42, h).mul(0.26)).add(step(0.7, h).mul(0.22));
+  const b = TOON_BANDS;
+  const s = TOON_EDGE_SOFT;
+  return float(b.dark)
+    .add(smoothstep(b.midAt - s, b.midAt + s, h).mul(b.mid))
+    .add(smoothstep(b.lightAt - s, b.lightAt + s, h).mul(b.light));
+}
+
+/**
+ * Rimlight. The silhouette test runs on the horizontal parts of N and V: the RTS camera looks down 50 to 74 degrees,
+ * so in 3D the N.V of a wall that faces the camera is at most cos(pitch) (0.28 to 0.64) and every side surface of a
+ * unit or building lit up as rim (the white sheen over coats and walls). In the ground plane a surface facing the
+ * camera reads 1 at any pitch and only the screen-space silhouette (beyond ~75 degrees) gets the rim. Surfaces that
+ * face mostly up or down (|N.xz| small) get none.
+ * The rim adds RIM.floor + RIM.albedo * albedo instead of a fixed white: a dark coat gets a thin light edge, not a
+ * white band (0.22 linear on a 0.03 albedo was seven times the lit color). Full on the lit side, RIM.shadeSide on the
+ * side away from the light.
+ */
+export const RIM = {
+  from: 0.72,
+  to: 0.92,
+  /** |N.xz| range over which a surface counts as a side (0: faces straight up or down). */
+  sideFrom: 0.25,
+  sideTo: 0.6,
+  floor: 0.035,
+  albedo: 0.45,
+  shadeSide: 0.4,
+} as const;
+
+function smoothstepCpu(a: number, b: number, x: number): number {
+  const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
+  return t * t * (3 - 2 * t);
+}
+
+/** CPU form of the silhouette term in rimLight (same constants), for tests and tuning. N and V unit length. */
+export function silhouetteEdge(n: readonly number[], v: readonly number[]): number {
+  const nLen = Math.hypot(n[0]!, n[2]!);
+  const vLen = Math.max(1e-6, Math.hypot(v[0]!, v[2]!));
+  const facing = (n[0]! * v[0]! + n[2]! * v[2]!) / vLen / Math.max(nLen, 1e-4);
+  return (
+    smoothstepCpu(RIM.from, RIM.to, 1 - facing) * smoothstepCpu(RIM.sideFrom, RIM.sideTo, nLen)
+  );
+}
+
+export function rimLight(
+  N: Node<'vec3'>,
+  V: Node<'vec3'>,
+  L: Node<'vec3'>,
+  albedo: Node<'vec3'>,
+): Node<'vec3'> {
+  const nh = vec2(N.x, N.z);
+  const nLen = length(nh);
+  const vh = normalize(vec2(V.x, V.z));
+  const facing = dot(nh, vh).div(max(nLen, 1e-4));
+  const edge = smoothstep(RIM.from, RIM.to, float(1).sub(facing)).mul(
+    smoothstep(RIM.sideFrom, RIM.sideTo, nLen),
+  );
+  const lit = mix(
+    float(RIM.shadeSide),
+    float(1),
+    smoothstep(0.35, 0.65, dot(N, L).mul(0.5).add(0.5)),
+  );
+  return albedo.mul(RIM.albedo).add(RIM.floor).mul(edge.mul(lit));
+}
+
+/** Luminance weights (linear Rec. 709). */
+const LUMA = [0.2126, 0.7152, 0.0722] as const;
+
+/**
+ * Team color under the mask: the team color times the albedo's luminance (0.6 * l + 0.55). On a neutral grey base (the
+ * fallback team material, the brief's painted mask) this equals the former per-channel team * (0.6 * base + 0.55); on
+ * a colored base (a blue jumpsuit masked by hue) the per-channel product multiplied the hue in twice and flattened the
+ * texture into one saturated color.
+ */
+export function teamAlbedo(
+  base: Node<'vec3'>,
+  team: Node<'vec3'>,
+  mask: Node<'float'>,
+): Node<'vec3'> {
+  const l = dot(base, vec3(...LUMA));
+  return mix(base, team.mul(l.mul(0.6).add(0.55)), mask);
 }
 
 export function createUnitMaterial(
@@ -152,15 +247,15 @@ export function createUnitMaterial(
     if (albedoSource.maskFromMapAlpha) mask = max(mask, texel.w);
   }
   const iTeam = palette.element(int(iAnim.z));
-  const albedo = mix(base, iTeam.mul(base.mul(0.6).add(0.55)), mask);
+  const albedo = teamAlbedo(base, iTeam, mask);
   const N = normalize(worldNrm);
   const shade = toonRamp(dot(N, lightDir));
   const V = normalize(cameraPosition.sub(vWorldPos));
-  const rim = smoothstep(0.62, 0.8, float(1).sub(max(dot(N, V), 0))).mul(0.22);
+  const rim = rimLight(N, V, lightDir, albedo);
 
   const material = new MeshBasicNodeMaterial();
   material.positionNode = worldPos;
-  material.colorNode = vec4(albedo.mul(shade).add(vec3(rim, rim, rim.mul(0.9))), 1);
+  material.colorNode = vec4(albedo.mul(shade).add(rim), 1);
   material.name = 'crawlout-unit-toon';
   return { material, textures: [boneTex, clipTex], lightDir };
 }

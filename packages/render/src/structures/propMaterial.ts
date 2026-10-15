@@ -1,5 +1,6 @@
 // Instanced toon material for static structures (buildings, scrap heaps, claim flags). Same look as the units:
-// 3-step toon ramp plus rimlight, team color through the team mask in the vertex color alpha. No PBR.
+// 3-step toon ramp plus rimlight (shared with unitMaterial.ts, a little weaker), team color through the team mask in
+// the vertex color alpha. No PBR.
 //
 // Per instance: iPos (x, y, z meters; yaw radians around +Y, 0 keeps +Z), iScale (x, y, z; team palette slot),
 // iTint (rgb multiplier on the albedo; w unused). An optional shadow factor (1 lit, 0 shadowed) drops the light to
@@ -24,7 +25,6 @@ import {
   normalize,
   select,
   sin,
-  smoothstep,
   texture,
   uniform,
   uniformArray,
@@ -33,7 +33,7 @@ import {
   vertexStage,
 } from 'three/tsl';
 import { teamPalette } from '../palette.js';
-import { toonRamp } from '../units/unitMaterial.js';
+import { rimLight, teamAlbedo, toonRamp } from '../units/unitMaterial.js';
 
 export interface PropMaterialOptions {
   lightDir: Vector3;
@@ -54,6 +54,9 @@ export interface PropMaterialOptions {
 
 /** Warm grey the grade pulls towards (linear rgb, multiplied by the albedo's luminance). */
 const GRADE_TONE = [1.08, 1.0, 0.82] as const;
+
+/** Rim on structures and props relative to units (unitMaterial.ts RIM): they should not compete with the units. */
+const PROP_RIM = 0.7;
 
 /** The darkest toon band, what a surface in shadow gets. */
 const SHADOW_BAND = 0.52;
@@ -110,16 +113,16 @@ export function createPropMaterial(opts: PropMaterialOptions): MeshBasicNodeMate
     const luma = dot(base, vec3(0.2126, 0.7152, 0.0722));
     base = mix(base, vec3(...GRADE_TONE).mul(luma), opts.grade);
   }
-  const albedo = mix(base, team.mul(base.mul(0.6).add(0.55)), color.w);
+  const albedo = teamAlbedo(base, team, color.w);
   const N = normalize(worldNrm);
   let shade = toonRamp(dot(N, light));
   if (opts.shadow) shade = mix(float(SHADOW_BAND), shade, opts.shadow);
   const V = normalize(cameraPosition.sub(vWorldPos));
-  const rim = smoothstep(0.62, 0.8, float(1).sub(max(dot(N, V), 0))).mul(0.16);
+  const rim = rimLight(N, V, light, albedo).mul(PROP_RIM);
 
   const m = new MeshBasicNodeMaterial();
   m.positionNode = worldPos;
-  const out = vec4(albedo.mul(shade).add(vec3(rim, rim, rim.mul(0.9))), 1);
+  const out = vec4(albedo.mul(shade).add(rim), 1);
   // A shadow caster must not sample its own shadow map in the shadow pass: three's shadow pass reads colorNode.a,
   // so a material that receives the shadow puts its color in fragmentNode instead.
   if (opts.shadow) m.fragmentNode = out;
