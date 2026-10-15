@@ -41,6 +41,7 @@ import { createIO } from './lods.js';
 import {
   manifestSchema,
   PROP_CATEGORIES,
+  albedoGainSchema,
   propCategorySchema,
   type AssetEntry,
 } from './manifest.js';
@@ -86,6 +87,8 @@ export const propSchema = z.object({
   centre: z.enum(['bounds', 'base']).optional(),
   /** Verwacht alfagedrag: 'mask' (bladkaarten, gras) of 'none'. Wijkt de bron af, dan faalt de build. */
   alpha: z.enum(['mask', 'none']).optional(),
+  /** Helderheidsfactor op de albedo (0,5 tot 2); komt als `albedoGain` in het manifest. Standaard 1. */
+  albedoGain: albedoGainSchema.optional(),
   /** Vrije toelichting (waarom deze maat), voor wie de config bijstuurt. */
   note: z.string().optional(),
 });
@@ -1091,6 +1094,7 @@ export async function buildPacks(
           teamMask: 'none',
           category: prop.category,
           ...(prepared.alpha.foliage !== 'none' ? { alpha: 'mask' as const } : {}),
+          ...(prop.albedoGain !== undefined ? { albedoGain: prop.albedoGain } : {}),
         });
       } catch (error) {
         report.errors.push(

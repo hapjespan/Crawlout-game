@@ -5,10 +5,13 @@ import {
   Color,
   Matrix4,
   PCFShadowMap,
+  DataTexture,
+  LinearFilter,
   type Mesh,
   type Object3D,
   PerspectiveCamera,
   Plane,
+  RGBAFormat,
   SRGBColorSpace,
   Raycaster,
   Scene,
@@ -54,6 +57,8 @@ import {
   type PropSourceOptions,
   type ResolvedSource,
 } from './props/propAssets.js';
+import { propCategoryOf } from './props/propCategory.js';
+import { buildGrassMask } from './terrain/grassMask.js';
 import { PropLayer, type PropLayerOptions, type RenderProp } from './props/propLayer.js';
 import { windOf } from './props/propWind.js';
 import {
@@ -76,6 +81,7 @@ import {
   type TerrainTextureStatus,
 } from './terrain/terrainTextures.js';
 import { bakeAnimations } from './units/bake.js';
+import { ALBEDO_GAIN_RANGE } from '@crawlout/asset-cli/manifest';
 import { resolveManifestPath, UnitAssetLoader, createGltfIO } from './units/unitAssetLoader.js';
 import {
   UnitAssetRegistry,
@@ -161,8 +167,8 @@ export interface CreateRendererOptions {
   albedoGain?: Readonly<Record<string, number>>;
 }
 
-/** Allowed albedoGain values. */
-export const ALBEDO_GAIN_RANGE = [0.5, 2] as const;
+/** Allowed albedoGain values (the manifest field has the same range). */
+export { ALBEDO_GAIN_RANGE };
 
 export interface SetTerrainOptions {
   /**
@@ -627,9 +633,35 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
     decals.setHeights(terrain.heightTexture);
     props.relayout();
   };
+  // Grass density mask over the terrain, from the grass and plant props (terrain/grassMask.ts).
+  let grassTexture: DataTexture | null = null;
+  let grassProps: readonly RenderProp[] = [];
+  const applyGrassMask = (): void => {
+    const hf = terrain.heightField;
+    const mask = hf
+      ? buildGrassMask(
+          grassProps.map((p) => ({ asset: p.asset, x: p.x, y: p.y })),
+          (asset) => props.categoryOf(asset) ?? propCategoryOf(asset),
+          hf,
+        )
+      : null;
+    grassTexture?.dispose();
+    grassTexture = null;
+    if (!mask) {
+      terrain.setGrassMask(null);
+      return;
+    }
+    const rgba = new Uint8Array(mask.w * mask.h * 4);
+    for (let i = 0; i < mask.data.length; i++) rgba.fill(mask.data[i]!, i * 4, i * 4 + 4);
+    grassTexture = new DataTexture(rgba, mask.w, mask.h, RGBAFormat);
+    grassTexture.minFilter = grassTexture.magFilter = LinearFilter;
+    grassTexture.needsUpdate = true;
+    terrain.setGrassMask(grassTexture, mask);
+  };
   const setTerrain = (geometry: TerrainGeometry, terrainOpts: SetTerrainOptions = {}): void => {
     terrain.set(geometry, terrainOpts.albedoLayout ?? null);
     if (waterMask) applyWater();
+    if (grassProps.length > 0) applyGrassMask();
     afterHeights();
     scheduleWarmUp();
     const hf = terrain.heightField;
@@ -784,6 +816,7 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
     async setProps(list, source = {}) {
       const generation = ++propGeneration;
       props.setProps(list);
+      grassProps = list;
       const src: ResolvedSource = {
         manifestUrl:
           source.manifestUrl === null
@@ -827,6 +860,7 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
             console.warn(`[render] prop "${assetId}": ${status.reason}`);
         }),
       );
+      if (generation === propGeneration) applyGrassMask();
       scheduleWarmUp();
       return [...current.values()].map((st) => ({ ...st }));
     },
@@ -919,6 +953,7 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
       terrain.dispose();
       water.dispose();
       terrainTexture?.dispose();
+      grassTexture?.dispose();
       interp.clear();
       zones.clear();
       gpu.dispose();

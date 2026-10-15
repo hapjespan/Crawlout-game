@@ -220,6 +220,14 @@ export class TerrainLayer {
     this.look.setAlbedo(map);
   }
 
+  /** Grass density mask (grassMask.ts) over the given world rectangle; null removes it. The caller keeps ownership. */
+  setGrassMask(
+    map: Texture | null,
+    rect?: { minX: number; minZ: number; sizeX: number; sizeZ: number },
+  ): void {
+    this.look.setGrassMask(map, rect);
+  }
+
   /** Rock and ground tints, sRGB hex (#rrggbb). */
   setTints(rockTint: string, groundTint: string): void {
     this.look.setTints(rockTint, groundTint);

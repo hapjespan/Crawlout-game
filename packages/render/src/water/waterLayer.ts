@@ -213,9 +213,16 @@ export function createWaterMaterial(opts: WaterLayerOptions): MeshBasicNodeMater
   const along = dot(p, flowDir).sub(t.mul(FORD_STREAK_SPEED));
   const across = dot(p, vec2(flowDir.y.negate(), flowDir.x));
   const streakA = sin(across.mul(3.6).add(sin(along.mul(0.9).add(1.3)).mul(1.7)));
-  const streakB = sin(across.mul(5.3).add(sin(along.mul(1.7)).mul(2.1)).add(2.0));
+  const streakB = sin(
+    across
+      .mul(5.3)
+      .add(sin(along.mul(1.7)).mul(2.1))
+      .add(2.0),
+  );
   const patch = sin(along.mul(0.55).add(across.mul(0.7)));
-  const streaks = smoothstep(0.2, 0.9, streakA.add(streakB).mul(0.5)).mul(smoothstep(-0.6, 0.5, patch));
+  const streaks = smoothstep(0.2, 0.9, streakA.add(streakB).mul(0.5)).mul(
+    smoothstep(-0.6, 0.5, patch),
+  );
   const fordFoam = ford
     .mul(streaks)
     .mul(FORD_FOAM_MAX)
@@ -223,7 +230,11 @@ export function createWaterMaterial(opts: WaterLayerOptions): MeshBasicNodeMater
     .mul(smoothstep(0.0, 0.03, depth));
   const foam = shoreFoam.mul(smoothstep(0.0, 0.02, depth));
   const lit = base.add(vec3(glint, glint, glint.mul(0.95)));
-  const color = mix(mix(lit, vec3(...FOAM), foam), mix(lit, vec3(...FOAM), fordFoam.mul(0.5)), float(1).sub(foam));
+  const color = mix(
+    mix(lit, vec3(...FOAM), foam),
+    mix(lit, vec3(...FOAM), fordFoam.mul(0.5)),
+    float(1).sub(foam),
+  );
   const alpha = max(mix(float(0.5), float(0.92), smoothstep(0.0, 0.75, depth)), foam);
 
   const m = new MeshBasicNodeMaterial();

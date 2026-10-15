@@ -44,7 +44,11 @@ Vóór de validatie draait een conform-stap (`src/conform.ts`), alleen voor wat 
 
 ```json
 {
-  "rigs": { "quaternius-ual": { "bones": { "DEF-hips": "Hips", "pelvis": "Hips", "DEF-hand.L": "LeftHand" } } },
+  "rigs": {
+    "quaternius-ual": {
+      "bones": { "DEF-hips": "Hips", "pelvis": "Hips", "DEF-hand.L": "LeftHand" }
+    }
+  },
   "assets": {
     "dweller_body_human": { "rig": "quaternius-ual", "lod0Triangles": 3600 },
     "rock001": { "scale": 0.01 }
@@ -74,16 +78,16 @@ npx -y pnpm@9 assets --local     # of: pnpm assets:local
 
 Extra velden per entry in de rigmap (ook bruikbaar voor `assets/src`, maar bedoeld voor lokale bronnen), in de volgorde waarin de conform-stap ze uitvoert:
 
-| Veld | Wat |
-| --- | --- |
-| `id` | Publiceer onder deze id in plaats van de bestandsnaam, bijvoorbeeld `dweller_body_human` om het repo-asset lokaal te vervangen. Rigmap en clipmap blijven op de bestandsnaam-id. |
-| `meshes` | Alleen deze meshes (exacte namen) blijven over; de rest van een scène (deur, vloer) vervalt, met ongebruikte nodes, materialen en textures. |
-| `fit` | `{ height, yawDegrees? }`: het skelet wordt in zijn node-pose opnieuw gebonden (rustpose = bindpose), gedraaid om +Y, geschaald naar `height` meter, voeten op y = 0, midden op x = z = 0. Alle transformaties zijn daarna toegepast (joints star, mesh-nodes op de identiteit). De eigen clips van de bron vervallen. |
-| `rig` (met `merge`) | Zoals hierboven; `rigs.<naam>.merge` stuurt het gewicht van een gesnoeide bone naar een gekozen bone in plaats van de voorouder (bijvoorbeeld een twist-bone die onder de schouder hangt maar bij de bovenarm hoort). |
-| `retarget` | `{ from, rigmap, clipmap, bones?, alignRest? }`, paden relatief aan de rigmap: de clips van een ander karakter (de Quaternius-UAL) worden overgezet, zie hieronder. |
-| `emissiveAsBaseColor` | Een materiaal zonder diffuse maar met een emissive textuur (Sketchfab-unlit) krijgt die als diffuse. |
-| `atlas` | Alle diffuse textures in één vierkante PNG-atlas van maximaal deze maat (render tekent één atlas per draw). Elke textuur krijgt een cel (macht van 2); past het niet, dan halveert eerst de textuur met de hoogste texeldichtheid. UV's buiten 0 tot 1 gaan zoals de bron ze bedoelde (wrap REPEAT): elke driehoek schuift naar zijn eigen tegel (hoekpunten die in driehoeken met verschillende tegels zitten worden gedupliceerd) en een overschrijding van hooguit 3 procent wordt afgeklemd. Een driehoek die een tegelgrens echt overspant (tegelende UV's, bijvoorbeeld 0 tot 3) laat de textuur in de cel N x N keer herhalen (cel groter, maximaal 8 herhalingen, `atlas.cells[].repeat` in het rapport); wrap CLAMP_TO_EDGE klemt per hoekpunt. Daarna is er één materiaal `atlas` en één primitive. |
-| `teamMask` | `{ hue: [van, tot], minSaturation?, minValue?, softness? }`: het teammasker per texel in de alfa van de diffuse (render: modus `diffuseAlpha`). Texels in het kleurbereik krijgen alfa 1, de rest 0; het masker wordt vervaagd (gauss met sigma `softness` texels, standaard 1) en door een smoothstep gehaald, zodat de rand zacht is en speldeprikken in de textuurruis verdwijnen. De kleur van de texels blijft ongemoeid, het materiaal blijft OPAQUE. Het manifest krijgt `teamMask: 'diffuseAlpha'` (zie Manifest). Draait na de atlas, dus op de textuur die render laadt. |
+| Veld                  | Wat                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                  | Publiceer onder deze id in plaats van de bestandsnaam, bijvoorbeeld `dweller_body_human` om het repo-asset lokaal te vervangen. Rigmap en clipmap blijven op de bestandsnaam-id.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| `meshes`              | Alleen deze meshes (exacte namen) blijven over; de rest van een scène (deur, vloer) vervalt, met ongebruikte nodes, materialen en textures.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `fit`                 | `{ height, yawDegrees? }`: het skelet wordt in zijn node-pose opnieuw gebonden (rustpose = bindpose), gedraaid om +Y, geschaald naar `height` meter, voeten op y = 0, midden op x = z = 0. Alle transformaties zijn daarna toegepast (joints star, mesh-nodes op de identiteit). De eigen clips van de bron vervallen.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `rig` (met `merge`)   | Zoals hierboven; `rigs.<naam>.merge` stuurt het gewicht van een gesnoeide bone naar een gekozen bone in plaats van de voorouder (bijvoorbeeld een twist-bone die onder de schouder hangt maar bij de bovenarm hoort).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `retarget`            | `{ from, rigmap, clipmap, bones?, alignRest? }`, paden relatief aan de rigmap: de clips van een ander karakter (de Quaternius-UAL) worden overgezet, zie hieronder.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `emissiveAsBaseColor` | Een materiaal zonder diffuse maar met een emissive textuur (Sketchfab-unlit) krijgt die als diffuse.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `atlas`               | Alle diffuse textures in één vierkante PNG-atlas van maximaal deze maat (render tekent één atlas per draw). Elke textuur krijgt een cel (macht van 2); past het niet, dan halveert eerst de textuur met de hoogste texeldichtheid. UV's buiten 0 tot 1 gaan zoals de bron ze bedoelde (wrap REPEAT): elke driehoek schuift naar zijn eigen tegel (hoekpunten die in driehoeken met verschillende tegels zitten worden gedupliceerd) en een overschrijding van hooguit 3 procent wordt afgeklemd. Een driehoek die een tegelgrens echt overspant (tegelende UV's, bijvoorbeeld 0 tot 3) laat de textuur in de cel N x N keer herhalen (cel groter, maximaal 8 herhalingen, `atlas.cells[].repeat` in het rapport); wrap CLAMP_TO_EDGE klemt per hoekpunt. Daarna is er één materiaal `atlas` en één primitive. |
+| `teamMask`            | `{ hue: [van, tot], minSaturation?, minValue?, softness? }`: het teammasker per texel in de alfa van de diffuse (render: modus `diffuseAlpha`). Texels in het kleurbereik krijgen alfa 1, de rest 0; het masker wordt vervaagd (gauss met sigma `softness` texels, standaard 1) en door een smoothstep gehaald, zodat de rand zacht is en speldeprikken in de textuurruis verdwijnen. De kleur van de texels blijft ongemoeid, het materiaal blijft OPAQUE. Het manifest krijgt `teamMask: 'diffuseAlpha'` (zie Manifest). Draait na de atlas, dus op de textuur die render laadt.                                                                                                                                                                                                                            |
 
 Retargeten (`src/retarget.ts`): bron en doel staan na de conform-stap in hetzelfde assenstelsel (meters, +Y, gezicht +Z) met Mixamo-namen; koppeling op naam, of via `bones` (doel naar bron) waar ze verschillen. Per doelbone wordt de rotatie relatief aan de rustpose overgenomen: het verschil van de bronbone met zijn rustpose in de wereld, D = Q_bron(t) · Q_bron,rust⁻¹, wat voor een volledig gekoppelde keten gelijk is aan de lokale delta omgerekend naar de rustpose van het doel. Daarvoor komt een rustpose-uitlijning A (kortste rotatie van de botrichting van het doel in rust naar die van de bron in rust, voor bones met precies één gekoppeld kind; anders geërfd van de ouder), zodat een T-pose-clip goed op een model met hangende armen of in A-pose komt. Doel: Q_doel(t) = D · A · Q_doel,rust. De Hips-translatie is het verschil met de rustpositie, geschaald met beenlengte doel / bron. Doelbones zonder bron houden hun rustpose. De nieuwe clips (30 keyframes per seconde, LINEAR) worden daarna gebakken zoals elke andere clip.
 
@@ -95,14 +99,14 @@ Afhankelijkheid: `sharp` (al in de lockfile via gltf-transform) voor de atlas en
 
 ## Wat wordt gevalideerd
 
-| Regel | Norm |
-| --- | --- |
-| Tris | Karakters LOD0 maximaal 4000 (LOD1 1500, LOD2 600 via simplify). Props (lager, `budgets.ts`): LOD0 maximaal 2000, LOD1 800, LOD2 300; een prop eronder blijft ongewijzigd, dus de LODs zijn dan gelijk |
-| Bones | Maximaal 28 |
-| Botnamen | Mixamo (`mixamorig:Hips` enzovoort; prefix optioneel); kern-bones moeten bestaan |
-| Textuur | Maximaal 2048 x 2048 |
-| UV | Eén set (`TEXCOORD_0`) |
-| Schaal | Karakter ongeveer 1,8 m (tolerantie 15 procent), voeten rond y=0 (5 cm) |
+| Regel    | Norm                                                                                                                                                                                                   |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Tris     | Karakters LOD0 maximaal 4000 (LOD1 1500, LOD2 600 via simplify). Props (lager, `budgets.ts`): LOD0 maximaal 2000, LOD1 800, LOD2 300; een prop eronder blijft ongewijzigd, dus de LODs zijn dan gelijk |
+| Bones    | Maximaal 28                                                                                                                                                                                            |
+| Botnamen | Mixamo (`mixamorig:Hips` enzovoort; prefix optioneel); kern-bones moeten bestaan                                                                                                                       |
+| Textuur  | Maximaal 2048 x 2048                                                                                                                                                                                   |
+| UV       | Eén set (`TEXCOORD_0`)                                                                                                                                                                                 |
+| Schaal   | Karakter ongeveer 1,8 m (tolerantie 15 procent), voeten rond y=0 (5 cm)                                                                                                                                |
 
 Een karakter met animaties moet alle acht clips van `ANIM_NAMES` hebben (idle, walk, run, attack1, attack2, gather, build, death), direct of via de clipmap; een ontbrekende clip is een fout met de naam van die clip, een dubbelzinnige koppeling ook. Verder: precies 1 skin, en alle `JOINTS_0`-indices liggen binnen de joints van die skin. Een karakter zonder animaties krijgt een waarschuwing en geen `baked`.
 
@@ -134,6 +138,22 @@ Validatie per LOD (faalt de build): binnen de footprint (5 procent), vulling en 
 **Geen grondplaat (keuze, rustbelt-ronde 'scatter').** De vijf gebouwen met een erf (woning, hoofdgebouw, werkplaats, training: een `dirt`-box van 4 cm; lab: een `metal`-box van 8 cm) hadden een plaat die de footprint vulde, zodat de bounds de footprint op 5 procent haalden. Op het rotsterrein van Rustbelt XL stak die zandkleurige of grijze rechthoek hard af. Een lage, randloze erf-plaat in een neutrale aardetint is met effen materialen niet te maken: 'randloos' vraagt een verloop (vertexkleur of een alfa-rand) en de buis levert geen vertexkleuren of textures voor effen onderdelen; elke effen plaat houdt dus een scherpe rand, ook in een neutrale tint, en het terrein verschilt per plek van kleur. De plaat is daarom weggehaald (en de `dirt`-kleur uit `flatMaterials`): het huis staat op het vlakke bouwvlak van de map (`pads`, 30 m straal) en de voet is y = 0. De footprint-controle leunt niet meer op de plaat: zie de eisen onder `footprint` (binnen de footprint, vulling 85 procent, LOD2 75). `test/buildings.test.ts` bewaakt dat er geen vlakke box meer is die de footprint vult.
 
 Preview voor eigen controle: `tools/asset-cli/preview/characters.html` tekent de karakters uit een manifest in rustpose met het teammasker uit het manifest (`?manifest=/assets/dist-local/manifest.json&az=0&el=6`, opties `only`, `lod`, `team`, `debug=mask|normals|flat`); `tools/asset-cli/preview/buildings.html` (three.js, geen onderdeel van de buis) tekent de gebouwen uit `assets/dist` met footprint-raster, een maatstaf van 1,8 m en team-materialen in een spelerskleur; serveer de repo-root statisch en open `/tools/asset-cli/preview/buildings.html?manifest=/assets/dist/manifest.json&lod=0` (opties: `lod`, `only`, `az`, `el`, `debug=materials`).
+
+## Robots (`src/robots.ts`, `assets/src/robots.json`)
+
+Placeholders uit basisvormen (box, cylinder, cone) op echte schaal (poppetje 1,8 m), gebouwd zoals de gebouw-varianten (zelfde `parts`-formaat, `maxLod` en `minLod` voor detail per LOD; vormen worden niet gesimplificeerd, de LODs ontstaan uit de onderdelen). Alles staat in `robots.json`: `flatMaterials`, `units` (rigide units) en `buildings` (footprint, oneven cellen, volgt de bounds). Per id moet een maat-bereik (`heightM`, bij units ook `widthM` en `depthM`) kloppen, anders faalt de build.
+
+Rigide units (`kind: 'rigid-unit'`): geen skelet, geen animaties, geen bake; beweging is een transform van het hele model. Manifest-velden (contract met render, `src/manifest.ts`):
+
+| Veld | Betekenis |
+| --- | --- |
+| `kind: 'rigid-unit'` | star model |
+| `rigid: true` | verplicht bij dit kind |
+| `bounds` | meters, modelruimte, kijkt naar +Z, midden op x = z = 0 |
+| `teamMaterials` | namen van de materialen met de spelerskleur (`['team_trim']`), `teamMask: 'materialName'` |
+| `hover` | optioneel, alleen zwevers (drone): meter van de onderkant boven de grond. De zweefhoogte zit al in het model (`bounds.min.y == hover`); render telt `hover` er niet bij op, maar gebruikt het voor schaduwvlek, selectiering en healthbar |
+
+`boneCount` is 0 en `footprint` ontbreekt. Preview: `tools/asset-cli/preview/robots.html` (serveer de repo-root statisch; opties `lod`, `az`, `team`, `only`).
 
 ## KTX2
 
@@ -239,8 +259,14 @@ assets/dist/terrain/rock_terrain_4.albedo.jpg    kleur in bovenaanzicht, 2048 x 
 **Zo gebruikt de map-agent het.**
 
 ```ts
-import { heightfieldSchema, terrainManifestSchema, heightAt } from '@crawlout/asset-cli/heightfield';
-const field = heightfieldSchema.parse(JSON.parse(read('assets/dist/terrain/rock_terrain_4.height.json')));
+import {
+  heightfieldSchema,
+  terrainManifestSchema,
+  heightAt,
+} from '@crawlout/asset-cli/heightfield';
+const field = heightfieldSchema.parse(
+  JSON.parse(read('assets/dist/terrain/rock_terrain_4.height.json')),
+);
 // sim-heightmap (Int16, 1/256 m): Math.round(field.heights[i] * k * 256), met k een eigen verticale factor
 ```
 

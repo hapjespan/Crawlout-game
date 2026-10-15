@@ -77,6 +77,8 @@ interface MeshSet {
   layers: Texture | null;
   /** Category from the manifest, if it gave one. */
   category: PropCategory | null;
+  /** Brightness factor from the manifest entry (`albedoGain`), if it gave one. */
+  albedoGain?: number;
 }
 
 /** `category` and `alpha` of a manifest entry, read loosely (the manifest schema may not have them yet). */
@@ -159,7 +161,7 @@ export class PropAssetRegistry {
     if (entry.kind !== 'prop')
       throw new Error(`"${assetId}" is a ${entry.kind} in the manifest, not a prop`);
     const { category, forceMask } = foliageFields(entry);
-    return this.loadOnce(`m|${manifestUrl}|${assetId}`, async () => {
+    const set = await this.loadOnce(`m|${manifestUrl}|${assetId}`, async () => {
       // Identical LODs (same file or same triangle count as the one before) share one scene and so one draw.
       const roots: Object3D[] = [];
       for (let i = 0; i < 3; i++) {
@@ -171,6 +173,7 @@ export class PropAssetRegistry {
       }
       return this.build(roots as [Object3D, Object3D, Object3D], forceMask, category);
     });
+    return entry.albedoGain === undefined ? set : { ...set, albedoGain: entry.albedoGain };
   }
 
   /** The visual for one asset id. Never rejects: what fails is a reason, and the next origin is tried. */
@@ -223,6 +226,7 @@ export class PropAssetRegistry {
         fit,
         height: l0.height,
         radius: l0.radius,
+        ...(set.albedoGain !== undefined ? { gain: set.albedoGain } : {}),
       },
       origin,
       reasons,

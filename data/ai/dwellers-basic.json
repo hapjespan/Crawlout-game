@@ -30,10 +30,7 @@
       "site": "hq"
     }
   ],
-  "attackTimersS": [
-    480,
-    720
-  ],
+  "attackTimersS": [480, 720],
   "militiaPct": 20,
   "militiaPctMax": 60,
   "militiaPctPerMin": 2.5,
@@ -50,10 +47,7 @@
     "lasergeleiding"
   ],
   "researchFromS": 180,
-  "armyLoadouts": [
-    "patrol",
-    "militie"
-  ],
+  "armyLoadouts": ["patrol", "militie"],
   "richScrap": 300,
   "richBuilds": [
     {

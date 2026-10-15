@@ -73,21 +73,53 @@
       const base = q.get('manifest') ?? '/assets/dist/manifest.json';
       const manifest = await (await fetch(base)).json();
       const dir = base.slice(0, base.lastIndexOf('/') + 1);
-      const props = manifest.assets.filter((a) => a.kind === 'prop' && a.category && (!only || only.has(a.id)));
+      const props = manifest.assets.filter(
+        (a) => a.kind === 'prop' && a.category && (!only || only.has(a.id)),
+      );
       const heightOf = (a) => a.bounds.max[1] - a.bounds.min[1];
 
       const rows = [
-        { title: 'bomen (tree-leafy, tree-bare)', pick: (a) => a.category.startsWith('tree'), maxScale: 60 },
-        { title: 'groot (structure, rotsen hoger dan 5 m)', pick: (a) => a.category === 'structure' || (a.category === 'rock' && heightOf(a) > 5), maxScale: 70 },
-        { title: 'rotsen, gras en planten', pick: (a) => ['rock', 'grass', 'plant'].includes(a.category), maxScale: 110 },
-        { title: 'kratten, kisten, vaten en puin (crate, chest, barrel, debris)', pick: (a) => ['crate', 'chest', 'barrel', 'debris'].includes(a.category), maxScale: 170 },
+        {
+          title: 'bomen (tree-leafy, tree-bare)',
+          pick: (a) => a.category.startsWith('tree'),
+          maxScale: 60,
+        },
+        {
+          title: 'groot (structure, rotsen hoger dan 5 m)',
+          pick: (a) => a.category === 'structure' || (a.category === 'rock' && heightOf(a) > 5),
+          maxScale: 70,
+        },
+        {
+          title: 'rotsen, gras en planten',
+          pick: (a) => ['rock', 'grass', 'plant'].includes(a.category),
+          maxScale: 110,
+        },
+        {
+          title: 'kratten, kisten, vaten en puin (crate, chest, barrel, debris)',
+          pick: (a) => ['crate', 'chest', 'barrel', 'debris'].includes(a.category),
+          maxScale: 170,
+        },
       ];
-      const order = ['tree-leafy', 'tree-bare', 'structure', 'rock', 'grass', 'plant', 'crate', 'chest', 'barrel', 'debris'];
+      const order = [
+        'tree-leafy',
+        'tree-bare',
+        'structure',
+        'rock',
+        'grass',
+        'plant',
+        'crate',
+        'chest',
+        'barrel',
+        'debris',
+      ];
       const taken = new Set();
       for (const row of rows) {
         row.items = props
           .filter((a) => !taken.has(a.id) && row.pick(a))
-          .sort((a, b) => order.indexOf(a.category) - order.indexOf(b.category) || a.id.localeCompare(b.id));
+          .sort(
+            (a, b) =>
+              order.indexOf(a.category) - order.indexOf(b.category) || a.id.localeCompare(b.id),
+          );
         row.items.forEach((a) => taken.add(a.id));
       }
 
@@ -111,7 +143,11 @@
       const H = visibleRows.reduce((s, r) => s + r.h, 0);
 
       const canvas = document.getElementById('c');
-      const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
+      const renderer = new THREE.WebGLRenderer({
+        canvas,
+        antialias: true,
+        preserveDrawingBuffer: true,
+      });
       renderer.setPixelRatio(1);
       renderer.setSize(W, H);
       renderer.setScissorTest(true);
@@ -147,7 +183,9 @@
           holder.position.set(item.propX, 0, 0);
           scene.add(holder);
           const box = new THREE.Box3().setFromObject(gltf.scene);
-          info.push(`${item.a.id} ${item.a.category} H ${(box.max.y - box.min.y).toFixed(2)} m y0 ${box.min.y.toFixed(3)} tris ${item.a.lods[lod].triangles}${item.a.alpha ? ' alpha' : ''}`);
+          info.push(
+            `${item.a.id} ${item.a.category} H ${(box.max.y - box.min.y).toFixed(2)} m y0 ${box.min.y.toFixed(3)} tris ${item.a.lods[lod].triangles}${item.a.alpha ? ' alpha' : ''}`,
+          );
         }
         // Orthografische camera: x-schaal `row.scale` px per meter, grond op 60 px boven de onderkant van de rij.
         const camH = row.h / row.scale;
