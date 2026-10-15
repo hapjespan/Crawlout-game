@@ -1,6 +1,7 @@
 import type { MapDef } from '@crawlout/data';
 import { encodeGrid } from '../grid-format.js';
-import { encodeProps, scatterProps, type PropsSpec } from '../props.js';
+import { encodeProps } from '../props.js';
+import { scatterProps, type PropsSpec } from '../scatter.js';
 import { BLOCKED, OPEN } from './cells.js';
 import { buildForest, type ForestSpec } from './forest.js';
 import { carveRiver, WATER_DEEP, WATER_SHALLOW, type RiverSpec } from './river.js';
@@ -331,6 +332,9 @@ export function generateMap(spec: MapSpec, io?: GenIo): GeneratedMap {
               ...(forest === undefined ? {} : { forest }),
               ...(water === undefined ? {} : { water }),
               clearings: padClearings(spec),
+              heights,
+              ruins: [...spec.ruins, ...spec.ruins.map((r) => mirrorRect(r, w, h))],
+              ...(crossings === undefined ? {} : { crossings }),
             }),
           ),
         }),

@@ -47,25 +47,26 @@ export {
   loadProps,
   parseProps,
   encodeProps,
-  scatterProps,
-  pathCorridor,
   PROPS_FORMAT,
-  PROP_KINDS,
   PROP_CLEARANCE_M,
   PROP_SCALE_MIN,
   PROP_SCALE_MAX,
 } from './props.js';
+export type { PropInstance, PropRecord, PropsFile } from './props.js';
+export { scatterProps, pathCorridor, sin1024, cos1024 } from './scatter.js';
 export type {
-  PropInstance,
-  PropRecord,
-  PropsFile,
   PropsSpec,
   PropQuota,
-  PropKind,
   PropPlacement,
   ForestPropsSpec,
   WeightedAsset,
   ScatterLayers,
-} from './props.js';
+  TerrainBands,
+  KitPart,
+  KitSpec,
+  PropsKits,
+} from './scatter.js';
+export { PROP_INFO, PROP_ASSETS, propRadiusU } from './propcatalog.js';
+export type { PropCategory, PropInfo } from './propcatalog.js';
 export { createRng } from './rng.js';
 export type { Rng } from './rng.js';

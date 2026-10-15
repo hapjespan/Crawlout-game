@@ -1,4 +1,56 @@
+import type { WeightedAsset } from '../scatter.js';
 import { generateMap, type GenIo, type GeneratedMap, type MapSpec } from './builder.js';
+
+const wa = (
+  asset: string,
+  weight: number,
+  depth: Pick<WeightedAsset, 'minDepth' | 'maxDepth'> = {},
+): WeightedAsset => ({
+  asset,
+  weight,
+  ...depth,
+});
+const GRASS = [
+  wa('grass_patch_01', 3),
+  wa('grass_patch_02', 3),
+  wa('grass_patch_03', 3),
+  wa('plant_01', 1),
+];
+const SMALL_ROCKS = [
+  wa('rock_set2_01', 2),
+  wa('rock_set2_02', 3),
+  wa('rock_set2_03', 3),
+  wa('rock_set2_04', 3),
+];
+const MID_ROCKS = [
+  wa('rock_set2_05', 1),
+  wa('rock_set2_06', 1),
+  wa('rock_set2_07', 1),
+  wa('rock_set2_08', 1),
+];
+const CLIFFS = [wa('rock_set2_09', 2), wa('rock_set2_10', 1), wa('rock_set2_11', 1)];
+const BARE_TREES = [wa('tree_bare_01', 1), wa('tree_bare_02', 1), wa('tree_bare_03', 1)];
+const LOOSE_TREES = [
+  wa('tree_oak_01', 2),
+  wa('tree_oak_02', 2),
+  wa('tree_pine_03', 2),
+  wa('tree_pine_01', 2),
+];
+const WOOD_WALLS = [
+  wa('wall_wood_01', 2),
+  wa('wall_wood_02', 1),
+  wa('wall_wood_03', 2),
+  wa('wall_wood_04', 1),
+];
+const CHESTS = [wa('chest_01', 2), wa('chest_02', 1), wa('chest_03', 1)];
+const DEBRIS = [
+  wa('debris_pallet_01', 1),
+  wa('debris_pallet_02', 1),
+  wa('debris_table_01', 1),
+  wa('debris_chair_01', 2),
+  wa('debris_crate_01', 2),
+  wa('debris_barrel_01', 1),
+];
 
 // Rustbelt XL: 384 x 384 m (3 x 3 tegels van 128 m), 2 spelers. Puntsymmetrisch (180 graden) om (192, 192).
 // Alleen de A-helft staat hier; de builder spiegelt alles. Eén claimpunt ligt in het midden, de rest in spiegelparen.
@@ -138,42 +190,160 @@ export const RUSTBELT_SPEC: MapSpec = {
     ],
   },
   keepMainComponent: true,
-  // Decoratie, puur visueel (de sim leest ze niet). Bos als raster, daarna quota per helft.
+  // Decoratie, puur visueel (de sim leest ze niet). Echte schaal: de DJMaesen-props (propcatalog.ts). Eerst de kliffen,
+  // dan de kits (kampen, ruines, claimpunten, voordes), dan het bos als raster, dan de quota per helft.
   props: {
     seed: 4242,
     edgeMargin: 3,
     comment:
-      'Decoratieve props voor Rustbelt, gegenereerd door packages/map/src/props.ts (pnpm --filter @crawlout/map gen); niet met de hand bewerken. x en y in sim-eenheden (1 m = 256), yaw 0..65535, scalePct 80..130. De sim leest dit bestand niet.',
+      'Decoratieve props voor Rustbelt, gegenereerd door packages/map/src/scatter.ts (pnpm --filter @crawlout/map gen); niet met de hand bewerken. x en y in sim-eenheden (1 m = 256), yaw 0..65535, scalePct 80..130, assets op echte schaal (DJMaesen-props uit assets/dist). De sim leest dit bestand niet.',
+    bands: { valleyBelowM: 3, dryAboveM: 5 },
     forest: {
-      cellM: 3,
-      gapPct: 6,
-      dense: [
-        { asset: 'treehigh001', weight: 40 },
-        { asset: 'treemed001', weight: 34 },
-        { asset: 'treelow001', weight: 16 },
-        { asset: 'bush001', weight: 5 },
-        { asset: 'bush002', weight: 5 },
+      cellM: 4,
+      gapPct: 8,
+      // Gemengd bos: stukken eiken, stukken dennen, hoge bomen diep in het bos en lage aan de rand.
+      oak: [
+        wa('tree_oak_01', 4, { maxDepth: 8 }),
+        wa('tree_oak_02', 4),
+        wa('tree_oak_03', 3, { minDepth: 5 }),
       ],
-      ringM: 4,
-      ringPct: 35,
-      ring: [
-        { asset: 'treelow001', weight: 30 },
-        { asset: 'treemed001', weight: 25 },
-        { asset: 'bush001', weight: 25 },
-        { asset: 'bush002', weight: 20 },
+      pine: [
+        wa('tree_pine_03', 4, { maxDepth: 8 }),
+        wa('tree_pine_01', 4),
+        wa('tree_pine_02', 3, { minDepth: 5 }),
       ],
+      bare: [wa('tree_bare_01', 1), wa('tree_bare_02', 1), wa('tree_bare_03', 1)],
+      pinePct: [15, 85],
+      barePct: { base: 4, edge: 22, dry: 20, edgeCells: 3 },
+      ringM: 6,
+      ringPct: 38,
+      understory: { assets: [wa('plant_01', 1)], pct: 10 },
+      scalePct: [85, 120],
+    },
+    kits: {
+      camp: {
+        parts: [
+          {
+            assets: [
+              wa('debris_pallet_01', 1),
+              wa('debris_pallet_02', 1),
+              wa('debris_table_01', 1),
+              wa('debris_chair_01', 2),
+              wa('debris_crate_01', 2),
+              wa('debris_barrel_01', 1),
+            ],
+            count: [4, 6],
+            ringM: [4.5, 7],
+            clumpM: 2.2,
+          },
+          {
+            assets: [wa('chest_01', 2), wa('chest_02', 1), wa('chest_03', 1)],
+            count: [2, 3],
+            ringM: [4, 6.5],
+            clumpM: 1.4,
+          },
+          {
+            assets: [wa('barrel_01', 2), wa('debris_barrel_01', 1)],
+            count: [1, 2],
+            ringM: [4, 7],
+            clumpM: 1,
+          },
+          { assets: [wa('crate_01', 1)], count: [1, 2], ringM: [4, 7], clumpM: 1.5 },
+          // Vervallen omheining: houten wanden langs een ring, met gaten.
+          { assets: WOOD_WALLS, count: [6, 9], ringM: [8.5, 10.5], tangent: true },
+          // De wachttoren: één per kamp.
+          { assets: [wa('watchtower_01', 1)], count: [1, 1], ringM: [10, 14] },
+        ],
+      },
+      ruin: {
+        parts: [
+          { assets: DEBRIS, count: [2, 4], ringM: [1.2, 3.5], clumpM: 1.6 },
+          {
+            assets: [wa('crate_01', 2), wa('debris_crate_01', 2), wa('barrel_01', 1)],
+            count: [1, 2],
+            ringM: [1.2, 3.5],
+            clumpM: 1.2,
+          },
+          { assets: CHESTS, count: [0, 1], ringM: [1.5, 3.5], clumpM: 1 },
+          { assets: WOOD_WALLS, count: [1, 3], ringM: [2.5, 4.5], tangent: true },
+        ],
+      },
+      claim: {
+        parts: [
+          {
+            assets: [...CHESTS, wa('crate_01', 2), wa('barrel_01', 1), wa('debris_barrel_01', 1)],
+            count: [3, 5],
+            ringM: [4.5, 7],
+            clumpM: 2,
+          },
+          { assets: DEBRIS, count: [1, 2], ringM: [4.5, 7], clumpM: 1.5 },
+        ],
+      },
+      ford: {
+        parts: [
+          { assets: [...DEBRIS, wa('crate_01', 1)], count: [2, 4], ringM: [5, 8], clumpM: 2 },
+          { assets: [wa('watchtower_01', 1)], count: [1, 1], ringM: [7, 11] },
+        ],
+      },
     },
     quotas: [
-      { asset: 'treehigh001', perHalf: 50, on: 'open' },
-      { asset: 'treemed001', perHalf: 70, on: 'open' },
-      { asset: 'treelow001', perHalf: 60, on: 'open' },
-      { asset: 'rock001', perHalf: 40 },
-      { asset: 'rock002', perHalf: 40 },
-      { asset: 'rock003', perHalf: 40 },
-      { asset: 'bush001', perHalf: 80 },
-      { asset: 'bush002', perHalf: 80 },
-      { asset: 'grass001', perHalf: 150 },
-      { asset: 'reed001', perHalf: 120 },
+      // Kliffen langs de randen van het onbegaanbare terrein (dikke stroken), nooit op een pad.
+      { assets: CLIFFS, perHalf: 30, on: 'cliff', scalePct: [92, 108] },
+      // Rotsen: groot op ruines en klifwanden, klein en middelgroot langs de randen en verspreid in het open.
+      { assets: MID_ROCKS, perHalf: 40, on: 'blocked' },
+      { assets: SMALL_ROCKS, perHalf: 100, on: 'edge', clump: { min: 1, max: 3, radiusM: 2.5 } },
+      { assets: MID_ROCKS, perHalf: 40, on: 'edge' },
+      { assets: SMALL_ROCKS, perHalf: 70, on: 'open', clump: { min: 1, max: 3, radiusM: 2 } },
+      { assets: MID_ROCKS, perHalf: 20, on: 'open' },
+      // Losse bomen en bosjes in het open; kale bomen vooral op het droge plateau.
+      {
+        assets: LOOSE_TREES,
+        perHalf: 45,
+        on: 'open',
+        clump: { min: 1, max: 3, radiusM: 4 },
+        scalePct: [85, 120],
+      },
+      {
+        assets: BARE_TREES,
+        perHalf: 60,
+        on: 'dry',
+        clump: { min: 1, max: 3, radiusM: 4 },
+        scalePct: [85, 120],
+      },
+      // Gras in plukken: breed over het open terrein, dichter in de dalen en langs de rivier.
+      {
+        assets: GRASS,
+        perHalf: 900,
+        on: 'open',
+        clump: { min: 3, max: 6, radiusM: 3 },
+        scalePct: [80, 130],
+      },
+      {
+        assets: GRASS,
+        perHalf: 850,
+        on: 'valley',
+        clump: { min: 5, max: 9, radiusM: 3 },
+        scalePct: [80, 130],
+      },
+      {
+        assets: GRASS,
+        perHalf: 800,
+        on: 'shore',
+        clump: { min: 6, max: 12, radiusM: 2.5 },
+        scalePct: [80, 130],
+      },
+      {
+        assets: [wa('plant_01', 1)],
+        perHalf: 50,
+        on: 'open',
+        clump: { min: 1, max: 3, radiusM: 2 },
+      },
+      {
+        assets: [wa('plant_01', 1)],
+        perHalf: 70,
+        on: 'shore',
+        clump: { min: 1, max: 3, radiusM: 2 },
+      },
     ],
   },
 };
