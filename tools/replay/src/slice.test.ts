@@ -113,6 +113,8 @@ describe('slice: Rustbelt met echte data', () => {
       const peak = [0, 0];
       const peakMilitia = [0, 0];
       const scrapIn = [0, 0];
+      const prev = [0, 0];
+      const prevCap = [0, 0];
       const counts = new Map<number, number>();
       play(r, (sim) => {
         for (let k = 0; k < sim.events.count; k++)
@@ -121,7 +123,12 @@ describe('slice: Rustbelt met echte data', () => {
         for (let p = 0; p < 2; p++) {
           const st = sim.playerStatus(p);
           peak[p] = Math.max(peak[p]!, st.settlers);
-          expect(st.settlers).toBeLessThanOrEqual(st.popCap); // geen bewoners buiten de pop-cap om
+          // geen bewoners buiten de pop-cap om: groei alleen met een vrij bed (een gesloopte woning in het gevecht
+          // verlaagt de cap onder het aantal bewoners, dat is geen groei)
+          if (st.settlers > prev[p]!)
+            expect(st.settlers).toBeLessThanOrEqual(Math.max(st.popCap, prevCap[p]!));
+          prev[p] = st.settlers;
+          prevCap[p] = st.popCap;
           peakMilitia[p] = Math.max(peakMilitia[p]!, unitsOf(sim, p, role('militia')).length);
           scrapIn[p] = Math.max(scrapIn[p]!, st.scrap);
         }

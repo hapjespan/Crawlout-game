@@ -170,13 +170,14 @@ describe('held', () => {
       const sim = open(43);
       const h = sim.getUnit(heroOf(sim, 0))!;
       const enemy = sim.spawnUnit({ typeId: SCAV, owner: 1, x: h.x + 2 * 256, y: h.y + 3 * 256 });
+      // de held staat oost van het hoofdgebouw: doel en bondgenoot aan de open kant
       const target = sim.spawnUnit({
         typeId: typeByKey('scavenger'),
         owner: 1,
-        x: h.x - 3 * 256,
+        x: h.x + 3 * 256,
         y: h.y - 2 * 256,
       });
-      const ally = sim.spawnUnit({ typeId: MILITIA, owner: 0, x: h.x - 3 * 256, y: h.y + 256 });
+      const ally = sim.spawnUnit({ typeId: MILITIA, owner: 0, x: h.x + 3 * 256, y: h.y + 256 });
       const goal = cellCenter(60, 60);
       const cmds = [
         cmd(sim.frame, 1, 'Move', { ids: [enemy], ...goal }),

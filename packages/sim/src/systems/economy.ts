@@ -41,6 +41,7 @@ import {
   nearestOwnBuilding,
   nodeAllowed,
   nthFreeCellAround,
+  playerInTurn,
   withinReach,
 } from './common.js';
 import { DEPOT_MASK } from './orders.js';
@@ -67,7 +68,8 @@ export function economySystem(ctx: SimContext, census: Census): void {
   for (let i = 0; i < w.highWater; i++)
     if (w.research[i] !== 0 && w.has(i, C.building)) researchWork(ctx, i);
   takeCensus(ctx, census);
-  for (let p = 0; p < ctx.playerCount; p++) growth(ctx, census, p);
+  // de groei in dezelfde doordraaiende beurtvolgorde als de AI: wie eerst groeit, krijgt de lagere index
+  for (let k = 0; k < ctx.playerCount; k++) growth(ctx, census, playerInTurn(ctx, k));
   heroSystem(ctx, census);
 }
 

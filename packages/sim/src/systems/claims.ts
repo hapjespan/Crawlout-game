@@ -15,8 +15,9 @@ import { NO_WINNER, WIN_DESTRUCTION, WIN_DOMINANCE, WIN_SURRENDER, distToRect2 }
 // Claim (besluit sprint 2, fase-0 sectie 13; Spelfundament 3.1): een claimpunt is van speler p zolang een voltooid
 // gebouw van p met provides claim (claimpaal, hoofdgebouw) met zijn footprint binnen claimRadius van het punt staat.
 // Staat er geen, dan is het punt neutraal; staan er van meerdere spelers, dan houdt de huidige eigenaar het tot zijn
-// gebouw weg is, daarna de laagste playerId. Een speler die af is houdt niets. Elke wissel geeft claimTaken
-// (b = nieuwe eigenaar, OWNER_NEUTRAL als het punt terugvalt).
+// gebouw weg is, daarna een van de anderen (bij meer dan één via sim.rng, fair-ronde; was de laagste playerId). Een
+// speler die af is houdt niets. Elke wissel geeft claimTaken (b = nieuwe eigenaar, OWNER_NEUTRAL als het punt
+// terugvalt).
 // Presentatie: claimBy/claimProgress volgen het verst gevorderde claimgebouw in aanbouw van een andere speler dan de
 // eigenaar binnen de straal (animT van het claimpunt).
 // Winroutes: A, vernietiging (een speler die een hoofdgebouw had en er geen meer heeft, is af); B, dominantie
@@ -81,7 +82,7 @@ export function updateClaimPoints(ctx: SimContext, s: ClaimScratch, quiet: boole
     }
     let next = OWNER_NEUTRAL;
     if (cur !== OWNER_NEUTRAL && (holders & (1 << cur)) !== 0) next = cur;
-    else if (holders !== 0) next = 31 - Math.clz32(holders & -holders); // laagste playerId
+    else if (holders !== 0) next = pickHolder(ctx, holders);
     if (next !== cur) {
       w.owner[pt] = next;
       if (!quiet) ctx.events.push(EVENT_TYPE.claimTaken, w.idOf(pt), next, w.x[pt]!, w.y[pt]!);
@@ -95,6 +96,23 @@ export function updateClaimPoints(ctx: SimContext, s: ClaimScratch, quiet: boole
     w.claimBy[pt] = siteOwner === next ? OWNER_NEUTRAL : siteOwner;
     w.claimProgress[pt] = w.claimBy[pt] === OWNER_NEUTRAL ? 0 : siteProgress;
     if (next < MAX_PLAYERS) s.owned[next] = s.owned[next]! + 1;
+  }
+}
+
+/**
+ * Wie een punt krijgt dat de huidige eigenaar niet (meer) houdt: de enige speler met een voltooid claimgebouw in de
+ * straal, en bij meer dan één (gelijke stand: hun claimpalen kwamen in dezelfde tick af) een van hen via sim.rng
+ * (fair-ronde). Voorheen won de laagste playerId; op een puntsymmetrische map, waar twee gespiegelde AI's hun palen bij
+ * het midden in dezelfde tick afbouwen, kreeg speler 0 het midden dan altijd. sim.rng wordt alleen bij een gelijke stand
+ * getrokken.
+ */
+function pickHolder(ctx: SimContext, holders: number): number {
+  let n = 0;
+  for (let b = holders; b !== 0; b &= b - 1) n++;
+  let k = n > 1 ? ctx.rng.nextInt(n) : 0;
+  for (let b = holders; ; b &= b - 1) {
+    if (k === 0) return 31 - Math.clz32(b & -b);
+    k--;
   }
 }
 

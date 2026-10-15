@@ -27,17 +27,19 @@ import {
   distToRect2,
   isEnemy,
   nodeAllowed,
+  playerInTurn,
 } from './common.js';
 import { pointsOf } from './claims.js';
 import { heroIndex } from './hero.js';
 import { DEPOT_MASK, ROLE_MILITIA } from './orders.js';
 
-// Systeem 2 (AI-deel): de scripted tegenstander, voor elke speler met ai = true, in playerId-volgorde, voor de
-// unit-orders. Geen cheats: de AI geeft gewone commando's via applyCommand (dezelfde validatie als spelers) en
-// ziet alleen wat elke speler kan zien: eigen units en gebouwen, de map, de spawns, wie een claimpunt bezit, en
-// vijandelijke units die bij zijn eigen gebouwen staan. Alle getallen komen uit het script (ai/*.json, balans
-// speltest 14 oktober). Afstanden naar verre doelen (nodes, claimpunten, raids, het front) meet hij over land, als
-// padafstand over het terrein (pathdist.ts, xl-int): op een map met een rivier is hemelsbreed misleidend.
+// Systeem 2 (AI-deel): de scripted tegenstander, voor elke speler met ai = true, voor de unit-orders; de volgorde van
+// de spelers draait per tick door (fair-ronde, zie aiSystem). Geen cheats: de AI geeft gewone commando's via
+// applyCommand (dezelfde validatie als spelers) en ziet alleen wat elke speler kan zien: eigen units en gebouwen, de
+// map, de spawns, wie een claimpunt bezit, en vijandelijke units die bij zijn eigen gebouwen staan. Alle getallen
+// komen uit het script (ai/*.json, balans speltest 14 oktober). Afstanden naar verre doelen (nodes, claimpunten,
+// raids, het front) meet hij over land, als padafstand over het terrein (pathdist.ts, xl-int): op een map met een
+// rivier is hemelsbreed misleidend.
 // Per tick, in deze volgorde (wie eerst komt, krijgt de vrije bouwer en de scrap):
 //  1. de held: oplappen, perk kiezen, ability (heroThink); zolang de held dood is en er een hoofdgebouw is, spaart hij
 //     voor het oplappen (geen bouwvolgorde, onderzoek, claims of omscholing);
@@ -109,7 +111,9 @@ export class AiScratch {
 export function aiSystem(ctx: SimContext, census: Census, scratch: AiScratch): void {
   if (ctx.globals.winner !== NO_WINNER) return;
   let counted = false;
-  for (let p = 0; p < ctx.playerCount; p++) {
+  // wie eerst denkt, krijgt bij een gelijke stand de plek of het punt: in de doordraaiende beurtvolgorde
+  for (let k = 0; k < ctx.playerCount; k++) {
+    const p = playerInTurn(ctx, k);
     const pl = ctx.players[p]!;
     if (!pl.ai || ctx.ps.defeated[p] !== 0) continue;
     const si = ctx.config.factions[pl.factionId]!.aiScript;
@@ -174,7 +178,8 @@ interface Fields {
  * Een stap van `steps` cellen vanaf (cx, cy) langs veld f naar zijn bron (tx, ty) (steeds de buur met de laagste
  * waarde, 8 richtingen, diagonaal alleen als beide rechte buren begaanbaar zijn; bij gelijke waarde de buur die
  * hemelsbreed het dichtst bij de bron ligt, zodat beide spelers op een puntsymmetrische map gespiegeld kiezen; dan de
- * vaste volgorde O, W, Z, N, ZO, ZW, NO, NW). Zo ligt "richting de vijand" langs de weg erheen, niet over een rivier.
+ * buur rechts van de richting naar de bron; dan de vaste volgorde O, W, Z, N, ZO, ZW, NO, NW). Zo ligt "richting de
+ * vijand" langs de weg erheen, niet over een rivier.
  */
 function stepAlong(
   ctx: SimContext,
@@ -209,15 +214,20 @@ function stepAlong(
       pE && pN && pass[c - W + 1] === 1 ? c - W + 1 : -1,
       pW && pN && pass[c - W - 1] === 1 ? c - W - 1 : -1,
     ];
+    let bestX = 0;
     for (const m of cand) {
       if (m < 0 || f[m]! > bestD || (f[m]! === bestD && best === c)) continue;
       const my = idiv(m, W);
       const mx = m - my * W;
       const e = (mx - tx) * (mx - tx) + (my - ty) * (my - ty);
-      if (f[m]! < bestD || e < bestE) {
+      // dan rechts van de richting naar de bron (kruisproduct: gelijk onder de 180-gradenspiegel; de vaste volgorde
+      // is dat niet)
+      const x = (tx - cx) * (my - cy) - (ty - cy) * (mx - cx);
+      if (f[m]! < bestD || e < bestE || (e === bestE && x > bestX)) {
         best = m;
         bestD = f[m]!;
         bestE = e;
+        bestX = x;
       }
     }
     if (best === c) break;
@@ -342,7 +352,8 @@ function findSite(
     rh = 1;
   }
   const local = localDist(ctx, rx, ry, rw, rh, MAX_FREE_RING + half + 2);
-  // Op de eerste ring met een vrije plek: de plek het dichtst bij het midden van de map, dan het dichtst bij het anker.
+  // Op de eerste ring met een vrije plek: de plek het dichtst bij het midden van de map, dan het dichtst bij het anker,
+  // dan rechts van de richting anker naar midden.
   // Op een puntsymmetrische map kiezen beide spelers zo elkaars spiegelbeeld (de scanvolgorde is dat niet). Gemeten
   // tussen de middens van de footprints in halve cellen: het midden van de map en van een footprint van even breedte
   // ligt op een celgrens, en een ring rond één cel zou voor de twee spelers andere footprints bevatten.
@@ -357,6 +368,7 @@ function findSite(
   let bestR = 0;
   let bestM = 0;
   let bestA = 0;
+  let bestX = 0;
   const idx = ctx.index;
   idx.refresh(w);
   for (let fy = cy - MAX_FREE_RING - fh; fy <= cy + MAX_FREE_RING; fy++) {
@@ -369,9 +381,13 @@ function findSite(
       if (r2 < 2 || r2 > R2) continue;
       const m = (x2 - map.w) * (x2 - map.w) + (y2 - map.h) * (y2 - map.h);
       const a = (x2 - ax2) * (x2 - ax2) + (y2 - ay2) * (y2 - ay2);
+      // laatste tiebreak: rechts van de richting anker naar midden van de map (kruisproduct, gelijk onder de spiegel)
+      const xr = (map.w - ax2) * (y2 - ay2) - (map.h - ay2) * (x2 - ax2);
       if (
         found >= 0 &&
-        (r2 > bestR || (r2 === bestR && (m > bestM || (m === bestM && a >= bestA))))
+        (r2 > bestR ||
+          (r2 === bestR &&
+            (m > bestM || (m === bestM && (a > bestA || (a === bestA && xr <= bestX))))))
       )
         continue;
       if (!footprintFree(ctx, fx - 1, fy - 1, fw + 2, fh + 2)) continue;
@@ -400,6 +416,7 @@ function findSite(
       bestR = r2;
       bestM = m;
       bestA = a;
+      bestX = xr;
     }
   }
   if (found >= 0) return cellCenterOf(map, found);

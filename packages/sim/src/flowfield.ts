@@ -421,16 +421,38 @@ export class FlowFields {
         }
         let e = k;
         while (e < len && open(e)) e++;
-        // [k, e) open: opknippen in n gelijke stukken van hoogstens entranceMax (zo symmetrisch als het kan: op een
-        // puntsymmetrische map horen gespiegelde ingangen zo veel mogelijk op gespiegelde plekken te liggen)
+        // [k, e) open: opknippen in stukken van hoogstens entranceMax, met per stuk een ingang in het midden.
+        // Spiegelsymmetrisch (fair-ronde): de 180-gradenspiegel van een puntsymmetrische map legt deze grens op een
+        // andere grens met hetzelfde open stuk achterstevoren, dus de ingangen van een stuk van lengte L moeten onder
+        // omkeren (x -> L - 1 - x) op zichzelf vallen. Daarom zijn de knippunten symmetrisch (b(n - j) = L - b(j); geen
+        // knip precies in het midden bij een oneven L), ligt het midden van een stuk van even lengte op de cel het
+        // dichtst bij het midden van het open stuk, en krijgt een stuk van even lengte dat precies in het midden ligt
+        // twee ingangen (beide middelste cellen).
         const len2 = e - k;
-        const n = idiv(len2 + this.entranceMax - 1, this.entranceMax);
-        for (let j = 0; j < n; j++) {
-          const p = k + idiv(j * len2, n);
-          const q = k + idiv((j + 1) * len2, n);
-          const c = cellA(p + ((q - p - 1) >> 1));
+        let n = idiv(len2 + this.entranceMax - 1, this.entranceMax);
+        if ((n & 1) === 0 && (len2 & 1) === 1) n++;
+        const cut = (j: number): number =>
+          2 * j <= n ? idiv(j * len2, n) : len2 - idiv((n - j) * len2, n);
+        const push = (x: number): void => {
+          const c = cellA(k + x);
           a.push(c);
           b.push(c + d);
+        };
+        for (let j = 0; j < n; j++) {
+          const p = cut(j);
+          const q = cut(j + 1);
+          const m = q - p;
+          if ((m & 1) === 1) {
+            push(p + (m >> 1));
+            continue;
+          }
+          const lo = p + (m >> 1) - 1;
+          // side < 0: lo + 1 ligt dichter bij het midden van het open stuk; 0: het stuk ligt precies in het midden
+          const side = 2 * lo + 1 - (len2 - 1);
+          if (side === 0) {
+            push(lo);
+            push(lo + 1);
+          } else push(side < 0 ? lo + 1 : lo);
         }
         k = e;
       }
@@ -1031,9 +1053,9 @@ export class FlowFields {
   /**
    * Beste volgende cel vanaf `cell` in veld s: de buur (8 richtingen, diagonaal alleen als beide rechte buren
    * begaanbaar zijn) met de laagste waarde; bij gelijke waarde de buur die hemelsbreed het dichtst bij het midden van de
-   * doelrechthoek ligt (xl-int: zo kiezen twee spelers op een puntsymmetrische map elkaars spiegelbeeld), dan de eerste
-   * in vaste volgorde. Geeft `cell` zelf als er geen betere begaanbare buur is (doel bereikt), -1 als het doel vanaf
-   * deze cel onbereikbaar is.
+   * doelrechthoek ligt (xl-int: zo kiezen twee spelers op een puntsymmetrische map elkaars spiegelbeeld), dan de buur
+   * rechts van de richting naar het doel (fair-ronde), dan de eerste in vaste volgorde. Geeft `cell` zelf als er geen
+   * betere begaanbare buur is (doel bereikt), -1 als het doel vanaf deze cel onbereikbaar is.
    */
   nextCell(s: number, cell: number): number {
     this.ensureGraph();
@@ -1061,6 +1083,7 @@ export class FlowFields {
     let best = cell;
     let bestD = here;
     let bestE = 0;
+    let bestX = 0;
     const consider = (ok: boolean, dx: number, dy: number): void => {
       if (!ok) return;
       const d = this.valueAt(s, q, cx + dx, cy + dy);
@@ -1068,9 +1091,13 @@ export class FlowFields {
       const ex = gx - 2 * dx;
       const ey = gy - 2 * dy;
       const e = ex * ex + ey * ey;
-      if (d < bestD || e < bestE) {
+      // ook gelijk hemelsbreed: de buur rechts van de richting naar het doel (kruisproduct, blijft gelijk onder de
+      // 180-gradenspiegel, de vaste volgorde niet)
+      const x = gx * dy - gy * dx;
+      if (d < bestD || e < bestE || (e === bestE && x > bestX)) {
         bestD = d;
         bestE = e;
+        bestX = x;
         best = cell + dy * w + dx;
       }
     };

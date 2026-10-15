@@ -42,6 +42,20 @@ export class MovementScratch {
   }
 }
 
+/**
+ * Nooit precies op een celgrens (fair-ronde): een coördinaat v = 256k hoort bij cel k, zijn spiegelbeeld (180 graden om
+ * het midden van de map, v' = 2 * mid - v) ook bij cel W - k in plaats van bij de gespiegelde cel W - 1 - k. Dan kiest
+ * een unit op de grens een andere volgende cel dan zijn spiegelbeeld. Een unit die op een grens uitkomt, schuift daarom
+ * één eenheid op naar het midden van de map (het spiegelbeeld schuift dan precies gespiegeld); op de middellijn zelf
+ * naar de kant van zijn eigen spawn (spawn op de middellijn: omlaag). Zo blijft `>> 8` overal gelijk aan de cel.
+ */
+function offGrid(v: number, mid: number, spawn: number): number {
+  if ((v & 255) !== 0) return v;
+  if (v < mid) return v + 1;
+  if (v > mid) return v - 1;
+  return spawn > mid ? v + 1 : v - 1;
+}
+
 /** Aangekomen: niet meer lopen, veld los. goalX/goalY blijven staan voor de contactregel van groeps-Moves. */
 function arrive(ctx: SimContext, i: number): void {
   ctx.world.mvOn[i] = 0;
@@ -220,8 +234,9 @@ export function movementSystem(ctx: SimContext, s: MovementScratch): void {
     if (mx !== 0 || my !== 0) {
       const x = w.x[i]!;
       const y = w.y[i]!;
-      const nx = clampI(x + mx, 0, maxX);
-      const ny = clampI(y + my, 0, maxY);
+      const sp = map.spawns[w.owner[i]!];
+      const nx = offGrid(clampI(x + mx, 0, maxX), map.w << 7, sp === undefined ? 0 : sp.x);
+      const ny = offGrid(clampI(y + my, 0, maxY), map.h << 7, sp === undefined ? 0 : sp.y);
       if (walkableAt(ctx, nx, ny)) {
         w.x[i] = nx;
         w.y[i] = ny;

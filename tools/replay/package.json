@@ -8,6 +8,8 @@
     "record": "node --import tsx src/record.ts fixtures",
     "replay:browsers": "node --import tsx src/browsers.ts fixtures",
     "balance": "node --import tsx src/balance-report.ts",
+    "fairness": "node --import tsx src/fairness-report.ts",
+    "mirror": "node --import tsx src/mirror-report.ts",
     "test": "vitest run"
   },
   "dependencies": {

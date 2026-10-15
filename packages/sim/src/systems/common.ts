@@ -6,7 +6,7 @@ import { BSTATE_DONE, C, NO_FIELD, NO_GOAL } from '../ecs/world.js';
 import type { EventBuffer } from '../events.js';
 import type { FlowFields } from '../flowfield.js';
 import type { TerrainDistances } from '../pathdist.js';
-import { idiv } from '../math/int.js';
+import { idiv, imod } from '../math/int.js';
 import { atan2A } from '../math/trig.js';
 import type { Rng } from '../rng.js';
 import type { Auras } from './hero.js';
@@ -174,6 +174,15 @@ export interface SimContext {
   buildingType(typeId: number): SimBuildingType | undefined;
 }
 
+/**
+ * De k-de speler in de beurtvolgorde van deze tick (fair-ronde): de volgorde draait elke tick door (frame f: speler
+ * f mod n eerst), zodat bij een gelijke stand geen speler vast voorgaat. Een functie van het frame, geen state.
+ */
+export function playerInTurn(ctx: SimContext, k: number): number {
+  const n = ctx.playerCount;
+  return n > 1 ? imod(ctx.frame + k, n) : 0;
+}
+
 /** Wisselt het flow field van een unit en houdt de refcount bij (afgeleide data). */
 export function setFlowField(ctx: SimContext, i: number, slot: number): void {
   const w = ctx.world;
@@ -272,7 +281,11 @@ export function stopMoving(ctx: SimContext, i: number): void {
   setFlowField(ctx, i, NO_FIELD);
 }
 
-/** Kwadraat van de afstand van (x, y) tot de rechthoek van cellen [fx, fx+fw) x [fy, fy+fh), in eenheden. */
+/**
+ * Kwadraat van de afstand van (x, y) tot de rechthoek van cellen [fx, fx+fw) x [fy, fy+fh), in eenheden. De rechthoek
+ * loopt van rand tot rand, (fx << 8) tot en met ((fx + fw) << 8) (fair-ronde: met "- 1" aan de verre kant was hij niet
+ * gelijk aan zijn spiegelbeeld, en kwam een unit bij de ene speler een tick eerder bij een gebouw aan dan bij de andere).
+ */
 export function distToRect2(
   x: number,
   y: number,
@@ -283,8 +296,8 @@ export function distToRect2(
 ): number {
   const x0 = fx << 8;
   const y0 = fy << 8;
-  const x1 = ((fx + fw) << 8) - 1;
-  const y1 = ((fy + fh) << 8) - 1;
+  const x1 = (fx + fw) << 8;
+  const y1 = (fy + fh) << 8;
   const dx = x < x0 ? x0 - x : x > x1 ? x - x1 : 0;
   const dy = y < y0 ? y0 - y : y > y1 ? y - y1 : 0;
   return dx * dx + dy * dy;
@@ -461,8 +474,9 @@ export function nearestFreeCellAround(
 
 /**
  * De k-de vrije cel rond een rechthoek: ring voor ring, en binnen een ring de cel het dichtst bij het midden van de map
- * eerst (dan rij voor rij). Op een puntsymmetrische map krijgen beide spelers zo elkaars spiegelbeeld (rij voor rij
- * alleen is dat niet: de bovenste rij ligt voor de ene speler aan de kant van het midden en voor de ander aan de rand).
+ * eerst (dan rechts van de richting naar het midden, dan rij voor rij). Op een puntsymmetrische map krijgen beide
+ * spelers zo elkaars spiegelbeeld (rij voor rij alleen is dat niet: de bovenste rij ligt voor de ene speler aan de kant
+ * van het midden en voor de ander aan de rand).
  * -1 als er minder zijn.
  */
 export function nthFreeCellAround(
@@ -476,28 +490,38 @@ export function nthFreeCellAround(
   const map = ctx.map;
   const mx2 = map.w - 1;
   const my2 = map.h - 1;
+  // van het midden van de rechthoek naar het midden van de map, in halve cellen
+  const rx = map.w - (2 * fx + fw);
+  const ry = map.h - (2 * fy + fh);
   let left = k;
   const ring: number[] = [];
   const key: number[] = [];
+  const side: number[] = [];
   for (let d = 1; d <= MAX_FREE_RING; d++) {
     ring.length = 0;
     key.length = 0;
+    side.length = 0;
     scanRing(map, fx, fy, fw, fh, d, (cx, cy) => {
       if (ctx.terrain.walk[cy * map.w + cx] !== 1) return false;
       // afstand tot het midden van de map, in halve cellen (het midden kan op een celgrens liggen)
       const dx = 2 * cx - mx2;
       const dy = 2 * cy - my2;
       const v = dx * dx + dy * dy;
+      // even ver: eerst rechts van de richting naar het midden (kruisproduct, gelijk onder de spiegel; fair-ronde)
+      const x = rx * (2 * cy + 1 - (2 * fy + fh)) - ry * (2 * cx + 1 - (2 * fx + fw));
       let j = ring.length;
       ring.push(0);
       key.push(0);
-      while (j > 0 && key[j - 1]! > v) {
+      side.push(0);
+      while (j > 0 && (key[j - 1]! > v || (key[j - 1] === v && side[j - 1]! < x))) {
         ring[j] = ring[j - 1]!;
         key[j] = key[j - 1]!;
+        side[j] = side[j - 1]!;
         j--;
       }
       ring[j] = cy * map.w + cx;
       key[j] = v;
+      side[j] = x;
       return false;
     });
     if (left < ring.length) return ring[left]!;

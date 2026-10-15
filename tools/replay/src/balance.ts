@@ -13,6 +13,14 @@ import type { BotPlan, Controller, PlannedBuilding } from './bot.js';
 
 export const TICKS_PER_MINUTE = 1200;
 
+/** De seeds van de eerlijkheidsmeting (fair-ronde): 1 tot 30, 42, 99 en 123. */
+export const FAIRNESS_SEEDS: readonly number[] = [
+  ...Array.from({ length: 30 }, (_, k) => k + 1),
+  42,
+  99,
+  123,
+];
+
 export interface PlayerTrace {
   /** Scrap op de bank aan het eind van elke minuut. */
   scrapByMinute: number[];
