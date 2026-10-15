@@ -3,6 +3,7 @@
 // Rig 0 is the procedural placeholder (bake.ts, humanoidGeometry.ts); loaded assets add rigs (addRig) and take over
 // unit typeIds (assignRig) or every unit without its own rig (setDefaultRig). A hero (typeId 1000 + heroId) uses the
 // default rig with a hero flag per instance: bigger, and on the placeholder with cap, collar and pauldrons.
+// Unit typeIds that the rigid layer owns (robots, rigidUnitLayer.ts) are skipped here: setSkip().
 import { heroIdOfTypeId } from '@crawlout/data';
 import { ANIM, ENTITY_FLAG } from '@crawlout/protocol';
 import {
@@ -124,6 +125,8 @@ export class UnitLayer {
   /** Rig per unit typeId (1..1023), DEFAULT_RIG when the typeId has none of its own. */
   private readonly rigByType = new Uint8Array(TYPE_ID_BUILDING_FIRST).fill(DEFAULT_RIG);
   private defaultRig = PLACEHOLDER_RIG;
+  /** Unit typeIds drawn by another layer (the rigid robots); this layer skips them. */
+  private skip: ((typeId: number) => boolean) | null = null;
   /** Instances drawn per LOD (all rigs together) in the last update. */
   readonly lodCounts: [number, number, number] = [0, 0, 0];
 
@@ -220,6 +223,11 @@ export class UnitLayer {
     this.defaultRig = rig;
   }
 
+  /** typeIds for which `skip` returns true are left to another layer; null draws every unit again. */
+  setSkip(skip: ((typeId: number) => boolean) | null): void {
+    this.skip = skip;
+  }
+
   /** Rig a typeId is drawn with. */
   rigFor(typeId: number): number {
     const own =
@@ -240,7 +248,7 @@ export class UnitLayer {
 
     for (let i = 0; i < frame.count; i++) {
       const typeId = frame.typeId[i]!;
-      if (!drawsAsUnit(typeId)) continue;
+      if (!drawsAsUnit(typeId) || this.skip?.(typeId)) continue;
       const x = frame.x[i]!;
       const y = frame.y[i]!;
       const z = frame.z[i]!;

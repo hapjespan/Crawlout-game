@@ -84,6 +84,8 @@ import {
   type UnitAssetStatus,
 } from './units/unitAssets.js';
 import { DEFAULT_LIGHT_DIR, UnitLayer } from './units/unitLayer.js';
+import { RigidUnitRegistry, type RigidUnitStatus } from './units/rigidUnitAssets.js';
+import { RigidUnitLayer, type RigidUnitSource } from './units/rigidUnitLayer.js';
 import { abilitiesFromGameData, AbilityZones, type AbilityLookup } from './vfx/abilityZones.js';
 import { EffectSpawner, type EffectContext } from './vfx/effects.js';
 import { ParticlePool } from './vfx/particles.js';
@@ -205,6 +207,10 @@ export interface LayerStats {
   propsVisible: number;
   propsTotal: number;
   waterTriangles: number;
+  /** Rigid units (robots) drawn and in the frame, and the draw calls they took. */
+  rigidVisible: number;
+  rigidTotal: number;
+  rigidDraws: number;
 }
 
 export interface CrawloutRenderer {
@@ -277,6 +283,20 @@ export interface CrawloutRenderer {
   focus(x: number, y: number): void;
   /** Latest measured frame stats. */
   stats(): FrameStats;
+  /**
+   * Loads a rigid unit asset (a robot: manifest entry with `rigid: true`, rigidUnitManifest.ts) and draws the unit types
+   * whose loadout names it (meshSlots.body, or `assets.bind`) with it. setGameData does this for every rigid body in
+   * the loadouts; call it for an asset that has no loadout. Resolves with the status, never rejects: on failure the
+   * unit types stay on the humanoid.
+   */
+  loadRigidUnit(manifestUrl: string, assetId: string): Promise<RigidUnitStatus>;
+  /**
+   * Draws unit typeIds with a rigid asset that is already in memory (synthetic robots of the demo, tests). Same layer as
+   * the manifest assets: one draw per asset per LOD, procedural animation from the snapshot's anim fields.
+   */
+  addRigidUnit(source: RigidUnitSource, typeIds: readonly number[]): RigidUnitStatus;
+  /** Status of every rigid unit asset requested so far. */
+  rigidUnitAssets(): RigidUnitStatus[];
   /** Triangles and draws per layer in the last frame. */
   layerStats(): LayerStats;
   dispose(): void;
@@ -394,6 +414,8 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
     anims,
     screen,
   });
+  const rigid = new RigidUnitLayer(scene, { capacity, lightDir: DEFAULT_LIGHT_DIR, screen });
+  units.setSkip((typeId) => rigid.owns(typeId)); // the robots are the rigid layer's
   const assetConfig = opts.assets;
   const gltfIO = createGltfIO();
   const resolveAssetPath = (manifestUrl: string, path: string): string =>
@@ -408,6 +430,13 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
       : Math.min(ALBEDO_GAIN_RANGE[1], Math.max(ALBEDO_GAIN_RANGE[0], g));
   };
   const unitAssets = new UnitAssetRegistry(units, loader, {
+    config: assetConfig,
+    maxTextureSize: caps.maxTextureSize,
+    warn: (message) => console.warn(`[render] ${message}`),
+    albedoGain: gainOf,
+    rigidIds: (url) => rigidUnits.rigidIds(url),
+  });
+  const rigidUnits = new RigidUnitRegistry(rigid, loader, {
     config: assetConfig,
     maxTextureSize: caps.maxTextureSize,
     warn: (message) => console.warn(`[render] ${message}`),
@@ -439,7 +468,7 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
       warmUp().catch((err: unknown) => console.warn('[render] pipeline warm-up failed', err));
     }, 250);
   };
-  void unitAssets.start().then(scheduleWarmUp);
+  void Promise.all([unitAssets.start(), rigidUnits.start()]).then(scheduleWarmUp);
   const footprints = new FootprintTable(opts.buildingFootprint ?? null);
   const structures = new StructureLayer(scene, {
     capacity,
@@ -671,6 +700,7 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
     decals.begin();
     zones.draw(t, decals); // first, so blobs and selection rings draw over the zone
     units.update(frame, camera, decals);
+    rigid.update(frame, camera, decals, t);
     structures.update(frame, camera, decals);
     if (preview) {
       const f = footprints.get(preview.typeId);
@@ -699,8 +729,10 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
   const groundPlane = new Plane(new Vector3(0, 1, 0), 0);
   const hitPoint = new Vector3();
   const viewProj = new Matrix4();
+  const rigidShape = (i: number, out: PickShape): PickShape | null =>
+    rigid.pickShape(frame.typeId[i]!, out);
   const pickShape = (i: number, out: PickShape): PickShape | null =>
-    structures.pickShape(frame.typeId[i]!, out);
+    rigidShape(i, out) ?? structures.pickShape(frame.typeId[i]!, out);
 
   return {
     backend,
@@ -729,12 +761,24 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
     setGameData(data) {
       footprints.setLookup(footprintsFromGameData(data));
       abilities = data.heroes ? abilitiesFromGameData({ heroes: data.heroes }) : null;
-      if (data.loadouts) void unitAssets.setLoadouts(data.loadouts).then(scheduleWarmUp);
+      if (data.loadouts)
+        void Promise.all([
+          unitAssets.setLoadouts(data.loadouts),
+          rigidUnits.setLoadouts(data.loadouts),
+        ]).then(scheduleWarmUp);
       void loadBuildings(data.buildings);
     },
     loadUnitAsset: (manifestUrl, assetId, assetOpts) =>
       unitAssets.load(manifestUrl, assetId, assetOpts).finally(scheduleWarmUp),
     unitAssets: () => unitAssets.statuses(),
+    loadRigidUnit: (manifestUrl, assetId) =>
+      rigidUnits.load(manifestUrl, assetId).finally(scheduleWarmUp),
+    addRigidUnit(source, typeIds) {
+      const status = rigidUnits.addLoaded(source.name, source, typeIds);
+      scheduleWarmUp();
+      return status;
+    },
+    rigidUnitAssets: () => rigidUnits.statuses(),
     buildingAssets: () =>
       buildingStatuses.map((st) => ({ ...st, buildingIds: [...st.buildingIds] })),
     async setProps(list, source = {}) {
@@ -819,6 +863,8 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
           canvas.clientHeight,
           x,
           y,
+          undefined,
+          rigidShape,
         );
       }
       let ground: PickResult['ground'] = null;
@@ -831,14 +877,10 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
     },
     boxSelect(rect, selectOpts) {
       viewProj.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
-      return selectInRect(
-        frame,
-        viewProj.elements,
-        canvas.clientWidth,
-        canvas.clientHeight,
-        rect,
-        selectOpts,
-      );
+      return selectInRect(frame, viewProj.elements, canvas.clientWidth, canvas.clientHeight, rect, {
+        shape: rigidShape,
+        ...selectOpts,
+      });
     },
     focus(x, y) {
       controls.focus(x / UNITS_PER_METER, y / UNITS_PER_METER);
@@ -850,6 +892,9 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
       propsVisible: props.visibleCount,
       propsTotal: props.totalCount,
       waterTriangles: water.triangles,
+      rigidVisible: rigid.visibleCount,
+      rigidTotal: rigid.totalCount,
+      rigidDraws: rigid.drawCount,
     }),
     dispose() {
       clearTimeout(warmTimer);
@@ -859,6 +904,8 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
       unitAssets.dispose();
       overlay?.dispose();
       units.dispose();
+      rigidUnits.dispose();
+      rigid.dispose();
       buildingGeneration++;
       structures.dispose();
       buildingLayers?.dispose();

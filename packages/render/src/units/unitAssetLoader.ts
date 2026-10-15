@@ -8,6 +8,12 @@ import { canvasRasterize, type Rasterize } from '../structures/textureArray.js';
 import type { BakedAnimations } from './bake.js';
 import { applyCharacterFit, bakedAnimationsFromManifest, characterFit } from './bakedManifest.js';
 import {
+  loadRigidUnitAsset,
+  type LoadedRigidAsset,
+  type RigidUnitLoadOptions,
+} from './rigidUnitAssetLoader.js';
+import { splitRigidEntries, type RigidAssetEntry } from './rigidUnitManifest.js';
+import {
   unitGeometryFromGltf,
   type TeamMaskSource,
   type UnitGeometryResult,
@@ -78,8 +84,13 @@ export function createGltfIO(
   };
 }
 
+interface ParsedManifest {
+  manifest: AssetManifest;
+  rigid: ReadonlyMap<string, RigidAssetEntry | string>;
+}
+
 export class UnitAssetLoader {
-  private readonly manifests = new Map<string, Promise<AssetManifest>>();
+  private readonly manifests = new Map<string, Promise<ParsedManifest>>();
 
   constructor(
     private readonly io: UnitAssetIO = createGltfIO(),
@@ -90,23 +101,51 @@ export class UnitAssetLoader {
     ) => string = resolveManifestPath,
   ) {}
 
-  /** The parsed manifest, fetched once per URL. */
-  manifest(manifestUrl: string): Promise<AssetManifest> {
+  private parsed(manifestUrl: string): Promise<ParsedManifest> {
     let m = this.manifests.get(manifestUrl);
     if (!m) {
       m = (async () => {
         const bytes = await this.io.fetchBytes(manifestUrl);
-        const parsed = manifestSchema.safeParse(JSON.parse(new TextDecoder().decode(bytes)));
+        // Rigid units (robots) are split off before the schema sees the manifest: it knows characters, props and
+        // buildings, and a rigid entry has its own (render-side) shape, see rigidUnitManifest.ts.
+        const { rest, rigid } = splitRigidEntries(JSON.parse(new TextDecoder().decode(bytes)));
+        const parsed = manifestSchema.safeParse(rest);
         if (!parsed.success)
           throw new UnitAssetError(
             `invalid manifest ${manifestUrl}: ${parsed.error.issues.map((i) => i.message).join('; ')}`,
           );
-        return parsed.data;
+        return { manifest: parsed.data, rigid };
       })();
       m.catch(() => this.manifests.delete(manifestUrl));
       this.manifests.set(manifestUrl, m);
     }
     return m;
+  }
+
+  /** The parsed manifest (without its rigid units), fetched once per URL. */
+  async manifest(manifestUrl: string): Promise<AssetManifest> {
+    return (await this.parsed(manifestUrl)).manifest;
+  }
+
+  /**
+   * The rigid units of the manifest by asset id: the entry, or the reason a rigid entry is unusable (so a loadout that
+   * names it can say why it falls back to the humanoid).
+   */
+  async rigidEntries(manifestUrl: string): Promise<ReadonlyMap<string, RigidAssetEntry | string>> {
+    return (await this.parsed(manifestUrl)).rigid;
+  }
+
+  /** Loads one rigid unit (robot) asset. Rejects with the reason when the entry or a GLB is unusable. */
+  async loadRigid(
+    manifestUrl: string,
+    assetId: string,
+    opts: RigidUnitLoadOptions = {},
+  ): Promise<LoadedRigidAsset> {
+    const entry = (await this.rigidEntries(manifestUrl)).get(assetId);
+    if (entry === undefined)
+      throw new UnitAssetError(`asset "${assetId}" is not a rigid unit in ${manifestUrl}`);
+    if (typeof entry === 'string') throw new UnitAssetError(`rigid unit "${assetId}": ${entry}`);
+    return loadRigidUnitAsset(this.io, (path) => this.resolveUrl(manifestUrl, path), entry, opts);
   }
 
   /** True when the manifest lists `assetId` as a character with baked clips. */
@@ -151,15 +190,13 @@ export class UnitAssetLoader {
       teamMask,
       rasterize,
     });
-    const rest = scenes
-      .slice(1)
-      .map((scene) =>
-        unitGeometryFromGltf(scene, {
-          boneCount: entry.boneCount,
-          teamMask: lod0.teamMask,
-          rasterize,
-        }),
-      );
+    const rest = scenes.slice(1).map((scene) =>
+      unitGeometryFromGltf(scene, {
+        boneCount: entry.boneCount,
+        teamMask: lod0.teamMask,
+        rasterize,
+      }),
+    );
     return { id: assetId, entry, anims, lods: [lod0, rest[0]!, rest[1]!] };
   }
 }

@@ -72,6 +72,11 @@ export class UnitAssetRegistry {
       warn?: (message: string) => void;
       /** Brightness factor on an asset's albedo (renderer option albedoGain); 1 or undefined keeps it. */
       albedoGain?: (assetId: string) => number | undefined;
+      /**
+       * Asset ids of a manifest that are rigid units (rigidUnitAssets.ts): robots drawn by the rigid layer, which this
+       * registry leaves alone (a rigid body is neither loaded as a skinned rig nor becomes the default rig).
+       */
+      rigidIds?: (manifestUrl: string) => Promise<ReadonlySet<string>>;
     },
   ) {}
 
@@ -79,9 +84,14 @@ export class UnitAssetRegistry {
   async start(): Promise<void> {
     const c = this.opts.config;
     const loads: Promise<unknown>[] = [];
-    if (c?.defaultUnit) loads.push(this.load(c.manifestUrl, c.defaultUnit, { asDefault: true }));
+    const rigid = c
+      ? ((await this.opts.rigidIds?.(c.manifestUrl)) ?? new Set<string>())
+      : new Set<string>();
+    if (c?.defaultUnit && !rigid.has(c.defaultUnit))
+      loads.push(this.load(c.manifestUrl, c.defaultUnit, { asDefault: true }));
     for (const assetId of Object.keys(c?.bind ?? {}))
-      if (assetId !== c?.defaultUnit) loads.push(this.load(c!.manifestUrl, assetId));
+      if (assetId !== c?.defaultUnit && !rigid.has(assetId))
+        loads.push(this.load(c!.manifestUrl, assetId));
     await Promise.all(loads);
   }
 
@@ -105,6 +115,10 @@ export class UnitAssetRegistry {
       const list = this.typesByAsset.get(id) ?? [];
       list.push(unitTypeId(l.id));
       this.typesByAsset.set(id, list);
+    }
+    if (this.opts.config) {
+      const rigid = (await this.opts.rigidIds?.(this.opts.config.manifestUrl)) ?? new Set<string>();
+      for (const id of rigid) this.typesByAsset.delete(id); // robots: the rigid layer draws these
     }
     const loads: Promise<unknown>[] = [];
     // Without a configured default unit, the first loadout body (in loadout order) also draws the units and heroes

@@ -1,7 +1,8 @@
 // One instanced draw of a static mesh with the prop material's per-instance attributes (propMaterial.ts): iPos
 // (x, y, z meters, yaw radians), iScale (x, y, z, team palette slot) and iTint (rgb multiplier; w: the model-space
 // height a building under construction is cut at, NO_CUT otherwise). Shared by the structure layer (buildings, scrap
-// heaps, claims) and the prop layer (trees, rocks, bushes).
+// heaps, claims), the prop layer (trees, rocks, bushes) and the rigid-unit layer (robots), which names one extra vec4
+// attribute (iAnim: the procedural pose, rigidMotion.ts) that setExtra() fills for the instance pushed last.
 import {
   DynamicDrawUsage,
   InstancedBufferAttribute,
@@ -19,6 +20,7 @@ export class InstanceBatch {
   private readonly pos: InstancedBufferAttribute;
   private readonly scale: InstancedBufferAttribute;
   private readonly tint: InstancedBufferAttribute;
+  private readonly extras = new Map<string, InstancedBufferAttribute>();
   count = 0;
 
   constructor(
@@ -27,12 +29,19 @@ export class InstanceBatch {
     material: MeshBasicNodeMaterial,
     capacity: number,
     name: string,
+    /** Names of extra per-instance vec4 attributes the material reads, filled with setExtra(). */
+    extra: readonly string[] = [],
   ) {
     const attr = (): InstancedBufferAttribute => {
       const a = new InstancedBufferAttribute(new Float32Array(capacity * 4), 4);
       a.setUsage(DynamicDrawUsage);
       return a;
     };
+    for (const key of extra) {
+      const a = attr();
+      this.extras.set(key, a);
+      geometry.setAttribute(key, a);
+    }
     this.pos = attr();
     this.scale = attr();
     this.tint = attr();
@@ -84,12 +93,24 @@ export class InstanceBatch {
     t[o + 3] = cut;
   }
 
+  /** Writes an extra attribute of the instance pushed last (push() first). */
+  setExtra(name: string, a: number, b: number, c: number, d: number): void {
+    const attr = this.extras.get(name);
+    if (!attr || this.count === 0) return;
+    const o = (this.count - 1) * 4;
+    const arr = attr.array as Float32Array;
+    arr[o] = a;
+    arr[o + 1] = b;
+    arr[o + 2] = c;
+    arr[o + 3] = d;
+  }
+
   commit(): void {
     const n = this.count;
     this.mesh.count = n;
     this.mesh.visible = n > 0;
     if (n === 0) return;
-    for (const a of [this.pos, this.scale, this.tint]) {
+    for (const a of [this.pos, this.scale, this.tint, ...this.extras.values()]) {
       a.clearUpdateRanges();
       a.addUpdateRange(0, n * 4);
       a.needsUpdate = true;
