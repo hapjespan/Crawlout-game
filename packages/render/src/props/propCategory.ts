@@ -58,3 +58,14 @@ export function isTree(category: PropCategory): boolean {
 export function hasBlobShadow(category: PropCategory): boolean {
   return category !== 'grass' && category !== 'plant' && category !== 'debris';
 }
+
+/**
+ * Whether a prop of this category casts the sun's real shadow: trees and structures always, rocks, crates, chests and
+ * barrels only with `smallProps` (high shadow quality); ground cover (grass, plants, debris) never, it is too small
+ * and too many for the shadow pass.
+ */
+export function castsShadow(category: PropCategory, smallProps: boolean): boolean {
+  if (isTree(category) || category === 'structure') return true;
+  if (category === 'grass' || category === 'plant' || category === 'debris') return false;
+  return smallProps;
+}

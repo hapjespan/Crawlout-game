@@ -42,7 +42,8 @@ import {
   weather,
 } from '../look/surfaceShading.js';
 import { teamPalette } from '../palette.js';
-import { rimLight, skyFill, teamAlbedo, toonRamp } from './unitMaterial.js';
+import type { SunShadowTerm } from '../shadows/sunShadow.js';
+import { rimLight, skyFill, teamAlbedo, toonLight } from './unitMaterial.js';
 
 export interface RigidUnitMaterialOptions {
   lightDir: Vector3;
@@ -57,6 +58,8 @@ export interface RigidUnitMaterialOptions {
   grade?: number;
   /** Surface kind per layer of `layers` (by material name, surfaceKindOfMaterial). Default wood. */
   layerKinds?: readonly SurfaceKind[];
+  /** The sun's shadow (shadows/sunShadow.ts), received by the robots (they cast it too, see rigidUnitLayer.ts). */
+  shadow?: SunShadowTerm | null;
 }
 
 /** How much a fully dimmed unit keeps of its color (a powered-down robot goes nearly black). */
@@ -145,15 +148,22 @@ export function createRigidUnitMaterial(opts: RigidUnitMaterialOptions): MeshBas
     mix(float(1), float(TEAM_GRADE), color.w),
   );
   const albedo = metalDiffuse(graded, surface).mul(float(1).sub(iMotion.z.mul(1 - DIM_KEEP)));
-  const shade = toonRamp(dot(N, light));
+  const shade = toonLight(N, light, opts.shadow?.factor);
   const V = normalize(cameraPosition.sub(vWorldPos));
   const rim = rimLight(N, V, light, albedo).mul(RIM_SHARE);
-  const spec = toonSpecular(N, V, light, surface, albedo).mul(float(1).sub(iMotion.z));
+  const spec = toonSpecular(N, V, light, surface, albedo, opts.shadow?.factor ?? 1).mul(
+    float(1).sub(iMotion.z),
+  );
   const glow = team.mul(iMotion.w.mul(GLOW_GAIN)).mul(max(color.w, GLOW_FLOOR));
 
   const m = new MeshBasicNodeMaterial();
   m.positionNode = worldPos;
-  m.colorNode = vec4(albedo.mul(skyFill(N).add(shade)).add(rim).add(spec).add(glow), 1);
+  const out = vec4(albedo.mul(skyFill(N).add(shade)).add(rim).add(spec).add(glow), 1);
+  // A shadow caster must not sample its own shadow map in the shadow pass (three reads colorNode.a there).
+  if (opts.shadow) {
+    m.fragmentNode = out;
+    m.receivedShadowPositionNode = opts.shadow.receivePosition(vWorldPos, N);
+  } else m.colorNode = out;
   m.name = opts.name;
   return m;
 }

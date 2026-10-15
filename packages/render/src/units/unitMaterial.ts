@@ -56,6 +56,8 @@ import { teamPalette } from '../palette.js';
 import type { BakedAnimations } from './bake.js';
 import { TEAM_FALLBACK_BASE, TEAM_PIVOT_DEFAULT } from './gltfUnitGeometry.js';
 import { HERO_PART_ALPHA } from './humanoidGeometry.js';
+import { HEMI_GROUND, HEMI_SKY, SUN_COLOR } from '../lighting/lightRig.js';
+import type { SunShadowTerm } from '../shadows/sunShadow.js';
 
 /** Added to the instance flags (iAnim.w) of a hero; above the uint8 snapshot flags. */
 export const HERO_INSTANCE_FLAG = 256;
@@ -74,6 +76,8 @@ const FAR_TEAM = [28, 75] as const;
 export interface ToonLighting {
   /** Direction towards the light, world space. */
   lightDir: Vector3;
+  /** The sun's shadow: units receive it (they also cast it, see unitLayer.ts). */
+  shadow?: SunShadowTerm | null;
 }
 
 export interface UnitAlbedo {
@@ -116,6 +120,35 @@ export function toonRamp(ndl: Node<'float'>): Node<'float'> {
     .add(smoothstep(b.midAt - s, b.midAt + s, h).mul(b.mid))
     .add(smoothstep(b.lightAt - s, b.lightAt + s, h).mul(b.light));
 }
+
+/**
+ * The light of the shared rig (lighting/lightRig.ts) on the toon ramp: the dark band is the hemisphere fill (cool from
+ * the sky, warm from the ground), what the ramp adds above it is the warm direct sun, and only that part is taken
+ * away by the sun's shadow (1 lit, 0 shadowed). A surface in shadow keeps exactly the dark band, as a surface turned
+ * away from the sun does, so a cast shadow and a self-shadowed side read the same.
+ */
+export function toonLight(
+  N: Node<'vec3'>,
+  L: Node<'vec3'>,
+  shadowFactor?: Node<'float'> | null,
+): Node<'vec3'> {
+  const b = TOON_BANDS;
+  // The ramp's steps above the dark band, rescaled so dark + direct still reaches 1 on a fully lit face.
+  const direct = toonRamp(dot(N, L))
+    .sub(b.dark)
+    .mul((1 - AMBIENT_BAND) / (1 - b.dark));
+  const sun = shadowFactor ? direct.mul(shadowFactor) : direct;
+  const up = clamp(N.y.mul(0.5).add(0.5), 0, 1);
+  const hemi = mix(vec3(...HEMI_GROUND), vec3(...HEMI_SKY), up);
+  return hemi.mul(AMBIENT_BAND).add(vec3(...SUN_COLOR).mul(sun));
+}
+
+/**
+ * The dark band of toonLight: what a surface in shadow or turned from the sun keeps. Lower than TOON_BANDS.dark (the
+ * old ramp's floor, tuned when nothing cast a shadow): a cast shadow has to read as a shape on the bright, mottled
+ * ground, about 2.5 : 1 against full sun, a hazy afternoon rather than a desert noon.
+ */
+export const AMBIENT_BAND = 0.4;
 
 /**
  * Rimlight. The silhouette test runs on the horizontal parts of N and V: the RTS camera looks down 50 to 74 degrees,
@@ -354,13 +387,20 @@ export function createUnitMaterial(
     teamAlbedo(base, iTeam, mask, (albedoSource.teamPivot ?? TEAM_PIVOT_DEFAULT) * gain),
     mix(float(1), float(TEAM_GRADE), mask),
   );
-  const shade = toonRamp(dot(N, lightDir));
+  const sun = lighting.shadow ?? null;
+  const shade = toonLight(N, lightDir, sun?.factor);
   const V = normalize(cameraPosition.sub(vWorldPos));
   const rim = rimLight(N, V, lightDir, albedo);
 
   const material = new MeshBasicNodeMaterial();
   material.positionNode = worldPos;
-  material.colorNode = vec4(albedo.mul(skyFill(N).add(shade)).add(rim), 1);
+  const out = vec4(albedo.mul(skyFill(N).add(shade)).add(rim), 1);
+  // A shadow caster must not sample its own shadow map in the shadow pass (three's shadow pass reads colorNode.a),
+  // so a unit that receives the shadow puts its color in fragmentNode.
+  if (sun) {
+    material.fragmentNode = out;
+    material.receivedShadowPositionNode = sun.receivePosition(vWorldPos, N);
+  } else material.colorNode = out;
   material.name = 'crawlout-unit-toon';
   return { material, textures: [boneTex, clipTex], lightDir };
 }

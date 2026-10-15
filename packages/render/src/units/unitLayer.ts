@@ -31,6 +31,8 @@ import type { DataTexturePrecision } from '../gpu/dataTextures.js';
 import { ScreenLod, UNIT_LOD_PX, type ScreenLodThresholds } from '../lod/screenLod.js';
 import { teamIndex } from '../palette.js';
 import type { InterpolatedFrame } from '../snapshot/interpolate.js';
+import { SUN_DIR } from '../lighting/lightRig.js';
+import type { SunShadowTerm } from '../shadows/sunShadow.js';
 import { InstanceVariation } from './animVariation.js';
 import { bakeAnimations, type BakedAnimations } from './bake.js';
 import { createHumanoidGeometry, UNIT_LODS } from './humanoidGeometry.js';
@@ -53,6 +55,11 @@ export interface UnitLayerOptions {
   precision?: DataTexturePrecision;
   /** Pre-baked clips for the placeholder rig; baked from the procedural rig when absent. */
   anims?: BakedAnimations;
+  /**
+   * The sun's shadow (shadows/sunShadow.ts): units cast it and receive it, and their blob decal drops to a faint
+   * contact darkening (BLOB_WITH_SHADOW) that keeps them grounded at RTS distance. Without it, the full blob.
+   */
+  shadow?: SunShadowTerm | null;
 }
 
 /** A rig the layer can draw: baked clips plus one geometry per LOD in the unit vertex layout. */
@@ -83,6 +90,13 @@ interface Rig {
 /** Anisotropic filtering of a unit asset's diffuse atlas. */
 export const UNIT_ATLAS_ANISOTROPY = 8;
 const UNIT_RADIUS = 1.0; // culling sphere around a unit's chest, meters
+/**
+ * With shadows the culling sphere is this big: a unit just outside the view still casts its shadow into it (a 1.8 m
+ * settler under the 40 degree sun throws about 2.2 m).
+ */
+const UNIT_SHADOW_RADIUS = 3.2;
+/** Blob strength under a unit when the real shadow is on: a contact darkening, not a second shadow. */
+export const BLOB_WITH_SHADOW = 0.45;
 const SELECTED = ENTITY_FLAG.selected;
 const DEAD = ENTITY_FLAG.dead;
 const DECAL_HALF = 0.8; // meters
@@ -100,6 +114,8 @@ const BLOB: DecalStyle = {
   color: DECAL_COLOR.selection,
 };
 const BLOB_SELECTED: DecalStyle = { ...BLOB, ring: 1 };
+const CONTACT: DecalStyle = { ...BLOB, shadow: BLOB_WITH_SHADOW };
+const CONTACT_SELECTED: DecalStyle = { ...CONTACT, ring: 1 };
 
 function dynamic(capacity: number, size: number): InstancedBufferAttribute {
   const a = new InstancedBufferAttribute(new Float32Array(capacity * size), size);
@@ -121,6 +137,9 @@ export class UnitLayer {
   private readonly precision: DataTexturePrecision;
   private readonly screen: ScreenLod;
   private readonly lodPixels: ScreenLodThresholds;
+  private readonly shadow: SunShadowTerm | null;
+  private readonly blob: DecalStyle;
+  private readonly blobSelected: DecalStyle;
   private readonly frustum = new Frustum();
   private readonly projView = new Matrix4();
   private readonly sphere = new Sphere();
@@ -141,6 +160,9 @@ export class UnitLayer {
     this.precision = opts.precision ?? 'float';
     this.screen = opts.screen ?? new ScreenLod();
     this.lodPixels = opts.lodPixels ?? UNIT_LOD_PX;
+    this.shadow = opts.shadow ?? null;
+    this.blob = this.shadow ? CONTACT : BLOB;
+    this.blobSelected = this.shadow ? CONTACT_SELECTED : BLOB_SELECTED;
     const anims = opts.anims ?? bakeAnimations();
     this.addRig({
       name: 'placeholder',
@@ -177,7 +199,7 @@ export class UnitLayer {
     if (map) map.anisotropy = Math.max(map.anisotropy, UNIT_ATLAS_ANISOTROPY);
     const bundle = createUnitMaterial(
       src.anims,
-      { lightDir: this.lightDir },
+      { lightDir: this.lightDir, shadow: this.shadow },
       this.precision,
       src.albedo ?? {},
     );
@@ -191,6 +213,7 @@ export class UnitLayer {
       const mesh = new Mesh(geo, bundle.material);
       mesh.name = `units-${src.name}-lod${lod}`;
       mesh.frustumCulled = false; // culled per instance on the CPU
+      mesh.castShadow = this.shadow !== null;
       mesh.count = 0;
       mesh.visible = false;
       this.scene.add(mesh);
@@ -253,7 +276,7 @@ export class UnitLayer {
     counts[0] = counts[1] = counts[2] = 0;
     for (const rig of this.rigs) for (const b of rig.lods) b.mesh.count = 0;
     const center = this.sphere.center;
-    this.sphere.radius = UNIT_RADIUS;
+    this.sphere.radius = this.shadow ? UNIT_SHADOW_RADIUS : UNIT_RADIUS;
 
     for (let i = 0; i < frame.count; i++) {
       const typeId = frame.typeId[i]!;
@@ -301,7 +324,7 @@ export class UnitLayer {
 
       const selected = (flags & SELECTED) !== 0 && (flags & DEAD) === 0;
       const half = isHero ? DECAL_HALF * HERO_SCALE : DECAL_HALF;
-      decals.push(x, z, half, half, selected ? BLOB_SELECTED : BLOB);
+      decals.push(x, z, half, half, selected ? this.blobSelected : this.blob);
     }
 
     for (const rig of this.rigs) {
@@ -327,5 +350,5 @@ export class UnitLayer {
   }
 }
 
-/** Shared light direction for units and terrain: low sun from the south-west, like the bake in the textures will be. */
-export const DEFAULT_LIGHT_DIR = new Vector3(-0.45, 0.8, 0.35).normalize();
+/** Shared light direction for every toon material: the rig's sun (lighting/lightRig.ts). */
+export const DEFAULT_LIGHT_DIR: Vector3 = SUN_DIR;

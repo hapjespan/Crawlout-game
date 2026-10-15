@@ -2,7 +2,6 @@
 import type { GameData } from '@crawlout/data';
 import { MAX_ENTITIES, TICK_MS, UNITS_PER_METER } from '@crawlout/protocol';
 import {
-  Color,
   Matrix4,
   PCFShadowMap,
   DataTexture,
@@ -45,7 +44,9 @@ import {
   type PickShape,
   type ScreenRect,
 } from './picking/selection.js';
-import { SunShadow } from './shadows/sunShadow.js';
+import { createAtmosphere } from './lighting/atmosphere.js';
+import { TONE_EXPOSURE, TONE_MAPPING } from './lighting/lightRig.js';
+import { SunShadow, type ShadowQuality } from './shadows/sunShadow.js';
 import {
   createInterpolatedFrame,
   simYawToRender,
@@ -75,6 +76,7 @@ import type { TerrainAlbedoLayout } from './terrain/albedoLayout.js';
 import { createGridTerrain, type TerrainGeometry } from './terrain/heightField.js';
 import type { TerrainChunkOptions } from './terrain/terrainChunks.js';
 import { TerrainLayer } from './terrain/terrainLayer.js';
+import { TerrainSkirt } from './terrain/terrainSkirt.js';
 import type { TerrainDetailOptions } from './terrain/terrainRefine.js';
 import {
   loadTerrainTextures,
@@ -118,8 +120,12 @@ export interface CreateRendererOptions {
   camera?: RtsCameraOptions;
   /** Entity capacity per batch. Default MAX_ENTITIES. */
   capacity?: number;
-  /** Real shadows cast by buildings onto terrain and buildings. Default true. */
-  shadows?: boolean;
+  /**
+   * The sun's real shadow (shadows/sunShadow.ts): buildings, units, trees and props cast it onto everything. true or
+   * 'high' (default): 4096 map, small props cast too; 'low': 2048 map, shorter shadow distance, only trees, buildings
+   * and units; false: off (blob decals only).
+   */
+  shadows?: boolean | ShadowQuality;
   /** Data texture precision: 'auto' (default) probes float32 support on WebGL2 and falls back to half-float. */
   dataTextures?: 'auto' | DataTexturePrecision;
   /** Building footprint by typeId. setGameData() replaces it with the footprints from GameData. */
@@ -359,25 +365,38 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
     force,
   );
 
-  const shadowsOn = opts.shadows ?? true;
+  const shadowQuality: ShadowQuality | null =
+    opts.shadows === false ? null : opts.shadows === 'low' ? 'low' : 'high';
+  const shadowsOn = shadowQuality !== null;
   gpu.shadowMap.enabled = shadowsOn;
+  // r186: PCF is the soft one (Vogel disk + noise over hardware compares; PCFSoftShadowMap was folded into it).
   gpu.shadowMap.type = PCFShadowMap;
+  // One tone mapping for everything, applied in the output pass (lighting/lightRig.ts).
+  gpu.toneMapping = TONE_MAPPING;
+  gpu.toneMappingExposure = TONE_EXPOSURE;
 
   const scene = new Scene();
-  scene.background = new Color(0x8fa3a8);
+  // Gradient sky and a fog of its horizon colour (lighting/atmosphere.ts).
+  const atmosphere = createAtmosphere();
+  scene.backgroundNode = atmosphere.backgroundNode;
+  scene.fogNode = atmosphere.fogNode;
   const camera = new PerspectiveCamera(45, 1, 0.5, 800);
   const time = uniform(0);
   const clockStart = performance.now();
   const clock = (now: number): number => (now - clockStart) / 1000;
 
-  const sun = shadowsOn ? new SunShadow(scene, DEFAULT_LIGHT_DIR) : null;
+  const sun = shadowQuality ? new SunShadow(scene, DEFAULT_LIGHT_DIR, shadowQuality) : null;
   const terrain = new TerrainLayer(scene, DEFAULT_LIGHT_DIR, {
-    shadow: sun?.factor,
+    shadow: sun,
     precision,
     ...(opts.terrainDetail ? { detail: opts.terrainDetail } : {}),
     ...(opts.terrainChunks ? { chunks: opts.terrainChunks } : {}),
   });
   const water = new WaterLayer(scene, { lightDir: DEFAULT_LIGHT_DIR, time, shadow: sun?.factor });
+  const skirt = new TerrainSkirt(scene, DEFAULT_LIGHT_DIR);
+  /** The terrain's height range: the slab the shadow camera is fitted over. */
+  let groundLo = 0;
+  let groundHi = 0;
   let terrainTexture: Texture | null = null;
   let terrainGeneration = 0;
   const setTerrainTextures = async (
@@ -420,8 +439,14 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
     precision,
     anims,
     screen,
+    shadow: sun,
   });
-  const rigid = new RigidUnitLayer(scene, { capacity, lightDir: DEFAULT_LIGHT_DIR, screen });
+  const rigid = new RigidUnitLayer(scene, {
+    capacity,
+    lightDir: DEFAULT_LIGHT_DIR,
+    screen,
+    shadow: sun,
+  });
   units.setSkip((typeId) => rigid.owns(typeId)); // the robots are the rigid layer's
   const assetConfig = opts.assets;
   const gltfIO = createGltfIO();
@@ -487,18 +512,20 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
       building: createPropMaterial({
         lightDir: DEFAULT_LIGHT_DIR,
         name: 'crawlout-building-toon',
-        shadow: sun?.factor,
+        shadow: sun,
       }),
       scrap: createPropMaterial({
         lightDir: DEFAULT_LIGHT_DIR,
         name: 'crawlout-scrap-toon',
         surface: 'rustMetal',
+        shadow: sun,
       }),
       claim: createPropMaterial({
         lightDir: DEFAULT_LIGHT_DIR,
         name: 'crawlout-claim-toon',
         time,
         surface: 'paintedMetal',
+        shadow: sun,
       }),
     },
   });
@@ -507,13 +534,14 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
     ...opts.props,
     maxBlobs: propBlobs,
     screen,
+    shadow: sun ? { smallProps: sun.settings.smallProps } : null,
     heightAt: (x, z) => terrain.heightAt(x, z),
     material: ({ map, layers, mask, category, height }) => {
       const wind = windOf(category);
       return createPropMaterial({
         lightDir: DEFAULT_LIGHT_DIR,
         name: mask ? 'crawlout-prop-toon-mask' : 'crawlout-prop-toon',
-        shadow: sun?.factor,
+        shadow: sun,
         map,
         layers,
         surface: surfaceKindOfCategory(category),
@@ -586,7 +614,7 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
         : createPropMaterial({
             lightDir: DEFAULT_LIGHT_DIR,
             name: 'crawlout-building-asset-toon',
-            shadow: sun?.factor,
+            shadow: sun,
             layers: set.layers,
             layerLuma: set.layerLuma,
             layerKinds: set.layerKinds,
@@ -642,6 +670,8 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
   const afterHeights = (): void => {
     decals.setHeights(terrain.heightTexture);
     props.relayout();
+    const hf = terrain.heightField;
+    if (hf) [groundLo, groundHi] = hf.heightRange();
   };
   // Grass density mask over the terrain, from the grass and plant props (terrain/grassMask.ts).
   let grassTexture: DataTexture | null = null;
@@ -675,6 +705,9 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
     afterHeights();
     scheduleWarmUp();
     const hf = terrain.heightField;
+    const bounds = hf ? { minX: hf.minX, maxX: hf.maxX, minZ: hf.minZ, maxZ: hf.maxZ } : null;
+    atmosphere.setBounds(bounds);
+    skirt.set(bounds, (x, z) => terrain.heightAt(x, z));
     if (hf) {
       controls.bounds = { minX: hf.minX, maxX: hf.maxX, minZ: hf.minZ, maxZ: hf.maxZ };
       controls.focus(controls.target.x, controls.target.z);
@@ -758,7 +791,8 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
     decals.end();
     additive.commit();
     smoke.commit();
-    sun?.update(controls.target.x, controls.target.y, controls.target.z, controls.distance);
+    atmosphere.update(controls.distance);
+    sun?.update(camera, groundLo, groundHi);
     gpu.render(scene, camera);
     const info = gpu.info.render;
     if (meter.frame(now, performance.now() - now, info.drawCalls, info.triangles))
@@ -959,6 +993,7 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
       additive.dispose();
       smoke.dispose();
       sun?.dispose();
+      skirt.dispose();
       terrainGeneration++;
       terrain.dispose();
       water.dispose();
