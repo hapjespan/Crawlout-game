@@ -181,7 +181,6 @@ export async function buildRobots(
   for (const id of ids) {
     const unit = config.units[id];
     const building = config.buildings[id];
-    const variant = (unit ?? building)!;
     const report: RobotsResult['reports'][number] = {
       id,
       source: configSource,
