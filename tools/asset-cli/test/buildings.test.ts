@@ -49,12 +49,21 @@ function deepCopy(value: VariantsConfig): VariantsConfig {
 }
 
 describe('variants.json', () => {
-  it('valideert en dekt alle acht Dweller-gebouwen uit data/buildings.json', () => {
+  it('valideert en dekt alle Dweller-gebouwen uit data/buildings.json (acht hier, de robotgebouwen in robots.json)', () => {
     const dwellers = buildingsJson.filter((b) => b.visuals.mesh.startsWith('dweller_building_'));
-    expect(dwellers).toHaveLength(8);
-    expect(ids).toEqual(dwellers.map((b) => b.visuals.mesh).sort());
-    for (const b of dwellers)
-      expect(config.variants[b.visuals.mesh]?.footprint, b.visuals.mesh).toEqual(b.footprint);
+    // data 0.15.0: tien gebouwen; robotfabriek en laserturret komen uit assets/src/robots.json (src/robots.ts)
+    const robots = JSON.parse(readFileSync(join(srcDir, 'robots.json'), 'utf8')) as {
+      buildings: Record<string, { footprint: { w: number; h: number } }>;
+    };
+    expect(dwellers).toHaveLength(10);
+    const inVariants = dwellers.filter((b) => robots.buildings[b.visuals.mesh] === undefined);
+    expect(inVariants).toHaveLength(8);
+    expect(ids).toEqual(inVariants.map((b) => b.visuals.mesh).sort());
+    for (const b of dwellers) {
+      const footprint =
+        config.variants[b.visuals.mesh]?.footprint ?? robots.buildings[b.visuals.mesh]?.footprint;
+      expect(footprint, b.visuals.mesh).toEqual(b.footprint);
+    }
   });
 
   it('verwijst alleen naar bestaande bronnen, bronmaterialen en effen materialen', () => {
