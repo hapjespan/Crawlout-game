@@ -205,6 +205,20 @@ export interface PlayerStatus {
    * (Sim.dominance in packages/sim/src/sim.ts), de client leest hem (apps/client/src/game/dominance.ts).
    */
   dominance: DominanceStatus;
+  /**
+   * Robots (protocol 0.8.0, data 0.15.0; ter bevestiging door de architect): de pop van de levende eigen robots. Robots
+   * tellen voor pop maar niet voor bedden: `pop` is de pop van de bewoners (binnen de bedden), `robotPop` die van de
+   * robots, en pop + robotPop (plus de robots in productie) blijft binnen popCapMax. `settlers` telt alleen bewoners.
+   * popCap = min(beds, popCapMax - robotPop - pop van robots in productie): de ruimte voor bewoners. Optioneel tot de
+   * HUD hem leest; de sim levert hem altijd.
+   */
+  robotPop?: number;
+  /**
+   * Getrainde SPECIAL-punten van de speler (protocol 0.8.0, data 0.15.0; ter bevestiging door de architect), per letter
+   * in de volgorde S P E C I A L. Ze zitten al in HeroStatus.special; de HUD heeft ze apart nodig voor de kosten en
+   * duur van de volgende run (training.json scrapCost + scrapCostStep maal getraind). Optioneel tot de HUD hem leest.
+   */
+  trained?: [number, number, number, number, number, number, number];
 }
 
 /**
@@ -240,7 +254,12 @@ export interface DominanceLeader {
  * craften zijn twee items.
  */
 export interface QueueItem {
-  kind: 'research' | 'craft';
+  /**
+   * produce (protocol 0.8.0): een robot in productie in een gebouw (buildingId = de fabriek, unitId = ENTITY_NONE, id =
+   * loadoutId); train (protocol 0.8.0): een trainingsprogramma (buildingId = de trainingsfaciliteit, unitId =
+   * ENTITY_NONE, id = programId). Beide stopt Cancel op het gebouw.
+   */
+  kind: 'research' | 'craft' | 'produce' | 'train';
   /** Entity-id van het gebouw waarin het werk loopt (craft onderweg: ENTITY_NONE). */
   buildingId: number;
   /** Bij craft de bewoner die omgeschoold wordt; bij research ENTITY_NONE. Verplicht sinds protocol 0.5.0. */

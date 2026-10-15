@@ -197,6 +197,51 @@ describe('besluiten sprint 3', () => {
   });
 });
 
+describe('voorstel content-x (protocol 0.8.0, ter bevestiging door de architect)', () => {
+  const env = (type: string, payload: unknown) =>
+    CommandEnvelope.safeParse({ frame: 0, playerId: 0, seq: 0, type, payload }).success;
+
+  it('Produce draagt het gebouw en het loadout, Train het gebouw en het programma', () => {
+    expect(env('Produce', { buildingId: 1048577, loadoutId: 10 })).toBe(true);
+    expect(env('Train', { buildingId: 1048577, programId: 3 })).toBe(true);
+    expect(env('Produce', { buildingId: 1048577 })).toBe(false);
+    expect(env('Train', { buildingId: 1048577, programId: -1 })).toBe(false);
+    expect(env('Produce', { buildingId: 1, loadoutId: 2, ids: [1] })).toBe(false);
+  });
+
+  it('QueueItem kent produce en train; robotPop en trained zijn optioneel tot de HUD ze leest', () => {
+    const status: PlayerStatus = {
+      playerId: 0,
+      scrap: 0,
+      settlers: 3,
+      pop: 3,
+      popCap: 6,
+      beds: 6,
+      hero: null,
+      queue: [
+        {
+          kind: 'produce',
+          buildingId: 1048577,
+          unitId: ENTITY_NONE,
+          id: 10,
+          progressPermille: 500,
+        },
+        { kind: 'train', buildingId: 2097153, unitId: ENTITY_NONE, id: 3, progressPermille: 0 },
+      ],
+      dominance: {
+        pointsHeld: 0,
+        pointsRequired: 3,
+        ticksHeld: 0,
+        ticksRequired: 9600,
+        leader: null,
+      },
+      robotPop: 2,
+      trained: [1, 0, 0, 0, 0, 0, 0],
+    };
+    expect(status.queue.map((q) => q.kind)).toEqual(['produce', 'train']);
+  });
+});
+
 describe('CommandEnvelope', () => {
   it('accepteert een geldig Move-commando', () => {
     const r = CommandEnvelope.safeParse({

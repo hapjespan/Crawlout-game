@@ -30,6 +30,16 @@ export type Role = z.infer<typeof Role>;
 //   lopend onderzoek; kosten meteen. Cancel met dat gebouw stopt het onderzoek met teruggave.
 // - HeroAbility: abilityId is de index in heroes.abilities van de held; zonder x, y en target geldt de positie van
 //   de held. Het begin van de zone komt als event abilityZone (snapshot.ts).
+// Voorstel content-x (protocol 0.8.0, data 0.15.0; ter bevestiging door de architect):
+// - Produce (buildingId, loadoutId): een robot nieuw bouwen in een eigen voltooid gebouw waar het loadout gebouwd
+//   wordt (loadouts.producedAt, de robotfabriek). Eén tegelijk per gebouw; de sim rekent scrapCost meteen af en vraagt
+//   prereqTech en ruimte in popCapMax (bewoners plus robots, ook die in productie). Na craftS staat de robot naast het
+//   gebouw. Cancel met het gebouw stopt het met teruggave. Craft weigert een loadout met producedAt (geen omscholing
+//   van een bewoner tot robot).
+// - Train (buildingId, programId): een SPECIAL-trainingsprogramma (data/training.json, programId = de numerieke id)
+//   in een eigen voltooid gebouw van het type uit het programma (de trainingsfaciliteit). Eén tegelijk per gebouw en
+//   per letter; kosten scrapCost + scrapCostStep maal de al getrainde punten op die letter, meteen afgerekend. Cancel
+//   met het gebouw stopt het met teruggave.
 export const COMMAND_PAYLOADS = {
   Move: z.object({ ids: EntityIds, ...Pos }).strict(),
   AttackMove: z.object({ ids: EntityIds, ...Pos }).strict(),
@@ -54,6 +64,8 @@ export const COMMAND_PAYLOADS = {
     .strict(),
   PickPerk: z.object({ heroId: uint, perkId: uint }).strict(),
   Surrender: z.object({}).strict(),
+  Produce: z.object({ buildingId: uint, loadoutId: uint }).strict(),
+  Train: z.object({ buildingId: uint, programId: uint }).strict(),
 } as const;
 
 const COMMAND_TYPE_NAMES = Object.keys(COMMAND_PAYLOADS) as [

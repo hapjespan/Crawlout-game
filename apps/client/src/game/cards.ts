@@ -166,7 +166,8 @@ export function buildingCards(ctx: CardContext): BuildingCard[] {
     });
     if (hasWorkshop) {
       for (const l of data.loadouts) {
-        if (l.factionId !== factionId) continue;
+        // robots (producedAt >= 0) are built new in their factory, never retrained from a settler
+        if (l.factionId !== factionId || l.producedAt >= 0) continue;
         const running = queueItem(status, 'craft', l.id);
         cards.push({
           kind: 'craft',
