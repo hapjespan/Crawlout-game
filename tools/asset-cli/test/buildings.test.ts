@@ -229,17 +229,17 @@ describe('controles op gebouw-documenten', () => {
     const wrong = deepCopy(config);
     const id = 'dweller_building_housing';
     const variant = wrong.variants[id]!;
-    // Uniform (standaard): het huis past in 3 x 3 m en is in de diepte 3 m, de breedte volgt uit de verhouding.
-    for (const part of variant.parts) if (part.type === 'house') part.size = [3, 3];
+    // Uniform (standaard): het huis past in 4,5 x 4,5 m en is in de diepte 4,5 m, de breedte volgt uit de verhouding.
+    for (const part of variant.parts) if (part.type === 'house') part.size = [4.5, 4.5];
     const generated = await generateBuilding(wrong, id, 0, new Map([['house', source]]));
     const errors = checkBuildingDocument(generated.document, variant.footprint, 0);
-    expect(errors.join('\n')).toMatch(/diepte \(z\) is 3\.\d+ m, footprint 2 m/);
+    expect(errors.join('\n')).toMatch(/diepte \(z\) is 4\.\d+ m, footprint 3 m/);
     // Bewust uitgerekt ('stretch') vult beide assen.
     for (const part of variant.parts) if (part.type === 'house') part.fit = 'stretch';
     const stretched = await generateBuilding(wrong, id, 0, new Map([['house', source]]));
     const stretchErrors = checkBuildingDocument(stretched.document, variant.footprint, 0);
-    expect(stretchErrors.join('\n')).toMatch(/breedte \(x\) is 3\.\d+ m, footprint 2 m/);
-    expect(stretchErrors.join('\n')).toMatch(/diepte \(z\) is 3\.\d+ m, footprint 2 m/);
+    expect(stretchErrors.join('\n')).toMatch(/breedte \(x\) is 4\.\d+ m, footprint 3 m/);
+    expect(stretchErrors.join('\n')).toMatch(/diepte \(z\) is 4\.\d+ m, footprint 3 m/);
 
     const floating = deepCopy(config);
     for (const part of floating.variants[id]!.parts)

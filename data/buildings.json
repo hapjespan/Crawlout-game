@@ -7,9 +7,9 @@
   },
   {
     "id": "woning", "faction": "dwellers", "hp": 300, "armorType": "light", "scrapCost": 75, "buildS": 20,
-    "footprint": { "w": 2, "h": 2 }, "beds": 4, "provides": ["huisvesting"], "prereqTech": [],
+    "footprint": { "w": 3, "h": 3 }, "beds": 4, "provides": ["huisvesting"], "prereqTech": [],
     "visuals": { "mesh": "dweller_building_housing" },
-    "_comment": "Balans speltest 14 oktober voor scrapCost, de rest startwaarde. Woning: 4 bedden voor 75 scrap (was 60, de richtwaarde uit contract 3): elf woningen naar de pop-cap van 50 kosten nu 825 scrap, een echte uitgave naast het leger. 20 s bouwtijd, 300 hp, 2x2 cellen. Geen bed, geen groei (Spelfundament sectie 2)."
+    "_comment": "Balans speltest 14 oktober voor scrapCost, de rest startwaarde. Woning: 4 bedden voor 75 scrap (was 60, de richtwaarde uit contract 3): elf woningen naar de pop-cap van 50 kosten nu 825 scrap, een echte uitgave naast het leger. 20 s bouwtijd, 300 hp, 3x3 cellen (data 0.13.0, was 2x2: met 3x3 krijgt het woonhuis de juiste verhoudingen naast bewoners van 1,8 m; kosten, hp, bedden en bouwtijd ongewijzigd). Geen bed, geen groei (Spelfundament sectie 2)."
   },
   {
     "id": "werkplaats", "faction": "dwellers", "hp": 600, "armorType": "medium", "scrapCost": 120, "buildS": 35,

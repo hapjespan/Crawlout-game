@@ -19,17 +19,17 @@
   },
   "variants": {
     "dweller_building_housing": {
-      "footprint": {"w": 2, "h": 2},
+      "footprint": {"w": 3, "h": 3},
       "lod0Triangles": 2500,
-      "note": "uniform geschaald huis (1,39 x 2 m) op een erf van 2 x 2 m; de footprint vult het erf",
+      "note": "uniform geschaald huis (2,08 x 3 m, 1,61 m hoog) op een erf van 3 x 3 m; de footprint vult het erf, de vlaggenmast steekt boven het dak uit (2,1 m)",
       "parts": [
-        {"type": "box", "size": [2, 0.04, 2], "material": "dirt", "position": [0, 0, 0]},
-        {"type": "house", "source": "house", "fit": "house", "size": [2, 2], "heightFactor": 1, "position": [0, 0, 0], "maxLod": 1},
-        {"type": "house", "source": "house", "fit": "house", "size": [2, 2], "heightFactor": 1, "position": [0, 0, 0], "select": {"materials": ["Material.004"], "components": 2}, "minLod": 2},
-        {"type": "box", "size": [1.072, 0.43, 1.272], "material": "wall_proxy", "position": [-0.089, 0, 0.284], "minLod": 2},
-        {"type": "box", "size": [1.385, 0.052, 2], "material": "wall_proxy", "position": [0, 0, 0], "minLod": 2},
-        {"type": "cylinder", "radius": 0.035, "height": 1.5, "segments": 6, "material": "metal", "position": [0.8, 0, 0.8], "maxLod": 1},
-        {"type": "box", "size": [0.4, 0.26, 0.03], "material": "team_trim", "position": [0.6, 1.2, 0.8]}
+        {"type": "box", "size": [3, 0.04, 3], "material": "dirt", "position": [0, 0, 0]},
+        {"type": "house", "source": "house", "fit": "house", "size": [3, 3], "heightFactor": 1, "position": [0, 0, 0], "maxLod": 1},
+        {"type": "house", "source": "house", "fit": "house", "size": [3, 3], "heightFactor": 1, "position": [0, 0, 0], "select": {"materials": ["Material.004"], "components": 2}, "minLod": 2},
+        {"type": "box", "size": [1.608, 0.645, 1.908], "material": "wall_proxy", "position": [-0.134, 0, 0.426], "minLod": 2},
+        {"type": "box", "size": [2.078, 0.078, 3], "material": "wall_proxy", "position": [0, 0, 0], "minLod": 2},
+        {"type": "cylinder", "radius": 0.045, "height": 2.1, "segments": 6, "material": "metal", "position": [1.25, 0, 1.2], "maxLod": 1},
+        {"type": "box", "size": [0.6, 0.39, 0.03], "material": "team_trim", "position": [0.95, 1.68, 1.2]}
       ]
     },
     "dweller_building_hq": {
