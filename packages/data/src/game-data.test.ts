@@ -216,6 +216,13 @@ describe('sim-tuning', () => {
       specialLuckCritPermille: 20,
       critDamagePermille: 1000,
       builderAutoHelpRadiusU: 3072,
+      formation: {
+        gapU: 64,
+        widthPermille: 2000,
+        slackU: 192,
+        directRangeU: 5120,
+        gatherRingU: 0,
+      },
     });
   });
 
@@ -517,7 +524,7 @@ describe('balans speltest 14 oktober: AI-script', () => {
   });
 });
 
-describe('content-x (data 0.15.0): robots, technicus, vangnet', () => {
+describe('content-x (data 0.16.0): robots, technicus, vangnet', () => {
   const data = loadGameData(raw());
   const loadout = (key: string) => data.loadouts.find((l) => l.key === key)!;
   const building = (key: string) => data.buildings.find((b) => b.key === key)!;
@@ -673,7 +680,7 @@ describe('content-x (data 0.15.0): robots, technicus, vangnet', () => {
   });
 });
 
-describe('content-x (data 0.15.0): turret-netwerk, uitrusting in tiers, held-passieven, training', () => {
+describe('content-x (data 0.16.0): turret-netwerk, uitrusting in tiers, held-passieven, training', () => {
   const data = loadGameData(raw());
   const loadout = (key: string) => data.loadouts.find((l) => l.key === key)!;
   const building = (key: string) => data.buildings.find((b) => b.key === key)!;

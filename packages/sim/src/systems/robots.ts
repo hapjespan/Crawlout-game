@@ -18,7 +18,7 @@ import {
   withinReach,
 } from './common.js';
 
-// Robots van de Dwellers (data 0.15.0):
+// Robots van de Dwellers (data 0.16.0):
 //  - Productie (loadouts producedAt, commando Produce): een voltooide eigen robotfabriek bouwt één robot tegelijk.
 //    Produce rekent scrapCost meteen af en vraagt prereqTech en ruimte binnen popCapMax (bewoners, robots en robots in
 //    productie; bedden spelen geen rol). Na craftTicks (systeem 6) staat de robot naast het gebouw; geen bewoner wordt

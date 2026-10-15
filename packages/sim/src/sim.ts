@@ -397,7 +397,7 @@ export class Sim implements SimContext {
         progressPermille: progress,
       });
     }
-    // data 0.15.0 (protocol 0.8.0): robotproductie en training per gebouw
+    // data 0.16.0 (protocol 0.8.0): robotproductie en training per gebouw
     for (let i = 0; i < w.highWater; i++) {
       if (w.alive[i] !== 1 || w.owner[i] !== playerId || w.job[i] === 0 || !w.has(i, C.building))
         continue;

@@ -2,7 +2,6 @@
 import type { GameData } from '@crawlout/data';
 import { MAX_ENTITIES, TICK_MS, UNITS_PER_METER } from '@crawlout/protocol';
 import {
-  Color,
   Matrix4,
   PCFShadowMap,
   DataTexture,
@@ -45,7 +44,9 @@ import {
   type PickShape,
   type ScreenRect,
 } from './picking/selection.js';
-import { SunShadow } from './shadows/sunShadow.js';
+import { createAtmosphere } from './lighting/atmosphere.js';
+import { TONE_EXPOSURE, TONE_MAPPING } from './lighting/lightRig.js';
+import { SunShadow, type ShadowQuality } from './shadows/sunShadow.js';
 import {
   createInterpolatedFrame,
   simYawToRender,
@@ -67,6 +68,7 @@ import {
   type BuildingAssetStatus,
   type BuildingVisual,
 } from './structures/buildingAssets.js';
+import { surfaceKindOfCategory } from './look/surfaces.js';
 import { createPropMaterial } from './structures/propMaterial.js';
 import { DEFAULT_LAYER_SIZE } from './structures/textureArray.js';
 import { StructureLayer } from './structures/structureLayer.js';
@@ -74,6 +76,7 @@ import type { TerrainAlbedoLayout } from './terrain/albedoLayout.js';
 import { createGridTerrain, type TerrainGeometry } from './terrain/heightField.js';
 import type { TerrainChunkOptions } from './terrain/terrainChunks.js';
 import { TerrainLayer } from './terrain/terrainLayer.js';
+import { TerrainSkirt } from './terrain/terrainSkirt.js';
 import type { TerrainDetailOptions } from './terrain/terrainRefine.js';
 import {
   loadTerrainTextures,
@@ -90,6 +93,8 @@ import {
   type UnitAssetStatus,
 } from './units/unitAssets.js';
 import { DEFAULT_LIGHT_DIR, UnitLayer } from './units/unitLayer.js';
+import { RigidUnitRegistry, type RigidUnitStatus } from './units/rigidUnitAssets.js';
+import { RigidUnitLayer, type RigidUnitSource } from './units/rigidUnitLayer.js';
 import { abilitiesFromGameData, AbilityZones, type AbilityLookup } from './vfx/abilityZones.js';
 import { EffectSpawner, type EffectContext } from './vfx/effects.js';
 import { ParticlePool } from './vfx/particles.js';
@@ -115,8 +120,12 @@ export interface CreateRendererOptions {
   camera?: RtsCameraOptions;
   /** Entity capacity per batch. Default MAX_ENTITIES. */
   capacity?: number;
-  /** Real shadows cast by buildings onto terrain and buildings. Default true. */
-  shadows?: boolean;
+  /**
+   * The sun's real shadow (shadows/sunShadow.ts): buildings, units, trees and props cast it onto everything. true or
+   * 'high' (default): 4096 map, small props cast too; 'low': 2048 map, shorter shadow distance, only trees, buildings
+   * and units; false: off (blob decals only).
+   */
+  shadows?: boolean | ShadowQuality;
   /** Data texture precision: 'auto' (default) probes float32 support on WebGL2 and falls back to half-float. */
   dataTextures?: 'auto' | DataTexturePrecision;
   /** Building footprint by typeId. setGameData() replaces it with the footprints from GameData. */
@@ -211,6 +220,10 @@ export interface LayerStats {
   propsVisible: number;
   propsTotal: number;
   waterTriangles: number;
+  /** Rigid units (robots) drawn and in the frame, and the draw calls they took. */
+  rigidVisible: number;
+  rigidTotal: number;
+  rigidDraws: number;
 }
 
 export interface CrawloutRenderer {
@@ -283,6 +296,24 @@ export interface CrawloutRenderer {
   focus(x: number, y: number): void;
   /** Latest measured frame stats. */
   stats(): FrameStats;
+  /**
+   * Loads a rigid unit asset (a robot: manifest entry with `rigid: true`, rigidUnitManifest.ts) and draws the unit types
+   * whose loadout names it (meshSlots.body, or `assets.bind`) with it. setGameData does this for every rigid body in
+   * the loadouts; call it for an asset that has no loadout, with the unit `typeIds` to draw with it. Resolves with the status, never rejects: on failure the
+   * unit types stay on the humanoid.
+   */
+  loadRigidUnit(
+    manifestUrl: string,
+    assetId: string,
+    typeIds?: readonly number[],
+  ): Promise<RigidUnitStatus>;
+  /**
+   * Draws unit typeIds with a rigid asset that is already in memory (synthetic robots of the demo, tests). Same layer as
+   * the manifest assets: one draw per asset per LOD, procedural animation from the snapshot's anim fields.
+   */
+  addRigidUnit(source: RigidUnitSource, typeIds: readonly number[]): RigidUnitStatus;
+  /** Status of every rigid unit asset requested so far. */
+  rigidUnitAssets(): RigidUnitStatus[];
   /** Triangles and draws per layer in the last frame. */
   layerStats(): LayerStats;
   dispose(): void;
@@ -302,10 +333,6 @@ const HEIGHT_TEXTURE_EDGE = 512;
 const PARTICLES_PER_POOL = 4096;
 /** Default most prop blob shadows, on top of the entity decals. */
 const PROP_BLOBS = 768;
-/** How far prop art is pulled towards the warm wasteland grey (structures/propMaterial.ts grade). */
-const PROP_GRADE = 0.22;
-/** The same for building assets: lighter, their tints per building type should stay readable. */
-const BUILDING_GRADE = 0.12;
 const PREVIEW_VALID: DecalStyle = {
   shape: DECAL_SHAPE.rect,
   shadow: 0,
@@ -338,25 +365,38 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
     force,
   );
 
-  const shadowsOn = opts.shadows ?? true;
+  const shadowQuality: ShadowQuality | null =
+    opts.shadows === false ? null : opts.shadows === 'low' ? 'low' : 'high';
+  const shadowsOn = shadowQuality !== null;
   gpu.shadowMap.enabled = shadowsOn;
+  // r186: PCF is the soft one (Vogel disk + noise over hardware compares; PCFSoftShadowMap was folded into it).
   gpu.shadowMap.type = PCFShadowMap;
+  // One tone mapping for everything, applied in the output pass (lighting/lightRig.ts).
+  gpu.toneMapping = TONE_MAPPING;
+  gpu.toneMappingExposure = TONE_EXPOSURE;
 
   const scene = new Scene();
-  scene.background = new Color(0x8fa3a8);
+  // Gradient sky and a fog of its horizon colour (lighting/atmosphere.ts).
+  const atmosphere = createAtmosphere();
+  scene.backgroundNode = atmosphere.backgroundNode;
+  scene.fogNode = atmosphere.fogNode;
   const camera = new PerspectiveCamera(45, 1, 0.5, 800);
   const time = uniform(0);
   const clockStart = performance.now();
   const clock = (now: number): number => (now - clockStart) / 1000;
 
-  const sun = shadowsOn ? new SunShadow(scene, DEFAULT_LIGHT_DIR) : null;
+  const sun = shadowQuality ? new SunShadow(scene, DEFAULT_LIGHT_DIR, shadowQuality) : null;
   const terrain = new TerrainLayer(scene, DEFAULT_LIGHT_DIR, {
-    shadow: sun?.factor,
+    shadow: sun,
     precision,
     ...(opts.terrainDetail ? { detail: opts.terrainDetail } : {}),
     ...(opts.terrainChunks ? { chunks: opts.terrainChunks } : {}),
   });
   const water = new WaterLayer(scene, { lightDir: DEFAULT_LIGHT_DIR, time, shadow: sun?.factor });
+  const skirt = new TerrainSkirt(scene, terrain.material);
+  /** The terrain's height range: the slab the shadow camera is fitted over. */
+  let groundLo = 0;
+  let groundHi = 0;
   let terrainTexture: Texture | null = null;
   let terrainGeneration = 0;
   const setTerrainTextures = async (
@@ -399,7 +439,15 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
     precision,
     anims,
     screen,
+    shadow: sun,
   });
+  const rigid = new RigidUnitLayer(scene, {
+    capacity,
+    lightDir: DEFAULT_LIGHT_DIR,
+    screen,
+    shadow: sun,
+  });
+  units.setSkip((typeId) => rigid.owns(typeId)); // the robots are the rigid layer's
   const assetConfig = opts.assets;
   const gltfIO = createGltfIO();
   const resolveAssetPath = (manifestUrl: string, path: string): string =>
@@ -414,6 +462,13 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
       : Math.min(ALBEDO_GAIN_RANGE[1], Math.max(ALBEDO_GAIN_RANGE[0], g));
   };
   const unitAssets = new UnitAssetRegistry(units, loader, {
+    config: assetConfig,
+    maxTextureSize: caps.maxTextureSize,
+    warn: (message) => console.warn(`[render] ${message}`),
+    albedoGain: gainOf,
+    rigidIds: (url) => rigidUnits.rigidIds(url),
+  });
+  const rigidUnits = new RigidUnitRegistry(rigid, loader, {
     config: assetConfig,
     maxTextureSize: caps.maxTextureSize,
     warn: (message) => console.warn(`[render] ${message}`),
@@ -445,7 +500,7 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
       warmUp().catch((err: unknown) => console.warn('[render] pipeline warm-up failed', err));
     }, 250);
   };
-  void unitAssets.start().then(scheduleWarmUp);
+  void Promise.all([unitAssets.start(), rigidUnits.start()]).then(scheduleWarmUp);
   const footprints = new FootprintTable(opts.buildingFootprint ?? null);
   const structures = new StructureLayer(scene, {
     capacity,
@@ -457,10 +512,21 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
       building: createPropMaterial({
         lightDir: DEFAULT_LIGHT_DIR,
         name: 'crawlout-building-toon',
-        shadow: sun?.factor,
+        shadow: sun,
       }),
-      scrap: createPropMaterial({ lightDir: DEFAULT_LIGHT_DIR, name: 'crawlout-scrap-toon' }),
-      claim: createPropMaterial({ lightDir: DEFAULT_LIGHT_DIR, name: 'crawlout-claim-toon', time }),
+      scrap: createPropMaterial({
+        lightDir: DEFAULT_LIGHT_DIR,
+        name: 'crawlout-scrap-toon',
+        surface: 'rustMetal',
+        shadow: sun,
+      }),
+      claim: createPropMaterial({
+        lightDir: DEFAULT_LIGHT_DIR,
+        name: 'crawlout-claim-toon',
+        time,
+        surface: 'paintedMetal',
+        shadow: sun,
+      }),
     },
   });
   const windStrength = uniform(opts.props?.wind === false ? 0 : 1);
@@ -468,16 +534,17 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
     ...opts.props,
     maxBlobs: propBlobs,
     screen,
+    shadow: sun ? { smallProps: sun.settings.smallProps } : null,
     heightAt: (x, z) => terrain.heightAt(x, z),
     material: ({ map, layers, mask, category, height }) => {
       const wind = windOf(category);
       return createPropMaterial({
         lightDir: DEFAULT_LIGHT_DIR,
         name: mask ? 'crawlout-prop-toon-mask' : 'crawlout-prop-toon',
-        shadow: sun?.factor,
+        shadow: sun,
         map,
         layers,
-        grade: PROP_GRADE,
+        surface: surfaceKindOfCategory(category),
         alphaMask: mask,
         ...(wind && height > 1e-4
           ? { wind: { ...wind, height, time, strength: windStrength } }
@@ -547,11 +614,11 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
         : createPropMaterial({
             lightDir: DEFAULT_LIGHT_DIR,
             name: 'crawlout-building-asset-toon',
-            shadow: sun?.factor,
+            shadow: sun,
             layers: set.layers,
             layerLuma: set.layerLuma,
+            layerKinds: set.layerKinds,
             reveal: true,
-            grade: BUILDING_GRADE,
           }),
     );
     disposeSet(); // the structure layer drew its own copies
@@ -603,6 +670,8 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
   const afterHeights = (): void => {
     decals.setHeights(terrain.heightTexture);
     props.relayout();
+    const hf = terrain.heightField;
+    if (hf) [groundLo, groundHi] = hf.heightRange();
   };
   // Grass density mask over the terrain, from the grass and plant props (terrain/grassMask.ts).
   let grassTexture: DataTexture | null = null;
@@ -636,6 +705,9 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
     afterHeights();
     scheduleWarmUp();
     const hf = terrain.heightField;
+    const bounds = hf ? { minX: hf.minX, maxX: hf.maxX, minZ: hf.minZ, maxZ: hf.maxZ } : null;
+    atmosphere.setBounds(bounds);
+    skirt.set(bounds, (x, z) => terrain.heightAt(x, z));
     if (hf) {
       controls.bounds = { minX: hf.minX, maxX: hf.maxX, minZ: hf.minZ, maxZ: hf.maxZ };
       controls.focus(controls.target.x, controls.target.z);
@@ -703,6 +775,7 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
     decals.begin();
     zones.draw(t, decals); // first, so blobs and selection rings draw over the zone
     units.update(frame, camera, decals);
+    rigid.update(frame, camera, decals, t);
     structures.update(frame, camera, decals);
     if (preview) {
       const f = footprints.get(preview.typeId);
@@ -718,7 +791,8 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
     decals.end();
     additive.commit();
     smoke.commit();
-    sun?.update(controls.target.x, controls.target.y, controls.target.z, controls.distance);
+    atmosphere.update(controls.distance);
+    sun?.update(camera, groundLo, groundHi);
     gpu.render(scene, camera);
     const info = gpu.info.render;
     if (meter.frame(now, performance.now() - now, info.drawCalls, info.triangles))
@@ -731,8 +805,10 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
   const groundPlane = new Plane(new Vector3(0, 1, 0), 0);
   const hitPoint = new Vector3();
   const viewProj = new Matrix4();
+  const rigidShape = (i: number, out: PickShape): PickShape | null =>
+    rigid.pickShape(frame.typeId[i]!, out);
   const pickShape = (i: number, out: PickShape): PickShape | null =>
-    structures.pickShape(frame.typeId[i]!, out);
+    rigidShape(i, out) ?? structures.pickShape(frame.typeId[i]!, out);
 
   return {
     backend,
@@ -761,12 +837,24 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
     setGameData(data) {
       footprints.setLookup(footprintsFromGameData(data));
       abilities = data.heroes ? abilitiesFromGameData({ heroes: data.heroes }) : null;
-      if (data.loadouts) void unitAssets.setLoadouts(data.loadouts).then(scheduleWarmUp);
+      if (data.loadouts)
+        void Promise.all([
+          unitAssets.setLoadouts(data.loadouts),
+          rigidUnits.setLoadouts(data.loadouts),
+        ]).then(scheduleWarmUp);
       void loadBuildings(data.buildings);
     },
     loadUnitAsset: (manifestUrl, assetId, assetOpts) =>
       unitAssets.load(manifestUrl, assetId, assetOpts).finally(scheduleWarmUp),
     unitAssets: () => unitAssets.statuses(),
+    loadRigidUnit: (manifestUrl, assetId, typeIds) =>
+      rigidUnits.load(manifestUrl, assetId, typeIds).finally(scheduleWarmUp),
+    addRigidUnit(source, typeIds) {
+      const status = rigidUnits.addLoaded(source.name, source, typeIds);
+      scheduleWarmUp();
+      return status;
+    },
+    rigidUnitAssets: () => rigidUnits.statuses(),
     buildingAssets: () =>
       buildingStatuses.map((st) => ({ ...st, buildingIds: [...st.buildingIds] })),
     async setProps(list, source = {}) {
@@ -853,6 +941,8 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
           canvas.clientHeight,
           x,
           y,
+          undefined,
+          rigidShape,
         );
       }
       let ground: PickResult['ground'] = null;
@@ -865,14 +955,10 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
     },
     boxSelect(rect, selectOpts) {
       viewProj.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
-      return selectInRect(
-        frame,
-        viewProj.elements,
-        canvas.clientWidth,
-        canvas.clientHeight,
-        rect,
-        selectOpts,
-      );
+      return selectInRect(frame, viewProj.elements, canvas.clientWidth, canvas.clientHeight, rect, {
+        shape: rigidShape,
+        ...selectOpts,
+      });
     },
     focus(x, y) {
       controls.focus(x / UNITS_PER_METER, y / UNITS_PER_METER);
@@ -884,6 +970,9 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
       propsVisible: props.visibleCount,
       propsTotal: props.totalCount,
       waterTriangles: water.triangles,
+      rigidVisible: rigid.visibleCount,
+      rigidTotal: rigid.totalCount,
+      rigidDraws: rigid.drawCount,
     }),
     dispose() {
       clearTimeout(warmTimer);
@@ -893,6 +982,8 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
       unitAssets.dispose();
       overlay?.dispose();
       units.dispose();
+      rigidUnits.dispose();
+      rigid.dispose();
       buildingGeneration++;
       structures.dispose();
       buildingLayers?.dispose();
@@ -902,6 +993,7 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
       additive.dispose();
       smoke.dispose();
       sun?.dispose();
+      skirt.dispose();
       terrainGeneration++;
       terrain.dispose();
       water.dispose();

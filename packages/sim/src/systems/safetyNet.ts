@@ -6,7 +6,7 @@ import type { Census } from './census.js';
 import type { SimContext } from './common.js';
 import { SPAWN_SPREAD, cellCenterOf, nthFreeCellAround, playerInTurn } from './common.js';
 
-// Vangnet van de factie (data 0.15.0, factions safetyNet radiobaken_instroom; Spelfundament 4 en 11), systeem 6 na de
+// Vangnet van de factie (data 0.16.0, factions safetyNet radiobaken_instroom; Spelfundament 4 en 11), systeem 6 na de
 // huisvestingsgroei, in de doordraaiende beurtvolgorde. Zolang een speler minder dan threshold bewoners heeft (levende
 // eigen units zonder de held en zonder robots), een voltooid gebouw met provides beacon, nog geen maxArrivals aankomsten
 // en ruimte in popCapMax (bedden spelen geen rol), loopt één timer per speler; na intervalTicks komt er een bewoner van

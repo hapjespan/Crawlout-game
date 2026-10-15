@@ -11,6 +11,7 @@ export {
   type SetTerrainOptions,
   ALBEDO_GAIN_RANGE,
 } from './renderer.js';
+export { type ShadowQuality } from './shadows/sunShadow.js';
 export {
   albedoUv,
   mirroredAlbedoLayout,
@@ -109,6 +110,17 @@ export {
   type UnitAssetStatus,
 } from './units/unitAssets.js';
 export { type TeamMaskSource } from './units/gltfUnitGeometry.js';
+export { type RigidUnitStatus } from './units/rigidUnitAssets.js';
+export { type RigidUnitSource } from './units/rigidUnitLayer.js';
+export { type RigidAssetEntry } from './units/rigidUnitManifest.js';
+export {
+  rigidPose,
+  createRigidPose,
+  motionWeight,
+  recoil,
+  type RigidPose,
+  type RigidMotionParams,
+} from './units/rigidMotion.js';
 export { TEAM_COLORS, NEUTRAL_COLOR, teamIndex } from './palette.js';
 export {
   classifyTypeId,

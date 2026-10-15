@@ -75,13 +75,33 @@
       const base = q.get('manifest') ?? '/assets/dist/manifest.json';
       const manifest = await (await fetch(base)).json();
       const dir = base.slice(0, base.lastIndexOf('/') + 1);
-      const robots = manifest.assets.filter((a) => (a.kind === 'rigid-unit' || a.id.startsWith('dweller_building_robotfactory') || a.id === 'dweller_building_turret_laser') && (!only || only.has(a.id)));
+      const robots = manifest.assets.filter(
+        (a) =>
+          (a.kind === 'rigid-unit' ||
+            a.id.startsWith('dweller_building_robotfactory') ||
+            a.id === 'dweller_building_turret_laser') &&
+          (!only || only.has(a.id)),
+      );
       const sizeOf = (a) => a.bounds.max.map((v, i) => v - a.bounds.min[i]);
 
       const rows = [
-        { title: 'rigide units (kind rigid-unit)', items: robots.filter((a) => a.kind === 'rigid-unit').sort((a, b) => sizeOf(a)[1] - sizeOf(b)[1]), maxScale: 150 },
-        { title: 'turret_laser (3 x 3)', items: robots.filter((a) => a.id === 'dweller_building_turret_laser'), maxScale: 150 },
-        { title: 'robotfactory (15 x 13)', items: robots.filter((a) => a.id === 'dweller_building_robotfactory'), maxScale: 45 },
+        {
+          title: 'rigide units (kind rigid-unit)',
+          items: robots
+            .filter((a) => a.kind === 'rigid-unit')
+            .sort((a, b) => sizeOf(a)[1] - sizeOf(b)[1]),
+          maxScale: 150,
+        },
+        {
+          title: 'turret_laser (3 x 3)',
+          items: robots.filter((a) => a.id === 'dweller_building_turret_laser'),
+          maxScale: 150,
+        },
+        {
+          title: 'robotfactory (15 x 13)',
+          items: robots.filter((a) => a.id === 'dweller_building_robotfactory'),
+          maxScale: 45,
+        },
       ];
 
       const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
@@ -104,7 +124,11 @@
       const H = visibleRows.reduce((s, r) => s + r.h, 0);
 
       const canvas = document.getElementById('c');
-      const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
+      const renderer = new THREE.WebGLRenderer({
+        canvas,
+        antialias: true,
+        preserveDrawingBuffer: true,
+      });
       renderer.setPixelRatio(1);
       renderer.setSize(W, H);
       renderer.setScissorTest(true);
@@ -119,12 +143,18 @@
         const sun = new THREE.DirectionalLight(0xfff0d0, 2.2);
         sun.position.set(-6, 10, 8);
         scene.add(sun);
-        const ground = new THREE.Mesh(new THREE.PlaneGeometry(row.totalW + 40, 60), new THREE.MeshStandardMaterial({ color: 0x3f4a38 }));
+        const ground = new THREE.Mesh(
+          new THREE.PlaneGeometry(row.totalW + 40, 60),
+          new THREE.MeshStandardMaterial({ color: 0x3f4a38 }),
+        );
         ground.rotation.x = -Math.PI / 2;
         ground.position.set(row.totalW / 2, -0.01, 0);
         scene.add(ground);
         for (const item of row.layout) {
-          const person = new THREE.Mesh(new THREE.CapsuleGeometry(0.22, 1.36, 4, 12), new THREE.MeshStandardMaterial({ color: 0x9fb4c4 }));
+          const person = new THREE.Mesh(
+            new THREE.CapsuleGeometry(0.22, 1.36, 4, 12),
+            new THREE.MeshStandardMaterial({ color: 0x9fb4c4 }),
+          );
           person.position.set(item.personX, 0.9, 0);
           scene.add(person);
           const gltf = await loader.loadAsync(dir + item.a.lods[lod].path);
@@ -140,13 +170,18 @@
           holder.position.set(item.propX, 0, 0);
           scene.add(holder);
           if (item.a.hover) {
-            const blob = new THREE.Mesh(new THREE.CircleGeometry(0.45, 24), new THREE.MeshBasicMaterial({ color: 0x1c2218 }));
+            const blob = new THREE.Mesh(
+              new THREE.CircleGeometry(0.45, 24),
+              new THREE.MeshBasicMaterial({ color: 0x1c2218 }),
+            );
             blob.rotation.x = -Math.PI / 2;
             blob.position.set(item.propX, 0.005, 0);
             scene.add(blob);
           }
           const box = new THREE.Box3().setFromObject(gltf.scene);
-          info.push(`${item.a.id} ${item.a.kind} H ${(box.max.y - box.min.y).toFixed(2)} m y0 ${box.min.y.toFixed(3)} tris ${item.a.lods[lod].triangles}`);
+          info.push(
+            `${item.a.id} ${item.a.kind} H ${(box.max.y - box.min.y).toFixed(2)} m y0 ${box.min.y.toFixed(3)} tris ${item.a.lods[lod].triangles}`,
+          );
         }
         const camH = row.h / row.scale;
         const camera = new THREE.OrthographicCamera(0, W / row.scale, camH, 0, 0.1, 400);

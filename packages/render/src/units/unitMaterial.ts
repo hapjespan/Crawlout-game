@@ -13,7 +13,9 @@
 // rotates by yaw.
 // Shading: 3-step toon ramp (soft band edges) plus a small sky fill, rimlight on the screen silhouette, team color
 // through the team mask (vertex alpha or, per texel, the atlas alpha) relative to the albedo's mean under the mask.
-// No PBR.
+// No PBR. The base is clothing (cloth surface of look/surfaces.ts): grain and dust at the boots from the shared
+// weathering, then the shared world grade (look/grade.ts), the team color itself only lightly graded so it stays the
+// one saturated accent on a dusty unit.
 // Hero (typeId 1000 + heroId): the unit layer adds HERO_INSTANCE_FLAG to the flags in iAnim.w. A hero is drawn
 // HERO_SCALE times bigger, and only a hero shows the hero parts of the placeholder (color alpha >= HERO_PART_ALPHA,
 // humanoidGeometry.ts); for other instances those vertices collapse onto their bone and rasterize nothing.
@@ -47,10 +49,15 @@ import {
   vertexStage,
 } from 'three/tsl';
 import { createDataTexture, type DataTexturePrecision } from '../gpu/dataTextures.js';
+import { TEAM_GRADE, worldGrade } from '../look/grade.js';
+import { surfaceIndex } from '../look/surfaces.js';
+import { createSurfaceTable, weather } from '../look/surfaceShading.js';
 import { teamPalette } from '../palette.js';
 import type { BakedAnimations } from './bake.js';
-import { TEAM_PIVOT_DEFAULT } from './gltfUnitGeometry.js';
+import { TEAM_FALLBACK_BASE, TEAM_PIVOT_DEFAULT } from './gltfUnitGeometry.js';
 import { HERO_PART_ALPHA } from './humanoidGeometry.js';
+import { HEMI_GROUND, HEMI_SKY, SUN_COLOR } from '../lighting/lightRig.js';
+import type { SunShadowTerm } from '../shadows/sunShadow.js';
 
 /** Added to the instance flags (iAnim.w) of a hero; above the uint8 snapshot flags. */
 export const HERO_INSTANCE_FLAG = 256;
@@ -61,9 +68,16 @@ export const TEAM_SLOTS = 16;
 /** Static per-instance variation: lean (shear of the body over its height, +-) and height scale (+-). */
 export const VARIATION = { lean: 0.03, height: 0.03 } as const;
 
+/** Strength of the clothing weathering (look/surfaceShading.ts weather): units are small, so lighter than a wall. */
+const UNIT_WEATHER = 0.6;
+/** Camera distance (m) over which a unit's team accent widens to its whole upper body (full at the far end). */
+const FAR_TEAM = [28, 75] as const;
+
 export interface ToonLighting {
   /** Direction towards the light, world space. */
   lightDir: Vector3;
+  /** The sun's shadow: units receive it (they also cast it, see unitLayer.ts). */
+  shadow?: SunShadowTerm | null;
 }
 
 export interface UnitAlbedo {
@@ -106,6 +120,35 @@ export function toonRamp(ndl: Node<'float'>): Node<'float'> {
     .add(smoothstep(b.midAt - s, b.midAt + s, h).mul(b.mid))
     .add(smoothstep(b.lightAt - s, b.lightAt + s, h).mul(b.light));
 }
+
+/**
+ * The light of the shared rig (lighting/lightRig.ts) on the toon ramp: the dark band is the hemisphere fill (cool from
+ * the sky, warm from the ground), what the ramp adds above it is the warm direct sun, and only that part is taken
+ * away by the sun's shadow (1 lit, 0 shadowed). A surface in shadow keeps exactly the dark band, as a surface turned
+ * away from the sun does, so a cast shadow and a self-shadowed side read the same.
+ */
+export function toonLight(
+  N: Node<'vec3'>,
+  L: Node<'vec3'>,
+  shadowFactor?: Node<'float'> | null,
+): Node<'vec3'> {
+  const b = TOON_BANDS;
+  // The ramp's steps above the dark band, rescaled so dark + direct still reaches 1 on a fully lit face.
+  const direct = toonRamp(dot(N, L))
+    .sub(b.dark)
+    .mul((1 - AMBIENT_BAND) / (1 - b.dark));
+  const sun = shadowFactor ? direct.mul(shadowFactor) : direct;
+  const up = clamp(N.y.mul(0.5).add(0.5), 0, 1);
+  const hemi = mix(vec3(...HEMI_GROUND), vec3(...HEMI_SKY), up);
+  return hemi.mul(AMBIENT_BAND).add(vec3(...SUN_COLOR).mul(sun));
+}
+
+/**
+ * The dark band of toonLight: what a surface in shadow or turned from the sun keeps. Lower than TOON_BANDS.dark (the
+ * old ramp's floor, tuned when nothing cast a shadow): a cast shadow has to read as a shape on the bright, mottled
+ * ground, about 2.5 : 1 against full sun, a hazy afternoon rather than a desert noon.
+ */
+export const AMBIENT_BAND = 0.4;
 
 /**
  * Rimlight. The silhouette test runs on the horizontal parts of N and V: the RTS camera looks down 50 to 74 degrees,
@@ -317,20 +360,47 @@ export function createUnitMaterial(
   const gain = albedoSource.gain ?? 1;
   if (gain !== 1) base = base.mul(gain);
   const iTeam = palette.element(teamSlot);
-  const albedo = teamAlbedo(
-    base,
-    iTeam,
-    mask,
-    (albedoSource.teamPivot ?? TEAM_PIVOT_DEFAULT) * gain,
-  );
   const N = normalize(worldNrm);
-  const shade = toonRamp(dot(N, lightDir));
+  // Team readability at RTS distance: the accent on the shoulders is a pixel or two from far away, so beyond FAR_TEAM
+  // the whole upper body (chest to shoulders in the bind pose, not the head) takes the team color, on the neutral base.
+  const far = smoothstep(FAR_TEAM[0], FAR_TEAM[1], length(cameraPosition.sub(vWorldPos)));
+  const bindY = attribute('position', 'vec3').y;
+  const upper = smoothstep(0.85, 0.98, bindY).mul(float(1).sub(smoothstep(1.52, 1.6, bindY)));
+  const wide = far.mul(vertexStage(upper));
+  base = mix(
+    base,
+    vec3(TEAM_FALLBACK_BASE, TEAM_FALLBACK_BASE, TEAM_FALLBACK_BASE),
+    wide.mul(float(1).sub(mask)),
+  );
+  mask = max(mask, wide);
+  // Weathering of the clothing in bind-pose space (the pattern sticks to the body), dust from the boots up.
+  base = weather({
+    albedo: base,
+    pos: vertexStage(attribute('position', 'vec3')),
+    normal: N,
+    height: vertexStage(skinnedPos.y),
+    surface: createSurfaceTable().at(surfaceIndex('cloth')),
+    amount: float(UNIT_WEATHER),
+    team: mask,
+  });
+  const albedo = worldGrade(
+    teamAlbedo(base, iTeam, mask, (albedoSource.teamPivot ?? TEAM_PIVOT_DEFAULT) * gain),
+    mix(float(1), float(TEAM_GRADE), mask),
+  );
+  const sun = lighting.shadow ?? null;
+  const shade = toonLight(N, lightDir, sun?.factor);
   const V = normalize(cameraPosition.sub(vWorldPos));
   const rim = rimLight(N, V, lightDir, albedo);
 
   const material = new MeshBasicNodeMaterial();
   material.positionNode = worldPos;
-  material.colorNode = vec4(albedo.mul(skyFill(N).add(shade)).add(rim), 1);
+  const out = vec4(albedo.mul(skyFill(N).add(shade)).add(rim), 1);
+  // A shadow caster must not sample its own shadow map in the shadow pass (three's shadow pass reads colorNode.a),
+  // so a unit that receives the shadow puts its color in fragmentNode.
+  if (sun) {
+    material.fragmentNode = out;
+    material.receivedShadowPositionNode = sun.receivePosition(vWorldPos, N);
+  } else material.colorNode = out;
   material.name = 'crawlout-unit-toon';
   return { material, textures: [boneTex, clipTex], lightDir };
 }

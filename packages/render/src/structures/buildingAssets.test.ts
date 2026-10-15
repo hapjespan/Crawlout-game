@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it, vi } from 'vitest';
 import { Vector3 } from 'three';
 import { manifestSchema, type AssetManifest } from '@crawlout/asset-cli/manifest';
+import { surfaceOfIndex } from '../look/surfaces.js';
 import { createGltfIO } from '../units/unitAssetLoader.js';
 import { buildingMeshes, loadBuildingAssets, type BuildingAssetIO } from './buildingAssets.js';
 import { NO_LAYER } from './buildingGeometry.js';
@@ -95,6 +96,13 @@ describe('building assets from assets/dist', () => {
     expect(set.layers!.image.depth).toBe(4);
     expect(rasterized.length).toBe(4);
     expect(byId.get('dweller_building_hq')!.reason).toMatch(/not decoded/);
+
+    // Surface kinds: a layer has the kind of its material name, a flat vertex carries its kind in u.
+    expect([...set.layerKinds].sort()).toEqual(['roofing', 'wood', 'wood', 'wood']);
+    const flatKinds = new Set<string>();
+    for (let i = 0; i < uvl.count; i++)
+      if (uvl.getZ(i) === NO_LAYER) flatKinds.add(surfaceOfIndex(uvl.getX(i)));
+    expect(flatKinds).toContain('paintedMetal'); // the water tower's steel and the team band
 
     // The beacon is built from shapes only (no house parts since the real-scale round): the same triangle count on
     // every LOD, so one geometry and one draw. The housing has three different LODs.

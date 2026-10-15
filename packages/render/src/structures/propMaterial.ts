@@ -4,21 +4,27 @@
 // iTint also carries the per-asset albedo gain (renderer option albedoGain).
 //
 // Per instance: iPos (x, y, z meters; yaw radians around +Y, 0 keeps +Z), iScale (x, y, z; team palette slot),
-// iTint (rgb multiplier on the albedo; w unused). An optional shadow factor (1 lit, 0 shadowed) drops the light to
-// the darkest band; an optional wave animates team-masked vertices (claim flags).
-// Decorative props (props/propLayer.ts) add a diffuse map sampled with uv (uv = (-1, -1) reads white, as on units)
-// and an optional grade that pulls the art's colors towards the wasteland palette, so lush kit colors sit under the
-// same toon ramp as everything else.
+// iTint (rgb multiplier on the albedo; w unused). The optional sun shadow (shadows/sunShadow.ts) takes the direct sun
+// away (toonLight: down to the darkest band); an optional wave animates team-masked vertices (claim flags).
+// Decorative props (props/propLayer.ts) add a diffuse map sampled with uv (uv = (-1, -1) reads white, as on units).
+// Surface (look/): every fragment has a surface kind (wood, painted metal, rust, rock, ...) that sets its albedo
+// range, roughness and metalness (look/surfaces.ts). A flat (untextured) fragment, the water tower's steel or a
+// placeholder prop, takes the kind's wasteland tint and is weathered procedurally (grain, flaked paint, rain streaks,
+// rust, dirt at the foot, dust on top; look/surfaceShading.ts); a photographed one gets a lighter dose of the dirt and
+// dust. The result goes through the shared world grade (look/grade.ts) and a toon specular from the recipe.
 // Building assets (buildingAssets.ts) use a texture array instead: attribute uvl = (u, v, layer), layer -1 reads
 // white, so one material serves every building whatever its number of materials. With `reveal`, a vertex above
 // iTint.w (model space) is pulled down onto that height: a building site rises out of the ground as it is built.
 // Foliage (props/propLayer.ts): `alphaMask` discards texels whose alpha is below the per-vertex cutoff `aCut` (leaf
 // cards and grass blades, glTF alphaMode MASK) and draws the material two-sided, flipping the normal on back faces;
-// an opaque material stays single-sided and has no discard. `wind` sways vertices along the wind by the square of
-// their height in the model, with iTint.w as the per-instance phase (props/propWind.ts).
+// an opaque material stays single-sided and has no discard. The same alpha test runs in the shadow pass
+// (maskShadowNode), so a tree's shadow has leaves, not cards. `wind` sways vertices along the wind by the square of
+// their height in the model, with iTint.w as the per-instance phase (props/propWind.ts); it lives in positionNode, which
+// the shadow pass uses too, so the shadow sways with the tree.
 import {
   DoubleSide,
   MeshBasicNodeMaterial,
+  Vector2,
   type Texture,
   type Vector3,
   type Node,
@@ -46,15 +52,25 @@ import {
   vec4,
   vertexStage,
 } from 'three/tsl';
+import { worldGrade, TEAM_GRADE } from '../look/grade.js';
+import { surfaceIndex, type SurfaceKind } from '../look/surfaces.js';
+import {
+  createSurfaceTable,
+  fitAlbedoNode,
+  metalDiffuse,
+  toonSpecular,
+  weather,
+} from '../look/surfaceShading.js';
 import { teamPalette } from '../palette.js';
 import { WIND_DIRECTION } from '../props/propWind.js';
-import { rimLight, skyFill, teamAlbedo, toonRamp } from '../units/unitMaterial.js';
+import type { SunShadowTerm } from '../shadows/sunShadow.js';
+import { rimLight, skyFill, teamAlbedo, toonLight } from '../units/unitMaterial.js';
 
 export interface PropMaterialOptions {
   lightDir: Vector3;
   name: string;
-  /** Shadow factor node (1 lit, 0 in shadow), e.g. three's shadow(light). */
-  shadow?: Node<'float'> | undefined;
+  /** The sun's shadow (shadows/sunShadow.ts), received by this material. */
+  shadow?: SunShadowTerm | null | undefined;
   /** Seconds (a uniform the renderer advances), drives the flag wave. */
   time?: Node<'float'>;
   /** Diffuse map, sampled with the uv attribute; albedo = vertex color * map. */
@@ -65,8 +81,12 @@ export interface PropMaterialOptions {
   layerLuma?: readonly number[];
   /** Cut the model at iTint.w (model-space y), for buildings under construction. */
   reveal?: boolean;
-  /** 0..1: pulls the albedo towards a warm grey of the same brightness (0 keeps the art's colors). Default 0. */
-  grade?: number;
+  /** Surface kind of the material (look/surfaces.ts): what a prop or placeholder is made of. Default wood. */
+  surface?: SurfaceKind;
+  /** Surface kind per layer of `layers` (by material name, surfaceKindOfMaterial); flat fragments carry theirs in uvl.x. */
+  layerKinds?: readonly SurfaceKind[];
+  /** 0..1: strength of the procedural weathering (look/surfaceShading.ts weather). Default 1, 0 for alpha-tested foliage. */
+  weather?: number;
   /**
    * Alpha test against the per-vertex `aCut` attribute (the geometry needs it, see propGeometry.ts) and two-sided
    * drawing. Needs `map` or `layers`: the alpha comes from the texture. Default false: opaque, single-sided.
@@ -91,14 +111,11 @@ export interface PropWindOptions {
   direction?: readonly [number, number];
 }
 
-/** Warm grey the grade pulls towards (linear rgb, multiplied by the albedo's luminance). */
-const GRADE_TONE = [1.08, 1.0, 0.82] as const;
+/** Weathering strength on a photographed fragment (it carries its own wear): dirt and dust only, softly. */
+const TEXTURED_WEATHER = 0.3;
 
 /** Rim on structures and props relative to units (unitMaterial.ts RIM): they should not compete with the units. */
 const PROP_RIM = 0.7;
-
-/** The darkest toon band, what a surface in shadow gets. */
-const SHADOW_BAND = 0.52;
 
 export function createPropMaterial(opts: PropMaterialOptions): MeshBasicNodeMaterial {
   const iPos = attribute('iPos', 'vec4');
@@ -152,47 +169,92 @@ export function createPropMaterial(opts: PropMaterialOptions): MeshBasicNodeMate
 
   const palette = uniformArray<'vec3'>(teamPalette(), 'vec3');
   const team = palette.element(int(iScale.w));
+  const luma = vec3(0.2126, 0.7152, 0.0722);
+  const baseKind = surfaceIndex(opts.surface ?? 'wood');
+  const table = createSurfaceTable();
   let base: Node<'vec3'> = color.xyz.mul(iTint.xyz);
   let texelAlpha: Node<'float'> | null = null;
   // Team pivot (unitMaterial.ts teamAlbedo): the untextured base times the mean of its texture layer.
-  let pivot: Node<'float'> = dot(base, vec3(0.2126, 0.7152, 0.0722));
+  let pivot: Node<'float'> = dot(base, luma);
+  // 1 where the fragment has no texture (its surface is procedural), and the surface kind index there and elsewhere.
+  let flat: Node<'float'> = float(1);
+  let kindIndex: Node<'int'> = int(baseKind);
   if (opts.map) {
     const uv = attribute('uv', 'vec2');
-    const texel = select(uv.x.lessThan(-0.5), vec4(1, 1, 1, 1), texture(opts.map, uv));
+    const plain = uv.x.lessThan(-0.5);
+    const texel = select(plain, vec4(1, 1, 1, 1), texture(opts.map, uv));
     base = base.mul(texel.xyz);
     texelAlpha = texel.w;
+    flat = select(plain, float(1), float(0));
   }
   if (opts.layers) {
     const uvl = attribute('uvl', 'vec3');
     const layer = int(max(uvl.z, 0).add(0.5));
-    const texel = select(
-      uvl.z.lessThan(-0.5),
-      vec4(1, 1, 1, 1),
-      texture(opts.layers, uvl.xy).depth(layer),
-    );
+    const plain = uvl.z.lessThan(-0.5);
+    const texel = select(plain, vec4(1, 1, 1, 1), texture(opts.layers, uvl.xy).depth(layer));
     base = base.mul(texel.xyz);
     texelAlpha = texel.w;
-    if (opts.layerLuma && opts.layerLuma.length > 0) {
-      const means = uniformArray<'float'>([...opts.layerLuma], 'float');
-      pivot = pivot.mul(select(uvl.z.lessThan(-0.5), float(1), means.element(layer)));
+    flat = select(plain, float(1), float(0));
+    // Per layer: the mean luma (the team pivot) and, with layerKinds (buildings), the surface kind. One vec2 array, as
+    // the fragment stage has few uniform buffers. A flat fragment of a building carries its kind in u
+    // (buildingGeometry.ts); without layerKinds (props) the whole material is one kind.
+    const count = Math.max(opts.layerLuma?.length ?? 0, opts.layerKinds?.length ?? 0);
+    if (count > 0) {
+      const perLayer = uniformArray<'vec2'>(
+        Array.from(
+          { length: count },
+          (_, i) =>
+            new Vector2(
+              opts.layerLuma?.[i] ?? 1,
+              opts.layerKinds?.[i] ? surfaceIndex(opts.layerKinds[i]!) : baseKind,
+            ),
+        ),
+        'vec2',
+      );
+      const entry = perLayer.element(layer);
+      if (opts.layerLuma && opts.layerLuma.length > 0)
+        pivot = pivot.mul(select(plain, float(1), entry.x));
+      if (opts.layerKinds && opts.layerKinds.length > 0)
+        kindIndex = select(plain, int(uvl.x.add(0.5)), int(entry.y.add(0.5)));
     }
   }
-  if (opts.grade) {
-    const luma = dot(base, vec3(0.2126, 0.7152, 0.0722));
-    base = mix(base, vec3(...GRADE_TONE).mul(luma), opts.grade);
-  }
-  const albedo = teamAlbedo(base, team, color.w, max(pivot, 1e-3));
+  const surface = table.at(kindIndex);
+  // The kind's range and tint come first (flat parts leave the authored swatch), then the weathering; the team pivot
+  // follows the shift so the team color is not dimmed or lifted by it, only by the wear.
+  const rawLuma = max(dot(base, luma), 1e-4);
+  base = mix(base, surface.tint, flat.mul(surface.flatBlend));
+  // A photographed kit color (the Gobkit's bright leaves) moves towards the kind's tint at its own luminance.
+  const tintAtLuma = surface.tint.mul(rawLuma.div(max(dot(surface.tint, luma), 1e-4)));
+  base = mix(base, tintAtLuma, float(1).sub(flat).mul(surface.texturedBlend));
+  base = fitAlbedoNode(base, surface.albedoMin, surface.albedoMax);
+  pivot = pivot.mul(max(dot(base, luma), 1e-4).div(rawLuma));
   const faceN = normalize(worldNrm);
   // Two-sided foliage: a back face is lit by its flipped normal.
   const N = opts.alphaMask ? faceN.mul(faceDirection) : faceN;
-  let shade = toonRamp(dot(N, light));
-  if (opts.shadow) shade = mix(float(SHADOW_BAND), shade, opts.shadow);
+  const strength = opts.weather ?? (opts.alphaMask ? 0 : 1);
+  if (strength > 0) {
+    const height = position.y.mul(iScale.y);
+    base = weather({
+      albedo: base,
+      pos: vWorldPos,
+      normal: faceN,
+      height,
+      surface,
+      amount: mix(float(TEXTURED_WEATHER), float(1), flat).mul(strength),
+      team: color.w,
+    });
+  }
+  let albedo = teamAlbedo(base, team, color.w, max(pivot, 1e-3));
+  albedo = worldGrade(albedo, mix(float(1), float(TEAM_GRADE), color.w));
+  albedo = metalDiffuse(albedo, surface);
+  const shade = toonLight(N, light, opts.shadow?.factor);
   const V = normalize(cameraPosition.sub(vWorldPos));
   const rim = rimLight(N, V, light, albedo).mul(PROP_RIM);
+  const spec = toonSpecular(N, V, light, surface, albedo, opts.shadow?.factor ?? 1);
 
   const m = new MeshBasicNodeMaterial();
   m.positionNode = worldPos;
-  const out = vec4(albedo.mul(skyFill(N).add(shade)).add(rim), 1);
+  const out = vec4(albedo.mul(skyFill(N).add(shade)).add(rim).add(spec), 1);
   // A shadow caster must not sample its own shadow map in the shadow pass: three's shadow pass reads colorNode.a,
   // so a material that receives the shadow puts its color in fragmentNode instead.
   if (opts.alphaMask && texelAlpha) {
@@ -202,9 +264,11 @@ export function createPropMaterial(opts: PropMaterialOptions): MeshBasicNodeMate
       Discard(alpha.lessThan(cutoff));
       return out;
     })();
+    m.maskShadowNode = alpha.greaterThanEqual(cutoff);
     m.side = DoubleSide;
   } else if (opts.shadow) m.fragmentNode = out;
   else m.colorNode = out;
+  if (opts.shadow) m.receivedShadowPositionNode = opts.shadow.receivePosition(vWorldPos, N);
   m.name = opts.name;
   return m;
 }

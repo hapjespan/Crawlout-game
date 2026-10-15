@@ -7,13 +7,15 @@ import { isqrt } from '../math/sqrt.js';
 import { SIN_TABLE, TRIG_BITS, atan2A } from '../math/trig.js';
 import type { SimContext } from './common.js';
 import { cellAt, setFlowField, walkableAt } from './common.js';
+import { lineClear } from './formation.js';
 
 // Systeem 4: beweging plus separatie.
 //  a) gewenste snelheid per unit met mvOn: flow field naar de volgende cel, vlak bij het doel recht erop af;
 //     binnen goalR van het doel is de unit er (mvOn = 0, veld los; goalX/goalY blijven voor de contactregel);
 //  b) separatie: overlappende units duwen elkaar uit elkaar (integer-sommen, dus volgorde-onafhankelijk); een
 //     lopende unit die een andere voor zich raakt, wijkt daarbij ook naar rechts uit (geen kop-op-kop-blokkade);
-//     een groeps-Move (groupR > 0) die een al gearriveerde unit met hetzelfde doel raakt, is ook klaar;
+//     a group Move (groupR > 0) within groupR of its goal that touches a stopped unit standing closer to that goal
+//     has arrived as well (its slot is taken or out of reach);
 //  c) toepassen met botsing tegen geblokkeerde cellen (eerst diagonaal, dan per as glijden).
 // Alles leest de posities van het begin van de stap en schrijft pas in c). Welke kant op een unit wil, bepaalt
 // systeem 2 (orders en AI) met steerTo; dit systeem voert alleen uit.
@@ -56,6 +58,19 @@ function offGrid(v: number, mid: number, spawn: number): number {
   return spawn > mid ? v + 1 : v - 1;
 }
 
+/** Whether the goal lies in the target rectangle of flow field `slot` (then the field itself leads there). */
+function goalInTarget(ctx: SimContext, slot: number, gx: number, gy: number): boolean {
+  const f = ctx.flow;
+  const cx = gx >> 8;
+  const cy = gy >> 8;
+  return (
+    cx >= f.tx0[slot]! &&
+    cy >= f.ty0[slot]! &&
+    cx < f.tx0[slot]! + f.tw[slot]! &&
+    cy < f.ty0[slot]! + f.th[slot]!
+  );
+}
+
 /** Aangekomen: niet meer lopen, veld los. goalX/goalY blijven staan voor de contactregel van groeps-Moves. */
 function arrive(ctx: SimContext, i: number): void {
   ctx.world.mvOn[i] = 0;
@@ -81,6 +96,7 @@ export function movementSystem(ctx: SimContext, s: MovementScratch): void {
   }
 
   // a) gewenste snelheid
+  const dr2 = cfg.formation.directRange * cfg.formation.directRange;
   for (let i = 0; i < n; i++) {
     s.vx[i] = 0;
     s.vy[i] = 0;
@@ -93,8 +109,9 @@ export function movementSystem(ctx: SimContext, s: MovementScratch): void {
     const gy = w.goalY[i]!;
     const gdx = gx - x;
     const gdy = gy - y;
-    const gr = w.goalR[i]!;
-    if (gdx * gdx + gdy * gdy <= gr * gr) {
+    const ar = w.goalR[i]!;
+    const gr = w.groupR[i]!;
+    if (gdx * gdx + gdy * gdy <= ar * ar) {
       arrive(ctx, i);
       continue;
     }
@@ -102,14 +119,24 @@ export function movementSystem(ctx: SimContext, s: MovementScratch): void {
     let ax = gx;
     let ay = gy;
     let snap = true; // bij het eindpunt (doel of eigen celmidden) niet voorbij schieten
-    const slot = w.flowField[i]!;
+    let slot = w.flowField[i]!;
     const cx = x >> 8;
     const cy = y >> 8;
     const near = Math.abs(cx - (gx >> 8)) <= 1 && Math.abs(cy - (gy >> 8)) <= 1;
+    // Group order (groupR > 0): the field leads to the group's anchor, the goal is the unit's own formation slot.
+    // Once the slot is in sight (within directRange, a straight walkable line) or the field's target is reached, the
+    // unit leaves the field for good and walks straight to its slot (systems/formation.ts).
+    const toSlot = slot !== NO_FIELD && !near && gr > 0 && !goalInTarget(ctx, slot, gx, gy);
+    if (toSlot && gdx * gdx + gdy * gdy <= dr2 && lineClear(ctx, x, y, gx, gy)) {
+      setFlowField(ctx, i, NO_FIELD);
+      slot = NO_FIELD;
+    }
     if (slot !== NO_FIELD && !near) {
       const cell = cellAt(map, x, y);
       const nb = ctx.flow.nextCell(slot, cell);
-      if (nb >= 0 && nb !== cell) {
+      if (toSlot && nb === cell) {
+        setFlowField(ctx, i, NO_FIELD); // at the anchor: straight to the slot from here
+      } else if (nb >= 0 && nb !== cell) {
         const ny = idiv(nb, map.w);
         ax = ((nb - ny * map.w) << 8) + 128;
         ay = (ny << 8) + 128;
@@ -127,7 +154,7 @@ export function movementSystem(ctx: SimContext, s: MovementScratch): void {
     let sp = ctx.auras.any
       ? clampI(scalePermille(w.speed[i]!, ctx.auras.speed[i]!), 0, MAX_SPEED)
       : w.speed[i]!;
-    // technicus-regel (data 0.15.0): een ongedekte robot loopt op robotRates.rate promille
+    // technicus-regel (data 0.16.0): een ongedekte robot loopt op robotRates.rate promille
     if (ctx.robotRates.any) sp = idiv(sp * ctx.robotRates.rate[i]!, 1000);
     if (len === 0) continue;
     if (snap && len <= sp) {
@@ -176,14 +203,14 @@ export function movementSystem(ctx: SimContext, s: MovementScratch): void {
           const reach = rr + slack;
           if (dx >= reach || -dx >= reach || dy >= reach || -dy >= reach) continue;
           const d2 = dx * dx + dy * dy;
-          if (
-            movingWithGoal &&
-            d2 < reach * reach &&
-            w.mvOn[j] === 0 &&
-            w.goalX[j] === w.goalX[i] &&
-            w.goalY[j] === w.goalY[i]
-          ) {
-            s.contact[i] = 1;
+          if (movingWithGoal && d2 < reach * reach && w.mvOn[j] === 0) {
+            // j stands between i and its goal (closer to that goal than i): i has arrived. A neighbour on its own
+            // slot next to i's slot is not in the way and does not stop i short of its slot.
+            const jx = w.goalX[i]! - w.x[j]!;
+            const jy = w.goalY[i]! - w.y[j]!;
+            const ix = w.goalX[i]! - x;
+            const iy = w.goalY[i]! - y;
+            if (jx * jx + jy * jy < ix * ix + iy * iy) s.contact[i] = 1;
           }
           if (d2 >= rr * rr || perm === 0) continue;
           if (d2 === 0) {

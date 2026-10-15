@@ -29,7 +29,7 @@ export const STAT_RANGE = statIndex('rangeM');
 export const STAT_GATHER = statIndex('gatherRatePct');
 export const STAT_BUILD_TIME = statIndex('buildTimePct');
 export const STAT_RESEARCH_TIME = statIndex('researchTimePct');
-/** Kosten van onderzoek (data 0.15.0, de passieven van de Opziener). */
+/** Kosten van onderzoek (data 0.16.0, de passieven van de Opziener). */
 export const STAT_RESEARCH_COST = statIndex('researchCostPct');
 
 /** Eerste SPECIAL-stat (S); P E C I A L volgen in die volgorde. */
@@ -83,7 +83,7 @@ export function effectSum(
     }
   }
   if (ctx.ps.heroState[p] !== HERO_ALIVE) return sum;
-  // perks en (data 0.15.0) de passieven van de held: alleen zolang hij leeft, geschaald met de oplap-straf
+  // perks en (data 0.16.0) de passieven van de held: alleen zolang hij leeft, geschaald met de oplap-straf
   const perks = ctx.ps.heroPerks[p]!;
   const h = heroOf(ctx, p);
   if (h === undefined || (perks === 0 && h.passives.length === 0)) return sum;
@@ -100,13 +100,13 @@ export function effectSum(
   return sum;
 }
 
-/** Kosten van een onderzoek voor speler p: scrapCost plus researchCostPct (data 0.15.0), niet negatief. */
+/** Kosten van een onderzoek voor speler p: scrapCost plus researchCostPct (data 0.16.0), niet negatief. */
 export function researchCost(ctx: SimContext, p: number, t: SimTech): number {
   return scalePermille(t.scrapCost, effectSum(ctx, p, STAT_RESEARCH_COST, t.buildingTypeId, false));
 }
 
 /**
- * Bonus van het turret-netwerk (data 0.15.0) voor voltooid gebouw i, in promille schade: met de tech requiresTech,
+ * Bonus van het turret-netwerk (data 0.16.0) voor voltooid gebouw i, in promille schade: met de tech requiresTech,
  * damagePermillePerTurret per andere voltooide, levende eigen turret (provides turret) waarvan het midden binnen radius
  * van het midden van i ligt (grens inclusief), hoogstens maxDamagePermille. 0 zonder netwerk of tech.
  */
@@ -224,7 +224,7 @@ export function applyStats(ctx: SimContext, i: number, grow: boolean): void {
     w.maxHp[i] = Math.max(1, scalePermille(bt.maxHp, effectSum(ctx, p, STAT_HP, typeId, false)));
     if (bt.damage > 0) {
       // turret (besluit 8): tech- en perk-effecten op het gebouwtype gelden net als op een unit
-      // het turret-netwerk (data 0.15.0) telt op in dezelfde som als tech en perks
+      // het turret-netwerk (data 0.16.0) telt op in dezelfde som als tech en perks
       w.damage[i] = scalePermille(
         bt.damage,
         effectSum(ctx, p, STAT_DAMAGE, typeId, false) + networkBonus(ctx, i, bt),

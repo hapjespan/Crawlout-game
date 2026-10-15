@@ -7,7 +7,7 @@ import { isInt } from '../math/int.js';
 import type { SimContext } from './common.js';
 import { idleOwnBuilding } from './robots.js';
 
-// SPECIAL-training (data 0.15.0, training.json, commando Train): in een eigen voltooid gebouw van het type uit het
+// SPECIAL-training (data 0.16.0, training.json, commando Train): in een eigen voltooid gebouw van het type uit het
 // programma (de trainingsfaciliteit) loopt één programma tegelijk. Het kost scrapCost + scrapCostStep maal de punten die
 // de speler al op die letter trainde, meteen afgerekend, en duurt trainTicks + trainTicksStep maal dat aantal. Klaar
 // geeft pointsPerRun punten op de letter, tot maxPoints. De punten horen bij de speler (PlayerState.trained, zeven

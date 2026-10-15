@@ -58,7 +58,7 @@ export interface SimUnitType {
   /** Tech-ids die de speler onderzocht moet hebben voor Craft of SetRole naar dit type. */
   readonly prereqTech: readonly number[];
   /**
-   * Robots (data 0.15.0): gebouw-typeId waar dit type nieuw gebouwd wordt (Produce), 0 = omscholen van een bewoner in
+   * Robots (data 0.16.0): gebouw-typeId waar dit type nieuw gebouwd wordt (Produce), 0 = omscholen van een bewoner in
    * de werkplaats (Craft). Een unit van een type met producedAtTypeId !== 0 is een robot: geen bed, geen omscholing.
    */
   readonly producedAtTypeId: number;
@@ -68,7 +68,7 @@ export interface SimUnitType {
   readonly siege: SimSiege | null;
 }
 
-/** Reparatie (data 0.15.0, loadouts repair): een vrije unit zoekt zelf een beschadigd eigen doel en herstelt het. */
+/** Reparatie (data 0.16.0, loadouts repair): een vrije unit zoekt zelf een beschadigd eigen doel en herstelt het. */
 export interface SimRepair {
   /** Herstel in duizendsten hp per tick. */
   readonly milliHpPerTick: number;
@@ -80,7 +80,7 @@ export interface SimRepair {
   readonly robots: boolean;
 }
 
-/** Belegering (data 0.15.0, loadouts siege). */
+/** Belegering (data 0.16.0, loadouts siege). */
 export interface SimSiege {
   /** Extra schade tegen gebouwen in promille, bovenop de damage-matrix. */
   readonly vsBuildingsPermille: number;
@@ -88,7 +88,7 @@ export interface SimSiege {
   readonly buildingsFirst: boolean;
 }
 
-/** Turret-netwerk (data 0.15.0, buildings network). */
+/** Turret-netwerk (data 0.16.0, buildings network). */
 export interface SimTurretNetwork {
   readonly requiresTech: number;
   /** Midden tot midden, grens inclusief. */
@@ -97,7 +97,7 @@ export interface SimTurretNetwork {
   readonly maxDamagePermille: number;
 }
 
-/** Trainingsprogramma (data 0.15.0, training.json). Op programId: training[k].programId === k. */
+/** Trainingsprogramma (data 0.16.0, training.json). Op programId: training[k].programId === k. */
 export interface SimTraining {
   readonly programId: number;
   readonly factionId: number;
@@ -136,7 +136,7 @@ export interface SimBuildingType {
   readonly damageType: number;
   readonly range: number;
   readonly cooldown: number;
-  /** Turret-netwerk (data 0.15.0), of null. */
+  /** Turret-netwerk (data 0.16.0), of null. */
   readonly network: SimTurretNetwork | null;
 }
 
@@ -221,7 +221,7 @@ export interface SimHero {
   readonly xpPerAssist: number;
   readonly xpAssistRadius: number;
   readonly abilities: readonly SimAbility[];
-  /** Passieve effecten voor de speler zolang de held leeft (data 0.15.0), met de semantiek van perk-effecten. */
+  /** Passieve effecten voor de speler zolang de held leeft (data 0.16.0), met de semantiek van perk-effecten. */
   readonly passives: readonly SimEffect[];
   /** perkIds waaruit de held kiest. */
   readonly perkPool: readonly number[];
@@ -264,7 +264,7 @@ export interface SimFaction {
   /** De held van deze factie (index in SimConfig.heroes), -1 = geen held. */
   readonly heroId: number;
   /**
-   * Vangnet (data 0.15.0, safetyNet radiobaken_instroom): onder threshold bewoners en met een voltooid baken komt er elke
+   * Vangnet (data 0.16.0, safetyNet radiobaken_instroom): onder threshold bewoners en met een voltooid baken komt er elke
    * intervalTicks een bewoner van typeId bij het baken, hoogstens maxArrivals keer per potje. null = geen vangnet.
    */
   readonly safetyNet: {
@@ -273,7 +273,7 @@ export interface SimFaction {
     readonly maxArrivals: number;
     readonly typeId: number;
   } | null;
-  /** Technicus-regel (data 0.15.0); null voor een factie zonder robots. */
+  /** Technicus-regel (data 0.16.0); null voor een factie zonder robots. */
   readonly robotRules: {
     readonly robotsPerTechnician: number;
     /** Indices in ROLES. */
@@ -333,7 +333,7 @@ export interface SimAiScript {
   readonly pushFromTicks: number;
   /** Zonder bruikbare scrap-node gaat elke golf naar het vijandelijke hoofdgebouw, met de plunderaars mee. */
   readonly allInWithoutNodes: boolean;
-  /** Robotproductie (data 0.15.0): unit-typeIds cyclisch vanaf fromTicks, tot max levende robots; null = geen. */
+  /** Robotproductie (data 0.16.0): unit-typeIds cyclisch vanaf fromTicks, tot max levende robots; null = geen. */
   readonly robots: {
     readonly typeIds: readonly number[];
     readonly fromTicks: number;
@@ -355,7 +355,7 @@ export interface SimConfig {
   readonly heroes: readonly SimHero[];
   /** Op perkId; hoogstens MAX_PERKS (bitset per held). */
   readonly perks: readonly SimPerk[];
-  /** Trainingsprogramma's op programId (data 0.15.0). */
+  /** Trainingsprogramma's op programId (data 0.16.0). */
   readonly training: readonly SimTraining[];
   readonly special: SimSpecialTuning;
   /** damageMatrix[damageType][armorType] in promille (1000 = normale schade). */
@@ -394,6 +394,22 @@ export interface SimConfig {
   readonly cancelRefundPermille: number;
   /** Een bouwer zonder taak helpt vanzelf bij een eigen bouwplaats binnen deze afstand (tot de rand van de footprint). */
   readonly builderAutoHelpRadius: number;
+  /** Group-order spreading: formation slots, arrival slack, straight-walk range and the worker ring at a node. */
+  readonly formation: SimFormationTuning;
+}
+
+/** Formation and arrival spreading for group orders (sim.json `formation`), in sim units. */
+export interface SimFormationTuning {
+  /** Free space between neighbouring slots; slot spacing is twice the largest unit radius plus this. */
+  readonly gap: number;
+  /** Columns ~ sqrt(units * widthPermille / 1000); above 1000 a formation is wider than deep. */
+  readonly widthPermille: number;
+  /** Within this distance of its slot, touching a blocking stationary unit counts as arrived (contact rule). */
+  readonly slack: number;
+  /** Within this distance of its slot, with a clear line, a unit leaves its flow field and walks straight. */
+  readonly directRange: number;
+  /** Radius of the ring of worker slots around a scrap node. */
+  readonly gatherRing: number;
 }
 
 /** Eén speler in de startopstelling, in playerId-volgorde. */
@@ -507,6 +523,12 @@ export function validateEnv(env: SimEnv): void {
   req(intIn(config.corpseTicks, 0, U16), 'corpseTicks');
   req(intIn(config.cancelRefundPermille, 0, 1000), 'cancelRefundPermille');
   req(intIn(config.builderAutoHelpRadius, 0, MAX_MAP_CELLS_SIDE << 8), 'builderAutoHelpRadius');
+  const f = config.formation;
+  req(intIn(f.gap, 0, MAX_RADIUS * 8), 'formation.gap');
+  req(intIn(f.widthPermille, 1, 100000), 'formation.widthPermille');
+  req(intIn(f.slack, 0, MAX_RADIUS * 16), 'formation.slack');
+  req(intIn(f.directRange, 0, MAX_MAP_CELLS_SIDE << 8), 'formation.directRange');
+  req(intIn(f.gatherRing, 0, MAX_RADIUS * 16), 'formation.gatherRing');
 
   const armorCount = config.damageMatrix[0]?.length ?? 0;
   req(config.damageMatrix.length > 0 && armorCount > 0, 'damageMatrix leeg');
@@ -890,6 +912,11 @@ export function envHash(env: SimEnv): number {
     c.corpseTicks,
     c.cancelRefundPermille,
     c.builderAutoHelpRadius,
+    c.formation.gap,
+    c.formation.widthPermille,
+    c.formation.slack,
+    c.formation.directRange,
+    c.formation.gatherRing,
   ]);
   h = fnv1aInt(h, c.unitTypes.length);
   for (const u of c.unitTypes) {

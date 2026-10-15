@@ -505,11 +505,44 @@ const FIXTURES_S6: FixtureDef[] = [
   },
 ];
 
+const FIXTURES_S7: FixtureDef[] = [
+  {
+    // Group-order spreading (visual review 15 October, item 5): every unit of a group Move or AttackMove gets its own
+    // formation slot. Both players (humans): the whole start army walks toward the middle, a repeated Move to the same
+    // point (no reshuffle), an AttackMove onward, a Move onto their own headquarters (a point in a building: no
+    // formation, as before), and all workers to one node (ring spots, off in data 0.15.0: gatherRingM 0).
+    name: 's7-rustbelt-formation',
+    build() {
+      const r = base('rustbelt', 715, [false, false]);
+      const st = startOf(r);
+      const sim = st.sim;
+      const s = new Script();
+      const centre = centrePoint(sim);
+      for (let p = 0; p < 2; p++) {
+        const sp = sim.map.spawns[p]!;
+        const army = [...st.militia[p]!, ...st.builder[p]!, ...st.hero[p]!];
+        const near = toward(sp, centre, 30);
+        const far = toward(sp, centre, 45);
+        s.add(4, p, 'Move', { ids: army, x: near.x, y: near.y });
+        s.add(500, p, 'Move', { ids: army, x: near.x, y: near.y });
+        s.add(560, p, 'AttackMove', { ids: army, x: far.x, y: far.y });
+        s.add(1000, p, 'Move', { ids: army, x: sp.x, y: sp.y });
+        const node = nearest(sim, st.nodes, sp.x, sp.y);
+        s.add(6, p, 'Gather', { ids: st.scav[p]!, nodeId: node });
+      }
+      r.bundles = s.bundles();
+      r.hashes = [{ frame: 1599, hash: 0 }]; // length; record fills in the real hashes
+      return r;
+    },
+  },
+];
+
 export const FIXTURES: readonly FixtureDef[] = [
   ...FIXTURES_UP_TO_S3,
   ...FIXTURES_S4,
   ...FIXTURES_S5,
   ...FIXTURES_S6,
+  ...FIXTURES_S7,
 ];
 
 /** De sim na het uitvoeren van de frames 0 tot `frame` (exclusief) met de bundels die de replay tot dan heeft. */

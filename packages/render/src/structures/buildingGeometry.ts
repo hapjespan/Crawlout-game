@@ -3,7 +3,8 @@
 // with a texture array):
 //   position, normal (node transforms applied, also the dequantization of KHR_mesh_quantization),
 //   color: linear rgb = the glTF base color factor, alpha = team mask (1 on a team material),
-//   uvl: u, v (tiling, may lie outside 0..1) and the texture layer of the material, or -1 for a flat material.
+//   uvl: u, v (tiling, may lie outside 0..1) and the texture layer of the material, or -1 for a flat material, whose
+//   u then carries the surface kind of the material (look/surfaces.ts index: metal, team trim, wall proxy ...).
 // Which layer a material samples is decided by a TextureLayerTable shared by all building assets: the asset-cli gives
 // every source texture one material name ("bronmaterialen met dezelfde naam hebben dezelfde textuur"), so the name is
 // the key, and the LODs of one material (512, 256, 128 px) share one layer. The table keeps the largest image per key.
@@ -18,7 +19,9 @@ import {
   type Object3D,
   type Texture,
 } from 'three/webgpu';
+import { surfaceIndex, surfaceKindOfMaterial, type SurfaceKind } from '../look/surfaces.js';
 import { TEAM_MATERIAL } from '../units/gltfUnitGeometry.js';
+import { texelsPerMeter, uvScaleForDensity } from './texelDensity.js';
 
 export class BuildingGeometryError extends Error {
   override name = 'BuildingGeometryError';
@@ -35,6 +38,8 @@ interface MaterialLike extends Material {
 /** Image sources the texture array is built from; the image is whatever the GLB loader produced (ImageBitmap etc.). */
 export interface TextureLayer {
   key: string;
+  /** Surface kind of the material (by its name). */
+  kind: SurfaceKind;
   image: unknown;
   /** Pixels of `image` (0 when the loader produced no image). */
   width: number;
@@ -62,7 +67,7 @@ export class TextureLayerTable {
     const [width, height] = imageSize(image);
     let index = this.byKey.get(key);
     if (index === undefined) {
-      index = this.layers.push({ key, image, width, height }) - 1;
+      index = this.layers.push({ key, kind: surfaceKindOfMaterial(key), image, width, height }) - 1;
       this.byKey.set(key, index);
     } else {
       const layer = this.layers[index]!;
@@ -131,6 +136,7 @@ export function buildingGeometryFromGltf(
     const team = opts.teamMaterials.includes(name) || TEAM_MATERIAL.test(name) ? 1 : 0;
     const uv = g.getAttribute('uv');
     const layer = material && uv ? opts.layers.layerOf(material) : NO_LAYER;
+    const flatKind = surfaceIndex(surfaceKindOfMaterial(name));
     const vc = g.getAttribute('color');
     const base = material?.color;
     const br = base?.r ?? 1;
@@ -150,13 +156,15 @@ export function buildingGeometryFromGltf(
         bb * (vc ? vc.getZ(i) : 1),
         team,
       );
-      if (layer === NO_LAYER) uvl.push(0, 0, NO_LAYER);
+      if (layer === NO_LAYER) uvl.push(flatKind, 0, NO_LAYER);
       else uvl.push(uv!.getX(i), uv!.getY(i), layer);
     }
     const gi = g.getIndex();
     if (gi) for (let i = 0; i < gi.count; i++) idx.push(first + gi.getX(i));
     else for (let i = 0; i < p.count; i++) idx.push(first + i);
   }
+
+  equalizeDensity(pos, uvl, idx, opts.layers.layers);
 
   const geometry = new BufferGeometry();
   geometry.setAttribute('position', new BufferAttribute(new Float32Array(pos), 3));
@@ -169,4 +177,66 @@ export function buildingGeometryFromGltf(
   );
   geometry.computeBoundingSphere();
   return { geometry, triangles: idx.length / 3, height: Math.max(0, maxY) };
+}
+
+/**
+ * Rescales the uv of every textured layer so its texel density lands in the shared band (texelDensity.ts). The density
+ * is measured per layer over the whole LOD (all meshes together, so a surface that continues over two meshes keeps its
+ * pattern) from the source texture's width. A layer without a decoded image, or one that does not tile, is left alone.
+ */
+function equalizeDensity(
+  pos: readonly number[],
+  uvl: number[],
+  idx: readonly number[],
+  layers: readonly TextureLayer[],
+): void {
+  const world = new Float64Array(layers.length);
+  const uvArea = new Float64Array(layers.length);
+  // A layer whose uv stay inside one tile is a packed atlas (windows, the roof's details) and not a tiling material:
+  // rescaling it would sample other parts of the atlas. Only layers that repeat are rescaled.
+  const uMin = new Float64Array(layers.length).fill(Infinity);
+  const uMax = new Float64Array(layers.length).fill(-Infinity);
+  const vMin = new Float64Array(layers.length).fill(Infinity);
+  const vMax = new Float64Array(layers.length).fill(-Infinity);
+  for (let i = 0; i < uvl.length; i += 3) {
+    const layer = uvl[i + 2]!;
+    if (layer < 0) continue;
+    uMin[layer] = Math.min(uMin[layer]!, uvl[i]!);
+    uMax[layer] = Math.max(uMax[layer]!, uvl[i]!);
+    vMin[layer] = Math.min(vMin[layer]!, uvl[i + 1]!);
+    vMax[layer] = Math.max(vMax[layer]!, uvl[i + 1]!);
+  }
+  const tiles = (layer: number): boolean =>
+    Math.max(uMax[layer]! - uMin[layer]!, vMax[layer]! - vMin[layer]!) > 1.5;
+  for (let t = 0; t + 2 < idx.length; t += 3) {
+    const a = idx[t]!;
+    const b = idx[t + 1]!;
+    const c = idx[t + 2]!;
+    const layer = uvl[a * 3 + 2]!;
+    if (layer < 0) continue;
+    const ux = pos[b * 3]! - pos[a * 3]!;
+    const uy = pos[b * 3 + 1]! - pos[a * 3 + 1]!;
+    const uz = pos[b * 3 + 2]! - pos[a * 3 + 2]!;
+    const vx = pos[c * 3]! - pos[a * 3]!;
+    const vy = pos[c * 3 + 1]! - pos[a * 3 + 1]!;
+    const vz = pos[c * 3 + 2]! - pos[a * 3 + 2]!;
+    world[layer] =
+      world[layer]! + 0.5 * Math.hypot(uy * vz - uz * vy, uz * vx - ux * vz, ux * vy - uy * vx);
+    const du1 = uvl[b * 3]! - uvl[a * 3]!;
+    const dv1 = uvl[b * 3 + 1]! - uvl[a * 3 + 1]!;
+    const du2 = uvl[c * 3]! - uvl[a * 3]!;
+    const dv2 = uvl[c * 3 + 1]! - uvl[a * 3 + 1]!;
+    uvArea[layer] = uvArea[layer]! + 0.5 * Math.abs(du1 * dv2 - du2 * dv1);
+  }
+  const scale = layers.map((l, i) =>
+    tiles(i) ? uvScaleForDensity(texelsPerMeter(world[i]!, uvArea[i]!, l.width)) : 1,
+  );
+  if (scale.every((s) => s === 1)) return;
+  for (let i = 0; i < uvl.length; i += 3) {
+    const layer = uvl[i + 2]!;
+    if (layer < 0) continue;
+    const s = scale[layer]!;
+    uvl[i] = uvl[i]! * s;
+    uvl[i + 1] = uvl[i + 1]! * s;
+  }
 }

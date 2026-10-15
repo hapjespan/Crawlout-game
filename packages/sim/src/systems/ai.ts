@@ -652,7 +652,7 @@ function think(
   const militia: number[] = [];
   const idleMilitia: number[] = [];
   const depots: number[] = [];
-  // robots (data 0.15.0): geen militie (niet in golfgroottes, niet omgeschoold), wel mee met golven en verdediging
+  // robots (data 0.16.0): geen militie (niet in golfgroottes, niet omgeschoold), wel mee met golven en verdediging
   const robots: number[] = [];
   const idleRobots: number[] = [];
   let producing = 0;
@@ -796,7 +796,7 @@ function think(
   }
 
   // 2b huisvesting zodra de pop-cap in zicht komt (zolang de bedden onder de ruimte voor bewoners blijven: popCapMax min
-  // de pop van de robots, data 0.15.0)
+  // de pop van de robots, data 0.16.0)
   const popCap = census.popCap(ctx, p);
   const hbt = script.housingTypeId === 0 ? undefined : ctx.buildingType(script.housingTypeId);
   if (
@@ -912,7 +912,7 @@ function think(
     }
   }
 
-  // 4b robots (data 0.15.0): vanaf fromTicks in de fabriek, cyclisch uit de volgorde, tot max levende robots
+  // 4b robots (data 0.16.0): vanaf fromTicks in de fabriek, cyclisch uit de volgorde, tot max levende robots
   if (!saving && script.robots !== null && tick >= script.robots.fromTicks)
     produceRobot(ctx, p, script.robots, robots.length + producing);
 
@@ -1105,7 +1105,7 @@ function think(
 }
 
 /**
- * Robotproductie van de AI (data 0.15.0, ai/*.json robots): zolang er minder dan max robots zijn (levend plus in
+ * Robotproductie van de AI (data 0.16.0, ai/*.json robots): zolang er minder dan max robots zijn (levend plus in
  * productie), bestelt hij in een vrije eigen fabriek het volgende type uit de volgorde (cyclisch, PlayerState.aiRobot);
  * een type zonder de techs slaat hij over, een type dat hij nog niet kan betalen of dat niet in popCapMax past laat hij
  * wachten.

@@ -31,12 +31,12 @@ export function combatSystem(ctx: SimContext): void {
     if (tid === NO_ENTITY || w.cooldown[i]! > 0 || w.damage[i]! <= 0) continue;
     const t = w.resolve(tid);
     if (t < 0 || !isEnemy(w, i, t) || !withinReach(w, i, t, w.range[i]!)) continue;
-    // technicus-regel (data 0.15.0): een ongedekte robot schiet trager (langere cooldown), bij 0 promille niet
+    // technicus-regel (data 0.16.0): een ongedekte robot schiet trager (langere cooldown), bij 0 promille niet
     const rate = robotRate(ctx, i);
     if (rate <= 0) continue;
     const mult = matrix[w.damageType[i]!]![w.armorType[t]!]!;
     let dmg = ctx.auras.any ? scalePermille(w.damage[i]!, ctx.auras.damage[i]!) : w.damage[i]!;
-    // belegering (data 0.15.0): extra schade tegen gebouwen bovenop de damage-matrix
+    // belegering (data 0.16.0): extra schade tegen gebouwen bovenop de damage-matrix
     if ((w.mask[t]! & C.building) !== 0 && (w.mask[i]! & C.unit) !== 0) {
       const siege = ctx.unitType(w.typeId[i]!)?.siege;
       if (siege !== undefined && siege !== null)

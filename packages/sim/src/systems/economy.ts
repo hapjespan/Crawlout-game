@@ -71,7 +71,7 @@ export function economySystem(ctx: SimContext, census: Census): void {
   for (let i = 0; i < w.highWater; i++) {
     if (!w.has(i, C.building)) continue;
     if (w.research[i] !== 0) researchWork(ctx, i);
-    // data 0.15.0: robotproductie en training in voltooide gebouwen
+    // data 0.16.0: robotproductie en training in voltooide gebouwen
     if (w.jobKind[i] === JOB_PRODUCE) productionWork(ctx, i);
     else if (w.jobKind[i] === JOB_TRAIN) trainingWork(ctx, i);
   }

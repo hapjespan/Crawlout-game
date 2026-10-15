@@ -28,7 +28,7 @@ import { PROP_CHUNK_SIZE, PropLayer, type PropVisual, type RenderProp } from './
 const heightAt = (x: number, z: number): number => 0.1 * x + 0.05 * z;
 
 function fakeDecals(): DecalLayer & { pushed: number } {
-  const d = { pushed: 0, push: () => void d.pushed++ };
+  const d = { pushed: 0, push: () => void d.pushed++, pushContact: () => void d.pushed++ };
   return d as unknown as DecalLayer & { pushed: number };
 }
 

@@ -5,7 +5,7 @@ import type { SimContext } from './common.js';
 
 /**
  * Telling per speler: units, pop, bedden en hoofdgebouwen. Afgeleid, elke keer opnieuw berekend.
- * Pop (data 0.15.0): bewoners (units die geen robot zijn, zonder de held) tellen voor de bedden; robots (een type met
+ * Pop (data 0.16.0): bewoners (units die geen robot zijn, zonder de held) tellen voor de bedden; robots (een type met
  * producedAtTypeId) tellen niet voor de bedden, maar bewoners plus robots plus de robots in productie blijven binnen
  * popCapMax.
  */
@@ -38,7 +38,7 @@ export class Census {
   }
 }
 
-/** Of unit i een robot is (zijn type wordt nieuw gebouwd, data 0.15.0). De held is nooit een robot. */
+/** Of unit i een robot is (zijn type wordt nieuw gebouwd, data 0.16.0). De held is nooit een robot. */
 export function isRobot(ctx: SimContext, i: number): boolean {
   const t = ctx.unitType(ctx.world.typeId[i]!);
   return t !== undefined && t.producedAtTypeId !== 0;

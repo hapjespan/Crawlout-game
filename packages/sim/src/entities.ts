@@ -132,7 +132,7 @@ export function completeBuilding(ctx: SimContext, i: number, bt: SimBuildingType
     w.cooldown[i] = 0;
   }
   ctx.events.push(EVENT_TYPE.buildingDone, w.idOf(i), bt.typeId, w.x[i]!, w.y[i]!);
-  // turret-netwerk (data 0.15.0): een nieuwe turret versterkt zijn buren en zichzelf
+  // turret-netwerk (data 0.16.0): een nieuwe turret versterkt zijn buren en zichzelf
   if ((bt.provides & PROVIDES_TURRET) !== 0) refreshTurrets(ctx, w.owner[i]!);
 }
 
@@ -163,7 +163,7 @@ export function removeBuilding(ctx: SimContext, i: number): void {
   ctx.terrain.setRect(i, w.fx[i]!, w.fy[i]!, w.fw[i]!, w.fh[i]!, false);
   ctx.flow.invalidate(w.fx[i]!, w.fy[i]!, w.fw[i]!, w.fh[i]!);
   w.free(i);
-  // turret-netwerk (data 0.15.0): de buren verliezen de bonus van deze turret
+  // turret-netwerk (data 0.16.0): de buren verliezen de bonus van deze turret
   if (turret) refreshTurrets(ctx, owner);
 }
 

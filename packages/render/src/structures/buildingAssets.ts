@@ -11,6 +11,7 @@ import {
   TextureLayerTable,
   type BuildingMesh,
 } from './buildingGeometry.js';
+import type { SurfaceKind } from '../look/surfaces.js';
 import { createLayerTexture, DEFAULT_LAYER_SIZE, type Rasterize } from './textureArray.js';
 
 /** Network and parsing, injectable for tests. */
@@ -50,6 +51,8 @@ export interface BuildingAssetSet {
   layers: DataArrayTexture | null;
   /** Layer edge in texels. */
   layerSize: number;
+  /** Surface kind per layer (look/surfaces.ts), by the layer's material name. */
+  layerKinds: SurfaceKind[];
   /** Mean linear luminance per layer (the team pivot of a textured team material, propMaterial.ts). */
   layerLuma: number[];
   statuses: BuildingAssetStatus[];
@@ -96,6 +99,7 @@ export async function loadBuildingAssets(
     visuals: new Map(),
     layers: null,
     layerSize: 0,
+    layerKinds: [],
     layerLuma: [],
     statuses,
   };
@@ -190,6 +194,7 @@ export async function loadBuildingAssets(
     );
     result.layers = texture;
     result.layerSize = size;
+    result.layerKinds = layers.layers.map((l) => l.kind);
     result.layerLuma = luma;
     if (missing.length > 0)
       for (const s of statuses)

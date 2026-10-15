@@ -14,12 +14,17 @@
 // greybox (rockTerrain.ts), ?terrain=map is the slice map's own greybox, ?terrain=wave the old synthetic hills; the
 // detail texture and tints come from assets/dist/terrain/terrain.json (?tex=0: tints only). ?detail=<n> sets the
 // render-only subdivision (0 draws the greybox as delivered). window.crawloutBench() runs the camera measurement
-// (bench.ts); ?bench starts it on load and logs the result.
+// (bench.ts); ?bench starts it on load and logs the result. ?shadows=0 turns the sun shadow off, ?shadows=low or
+// ?detail=1 lowers its quality (shadows.ts).
 // ?xl is the synthetic 384 x 384 m map (xlWorld.ts): Rock Terrain 4 tiled three times each way, a river with three
 // fords through setWater, a forest border, groves and loose trees (6000) plus rocks and bushes; units and buildings
 // over the whole map. ?water=0 leaves the water out. ?xl&foliage swaps the trees for synthetic alpha-tested ones
 // (render/dev/foliageAssets.ts: leaf cards, grass, plants, crates, chests, barrels, watchtowers; ?grass=<n> sets the tufts);
 // ?wind=0 holds the foliage still and ?propmax=<n> sets the prop budget.
+// ?robots swaps the regular units for synthetic robots (render/dev/syntheticRobots.ts): security robots (2.2 m), repair
+// drones (0.8 m, floating 1.35 m up) and sentinels (3.5 m), drawn by the rigid-unit layer with its procedural animation
+// from the anim fields; the heroes stay humanoid, ?nohero removes them. ?robots=<n> sets the share of drones (0..9 of 10);
+// ?robots=real draws the robots of assets/dist (dweller_robot_guard, _drone, _sentinel) instead of the synthetic ones.
 import { PROVIDES } from '@crawlout/data';
 import { MAX_ENTITIES, TICK_MS, UNITS_PER_METER } from '@crawlout/protocol';
 import {
@@ -33,12 +38,15 @@ import {
   FakeSnapshotSource,
   foliageProps,
   foliagePropSource,
+  syntheticRobots,
+  SYNTHETIC_ROBOT_TYPE_IDS,
 } from '@crawlout/render/dev';
 import { assetConfig } from '../game/assets.js';
 import { loadClientGameData, loadClientMap } from '../game/content.js';
 import { runBench } from './bench.js';
 import { loadMapProps, propSource } from './props.js';
 import { greyboxFromHeights, rockTerrainGreybox, rockTerrainHeights } from './rockTerrain.js';
+import { shadowOption } from './shadows.js';
 import { terrainTextures } from './terrain.js';
 import { albedoLayoutForMap, rockDemoAlbedoLayout, xlDemoAlbedoLayout } from './terrainLayout.js';
 import { xlWorld, type XlWorld } from './xlWorld.js';
@@ -64,6 +72,13 @@ function wastelandColor(x: number, z: number, y: number): readonly [number, numb
   const g = 0.4 + 0.12 * n + 0.06 * low;
   const b = 0.3 + 0.06 * n;
   return [r, g, b];
+}
+
+/** Ten unit types in a row with `drones` repair drones, one sentinel and the rest security robots. */
+function robotMix(drones: number): number[] {
+  const { guard, drone, sentinel } = SYNTHETIC_ROBOT_TYPE_IDS;
+  const d = Math.min(9, Math.max(0, drones));
+  return [sentinel, ...Array.from({ length: 9 }, (_, i) => (i < d ? drone : guard))];
 }
 
 function showError(message: string): void {
@@ -103,7 +118,7 @@ async function main(): Promise<void> {
   const renderer = await createRenderer({
     canvas,
     forceWebGL: params.has('webgl'),
-    shadows: !params.has('noshadow'),
+    shadows: shadowOption(params),
     dataTextures: params.has('half') ? 'half' : 'auto',
     ...(assets ? { assets } : {}),
     buildingAssets: params.get('buildings') !== 'ph',
@@ -115,6 +130,17 @@ async function main(): Promise<void> {
     },
   });
   renderer.setGameData(data);
+  const robots = params.has('robots');
+  if (robots && params.get('robots') === 'real' && assets) {
+    // The robots of assets/dist (manifest entries with rigid: true), on the typeIds the synthetic ones use.
+    const { guard, drone, sentinel } = SYNTHETIC_ROBOT_TYPE_IDS;
+    for (const [name, typeId] of [
+      ['guard', guard],
+      ['drone', drone],
+      ['sentinel', sentinel],
+    ] as const)
+      void renderer.loadRigidUnit(assets.manifestUrl, `dweller_robot_${name}`, [typeId]);
+  } else if (robots) for (const r of syntheticRobots()) renderer.addRigidUnit(r.source, [r.typeId]);
   const backendEl = document.getElementById('backend');
   if (backendEl) {
     const precision = renderer.dataTexturePrecision === 'half' ? ', half-float' : '';
@@ -149,6 +175,13 @@ async function main(): Promise<void> {
   const showUnits = (): void => {
     if (!unitsEl) return;
     const list = renderer.unitAssets();
+    if (robots) {
+      unitsEl.textContent = renderer
+        .rigidUnitAssets()
+        .map((a) => `${a.assetId}: ${a.state}${a.reason ? ` (${a.reason})` : ''}`)
+        .join(' · ');
+      return;
+    }
     unitsEl.textContent =
       list.length === 0
         ? assets
@@ -222,6 +255,9 @@ async function main(): Promise<void> {
     scrapNodes: intParam(params, 'nodes', 8, 64),
     claims: intParam(params, 'claims', 3, 32),
     combat: params.get('combat') !== '0',
+    ...(robots
+      ? { unitTypes: robotMix(params.get('robots') ? intParam(params, 'robots', 4, 9) : 4) }
+      : {}),
     ...(data.heroes.length > 0 && !params.has('nohero') ? { heroId: 0 } : {}),
     turrets: data.buildings
       .filter((b) => b.provides.includes(PROVIDES.indexOf('turret')))

@@ -20,3 +20,8 @@ export {
   type FoliageCounts,
   type FoliageWorld,
 } from './foliageAssets.js';
+export {
+  syntheticRobots,
+  SYNTHETIC_ROBOT_TYPE_IDS,
+  type SyntheticRobot,
+} from './syntheticRobots.js';

@@ -16,18 +16,22 @@ import { playMatchesParallel, summarize } from './fairness.js';
 // spiegelbeeld tot de gelijke stand bij het midden (mirror.test.ts). Echte-schaalronde (data 0.14.0: gebouwen op echte
 // schaal, oneven footprints, woning 13 x 19 met 5 bedden voor 95 scrap): gemeten over de 33 seeds hieronder wint speler 0
 // er 13 en speler 1 er 20, 10 keer vernietiging en 23 keer dominantie, alle 33 tussen 25 en 35 minuten (25,5 tot 30,6).
-// Met data 0.13.0 was het 18 tegen 15. Een even footprint (hoofdgebouw 20 x 20) brak de spiegel al bij de start (speler
+// Met data 0.13.0 was het 18 tegen 15.
+// Formatieronde (data 0.15.0, packages/sim 0.12.0: elke unit van een groeps-Move of -AttackMove een eigen plek in een
+// formatie): speler 0 wint 17 en speler 1 wint 16, 14 keer vernietiging en 19 keer dominantie, lengte 25,5 tot 36,8
+// minuten (32 van de 33 tussen 25 en 35); EXPECTED is opnieuw gemeten.
+// Een even footprint (hoofdgebouw 20 x 20) brak de spiegel al bij de start (speler
 // 0 won 30 van de 33), een claimpaal van 3 x 3 liet het midden altijd naar speler 0 gaan; zie packages/data/CHANGELOG.md
 // 0.14.0. Het verschil tussen de spelers is toeval (één standaardafwijking bij 33 muntworpen is 2,9 potjes), geen
 // voorkeur; de marge hieronder is daarom ruimer dan het doel van 40 tot 60 procent: elke speler wint minstens 12 en
 // hoogstens 21 van de 33 (36 tot 64 procent). Een sim die een speler voortrekt (zoals 28 tegen 5) valt er ruim buiten.
 
 const EXPECTED = [
-  { seed: 1, winner: 1, reason: 'destruction', frame: 32544 },
-  { seed: 5, winner: 0, reason: 'dominance', frame: 32719 },
-  { seed: 7, winner: 0, reason: 'dominance', frame: 31302 },
-  { seed: 42, winner: 1, reason: 'dominance', frame: 32333 },
-  { seed: 99, winner: 1, reason: 'dominance', frame: 31531 },
+  { seed: 1, winner: 1, reason: 'dominance', frame: 32344 },
+  { seed: 5, winner: 0, reason: 'dominance', frame: 33293 },
+  { seed: 7, winner: 1, reason: 'destruction', frame: 33395 },
+  { seed: 42, winner: 0, reason: 'destruction', frame: 33967 },
+  { seed: 99, winner: 1, reason: 'destruction', frame: 31511 },
 ] as const;
 
 // REPLAY_FAST=1 slaat deze 33 potjes (ongeveer 25 s met parallelle processen, 2 minuten na elkaar) over in de snelle

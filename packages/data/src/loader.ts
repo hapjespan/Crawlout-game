@@ -43,7 +43,7 @@ export interface RawGameData {
   tech: unknown;
   heroes: unknown;
   perks: unknown;
-  /** Inhoud van data/training.json (data 0.15.0). */
+  /** Inhoud van data/training.json (data 0.16.0). */
   training: unknown;
   damageMatrix: unknown;
   /** Inhoud van data/sim.json. */
@@ -90,7 +90,7 @@ export interface FactionData {
   /** Bewoners per minuut, ruw (de sim rekent zelf naar ticks). */
   housingGrowthPerMin: number;
   /**
-   * Vangnet (data 0.15.0). Bij action radiobaken_instroom: zolang het aantal eigen bewoners (levende units van bodyType human, zonder
+   * Vangnet (data 0.16.0). Bij action radiobaken_instroom: zolang het aantal eigen bewoners (levende units van bodyType human, zonder
    * held en robots) onder threshold ligt en er een voltooid gebouw met provides beacon staat, komt er elke intervalTicks een bewoner
    * van loadoutId bij het baken, zonder bedden-eis en binnen popCapMax, hoogstens maxArrivals keer per speler per potje.
    */
@@ -102,7 +102,7 @@ export interface FactionData {
     /** loadout-id van de bewoner die aankomt; -1 als de actie geen aankomst heeft. */
     loadoutId: number;
   };
-  /** De technicus-regel (data 0.15.0); null voor een factie zonder robots. */
+  /** De technicus-regel (data 0.16.0); null voor een factie zonder robots. */
   robotRules: RobotRulesData | null;
   uniqueUnits: number[]; // loadout-ids
   uniqueBuildings: number[]; // building-ids
@@ -134,9 +134,9 @@ export interface LoadoutData {
   visuals: { meshSlots: Record<string, string> };
   /** Gebouw-id waar de unit nieuw gebouwd wordt (robots), of -1: omscholen van een bewoner in de werkplaats. */
   producedAt: number;
-  /** Support-robot (data 0.15.0); null voor de rest. */
+  /** Support-robot (data 0.16.0); null voor de rest. */
   repair: RepairData | null;
-  /** Belegering (data 0.15.0); null voor de rest. */
+  /** Belegering (data 0.16.0); null voor de rest. */
   siege: SiegeData | null;
 }
 
@@ -183,7 +183,7 @@ export interface BuildingData {
   damageType: number; // index in DAMAGE_TYPES
   rangeU: number;
   cooldownTicks: number;
-  /** Turret-netwerk (data 0.15.0); null voor een gebouw zonder. */
+  /** Turret-netwerk (data 0.16.0); null voor een gebouw zonder. */
   network: TurretNetworkData | null;
 }
 
@@ -233,7 +233,7 @@ export interface HeroData {
   xpPerAssist: number;
   xpAssistRadiusU: number;
   abilities: AbilityData[];
-  /** Passieve effecten voor de speler zolang de held leeft (data 0.15.0); zelfde omrekening en semantiek als perk-effecten. */
+  /** Passieve effecten voor de speler zolang de held leeft (data 0.16.0); zelfde omrekening en semantiek als perk-effecten. */
   passives: EffectData[];
   perkPool: number[]; // perk-ids
   reviveScrap: number;
@@ -314,7 +314,7 @@ export interface AiScriptData {
   waveMaxWaitTicks: number;
   pushMinArmy: number;
   pushFromTicks: number;
-  /** Robotproductie (data 0.15.0); null als het script geen robots bouwt. */
+  /** Robotproductie (data 0.16.0); null als het script geen robots bouwt. */
   robots: { sequence: number[]; fromTicks: number; max: number } | null;
   allInWithoutNodes: boolean;
 }
@@ -347,6 +347,17 @@ export interface SimTuningData {
   critDamagePermille: number;
   /** Een bouwer zonder taak helpt bij een eigen bouwplaats binnen deze afstand (tot de rand van de footprint; data 0.8.0). */
   builderAutoHelpRadiusU: number;
+  /** Group-order spreading (data 0.15.0): formation slots, arrival slack, straight-walk range, worker ring. */
+  formation: FormationTuningData;
+}
+
+/** sim.json `formation` in sim units. */
+export interface FormationTuningData {
+  gapU: number;
+  widthPermille: number;
+  slackU: number;
+  directRangeU: number;
+  gatherRingU: number;
 }
 
 export interface GameData {
@@ -361,7 +372,7 @@ export interface GameData {
   tech: TechData[];
   heroes: HeroData[];
   perks: PerkData[];
-  /** Trainingsprogramma's (data 0.15.0). */
+  /** Trainingsprogramma's (data 0.16.0). */
   training: TrainingProgramData[];
   aiScripts: AiScriptData[];
   /** damageMatrix[damageTypeIndex][armorTypeIndex] = multiplier in promille (1000 = 100 procent). */
@@ -785,6 +796,13 @@ export function loadGameData(raw: RawGameData): GameData {
       specialLuckCritPermille: pctToPermille(simRaw.specialLuckCritPct),
       critDamagePermille: pctToPermille(simRaw.critDamagePct),
       builderAutoHelpRadiusU: metersToUnits(simRaw.builderAutoHelpRadiusM),
+      formation: {
+        gapU: metersToUnits(simRaw.formation.gapM),
+        widthPermille: pctToPermille(simRaw.formation.widthPct),
+        slackU: metersToUnits(simRaw.formation.slackM),
+        directRangeU: metersToUnits(simRaw.formation.directRangeM),
+        gatherRingU: metersToUnits(simRaw.formation.gatherRingM),
+      },
     },
   };
 }

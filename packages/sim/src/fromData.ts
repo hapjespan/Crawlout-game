@@ -365,6 +365,13 @@ export function simConfigFromGameData(data: GameData): SimConfig {
     corpseTicks: t.corpseTicks,
     cancelRefundPermille: t.cancelRefundPermille,
     builderAutoHelpRadius: t.builderAutoHelpRadiusU,
+    formation: {
+      gap: t.formation.gapU,
+      widthPermille: t.formation.widthPermille,
+      slack: t.formation.slackU,
+      directRange: t.formation.directRangeU,
+      gatherRing: t.formation.gatherRingU,
+    },
   };
 }
 

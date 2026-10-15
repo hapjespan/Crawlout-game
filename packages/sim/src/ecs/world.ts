@@ -32,7 +32,7 @@ export const PHASE_WORK = 1; // aan het werk bij het doel (verzamelen, bouwen, w
 export const PHASE_RETURN = 2; // verzamelen: onderweg naar een depot
 export const PHASE_CRAFT = 3; // werkplaats: betaald, aan het omscholen
 
-/** Soort werk in een gebouw (veld `jobKind`, data 0.15.0). */
+/** Soort werk in een gebouw (veld `jobKind`, data 0.16.0). */
 export const JOB_NONE = 0;
 export const JOB_PRODUCE = 1;
 export const JOB_TRAIN = 2;
@@ -153,7 +153,7 @@ export class World {
   /** Onderzoek in een voltooid gebouw: techId + 1, 0 = geen; de voortgang staat in `work` (duizendsten van een tick). */
   readonly research = new Uint16Array(MAX_ENTITIES);
   /**
-   * Werk in een voltooid gebouw naast onderzoek (data 0.15.0): JOB_PRODUCE (een robot, job = loadoutId + 1) of
+   * Werk in een voltooid gebouw naast onderzoek (data 0.16.0): JOB_PRODUCE (een robot, job = loadoutId + 1) of
    * JOB_TRAIN (een trainingsprogramma, job = programId + 1); 0 = geen. De voortgang in ticks staat in `jobWork`.
    */
   readonly job = new Uint16Array(MAX_ENTITIES);

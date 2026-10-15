@@ -1,6 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PerspectiveCamera } from 'three/webgpu';
-import { maxDistanceFor, RtsCameraController, type RtsCameraOptions } from './rtsCamera.js';
+import {
+  DEFAULT_MIN_DISTANCE,
+  maxDistanceFor,
+  RtsCameraController,
+  type RtsCameraOptions,
+} from './rtsCamera.js';
 
 // Node has EventTarget but no DOM: a window and a canvas stand-in are enough for the keyboard path.
 function fakeDom(): HTMLElement {
@@ -175,6 +180,30 @@ describe('RtsCameraController on a large map', () => {
     expect(cam.target.x).toBeLessThanOrEqual(384);
     expect(cam.target.z).toBeGreaterThanOrEqual(0);
     expect(cam.target.z).toBeLessThanOrEqual(384);
+    cam.dispose();
+  });
+});
+
+describe('RtsCameraController closest zoom', () => {
+  beforeEach(() => vi.stubGlobal('window', new EventTarget()));
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('stops at the default minimum, so a unit and its surroundings stay in view', () => {
+    expect(DEFAULT_MIN_DISTANCE).toBeGreaterThanOrEqual(22);
+    expect(DEFAULT_MIN_DISTANCE).toBeLessThanOrEqual(28);
+    const cam = new RtsCameraController(new PerspectiveCamera(), fakeDom());
+    cam.zoomTo(1, true);
+    expect(cam.distance).toBe(DEFAULT_MIN_DISTANCE);
+    cam.dispose();
+  });
+
+  it('keeps the pitch curve where it was: 50 degrees anchors at 10 m, not at the new minimum', () => {
+    const cam = new RtsCameraController(new PerspectiveCamera(), fakeDom());
+    cam.zoomTo(42, true);
+    expect(cam.pitchDegrees()).toBeCloseTo(50 + 18 * ((42 - 10) / (140 - 10)), 6);
+    cam.zoomTo(1, true);
+    expect(cam.pitchDegrees()).toBeGreaterThan(50);
+    expect(cam.pitchDegrees()).toBeLessThan(54);
     cam.dispose();
   });
 });

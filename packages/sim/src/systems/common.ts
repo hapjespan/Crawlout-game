@@ -55,9 +55,9 @@ export class PlayerState {
   readonly zoneX = new Int32Array(MAX_PLAYERS * MAX_ABILITIES);
   readonly zoneY = new Int32Array(MAX_PLAYERS * MAX_ABILITIES);
   readonly zoneTicks = new Int32Array(MAX_PLAYERS * MAX_ABILITIES);
-  /** Getrainde SPECIAL-punten per speler en letter (data 0.15.0, training.json; S P E C I A L). Blijven na de dood van de held. */
+  /** Getrainde SPECIAL-punten per speler en letter (data 0.16.0, training.json; S P E C I A L). Blijven na de dood van de held. */
   readonly trained = new Uint8Array(MAX_PLAYERS * SPECIAL_COUNT);
-  /** Vangnet (data 0.15.0): ticks dat aan de voorwaarde voldaan is (één timer per speler) en het aantal aankomsten. */
+  /** Vangnet (data 0.16.0): ticks dat aan de voorwaarde voldaan is (één timer per speler) en het aantal aankomsten. */
   readonly netTimer = new Int32Array(MAX_PLAYERS);
   readonly netArrivals = new Int32Array(MAX_PLAYERS);
   /** Scripted AI: index in de robotvolgorde (robots.sequence) van de volgende robot. */
@@ -251,10 +251,27 @@ export function steerToPoint(
   arriveR: number,
   groupR: number,
 ): void {
-  const b = ctx.terrain.occ[cellAt(ctx.map, x, y)]! - 1;
+  steerVia(ctx, i, x, y, x, y, arriveR, groupR);
+}
+
+/**
+ * Like steerToPoint toward (tx, ty) (its cell, or the footprint of the building on it, as the target of the flow
+ * field), but with its own goal (gx, gy) near it: a worker's spot on the ring around a node shares the node's field.
+ */
+export function steerVia(
+  ctx: SimContext,
+  i: number,
+  tx: number,
+  ty: number,
+  gx: number,
+  gy: number,
+  arriveR: number,
+  groupR: number,
+): void {
+  const b = ctx.terrain.occ[cellAt(ctx.map, tx, ty)]! - 1;
   const w = ctx.world;
-  if (b >= 0) steerTo(ctx, i, x, y, w.fx[b]!, w.fy[b]!, w.fw[b]!, w.fh[b]!, arriveR, groupR);
-  else steerTo(ctx, i, x, y, x >> 8, y >> 8, 1, 1, arriveR, groupR);
+  if (b >= 0) steerTo(ctx, i, gx, gy, w.fx[b]!, w.fy[b]!, w.fw[b]!, w.fh[b]!, arriveR, groupR);
+  else steerTo(ctx, i, gx, gy, tx >> 8, ty >> 8, 1, 1, arriveR, groupR);
 }
 
 /** Achter een bewegend doel aan: het veld blijft zolang het oude doel dicht genoeg bij de nieuwe positie ligt. */

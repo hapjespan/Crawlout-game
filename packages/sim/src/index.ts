@@ -12,6 +12,7 @@ export type {
   SimConfig,
   SimEnv,
   SimFaction,
+  SimFormationTuning,
   SimInit,
   SimMap,
   SimPlayer,
