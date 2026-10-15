@@ -1,12 +1,15 @@
-// Terrain mesh from flat typed arrays (the map agent's greybox export). The greybox is resampled into a smooth grid
-// (terrainRefine.ts, render only) and drawn with the terrain material (terrainMaterial.ts: rock on slopes, dust on the
-// flat, a world-space detail texture, toon ramp). Receives building shadows when a shadow factor is given, and keeps
-// a height texture for terrain-hugging decals. Height lookups use the refined surface, which is what is drawn.
+// Terrain from flat typed arrays (the map agent's greybox export). The greybox is resampled into a smooth field
+// (terrainField.ts, render only) and drawn in chunks with distance LOD (terrainChunks.ts) with the terrain material
+// (terrainMaterial.ts: rock on slopes, dust on the flat, a world-space detail texture, toon ramp). Receives building
+// shadows when a shadow factor is given, and keeps a height texture for terrain-hugging decals. Height lookups and
+// picking use the field, which is what the finest chunks draw. A bed (setBed, the river) is cut into the field.
+// With `detail.subdivide: 0` the greybox is drawn as delivered, as one mesh (debugging; no chunks, no bed).
 import {
   BufferAttribute,
   BufferGeometry,
   Color,
   Mesh,
+  type Camera,
   type Scene,
   type Texture,
   type Vector3,
@@ -15,6 +18,15 @@ import {
 import type { DataTexturePrecision } from '../gpu/dataTextures.js';
 import { TerrainHeightField, type TerrainGeometry } from './heightField.js';
 import { createHeightTexture, type HeightTexture } from './heightTexture.js';
+import { TerrainChunks, type TerrainChunkOptions } from './terrainChunks.js';
+import {
+  buildTerrainField,
+  computeOcclusion,
+  GridHeightField,
+  raycastHeight,
+  type HeightSource,
+  type TerrainField,
+} from './terrainField.js';
 import { createTerrainMaterial, type TerrainMaterialBundle } from './terrainMaterial.js';
 import { refineTerrain, type TerrainDetailOptions } from './terrainRefine.js';
 
@@ -24,7 +36,12 @@ export interface TerrainLayerOptions {
   precision?: DataTexturePrecision;
   /** Render-only refinement of the given mesh. */
   detail?: TerrainDetailOptions;
+  /** Chunk size, levels and LOD distances of the chunked terrain. */
+  chunks?: TerrainChunkOptions;
 }
+
+/** Cuts a bed into the terrain: the drawn height at (x, z) given the field's own height there. */
+export type TerrainBed = (x: number, z: number, height: number) => number;
 
 function linearColors(
   src: Float32Array | Uint8Array | undefined,
@@ -46,11 +63,19 @@ function linearColors(
 
 export class TerrainLayer {
   private mesh: Mesh | null = null;
+  private chunks: TerrainChunks | null = null;
+  private field: TerrainField | null = null;
+  /** The field's heights before a bed was cut. */
+  private baseHeights: Float32Array | null = null;
+  private baseOcclusion: Float32Array | null = null;
+  private baseGrid: GridHeightField | null = null;
+  private bed: TerrainBed | null = null;
   private readonly look: TerrainMaterialBundle;
-  heightField: TerrainHeightField | null = null;
+  heightField: HeightSource | null = null;
   heightTexture: HeightTexture | null = null;
   private readonly precision: DataTexturePrecision;
   private readonly detail: TerrainDetailOptions;
+  private readonly chunkOptions: TerrainChunkOptions;
 
   constructor(
     private readonly scene: Scene,
@@ -59,6 +84,7 @@ export class TerrainLayer {
   ) {
     this.precision = opts.precision ?? 'float';
     this.detail = opts.detail ?? {};
+    this.chunkOptions = opts.chunks ?? {};
     this.look = createTerrainMaterial({ lightDir, shadow: opts.shadow });
   }
 
@@ -67,7 +93,67 @@ export class TerrainLayer {
     if (positions.length % 3 !== 0) throw new Error('terrain positions must hold xyz triples');
     if (indices.length % 3 !== 0) throw new Error('terrain indices must hold triangles');
     const source = new TerrainHeightField(positions, indices);
-    const drawn = refineTerrain(geometry, source, this.detail);
+    this.clear();
+    this.bed = null; // a bed belongs to a terrain
+    if ((this.detail.subdivide ?? 2) <= 0) {
+      this.setWholeMesh(refineTerrain(geometry, source, { subdivide: 0 }));
+      this.heightField = source;
+    } else {
+      const field = buildTerrainField(geometry, source, {
+        subdivide: this.detail.subdivide ?? 2,
+        baseStep: this.detail.baseStep ?? 1,
+      });
+      this.field = field;
+      this.baseHeights = field.heights.slice();
+      this.baseOcclusion = field.occlusion.slice();
+      this.baseGrid = new GridHeightField({ ...field, heights: this.baseHeights });
+      this.heightField = new GridHeightField(field);
+      this.chunks = new TerrainChunks(this.scene, field, this.look.material, this.chunkOptions);
+    }
+    this.afterHeights();
+  }
+
+  /**
+   * Cuts a bed into the drawn terrain (or removes it with null): every field sample gets bed(x, z, height). Height
+   * lookups, decals and picking follow; read heightTexture again. set() drops the bed (it belongs to a terrain).
+   */
+  setBed(bed: TerrainBed | null): void {
+    if (bed === null && this.bed === null) return;
+    this.bed = bed;
+    const field = this.field;
+    if (!field || !this.baseHeights || !this.baseOcclusion) return;
+    field.heights.set(this.baseHeights);
+    field.occlusion.set(this.baseOcclusion);
+    if (bed) this.cutBed();
+    this.chunks?.dispose();
+    this.chunks = new TerrainChunks(this.scene, field, this.look.material, this.chunkOptions);
+    this.heightTexture?.texture.dispose();
+    this.afterHeights();
+  }
+
+  /** The field's heights before the bed: what the map delivered, refined. */
+  baseHeightAt(x: number, z: number): number {
+    return this.baseGrid ? this.baseGrid.heightAt(x, z, 0) : this.heightAt(x, z);
+  }
+
+  private cutBed(): void {
+    const f = this.field!;
+    const bed = this.bed!;
+    let changed = false;
+    for (let j = 0; j < f.nz; j++)
+      for (let i = 0; i < f.nx; i++) {
+        const k = j * f.nx + i;
+        const h = f.heights[k]!;
+        const y = bed(f.minX + i * f.step, f.minZ + j * f.step, h);
+        if (y !== h) {
+          f.heights[k] = y;
+          changed = true;
+        }
+      }
+    if (changed) computeOcclusion(f);
+  }
+
+  private setWholeMesh(drawn: TerrainGeometry & { occlusion?: Float32Array }): void {
     const vertexCount = drawn.positions.length / 3;
     const geo = new BufferGeometry();
     geo.setAttribute('position', new BufferAttribute(drawn.positions, 3));
@@ -79,17 +165,23 @@ export class TerrainLayer {
     else geo.computeVertexNormals();
     geo.computeBoundingSphere();
     geo.computeBoundingBox();
-
-    this.clear();
     this.mesh = new Mesh(geo, this.look.material);
     this.mesh.name = 'terrain';
+    this.mesh.raycast = () => {};
     this.scene.add(this.mesh);
-    // A refined grid has small even cells: a finer bin keeps a height query at a handful of triangles.
-    this.heightField =
-      drawn === geometry ? source : new TerrainHeightField(drawn.positions, drawn.indices, 1);
-    this.heightTexture = createHeightTexture(this.heightField, this.precision);
-    const [lo, hi] = this.heightField.heightRange();
+  }
+
+  private afterHeights(): void {
+    const hf = this.heightField;
+    if (!hf) return;
+    this.heightTexture = createHeightTexture(hf, this.precision);
+    const [lo, hi] = hf.heightRange();
     this.look.setHeightRange(lo, hi);
+  }
+
+  /** Chooses the chunks and their LOD for this camera. Call once per frame before rendering. */
+  update(camera: Camera): void {
+    this.chunks?.update(camera);
   }
 
   /** Detail texture (the albedo of terrain.json); null for the tints alone. The caller keeps ownership. */
@@ -102,24 +194,50 @@ export class TerrainLayer {
     this.look.setTints(rockTint, groundTint);
   }
 
-  get object(): Mesh | null {
-    return this.mesh;
+  /** The chunk tree (null for the whole-mesh mode): tests and stats. */
+  get chunkTree(): TerrainChunks | null {
+    return this.chunks;
   }
 
-  /** Triangles drawn. */
+  /** Triangles drawn in the last update. */
   get triangles(): number {
+    if (this.chunks) return this.chunks.triangles;
     return (this.mesh?.geometry.getIndex()?.count ?? 0) / 3;
+  }
+
+  /** Terrain meshes drawn in the last update. */
+  get drawCount(): number {
+    return this.chunks ? this.chunks.drawn.length : this.mesh ? 1 : 0;
   }
 
   heightAt(x: number, z: number): number {
     return this.heightField ? this.heightField.heightAt(x, z, 0) : 0;
   }
 
+  /** First terrain point along a ray, into `out`; false when it misses. */
+  raycast(
+    origin: { x: number; y: number; z: number },
+    dir: { x: number; y: number; z: number },
+    out: { x: number; y: number; z: number },
+  ): boolean {
+    const hf = this.heightField;
+    return hf
+      ? raycastHeight(hf, origin, dir, out, { step: this.field ? this.field.step : 0.5 })
+      : false;
+  }
+
   clear(): void {
-    if (!this.mesh) return;
-    this.mesh.removeFromParent();
-    this.mesh.geometry.dispose();
-    this.mesh = null;
+    this.chunks?.dispose();
+    this.chunks = null;
+    this.field = null;
+    this.baseHeights = null;
+    this.baseOcclusion = null;
+    this.baseGrid = null;
+    if (this.mesh) {
+      this.mesh.removeFromParent();
+      this.mesh.geometry.dispose();
+      this.mesh = null;
+    }
     this.heightField = null;
     this.heightTexture?.texture.dispose();
     this.heightTexture = null;

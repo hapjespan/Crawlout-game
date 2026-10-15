@@ -1,5 +1,8 @@
 // RTS camera: orbits a ground target. Pan with WASD/arrows and screen-edge scroll, zoom with the wheel,
-// rotate with Q/E or by dragging with the middle mouse button.
+// rotate with Q/E or by dragging with the middle mouse button. Pan speed grows with the zoom distance. Without an
+// explicit maxDistance the zoom-out limit follows the map (bounds): 140 m, or the longer side when that is more, so a
+// 384 m map fits on screen in the overview, also turned 45 degrees. The pitch runs from 50 to 68 degrees over 10..140 m as before
+// and on to 74 degrees at the furthest zoom.
 import { MathUtils, type PerspectiveCamera } from 'three/webgpu';
 
 export interface RtsCameraBounds {
@@ -13,6 +16,7 @@ export interface RtsCameraOptions {
   /** Ground height under the target, so the camera follows hills. */
   heightAt?: (x: number, z: number) => number;
   minDistance?: number;
+  /** Furthest zoom, meters. Default: follows the bounds (see above). */
   maxDistance?: number;
   /** Pixels from the canvas edge where edge scroll starts. 0 disables edge scroll. */
   edgeMargin?: number;
@@ -40,17 +44,30 @@ export const DEFAULT_PAN_KEYS: Readonly<Record<string, PanDirection>> = {
   ArrowRight: [1, 0],
 };
 
+/** Default furthest zoom, and the zoom where the pitch curve of a small map ends. */
+export const BASE_MAX_DISTANCE = 140;
+/** Furthest zoom per meter of the longer map side, when that is more than the default. */
+const MAX_DISTANCE_PER_SIDE = 1;
+
+/** The furthest zoom for a map: BASE_MAX_DISTANCE, or its longer side when that is more. */
+export function maxDistanceFor(bounds: RtsCameraBounds | null): number {
+  if (!bounds) return BASE_MAX_DISTANCE;
+  const side = Math.max(bounds.maxX - bounds.minX, bounds.maxZ - bounds.minZ);
+  return Math.max(BASE_MAX_DISTANCE, side * MAX_DISTANCE_PER_SIDE);
+}
+
 export class RtsCameraController {
   /** Ground point the camera looks at, meters. */
   readonly target = { x: 64, y: 0, z: 64 };
   /** Heading in radians; 0 looks towards world -Z. */
   yaw = Math.PI * 0.25;
   distance = 42;
-  bounds: RtsCameraBounds | null = null;
 
   private targetDistance = this.distance;
   private readonly minDistance: number;
-  private readonly maxDistance: number;
+  private maxZoom: number;
+  private readonly autoMax: boolean;
+  private area: RtsCameraBounds | null = null;
   private readonly edgeMargin: number;
   private readonly keys = new Set<string>();
   private readonly panKeys = new Map<string, PanDirection>();
@@ -65,7 +82,8 @@ export class RtsCameraController {
     opts: RtsCameraOptions = {},
   ) {
     this.minDistance = opts.minDistance ?? 10;
-    this.maxDistance = opts.maxDistance ?? 140;
+    this.autoMax = opts.maxDistance === undefined;
+    this.maxZoom = opts.maxDistance ?? BASE_MAX_DISTANCE;
     this.edgeMargin = opts.edgeMargin ?? 16;
     this.heightAt = opts.heightAt ?? (() => 0);
     for (const [code, dir] of Object.entries(DEFAULT_PAN_KEYS)) this.panKeys.set(code, dir);
@@ -106,8 +124,37 @@ export class RtsCameraController {
     this.targetDistance = MathUtils.clamp(
       this.targetDistance * Math.pow(1.12, steps),
       this.minDistance,
-      this.maxDistance,
+      this.maxZoom,
     );
+  }
+
+  /** The area the target stays in, meters; also sets the zoom-out limit unless maxDistance was given. */
+  get bounds(): RtsCameraBounds | null {
+    return this.area;
+  }
+
+  set bounds(b: RtsCameraBounds | null) {
+    this.area = b ? { ...b } : null;
+    if (this.autoMax) {
+      this.maxZoom = maxDistanceFor(this.area);
+      this.targetDistance = Math.min(this.targetDistance, this.maxZoom);
+      this.distance = Math.min(this.distance, this.maxZoom);
+    }
+    this.clampTarget();
+  }
+
+  /** Furthest zoom, meters. */
+  get maxDistance(): number {
+    return this.maxZoom;
+  }
+
+  /** Zooms to a distance (clamped); `immediate` skips the easing. */
+  zoomTo(distance: number, immediate = false): void {
+    this.targetDistance = MathUtils.clamp(distance, this.minDistance, this.maxZoom);
+    if (immediate) {
+      this.distance = this.targetDistance;
+      this.apply();
+    }
   }
 
   private onPointerMove(e: PointerEvent): void {
@@ -213,9 +260,7 @@ export class RtsCameraController {
   }
 
   private apply(): void {
-    // Steeper when zoomed out, flatter when close: 50 to 68 degrees above the horizon.
-    const t = (this.distance - this.minDistance) / (this.maxDistance - this.minDistance);
-    const pitch = MathUtils.degToRad(50 + 18 * MathUtils.clamp(t, 0, 1));
+    const pitch = MathUtils.degToRad(this.pitchDegrees());
     const h = this.distance * Math.cos(pitch);
     const c = this.camera;
     c.position.set(
@@ -225,6 +270,18 @@ export class RtsCameraController {
     );
     c.lookAt(this.target.x, this.target.y, this.target.z);
     c.updateMatrixWorld();
+  }
+
+  /**
+   * Degrees above the horizon: 50 to 68 from the closest zoom to 140 m (or the furthest zoom if that is closer), then
+   * on to 74 at the furthest zoom of a large map, so the overview looks down on it.
+   */
+  pitchDegrees(): number {
+    const ref = Math.min(BASE_MAX_DISTANCE, this.maxZoom);
+    const t = (this.distance - this.minDistance) / Math.max(1e-6, ref - this.minDistance);
+    if (this.distance <= ref || this.maxZoom <= ref) return 50 + 18 * MathUtils.clamp(t, 0, 1);
+    const u = (this.distance - ref) / (this.maxZoom - ref);
+    return 68 + 6 * MathUtils.clamp(u, 0, 1);
   }
 
   dispose(): void {

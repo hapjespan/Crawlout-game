@@ -176,6 +176,90 @@ describe('PropLayer', () => {
   });
 });
 
+describe('PropLayer at scale', () => {
+  /** 8000 trees over a 384 m map: a dense border and a scatter. */
+  function forest(): RenderProp[] {
+    const out: RenderProp[] = [];
+    for (let k = 0; out.length < 8000; k++) {
+      const x = (k * 7.13) % 384;
+      const y = (k * 3.71 + (k % 7) * 11.3) % 384;
+      out.push({
+        asset: k % 3 === 0 ? 'treehigh001' : 'treemed001',
+        x,
+        y,
+        yaw: (k * 977) % 65536,
+        scale: 1,
+      });
+    }
+    return out;
+  }
+  const make = (opts = {}): PropLayer => {
+    const l = new PropLayer(new Scene(), {
+      heightAt,
+      material: () => new MeshBasicNodeMaterial(),
+      ...opts,
+    });
+    l.setProps(forest());
+    for (const id of l.assetIds()) l.setVisual(id, visual(5));
+    return l;
+  };
+
+  it('draws at most about maxVisible props in an overview of the whole map', () => {
+    const l = make();
+    l.update(camera(new Vector3(192, 420, 300), new Vector3(192, 0, 192)), fakeDecals());
+    expect(l.visibleCount).toBeLessThanOrEqual(3000 + 300); // rounded per chunk and asset
+    expect(l.visibleCount).toBeGreaterThan(2000);
+    expect(l.drawCount()).toBe(2); // still one draw per asset
+  });
+
+  /** Drawn instances as "x,z" keys plus their scales. */
+  const drawn = (l: PropLayer): Map<string, number> => {
+    const out = new Map<string, number>();
+    for (const m of l.meshes()) {
+      const pos = m.geometry.getAttribute('iPos') as InstancedBufferAttribute;
+      const scale = m.geometry.getAttribute('iScale') as InstancedBufferAttribute;
+      for (let k = 0; k < m.count; k++)
+        out.set(`${pos.getX(k).toFixed(3)},${pos.getZ(k).toFixed(3)}`, scale.getX(k));
+    }
+    return out;
+  };
+
+  it('keeps every prop near the camera and thins the far ones, drawing those a little larger', () => {
+    const l = make({ maxVisible: 100_000 });
+    l.update(camera(new Vector3(100, 60, 100.01), new Vector3(100, 0, 100)), fakeDecals());
+    const shown = drawn(l);
+    const close = forest().filter((p) => Math.hypot(p.x - 100, p.y - 100) < 15);
+    expect(close.length).toBeGreaterThan(20);
+    for (const p of close) expect(shown.get(`${p.x.toFixed(3)},${p.y.toFixed(3)}`)).toBe(1);
+    l.update(camera(new Vector3(20, 40, 20), new Vector3(300, 0, 300)), fakeDecals());
+    const scales = [...drawn(l).values()];
+    expect(Math.max(...scales)).toBeGreaterThan(1.05);
+    expect(Math.max(...scales)).toBeLessThanOrEqual(1.6 + 1e-6);
+  });
+
+  it('thins to the same props: a smaller budget draws a subset of a larger one', () => {
+    const cam = camera(new Vector3(192, 420, 300), new Vector3(192, 0, 192));
+    const small = make({ maxVisible: 1500 });
+    const large = make({ maxVisible: 3000 });
+    small.update(cam, fakeDecals());
+    large.update(cam, fakeDecals());
+    const a = drawn(small);
+    const b = drawn(large);
+    expect(a.size).toBeLessThanOrEqual(1500 * 1.15);
+    expect(b.size).toBeGreaterThan(a.size);
+    let kept = 0;
+    for (const id of a.keys()) if (b.has(id)) kept++;
+    expect(kept).toBe(a.size);
+  });
+
+  it('pushes at most maxBlobs blob shadows, nearest first', () => {
+    const l = make({ maxBlobs: 20 });
+    const decals = fakeDecals();
+    l.update(camera(new Vector3(190, 30, 190), new Vector3(200, 0, 200)), decals);
+    expect(decals.pushed).toBe(20);
+  });
+});
+
 describe('prop fit', () => {
   it('reads the kind from the asset id', () => {
     expect(propKindOf('treehigh001')).toBe('tree');

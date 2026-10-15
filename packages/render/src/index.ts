@@ -6,7 +6,18 @@ export {
   type PickResult,
   type PlacementPreview,
   type RenderBackend,
+  type WaterInfo,
+  type LayerStats,
 } from './renderer.js';
+export {
+  parseWaterMask,
+  WaterMaskError,
+  WATER_CELL,
+  type WaterMask,
+  type WaterMaskInput,
+  type WaterOptions,
+} from './water/waterMask.js';
+export { type TerrainChunkOptions } from './terrain/terrainChunks.js';
 export {
   parseSnapshot,
   SnapshotParseError,
@@ -49,6 +60,8 @@ export {
 export {
   RtsCameraController,
   DEFAULT_PAN_KEYS,
+  BASE_MAX_DISTANCE,
+  maxDistanceFor,
   type RtsCameraOptions,
   type RtsCameraBounds,
   type PanDirection,

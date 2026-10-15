@@ -1,9 +1,13 @@
 // Decorative props (trees, rocks, bushes, grass) from the map's props file: static, not in the sim, not pickable.
 // One instanced draw per prop asset per distinct LOD geometry (identical LODs share one draw), with frustum culling
-// per chunk of CHUNK_SIZE meters: the layer only rewrites the instance buffers when the set of visible chunks or
-// their LOD changes, so a still camera costs no uploads. Height comes from the terrain at each prop (relayout() after
-// setTerrain). Props get a soft blob shadow decal near the camera (LOD 0 and 1 chunks), no real shadow: that keeps
-// the shadow pass at buildings only.
+// per chunk of CHUNK_SIZE meters: the layer only rewrites the instance buffers when the set of visible chunks, their
+// LOD or their density changes, so a still camera costs no uploads. Height comes from the terrain at each prop
+// (relayout() after setTerrain). Props get a soft blob shadow decal near the camera (LOD 0 and 1 chunks, at most
+// maxBlobs, nearest chunks first), no real shadow: that keeps the shadow pass at buildings only.
+// Scale (thousands of trees on a 384 m map): beyond thinDistance a chunk draws only part of its props, falling off
+// with distance, and over all chunks at most maxVisible props are drawn (the far ones give way first). Which props a
+// chunk keeps is fixed per prop (a hash, the chunk's props sorted on it), so props never shuffle while the camera
+// moves; a thinned chunk draws its kept props a little larger, so a forest still reads as a forest from far away.
 import {
   Box3,
   Frustum,
@@ -56,6 +60,14 @@ export interface PropLayerOptions {
   lodDistances?: readonly [number, number];
   /** Chunk edge in meters. */
   chunkSize?: number;
+  /** Most props drawn at once. Default 3000. */
+  maxVisible?: number;
+  /** Chunks closer than this (meters) draw all their props. Default 160. */
+  thinDistance?: number;
+  /** Lowest share of its props a far chunk draws before the maxVisible cap. Default 0.15. */
+  minDensity?: number;
+  /** Most blob shadows pushed per frame. Default 768. */
+  maxBlobs?: number;
 }
 
 export const PROP_CHUNK_SIZE = 16;
@@ -73,6 +85,11 @@ const BLOB: DecalStyle = {
   color: DECAL_COLOR.selection,
 };
 const STRIDE = 6; // x, y, z, yaw (render radians), scale, brightness
+/** Density steps per chunk: the instance buffers are only rewritten when a chunk crosses a step. */
+const DENSITY_STEPS = 32;
+/** Size boost of thinned props: (1 / density)^SPARSE_GROW, at most SPARSE_MAX. */
+const SPARSE_GROW = 0.5;
+const SPARSE_MAX = 1.6;
 
 interface Group {
   id: string;
@@ -82,6 +99,9 @@ interface Group {
   chunk: Int32Array;
   /** [chunk, start, end) triples over `data`. */
   ranges: number[];
+  /** Range start and end per chunk (equal when the chunk has none of this asset). */
+  start: Int32Array;
+  end: Int32Array;
   visual: PropVisual | null;
   material: MeshBasicNodeMaterial | null;
   batches: InstanceBatch[];
@@ -108,6 +128,25 @@ export class PropLayer {
   private chunkCenters: Vector3[] = [];
   private state = new Int8Array(0);
   private shown = new Int8Array(0);
+  /** Density step per chunk (0..DENSITY_STEPS), now and as last written. */
+  private density = new Uint8Array(0);
+  private shownDensity = new Uint8Array(0);
+  private distance = new Float32Array(0);
+  private chunkTotal = new Int32Array(0);
+  private blobChunks: number[] = [];
+  private readonly maxVisible: number;
+  private readonly thinDistance: number;
+  private readonly minDensity: number;
+  private readonly maxBlobs: number;
+  /** Props drawn in the last update. */
+  visibleCount = 0;
+
+  /** Props in the current set. */
+  get totalCount(): number {
+    let n = 0;
+    for (const g of this.groups) n += g.count;
+    return n;
+  }
   private dirty = true;
   private readonly frustum = new Frustum();
   private readonly projView = new Matrix4();
@@ -121,6 +160,10 @@ export class PropLayer {
     const [d1, d2] = opts.lodDistances ?? [45, 100];
     this.lodDist2 = [d1 * d1, d2 * d2];
     this.chunkSize = opts.chunkSize ?? PROP_CHUNK_SIZE;
+    this.maxVisible = opts.maxVisible ?? 3000;
+    this.thinDistance = opts.thinDistance ?? 160;
+    this.minDensity = opts.minDensity ?? 0.15;
+    this.maxBlobs = opts.maxBlobs ?? 768;
   }
 
   /** Replaces all props. Visuals of asset ids that stay are kept. */
@@ -152,7 +195,9 @@ export class PropLayer {
     });
     this.groups = [];
     for (const [id, list] of lists) {
-      list.sort((a, b) => chunkOf(a.p) - chunkOf(b.p) || a.index - b.index);
+      // Within a chunk on a fixed per-prop priority: a thinned chunk keeps a prefix, the same props every time.
+      const prio = new Map(list.map((e) => [e, hash01(e.index ^ 0x5bd1e995)]));
+      list.sort((a, b) => chunkOf(a.p) - chunkOf(b.p) || prio.get(a)! - prio.get(b)!);
       const data = new Float32Array(list.length * STRIDE);
       const chunk = new Int32Array(list.length);
       list.forEach(({ p, index }, k) => {
@@ -165,10 +210,14 @@ export class PropLayer {
         chunk[k] = chunkOf(p);
       });
       const ranges: number[] = [];
+      const start = new Int32Array(cols * rows);
+      const end = new Int32Array(cols * rows);
       for (let k = 0; k < list.length;) {
         let e = k + 1;
         while (e < list.length && chunk[e] === chunk[k]) e++;
         ranges.push(chunk[k]!, k, e);
+        start[chunk[k]!] = k;
+        end[chunk[k]!] = e;
         k = e;
       }
       const prev = old.get(id);
@@ -178,6 +227,8 @@ export class PropLayer {
         data,
         chunk,
         ranges,
+        start,
+        end,
         visual: null,
         material: null,
         batches: [],
@@ -196,6 +247,11 @@ export class PropLayer {
     this.chunkCenters = Array.from({ length: cols * rows }, () => new Vector3());
     this.state = new Int8Array(cols * rows).fill(-1);
     this.shown = new Int8Array(cols * rows).fill(-2);
+    this.density = new Uint8Array(cols * rows);
+    this.shownDensity = new Uint8Array(cols * rows);
+    this.distance = new Float32Array(cols * rows);
+    this.chunkTotal = new Int32Array(cols * rows);
+    for (const g of this.groups) for (let k = 0; k < g.count; k++) this.chunkTotal[g.chunk[k]!]!++;
     this.relayout();
   }
 
@@ -285,36 +341,68 @@ export class PropLayer {
     );
   }
 
-  /** Culls and LODs per chunk, rewrites the instance buffers when that changed, and pushes the blob decals. */
+  /** Culls, LODs and thins per chunk, rewrites the instance buffers when that changed, and pushes the blob decals. */
   update(camera: Camera, decals: DecalLayer): void {
     this.projView.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
     this.frustum.setFromProjectionMatrix(this.projView);
     const cam = camera.position;
     const state = this.state;
-    let changed = this.dirty;
+    const dist = this.distance;
+    let near = 0;
+    let far = 0;
     for (let c = 0; c < state.length; c++) {
       const box = this.chunkBoxes[c]!;
       let s = -1;
       if (!box.isEmpty() && this.frustum.intersectsBox(box)) {
-        const d2 = box.distanceToPoint(cam) ** 2;
+        const d = box.distanceToPoint(cam);
+        dist[c] = d;
+        const d2 = d * d;
         s = d2 < this.lodDist2[0] ? 0 : d2 < this.lodDist2[1] ? 1 : 2;
+        if (d < this.thinDistance) near += this.chunkTotal[c]!;
+        else far += this.chunkTotal[c]! * Math.max(this.minDensity, this.thinDistance / d);
       }
       state[c] = s;
-      if (s !== this.shown[c]) changed = true;
+    }
+    // Over budget: the far chunks give way first, then everything alike.
+    let farScale = 1;
+    let allScale = 1;
+    if (near + far > this.maxVisible) {
+      if (near < this.maxVisible) farScale = (this.maxVisible - near) / far;
+      else allScale = this.maxVisible / (near + far);
+    }
+    let changed = this.dirty;
+    for (let c = 0; c < state.length; c++) {
+      let q = 0;
+      if (state[c]! >= 0) {
+        const d = dist[c]!;
+        const f =
+          d < this.thinDistance
+            ? allScale
+            : Math.max(this.minDensity, this.thinDistance / d) * farScale * allScale;
+        q = Math.max(1, Math.min(DENSITY_STEPS, Math.ceil(f * DENSITY_STEPS)));
+      }
+      this.density[c] = q;
+      if (state[c] !== this.shown[c] || q !== this.shownDensity[c]) changed = true;
     }
     if (changed) this.rebuild();
 
-    for (const g of this.groups) {
-      if (!g.visual || g.batches.length === 0) continue;
-      const d = g.data;
-      const r = g.visual.radius * g.visual.fit * BLOB_SCALE;
-      for (let q = 0; q < g.ranges.length; q += 3) {
-        const s = state[g.ranges[q]!]!;
-        if (s < 0 || s > 1) continue;
-        for (let k = g.ranges[q + 1]!; k < g.ranges[q + 2]!; k++) {
+    let blobs = 0;
+    for (const c of this.blobChunks) {
+      const q = this.density[c]!;
+      for (const g of this.groups) {
+        if (!g.visual || g.batches.length === 0) continue;
+        const s0 = g.start[c]!;
+        const n = g.end[c]! - s0;
+        if (n === 0) continue;
+        const keep = Math.round((q * n) / DENSITY_STEPS);
+        const d = g.data;
+        const r = g.visual.radius * g.visual.fit * BLOB_SCALE;
+        for (let k = s0; k < s0 + keep; k++) {
+          if (blobs >= this.maxBlobs) return;
           const o = k * STRIDE;
           const half = r * d[o + 4]!;
           decals.push(d[o]!, d[o + 2]!, half, half, BLOB);
+          blobs++;
         }
       }
     }
@@ -322,6 +410,7 @@ export class PropLayer {
 
   private rebuild(): void {
     this.shown.set(this.state);
+    this.shownDensity.set(this.density);
     this.dirty = false;
     const counts = this.lodCounts;
     counts[0] = counts[1] = counts[2] = 0;
@@ -332,12 +421,17 @@ export class PropLayer {
       const fit = g.visual.fit;
       const d = g.data;
       for (let q = 0; q < g.ranges.length; q += 3) {
-        const s = this.state[g.ranges[q]!]!;
+        const c = g.ranges[q]!;
+        const s = this.state[c]!;
         if (s < 0) continue;
         const batch = g.batches[g.lodBatch[s]!]!;
-        for (let k = g.ranges[q + 1]!; k < g.ranges[q + 2]!; k++) {
+        const k0 = g.ranges[q + 1]!;
+        const n = g.ranges[q + 2]! - k0;
+        const keep = Math.round((this.density[c]! * n) / DENSITY_STEPS);
+        const grow = keep < n ? Math.min(SPARSE_MAX, Math.pow(n / keep, SPARSE_GROW)) : 1;
+        for (let k = k0; k < k0 + keep; k++) {
           const o = k * STRIDE;
-          const sc = d[o + 4]! * fit;
+          const sc = d[o + 4]! * fit * grow;
           t[0] = t[1] = t[2] = d[o + 5]!;
           batch.push(d[o]!, d[o + 1]!, d[o + 2]!, d[o + 3]!, sc, sc, sc, NEUTRAL_TEAM, t);
           counts[s] = counts[s]! + 1;
@@ -345,6 +439,12 @@ export class PropLayer {
       }
       for (const b of g.batches) b.commit();
     }
+    this.visibleCount = counts[0] + counts[1] + counts[2];
+    // Blob shadows: chunks at LOD 0 and 1, nearest first.
+    this.blobChunks = [];
+    for (let c = 0; c < this.state.length; c++)
+      if (this.state[c]! >= 0 && this.state[c]! <= 1) this.blobChunks.push(c);
+    this.blobChunks.sort((a, b) => this.distance[a]! - this.distance[b]!);
   }
 
   /** Instanced draws the props take this frame. */

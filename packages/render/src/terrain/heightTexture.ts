@@ -3,7 +3,7 @@
 import type { DataTexture, Node } from 'three/webgpu';
 import { clamp, floor, int, ivec2, mix, textureLoad, vec2 } from 'three/tsl';
 import { createDataTexture, type DataTexturePrecision } from '../gpu/dataTextures.js';
-import type { TerrainHeightField } from './heightField.js';
+import type { HeightSource } from './terrainField.js';
 
 export interface HeightTexture {
   texture: DataTexture;
@@ -17,7 +17,7 @@ export interface HeightTexture {
 
 /** Heights in the r channel, one texel per `step` meters over the field's bounds, at most `maxEdge` texels per side. */
 export function bakeHeights(
-  hf: TerrainHeightField,
+  hf: HeightSource,
   step = 1,
   maxEdge = 512,
 ): { data: Float32Array; cols: number; rows: number; step: number } {
@@ -38,7 +38,7 @@ export function bakeHeights(
 }
 
 export function createHeightTexture(
-  hf: TerrainHeightField,
+  hf: HeightSource,
   precision: DataTexturePrecision,
 ): HeightTexture {
   const baked = bakeHeights(hf);

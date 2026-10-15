@@ -51,7 +51,7 @@ import {
   type PropSourceOptions,
   type ResolvedSource,
 } from './props/propAssets.js';
-import { PropLayer, type RenderProp } from './props/propLayer.js';
+import { PropLayer, type PropLayerOptions, type RenderProp } from './props/propLayer.js';
 import {
   buildingMeshes,
   loadBuildingAssets,
@@ -62,6 +62,7 @@ import { createPropMaterial } from './structures/propMaterial.js';
 import { DEFAULT_LAYER_SIZE } from './structures/textureArray.js';
 import { StructureLayer } from './structures/structureLayer.js';
 import { createGridTerrain, type TerrainGeometry } from './terrain/heightField.js';
+import type { TerrainChunkOptions } from './terrain/terrainChunks.js';
 import { TerrainLayer } from './terrain/terrainLayer.js';
 import type { TerrainDetailOptions } from './terrain/terrainRefine.js';
 import {
@@ -81,6 +82,14 @@ import { DEFAULT_LIGHT_DIR, UnitLayer } from './units/unitLayer.js';
 import { abilitiesFromGameData, AbilityZones, type AbilityLookup } from './vfx/abilityZones.js';
 import { EffectSpawner, type EffectContext } from './vfx/effects.js';
 import { ParticlePool } from './vfx/particles.js';
+import { WaterLayer } from './water/waterLayer.js';
+import {
+  analyzeWater,
+  parseWaterMask,
+  type WaterMask,
+  type WaterMaskInput,
+  type WaterOptions,
+} from './water/waterMask.js';
 
 export type RenderBackend = 'webgpu' | 'webgl2';
 
@@ -112,8 +121,20 @@ export interface CreateRendererOptions {
    * values. Without it the terrain uses the Rock Terrain 4 tints and no texture. setTerrainTextures() changes it later.
    */
   terrainTextures?: TerrainTextureOptions;
-  /** Render-only refinement of the terrain mesh (terrain/terrainRefine.ts). Default { subdivide: 2, baseStep: 1 }. */
+  /** Render-only refinement of the terrain mesh (terrain/terrainField.ts). Default { subdivide: 2, baseStep: 1 }. */
   terrainDetail?: TerrainDetailOptions;
+  /**
+   * Chunks and distance LOD of the terrain (terrain/terrainChunks.ts). Default 32 m chunks at the field step, 64 m at
+   * twice it, 128 m roots at four times it, splitting under 40 and 100 m, roots at half resolution beyond 220 m.
+   */
+  terrainChunks?: TerrainChunkOptions;
+  /** Levels, bed and flow of the water (water/waterMask.ts). */
+  water?: WaterOptions;
+  /**
+   * Prop budget: most props drawn at once (default 3000), full density within thinDistance (default 160 m), at least
+   * minDensity of a far chunk before the cap (default 0.15), most blob shadows (default 768).
+   */
+  props?: Pick<PropLayerOptions, 'maxVisible' | 'thinDistance' | 'minDensity' | 'maxBlobs'>;
   /**
    * Building assets (kind 'building') from the `assets` manifest for the building types whose visuals.mesh it has,
    * loaded by setGameData. Default true; false keeps the placeholder blocks.
@@ -138,6 +159,25 @@ export interface PlacementPreview {
   valid: boolean;
 }
 
+/** What setWater drew. */
+export interface WaterInfo {
+  /** Water cells (deep plus shallow) and the shallow or fordable ones among them. */
+  cells: number;
+  shallowCells: number;
+  /** Triangles of the water surface (water plus its bank ring), one draw call. */
+  triangles: number;
+}
+
+/** Per-layer numbers of the last frame, next to the totals of stats(). */
+export interface LayerStats {
+  terrainTriangles: number;
+  terrainDraws: number;
+  /** Props drawn and props in total. */
+  propsVisible: number;
+  propsTotal: number;
+  waterTriangles: number;
+}
+
 export interface CrawloutRenderer {
   readonly backend: RenderBackend;
   /** Precision of the bone, clip and height textures: float32, or half-float on WebGL2 drivers without float32. */
@@ -150,6 +190,13 @@ export interface CrawloutRenderer {
    * that surface. The given arrays are not modified.
    */
   setTerrain(geometry: TerrainGeometry): void;
+  /**
+   * The map's water mask (MapDef water, decoded: w * h cells, 0 land, 1 water, 2 shallow or fordable), laid over the
+   * terrain's bounds; null removes the water. Cuts a bed into the drawn terrain under the water (heights for units,
+   * props, decals and picking follow) and draws the surface in one draw call. Kept across setTerrain. Throws
+   * WaterMaskError on a mask of the wrong size or with other values. Returns what it drew (null without water).
+   */
+  setWater(mask: WaterMaskInput | null): WaterInfo | null;
   /**
    * Detail texture and tints of the terrain material (terrain.json or explicit values). Resolves with the status once
    * the texture is loaded; never rejects (on failure the tints that could be read still apply).
@@ -199,6 +246,8 @@ export interface CrawloutRenderer {
   focus(x: number, y: number): void;
   /** Latest measured frame stats. */
   stats(): FrameStats;
+  /** Triangles and draws per layer in the last frame. */
+  layerStats(): LayerStats;
   dispose(): void;
 }
 
@@ -214,6 +263,8 @@ function createOverlay(
 /** Height-texture edge the decals may need (terrain/heightTexture.ts caps at 512). */
 const HEIGHT_TEXTURE_EDGE = 512;
 const PARTICLES_PER_POOL = 4096;
+/** Default most prop blob shadows, on top of the entity decals. */
+const PROP_BLOBS = 768;
 /** How far prop art is pulled towards the warm wasteland grey (structures/propMaterial.ts grade). */
 const PROP_GRADE = 0.22;
 /** The same for building assets: lighter, their tints per building type should stay readable. */
@@ -266,7 +317,9 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
     shadow: sun?.factor,
     precision,
     ...(opts.terrainDetail ? { detail: opts.terrainDetail } : {}),
+    ...(opts.terrainChunks ? { chunks: opts.terrainChunks } : {}),
   });
+  const water = new WaterLayer(scene, { lightDir: DEFAULT_LIGHT_DIR, time, shadow: sun?.factor });
   let terrainTexture: Texture | null = null;
   let terrainGeneration = 0;
   const setTerrainTextures = async (
@@ -298,7 +351,8 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
     return status;
   };
   if (opts.terrainTextures) void setTerrainTextures(opts.terrainTextures);
-  const decals = new DecalLayer(scene, capacity + 64);
+  const propBlobs = opts.props?.maxBlobs ?? PROP_BLOBS;
+  const decals = new DecalLayer(scene, capacity + 64 + propBlobs);
   const units = new UnitLayer(scene, { capacity, lightDir: DEFAULT_LIGHT_DIR, precision, anims });
   const assetConfig = opts.assets;
   const gltfIO = createGltfIO();
@@ -330,6 +384,8 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
     },
   });
   const props = new PropLayer(scene, {
+    ...opts.props,
+    maxBlobs: propBlobs,
     heightAt: (x, z) => terrain.heightAt(x, z),
     material: (map) =>
       createPropMaterial({
@@ -419,14 +475,51 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
     ...opts.camera,
   });
 
-  const setTerrain = (geometry: TerrainGeometry): void => {
-    terrain.set(geometry);
+  let waterMask: WaterMask | null = null;
+  let waterInfo: WaterInfo | null = null;
+  /** Lays the water mask over the current terrain: bed, surface, then everything that reads heights. */
+  const applyWater = (): void => {
+    const hf = terrain.heightField;
+    waterInfo = null;
+    if (!waterMask || !hf) {
+      terrain.setBed(null);
+      water.set(null, () => 0);
+      return;
+    }
+    const cell = (hf.maxX - hf.minX) / waterMask.w;
+    const cellZ = (hf.maxZ - hf.minZ) / waterMask.h;
+    if (Math.abs(cell - cellZ) > 0.01 * cell)
+      console.warn(
+        `[render] water mask ${waterMask.w}x${waterMask.h} does not fit the terrain's aspect; cells of ${cell} m`,
+      );
+    const surface = analyzeWater(
+      waterMask,
+      (x, z) => terrain.baseHeightAt(x, z),
+      { minX: hf.minX, minZ: hf.minZ, cell },
+      opts.water,
+    );
+    terrain.setBed(surface.cells > 0 ? surface.bed : null);
+    water.set(surface, (x, z) => terrain.heightAt(x, z));
+    waterInfo =
+      surface.cells > 0
+        ? { cells: surface.cells, shallowCells: surface.shallowCells, triangles: water.triangles }
+        : null;
+  };
+  const afterHeights = (): void => {
     decals.setHeights(terrain.heightTexture);
     props.relayout();
+  };
+  const setTerrain = (geometry: TerrainGeometry): void => {
+    terrain.set(geometry);
+    if (waterMask) applyWater();
+    afterHeights();
     const hf = terrain.heightField;
     if (hf) {
       controls.bounds = { minX: hf.minX, maxX: hf.maxX, minZ: hf.minZ, maxZ: hf.maxZ };
       controls.focus(controls.target.x, controls.target.z);
+      // The furthest zoom of a large map looks across it: keep its far corner inside the far plane.
+      camera.far = Math.max(800, controls.maxDistance * 2.6);
+      camera.updateProjectionMatrix();
     }
   };
   setTerrain(createGridTerrain(128, 128, 4));
@@ -480,6 +573,7 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
     time.value = t;
     controls.update(dt);
     camera.updateMatrixWorld();
+    terrain.update(camera);
     interp.sample(now, frame);
     for (let i = 0; i < frame.count; i++) frame.y[i] = terrain.heightAt(frame.x[i]!, frame.z[i]!);
     decals.begin();
@@ -532,6 +626,12 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
         effects.handle(ev.type[k]!, ev.a[k]!, ev.b[k]!, ev.x[k]!, ev.y[k]!, t0, effectContext);
     },
     setTerrain,
+    setWater(mask) {
+      waterMask = mask ? parseWaterMask(mask) : null;
+      applyWater();
+      afterHeights();
+      return waterInfo ? { ...waterInfo } : null;
+    },
     setTerrainTextures,
     setGameData(data) {
       footprints.setLookup(footprintsFromGameData(data));
@@ -618,9 +718,9 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
         );
       }
       let ground: PickResult['ground'] = null;
-      const mesh = terrain.object;
-      const hits = mesh ? raycaster.intersectObject(mesh, false) : [];
-      const p = hits[0]?.point ?? raycaster.ray.intersectPlane(groundPlane, hitPoint);
+      const p = terrain.raycast(origin, direction, hitPoint)
+        ? hitPoint
+        : raycaster.ray.intersectPlane(groundPlane, hitPoint);
       if (p)
         ground = { x: Math.round(p.x * UNITS_PER_METER), y: Math.round(p.z * UNITS_PER_METER) };
       return { entityId: hit >= 0 ? frame.id[hit]! : null, ground };
@@ -640,6 +740,13 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
       controls.focus(x / UNITS_PER_METER, y / UNITS_PER_METER);
     },
     stats: () => ({ ...meter.stats }),
+    layerStats: () => ({
+      terrainTriangles: terrain.triangles,
+      terrainDraws: terrain.drawCount,
+      propsVisible: props.visibleCount,
+      propsTotal: props.totalCount,
+      waterTriangles: water.triangles,
+    }),
     dispose() {
       void gpu.setAnimationLoop(null);
       resizeObserver.disconnect();
@@ -658,6 +765,7 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
       sun?.dispose();
       terrainGeneration++;
       terrain.dispose();
+      water.dispose();
       terrainTexture?.dispose();
       interp.clear();
       zones.clear();

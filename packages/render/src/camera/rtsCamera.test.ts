@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PerspectiveCamera } from 'three/webgpu';
-import { RtsCameraController, type RtsCameraOptions } from './rtsCamera.js';
+import { maxDistanceFor, RtsCameraController, type RtsCameraOptions } from './rtsCamera.js';
 
 // Node has EventTarget but no DOM: a window and a canvas stand-in are enough for the keyboard path.
 function fakeDom(): HTMLElement {
@@ -111,5 +111,70 @@ describe('RtsCameraController edge scroll', () => {
         root.dispatchEvent(new Event('pointerleave'));
       }),
     ).toBe(0);
+  });
+});
+
+describe('RtsCameraController on a large map', () => {
+  beforeEach(() => vi.stubGlobal('window', new EventTarget()));
+  afterEach(() => vi.unstubAllGlobals());
+
+  const map = (side: number) => ({ minX: 0, maxX: side, minZ: 0, maxZ: side });
+  const wheel = (dom: HTMLElement, deltaY: number): void =>
+    void dom.dispatchEvent(
+      Object.assign(new Event('wheel'), { deltaY, deltaMode: 0, preventDefault() {} }),
+    );
+
+  it('zooms out far enough to see a 384 m map, and keeps 140 m on the small map', () => {
+    expect(maxDistanceFor(map(128))).toBe(140);
+    expect(maxDistanceFor(map(384))).toBe(384);
+    const dom = fakeDom();
+    const cam = new RtsCameraController(new PerspectiveCamera(), dom, { edgeMargin: 0 });
+    cam.bounds = map(384);
+    for (let k = 0; k < 60; k++) wheel(dom, 100);
+    for (let k = 0; k < 60; k++) cam.update(0.1);
+    expect(cam.distance).toBeCloseTo(384, 0);
+    expect(cam.pitchDegrees()).toBeCloseTo(74, 1);
+    // An explicit maxDistance wins over the map.
+    const fixed = new RtsCameraController(new PerspectiveCamera(), fakeDom(), { maxDistance: 90 });
+    fixed.bounds = map(384);
+    expect(fixed.maxDistance).toBe(90);
+    cam.dispose();
+    fixed.dispose();
+  });
+
+  it('keeps the pitch at gameplay zoom whatever the map size', () => {
+    const small = new RtsCameraController(new PerspectiveCamera(), fakeDom());
+    const large = new RtsCameraController(new PerspectiveCamera(), fakeDom());
+    small.bounds = map(128);
+    large.bounds = map(384);
+    expect(large.pitchDegrees()).toBeCloseTo(small.pitchDegrees(), 6);
+    large.zoomTo(140, true);
+    expect(large.pitchDegrees()).toBeCloseTo(68, 6);
+    small.dispose();
+    large.dispose();
+  });
+
+  it('pans faster when zoomed out, and stays on the map', () => {
+    const cam = new RtsCameraController(new PerspectiveCamera(), fakeDom(), { edgeMargin: 0 });
+    cam.bounds = map(384);
+    cam.focus(192, 192);
+    const panned = (): number => {
+      const x = cam.target.x;
+      const z = cam.target.z;
+      window.dispatchEvent(Object.assign(new Event('keydown'), { code: 'KeyD' }));
+      cam.update(0.1);
+      window.dispatchEvent(Object.assign(new Event('keyup'), { code: 'KeyD' }));
+      return Math.hypot(cam.target.x - x, cam.target.z - z);
+    };
+    const near = panned();
+    cam.zoomTo(cam.maxDistance, true);
+    const far = panned();
+    expect(far).toBeGreaterThan(near * 4);
+    for (let k = 0; k < 100; k++) panned();
+    expect(cam.target.x).toBeGreaterThanOrEqual(0);
+    expect(cam.target.x).toBeLessThanOrEqual(384);
+    expect(cam.target.z).toBeGreaterThanOrEqual(0);
+    expect(cam.target.z).toBeLessThanOrEqual(384);
+    cam.dispose();
   });
 });
