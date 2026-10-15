@@ -1,8 +1,9 @@
 import { MAX_ENTITIES_PER_COMMAND } from '@crawlout/protocol';
 import type { PlayerStatus, Role } from '@crawlout/protocol';
-import { kindOfTypeId } from '@crawlout/data';
+import { heroIdOfTypeId, kindOfTypeId } from '@crawlout/data';
 import type {
   BuildOption,
+  BuildingButton,
   BuildingCard,
   CraftOption,
   HeroAbilityOption,
@@ -33,10 +34,7 @@ export type ActionId =
   | 'roleBuilder'
   | 'roleMilitia'
   | 'build'
-  | 'hero'
   | 'revive'
-  | 'craft'
-  | 'minimap'
   | 'lastAlert'
   | 'lobby';
 
@@ -47,6 +45,13 @@ export const MAX_TOASTS = 4;
 export const PERK_KEYS = ['f1', 'f2', 'f3'] as const;
 /** Held-abilities in volgorde van getHeroAbilities(). */
 export const ABILITY_KEYS = ['z', 'x', 'c'] as const;
+/** Sneltoetsen zonder knop: H zoekt de held op, K schakelt de cijfertoetsen van de craftkaarten. */
+export const HERO_KEY = 'h';
+export const CRAFT_KEY = 'k';
+/** Een kaartstart binnen dit venster na dezelfde kaart telt niet mee (pointerup en klik van dezelfde druk). */
+const CARD_DEDUPE_MS = 350;
+/** Zo lang blijft de reden staan nadat de speler op een kaart klikt die niet start. */
+export const CARD_NOTICE_MS = 3500;
 
 export interface ActionDef {
   id: ActionId;
@@ -54,27 +59,91 @@ export interface ActionDef {
   /** Toets in kleine letters, zoals KeyboardEvent.key. */
   key: string;
   needsSelection: boolean;
-  /** Alleen zichtbaar als de bijbehorende dep of data er is. */
-  requires?: 'hero' | 'revive' | 'craft' | 'minimap' | 'alert' | 'lobby';
+  /** Alleen zichtbaar als de bijbehorende dep of data er is; deze acties hangen niet van de selectie af. */
+  requires?: 'revive' | 'alert' | 'lobby';
 }
 
-/** Commandokaart: volgorde is de volgorde op het scherm. */
+/** Wat er geselecteerd is, per soort; bepaalt welke commando's op de kaart staan. */
+export interface SelectionSummary {
+  /** Alles wat geen gebouw is (held en robots incluis). */
+  units: number;
+  buildings: number;
+  hero: boolean;
+  builders: number;
+  scavengers: number;
+  militia: number;
+  /** Units zonder een van de drie rollen en zonder held: robots, technici. */
+  other: number;
+}
+
+/** Commandokaart: volgorde is de volgorde op het scherm. Wat er staat hangt af van de selectie (zie appliesTo). */
 export const ACTIONS: readonly ActionDef[] = [
   { id: 'move', label: 'Verplaats', key: 'm', needsSelection: true },
   { id: 'stop', label: 'Stop', key: 's', needsSelection: true },
   { id: 'attackMove', label: 'Val aan', key: 'a', needsSelection: true },
   { id: 'gather', label: 'Verzamel', key: 'g', needsSelection: true },
+  { id: 'build', label: 'Bouw', key: 'b', needsSelection: true },
   { id: 'roleScavenger', label: 'Plunderaar', key: '1', needsSelection: true },
   { id: 'roleBuilder', label: 'Bouwer', key: '2', needsSelection: true },
   { id: 'roleMilitia', label: 'Militie', key: '3', needsSelection: true },
-  { id: 'build', label: 'Bouw', key: 'b', needsSelection: false },
-  { id: 'hero', label: 'Held', key: 'h', needsSelection: false, requires: 'hero' },
   { id: 'revive', label: 'Oplappen', key: 'v', needsSelection: false, requires: 'revive' },
-  { id: 'craft', label: 'Craft', key: 'k', needsSelection: true, requires: 'craft' },
-  { id: 'minimap', label: 'Minimap', key: 'n', needsSelection: false, requires: 'minimap' },
   { id: 'lastAlert', label: 'Alarm', key: ' ', needsSelection: false, requires: 'alert' },
   { id: 'lobby', label: 'Lobby', key: 'l', needsSelection: false, requires: 'lobby' },
 ];
+
+/** Telt de selectie per soort. */
+export function summarize(selection: readonly SelectedEntity[]): SelectionSummary {
+  const sum: SelectionSummary = {
+    units: 0,
+    buildings: 0,
+    hero: false,
+    builders: 0,
+    scavengers: 0,
+    militia: 0,
+    other: 0,
+  };
+  for (const s of selection) {
+    if (kindOfTypeId(s.typeId).kind === 'building') sum.buildings++;
+    else if (heroIdOfTypeId(s.typeId) >= 0) {
+      sum.units++;
+      sum.hero = true;
+    } else {
+      sum.units++;
+      if (s.role === 'builder') sum.builders++;
+      else if (s.role === 'scavenger') sum.scavengers++;
+      else if (s.role === 'militia') sum.militia++;
+      else sum.other++;
+    }
+  }
+  return sum;
+}
+
+/**
+ * Past deze selectie-afhankelijke actie bij de selectie? Verplaats en Stop bij elke unit; Val aan bij wie vecht (niet bij
+ * alleen plunderaars of bouwers); Verzamel bij plunderaars; Bouw bij bouwers; een rol alleen als minstens een bewoner
+ * die rol nog niet heeft.
+ */
+function appliesTo(id: ActionId, s: SelectionSummary): boolean {
+  switch (id) {
+    case 'move':
+    case 'stop':
+      return s.units > 0;
+    case 'attackMove':
+      return s.militia + s.other > 0 || s.hero;
+    case 'gather':
+      return s.scavengers > 0;
+    case 'build':
+      return s.builders > 0;
+    case 'roleScavenger':
+      return s.builders + s.militia > 0;
+    case 'roleBuilder':
+      return s.scavengers + s.militia > 0;
+    case 'roleMilitia':
+      return s.scavengers + s.builders > 0;
+    default:
+      return true;
+  }
+}
 
 /** Sneltoets als label. */
 export const keyLabel = (key: string): string => (key === ' ' ? 'Spatie' : key.toUpperCase());
@@ -84,6 +153,7 @@ export const CARD_STATE_LABEL: Record<BuildingCard['state'], string> = {
   available: 'Beschikbaar',
   tooExpensive: 'Te duur',
   locked: 'Vergrendeld',
+  busy: 'Gebouw bezig',
   running: 'Bezig',
   done: 'Klaar',
 };
@@ -166,12 +236,14 @@ export interface HudState {
   cards: readonly BuildingCard[];
   /** Bij een selectie met bewoners: K heeft de cijfertoetsen van de craftkaarten geactiveerd. */
   craftMenuOpen: boolean;
+  /** Reden dat de laatst aangeklikte kaart niet startte (te duur, vergrendeld, gebouw bezig), tijdelijk; anders null. */
+  cardNotice: string | null;
   toasts: readonly ToastAlert[];
   lobby: LobbyView | null;
-  showMinimap: boolean;
-  showHero: boolean;
   showLobby: boolean;
   roster: readonly RosterGroup[];
+  /** Eigen voltooide gebouwen waar iets te doen is, voor de knoppen naast de eenhedenbalk. */
+  buildingButtons: readonly BuildingButton[];
   /** Uitgeklapte groep in de eenhedenbalk (key), of null. */
   rosterOpen: string | null;
 }
@@ -206,6 +278,11 @@ export class HudController implements HudHandle {
   private toastSeq = 0;
   /** Telde de tegenstander bij de vorige lezing al? Alleen de overgang geeft een toast. */
   private opponentCounting = false;
+  private noticeTimer: ReturnType<typeof setTimeout> | null = null;
+  /** Laatst gestarte kaart, om één druk (pointerup plus klik) niet twee keer te starten. */
+  private lastCardStart: { key: string; at: number } | null = null;
+  /** Kaart waarop de knop is ingedrukt en nog niet losgelaten (pointerdown), zie cardPress. */
+  private pressedCard: string | null = null;
 
   constructor(private readonly deps: HudDeps) {
     this.state = {
@@ -227,10 +304,10 @@ export class HudController implements HudHandle {
       pendingAbility: null,
       cards: [],
       craftMenuOpen: false,
+      cardNotice: null,
+      buildingButtons: [],
       toasts: [],
       lobby: null,
-      showMinimap: true,
-      showHero: true,
       showLobby: false,
     };
     this.read();
@@ -262,6 +339,8 @@ export class HudController implements HudHandle {
     this.unsubscribeAlerts = null;
     for (const t of this.toastTimers.values()) clearTimeout(t);
     this.toastTimers.clear();
+    if (this.noticeTimer) clearTimeout(this.noticeTimer);
+    this.noticeTimer = null;
     this.listeners.clear();
   }
 
@@ -286,23 +365,32 @@ export class HudController implements HudHandle {
     return this.isAvailable(action) && (!action.needsSelection || this.state.selection.length > 0);
   }
 
-  /** Is het onderdeel van deze actie er (dep aanwezig, data beschikbaar)? */
+  /** Telt de huidige selectie per soort. */
+  selectionSummary(): SelectionSummary {
+    return summarize(this.state.selection);
+  }
+
+  /** Is de held (ook) geselecteerd? */
+  heroSelected(): boolean {
+    return this.state.selection.some((s) => heroIdOfTypeId(s.typeId) >= 0);
+  }
+
+  /** De acties die nu op de commandokaart staan: alleen wat bij de selectie past, plus oplappen, alarm en lobby. */
+  visibleActions(): readonly ActionDef[] {
+    return ACTIONS.filter((a) => this.isAvailable(a));
+  }
+
+  /** Staat deze actie op de kaart (past bij de selectie, dep aanwezig, data beschikbaar)? */
   isAvailable(action: ActionDef): boolean {
     switch (action.requires) {
-      case 'hero':
-        return this.hasHero();
       case 'revive':
         return this.canRevive();
-      case 'craft':
-        return this.hasCraftCards();
-      case 'minimap':
-        return this.deps.getMinimap !== undefined;
       case 'alert':
         return this.state.toasts.some((t) => t.kind !== 'dominance');
       case 'lobby':
         return this.deps.getLobby !== undefined;
       default:
-        return true;
+        return appliesTo(action.id, this.selectionSummary());
     }
   }
 
@@ -368,13 +456,87 @@ export class HudController implements HudHandle {
     return card.kind !== 'craft' || this.selectedIds(false).length > 0;
   }
 
-  /** Start een kaart (klik of sneltoets). Geeft false als ze niet start (vergrendeld, te duur, loopt of klaar). */
+  /** Waarom deze kaart nu niet start, in gewone taal; null als ze wel start. De client kan een eigen reden meegeven. */
+  cardReason(card: BuildingCard): string | null {
+    if (this.canStartCard(card)) return null;
+    if (card.reason) return card.reason;
+    switch (card.state) {
+      case 'tooExpensive':
+        return `Te duur: ${card.naam} kost ${card.scrapCost} scrap`;
+      case 'locked':
+        return card.requires.length > 0
+          ? `Vergrendeld: vereist ${card.requires.join(', ')}`
+          : 'Vergrendeld';
+      case 'busy':
+        return 'Dit gebouw is al bezig met ander werk';
+      case 'running':
+        return `${card.naam} loopt al`;
+      case 'done':
+        return `${card.naam} is al klaar`;
+      default:
+        return card.kind === 'craft' ? 'Selecteer eerst een bewoner om te craften' : null;
+    }
+  }
+
+  private cardKey(card: BuildingCard): string {
+    return `${card.kind}:${card.id}`;
+  }
+
+  /** Muis of vinger gaat omlaag op een kaart; de start volgt bij loslaten op dezelfde kaart (cardRelease). */
+  cardPress(card: BuildingCard): void {
+    this.pressedCard = this.cardKey(card);
+  }
+
+  /**
+   * Loslaten op een kaart: starten als de druk ook op deze kaart begon. Zo gaat de klik niet verloren als de lijst
+   * tussen indrukken en loslaten opnieuw getekend wordt en de browser daardoor geen click meer stuurt.
+   */
+  cardRelease(card: BuildingCard): void {
+    const key = this.cardKey(card);
+    if (this.pressedCard !== key) return;
+    this.pressedCard = null;
+    this.lastCardStart = { key, at: Date.now() };
+    this.startCard(card);
+  }
+
+  /** De click na een cardRelease van dezelfde druk telt niet nog een keer; toetsenbord en losse clicks starten wel. */
+  cardClick(card: BuildingCard): void {
+    const last = this.lastCardStart;
+    this.lastCardStart = null;
+    if (last && last.key === this.cardKey(card) && Date.now() - last.at < CARD_DEDUPE_MS) return;
+    this.startCard(card);
+  }
+
+  /** Toont kort waarom een actie niet doorging. */
+  private showNotice(text: string): void {
+    if (this.noticeTimer) clearTimeout(this.noticeTimer);
+    this.noticeTimer = setTimeout(() => {
+      this.noticeTimer = null;
+      this.set({ cardNotice: null });
+    }, CARD_NOTICE_MS);
+    this.set({ cardNotice: text });
+  }
+
+  /**
+   * Start een kaart (klik of sneltoets). Geeft false als ze niet start (vergrendeld, te duur, bezig, loopt of klaar);
+   * de speler krijgt dan de reden te zien.
+   */
   startCard(card: BuildingCard): boolean {
-    if (!this.canStartCard(card)) return false;
+    if (!this.canStartCard(card)) {
+      const reason = this.cardReason(card);
+      if (reason) this.showNotice(reason);
+      return false;
+    }
+    if (this.state.cardNotice) this.set({ cardNotice: null });
     if (this.deps.startCard) this.deps.startCard(card);
     else if (card.kind === 'research') this.deps.sendCommand('Research', { techId: card.id });
     else if (card.kind === 'revive') this.deps.sendCommand('Recruit', { buildingId: card.id });
-    else this.deps.sendCommand('Craft', { ids: this.selectedIds(false), loadoutId: card.id });
+    else if (card.kind === 'produce' && card.buildingId !== undefined)
+      this.deps.sendCommand('Produce', { buildingId: card.buildingId, loadoutId: card.id });
+    else if (card.kind === 'train' && card.buildingId !== undefined)
+      this.deps.sendCommand('Train', { buildingId: card.buildingId, programId: card.id });
+    else if (card.kind === 'craft')
+      this.deps.sendCommand('Craft', { ids: this.selectedIds(false), loadoutId: card.id });
     if (card.kind === 'craft') this.set({ craftMenuOpen: false });
     return true;
   }
@@ -438,8 +600,14 @@ export class HudController implements HudHandle {
       this.set({ targeting, buildMenuOpen: false });
       this.deps.beginTargeting(targeting);
     } else if (role) {
+      // Only settlers switch role: the hero and robots would be ignored by the sim anyway.
+      const settlers = this.state.selection
+        .filter((s) => s.role !== null && s.role !== role)
+        .slice(0, MAX_ENTITIES_PER_COMMAND)
+        .map((s) => s.id);
+      if (settlers.length === 0) return false;
       this.stopTargeting();
-      this.deps.sendCommand('SetRole', { ids, role });
+      this.deps.sendCommand('SetRole', { ids: settlers, role });
     } else if (id === 'stop') {
       this.stopTargeting();
       this.deps.sendCommand('Stop', { ids });
@@ -451,14 +619,6 @@ export class HudController implements HudHandle {
       this.emit();
     } else if (id === 'revive') {
       this.revive();
-    } else if (id === 'craft') {
-      this.stopTargeting();
-      this.stopPlacement();
-      this.set({ craftMenuOpen: !this.state.craftMenuOpen, buildMenuOpen: false });
-    } else if (id === 'hero') {
-      this.set({ showHero: !this.state.showHero });
-    } else if (id === 'minimap') {
-      this.set({ showMinimap: !this.state.showMinimap });
     } else if (id === 'lastAlert') {
       this.focusLastAlert();
     } else if (id === 'lobby') {
@@ -466,6 +626,47 @@ export class HudController implements HudHandle {
       this.read();
       this.emit();
     }
+    return true;
+  }
+
+  /** K: schakelt de cijfertoetsen van de craftkaarten (alleen bij een selectie met bewoners en craftkaarten). */
+  toggleCraftMenu(): boolean {
+    if (!this.hasCraftCards() || this.state.confirmSurrender) return false;
+    this.stopTargeting();
+    this.stopPlacement();
+    this.set({ craftMenuOpen: !this.state.craftMenuOpen, buildMenuOpen: false });
+    return true;
+  }
+
+  /** H: selecteert de held en zet de camera op hem. Geeft false zonder held in het veld. */
+  focusHero(): boolean {
+    const unit = this.state.roster.find((g) => g.key === 'hero')?.units[0];
+    if (unit) return this.selectRosterUnit(unit.id);
+    const entityId = this.state.status?.hero?.entityId;
+    // ENTITY_NONE (0) means no living hero entity.
+    if (!entityId || !this.deps.selectUnits || this.state.heroDead) return false;
+    this.deps.selectUnits([entityId], false);
+    this.refresh();
+    return true;
+  }
+
+  /**
+   * Klik op een gebouwknop: selecteer een gebouw van dat type, zodat zijn kaarten verschijnen. Nog een klik gaat naar het
+   * volgende gebouw van hetzelfde type (doorklikken). Met `focus` (dubbelklik) blijft de keuze staan en gaat de camera
+   * naar het geselecteerde gebouw van het type, of het eerste als er geen geselecteerd is.
+   */
+  selectBuilding(key: string, focus = false, add = false): boolean {
+    const group = this.state.buildingButtons.find((b) => b.key === key);
+    if (!group || group.sites.length === 0 || !this.deps.selectUnits) return false;
+    const selected = new Set(this.state.selection.map((s) => s.id));
+    const at = group.sites.findIndex((s) => selected.has(s.id));
+    const only = this.state.selection.length === 1;
+    const site = focus
+      ? (group.sites[at] ?? group.sites[0]!)
+      : (group.sites[at >= 0 && only ? (at + 1) % group.sites.length : 0] ?? group.sites[0]!);
+    this.deps.selectUnits([site.id], add);
+    if (focus) this.deps.focusCamera?.(site.x, site.y);
+    this.refresh();
     return true;
   }
 
@@ -494,6 +695,7 @@ export class HudController implements HudHandle {
       y: Math.round(pos.y),
     });
     this.set({ placement: null });
+    this.deps.endPlacement?.();
     return true;
   }
 
@@ -577,6 +779,7 @@ export class HudController implements HudHandle {
         y: Math.round(target.y),
       });
       this.set({ targeting: null, pendingAbility: null });
+      this.deps.endTargeting?.();
       return true;
     }
     const ids = this.selectedIds();
@@ -593,11 +796,21 @@ export class HudController implements HudHandle {
       this.deps.sendCommand(kind === 'move' ? 'Move' : 'AttackMove', { ids, ...pos });
     }
     this.set({ targeting: null });
+    // The client keeps its own cursor and click mode; without this a finished order left it in targeting mode for good.
+    this.deps.endTargeting?.();
     return true;
   }
 
   cancelTargeting(): void {
     this.stopTargeting();
+  }
+
+  targetingActive(): boolean {
+    return this.state.targeting !== null;
+  }
+
+  placementActive(): boolean {
+    return this.state.placement !== null;
   }
 
   requestSurrender(): void {
@@ -665,6 +878,8 @@ export class HudController implements HudHandle {
       return true;
     }
     if (key === '.' && this.deps.getRoster) return this.selectNextIdle() || true;
+    if (key === HERO_KEY) return this.focusHero() || this.hasHero();
+    if (key === CRAFT_KEY) return this.toggleCraftMenu();
     const action = ACTIONS.find((a) => a.key === key);
     return action ? this.run(action.id) : false;
   }
@@ -755,6 +970,12 @@ export class HudController implements HudHandle {
     const cards = this.readCards(selection, buildingIds, units);
     const placement = selection.some((s) => s.role === 'builder') ? this.state.placement : null;
     if (this.state.placement && !placement) d.endPlacement?.();
+    // Targeting without a selection makes no sense any more (a hero ability does not need one).
+    const targeting =
+      selection.length === 0 && this.state.targeting !== 'heroAbility'
+        ? null
+        : this.state.targeting;
+    if (this.state.targeting && !targeting) d.endTargeting?.();
     this.state = {
       ...this.state,
       status,
@@ -769,16 +990,15 @@ export class HudController implements HudHandle {
       heroAbilities: hero ? (d.getHeroAbilities?.() ?? []) : [],
       heroDead: hero !== null && (d.isHeroDead?.() ?? false),
       cards,
+      // The build menu is for builders: without one selected it closes (a click on empty ground clears everything).
+      buildMenuOpen: this.state.buildMenuOpen && selection.some((s) => s.role === 'builder'),
       craftMenuOpen:
         cards.some((c) => c.kind === 'craft') && units ? this.state.craftMenuOpen : false,
       lobby: this.state.showLobby ? (d.getLobby?.() ?? null) : null,
       roster: d.getRoster?.() ?? [],
+      buildingButtons: d.getBuildingButtons?.() ?? [],
       network: this.deps.getNetwork?.() ?? NO_NETWORK,
-      // Targeting zonder selectie heeft geen zin meer.
-      targeting:
-        selection.length === 0 && this.state.targeting !== 'heroAbility'
-          ? null
-          : this.state.targeting,
+      targeting,
     };
   }
 

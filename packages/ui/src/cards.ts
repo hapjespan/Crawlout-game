@@ -18,6 +18,9 @@ const ICON_PATHS: Record<string, string> = {
   heart: 'M12 20s-8-5-8-11a4.5 4.5 0 0 1 8-2 4.5 4.5 0 0 1 8 2c0 6-8 11-8 11z',
   crate: 'M3 7l9-4 9 4v10l-9 4-9-4zM3 7l9 4 9-4M12 11v10',
   bolt: 'M13 2L5 14h6l-1 8 8-12h-6z',
+  robot:
+    'M8 8h8a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2v-6a2 2 0 0 1 2-2zM12 8V4M10 13h.01M14 13h.01M4 12v3M20 12v3',
+  training: 'M4 15v-6M20 15v-6M7 17V7M17 17V7M7 12h10M2 12h2M20 12h2',
   gear: 'M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6zM12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.600l2.1 2.100M16.3 16.300l2.1 2.100M5.6 18.400l2.1-2.100M16.3 7.700l2.1-2.1',
 };
 
@@ -47,6 +50,7 @@ const STATE_GLYPH: Record<CardState, string> = {
   available: 'M12 7v10M7 12h10',
   tooExpensive: 'M12 5l8 14H4zM12 10v4M12 16.500v.5',
   locked: 'M7 11h10v8H7zM9 11V8a3 3 0 0 1 6 0v3',
+  busy: 'M7 4h10M7 20h10M8 4c0 5 8 5 8 16M16 4c0 5-8 5-8 16',
   running: 'M12 5a7 7 0 1 0 7 7M12 8v4l3 2',
   done: 'M5 12.500l4.5 4.500L19 7.5',
 };
@@ -75,6 +79,8 @@ const KIND_LABEL: Record<CardKind, string> = {
   research: 'Onderzoek',
   craft: 'Craft',
   revive: 'Oplappen',
+  produce: 'Robot',
+  train: 'Training',
 };
 
 /** Volledige tekst voor schermlezers: alles wat de kaart toont, in een zin. */
@@ -86,6 +92,8 @@ export function cardLabel(card: BuildingCard, key: string | null): string {
   let status = `Status: ${CARD_STATE_LABEL[card.state].toLowerCase()}`;
   if (card.state === 'locked' && card.requires.length > 0)
     status += `, vereist: ${card.requires.join(', ')}`;
+  else if (card.reason && card.state !== 'running' && card.state !== 'done')
+    status += `, ${card.reason}`;
   if (card.state === 'running') status += `, ${clampPct(card.progressPct)}%`;
   parts.push(status);
   if (key !== null && card.state === 'available') parts.push(`sneltoets ${key}`);
@@ -109,6 +117,8 @@ function Card(props: {
       : card.state === 'running'
         ? `${CARD_STATE_LABEL.running} · ${pct}%`
         : CARD_STATE_LABEL[card.state];
+  // The reason a card does not start is also the tooltip, so hovering a greyed-out card explains it.
+  const reason = ctl.cardReason(card);
   return h(
     'li',
     { class: `co-card co-card-${card.state}`, 'data-state': card.state },
@@ -122,7 +132,14 @@ function Card(props: {
         'data-card-id': card.id,
         'aria-label': cardLabel(card, key),
         'aria-keyshortcuts': key ?? undefined,
-        onClick: () => void ctl.startCard(card),
+        title: reason ?? undefined,
+        // Press and release on the same card start it even when the browser sends no click (the list redrew in
+        // between, or a trackpad ctrl+click); the click that follows the same press is skipped by the controller.
+        onPointerDown: (e: PointerEvent) => {
+          if (e.button === 0) ctl.cardPress(card);
+        },
+        onPointerUp: () => ctl.cardRelease(card),
+        onClick: () => ctl.cardClick(card),
       },
       h(Icon, { id: card.icon }),
       h('span', { class: 'co-card-name' }, card.naam),
@@ -187,19 +204,29 @@ function Card(props: {
   );
 }
 
-/** Gebouwpaneel met kaarten per onderzoek, craft of oplappen. Zichtbaar zodra de dep kaarten levert voor de selectie. */
+function panelTitle(cards: readonly BuildingCard[]): string {
+  const only = (kind: CardKind): boolean => cards.every((c) => c.kind === kind);
+  if (only('craft')) return 'Craft';
+  if (only('produce')) return 'Robotfabriek';
+  if (only('train')) return 'Training';
+  return 'Gebouw';
+}
+
+/** Gebouwpaneel met kaarten per onderzoek, craft, oplappen, robotproductie of training. Zichtbaar zodra de dep kaarten levert voor de selectie. */
 export function CardPanel(props: { ctl: HudController; state: HudState }): ComponentChild {
   const { ctl, state } = props;
   if (state.cards.length === 0) return null;
   const keyActive = ctl.cardKeysActive();
-  const craftOnly = !state.cards.some((c) => c.kind !== 'craft');
-  const title = craftOnly ? 'Craft' : 'Gebouw';
+  const title = panelTitle(state.cards);
   return h(
     'section',
     { class: 'co-panel co-cards', 'aria-label': title },
     h('h2', null, title),
     !keyActive && ctl.hasCraftCardsForKeys()
       ? h('p', { class: 'co-empty co-cards-hint' }, 'Druk K om met de cijfertoetsen te kiezen')
+      : null,
+    state.cardNotice
+      ? h('p', { class: 'co-card-notice', role: 'status', 'aria-live': 'polite' }, state.cardNotice)
       : null,
     h(
       'ul',

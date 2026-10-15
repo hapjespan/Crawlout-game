@@ -115,10 +115,9 @@ describe('sneltoetsen', () => {
   });
 
   it.each([
-    ['1', 'scavenger'],
     ['2', 'builder'],
     ['3', 'militia'],
-  ])('toets %s zet rol %s', (key, role) => {
+  ])('toets %s zet rol %s (plunderaars hebben nog een andere rol nodig)', (key, role) => {
     const t = setup();
     mounted = t.handle;
     press(key);
@@ -126,11 +125,26 @@ describe('sneltoetsen', () => {
     t.sent.forEach(expectValid);
   });
 
+  it('een rol die iedereen al heeft staat niet op de kaart en stuurt niets', () => {
+    const t = setup();
+    mounted = t.handle;
+    expect(t.el.querySelector('[data-action="roleScavenger"]')).toBeNull();
+    press('1');
+    expect(t.sent).toEqual([]);
+  });
+
+  it('SetRole gaat alleen naar bewoners die de rol nog niet hebben', () => {
+    const t = setup({ selection: [unit(5, 'scavenger'), unit(6, 'builder'), unit(7, 'militia')] });
+    mounted = t.handle;
+    press('2');
+    expect(t.sent).toEqual([{ type: 'SetRole', payload: { ids: [5, 7], role: 'builder' } }]);
+  });
+
   it.each([
     ['m', 'move', 'Move'],
     ['a', 'attackMove', 'AttackMove'],
   ] as const)('toets %s start targeting en de wereldklik stuurt %s', (key, kind, type) => {
-    const t = setup();
+    const t = setup({ selection: [unit(5, 'militia'), unit(6, 'militia')] });
     mounted = t.handle;
     press(key);
     expect(t.targeting).toEqual([kind]);
@@ -198,7 +212,7 @@ describe('sneltoetsen', () => {
   });
 
   it('knopklik werkt en B opent het bouwmenu-placeholder', () => {
-    const t = setup();
+    const t = setup({ selection: [unit(5, 'builder'), unit(6, 'builder')] });
     mounted = t.handle;
     act(() => (t.el.querySelector('[data-action="stop"]') as HTMLButtonElement).click());
     expect(t.sent[0]?.type).toBe('Stop');

@@ -40,10 +40,12 @@ import { loadClientMapWater } from './render/water.js';
 import { loadClientGameData, loadClientMap } from './game/content.js';
 import { startSession } from './game/session.js';
 import { createStatusOverlay } from './net/statusOverlay.js';
-import { buildingCards } from './game/cards.js';
+import { buildingButtons, buildingCards, buildingName, type CardContext } from './game/cards.js';
+import { leftClickIs, nextSelection, type ClickMode } from './game/clickRules.js';
+import { createPerfBadge } from './net/perfBadge.js';
 import { dominanceView } from './game/dominance.js';
 import { minimapLayers } from './game/minimapLayers.js';
-import { buildRoster } from './game/roster.js';
+import { LOADOUT_NAMES, buildRoster } from './game/roster.js';
 import { EVENT_TYPE, readSnapshot, type EntityRow } from './game/snapshot.js';
 
 const SLICE_MAP = 'rustbelt';
@@ -73,7 +75,7 @@ async function main(): Promise<void> {
   const data = loadClientGameData();
   const map = loadClientMap(SLICE_MAP);
   const params = new URLSearchParams(location.search);
-  const perf = document.getElementById('perf') ?? true;
+  const perfEl = document.getElementById('perf');
   // Local fan art only in dev: a production build drops this import, so it never ships.
   const localAssets = import.meta.env.DEV ? await import('./game/localAssets.js') : null;
   const assets = assetConfig(params, data.heroes, localAssets);
@@ -82,7 +84,8 @@ async function main(): Promise<void> {
     canvas,
     forceWebGL: params.has('webgl'),
     shadows: shadowOption(params),
-    stats: perf,
+    // The frame stats are the compact badge in the top right (createPerfBadge), not the renderer's own overlay.
+    stats: false,
     // A and S are HUD hotkeys (attack-move, stop); W, D, arrows and Q/E keep moving the camera.
     camera: { panKeys: { KeyA: null, KeyS: null } },
     ...(assets ? { assets } : {}),
@@ -98,6 +101,7 @@ async function main(): Promise<void> {
   // Selection is local UI state, never sim state: it is stamped into each snapshot's flags for the renderer.
   let selection = new Set<number>();
   let entities = new Map<number, EntityRow>();
+  let ownCache: EntityRow[] | null = null;
   let status: PlayerStatus | null = null;
   let network: NetworkState = { desync: null, stall: null };
   const listeners = new Set<() => void>();
@@ -128,17 +132,28 @@ async function main(): Promise<void> {
   const unlocked = (prereq: readonly number[]): boolean =>
     prereq.every((t) => status?.techs?.includes(t) ?? false);
   const hqProvidesIdx = PROVIDES.indexOf('hq');
+  const cardContext = (selected: readonly EntityRow[]): CardContext => ({
+    data,
+    factionId: myFaction()?.id,
+    playerId: session.playerId,
+    status,
+    selected,
+    own: own(),
+    heroDead: status?.hero?.state === 'dead' || status?.hero?.state === 'reviving',
+  });
   const myHq = (): EntityRow | undefined =>
     [...entities.values()].find(
       (e) => e.owner === session.playerId && buildingOf(e.typeId)?.provides.includes(hqProvidesIdx),
     );
 
+  const perfBadge = perfEl ? createPerfBadge(perfEl, () => renderer.stats()) : null;
   const netStatus = createStatusOverlay();
   const session = startSession(data, map, {
     onSnapshot(buf) {
       const previous = entities;
       const snap = readSnapshot(buf, selection);
       entities = snap.entities;
+      ownCache = null;
       for (const id of selection) if (!entities.has(id)) selection.delete(id);
       renderer.pushSnapshot(buf);
       for (const ev of snap.events) {
@@ -194,6 +209,9 @@ async function main(): Promise<void> {
 
   const mine = (ids: Iterable<number>): number[] =>
     [...ids].filter((id) => entities.get(id)?.owner === session.playerId);
+  /** Own entities of the latest snapshot, shared by the card and building-button deps (read at 20 Hz). */
+  const own = (): EntityRow[] =>
+    (ownCache ??= [...entities.values()].filter((e) => e.owner === session.playerId));
   const roleIdx = (role: string): number => ROLES.indexOf(role as (typeof ROLES)[number]);
 
   /** Commands carry at most 64 entity ids; larger selections are split. */
@@ -310,14 +328,26 @@ async function main(): Promise<void> {
       mine(selection).map((id): SelectedEntity => {
         const e = entities.get(id)!;
         const l = loadoutOf(e.typeId);
-        const name = l?.key ?? heroOf(e.typeId)?.naam ?? buildingOf(e.typeId)?.key ?? null;
+        const b = buildingOf(e.typeId);
+        const name =
+          (l ? (LOADOUT_NAMES[l.key] ?? l.key) : undefined) ??
+          heroOf(e.typeId)?.naam ??
+          (b ? buildingName(b.key) : null);
         // The protocol Role has only the three SetRole roles; technician and robot (data 0.16.0) show as no role for now.
         const dataRole = l === undefined ? undefined : ROLES[l.role];
         const role =
           dataRole === 'scavenger' || dataRole === 'builder' || dataRole === 'militia'
             ? dataRole
             : null;
-        return { id, typeId: e.typeId, loadoutName: name, hpPct: e.hpPct, role };
+        return {
+          id,
+          typeId: e.typeId,
+          loadoutName: name,
+          hpPct: e.hpPct,
+          role,
+          // A building site has nothing to offer yet: say so instead of showing an empty panel.
+          ...(b && e.anim === ANIM.build ? { note: 'In aanbouw' } : {}),
+        };
       }),
     getNetwork: () => network,
     playerName: (id) => session.playerName(id),
@@ -388,19 +418,16 @@ async function main(): Promise<void> {
       if (hq) session.sendCommand('Recruit', { buildingId: hq.id });
     },
     getBuildingCards: () =>
-      buildingCards({
-        data,
-        factionId: myFaction()?.id,
-        playerId: session.playerId,
-        status,
-        selected: mine(selection).map((id) => entities.get(id)!),
-        own: [...entities.values()].filter((e) => e.owner === session.playerId),
-        heroDead: status?.hero?.state === 'dead' || status?.hero?.state === 'reviving',
-      }),
+      buildingCards(cardContext(mine(selection).map((id) => entities.get(id)!))),
+    getBuildingButtons: () => buildingButtons(cardContext([])),
     startCard: (card) => {
       if (card.kind === 'research') session.sendCommand('Research', { techId: card.id });
       else if (card.kind === 'revive') session.sendCommand('Recruit', { buildingId: card.id });
-      else {
+      else if (card.kind === 'produce' && card.buildingId !== undefined)
+        session.sendCommand('Produce', { buildingId: card.buildingId, loadoutId: card.id });
+      else if (card.kind === 'train' && card.buildingId !== undefined)
+        session.sendCommand('Train', { buildingId: card.buildingId, programId: card.id });
+      else if (card.kind === 'craft') {
         const settlers = mine(selection).filter((id) => loadoutOf(entities.get(id)!.typeId));
         if (settlers.length > 0) sendChunked('Craft', settlers, { loadoutId: card.id });
       }
@@ -447,27 +474,57 @@ async function main(): Promise<void> {
     const r = canvas.getBoundingClientRect();
     return { x: e.clientX - r.left, y: e.clientY - r.top };
   };
+  /**
+   * The HUD ends targeting and placement on its own (finished order, Escape, empty selection) and tells us through
+   * endTargeting and endPlacement. If that ever goes missing, a stale mode would swallow every click and nothing
+   * could be selected any more: so check with the HUD before treating a click as a target or a placement.
+   */
+  const syncModes = (): void => {
+    if (targeting && !hud.targetingActive()) {
+      targeting = null;
+      canvas.style.cursor = 'default';
+    }
+    if (placing && !hud.placementActive()) {
+      placing = null;
+      renderer.setPlacementPreview(null);
+      canvas.style.cursor = 'default';
+    }
+  };
+  const endDrag = (): void => {
+    marquee.style.display = 'none';
+    drag = null;
+  };
   canvas.addEventListener('pointerdown', (e) => {
     // Ctrl+click is the Mac right click: the contextmenu event that follows gives the order.
     if (e.button !== 0 || e.ctrlKey) return;
     const p = local(e);
-    if (placing) {
-      const at = placementAt(p.x, p.y);
-      if (at?.valid && hud.completePlacement({ x: at.x, y: at.y })) {
-        placing = null;
-        renderer.setPlacementPreview(null);
-        canvas.style.cursor = 'default';
-      }
-      return;
-    }
-    if (targeting) {
+    syncModes();
+    if (placing || targeting) {
       const hit = renderer.pickAt(p.x, p.y);
-      const node = hit.entityId === null ? undefined : entities.get(hit.entityId);
-      if (targeting === 'gather' && node && kindOfTypeId(node.typeId).kind === 'scrapNode')
-        hud.completeTargeting({ nodeId: node.id });
-      else if (hit.ground)
-        hud.completeTargeting({ x: Math.round(hit.ground.x), y: Math.round(hit.ground.y) });
-      return;
+      const picked = hit.entityId === null ? undefined : entities.get(hit.entityId);
+      const hitKind = picked ? kindOfTypeId(picked.typeId).kind : 'none';
+      const state: ClickMode = placing
+        ? { mode: 'placement' }
+        : { mode: 'targeting', kind: targeting! };
+      if (leftClickIs(state, hitKind) === 'complete') {
+        if (placing) {
+          const at = placementAt(p.x, p.y);
+          if (at?.valid && hud.completePlacement({ x: at.x, y: at.y })) {
+            placing = null;
+            renderer.setPlacementPreview(null);
+            canvas.style.cursor = 'default';
+          }
+        } else if (targeting === 'gather' && picked && hitKind === 'scrapNode') {
+          hud.completeTargeting({ nodeId: picked.id });
+        } else if (hit.ground) {
+          hud.completeTargeting({ x: Math.round(hit.ground.x), y: Math.round(hit.ground.y) });
+        }
+        return;
+      }
+      // A click on a unit or building leaves placement or targeting and selects what was clicked (pointerup).
+      hud.cancelPlacement();
+      hud.cancelTargeting();
+      syncModes();
     }
     canvas.setPointerCapture(e.pointerId);
     drag = { ...p, moved: false };
@@ -498,24 +555,49 @@ async function main(): Promise<void> {
         )
       : [];
     if (ids.length === 0 && Math.hypot(p.x - drag.x, p.y - drag.y) < SMALL_DRAG_PX) {
-      // A click, or a tiny drag that caught nobody: pick where the press started.
+      // A click, or a tiny drag that caught nobody: pick where the press started (buildings by their whole drawn volume, see the renderer's pick box).
       const hit = renderer.pickAt(drag.x, drag.y).entityId;
       ids = hit === null ? [] : [hit];
     }
-    selection = e.shiftKey ? new Set([...selection, ...ids]) : new Set(ids);
-    marquee.style.display = 'none';
-    drag = null;
+    selection = nextSelection(selection, ids, e.shiftKey);
+    endDrag();
     notify();
   });
+  // A press that never gets its pointerup (cancelled by the system, capture lost) must not leave the marquee on screen.
+  canvas.addEventListener('pointercancel', endDrag);
   canvas.addEventListener('contextmenu', (e) => {
     e.preventDefault();
+    syncModes();
     if (placing) return hud.cancelPlacement();
     if (targeting) return hud.cancelTargeting();
     const p = local(e);
     orderAt(p.x, p.y);
   });
 
+  // Edge scroll follows the pointer over the whole window, so a pointer resting on a panel near the screen edge kept
+  // scrolling the map away. Pointer moves over HUD panels no longer reach the camera; one synthetic blur on entering a
+  // panel makes it forget the last canvas position (and stop scrolling) until the pointer is over the canvas again.
+  let overPanel = false;
+  hudEl.addEventListener('pointermove', (e) => {
+    e.stopPropagation();
+    if (!overPanel) {
+      overPanel = true;
+      window.dispatchEvent(new Event('blur'));
+    }
+  });
+  canvas.addEventListener('pointermove', () => {
+    overPanel = false;
+  });
+
+  // Escape that the HUD did not use (no mode, menu or dialog to close) clears the selection, so a new pick is always free.
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape' || e.defaultPrevented || selection.size === 0) return;
+    selection = new Set();
+    notify();
+  });
+
   window.addEventListener('beforeunload', () => {
+    perfBadge?.dispose();
     window.clearInterval(statusPoll);
     session.dispose();
     hud.unmount();

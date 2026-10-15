@@ -2,12 +2,14 @@ import { h } from 'preact';
 import type { ComponentChild } from 'preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import type { PlayerStatus } from '@crawlout/protocol';
-import { ABILITY_KEYS, ACTIONS, PERK_KEYS, ROLE_LABEL, keyLabel, threatOf } from './controller.js';
+import { kindOfTypeId } from '@crawlout/data';
+import { ABILITY_KEYS, PERK_KEYS, ROLE_LABEL, keyLabel, threatOf } from './controller.js';
 import type { HudController, HudState } from './controller.js';
 import { CardPanel } from './cards.js';
 import { drawMinimap } from './minimap.js';
 import type {
   AlertKind,
+  BuildingButton,
   RosterGroup,
   SelectedEntity,
   TargetingKind,
@@ -41,6 +43,10 @@ function Counters(props: { status: PlayerStatus | null }): ComponentChild {
     h(Counter, { label: 'Scrap', value: fmt(s?.scrap) }),
     h(Counter, { label: 'Bewoners', value: fmt(s?.settlers) }),
     h(Counter, { label: 'Pop', value: s ? `${s.pop}/${s.popCap}` : '–', full }),
+    // Robots count for pop but not for beds: the sim reports them next to the settlers' pop.
+    s && ((s.robotPop ?? 0) > 0 || s.queue.some((q) => q.kind === 'produce'))
+      ? h(Counter, { label: 'Robots', value: String(s.robotPop ?? 0) })
+      : null,
     h(Counter, { label: 'Bedden', value: fmt(s?.beds) }),
   );
 }
@@ -141,8 +147,11 @@ function SelectionPanel(props: { selection: readonly SelectedEntity[] }): Compon
       h(
         'p',
         { class: 'co-unit-meta' },
-        `Loadout: ${u.loadoutName ?? 'geen'} · Rol: ${u.role ? ROLE_LABEL[u.role] : 'geen'} · ${u.hpPct}%`,
+        kindOfTypeId(u.typeId).kind === 'building'
+          ? `Gebouw · ${u.hpPct}%`
+          : `Loadout: ${u.loadoutName ?? 'geen'} · Rol: ${u.role ? ROLE_LABEL[u.role] : 'geen'} · ${u.hpPct}%`,
       ),
+      u.note ? h('p', { class: 'co-unit-note' }, u.note) : null,
       h(HpBar, { pct: u.hpPct }),
     ];
   } else {
@@ -180,10 +189,88 @@ const ACTIVITY_TEXT: Record<UnitActivity, string> = {
   fighting: 'Vecht',
 };
 
-/** Eenhedenbalk: per type een knop met aantal en het aantal zonder taak; klik selecteert, de lijst toont wat elke unit doet. */
+/** Gebouwenpaneel: een knop per gebouwtype met aantal, een badge bij beschikbare acties en voortgang bij lopend werk. */
+function BuildingButtons(props: { ctl: HudController; state: HudState }): ComponentChild {
+  const { ctl, state } = props;
+  if (state.buildingButtons.length === 0) return null;
+  const selected = new Set(state.selection.map((s) => s.id));
+  return h(
+    'div',
+    { class: 'co-building-buttons', role: 'group', 'aria-label': 'Gebouwen' },
+    h('span', { class: 'co-building-label', 'aria-hidden': 'true' }, 'Gebouwen'),
+    state.buildingButtons.map((b: BuildingButton) => {
+      const count = b.sites.length;
+      const pct =
+        b.progressPct === undefined ? null : Math.max(0, Math.min(100, Math.round(b.progressPct)));
+      const busy = b.running > 0;
+      const isSelected = b.sites.some((s) => selected.has(s.id));
+      const detail = [
+        count > 1 ? `${count} gebouwen` : null,
+        b.available > 0 ? `${b.available} beschikbaar` : 'niets te starten',
+        busy ? `${b.running} bezig${pct !== null ? `, ${pct}%` : ''}` : null,
+      ]
+        .filter((x) => x !== null)
+        .join(', ');
+      const hint =
+        count > 1
+          ? 'Klik om te selecteren, nogmaals voor het volgende gebouw, dubbelklik voor de camera.'
+          : 'Klik om te selecteren, dubbelklik om de camera erheen te zetten.';
+      return h(
+        'button',
+        {
+          key: b.key,
+          type: 'button',
+          class: [
+            'co-building-btn',
+            isSelected ? 'co-selected' : '',
+            b.available > 0 ? 'co-ready' : '',
+            busy ? 'co-busy' : '',
+          ]
+            .filter((c) => c !== '')
+            .join(' '),
+          'data-building': b.key,
+          'aria-label': `${b.naam}: ${detail}. ${hint}`,
+          'aria-pressed': isSelected,
+          title: `${b.naam}: ${detail}`,
+          // The second click of a double click must not cycle on: dblclick selects the current one and focuses it.
+          onClick: (e: MouseEvent) => {
+            if (e.detail < 2) ctl.selectBuilding(b.key, false, e.shiftKey);
+          },
+          onDblClick: () => ctl.selectBuilding(b.key, true),
+        },
+        h('span', { class: 'co-building-name' }, b.naam),
+        count > 1 ? h('span', { class: 'co-building-count' }, `×${count}`) : null,
+        b.available > 0
+          ? h('span', { class: 'co-building-badge', 'aria-hidden': 'true' }, String(b.available))
+          : busy
+            ? h('span', { class: 'co-building-badge co-building-busy', 'aria-hidden': 'true' }, '…')
+            : null,
+        pct !== null
+          ? h(
+              'span',
+              {
+                class: 'co-building-progress',
+                role: 'progressbar',
+                'aria-label': `Voortgang ${b.naam}`,
+                'aria-valuemin': 0,
+                'aria-valuemax': 100,
+                'aria-valuenow': pct,
+              },
+              h('span', { style: { width: `${pct}%` } }),
+            )
+          : null,
+      );
+    }),
+  );
+}
+
+/**
+ * Onderbalk naast de selectie: per eenhedentype een knop met aantal en het aantal zonder taak (klik selecteert, de lijst
+ * toont wat elke unit doet), en per gebouw met iets te doen een knop (klik selecteert en opent zijn kaarten).
+ */
 function RosterBar(props: { ctl: HudController; state: HudState }): ComponentChild {
   const { ctl, state } = props;
-  if (state.roster.length === 0) return null;
+  if (state.roster.length === 0 && state.buildingButtons.length === 0) return null;
   const selected = new Set(state.selection.map((s) => s.id));
   const open: RosterGroup | undefined = state.roster.find((g) => g.key === state.rosterOpen);
   return h(
@@ -217,76 +304,96 @@ function RosterBar(props: { ctl: HudController; state: HudState }): ComponentChi
       : null,
     h(
       'div',
-      { class: 'co-roster-groups' },
-      state.roster.map((g) => {
-        const idle = g.units.filter((u) => u.activity === 'idle').length;
-        const allSelected = g.units.length > 0 && g.units.every((u) => selected.has(u.id));
-        return h(
-          'button',
-          {
-            key: g.key,
-            type: 'button',
-            class: allSelected ? 'co-roster-group co-selected' : 'co-roster-group',
-            'aria-label': `${g.naam}: ${g.units.length}, waarvan ${idle} zonder taak. Klik om ze te selecteren.`,
-            'aria-expanded': state.rosterOpen === g.key,
-            disabled: g.units.length === 0,
-            onClick: (e: MouseEvent) => ctl.selectGroup(g.key, e.shiftKey),
-          },
-          h('span', { class: 'co-roster-name' }, g.naam),
-          h('span', { class: 'co-roster-count' }, String(g.units.length)),
-          idle > 0
-            ? h(
-                'span',
-                { class: 'co-roster-idle', title: `${idle} zonder taak (punt-toets: volgende)` },
-                `${idle} vrij`,
-              )
-            : null,
-        );
-      }),
+      { class: 'co-roster-row' },
+      h(
+        'div',
+        { class: 'co-roster-groups' },
+        state.roster.map((g) => {
+          const idle = g.units.filter((u) => u.activity === 'idle').length;
+          const allSelected = g.units.length > 0 && g.units.every((u) => selected.has(u.id));
+          return h(
+            'button',
+            {
+              key: g.key,
+              type: 'button',
+              class: allSelected ? 'co-roster-group co-selected' : 'co-roster-group',
+              'aria-label': `${g.naam}: ${g.units.length}, waarvan ${idle} zonder taak. Klik om ze te selecteren.`,
+              'aria-expanded': state.rosterOpen === g.key,
+              disabled: g.units.length === 0,
+              onClick: (e: MouseEvent) => ctl.selectGroup(g.key, e.shiftKey),
+            },
+            h('span', { class: 'co-roster-name' }, g.naam),
+            h('span', { class: 'co-roster-count' }, String(g.units.length)),
+            idle > 0
+              ? h(
+                  'span',
+                  { class: 'co-roster-idle', title: `${idle} zonder taak (punt-toets: volgende)` },
+                  `${idle} vrij`,
+                )
+              : null,
+          );
+        }),
+      ),
+      h(BuildingButtons, { ctl, state }),
     ),
   );
 }
 
+/** Wat de commandokaart zegt als er geen knoppen zijn: niets geselecteerd, of een gebouw. */
+function commandHint(ctl: HudController, state: HudState): string {
+  const sel = ctl.selectionSummary();
+  if (sel.units === 0 && sel.buildings === 0) return 'Selecteer een eenheid of gebouw.';
+  if (sel.units === 0) {
+    if (state.cards.length > 0) return 'Kies hierboven wat dit gebouw moet doen.';
+    return state.selection.some((s) => s.note)
+      ? 'Dit gebouw is nog niet klaar.'
+      : 'Dit gebouw heeft nu niets te doen.';
+  }
+  return '';
+}
+
+/** Commandokaart: alleen de commando's die bij de selectie passen, zodat er nooit knoppen staan die niets doen. */
 function CommandCard(props: { ctl: HudController; state: HudState }): ComponentChild {
   const { ctl, state } = props;
+  const actions = ctl.visibleActions();
+  const hint = actions.length === 0 ? commandHint(ctl, state) : '';
+  const heroSelected = ctl.heroSelected();
   return h(
     'section',
     { class: 'co-panel co-commands', 'aria-label': "Commando's" },
-    h('h2', null, "Commando's"),
-    h(
-      'div',
-      { class: 'co-buttons' },
-      ACTIONS.filter((a) => ctl.isAvailable(a) || a.requires === undefined).map((a) => {
-        const pressed =
-          a.id === 'build'
-            ? state.buildMenuOpen || state.placement !== null
-            : a.id === 'hero'
-              ? state.showHero
-              : a.id === 'craft'
-                ? state.craftMenuOpen
-                : a.id === 'minimap'
-                  ? state.showMinimap
-                  : a.id === 'lobby'
-                    ? state.showLobby
-                    : state.targeting === a.id;
-        return h(
-          'button',
-          {
-            key: a.id,
-            type: 'button',
-            class: 'co-btn',
-            disabled: !ctl.isEnabled(a),
-            'aria-label': `${a.label} (sneltoets ${keyLabel(a.key)})`,
-            'aria-keyshortcuts': a.key === ' ' ? 'Space' : a.key.toUpperCase(),
-            'aria-pressed': pressed,
-            'data-action': a.id,
-            onClick: () => ctl.run(a.id),
-          },
-          h('span', null, a.label),
-          h('span', { class: 'co-key', 'aria-hidden': 'true' }, keyLabel(a.key)),
-        );
-      }),
-    ),
+    actions.length > 0 || heroSelected ? h('h2', null, "Commando's") : null,
+    hint ? h('p', { class: 'co-empty co-commands-hint' }, hint) : null,
+    actions.length > 0
+      ? h(
+          'div',
+          { class: 'co-buttons' },
+          actions.map((a) => {
+            const pressed =
+              a.id === 'build'
+                ? state.buildMenuOpen || state.placement !== null
+                : a.id === 'lobby'
+                  ? state.showLobby
+                  : state.targeting === a.id;
+            return h(
+              'button',
+              {
+                key: a.id,
+                type: 'button',
+                class: 'co-btn',
+                disabled: !ctl.isEnabled(a),
+                'aria-label': `${a.label} (sneltoets ${keyLabel(a.key)})`,
+                'aria-keyshortcuts': a.key === ' ' ? 'Space' : a.key.toUpperCase(),
+                'aria-pressed': pressed,
+                'data-action': a.id,
+                onClick: () => ctl.run(a.id),
+              },
+              h('span', null, a.label),
+              h('span', { class: 'co-key', 'aria-hidden': 'true' }, keyLabel(a.key)),
+            );
+          }),
+        )
+      : null,
+    heroSelected ? h(HeroAbilities, { ctl, state }) : null,
     state.buildMenuOpen ? h(BuildMenu, { ctl, state }) : null,
   );
 }
@@ -389,7 +496,7 @@ function HeroAbilities(props: { ctl: HudController; state: HudState }): Componen
 function HeroPanel(props: { ctl: HudController; state: HudState }): ComponentChild {
   const { ctl, state } = props;
   const hero = state.status?.hero;
-  if (!hero || !state.showHero) return null;
+  if (!hero) return null;
   const naam = (hero.heroId !== undefined ? ctl.heroName(hero.heroId) : undefined) ?? 'Held';
   const pct =
     hero.xpNext !== undefined && hero.xpNext > 0
@@ -444,7 +551,8 @@ function HeroPanel(props: { ctl: HudController; state: HudState }): ComponentChi
           h('span', { class: 'co-key', 'aria-hidden': 'true' }, 'V'),
         )
       : null,
-    h(HeroAbilities, { ctl, state }),
+    // With the hero selected the commands panel shows the abilities, so they appear once.
+    ctl.heroSelected() ? null : h(HeroAbilities, { ctl, state }),
     pending > 0
       ? h(
           'div',
@@ -480,7 +588,7 @@ function Minimap(props: { ctl: HudController; state: HudState }): ComponentChild
   useEffect(() => {
     if (ref.current && m) drawMinimap(ref.current, m, state.status?.playerId ?? 0);
   });
-  if (!m || !state.showMinimap) return null;
+  if (!m) return null;
   const onClick = (e: MouseEvent): void => {
     const el = e.currentTarget as HTMLCanvasElement;
     const r = el.getBoundingClientRect();
@@ -647,6 +755,8 @@ function SurrenderDialog(props: { ctl: HudController }): ComponentChild {
   );
 }
 
+const stopEvent = (e: Event): void => e.stopPropagation();
+
 export function Hud(props: { ctl: HudController }): ComponentChild {
   const { ctl } = props;
   const [, setTick] = useState(0);
@@ -655,7 +765,20 @@ export function Hud(props: { ctl: HudController }): ComponentChild {
   const { desync, stall } = state.network;
   return h(
     'div',
-    { class: 'co-hud' },
+    {
+      class: 'co-hud',
+      // Presses on the HUD never reach anything behind or around it (the canvas, document listeners), and the native
+      // context menu does not open on a ctrl+click (macOS right click) over a panel.
+      onPointerDown: stopEvent,
+      onMouseDown: stopEvent,
+      onClick: stopEvent,
+      onDblClick: stopEvent,
+      onAuxClick: stopEvent,
+      onContextMenu: (e: Event) => {
+        e.stopPropagation();
+        e.preventDefault();
+      },
+    },
     h(Counters, { status: state.status }),
     h(
       'div',
@@ -697,10 +820,15 @@ export function Hud(props: { ctl: HudController }): ComponentChild {
     h(HeroPanel, { ctl, state }),
     h(Toasts, { ctl, state }),
     h(LobbyPanel, { ctl, state }),
-    h(CardPanel, { ctl, state }),
     h(SelectionPanel, { selection: state.selection }),
     h(RosterBar, { ctl, state }),
-    h(CommandCard, { ctl, state }),
+    // Bottom right column: the card window sits directly above the commands, so it never covers the minimap or roster.
+    h(
+      'div',
+      { class: 'co-right-col' },
+      h(CardPanel, { ctl, state }),
+      h(CommandCard, { ctl, state }),
+    ),
     state.confirmSurrender ? h(SurrenderDialog, { ctl }) : null,
   );
 }

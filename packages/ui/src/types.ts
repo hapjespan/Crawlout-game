@@ -16,6 +16,8 @@ export interface SelectedEntity {
   hpPct: number;
   /** Rol van een unit, of null voor gebouwen en nodes. */
   role: Role | null;
+  /** Korte toelichting in het selectiepaneel, bijvoorbeeld "In aanbouw" voor een gebouw dat nog niet af is. */
+  note?: string;
 }
 
 /** Netwerktoestand die de HUD toont: desync en stall komen uit de relay (frames.ts). */
@@ -110,14 +112,18 @@ export interface PerkOption {
   beschrijving?: string;
 }
 
-/** Soort kaart in het gebouwpaneel. `revive` is het oplappen van de held (Recruit in het protocol). */
-export type CardKind = 'research' | 'craft' | 'revive';
+/**
+ * Soort kaart in het gebouwpaneel. `revive` is het oplappen van de held (Recruit in het protocol); `produce` bouwt een
+ * robot in de robotfabriek (Produce) en `train` loopt een SPECIAL-trainingsprogramma in de trainingsfaciliteit (Train).
+ */
+export type CardKind = 'research' | 'craft' | 'revive' | 'produce' | 'train';
 /**
  * Status van een kaart. De client bepaalt die uit data, voorraad en PlayerStatus.queue:
- * - available: te starten; tooExpensive: genoeg slots maar te weinig scrap; locked: er ontbreekt een vereiste;
- * - running: loopt nu (progressPct hoort erbij); done: klaar (eenmalig onderzoek).
+ * - available: te starten; tooExpensive: te weinig scrap; locked: er ontbreekt een vereiste;
+ * - busy: het gebouw (of de letter, bij training) is al bezig met ander werk, dus de sim weigert de start;
+ * - running: loopt nu (progressPct hoort erbij); done: klaar (eenmalig onderzoek, of de training is vol).
  */
-export type CardState = 'available' | 'tooExpensive' | 'locked' | 'running' | 'done';
+export type CardState = 'available' | 'tooExpensive' | 'locked' | 'busy' | 'running' | 'done';
 /** Bekende icoonnamen; een onbekende naam valt terug op een neutraal symbool. */
 export const CARD_ICON_IDS = [
   'research',
@@ -133,14 +139,24 @@ export const CARD_ICON_IDS = [
   'crate',
   'bolt',
   'gear',
+  'robot',
+  'training',
 ] as const;
 export type CardIconId = (typeof CARD_ICON_IDS)[number];
 
-/** Eén kaart in het gebouwpaneel: een onderzoek, een craft of het oplappen van de held. Alle teksten zijn kant-en-klaar Nederlands. */
+/** Eén kaart in het gebouwpaneel: onderzoek, craft, oplappen, robotproductie of training. Alle teksten zijn kant-en-klaar Nederlands. */
 export interface BuildingCard {
   kind: CardKind;
-  /** techId bij research, loadoutId bij craft, buildingId (hoofdgebouw) bij revive. Samen met kind uniek binnen het paneel. */
+  /**
+   * techId bij research, loadoutId bij craft en produce, buildingId (hoofdgebouw) bij revive, programId bij train.
+   * Samen met kind uniek binnen het paneel.
+   */
   id: number;
+  /**
+   * Entity-id van het gebouw waarin de kaart draait (produce en train gaan als buildingId mee in het commando); bij
+   * research en craft ontbreekt het of is het het gekozen gebouw.
+   */
+  buildingId?: number;
   naam: string;
   /** Een CardIconId; onbekende waarden geven het neutrale symbool. */
   icon: string;
@@ -153,11 +169,46 @@ export interface BuildingCard {
   unlocks: readonly string[];
   /** Namen van wat er nog ontbreekt (alleen bij locked), bijvoorbeeld ["Geweerrek"]. */
   requires: readonly string[];
+  /** Waarom de kaart nu niet start (bij tooExpensive, locked, busy), kant-en-klaar Nederlands; de HUD toont het als reden. */
+  reason?: string;
   state: CardState;
   /** 0..100, alleen bij running. */
   progressPct?: number;
   /** Sneltoets, een cijfer "1" tot "9" (de client nummert de kaarten in de getoonde volgorde). */
   hotkey: string;
+}
+
+/** Eén eigen, voltooid gebouw binnen een gebouwknop. */
+export interface BuildingSite {
+  /** Entity-id van het gebouw. */
+  id: number;
+  /** Positie in sim-eenheden (voor de camera bij dubbelklik). */
+  x: number;
+  y: number;
+  /** Aantal kaarten (onderzoek, robots, training, oplappen) dat nu te starten is. */
+  available: number;
+  /** Aantal lopende taken in dit gebouw. */
+  running: number;
+  /** 0..100, voortgang van de lopende taak; ontbreekt zonder lopende taak. */
+  progressPct?: number;
+}
+
+/**
+ * Eén knop in het gebouwenpaneel: alle eigen voltooide gebouwen van één type ("Werkplaats", "Lab", "Woning x3").
+ * De client levert alle gebouwtypen die de speler heeft; de HUD toont ze naast de eenhedenbalk. Een klik selecteert het
+ * eerste gebouw en opent zijn kaarten, nog een klik het volgende van hetzelfde type.
+ */
+export interface BuildingButton {
+  /** Vaste sleutel van het type (bijvoorbeeld de data-key), stabiel tussen lezingen. */
+  key: string;
+  /** Naam voor op de knop, bijvoorbeeld "Basis" of "Lab". */
+  naam: string;
+  /** De gebouwen van dit type in vaste volgorde (de volgorde van doorklikken). */
+  sites: readonly BuildingSite[];
+  /** Som over de gebouwen: te starten kaarten, lopende taken, en de voortgang van de verst gevorderde taak. */
+  available: number;
+  running: number;
+  progressPct?: number;
 }
 
 export type AlertKind = 'attack' | 'settlerLost' | 'claimLost' | 'dominance';
@@ -295,8 +346,10 @@ export interface HudDeps {
   openHostSettings?(): void;
   /** Eenhedenbalk: eigen units per type met wat ze doen. Ontbreekt: geen balk. */
   getRoster?(): readonly RosterGroup[];
-  /** Zet de selectie van de client (add: bij de huidige selectie voegen). Nodig voor de eenhedenbalk. */
+  /** Zet de selectie van de client (add: bij de huidige selectie voegen). Nodig voor de eenhedenbalk en de gebouwknoppen. */
   selectUnits?(ids: readonly number[], add: boolean): void;
+  /** Gebouwknoppen naast de eenhedenbalk: alle eigen voltooide gebouwen per type. Ontbreekt of leeg: geen paneel. */
+  getBuildingButtons?(): readonly BuildingButton[];
 }
 
 export interface HudHandle {
@@ -306,6 +359,10 @@ export interface HudHandle {
   /** Een wereldklik die het doel van de actieve targeting is. Geeft false als er geen passende targeting actief is. */
   completeTargeting(target: TargetResult): boolean;
   cancelTargeting(): void;
+  /** Wacht de HUD nu op een wereldklik als doel? De client controleert dit voor een klik, zodat een verouderde modus de selectie niet blokkeert. */
+  targetingActive(): boolean;
+  /** Is de HUD in plaatsingsmodus? */
+  placementActive(): boolean;
   /** Forceer een nieuwe lezing van de deps. */
   refresh(): void;
   unmount(): void;
