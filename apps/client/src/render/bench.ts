@@ -19,6 +19,9 @@ export interface BenchPhase {
   terrainTrianglesMax: number;
   terrainDrawsMax: number;
   propsVisibleMax: number;
+  /** Rigid units (robots) drawn at most in one frame, and the draw calls the rigid layer took. */
+  rigidVisibleMax: number;
+  rigidDrawsMax: number;
 }
 
 export interface BenchResult {
@@ -50,6 +53,8 @@ async function phase(
   let terrainTris = 0;
   let terrainDraws = 0;
   let props = 0;
+  let rigidVisible = 0;
+  let rigidDraws = 0;
   let last = await frame();
   const start = last;
   for (;;) {
@@ -65,6 +70,8 @@ async function phase(
     terrainTris = Math.max(terrainTris, l.terrainTriangles);
     terrainDraws = Math.max(terrainDraws, l.terrainDraws);
     props = Math.max(props, l.propsVisible);
+    rigidVisible = Math.max(rigidVisible, l.rigidVisible);
+    rigidDraws = Math.max(rigidDraws, l.rigidDraws);
     step(u);
   }
   const sorted = [...intervals].sort((a, b) => a - b);
@@ -85,6 +92,8 @@ async function phase(
     terrainTrianglesMax: terrainTris,
     terrainDrawsMax: terrainDraws,
     propsVisibleMax: props,
+    rigidVisibleMax: rigidVisible,
+    rigidDrawsMax: rigidDraws,
   };
 }
 

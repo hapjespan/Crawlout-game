@@ -24,6 +24,7 @@ import {
   type PackPropDetails,
   type PacksConfig,
 } from './packs.js';
+import { buildRobots, loadRobotsConfig, type RobotDetails, type RobotsResult } from './robots.js';
 import { EMPTY_RIGMAP, parseRigmap, type Rigmap } from './rigmap.js';
 import { validateAsset } from './validate.js';
 import type { VariantsConfig } from './variants.js';
@@ -44,6 +45,8 @@ export interface BuildOptions {
   onlyConfigured?: boolean;
   /** Pad naar de gebouwenconfig; standaard `<srcDir>/buildings/variants.json`. Ontbreekt hij, dan zijn er geen gebouwen. */
   variantsPath?: string;
+  /** Pad naar de robots-config; standaard `<srcDir>/robots.json`. Ontbreekt hij, dan zijn er geen robots. */
+  robotsPath?: string;
   /** Pad naar de prop-packs-config; standaard `<srcDir>/packs.json`. Ontbreekt hij, dan zijn er geen pack-props. */
   packsPath?: string;
   /** Map met de pack-GLB's; standaard `<srcDir>/packs`, vanuit een worktree ook die van de hoofdcheckout. */
@@ -56,7 +59,7 @@ export interface AssetReport {
   errors: string[];
   warnings: string[];
   /** Wat de buis aan de bron veranderd heeft en wat eruit kwam; komt in validation-report.json. */
-  details?: AssetDetails | BuildingDetails | PackPropDetails;
+  details?: AssetDetails | BuildingDetails | RobotDetails | PackPropDetails;
 }
 
 export interface AssetDetails {
@@ -253,6 +256,40 @@ export async function buildAssets(options: BuildOptions): Promise<BuildResult> {
     reports.push(report);
   }
 
+  // Robots (src/robots.ts): rigide units en twee extra gebouwen uit basisvormen, volgens robots.json.
+  const robotsSource = options.robotsPath ?? join(srcDir, 'robots.json');
+  let robots: RobotsResult | null = null;
+  if (existsSync(robotsSource)) {
+    try {
+      robots = await buildRobots(
+        loadRobotsConfig(robotsSource),
+        relative(srcDir, robotsSource).split(sep).join('/'),
+      );
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : String(error);
+      return {
+        ok: false,
+        reports: [
+          {
+            id: basename(robotsSource, '.json'),
+            source: relative(srcDir, robotsSource).split(sep).join('/'),
+            errors: [`ongeldige ${basename(robotsSource)}: ${reason}`],
+            warnings: [],
+          },
+        ],
+        notices,
+        manifest: null,
+      };
+    }
+  }
+  for (const report of robots?.reports ?? []) {
+    const clash = seen.get(report.id);
+    if (clash)
+      report.errors.push(`id "${report.id}" is al in gebruik door ${clash}; hernoem de robot.`);
+    seen.set(report.id, report.source);
+    reports.push(report);
+  }
+
   // Prop-packs (src/packs.ts): splitsen, echte schaal, atlas en LOD's volgens packs.json.
   const packsSource = options.packsPath ?? join(srcDir, 'packs.json');
   let packsConfig: PacksConfig | null = null;
@@ -293,9 +330,14 @@ export async function buildAssets(options: BuildOptions): Promise<BuildResult> {
   if (reports.some((r) => r.errors.length > 0))
     return { ok: false, reports, notices, manifest: null };
 
-  const entries: AssetEntry[] = [...(buildings?.entries ?? []), ...(packs?.entries ?? [])];
+  const entries: AssetEntry[] = [
+    ...(buildings?.entries ?? []),
+    ...(robots?.entries ?? []),
+    ...(packs?.entries ?? []),
+  ];
   const outputs = new Map<string, Uint8Array | string>([
     ...(buildings?.outputs ?? []),
+    ...(robots?.outputs ?? []),
     ...(packs?.outputs ?? []),
   ]);
   for (const asset of validated) {

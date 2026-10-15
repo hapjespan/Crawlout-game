@@ -3,6 +3,7 @@
 // Rig 0 is the procedural placeholder (bake.ts, humanoidGeometry.ts); loaded assets add rigs (addRig) and take over
 // unit typeIds (assignRig) or every unit without its own rig (setDefaultRig). A hero (typeId 1000 + heroId) uses the
 // default rig with a hero flag per instance: bigger, and on the placeholder with cap, collar and pauldrons.
+// Unit typeIds that the rigid layer owns (robots, rigidUnitLayer.ts) are skipped here: setSkip().
 import { heroIdOfTypeId } from '@crawlout/data';
 import { ANIM, ENTITY_FLAG } from '@crawlout/protocol';
 import {
@@ -32,12 +33,14 @@ import { teamIndex } from '../palette.js';
 import type { InterpolatedFrame } from '../snapshot/interpolate.js';
 import { SUN_DIR } from '../lighting/lightRig.js';
 import type { SunShadowTerm } from '../shadows/sunShadow.js';
+import { InstanceVariation } from './animVariation.js';
 import { bakeAnimations, type BakedAnimations } from './bake.js';
 import { createHumanoidGeometry, UNIT_LODS } from './humanoidGeometry.js';
 import {
   createUnitMaterial,
   HERO_INSTANCE_FLAG,
   HERO_SCALE,
+  TEAM_SLOTS,
   type UnitAlbedo,
 } from './unitMaterial.js';
 
@@ -143,6 +146,10 @@ export class UnitLayer {
   /** Rig per unit typeId (1..1023), DEFAULT_RIG when the typeId has none of its own. */
   private readonly rigByType = new Uint8Array(TYPE_ID_BUILDING_FIRST).fill(DEFAULT_RIG);
   private defaultRig = PLACEHOLDER_RIG;
+  /** Unit typeIds drawn by another layer (the rigid robots); this layer skips them. */
+  private skip: ((typeId: number) => boolean) | null = null;
+  /** Per-entity animation phase, rate, start delay and turn smoothing (animVariation.ts). */
+  private readonly variation = new InstanceVariation();
   /** Instances drawn per LOD (all rigs together) in the last update. */
   readonly lodCounts: [number, number, number] = [0, 0, 0];
 
@@ -243,6 +250,11 @@ export class UnitLayer {
     this.defaultRig = rig;
   }
 
+  /** typeIds for which `skip` returns true are left to another layer; null draws every unit again. */
+  setSkip(skip: ((typeId: number) => boolean) | null): void {
+    this.skip = skip;
+  }
+
   /** Rig a typeId is drawn with. */
   rigFor(typeId: number): number {
     const own =
@@ -251,7 +263,12 @@ export class UnitLayer {
   }
 
   /** Distributes the units in the frame over the rig and LOD batches. `frame.y` must already hold terrain heights. */
-  update(frame: InterpolatedFrame, camera: Camera, decals: DecalLayer): void {
+  update(
+    frame: InterpolatedFrame,
+    camera: Camera,
+    decals: DecalLayer,
+    nowMs: number = performance.now(),
+  ): void {
     this.projView.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
     this.frustum.setFromProjectionMatrix(this.projView);
     const cam = camera.position;
@@ -263,7 +280,7 @@ export class UnitLayer {
 
     for (let i = 0; i < frame.count; i++) {
       const typeId = frame.typeId[i]!;
-      if (!drawsAsUnit(typeId)) continue;
+      if (!drawsAsUnit(typeId) || this.skip?.(typeId)) continue;
       const x = frame.x[i]!;
       const y = frame.y[i]!;
       const z = frame.z[i]!;
@@ -284,14 +301,25 @@ export class UnitLayer {
       const pose = batch.pose.array as Float32Array;
       const anim = batch.anim.array as Float32Array;
       const flags = frame.flags[i]!;
-      const clip = frame.anim[i]!;
+      const simClip = frame.anim[i]!;
+      const v = this.variation.apply(
+        frame.id[i]!,
+        x,
+        z,
+        simClip < rig.anims.clips.length ? simClip : ANIM.idle,
+        frame.animT[i]!,
+        frame.yaw[i]!,
+        rig.anims.clips[ANIM.idle]?.duration ?? 1,
+        nowMs,
+      );
       pose[k * 4] = x;
       pose[k * 4 + 1] = y;
       pose[k * 4 + 2] = z;
-      pose[k * 4 + 3] = frame.yaw[i]!;
-      anim[k * 4] = clip < rig.anims.clips.length ? clip : ANIM.idle;
-      anim[k * 4 + 1] = frame.animT[i]!;
-      anim[k * 4 + 2] = teamIndex(frame.owner[i]!);
+      pose[k * 4 + 3] = v.yaw;
+      anim[k * 4] = v.clip;
+      anim[k * 4 + 1] = v.t;
+      // Team slot in the low bits, the static per-instance variation seed above them (see unitMaterial.ts).
+      anim[k * 4 + 2] = teamIndex(frame.owner[i]!) + TEAM_SLOTS * v.seed;
       anim[k * 4 + 3] = isHero ? flags + HERO_INSTANCE_FLAG : flags;
 
       const selected = (flags & SELECTED) !== 0 && (flags & DEAD) === 0;

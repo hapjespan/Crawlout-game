@@ -8,7 +8,9 @@ const at = (m: NonNullable<ReturnType<typeof buildGrassMask>>, x: number, z: num
 
 describe('grass density mask', () => {
   it('is null without grass or plant props', () => {
-    expect(buildGrassMask([{ asset: 'rock_set2_01', x: 10, y: 10 }], propCategoryOf, bounds)).toBeNull();
+    expect(
+      buildGrassMask([{ asset: 'rock_set2_01', x: 10, y: 10 }], propCategoryOf, bounds),
+    ).toBeNull();
     expect(buildGrassMask([], propCategoryOf, bounds)).toBeNull();
   });
 
@@ -27,7 +29,7 @@ describe('grass density mask', () => {
 
   it('counts a plant for less than a grass patch and ignores trees', () => {
     const one = (asset: string) =>
-      Math.max(...buildGrassMask([{ asset, x: 32, y: 32 }], propCategoryOf, bounds)?.data ?? [0]);
+      Math.max(...(buildGrassMask([{ asset, x: 32, y: 32 }], propCategoryOf, bounds)?.data ?? [0]));
     expect(one('plant_01')).toBeGreaterThan(0);
     expect(one('plant_01')).toBeLessThan(one('grass_patch_01'));
     expect(one('tree_oak_01')).toBe(0);

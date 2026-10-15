@@ -60,6 +60,13 @@ export const BUDGETS = {
   buildingCentreTolerance: 0.08,
   /** De grond staat op y = 0, tolerantie in meter. */
   buildingGroundTolerance: 0.01,
+  /**
+   * Rigide units (kind 'rigid-unit', de robots uit assets/src/robots.json): absolute plafonds per LOD. Ze staan niet
+   * stil maar hebben geen skelet; per type geinstanced, dus lager dan karakters.
+   */
+  rigidUnitMaxTris: [2000, 800, 300] as const,
+  /** Tolerantie (m) op de zweefhoogte: `hover` tegen de onderkant van de bounds. */
+  hoverTolerance: 0.01,
   maxBones: 28,
   maxTextureSize: 2048,
   characterHeight: 1.8,
