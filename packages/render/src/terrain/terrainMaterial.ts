@@ -17,8 +17,9 @@
 //   grain   = a fine rotated sample (7.7 m) adds texture near the camera (fades out from 25 to 90 m), where the
 //             albedo (16 px per meter at 2048) is magnified.
 //   no texture: the tints of terrain.json on fixed brightness, rock from about 30 degrees slope (the former look).
-//   light   = the 3-step toon ramp of the units with softened band edges (terrain normals vary smoothly; hard steps
-//             would shimmer), times the building shadow and the sky occlusion of the refined grid.
+//   light   = the shared light rig (unitMaterial.ts toonLight: hemisphere fill in the dark band, warm direct sun on
+//             top, the toon ramp's soft band edges, as terrain normals vary smoothly and hard steps would shimmer),
+//             the sun's shadow taking the direct part away, times the sky occlusion of the refined grid.
 import {
   Color,
   DataTexture,
@@ -64,6 +65,8 @@ import {
   vec3,
   vec4,
 } from 'three/tsl';
+import type { SunShadowTerm } from '../shadows/sunShadow.js';
+import { toonLight } from '../units/unitMaterial.js';
 import {
   ALBEDO_SEAMS,
   MAX_ALBEDO_TILES,
@@ -73,8 +76,8 @@ import {
 
 export interface TerrainMaterialOptions {
   lightDir: Vector3;
-  /** Shadow factor node, 1 lit and 0 shadowed (shadows/sunShadow.ts). */
-  shadow?: Node<'float'> | undefined;
+  /** The sun's shadow (shadows/sunShadow.ts), received by the terrain. */
+  shadow?: SunShadowTerm | null | undefined;
 }
 
 /** Target brightness (linear luminance) of rock and ground before light; the tints only give the hue. */
@@ -349,12 +352,8 @@ export function createTerrainMaterial(opts: TerrainMaterialOptions): TerrainMate
   });
   const albedo = terrainAlbedo();
 
-  // Soft-edged toon ramp: the bands of unitMaterial.ts toonRamp, each edge spread over a little light.
-  const hl = dot(N, light).mul(0.5).add(0.5);
-  let shade: Node<'float'> = float(0.52)
-    .add(smoothstep(0.39, 0.45, hl).mul(0.26))
-    .add(smoothstep(0.67, 0.73, hl).mul(0.22));
-  if (opts.shadow) shade = mix(float(0.52), shade, opts.shadow);
+  // The shared rig's light (toonLight): soft-edged toon ramp, hemisphere fill, warm sun, the sun's shadow.
+  const shade = toonLight(N, light, opts.shadow?.factor);
 
   // Sky occlusion from the refined grid (terrainRefine.ts): the foot of a cliff and gullies sit a little darker.
   const occlusion = attribute('occlusion', 'float');
@@ -362,8 +361,10 @@ export function createTerrainMaterial(opts: TerrainMaterialOptions): TerrainMate
   const m = new MeshBasicNodeMaterial();
   const out = vec4(albedo.mul(shade).mul(occlusion), 1);
   // Receiving the building shadow: the color goes in fragmentNode (see propMaterial.ts).
-  if (opts.shadow) m.fragmentNode = out;
-  else m.colorNode = out;
+  if (opts.shadow) {
+    m.fragmentNode = out;
+    m.receivedShadowPositionNode = opts.shadow.receivePosition(positionWorld, N);
+  } else m.colorNode = out;
   m.name = 'crawlout-terrain-toon';
 
   const setTints = (rockTint: string, groundTint: string): void => {

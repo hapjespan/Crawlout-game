@@ -11,6 +11,7 @@ export {
   type SetTerrainOptions,
   ALBEDO_GAIN_RANGE,
 } from './renderer.js';
+export { type ShadowQuality } from './shadows/sunShadow.js';
 export {
   albedoUv,
   mirroredAlbedoLayout,

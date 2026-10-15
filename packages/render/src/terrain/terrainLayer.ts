@@ -1,7 +1,7 @@
 // Terrain from flat typed arrays (the map agent's greybox export). The greybox is resampled into a smooth field
 // (terrainField.ts, render only) and drawn in chunks with distance LOD (terrainChunks.ts) with the terrain material
-// (terrainMaterial.ts: rock on slopes, dust on the flat, a world-space detail texture, toon ramp). Receives building
-// shadows when a shadow factor is given, and keeps a height texture for terrain-hugging decals. Height lookups and
+// (terrainMaterial.ts: rock on slopes, dust on the flat, a world-space detail texture, toon ramp). Receives
+// the sun shadow when one is given, and keeps a height texture for terrain-hugging decals. Height lookups and
 // picking use the field, which is what the finest chunks draw. A bed (setBed, the river) is cut into the field.
 // With `detail.subdivide: 0` the greybox is drawn as delivered, as one mesh (debugging; no chunks, no bed).
 import {
@@ -13,9 +13,9 @@ import {
   type Scene,
   type Texture,
   type Vector3,
-  type Node,
 } from 'three/webgpu';
 import type { DataTexturePrecision } from '../gpu/dataTextures.js';
+import type { SunShadowTerm } from '../shadows/sunShadow.js';
 import {
   mirroredAlbedoLayout,
   validateAlbedoLayout,
@@ -40,8 +40,8 @@ import {
 import { refineTerrain, type TerrainDetailOptions } from './terrainRefine.js';
 
 export interface TerrainLayerOptions {
-  /** Shadow factor node, 1 lit and 0 shadowed (shadows/sunShadow.ts). */
-  shadow?: Node<'float'> | undefined;
+  /** The sun's shadow (shadows/sunShadow.ts), received by the terrain. */
+  shadow?: SunShadowTerm | null | undefined;
   precision?: DataTexturePrecision;
   /** Render-only refinement of the given mesh. */
   detail?: TerrainDetailOptions;
