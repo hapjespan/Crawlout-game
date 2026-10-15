@@ -34,6 +34,7 @@ import type { SimWinner } from '@crawlout/sim';
 import { assetConfig } from './game/assets.js';
 import { propSource } from './render/props.js';
 import { terrainTextures } from './render/terrain.js';
+import { loadClientMapWater } from './render/water.js';
 import { loadClientGameData, loadClientMap } from './game/content.js';
 import { startSession } from './game/session.js';
 import { createStatusOverlay } from './net/statusOverlay.js';
@@ -86,6 +87,8 @@ async function main(): Promise<void> {
   renderer.setTerrain(map.terrain);
   renderer.setGameData(data);
   void renderer.setProps(map.props, propSource());
+  const water = loadClientMapWater(SLICE_MAP);
+  if (water) renderer.setWater(water);
 
   // Selection is local UI state, never sim state: it is stamped into each snapshot's flags for the renderer.
   let selection = new Set<number>();
