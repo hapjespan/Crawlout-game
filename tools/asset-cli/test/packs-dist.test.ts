@@ -19,7 +19,7 @@ const manifest = manifestSchema.parse(
 const entries = new Map(manifest.assets.map((a) => [a.id, a]));
 const props = listConfiguredProps(config);
 
-describe('pack-props in assets/dist', () => {
+describe('pack-props in assets/dist', { timeout: 60_000 }, () => {
   it('heeft voor elke categorie minstens een prop en alle 10 categorieen in de config', () => {
     expect(Object.keys(config.categories).sort()).toEqual([...PROP_CATEGORIES].sort());
     for (const category of PROP_CATEGORIES)

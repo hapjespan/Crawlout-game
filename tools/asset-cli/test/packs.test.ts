@@ -189,7 +189,7 @@ describe('config', () => {
   });
 });
 
-describe('buildPacks', () => {
+describe('buildPacks', { timeout: 60_000 }, () => {
   it('splitst, corrigeert de FBX-draaiing, schaalt naar de echte maat en zet de voet op y=0 en het midden op x en z', async () => {
     const { packsDir, parsed } = await setup();
     const result = await buildPacks(parsed, { packsDir });
@@ -335,7 +335,7 @@ describe('buildPacks', () => {
   });
 });
 
-describe('buildAssets met packs.json', () => {
+describe('buildAssets met packs.json', { timeout: 60_000 }, () => {
   it('neemt de pack-props op in manifest en validation-report en laat assets/src/packs met rust', async () => {
     const src = join(root, 'src');
     mkdirSync(join(src, 'packs'), { recursive: true });

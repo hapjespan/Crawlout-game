@@ -2,6 +2,44 @@
   "version": 1,
   "assets": [
     {
+      "id": "barrel_01",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.350303,
+          0,
+          -0.350303
+        ],
+        "max": [
+          0.350303,
+          0.9,
+          0.350303
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "barrel_01/lod0.glb",
+          "triangles": 600
+        },
+        {
+          "level": 1,
+          "path": "barrel_01/lod1.glb",
+          "triangles": 250
+        },
+        {
+          "level": 2,
+          "path": "barrel_01/lod2.glb",
+          "triangles": 80
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none",
+      "category": "barrel"
+    },
+    {
       "id": "bush001",
       "kind": "prop",
       "bounds": {
@@ -74,6 +112,386 @@
       "animations": [],
       "boneCount": 0,
       "teamMask": "materialName"
+    },
+    {
+      "id": "chest_01",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.461568,
+          0,
+          -0.192996
+        ],
+        "max": [
+          0.461784,
+          0.545787,
+          0.190817
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "chest_01/lod0.glb",
+          "triangles": 800
+        },
+        {
+          "level": 1,
+          "path": "chest_01/lod1.glb",
+          "triangles": 294
+        },
+        {
+          "level": 2,
+          "path": "chest_01/lod2.glb",
+          "triangles": 100
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none",
+      "category": "chest"
+    },
+    {
+      "id": "chest_02",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.435819,
+          0,
+          -0.311674
+        ],
+        "max": [
+          0.435819,
+          0.3,
+          0.311674
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "chest_02/lod0.glb",
+          "triangles": 256
+        },
+        {
+          "level": 1,
+          "path": "chest_02/lod1.glb",
+          "triangles": 256
+        },
+        {
+          "level": 2,
+          "path": "chest_02/lod2.glb",
+          "triangles": 100
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none",
+      "category": "chest"
+    },
+    {
+      "id": "chest_03",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.435819,
+          0,
+          -0.311674
+        ],
+        "max": [
+          0.435819,
+          0.3,
+          0.311674
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "chest_03/lod0.glb",
+          "triangles": 256
+        },
+        {
+          "level": 1,
+          "path": "chest_03/lod1.glb",
+          "triangles": 256
+        },
+        {
+          "level": 2,
+          "path": "chest_03/lod2.glb",
+          "triangles": 100
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none",
+      "category": "chest"
+    },
+    {
+      "id": "crate_01",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.45,
+          0,
+          -0.45
+        ],
+        "max": [
+          0.45,
+          0.9,
+          0.45
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "crate_01/lod0.glb",
+          "triangles": 260
+        },
+        {
+          "level": 1,
+          "path": "crate_01/lod1.glb",
+          "triangles": 200
+        },
+        {
+          "level": 2,
+          "path": "crate_01/lod2.glb",
+          "triangles": 80
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none",
+      "category": "crate"
+    },
+    {
+      "id": "debris_barrel_01",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.340908,
+          0,
+          -0.330739
+        ],
+        "max": [
+          0.340908,
+          0.799896,
+          0.330739
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "debris_barrel_01/lod0.glb",
+          "triangles": 400
+        },
+        {
+          "level": 1,
+          "path": "debris_barrel_01/lod1.glb",
+          "triangles": 150
+        },
+        {
+          "level": 2,
+          "path": "debris_barrel_01/lod2.glb",
+          "triangles": 46
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none",
+      "category": "debris"
+    },
+    {
+      "id": "debris_chair_01",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.245047,
+          0,
+          -0.271059
+        ],
+        "max": [
+          0.245047,
+          0.9,
+          0.271059
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "debris_chair_01/lod0.glb",
+          "triangles": 400
+        },
+        {
+          "level": 1,
+          "path": "debris_chair_01/lod1.glb",
+          "triangles": 150
+        },
+        {
+          "level": 2,
+          "path": "debris_chair_01/lod2.glb",
+          "triangles": 50
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none",
+      "category": "debris"
+    },
+    {
+      "id": "debris_crate_01",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.579503,
+          0,
+          -0.689982
+        ],
+        "max": [
+          0.579503,
+          0.9,
+          0.689982
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "debris_crate_01/lod0.glb",
+          "triangles": 120
+        },
+        {
+          "level": 1,
+          "path": "debris_crate_01/lod1.glb",
+          "triangles": 120
+        },
+        {
+          "level": 2,
+          "path": "debris_crate_01/lod2.glb",
+          "triangles": 50
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none",
+      "category": "debris"
+    },
+    {
+      "id": "debris_pallet_01",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.415729,
+          0,
+          -0.6
+        ],
+        "max": [
+          0.415729,
+          0.168373,
+          0.6
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "debris_pallet_01/lod0.glb",
+          "triangles": 240
+        },
+        {
+          "level": 1,
+          "path": "debris_pallet_01/lod1.glb",
+          "triangles": 150
+        },
+        {
+          "level": 2,
+          "path": "debris_pallet_01/lod2.glb",
+          "triangles": 50
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none",
+      "category": "debris"
+    },
+    {
+      "id": "debris_pallet_02",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.438917,
+          0,
+          -0.6
+        ],
+        "max": [
+          0.438917,
+          0.316652,
+          0.6
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "debris_pallet_02/lod0.glb",
+          "triangles": 400
+        },
+        {
+          "level": 1,
+          "path": "debris_pallet_02/lod1.glb",
+          "triangles": 150
+        },
+        {
+          "level": 2,
+          "path": "debris_pallet_02/lod2.glb",
+          "triangles": 50
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none",
+      "category": "debris"
+    },
+    {
+      "id": "debris_table_01",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.785763,
+          0,
+          -0.479697
+        ],
+        "max": [
+          0.785763,
+          0.75,
+          0.479697
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "debris_table_01/lod0.glb",
+          "triangles": 400
+        },
+        {
+          "level": 1,
+          "path": "debris_table_01/lod1.glb",
+          "triangles": 150
+        },
+        {
+          "level": 2,
+          "path": "debris_table_01/lod2.glb",
+          "triangles": 50
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none",
+      "category": "debris"
     },
     {
       "id": "dweller_body_human",
@@ -570,6 +988,123 @@
       ]
     },
     {
+      "id": "grass_patch_01",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.560377,
+          0,
+          -0.567954
+        ],
+        "max": [
+          0.560377,
+          0.6,
+          0.567954
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "grass_patch_01/lod0.glb",
+          "triangles": 400
+        },
+        {
+          "level": 1,
+          "path": "grass_patch_01/lod1.glb",
+          "triangles": 149
+        },
+        {
+          "level": 2,
+          "path": "grass_patch_01/lod2.glb",
+          "triangles": 50
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none",
+      "category": "grass",
+      "alpha": "mask"
+    },
+    {
+      "id": "grass_patch_02",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.401441,
+          0,
+          -0.423913
+        ],
+        "max": [
+          0.401441,
+          0.6,
+          0.423913
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "grass_patch_02/lod0.glb",
+          "triangles": 236
+        },
+        {
+          "level": 1,
+          "path": "grass_patch_02/lod1.glb",
+          "triangles": 149
+        },
+        {
+          "level": 2,
+          "path": "grass_patch_02/lod2.glb",
+          "triangles": 50
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none",
+      "category": "grass",
+      "alpha": "mask"
+    },
+    {
+      "id": "grass_patch_03",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.667967,
+          0,
+          -0.754875
+        ],
+        "max": [
+          0.667967,
+          0.6,
+          0.754875
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "grass_patch_03/lod0.glb",
+          "triangles": 400
+        },
+        {
+          "level": 1,
+          "path": "grass_patch_03/lod1.glb",
+          "triangles": 150
+        },
+        {
+          "level": 2,
+          "path": "grass_patch_03/lod2.glb",
+          "triangles": 50
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none",
+      "category": "grass",
+      "alpha": "mask"
+    },
+    {
       "id": "grass001",
       "kind": "prop",
       "bounds": {
@@ -607,6 +1142,45 @@
       "teamMask": "materialName"
     },
     {
+      "id": "plant_01",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.405681,
+          0,
+          -0.414774
+        ],
+        "max": [
+          0.405681,
+          1.2,
+          0.414774
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "plant_01/lod0.glb",
+          "triangles": 186
+        },
+        {
+          "level": 1,
+          "path": "plant_01/lod1.glb",
+          "triangles": 99
+        },
+        {
+          "level": 2,
+          "path": "plant_01/lod2.glb",
+          "triangles": 39
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none",
+      "category": "plant",
+      "alpha": "mask"
+    },
+    {
       "id": "reed001",
       "kind": "prop",
       "bounds": {
@@ -642,6 +1216,424 @@
       "animations": [],
       "boneCount": 0,
       "teamMask": "materialName"
+    },
+    {
+      "id": "rock_set2_01",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.911717,
+          0,
+          -1.031727
+        ],
+        "max": [
+          0.911717,
+          0.912572,
+          1.031727
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "rock_set2_01/lod0.glb",
+          "triangles": 590
+        },
+        {
+          "level": 1,
+          "path": "rock_set2_01/lod1.glb",
+          "triangles": 400
+        },
+        {
+          "level": 2,
+          "path": "rock_set2_01/lod2.glb",
+          "triangles": 120
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none",
+      "category": "rock"
+    },
+    {
+      "id": "rock_set2_02",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.277658,
+          0,
+          -0.306851
+        ],
+        "max": [
+          0.277658,
+          0.63081,
+          0.306851
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "rock_set2_02/lod0.glb",
+          "triangles": 164
+        },
+        {
+          "level": 1,
+          "path": "rock_set2_02/lod1.glb",
+          "triangles": 164
+        },
+        {
+          "level": 2,
+          "path": "rock_set2_02/lod2.glb",
+          "triangles": 120
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none",
+      "category": "rock"
+    },
+    {
+      "id": "rock_set2_03",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.447627,
+          0,
+          -0.500371
+        ],
+        "max": [
+          0.447627,
+          0.760578,
+          0.500371
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "rock_set2_03/lod0.glb",
+          "triangles": 236
+        },
+        {
+          "level": 1,
+          "path": "rock_set2_03/lod1.glb",
+          "triangles": 236
+        },
+        {
+          "level": 2,
+          "path": "rock_set2_03/lod2.glb",
+          "triangles": 120
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none",
+      "category": "rock"
+    },
+    {
+      "id": "rock_set2_04",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.415442,
+          0,
+          -0.389314
+        ],
+        "max": [
+          0.415442,
+          0.730567,
+          0.389314
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "rock_set2_04/lod0.glb",
+          "triangles": 204
+        },
+        {
+          "level": 1,
+          "path": "rock_set2_04/lod1.glb",
+          "triangles": 204
+        },
+        {
+          "level": 2,
+          "path": "rock_set2_04/lod2.glb",
+          "triangles": 120
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none",
+      "category": "rock"
+    },
+    {
+      "id": "rock_set2_05",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -1.782593,
+          0,
+          -1.744946
+        ],
+        "max": [
+          1.782593,
+          1.736452,
+          1.738178
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "rock_set2_05/lod0.glb",
+          "triangles": 1000
+        },
+        {
+          "level": 1,
+          "path": "rock_set2_05/lod1.glb",
+          "triangles": 400
+        },
+        {
+          "level": 2,
+          "path": "rock_set2_05/lod2.glb",
+          "triangles": 120
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none",
+      "category": "rock"
+    },
+    {
+      "id": "rock_set2_06",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -2.06246,
+          0,
+          -2.018903
+        ],
+        "max": [
+          2.06246,
+          2.009075,
+          2.011072
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "rock_set2_06/lod0.glb",
+          "triangles": 1000
+        },
+        {
+          "level": 1,
+          "path": "rock_set2_06/lod1.glb",
+          "triangles": 400
+        },
+        {
+          "level": 2,
+          "path": "rock_set2_06/lod2.glb",
+          "triangles": 120
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none",
+      "category": "rock"
+    },
+    {
+      "id": "rock_set2_07",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -1.870245,
+          0,
+          -2.479679
+        ],
+        "max": [
+          1.874499,
+          2.224856,
+          2.471138
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "rock_set2_07/lod0.glb",
+          "triangles": 1000
+        },
+        {
+          "level": 1,
+          "path": "rock_set2_07/lod1.glb",
+          "triangles": 400
+        },
+        {
+          "level": 2,
+          "path": "rock_set2_07/lod2.glb",
+          "triangles": 120
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none",
+      "category": "rock"
+    },
+    {
+      "id": "rock_set2_08",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -2.120858,
+          0,
+          -2.811956
+        ],
+        "max": [
+          2.125682,
+          2.522986,
+          2.80227
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "rock_set2_08/lod0.glb",
+          "triangles": 1000
+        },
+        {
+          "level": 1,
+          "path": "rock_set2_08/lod1.glb",
+          "triangles": 400
+        },
+        {
+          "level": 2,
+          "path": "rock_set2_08/lod2.glb",
+          "triangles": 120
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none",
+      "category": "rock"
+    },
+    {
+      "id": "rock_set2_09",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -4.221944,
+          0,
+          -4.431234
+        ],
+        "max": [
+          4.238962,
+          10.077539,
+          4.376972
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "rock_set2_09/lod0.glb",
+          "triangles": 1000
+        },
+        {
+          "level": 1,
+          "path": "rock_set2_09/lod1.glb",
+          "triangles": 400
+        },
+        {
+          "level": 2,
+          "path": "rock_set2_09/lod2.glb",
+          "triangles": 120
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none",
+      "category": "rock"
+    },
+    {
+      "id": "rock_set2_10",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -9.924456,
+          0,
+          -8.682119
+        ],
+        "max": [
+          9.978811,
+          7.747105,
+          8.682119
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "rock_set2_10/lod0.glb",
+          "triangles": 1000
+        },
+        {
+          "level": 1,
+          "path": "rock_set2_10/lod1.glb",
+          "triangles": 400
+        },
+        {
+          "level": 2,
+          "path": "rock_set2_10/lod2.glb",
+          "triangles": 119
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none",
+      "category": "rock"
+    },
+    {
+      "id": "rock_set2_11",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -8.875319,
+          0,
+          -10.956415
+        ],
+        "max": [
+          8.902001,
+          7.700915,
+          10.975328
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "rock_set2_11/lod0.glb",
+          "triangles": 1000
+        },
+        {
+          "level": 1,
+          "path": "rock_set2_11/lod1.glb",
+          "triangles": 400
+        },
+        {
+          "level": 2,
+          "path": "rock_set2_11/lod2.glb",
+          "triangles": 120
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none",
+      "category": "rock"
     },
     {
       "id": "rock001",
@@ -755,6 +1747,357 @@
       "teamMask": "materialName"
     },
     {
+      "id": "tree_bare_01",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -2.550408,
+          0,
+          -1.350689
+        ],
+        "max": [
+          2.648557,
+          9.273618,
+          3.878488
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "tree_bare_01/lod0.glb",
+          "triangles": 1500
+        },
+        {
+          "level": 1,
+          "path": "tree_bare_01/lod1.glb",
+          "triangles": 500
+        },
+        {
+          "level": 2,
+          "path": "tree_bare_01/lod2.glb",
+          "triangles": 144
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none",
+      "category": "tree-bare",
+      "alpha": "mask"
+    },
+    {
+      "id": "tree_bare_02",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -3.585048,
+          0,
+          -0.160819
+        ],
+        "max": [
+          4.886115,
+          7.338819,
+          6.694471
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "tree_bare_02/lod0.glb",
+          "triangles": 1500
+        },
+        {
+          "level": 1,
+          "path": "tree_bare_02/lod1.glb",
+          "triangles": 500
+        },
+        {
+          "level": 2,
+          "path": "tree_bare_02/lod2.glb",
+          "triangles": 148
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none",
+      "category": "tree-bare",
+      "alpha": "mask"
+    },
+    {
+      "id": "tree_bare_03",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -2.584261,
+          0,
+          -3.020685
+        ],
+        "max": [
+          2.283586,
+          7.330945,
+          2.449814
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "tree_bare_03/lod0.glb",
+          "triangles": 1500
+        },
+        {
+          "level": 1,
+          "path": "tree_bare_03/lod1.glb",
+          "triangles": 498
+        },
+        {
+          "level": 2,
+          "path": "tree_bare_03/lod2.glb",
+          "triangles": 136
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none",
+      "category": "tree-bare",
+      "alpha": "mask"
+    },
+    {
+      "id": "tree_oak_01",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -3.020348,
+          0,
+          -1.760826
+        ],
+        "max": [
+          2.764657,
+          7,
+          3.458588
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "tree_oak_01/lod0.glb",
+          "triangles": 1486
+        },
+        {
+          "level": 1,
+          "path": "tree_oak_01/lod1.glb",
+          "triangles": 498
+        },
+        {
+          "level": 2,
+          "path": "tree_oak_01/lod2.glb",
+          "triangles": 147
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none",
+      "category": "tree-leafy",
+      "alpha": "mask"
+    },
+    {
+      "id": "tree_oak_02",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -3.738391,
+          0,
+          -4.67248
+        ],
+        "max": [
+          4.639569,
+          10,
+          3.841039
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "tree_oak_02/lod0.glb",
+          "triangles": 1458
+        },
+        {
+          "level": 1,
+          "path": "tree_oak_02/lod1.glb",
+          "triangles": 495
+        },
+        {
+          "level": 2,
+          "path": "tree_oak_02/lod2.glb",
+          "triangles": 147
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none",
+      "category": "tree-leafy",
+      "alpha": "mask"
+    },
+    {
+      "id": "tree_oak_03",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -5.602129,
+          0,
+          -4.743079
+        ],
+        "max": [
+          5.13411,
+          12.999999,
+          5.873591
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "tree_oak_03/lod0.glb",
+          "triangles": 1471
+        },
+        {
+          "level": 1,
+          "path": "tree_oak_03/lod1.glb",
+          "triangles": 497
+        },
+        {
+          "level": 2,
+          "path": "tree_oak_03/lod2.glb",
+          "triangles": 146
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none",
+      "category": "tree-leafy",
+      "alpha": "mask"
+    },
+    {
+      "id": "tree_pine_01",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -2.414298,
+          0,
+          -2.479218
+        ],
+        "max": [
+          2.174985,
+          9.385921,
+          2.240258
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "tree_pine_01/lod0.glb",
+          "triangles": 1500
+        },
+        {
+          "level": 1,
+          "path": "tree_pine_01/lod1.glb",
+          "triangles": 488
+        },
+        {
+          "level": 2,
+          "path": "tree_pine_01/lod2.glb",
+          "triangles": 130
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none",
+      "category": "tree-leafy",
+      "alpha": "mask"
+    },
+    {
+      "id": "tree_pine_02",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -2.539848,
+          0,
+          -2.551518
+        ],
+        "max": [
+          2.553177,
+          12.931706,
+          2.610949
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "tree_pine_02/lod0.glb",
+          "triangles": 1499
+        },
+        {
+          "level": 1,
+          "path": "tree_pine_02/lod1.glb",
+          "triangles": 487
+        },
+        {
+          "level": 2,
+          "path": "tree_pine_02/lod2.glb",
+          "triangles": 130
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none",
+      "category": "tree-leafy",
+      "alpha": "mask"
+    },
+    {
+      "id": "tree_pine_03",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -1.871065,
+          0,
+          -1.649315
+        ],
+        "max": [
+          1.906742,
+          6.5,
+          1.773455
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "tree_pine_03/lod0.glb",
+          "triangles": 1432
+        },
+        {
+          "level": 1,
+          "path": "tree_pine_03/lod1.glb",
+          "triangles": 488
+        },
+        {
+          "level": 2,
+          "path": "tree_pine_03/lod2.glb",
+          "triangles": 131
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none",
+      "category": "tree-leafy",
+      "alpha": "mask"
+    },
+    {
       "id": "treehigh001",
       "kind": "prop",
       "bounds": {
@@ -864,6 +2207,196 @@
       "animations": [],
       "boneCount": 0,
       "teamMask": "materialName"
+    },
+    {
+      "id": "wall_wood_01",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -1.13569,
+          0,
+          -0.141892
+        ],
+        "max": [
+          1.13569,
+          3,
+          0.141892
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "wall_wood_01/lod0.glb",
+          "triangles": 80
+        },
+        {
+          "level": 1,
+          "path": "wall_wood_01/lod1.glb",
+          "triangles": 80
+        },
+        {
+          "level": 2,
+          "path": "wall_wood_01/lod2.glb",
+          "triangles": 80
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none",
+      "category": "structure"
+    },
+    {
+      "id": "wall_wood_02",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -2.433555,
+          0,
+          -0.126895
+        ],
+        "max": [
+          2.433555,
+          3,
+          0.126895
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "wall_wood_02/lod0.glb",
+          "triangles": 328
+        },
+        {
+          "level": 1,
+          "path": "wall_wood_02/lod1.glb",
+          "triangles": 328
+        },
+        {
+          "level": 2,
+          "path": "wall_wood_02/lod2.glb",
+          "triangles": 116
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none",
+      "category": "structure"
+    },
+    {
+      "id": "wall_wood_03",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -1.1179,
+          0,
+          -0.104476
+        ],
+        "max": [
+          1.1179,
+          3,
+          0.104476
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "wall_wood_03/lod0.glb",
+          "triangles": 152
+        },
+        {
+          "level": 1,
+          "path": "wall_wood_03/lod1.glb",
+          "triangles": 152
+        },
+        {
+          "level": 2,
+          "path": "wall_wood_03/lod2.glb",
+          "triangles": 120
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none",
+      "category": "structure"
+    },
+    {
+      "id": "wall_wood_04",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -2.063571,
+          0,
+          -0.136042
+        ],
+        "max": [
+          2.063571,
+          3,
+          0.136042
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "wall_wood_04/lod0.glb",
+          "triangles": 256
+        },
+        {
+          "level": 1,
+          "path": "wall_wood_04/lod1.glb",
+          "triangles": 256
+        },
+        {
+          "level": 2,
+          "path": "wall_wood_04/lod2.glb",
+          "triangles": 120
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none",
+      "category": "structure"
+    },
+    {
+      "id": "watchtower_01",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -1.276862,
+          0,
+          -1.294177
+        ],
+        "max": [
+          1.276862,
+          8,
+          1.294177
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "watchtower_01/lod0.glb",
+          "triangles": 474
+        },
+        {
+          "level": 1,
+          "path": "watchtower_01/lod1.glb",
+          "triangles": 400
+        },
+        {
+          "level": 2,
+          "path": "watchtower_01/lod2.glb",
+          "triangles": 120
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none",
+      "category": "structure"
     }
   ]
 }

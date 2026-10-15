@@ -3,6 +3,67 @@
   "ok": true,
   "assets": [
     {
+      "id": "barrel_01",
+      "source": "packs/fps_dungeon_extras.glb#barrel",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "pack": "fps_dungeon_extras",
+      "category": "barrel",
+      "sourceTriangles": 1280,
+      "lodTriangles": [
+        600,
+        250,
+        80
+      ],
+      "sourceHeightM": 1.407,
+      "heightM": 0.9,
+      "scale": 0.006396,
+      "atlas": {
+        "size": 512,
+        "cells": [
+          {
+            "texture": "barrel",
+            "source": 0,
+            "size": 512,
+            "repeat": 1
+          }
+        ]
+      },
+      "textures": [
+        {
+          "size": 512,
+          "format": "jpeg",
+          "bytes": 32405
+        },
+        {
+          "size": 256,
+          "format": "jpeg",
+          "bytes": 9879
+        },
+        {
+          "size": 128,
+          "format": "jpeg",
+          "bytes": 3261
+        }
+      ],
+      "alpha": {
+        "triangleShare": 0,
+        "meanRgb": [
+          0,
+          0,
+          0
+        ],
+        "hue": 0,
+        "saturation": 0,
+        "foliage": "none",
+        "cutoff": 0.5
+      },
+      "materials": [
+        "barrel"
+      ]
+    },
+    {
       "id": "bush001",
       "source": "props/Bush001.glb",
       "errors": [],
@@ -43,6 +104,616 @@
       "clipsDropped": [],
       "extraUvSetsRemoved": 0,
       "scale": 0.01
+    },
+    {
+      "id": "chest_01",
+      "source": "packs/fps_dungeon_extras.glb#chest",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "pack": "fps_dungeon_extras",
+      "category": "chest",
+      "sourceTriangles": 2280,
+      "lodTriangles": [
+        800,
+        294,
+        100
+      ],
+      "sourceHeightM": 1.119,
+      "heightM": 0.546,
+      "scale": 0.004915,
+      "atlas": {
+        "size": 512,
+        "cells": [
+          {
+            "texture": "chest",
+            "source": 0,
+            "size": 512,
+            "repeat": 1
+          }
+        ]
+      },
+      "textures": [
+        {
+          "size": 512,
+          "format": "jpeg",
+          "bytes": 33730
+        },
+        {
+          "size": 256,
+          "format": "jpeg",
+          "bytes": 9797
+        },
+        {
+          "size": 128,
+          "format": "jpeg",
+          "bytes": 3083
+        }
+      ],
+      "alpha": {
+        "triangleShare": 0,
+        "meanRgb": [
+          0,
+          0,
+          0
+        ],
+        "hue": 0,
+        "saturation": 0,
+        "foliage": "none",
+        "cutoff": 0.5
+      },
+      "materials": [
+        "chest"
+      ]
+    },
+    {
+      "id": "chest_02",
+      "source": "packs/fps_dungeon_extras.glb#healthbox",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "pack": "fps_dungeon_extras",
+      "category": "chest",
+      "sourceTriangles": 256,
+      "lodTriangles": [
+        256,
+        256,
+        100
+      ],
+      "sourceHeightM": 0.264,
+      "heightM": 0.3,
+      "scale": 0.011379,
+      "atlas": {
+        "size": 512,
+        "cells": [
+          {
+            "texture": "healthbox",
+            "source": 0,
+            "size": 512,
+            "repeat": 1
+          }
+        ]
+      },
+      "textures": [
+        {
+          "size": 512,
+          "format": "jpeg",
+          "bytes": 39669
+        },
+        {
+          "size": 256,
+          "format": "jpeg",
+          "bytes": 10370
+        },
+        {
+          "size": 128,
+          "format": "jpeg",
+          "bytes": 3154
+        }
+      ],
+      "alpha": {
+        "triangleShare": 0,
+        "meanRgb": [
+          0,
+          0,
+          0
+        ],
+        "hue": 0,
+        "saturation": 0,
+        "foliage": "none",
+        "cutoff": 0.5
+      },
+      "materials": [
+        "healthbox"
+      ]
+    },
+    {
+      "id": "chest_03",
+      "source": "packs/fps_dungeon_extras.glb#ammobox",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "pack": "fps_dungeon_extras",
+      "category": "chest",
+      "sourceTriangles": 256,
+      "lodTriangles": [
+        256,
+        256,
+        100
+      ],
+      "sourceHeightM": 0.264,
+      "heightM": 0.3,
+      "scale": 0.011379,
+      "atlas": {
+        "size": 512,
+        "cells": [
+          {
+            "texture": "ammobox",
+            "source": 0,
+            "size": 512,
+            "repeat": 1
+          }
+        ]
+      },
+      "textures": [
+        {
+          "size": 512,
+          "format": "jpeg",
+          "bytes": 41157
+        },
+        {
+          "size": 256,
+          "format": "jpeg",
+          "bytes": 10913
+        },
+        {
+          "size": 128,
+          "format": "jpeg",
+          "bytes": 3315
+        }
+      ],
+      "alpha": {
+        "triangleShare": 0,
+        "meanRgb": [
+          0,
+          0,
+          0
+        ],
+        "hue": 0,
+        "saturation": 0,
+        "foliage": "none",
+        "cutoff": 0.5
+      },
+      "materials": [
+        "ammobox"
+      ]
+    },
+    {
+      "id": "crate_01",
+      "source": "packs/fps_dungeon_extras.glb#crate_1",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "pack": "fps_dungeon_extras",
+      "category": "crate",
+      "sourceTriangles": 260,
+      "lodTriangles": [
+        260,
+        200,
+        80
+      ],
+      "sourceHeightM": 1.44,
+      "heightM": 0.9,
+      "scale": 0.00625,
+      "atlas": {
+        "size": 512,
+        "cells": [
+          {
+            "texture": "crate",
+            "source": 0,
+            "size": 512,
+            "repeat": 1
+          }
+        ]
+      },
+      "textures": [
+        {
+          "size": 512,
+          "format": "jpeg",
+          "bytes": 27647
+        },
+        {
+          "size": 256,
+          "format": "jpeg",
+          "bytes": 8401
+        },
+        {
+          "size": 128,
+          "format": "jpeg",
+          "bytes": 2708
+        }
+      ],
+      "alpha": {
+        "triangleShare": 0,
+        "meanRgb": [
+          0,
+          0,
+          0
+        ],
+        "hue": 0,
+        "saturation": 0,
+        "foliage": "none",
+        "cutoff": 0.5
+      },
+      "materials": [
+        "crate"
+      ]
+    },
+    {
+      "id": "debris_barrel_01",
+      "source": "packs/fps_dungeon_extras.glb#barrelbroken",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "pack": "fps_dungeon_extras",
+      "category": "debris",
+      "sourceTriangles": 556,
+      "lodTriangles": [
+        400,
+        150,
+        46
+      ],
+      "sourceHeightM": 1.251,
+      "heightM": 0.8,
+      "scale": 0.006393,
+      "atlas": {
+        "size": 512,
+        "cells": [
+          {
+            "texture": "barrel",
+            "source": 0,
+            "size": 512,
+            "repeat": 1
+          }
+        ]
+      },
+      "textures": [
+        {
+          "size": 512,
+          "format": "jpeg",
+          "bytes": 32405
+        },
+        {
+          "size": 256,
+          "format": "jpeg",
+          "bytes": 9879
+        },
+        {
+          "size": 128,
+          "format": "jpeg",
+          "bytes": 3261
+        }
+      ],
+      "alpha": {
+        "triangleShare": 0,
+        "meanRgb": [
+          0,
+          0,
+          0
+        ],
+        "hue": 0,
+        "saturation": 0,
+        "foliage": "none",
+        "cutoff": 0.5
+      },
+      "materials": [
+        "barrel"
+      ]
+    },
+    {
+      "id": "debris_chair_01",
+      "source": "packs/fps_dungeon_extras.glb#chair",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "pack": "fps_dungeon_extras",
+      "category": "debris",
+      "sourceTriangles": 492,
+      "lodTriangles": [
+        400,
+        150,
+        50
+      ],
+      "sourceHeightM": 1.378,
+      "heightM": 0.9,
+      "scale": 0.00653,
+      "atlas": {
+        "size": 512,
+        "cells": [
+          {
+            "texture": "chair",
+            "source": 0,
+            "size": 512,
+            "repeat": 1
+          }
+        ]
+      },
+      "textures": [
+        {
+          "size": 512,
+          "format": "jpeg",
+          "bytes": 30886
+        },
+        {
+          "size": 256,
+          "format": "jpeg",
+          "bytes": 8709
+        },
+        {
+          "size": 128,
+          "format": "jpeg",
+          "bytes": 2754
+        }
+      ],
+      "alpha": {
+        "triangleShare": 0,
+        "meanRgb": [
+          0,
+          0,
+          0
+        ],
+        "hue": 0,
+        "saturation": 0,
+        "foliage": "none",
+        "cutoff": 0.5
+      },
+      "materials": [
+        "chair"
+      ]
+    },
+    {
+      "id": "debris_crate_01",
+      "source": "packs/fps_dungeon_extras.glb#cratepieces",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "pack": "fps_dungeon_extras",
+      "category": "debris",
+      "sourceTriangles": 120,
+      "lodTriangles": [
+        120,
+        120,
+        50
+      ],
+      "sourceHeightM": 1.46,
+      "heightM": 0.9,
+      "scale": 0.006165,
+      "atlas": {
+        "size": 512,
+        "cells": [
+          {
+            "texture": "crate",
+            "source": 0,
+            "size": 512,
+            "repeat": 1
+          }
+        ]
+      },
+      "textures": [
+        {
+          "size": 512,
+          "format": "jpeg",
+          "bytes": 27647
+        },
+        {
+          "size": 256,
+          "format": "jpeg",
+          "bytes": 8401
+        },
+        {
+          "size": 128,
+          "format": "jpeg",
+          "bytes": 2708
+        }
+      ],
+      "alpha": {
+        "triangleShare": 0,
+        "meanRgb": [
+          0,
+          0,
+          0
+        ],
+        "hue": 0,
+        "saturation": 0,
+        "foliage": "none",
+        "cutoff": 0.5
+      },
+      "materials": [
+        "crate"
+      ]
+    },
+    {
+      "id": "debris_pallet_01",
+      "source": "packs/wood_walls.glb#palet",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "pack": "wood_walls",
+      "category": "debris",
+      "sourceTriangles": 240,
+      "lodTriangles": [
+        240,
+        150,
+        50
+      ],
+      "sourceHeightM": 0.452,
+      "heightM": 0.168,
+      "scale": 0.003725,
+      "atlas": {
+        "size": 512,
+        "cells": [
+          {
+            "texture": "wood",
+            "source": 0,
+            "size": 512,
+            "repeat": 2
+          }
+        ]
+      },
+      "textures": [
+        {
+          "size": 512,
+          "format": "jpeg",
+          "bytes": 38781
+        },
+        {
+          "size": 256,
+          "format": "jpeg",
+          "bytes": 8912
+        },
+        {
+          "size": 128,
+          "format": "jpeg",
+          "bytes": 2341
+        }
+      ],
+      "alpha": {
+        "triangleShare": 0,
+        "meanRgb": [
+          0,
+          0,
+          0
+        ],
+        "hue": 0,
+        "saturation": 0,
+        "foliage": "none",
+        "cutoff": 0.5
+      },
+      "materials": [
+        "wood"
+      ]
+    },
+    {
+      "id": "debris_pallet_02",
+      "source": "packs/wood_walls.glb#palet2",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "pack": "wood_walls",
+      "category": "debris",
+      "sourceTriangles": 480,
+      "lodTriangles": [
+        400,
+        150,
+        50
+      ],
+      "sourceHeightM": 0.893,
+      "heightM": 0.317,
+      "scale": 0.003544,
+      "atlas": {
+        "size": 512,
+        "cells": [
+          {
+            "texture": "wood",
+            "source": 0,
+            "size": 512,
+            "repeat": 2
+          }
+        ]
+      },
+      "textures": [
+        {
+          "size": 512,
+          "format": "jpeg",
+          "bytes": 38781
+        },
+        {
+          "size": 256,
+          "format": "jpeg",
+          "bytes": 8912
+        },
+        {
+          "size": 128,
+          "format": "jpeg",
+          "bytes": 2341
+        }
+      ],
+      "alpha": {
+        "triangleShare": 0,
+        "meanRgb": [
+          0,
+          0,
+          0
+        ],
+        "hue": 0,
+        "saturation": 0,
+        "foliage": "none",
+        "cutoff": 0.5
+      },
+      "materials": [
+        "wood"
+      ]
+    },
+    {
+      "id": "debris_table_01",
+      "source": "packs/fps_dungeon_extras.glb#table",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "pack": "fps_dungeon_extras",
+      "category": "debris",
+      "sourceTriangles": 516,
+      "lodTriangles": [
+        400,
+        150,
+        50
+      ],
+      "sourceHeightM": 0.971,
+      "heightM": 0.75,
+      "scale": 0.007722,
+      "atlas": {
+        "size": 512,
+        "cells": [
+          {
+            "texture": "table",
+            "source": 0,
+            "size": 512,
+            "repeat": 1
+          }
+        ]
+      },
+      "textures": [
+        {
+          "size": 512,
+          "format": "jpeg",
+          "bytes": 37032
+        },
+        {
+          "size": 256,
+          "format": "jpeg",
+          "bytes": 10021
+        },
+        {
+          "size": 128,
+          "format": "jpeg",
+          "bytes": 2993
+        }
+      ],
+      "alpha": {
+        "triangleShare": 0,
+        "meanRgb": [
+          0,
+          0,
+          0
+        ],
+        "hue": 0,
+        "saturation": 0,
+        "foliage": "none",
+        "cutoff": 0.5
+      },
+      "materials": [
+        "table"
+      ]
     },
     {
       "id": "dweller_body_human",
@@ -336,6 +1007,189 @@
       ]
     },
     {
+      "id": "grass_patch_01",
+      "source": "packs/grass_patches.glb#grasspatch1",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "pack": "grass_patches",
+      "category": "grass",
+      "sourceTriangles": 517,
+      "lodTriangles": [
+        400,
+        149,
+        50
+      ],
+      "sourceHeightM": 1.262,
+      "heightM": 0.6,
+      "scale": 0.004755,
+      "atlas": {
+        "size": 512,
+        "cells": [
+          {
+            "texture": "grass1",
+            "source": 0,
+            "size": 512,
+            "repeat": 1
+          }
+        ]
+      },
+      "textures": [
+        {
+          "size": 512,
+          "format": "webp",
+          "bytes": 67260
+        },
+        {
+          "size": 256,
+          "format": "webp",
+          "bytes": 24596
+        },
+        {
+          "size": 128,
+          "format": "webp",
+          "bytes": 8814
+        }
+      ],
+      "alpha": {
+        "triangleShare": 1,
+        "meanRgb": [
+          113.6,
+          89.6,
+          50.2
+        ],
+        "hue": 37,
+        "saturation": 0.56,
+        "foliage": "leafy",
+        "cutoff": 0.5
+      },
+      "materials": [
+        "grass1"
+      ]
+    },
+    {
+      "id": "grass_patch_02",
+      "source": "packs/grass_patches.glb#grasspatch2",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "pack": "grass_patches",
+      "category": "grass",
+      "sourceTriangles": 236,
+      "lodTriangles": [
+        236,
+        149,
+        50
+      ],
+      "sourceHeightM": 1.204,
+      "heightM": 0.6,
+      "scale": 0.004985,
+      "atlas": {
+        "size": 512,
+        "cells": [
+          {
+            "texture": "grass1",
+            "source": 0,
+            "size": 512,
+            "repeat": 1
+          }
+        ]
+      },
+      "textures": [
+        {
+          "size": 512,
+          "format": "webp",
+          "bytes": 67260
+        },
+        {
+          "size": 256,
+          "format": "webp",
+          "bytes": 24596
+        },
+        {
+          "size": 128,
+          "format": "webp",
+          "bytes": 8814
+        }
+      ],
+      "alpha": {
+        "triangleShare": 1,
+        "meanRgb": [
+          113.6,
+          89.6,
+          50.2
+        ],
+        "hue": 37,
+        "saturation": 0.56,
+        "foliage": "leafy",
+        "cutoff": 0.5
+      },
+      "materials": [
+        "grass1"
+      ]
+    },
+    {
+      "id": "grass_patch_03",
+      "source": "packs/grass_patches.glb#grasspatch3",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "pack": "grass_patches",
+      "category": "grass",
+      "sourceTriangles": 1157,
+      "lodTriangles": [
+        400,
+        150,
+        50
+      ],
+      "sourceHeightM": 1.295,
+      "heightM": 0.6,
+      "scale": 0.004634,
+      "atlas": {
+        "size": 512,
+        "cells": [
+          {
+            "texture": "grass1",
+            "source": 0,
+            "size": 512,
+            "repeat": 1
+          }
+        ]
+      },
+      "textures": [
+        {
+          "size": 512,
+          "format": "webp",
+          "bytes": 67260
+        },
+        {
+          "size": 256,
+          "format": "webp",
+          "bytes": 24596
+        },
+        {
+          "size": 128,
+          "format": "webp",
+          "bytes": 8814
+        }
+      ],
+      "alpha": {
+        "triangleShare": 1,
+        "meanRgb": [
+          113.6,
+          89.6,
+          50.2
+        ],
+        "hue": 37,
+        "saturation": 0.56,
+        "foliage": "leafy",
+        "cutoff": 0.5
+      },
+      "materials": [
+        "grass1"
+      ]
+    },
+    {
       "id": "grass001",
       "source": "props/Grass001.glb",
       "errors": [],
@@ -357,6 +1211,67 @@
       "scale": 0.01
     },
     {
+      "id": "plant_01",
+      "source": "packs/plant.glb#root",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "pack": "plant",
+      "category": "plant",
+      "sourceTriangles": 186,
+      "lodTriangles": [
+        186,
+        99,
+        39
+      ],
+      "sourceHeightM": 4.35,
+      "heightM": 1.2,
+      "scale": 0.002759,
+      "atlas": {
+        "size": 512,
+        "cells": [
+          {
+            "texture": "plant1leaf",
+            "source": 0,
+            "size": 512,
+            "repeat": 1
+          }
+        ]
+      },
+      "textures": [
+        {
+          "size": 512,
+          "format": "webp",
+          "bytes": 48086
+        },
+        {
+          "size": 256,
+          "format": "webp",
+          "bytes": 18508
+        },
+        {
+          "size": 128,
+          "format": "webp",
+          "bytes": 6932
+        }
+      ],
+      "alpha": {
+        "triangleShare": 1,
+        "meanRgb": [
+          97.3,
+          76.4,
+          26.9
+        ],
+        "hue": 42,
+        "saturation": 0.72,
+        "foliage": "leafy",
+        "cutoff": 0.5
+      },
+      "materials": [
+        "plant1leaf"
+      ]
+    },
+    {
       "id": "reed001",
       "source": "props/Reed001.glb",
       "errors": [],
@@ -376,6 +1291,677 @@
       "clipsDropped": [],
       "extraUvSetsRemoved": 0,
       "scale": 0.01
+    },
+    {
+      "id": "rock_set2_01",
+      "source": "packs/rocks_set2.glb#smallrock1",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "pack": "rocks_set2",
+      "category": "rock",
+      "sourceTriangles": 590,
+      "lodTriangles": [
+        590,
+        400,
+        120
+      ],
+      "sourceHeightM": 0.913,
+      "heightM": 0.913,
+      "scale": 0.01,
+      "atlas": {
+        "size": 512,
+        "cells": [
+          {
+            "texture": "cliffs",
+            "source": 0,
+            "size": 512,
+            "repeat": 1
+          }
+        ]
+      },
+      "textures": [
+        {
+          "size": 512,
+          "format": "jpeg",
+          "bytes": 38468
+        },
+        {
+          "size": 256,
+          "format": "jpeg",
+          "bytes": 10328
+        },
+        {
+          "size": 128,
+          "format": "jpeg",
+          "bytes": 2994
+        }
+      ],
+      "alpha": {
+        "triangleShare": 0,
+        "meanRgb": [
+          0,
+          0,
+          0
+        ],
+        "hue": 0,
+        "saturation": 0,
+        "foliage": "none",
+        "cutoff": 0.5
+      },
+      "materials": [
+        "cliffs"
+      ]
+    },
+    {
+      "id": "rock_set2_02",
+      "source": "packs/rocks_set2.glb#smallrock2",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "pack": "rocks_set2",
+      "category": "rock",
+      "sourceTriangles": 164,
+      "lodTriangles": [
+        164,
+        164,
+        120
+      ],
+      "sourceHeightM": 0.631,
+      "heightM": 0.631,
+      "scale": 0.01,
+      "atlas": {
+        "size": 512,
+        "cells": [
+          {
+            "texture": "cliffs",
+            "source": 0,
+            "size": 512,
+            "repeat": 1
+          }
+        ]
+      },
+      "textures": [
+        {
+          "size": 512,
+          "format": "jpeg",
+          "bytes": 38468
+        },
+        {
+          "size": 256,
+          "format": "jpeg",
+          "bytes": 10328
+        },
+        {
+          "size": 128,
+          "format": "jpeg",
+          "bytes": 2994
+        }
+      ],
+      "alpha": {
+        "triangleShare": 0,
+        "meanRgb": [
+          0,
+          0,
+          0
+        ],
+        "hue": 0,
+        "saturation": 0,
+        "foliage": "none",
+        "cutoff": 0.5
+      },
+      "materials": [
+        "cliffs"
+      ]
+    },
+    {
+      "id": "rock_set2_03",
+      "source": "packs/rocks_set2.glb#smallrock3",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "pack": "rocks_set2",
+      "category": "rock",
+      "sourceTriangles": 236,
+      "lodTriangles": [
+        236,
+        236,
+        120
+      ],
+      "sourceHeightM": 0.761,
+      "heightM": 0.761,
+      "scale": 0.01,
+      "atlas": {
+        "size": 512,
+        "cells": [
+          {
+            "texture": "cliffs",
+            "source": 0,
+            "size": 512,
+            "repeat": 1
+          }
+        ]
+      },
+      "textures": [
+        {
+          "size": 512,
+          "format": "jpeg",
+          "bytes": 38468
+        },
+        {
+          "size": 256,
+          "format": "jpeg",
+          "bytes": 10328
+        },
+        {
+          "size": 128,
+          "format": "jpeg",
+          "bytes": 2994
+        }
+      ],
+      "alpha": {
+        "triangleShare": 0,
+        "meanRgb": [
+          0,
+          0,
+          0
+        ],
+        "hue": 0,
+        "saturation": 0,
+        "foliage": "none",
+        "cutoff": 0.5
+      },
+      "materials": [
+        "cliffs"
+      ]
+    },
+    {
+      "id": "rock_set2_04",
+      "source": "packs/rocks_set2.glb#smallrock4",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "pack": "rocks_set2",
+      "category": "rock",
+      "sourceTriangles": 204,
+      "lodTriangles": [
+        204,
+        204,
+        120
+      ],
+      "sourceHeightM": 0.731,
+      "heightM": 0.731,
+      "scale": 0.01,
+      "atlas": {
+        "size": 512,
+        "cells": [
+          {
+            "texture": "cliffs",
+            "source": 0,
+            "size": 512,
+            "repeat": 1
+          }
+        ]
+      },
+      "textures": [
+        {
+          "size": 512,
+          "format": "jpeg",
+          "bytes": 38468
+        },
+        {
+          "size": 256,
+          "format": "jpeg",
+          "bytes": 10328
+        },
+        {
+          "size": 128,
+          "format": "jpeg",
+          "bytes": 2994
+        }
+      ],
+      "alpha": {
+        "triangleShare": 0,
+        "meanRgb": [
+          0,
+          0,
+          0
+        ],
+        "hue": 0,
+        "saturation": 0,
+        "foliage": "none",
+        "cutoff": 0.5
+      },
+      "materials": [
+        "cliffs"
+      ]
+    },
+    {
+      "id": "rock_set2_05",
+      "source": "packs/rocks_set2.glb#smallrock5",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "pack": "rocks_set2",
+      "category": "rock",
+      "sourceTriangles": 1344,
+      "lodTriangles": [
+        1000,
+        400,
+        120
+      ],
+      "sourceHeightM": 1.739,
+      "heightM": 1.736,
+      "scale": 0.01,
+      "atlas": {
+        "size": 512,
+        "cells": [
+          {
+            "texture": "cliffs",
+            "source": 0,
+            "size": 512,
+            "repeat": 1
+          }
+        ]
+      },
+      "textures": [
+        {
+          "size": 512,
+          "format": "jpeg",
+          "bytes": 38468
+        },
+        {
+          "size": 256,
+          "format": "jpeg",
+          "bytes": 10328
+        },
+        {
+          "size": 128,
+          "format": "jpeg",
+          "bytes": 2994
+        }
+      ],
+      "alpha": {
+        "triangleShare": 0,
+        "meanRgb": [
+          0,
+          0,
+          0
+        ],
+        "hue": 0,
+        "saturation": 0,
+        "foliage": "none",
+        "cutoff": 0.5
+      },
+      "materials": [
+        "cliffs"
+      ]
+    },
+    {
+      "id": "rock_set2_06",
+      "source": "packs/rocks_set2.glb#smallrock5_1",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "pack": "rocks_set2",
+      "category": "rock",
+      "sourceTriangles": 1344,
+      "lodTriangles": [
+        1000,
+        400,
+        120
+      ],
+      "sourceHeightM": 2.012,
+      "heightM": 2.009,
+      "scale": 0.01,
+      "atlas": {
+        "size": 512,
+        "cells": [
+          {
+            "texture": "cliffs",
+            "source": 0,
+            "size": 512,
+            "repeat": 1
+          }
+        ]
+      },
+      "textures": [
+        {
+          "size": 512,
+          "format": "jpeg",
+          "bytes": 38468
+        },
+        {
+          "size": 256,
+          "format": "jpeg",
+          "bytes": 10328
+        },
+        {
+          "size": 128,
+          "format": "jpeg",
+          "bytes": 2994
+        }
+      ],
+      "alpha": {
+        "triangleShare": 0,
+        "meanRgb": [
+          0,
+          0,
+          0
+        ],
+        "hue": 0,
+        "saturation": 0,
+        "foliage": "none",
+        "cutoff": 0.5
+      },
+      "materials": [
+        "cliffs"
+      ]
+    },
+    {
+      "id": "rock_set2_07",
+      "source": "packs/rocks_set2.glb#smallrockcluster",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "pack": "rocks_set2",
+      "category": "rock",
+      "sourceTriangles": 2938,
+      "lodTriangles": [
+        1000,
+        400,
+        120
+      ],
+      "sourceHeightM": 2.233,
+      "heightM": 2.225,
+      "scale": 0.01,
+      "atlas": {
+        "size": 1024,
+        "cells": [
+          {
+            "texture": "cliffs",
+            "source": 0,
+            "size": 1024,
+            "repeat": 1
+          }
+        ]
+      },
+      "textures": [
+        {
+          "size": 1024,
+          "format": "jpeg",
+          "bytes": 146618
+        },
+        {
+          "size": 512,
+          "format": "jpeg",
+          "bytes": 38468
+        },
+        {
+          "size": 256,
+          "format": "jpeg",
+          "bytes": 10169
+        }
+      ],
+      "alpha": {
+        "triangleShare": 0,
+        "meanRgb": [
+          0,
+          0,
+          0
+        ],
+        "hue": 0,
+        "saturation": 0,
+        "foliage": "none",
+        "cutoff": 0.5
+      },
+      "materials": [
+        "cliffs"
+      ]
+    },
+    {
+      "id": "rock_set2_08",
+      "source": "packs/rocks_set2.glb#smallrockcluster_1",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "pack": "rocks_set2",
+      "category": "rock",
+      "sourceTriangles": 2938,
+      "lodTriangles": [
+        1000,
+        400,
+        120
+      ],
+      "sourceHeightM": 2.533,
+      "heightM": 2.523,
+      "scale": 0.01,
+      "atlas": {
+        "size": 1024,
+        "cells": [
+          {
+            "texture": "cliffs",
+            "source": 0,
+            "size": 1024,
+            "repeat": 1
+          }
+        ]
+      },
+      "textures": [
+        {
+          "size": 1024,
+          "format": "jpeg",
+          "bytes": 146618
+        },
+        {
+          "size": 512,
+          "format": "jpeg",
+          "bytes": 38468
+        },
+        {
+          "size": 256,
+          "format": "jpeg",
+          "bytes": 10169
+        }
+      ],
+      "alpha": {
+        "triangleShare": 0,
+        "meanRgb": [
+          0,
+          0,
+          0
+        ],
+        "hue": 0,
+        "saturation": 0,
+        "foliage": "none",
+        "cutoff": 0.5
+      },
+      "materials": [
+        "cliffs"
+      ]
+    },
+    {
+      "id": "rock_set2_09",
+      "source": "packs/rocks_set2.glb#cliff1",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "pack": "rocks_set2",
+      "category": "rock",
+      "sourceTriangles": 9028,
+      "lodTriangles": [
+        1000,
+        400,
+        120
+      ],
+      "sourceHeightM": 10.083,
+      "heightM": 10.078,
+      "scale": 0.01,
+      "atlas": {
+        "size": 1024,
+        "cells": [
+          {
+            "texture": "cliffs",
+            "source": 0,
+            "size": 1024,
+            "repeat": 1
+          }
+        ]
+      },
+      "textures": [
+        {
+          "size": 1024,
+          "format": "jpeg",
+          "bytes": 146618
+        },
+        {
+          "size": 512,
+          "format": "jpeg",
+          "bytes": 38468
+        },
+        {
+          "size": 256,
+          "format": "jpeg",
+          "bytes": 10169
+        }
+      ],
+      "alpha": {
+        "triangleShare": 0,
+        "meanRgb": [
+          0,
+          0,
+          0
+        ],
+        "hue": 0,
+        "saturation": 0,
+        "foliage": "none",
+        "cutoff": 0.5
+      },
+      "materials": [
+        "cliffs"
+      ]
+    },
+    {
+      "id": "rock_set2_10",
+      "source": "packs/rocks_set2.glb#cliff2",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "pack": "rocks_set2",
+      "category": "rock",
+      "sourceTriangles": 7180,
+      "lodTriangles": [
+        1000,
+        400,
+        119
+      ],
+      "sourceHeightM": 7.833,
+      "heightM": 7.747,
+      "scale": 0.01,
+      "atlas": {
+        "size": 1024,
+        "cells": [
+          {
+            "texture": "cliffs",
+            "source": 0,
+            "size": 1024,
+            "repeat": 1
+          }
+        ]
+      },
+      "textures": [
+        {
+          "size": 1024,
+          "format": "jpeg",
+          "bytes": 146618
+        },
+        {
+          "size": 512,
+          "format": "jpeg",
+          "bytes": 38468
+        },
+        {
+          "size": 256,
+          "format": "jpeg",
+          "bytes": 10169
+        }
+      ],
+      "alpha": {
+        "triangleShare": 0,
+        "meanRgb": [
+          0,
+          0,
+          0
+        ],
+        "hue": 0,
+        "saturation": 0,
+        "foliage": "none",
+        "cutoff": 0.5
+      },
+      "materials": [
+        "cliffs"
+      ]
+    },
+    {
+      "id": "rock_set2_11",
+      "source": "packs/rocks_set2.glb#cliff3",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "pack": "rocks_set2",
+      "category": "rock",
+      "sourceTriangles": 14073,
+      "lodTriangles": [
+        1000,
+        400,
+        120
+      ],
+      "sourceHeightM": 7.764,
+      "heightM": 7.701,
+      "scale": 0.01,
+      "atlas": {
+        "size": 1024,
+        "cells": [
+          {
+            "texture": "cliffs",
+            "source": 0,
+            "size": 1024,
+            "repeat": 1
+          }
+        ]
+      },
+      "textures": [
+        {
+          "size": 1024,
+          "format": "jpeg",
+          "bytes": 146618
+        },
+        {
+          "size": 512,
+          "format": "jpeg",
+          "bytes": 38468
+        },
+        {
+          "size": 256,
+          "format": "jpeg",
+          "bytes": 10169
+        }
+      ],
+      "alpha": {
+        "triangleShare": 0,
+        "meanRgb": [
+          0,
+          0,
+          0
+        ],
+        "hue": 0,
+        "saturation": 0,
+        "foliage": "none",
+        "cutoff": 0.5
+      },
+      "materials": [
+        "cliffs"
+      ]
     },
     {
       "id": "rock001",
@@ -441,6 +2027,618 @@
       "scale": 0.01
     },
     {
+      "id": "tree_bare_01",
+      "source": "packs/trees.glb#tree1",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "pack": "trees",
+      "category": "tree-bare",
+      "sourceTriangles": 3354,
+      "lodTriangles": [
+        1500,
+        500,
+        144
+      ],
+      "sourceHeightM": 9.288,
+      "heightM": 9.274,
+      "scale": 0.01,
+      "atlas": {
+        "size": 1024,
+        "cells": [
+          {
+            "texture": "tree1",
+            "source": 0,
+            "size": 512,
+            "repeat": 1
+          },
+          {
+            "texture": "branches",
+            "source": 1,
+            "size": 512,
+            "repeat": 1
+          }
+        ]
+      },
+      "textures": [
+        {
+          "size": 1024,
+          "format": "webp",
+          "bytes": 52434
+        },
+        {
+          "size": 512,
+          "format": "webp",
+          "bytes": 21088
+        },
+        {
+          "size": 256,
+          "format": "webp",
+          "bytes": 7808
+        }
+      ],
+      "alpha": {
+        "triangleShare": 0.18783542039355994,
+        "meanRgb": [
+          41.4,
+          38,
+          33
+        ],
+        "hue": 35,
+        "saturation": 0.2,
+        "foliage": "bare",
+        "cutoff": 0.5
+      },
+      "materials": [
+        "tree1",
+        "branches"
+      ]
+    },
+    {
+      "id": "tree_bare_02",
+      "source": "packs/trees.glb#tree2",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "pack": "trees",
+      "category": "tree-bare",
+      "sourceTriangles": 3176,
+      "lodTriangles": [
+        1500,
+        500,
+        148
+      ],
+      "sourceHeightM": 7.374,
+      "heightM": 7.339,
+      "scale": 0.01,
+      "atlas": {
+        "size": 1024,
+        "cells": [
+          {
+            "texture": "tree2",
+            "source": 0,
+            "size": 512,
+            "repeat": 1
+          },
+          {
+            "texture": "branches",
+            "source": 1,
+            "size": 512,
+            "repeat": 1
+          }
+        ]
+      },
+      "textures": [
+        {
+          "size": 1024,
+          "format": "webp",
+          "bytes": 50582
+        },
+        {
+          "size": 512,
+          "format": "webp",
+          "bytes": 20782
+        },
+        {
+          "size": 256,
+          "format": "webp",
+          "bytes": 7694
+        }
+      ],
+      "alpha": {
+        "triangleShare": 0.11335012594458438,
+        "meanRgb": [
+          41.4,
+          38,
+          33
+        ],
+        "hue": 35,
+        "saturation": 0.2,
+        "foliage": "bare",
+        "cutoff": 0.5
+      },
+      "materials": [
+        "tree2",
+        "branches"
+      ]
+    },
+    {
+      "id": "tree_bare_03",
+      "source": "packs/trees.glb#tree3",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "pack": "trees",
+      "category": "tree-bare",
+      "sourceTriangles": 3328,
+      "lodTriangles": [
+        1500,
+        498,
+        136
+      ],
+      "sourceHeightM": 7.331,
+      "heightM": 7.331,
+      "scale": 0.01,
+      "atlas": {
+        "size": 1024,
+        "cells": [
+          {
+            "texture": "tree3",
+            "source": 0,
+            "size": 512,
+            "repeat": 1
+          },
+          {
+            "texture": "branches",
+            "source": 1,
+            "size": 512,
+            "repeat": 1
+          }
+        ]
+      },
+      "textures": [
+        {
+          "size": 1024,
+          "format": "webp",
+          "bytes": 54066
+        },
+        {
+          "size": 512,
+          "format": "webp",
+          "bytes": 21738
+        },
+        {
+          "size": 256,
+          "format": "webp",
+          "bytes": 7914
+        }
+      ],
+      "alpha": {
+        "triangleShare": 0.14423076923076922,
+        "meanRgb": [
+          41.4,
+          38,
+          33
+        ],
+        "hue": 35,
+        "saturation": 0.2,
+        "foliage": "bare",
+        "cutoff": 0.5
+      },
+      "materials": [
+        "tree3",
+        "branches"
+      ]
+    },
+    {
+      "id": "tree_oak_01",
+      "source": "packs/oak_trees.glb#Treesmall",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "pack": "oak_trees",
+      "category": "tree-leafy",
+      "sourceTriangles": 3783,
+      "lodTriangles": [
+        1486,
+        498,
+        147
+      ],
+      "sourceHeightM": 3.91,
+      "heightM": 7,
+      "scale": 0.017901,
+      "atlas": {
+        "size": 1024,
+        "cells": [
+          {
+            "texture": "bark1",
+            "source": 0,
+            "size": 512,
+            "repeat": 3
+          },
+          {
+            "texture": "leaf1",
+            "source": 1,
+            "size": 512,
+            "repeat": 1
+          }
+        ]
+      },
+      "textures": [
+        {
+          "size": 1024,
+          "format": "webp",
+          "bytes": 163412
+        },
+        {
+          "size": 512,
+          "format": "webp",
+          "bytes": 55342
+        },
+        {
+          "size": 256,
+          "format": "webp",
+          "bytes": 17204
+        }
+      ],
+      "alpha": {
+        "triangleShare": 0.10362146444620672,
+        "meanRgb": [
+          121.3,
+          116.7,
+          50.2
+        ],
+        "hue": 56,
+        "saturation": 0.59,
+        "foliage": "leafy",
+        "cutoff": 0.6541539634146342
+      },
+      "materials": [
+        "bark1",
+        "leaf1"
+      ]
+    },
+    {
+      "id": "tree_oak_02",
+      "source": "packs/oak_trees.glb#Treemedium",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "pack": "oak_trees",
+      "category": "tree-leafy",
+      "sourceTriangles": 2951,
+      "lodTriangles": [
+        1458,
+        495,
+        147
+      ],
+      "sourceHeightM": 5.586,
+      "heightM": 10,
+      "scale": 0.017901,
+      "atlas": {
+        "size": 1024,
+        "cells": [
+          {
+            "texture": "bark1",
+            "source": 0,
+            "size": 512,
+            "repeat": 2
+          },
+          {
+            "texture": "leaf1",
+            "source": 1,
+            "size": 512,
+            "repeat": 1
+          }
+        ]
+      },
+      "textures": [
+        {
+          "size": 1024,
+          "format": "webp",
+          "bytes": 166228
+        },
+        {
+          "size": 512,
+          "format": "webp",
+          "bytes": 54770
+        },
+        {
+          "size": 256,
+          "format": "webp",
+          "bytes": 17458
+        }
+      ],
+      "alpha": {
+        "triangleShare": 0.3381904439173162,
+        "meanRgb": [
+          121.3,
+          116.7,
+          50.2
+        ],
+        "hue": 56,
+        "saturation": 0.59,
+        "foliage": "leafy",
+        "cutoff": 0.6541539634146342
+      },
+      "materials": [
+        "bark1",
+        "leaf1"
+      ]
+    },
+    {
+      "id": "tree_oak_03",
+      "source": "packs/oak_trees.glb#treelarge",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "pack": "oak_trees",
+      "category": "tree-leafy",
+      "sourceTriangles": 7741,
+      "lodTriangles": [
+        1471,
+        497,
+        146
+      ],
+      "sourceHeightM": 7.792,
+      "heightM": 13,
+      "scale": 0.016684,
+      "atlas": {
+        "size": 1024,
+        "cells": [
+          {
+            "texture": "bark1",
+            "source": 0,
+            "size": 512,
+            "repeat": 2
+          },
+          {
+            "texture": "leaf1",
+            "source": 1,
+            "size": 512,
+            "repeat": 1
+          }
+        ]
+      },
+      "textures": [
+        {
+          "size": 1024,
+          "format": "webp",
+          "bytes": 166228
+        },
+        {
+          "size": 512,
+          "format": "webp",
+          "bytes": 54770
+        },
+        {
+          "size": 256,
+          "format": "webp",
+          "bytes": 17458
+        }
+      ],
+      "alpha": {
+        "triangleShare": 0.2285234465831288,
+        "meanRgb": [
+          121.3,
+          116.7,
+          50.2
+        ],
+        "hue": 56,
+        "saturation": 0.59,
+        "foliage": "leafy",
+        "cutoff": 0.6541539634146342
+      },
+      "materials": [
+        "bark1",
+        "leaf1"
+      ]
+    },
+    {
+      "id": "tree_pine_01",
+      "source": "packs/more_trees.glb#tree1",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "pack": "more_trees",
+      "category": "tree-leafy",
+      "sourceTriangles": 1612,
+      "lodTriangles": [
+        1500,
+        488,
+        130
+      ],
+      "sourceHeightM": 9.386,
+      "heightM": 9.386,
+      "scale": 0.01,
+      "atlas": {
+        "size": 1024,
+        "cells": [
+          {
+            "texture": "bark1",
+            "source": 0,
+            "size": 512,
+            "repeat": 2
+          },
+          {
+            "texture": "pinebranch",
+            "source": 1,
+            "size": 512,
+            "repeat": 1
+          }
+        ]
+      },
+      "textures": [
+        {
+          "size": 1024,
+          "format": "webp",
+          "bytes": 95002
+        },
+        {
+          "size": 512,
+          "format": "webp",
+          "bytes": 33682
+        },
+        {
+          "size": 256,
+          "format": "webp",
+          "bytes": 11178
+        }
+      ],
+      "alpha": {
+        "triangleShare": 0.5359801488833746,
+        "meanRgb": [
+          106.5,
+          89.6,
+          56.3
+        ],
+        "hue": 40,
+        "saturation": 0.47,
+        "foliage": "leafy",
+        "cutoff": 0.8736661585
+      },
+      "materials": [
+        "bark1",
+        "pinebranch"
+      ]
+    },
+    {
+      "id": "tree_pine_02",
+      "source": "packs/more_trees.glb#tree2",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "pack": "more_trees",
+      "category": "tree-leafy",
+      "sourceTriangles": 1718,
+      "lodTriangles": [
+        1499,
+        487,
+        130
+      ],
+      "sourceHeightM": 12.932,
+      "heightM": 12.932,
+      "scale": 0.01,
+      "atlas": {
+        "size": 1024,
+        "cells": [
+          {
+            "texture": "bark1",
+            "source": 0,
+            "size": 512,
+            "repeat": 2
+          },
+          {
+            "texture": "pinebranch",
+            "source": 1,
+            "size": 512,
+            "repeat": 1
+          }
+        ]
+      },
+      "textures": [
+        {
+          "size": 1024,
+          "format": "webp",
+          "bytes": 95002
+        },
+        {
+          "size": 512,
+          "format": "webp",
+          "bytes": 33682
+        },
+        {
+          "size": 256,
+          "format": "webp",
+          "bytes": 11178
+        }
+      ],
+      "alpha": {
+        "triangleShare": 0.5168800931315483,
+        "meanRgb": [
+          106.5,
+          89.6,
+          56.3
+        ],
+        "hue": 40,
+        "saturation": 0.47,
+        "foliage": "leafy",
+        "cutoff": 0.8736661585
+      },
+      "materials": [
+        "bark1",
+        "pinebranch"
+      ]
+    },
+    {
+      "id": "tree_pine_03",
+      "source": "packs/more_trees.glb#tree3",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "pack": "more_trees",
+      "category": "tree-leafy",
+      "sourceTriangles": 1432,
+      "lodTriangles": [
+        1432,
+        488,
+        131
+      ],
+      "sourceHeightM": 5.35,
+      "heightM": 6.5,
+      "scale": 0.012149,
+      "atlas": {
+        "size": 1024,
+        "cells": [
+          {
+            "texture": "bark1",
+            "source": 0,
+            "size": 512,
+            "repeat": 2
+          },
+          {
+            "texture": "pinebranch",
+            "source": 1,
+            "size": 512,
+            "repeat": 1
+          }
+        ]
+      },
+      "textures": [
+        {
+          "size": 1024,
+          "format": "webp",
+          "bytes": 95002
+        },
+        {
+          "size": 512,
+          "format": "webp",
+          "bytes": 33682
+        },
+        {
+          "size": 256,
+          "format": "webp",
+          "bytes": 11178
+        }
+      ],
+      "alpha": {
+        "triangleShare": 0.4860335195530726,
+        "meanRgb": [
+          106.5,
+          89.6,
+          56.3
+        ],
+        "hue": 40,
+        "saturation": 0.47,
+        "foliage": "leafy",
+        "cutoff": 0.8736661585
+      },
+      "materials": [
+        "bark1",
+        "pinebranch"
+      ]
+    },
+    {
       "id": "treehigh001",
       "source": "props/TreeHigh001.glb",
       "errors": [],
@@ -502,6 +2700,311 @@
       "clipsDropped": [],
       "extraUvSetsRemoved": 0,
       "scale": 0.01
+    },
+    {
+      "id": "wall_wood_01",
+      "source": "packs/wood_walls.glb#woodwall1",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "pack": "wood_walls",
+      "category": "structure",
+      "sourceTriangles": 80,
+      "lodTriangles": [
+        80,
+        80,
+        80
+      ],
+      "sourceHeightM": 5.011,
+      "heightM": 3,
+      "scale": 0.005987,
+      "atlas": {
+        "size": 1024,
+        "cells": [
+          {
+            "texture": "wood",
+            "source": 0,
+            "size": 1024,
+            "repeat": 2
+          }
+        ]
+      },
+      "textures": [
+        {
+          "size": 1024,
+          "format": "jpeg",
+          "bytes": 182465
+        },
+        {
+          "size": 512,
+          "format": "jpeg",
+          "bytes": 39524
+        },
+        {
+          "size": 256,
+          "format": "jpeg",
+          "bytes": 8813
+        }
+      ],
+      "alpha": {
+        "triangleShare": 0,
+        "meanRgb": [
+          0,
+          0,
+          0
+        ],
+        "hue": 0,
+        "saturation": 0,
+        "foliage": "none",
+        "cutoff": 0.5
+      },
+      "materials": [
+        "wood"
+      ]
+    },
+    {
+      "id": "wall_wood_02",
+      "source": "packs/wood_walls.glb#woodwall2",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "pack": "wood_walls",
+      "category": "structure",
+      "sourceTriangles": 328,
+      "lodTriangles": [
+        328,
+        328,
+        116
+      ],
+      "sourceHeightM": 6.137,
+      "heightM": 3,
+      "scale": 0.004888,
+      "atlas": {
+        "size": 1024,
+        "cells": [
+          {
+            "texture": "wood",
+            "source": 0,
+            "size": 1024,
+            "repeat": 2
+          }
+        ]
+      },
+      "textures": [
+        {
+          "size": 1024,
+          "format": "jpeg",
+          "bytes": 182465
+        },
+        {
+          "size": 512,
+          "format": "jpeg",
+          "bytes": 39524
+        },
+        {
+          "size": 256,
+          "format": "jpeg",
+          "bytes": 8813
+        }
+      ],
+      "alpha": {
+        "triangleShare": 0,
+        "meanRgb": [
+          0,
+          0,
+          0
+        ],
+        "hue": 0,
+        "saturation": 0,
+        "foliage": "none",
+        "cutoff": 0.5
+      },
+      "materials": [
+        "wood"
+      ]
+    },
+    {
+      "id": "wall_wood_03",
+      "source": "packs/wood_walls.glb#woodwall3",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "pack": "wood_walls",
+      "category": "structure",
+      "sourceTriangles": 152,
+      "lodTriangles": [
+        152,
+        152,
+        120
+      ],
+      "sourceHeightM": 6.805,
+      "heightM": 3,
+      "scale": 0.004408,
+      "atlas": {
+        "size": 1024,
+        "cells": [
+          {
+            "texture": "wood",
+            "source": 0,
+            "size": 1024,
+            "repeat": 2
+          }
+        ]
+      },
+      "textures": [
+        {
+          "size": 1024,
+          "format": "jpeg",
+          "bytes": 182465
+        },
+        {
+          "size": 512,
+          "format": "jpeg",
+          "bytes": 39524
+        },
+        {
+          "size": 256,
+          "format": "jpeg",
+          "bytes": 8813
+        }
+      ],
+      "alpha": {
+        "triangleShare": 0,
+        "meanRgb": [
+          0,
+          0,
+          0
+        ],
+        "hue": 0,
+        "saturation": 0,
+        "foliage": "none",
+        "cutoff": 0.5
+      },
+      "materials": [
+        "wood"
+      ]
+    },
+    {
+      "id": "wall_wood_04",
+      "source": "packs/wood_walls.glb#woodwall4",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "pack": "wood_walls",
+      "category": "structure",
+      "sourceTriangles": 256,
+      "lodTriangles": [
+        256,
+        256,
+        120
+      ],
+      "sourceHeightM": 5.233,
+      "heightM": 3,
+      "scale": 0.005733,
+      "atlas": {
+        "size": 1024,
+        "cells": [
+          {
+            "texture": "wood",
+            "source": 0,
+            "size": 1024,
+            "repeat": 1
+          }
+        ]
+      },
+      "textures": [
+        {
+          "size": 1024,
+          "format": "jpeg",
+          "bytes": 209554
+        },
+        {
+          "size": 512,
+          "format": "jpeg",
+          "bytes": 46009
+        },
+        {
+          "size": 256,
+          "format": "jpeg",
+          "bytes": 10032
+        }
+      ],
+      "alpha": {
+        "triangleShare": 0,
+        "meanRgb": [
+          0,
+          0,
+          0
+        ],
+        "hue": 0,
+        "saturation": 0,
+        "foliage": "none",
+        "cutoff": 0.5
+      },
+      "materials": [
+        "wood"
+      ]
+    },
+    {
+      "id": "watchtower_01",
+      "source": "packs/outpost.glb#outpost",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "pack": "outpost",
+      "category": "structure",
+      "sourceTriangles": 474,
+      "lodTriangles": [
+        474,
+        400,
+        120
+      ],
+      "sourceHeightM": 13.06,
+      "heightM": 8,
+      "scale": 0.006126,
+      "atlas": {
+        "size": 1024,
+        "cells": [
+          {
+            "texture": "wood",
+            "source": 0,
+            "size": 1024,
+            "repeat": 3
+          }
+        ]
+      },
+      "textures": [
+        {
+          "size": 1024,
+          "format": "jpeg",
+          "bytes": 73572
+        },
+        {
+          "size": 512,
+          "format": "jpeg",
+          "bytes": 20014
+        },
+        {
+          "size": 256,
+          "format": "jpeg",
+          "bytes": 5807
+        }
+      ],
+      "alpha": {
+        "triangleShare": 0,
+        "meanRgb": [
+          0,
+          0,
+          0
+        ],
+        "hue": 0,
+        "saturation": 0,
+        "foliage": "none",
+        "cutoff": 0.5
+      },
+      "materials": [
+        "wood"
+      ]
     }
   ]
 }
