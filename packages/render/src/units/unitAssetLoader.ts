@@ -33,7 +33,7 @@ export interface LoadedUnitAsset {
 }
 
 export interface UnitAssetLoadOptions {
-  /** Default 'auto': the alpha of the atlas when it holds a mask, else the material names. */
+  /** Default: the manifest's teamMask. 'auto' tests the atlas alpha (for manifests without the field). */
   teamMask?: TeamMaskSource;
   /** Reads atlas pixels for the mask test and the team pivot; default the canvas (null outside a browser). */
   rasterize?: Rasterize;
@@ -131,6 +131,9 @@ export class UnitAssetLoader {
     const baked = entry.baked;
     if (!baked) throw new UnitAssetError(`asset "${assetId}" has no baked animations`);
     const url = (path: string): string => this.resolveUrl(manifestUrl, path);
+    // An explicit option wins ('auto' reads the atlas); otherwise the asset says where its team mask lives (manifest
+    // `teamMask`, absent means 'materialName' by the manifest contract).
+    const teamMask = opts.teamMask ?? entry.teamMask ?? 'materialName';
 
     const [animBytes, ...glbs] = await Promise.all([
       this.io.fetchBytes(url(baked.path)),
@@ -141,11 +144,11 @@ export class UnitAssetLoader {
     const scenes = await Promise.all(
       entry.lods.map((lod, i) => this.io.parseGltf(glbs[i]!, url(lod.path))),
     );
-    // LOD 0 decides where the team mask comes from ('auto' reads its atlas); the lighter LODs follow it.
+    // LOD 0 resolves the team mask ('auto' reads its atlas) and measures the team pivot; the lighter LODs follow it.
     const rasterize = opts.rasterize ?? canvasRasterize;
     const lod0 = unitGeometryFromGltf(scenes[0]!, {
       boneCount: entry.boneCount,
-      teamMask: opts.teamMask ?? 'auto',
+      teamMask,
       rasterize,
     });
     const rest = scenes

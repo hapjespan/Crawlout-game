@@ -49,13 +49,13 @@ export const rigmapSchema = z.object({
         emissiveAsBaseColor: z.boolean().optional(),
         /** Alle diffuse textures samenvoegen tot één atlas van maximaal deze maat. */
         atlas: z.number().int().positive().optional(),
-        /** Teammasker afsplitsen op textuurkleur (src/textures.ts splitTeamMask). */
+        /** Teammasker per texel in de alfa van de diffuse (src/textures.ts applyTeamMaskAlpha); manifest `teamMask` wordt 'diffuseAlpha'. */
         teamMask: z
           .object({
             hue: z.tuple([z.number().min(0).max(360), z.number().min(0).max(360)]),
             minSaturation: z.number().min(0).max(1).optional(),
             minValue: z.number().min(0).max(1).optional(),
-            threshold: z.number().min(0).max(1).optional(),
+            softness: z.number().min(0).max(20).optional(),
           })
           .optional(),
       }),

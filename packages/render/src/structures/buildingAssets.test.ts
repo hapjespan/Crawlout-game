@@ -58,7 +58,7 @@ describe('building assets from assets/dist', () => {
     const hq = set.visuals.get('dweller_building_hq')!;
     expect(hq.footprint).toEqual({ w: 5, h: 5 });
     expect(hq.height).toBeCloseTo(5.9, 2);
-    expect(hq.triangles).toEqual([2202, 809, 287]);
+    expect(hq.triangles).toEqual([2369, 944, 286]);
     const g = hq.lods[0];
     for (const name of ['position', 'normal', 'color', 'uvl'])
       expect(g.getAttribute(name)).toBeDefined();

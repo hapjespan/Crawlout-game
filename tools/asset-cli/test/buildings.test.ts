@@ -28,7 +28,7 @@ import {
 } from '../src/geometry.js';
 import { createIO } from '../src/lods.js';
 import { assetEntrySchema, manifestSchema } from '../src/manifest.js';
-import { parseVariants, type VariantsConfig } from '../src/variants.js';
+import { parseVariants, type HousePart, type VariantsConfig } from '../src/variants.js';
 
 const srcDir = fileURLToPath(new URL('../../../assets/src/', import.meta.url));
 const variantsPath = join(srcDir, 'buildings', 'variants.json');
@@ -192,6 +192,25 @@ describe('gebouwen uit de generator', () => {
     }
   });
 
+  it('textures op 1024, 512 en 256 per LOD (de bron-textures van 1024 blijven op LOD0 op 1024)', async () => {
+    expect(BUDGETS.buildingTextureSizes).toEqual([1024, 512, 256]);
+    const io = createIO();
+    const largest = async (level: number): Promise<number> => {
+      const document = await io.readBinary(
+        built.outputs.get(`dweller_building_housing/lod${level}.glb`)!,
+      );
+      return Math.max(
+        ...document
+          .getRoot()
+          .listTextures()
+          .map((t) => Math.max(...t.getSize()!)),
+      );
+    };
+    expect(await largest(0)).toBe(1024);
+    expect(await largest(1)).toBe(512);
+    expect(await largest(2)).toBe(256);
+  });
+
   it('is deterministisch: twee runs geven dezelfde bytes', async () => {
     const again = await buildBuildings(config, srcDir, 'buildings/variants.json');
     expect([...again.outputs.keys()].sort()).toEqual([...built.outputs.keys()].sort());
@@ -210,11 +229,17 @@ describe('controles op gebouw-documenten', () => {
     const wrong = deepCopy(config);
     const id = 'dweller_building_housing';
     const variant = wrong.variants[id]!;
+    // Uniform (standaard): het huis past in 3 x 3 m en is in de diepte 3 m, de breedte volgt uit de verhouding.
     for (const part of variant.parts) if (part.type === 'house') part.size = [3, 3];
     const generated = await generateBuilding(wrong, id, 0, new Map([['house', source]]));
     const errors = checkBuildingDocument(generated.document, variant.footprint, 0);
-    expect(errors.join('\n')).toMatch(/breedte \(x\) is 3\.\d+ m, footprint 2 m/);
     expect(errors.join('\n')).toMatch(/diepte \(z\) is 3\.\d+ m, footprint 2 m/);
+    // Bewust uitgerekt ('stretch') vult beide assen.
+    for (const part of variant.parts) if (part.type === 'house') part.fit = 'stretch';
+    const stretched = await generateBuilding(wrong, id, 0, new Map([['house', source]]));
+    const stretchErrors = checkBuildingDocument(stretched.document, variant.footprint, 0);
+    expect(stretchErrors.join('\n')).toMatch(/breedte \(x\) is 3\.\d+ m, footprint 2 m/);
+    expect(stretchErrors.join('\n')).toMatch(/diepte \(z\) is 3\.\d+ m, footprint 2 m/);
 
     const floating = deepCopy(config);
     for (const part of floating.variants[id]!.parts)
@@ -232,17 +257,82 @@ describe('controles op gebouw-documenten', () => {
     expect(validateBuildingDocument(plain.document, 0).join('\n')).toMatch(/geen team-materiaal/);
   });
 
+  /** Het eerste huisonderdeel van `id` als enige onderdeel (alleen om de bounds van het huis te meten). */
+  const houseOnly = (id: string, patch: Partial<HousePart> = {}): VariantsConfig => {
+    const copy = deepCopy(config);
+    const part = copy.variants[id]!.parts.find((p) => p.type === 'house' && p.maxLod !== 0)!;
+    copy.variants[id]!.parts = [{ ...part, ...patch, select: undefined } as HousePart];
+    delete copy.variants[id]!.parts[0]!.maxLod;
+    return copy;
+  };
+  const sizeOf = async (cfg: VariantsConfig, id: string, level: 0 | 1 | 2 = 0) => {
+    const doc = (await generateBuilding(cfg, id, level, new Map([['house', source]]))).document;
+    const { min, max } = getBounds(doc.getRoot().listScenes()[0]!);
+    return [max[0]! - min[0]!, max[1]! - min[1]!, max[2]! - min[2]!] as const;
+  };
+
   it('hoogtefactor schaalt alleen de hoogte', async () => {
     const id = 'dweller_building_housing';
-    const tall = deepCopy(config);
-    const part = tall.variants[id]!.parts.find((p) => p.type === 'house')!;
-    if (part.type === 'house') part.heightFactor *= 2;
-    const a = await generateBuilding(config, id, 0, new Map([['house', source]]));
-    const b = await generateBuilding(tall, id, 0, new Map([['house', source]]));
-    const boundsOf = (doc: typeof a.document) => getBounds(doc.getRoot().listScenes()[0]!);
-    const [ba, bb] = [boundsOf(a.document), boundsOf(b.document)];
-    expect(bb.max[0]! - bb.min[0]!).toBeCloseTo(ba.max[0]! - ba.min[0]!, 1);
-    expect(bb.max[1]!).toBeGreaterThan(ba.max[1]! * 1.5);
+    const [bx, by, bz] = await sizeOf(houseOnly(id, { heightFactor: 1 }), id);
+    const [tx, ty, tz] = await sizeOf(houseOnly(id, { heightFactor: 2 }), id);
+    expect(tx).toBeCloseTo(bx, 2);
+    expect(tz).toBeCloseTo(bz, 2);
+    expect(ty).toBeCloseTo(by * 2, 1);
+  });
+
+  it('het huis wordt uniform geschaald: dezelfde verhoudingen als de bron, ook gedraaid', async () => {
+    // Het bronhuis is 525,8 x 407,9 x 759,0 (x, y, z). Een uniforme schaal houdt die verhouding, na een kwartslag
+    // staan x en z omgewisseld.
+    const natural = [525.776, 407.878, 758.989] as const;
+    const id = 'dweller_building_housing';
+    const [x, y, z] = await sizeOf(houseOnly(id, { size: [4, 4], heightFactor: 1 }), id);
+    expect(z).toBeCloseTo(4, 1); // de diepte is de lange as en vult het vak
+    expect(x / z).toBeCloseTo(natural[0] / natural[2], 2);
+    expect(y / z).toBeCloseTo(natural[1] / natural[2], 2);
+    const [rx, ry, rz] = await sizeOf(
+      houseOnly(id, { size: [4, 4], heightFactor: 1, rotation: [0, 90, 0] }),
+      id,
+    );
+    expect(rx).toBeCloseTo(4, 1);
+    expect(rz / rx).toBeCloseTo(natural[0] / natural[2], 2);
+    expect(ry / rx).toBeCloseTo(natural[1] / natural[2], 2);
+  });
+
+  it('geen variant rekt het huis uit: alle huisonderdelen zijn uniform en heightFactor 1 of een bewuste keuze', () => {
+    for (const [id, variant] of Object.entries(config.variants))
+      for (const part of variant.parts)
+        if (part.type === 'house') {
+          expect(part.fit ?? 'contain', `${id}: fit`).not.toBe('stretch');
+          expect(part.heightFactor, `${id}: heightFactor`).toBe(1);
+        }
+  });
+
+  it('een dakdeel met fit house staat precies op zijn plek in het huis (zelfde schaal en plaats)', async () => {
+    const id = 'dweller_building_hq';
+    const parts = config.variants[id]!.parts.filter((p): p is HousePart => p.type === 'house');
+    const house = parts.find((p) => !p.select)!;
+    const roof = parts.find(
+      (p) => p.select && p.size[0] === house.size[0] && p.position[2] === house.position[2],
+    )!;
+    expect(roof.fit).toBe('house');
+    const only = (part: HousePart): VariantsConfig => {
+      const copy = deepCopy(config);
+      copy.variants[id]!.parts = [{ ...part, maxLod: undefined, minLod: undefined } as HousePart];
+      return copy;
+    };
+    const full = await generateBuilding(only(house), id, 0, new Map([['house', source]]));
+    const cap = await generateBuilding(only(roof), id, 0, new Map([['house', source]]));
+    const a = getBounds(full.document.getRoot().listScenes()[0]!);
+    const b = getBounds(cap.document.getRoot().listScenes()[0]!);
+    // De dakvlakken liggen binnen de bounds van het hele huis, aan de bovenkant, niet naar het midden geschaald.
+    expect(b.max[0]!).toBeLessThanOrEqual(a.max[0]! + 0.05);
+    expect(b.min[0]!).toBeGreaterThanOrEqual(a.min[0]! - 0.05);
+    expect(b.max[2]!).toBeLessThanOrEqual(a.max[2]! + 0.05);
+    expect(b.min[2]!).toBeGreaterThanOrEqual(a.min[2]! - 0.05);
+    // De schoorsteen steekt boven het dak uit, dus de bovenkant van het dak is net onder die van het huis.
+    expect(b.max[1]!).toBeLessThanOrEqual(a.max[1]! + 0.05);
+    expect(b.max[1]!).toBeGreaterThan(a.max[1]! * 0.85);
+    expect(b.min[1]!).toBeGreaterThan(a.max[1]! * 0.3);
   });
 });
 

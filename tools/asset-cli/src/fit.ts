@@ -54,7 +54,7 @@ export async function extractMeshes(
     return found;
   };
   for (const node of root.listNodes()) if (!node.isDisposed() && !useful(node)) node.dispose();
-  await document.transform(prune({ keepLeaves: false }));
+  await document.transform(prune({ keepLeaves: false, keepAttributes: true }));
   return [...new Set(removed)];
 }
 

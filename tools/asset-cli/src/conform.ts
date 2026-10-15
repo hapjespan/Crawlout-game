@@ -10,9 +10,16 @@ import { parseClipmap, resolveClips, type Clipmap } from './clipmap.js';
 import { extractMeshes, fitCharacter, mergeSkinnedPrimitives, type FitInfo } from './fit.js';
 import { countTriangles, hasSkin } from './inspect.js';
 import { createIO, simplifyToTarget } from './lods.js';
+import { ensureSmoothNormals } from './normals.js';
 import { retargetClips, type RetargetInfo } from './retarget.js';
 import { parseRigmap, type Rigmap } from './rigmap.js';
-import { buildAtlas, emissiveAsBaseColor, splitTeamMask, type AtlasInfo } from './textures.js';
+import {
+  applyTeamMaskAlpha,
+  buildAtlas,
+  emissiveAsBaseColor,
+  type AtlasInfo,
+  type TeamMaskInfo,
+} from './textures.js';
 
 export interface ConformInfo {
   bones?: PruneResult;
@@ -30,8 +37,10 @@ export interface ConformInfo {
   fit?: FitInfo;
   retarget?: RetargetInfo & { from: string };
   atlas?: AtlasInfo;
-  /** Driehoeken in het teammasker en in totaal (`teamMask`). */
-  teamMask?: { masked: number; total: number };
+  /** Het teammasker in de alfa van de diffuse (`teamMask`): texels in het masker en in totaal. */
+  teamMask?: TeamMaskInfo;
+  /** Primitives die geen normalen hadden en gladde normalen kregen. */
+  normalsComputed?: number;
 }
 
 /** Bakt een uniforme schaal in de vertices van een statische asset; de nodes komen op de identiteit onder de scene. */
@@ -161,6 +170,9 @@ export async function conformDocument(
   if (entry?.meshes) {
     info.meshesRemoved = await extractMeshes(document, entry.meshes);
   }
+  // Normalen vóór de fit: die draait ze mee met de vertices.
+  const normalsComputed = ensureSmoothNormals(document);
+  if (normalsComputed > 0) info.normalsComputed = normalsComputed;
   if (entry?.fit) info.fit = fitCharacter(document, entry.fit);
   if (entry?.rig) {
     const rig = options.rigmap.rigs[entry.rig];
@@ -198,7 +210,7 @@ export async function conformDocument(
     info.clipsKept = kept;
     info.clipsDropped = dropped;
   }
-  if (entry?.teamMask) info.teamMask = await splitTeamMask(document, entry.teamMask);
+  if (entry?.teamMask) info.teamMask = await applyTeamMaskAlpha(document, entry.teamMask);
   if (entry?.lod0Triangles !== undefined && countTriangles(document) > entry.lod0Triangles) {
     await simplifyToTarget(document, entry.lod0Triangles);
     info.reduced = true;

@@ -2,7 +2,13 @@
 // diffuse gebruiken, alle diffuse textures samenvoegen tot één atlas (render tekent één atlas per draw), en het
 // teammasker als apart materiaal (naam met "team", wat render als masker leest) afsplitsen op textuurkleur.
 // Beeldbewerking via sharp, alleen geladen als een van deze stappen in de config staat.
-import type { Document, Material, Primitive, Texture } from '@gltf-transform/core';
+import {
+  Root,
+  type Accessor,
+  type Document,
+  type Primitive,
+  type Texture,
+} from '@gltf-transform/core';
 
 type Sharp = (typeof import('sharp'))['default'];
 let sharpModule: Promise<Sharp> | null = null;
@@ -91,32 +97,217 @@ function surfaceArea(prims: readonly Primitive[]): number {
 
 export interface AtlasInfo {
   size: number;
-  /** Per bron-textuur (naam of index) de celmaat in de atlas. */
-  cells: { texture: string; source: number; size: number }[];
+  /** Per bron-textuur (naam of index) de celmaat in de atlas en hoe vaak de textuur in de cel herhaald is (tegelende UV's). */
+  cells: { texture: string; source: number; size: number; repeat: number }[];
+}
+
+/** Een UV-overschrijding tot deze afstand buiten een tegel van 0 tot 1 telt niet als tegelen maar wordt afgeklemd. */
+const UV_TILE_TOLERANCE = 0.03;
+/** Meer herhalingen van een textuur in één cel geeft te weinig texels per tegel. */
+const MAX_UV_REPEAT = 8;
+const WRAP_CLAMP_TO_EDGE = 33071;
+
+interface TriangleTile {
+  /** Tegel (gehele UV-verschuiving) per as. */
+  base: [number, number];
+  /** Aantal tegels dat de driehoek per as raakt (1 = binnen één tegel). */
+  touched: [number, number];
+}
+
+/**
+ * De tegel van een driehoek, uit zijn UV-omhullende. Een driehoek die binnen een tegel past (met `tolerance` marge
+ * naar buiten) hoort bij die tegel; een driehoek die een tegelgrens echt overspant raakt meerdere tegels en vraagt
+ * dat de textuur in de atlascel herhaald wordt.
+ */
+export function triangleTile(
+  uvs: readonly [number, number][],
+  tolerance = UV_TILE_TOLERANCE,
+): TriangleTile {
+  const base: [number, number] = [0, 0];
+  const touched: [number, number] = [1, 1];
+  for (const axis of [0, 1] as const) {
+    let min = Infinity;
+    let max = -Infinity;
+    for (const uv of uvs) {
+      const value = Number.isFinite(uv[axis]) ? uv[axis] : 0;
+      min = Math.min(min, value);
+      max = Math.max(max, value);
+    }
+    base[axis] = Math.floor(min + tolerance);
+    touched[axis] = Math.max(1, Math.floor(max - tolerance) - base[axis] + 1);
+  }
+  return { base, touched };
+}
+
+/** Bron-UV's van een primitive als paren (Float32 uit elke opslagvorm). */
+function readUvs(uv: Accessor): [number, number][] {
+  const out: [number, number][] = [];
+  const e = [0, 0];
+  for (let i = 0; i < uv.getCount(); i++) {
+    uv.getElement(i, e);
+    out.push([e[0]!, e[1]!]);
+  }
+  return out;
+}
+
+function triangleIndices(prim: Primitive): number[] {
+  const idx = prim.getIndices();
+  const count = idx ? idx.getCount() : (prim.getAttribute('POSITION')?.getCount() ?? 0);
+  const out: number[] = [];
+  for (let i = 0; i + 2 < count; i += 3)
+    out.push(
+      idx ? idx.getScalar(i) : i,
+      idx ? idx.getScalar(i + 1) : i + 1,
+      idx ? idx.getScalar(i + 2) : i + 2,
+    );
+  return out;
+}
+
+/** Aantal herhalingen dat een textuur in zijn cel nodig heeft, uit de driehoeken die tegelgrenzen overspannen. */
+function requiredRepeat(
+  prims: readonly Primitive[],
+  clampedAxes: readonly [boolean, boolean],
+): number {
+  let repeat = 1;
+  for (const prim of prims) {
+    const uv = prim.getAttribute('TEXCOORD_0');
+    if (!uv) continue;
+    const uvs = readUvs(uv);
+    const tri = triangleIndices(prim);
+    for (let i = 0; i < tri.length; i += 3) {
+      const { touched } = triangleTile([uvs[tri[i]!]!, uvs[tri[i + 1]!]!, uvs[tri[i + 2]!]!]);
+      for (const axis of [0, 1] as const)
+        if (!clampedAxes[axis]) repeat = Math.max(repeat, touched[axis]);
+    }
+  }
+  return repeat;
+}
+
+/**
+ * Zet de primitive om naar de atlas: elke driehoek schuift naar zijn eigen tegel (hoekpunten die in driehoeken met
+ * verschillende tegels zitten worden gedupliceerd), daarna naar de cel `(x, y, size)` van de atlas (`used` px breed).
+ * `repeat` is het aantal herhalingen van de textuur in de cel; assen met wrap CLAMP_TO_EDGE klemmen per hoekpunt.
+ * Alle attributen krijgen nieuwe accessors (de bron kan door andere primitives gedeeld worden).
+ */
+function remapPrimitiveToAtlas(
+  document: Document,
+  prim: Primitive,
+  cell: { x: number; y: number; size: number },
+  used: number,
+  repeat: number,
+  clampedAxes: readonly [boolean, boolean],
+): void {
+  const uvAccessor = prim.getAttribute('TEXCOORD_0')!;
+  const uvs = readUvs(uvAccessor);
+  const tri = triangleIndices(prim);
+  const keyToNew = new Map<string, number>();
+  const sourceOf: number[] = [];
+  const tileOf: [number, number][] = [];
+  const indices: number[] = [];
+  for (let i = 0; i < tri.length; i += 3) {
+    const corners = [tri[i]!, tri[i + 1]!, tri[i + 2]!];
+    const { base } = triangleTile(corners.map((c) => uvs[c]!));
+    const tile: [number, number] = [clampedAxes[0] ? 0 : base[0], clampedAxes[1] ? 0 : base[1]];
+    for (const corner of corners) {
+      const key = `${corner}:${tile[0]}:${tile[1]}`;
+      let index = keyToNew.get(key);
+      if (index === undefined) {
+        index = sourceOf.length;
+        keyToNew.set(key, index);
+        sourceOf.push(corner);
+        tileOf.push(tile);
+      }
+      indices.push(index);
+    }
+  }
+  const count = sourceOf.length;
+  const buffer =
+    prim.getAttribute('POSITION')!.getBuffer() ??
+    document.getRoot().listBuffers()[0] ??
+    document.createBuffer();
+
+  // UV: tegel eraf, delen door het aantal herhalingen, naar het midden van de texels van de cel (geen bloeden).
+  const out = new Float32Array(count * 2);
+  const scale = (cell.size - 1) / used;
+  for (let v = 0; v < count; v++) {
+    const src = uvs[sourceOf[v]!]!;
+    for (const axis of [0, 1] as const) {
+      const local = Number.isFinite(src[axis]) ? src[axis] - tileOf[v]![axis] : 0;
+      const t = Math.min(1, Math.max(0, local)) / (clampedAxes[axis] ? 1 : repeat);
+      out[v * 2 + axis] = ((axis === 0 ? cell.x : cell.y) + 0.5) / used + t * scale;
+    }
+  }
+
+  for (const semantic of prim.listSemantics()) {
+    const old = prim.getAttribute(semantic)!;
+    if (semantic === 'TEXCOORD_0') {
+      prim.setAttribute(
+        semantic,
+        document.createAccessor().setType('VEC2').setArray(out).setBuffer(buffer),
+      );
+      continue;
+    }
+    const array = old.getArray()!;
+    const size = old.getElementSize();
+    const next = new (array.constructor as new (n: number) => typeof array)(count * size);
+    for (let v = 0; v < count; v++)
+      next.set(array.subarray(sourceOf[v]! * size, (sourceOf[v]! + 1) * size), v * size);
+    prim.setAttribute(semantic, old.clone().setArray(next));
+  }
+  prim.setIndices(
+    document
+      .createAccessor()
+      .setType('SCALAR')
+      .setArray(count > 65535 ? new Uint32Array(indices) : new Uint16Array(indices))
+      .setBuffer(buffer),
+  );
 }
 
 /**
  * Voegt alle diffuse textures samen tot één vierkante PNG-atlas van maximaal `size`. Elke textuur krijgt een vierkante
- * cel (macht van 2); past het niet, dan halveert de textuur met het kleinste oppervlak per texel eerst. UV's worden
- * per primitive naar hun cel verschoven; een primitive waarvan de UV's als geheel een geheel getal buiten [0, 1]
- * liggen wordt eerst teruggeschoven. Alle primitives krijgen daarna één materiaal ("atlas").
+ * cel (macht van 2); past het niet, dan halveert de textuur met het kleinste oppervlak per texel eerst.
+ *
+ * UV's buiten 0 tot 1 gaan zoals de bron ze bedoelde (wrap REPEAT): elke driehoek schuift naar zijn eigen tegel van
+ * 0 tot 1, een overschrijding van hooguit 3 procent wordt afgeklemd. Een driehoek die een tegelgrens echt overspant
+ * (een tegelende textuur, bijvoorbeeld UV's van 0 tot 3) vraagt dat de textuur in de cel herhaald wordt; de cel bevat
+ * dan N x N kopieën en de UV's worden door N gedeeld. Wrap CLAMP_TO_EDGE klemt per hoekpunt. Alle primitives krijgen
+ * daarna één materiaal ("atlas").
  */
 export async function buildAtlas(document: Document, size: number): Promise<AtlasInfo> {
   const sharp = await loadSharp();
   const root = document.getRoot();
   const prims = root.listMeshes().flatMap((m) => m.listPrimitives());
   const usedBy = new Map<Texture, Primitive[]>();
+  const wrap = new Map<Texture, [boolean, boolean]>();
   for (const prim of prims) {
-    const tex = prim.getMaterial()?.getBaseColorTexture();
+    const material = prim.getMaterial();
+    const tex = material?.getBaseColorTexture();
     if (!tex)
       throw new Error(
-        `primitive met materiaal "${prim.getMaterial()?.getName() ?? '-'}" heeft geen diffuse textuur`,
+        `primitive met materiaal "${material?.getName() ?? '-'}" heeft geen diffuse textuur`,
       );
+    if (!prim.getAttribute('TEXCOORD_0'))
+      throw new Error('primitive zonder TEXCOORD_0 bij het maken van de atlas');
     usedBy.set(tex, [...(usedBy.get(tex) ?? []), prim]);
+    const info = material!.getBaseColorTextureInfo();
+    wrap.set(tex, [
+      info?.getWrapS() === WRAP_CLAMP_TO_EDGE,
+      info?.getWrapT() === WRAP_CLAMP_TO_EDGE,
+    ]);
   }
   const textures = [...usedBy.keys()];
+  const repeats = textures.map((t) => requiredRepeat(usedBy.get(t)!, wrap.get(t)!));
+  textures.forEach((t, i) => {
+    if (repeats[i]! > MAX_UV_REPEAT)
+      throw new Error(
+        `textuur "${t.getName() || t.getURI() || '(naamloos)'}" tegelt ${repeats[i]} keer; meer dan ${MAX_UV_REPEAT} past niet in een atlascel`,
+      );
+  });
   const meta = await Promise.all(textures.map((t) => sharp(Buffer.from(t.getImage()!)).metadata()));
-  const cells = meta.map((m) => Math.min(size, pow2(Math.max(m.width ?? 1, m.height ?? 1))));
+  // Een herhaalde textuur krijgt een grotere cel, zodat een tegel zijn eigen resolutie houdt (tot de atlasmaat).
+  const cells = meta.map((m, i) =>
+    Math.min(size, pow2(Math.max(m.width ?? 1, m.height ?? 1) * repeats[i]!)),
+  );
   const density = textures.map(
     (t, i) => cells[i]! ** 2 / Math.max(1e-9, surfaceArea(usedBy.get(t)!)),
   );
@@ -143,15 +334,45 @@ export async function buildAtlas(document: Document, size: number): Promise<Atla
     size: cells[i]!,
   }));
   const layers = await Promise.all(
-    placements.map(async (p) => ({
-      input: await sharp(Buffer.from(p.texture.getImage()!))
-        .resize(p.size, p.size, { fit: 'fill' })
-        .ensureAlpha()
-        .png()
-        .toBuffer(),
-      left: p.x,
-      top: p.y,
-    })),
+    placements.map(async (p, i) => {
+      const repeat = repeats[i]!;
+      const source = Buffer.from(p.texture.getImage()!);
+      let input: Buffer;
+      if (repeat === 1) {
+        input = await sharp(source)
+          .resize(p.size, p.size, { fit: 'fill' })
+          .ensureAlpha()
+          .png()
+          .toBuffer();
+      } else {
+        // N x N kopieën van de textuur naast elkaar, dan naar de celmaat.
+        const tile = Math.ceil(p.size / repeat);
+        const one = await sharp(source)
+          .resize(tile, tile, { fit: 'fill' })
+          .ensureAlpha()
+          .png()
+          .toBuffer();
+        const grid = await sharp({
+          create: {
+            width: tile * repeat,
+            height: tile * repeat,
+            channels: 4,
+            background: { r: 0, g: 0, b: 0, alpha: 1 },
+          },
+        })
+          .composite(
+            Array.from({ length: repeat * repeat }, (_, k) => ({
+              input: one,
+              left: (k % repeat) * tile,
+              top: Math.floor(k / repeat) * tile,
+            })),
+          )
+          .png()
+          .toBuffer();
+        input = await sharp(grid).resize(p.size, p.size, { fit: 'fill' }).png().toBuffer();
+      }
+      return { input, left: p.x, top: p.y };
+    }),
   );
   // Atlas zo klein mogelijk: de omhullende macht van 2 van wat gebruikt is.
   const used = pow2(Math.max(...placements.map((p) => Math.max(p.x, p.y) + p.size)));
@@ -175,74 +396,50 @@ export async function buildAtlas(document: Document, size: number): Promise<Atla
     .setBaseColorTexture(atlas)
     .setBaseColorFactor([1, 1, 1, 1]);
 
-  // Een UV-accessor die door primitives met verschillende textures gedeeld wordt, krijgt per textuur een kopie
-  // (vóór het verschuiven, zodat elke kopie de bron-UV's heeft).
-  const owner = new Map<unknown, Texture>();
-  for (const p of placements)
+  const oldAccessors = new Set<Accessor>();
+  for (const prim of prims) {
+    for (const semantic of prim.listSemantics()) oldAccessors.add(prim.getAttribute(semantic)!);
+    const idx = prim.getIndices();
+    if (idx) oldAccessors.add(idx);
+  }
+  placements.forEach((p, i) => {
     for (const prim of usedBy.get(p.texture)!) {
-      const uv = prim.getAttribute('TEXCOORD_0');
-      if (!uv) throw new Error('primitive zonder TEXCOORD_0 bij het maken van de atlas');
-      const first = owner.get(uv);
-      if (!first) owner.set(uv, p.texture);
-      else if (first !== p.texture) {
-        const copy = uv.clone();
-        owner.set(copy, p.texture);
-        prim.setAttribute('TEXCOORD_0', copy);
-      }
-    }
-  const done = new Set<unknown>();
-  for (const p of placements) {
-    for (const prim of usedBy.get(p.texture)!) {
-      const uv = prim.getAttribute('TEXCOORD_0')!;
-      if (done.has(uv)) {
-        prim.setMaterial(material);
-        continue;
-      }
-      done.add(uv);
-      const e = [0, 0];
-      let minU = Infinity;
-      let minV = Infinity;
-      for (let i = 0; i < uv.getCount(); i++) {
-        uv.getElement(i, e);
-        minU = Math.min(minU, e[0]!);
-        minV = Math.min(minV, e[1]!);
-      }
-      const shiftU = Math.floor(minU + 1e-4);
-      const shiftV = Math.floor(minV + 1e-4);
-      const out = new Float32Array(uv.getCount() * 2);
-      const scale = p.size / used;
-      for (let i = 0; i < uv.getCount(); i++) {
-        uv.getElement(i, e);
-        const u = Math.min(1, Math.max(0, e[0]! - shiftU));
-        const v = Math.min(1, Math.max(0, e[1]! - shiftV));
-        out[i * 2] = p.x / used + u * scale;
-        out[i * 2 + 1] = p.y / used + v * scale;
-      }
-      uv.setNormalized(false).setArray(out);
+      remapPrimitiveToAtlas(document, prim, p, used, repeats[i]!, wrap.get(p.texture)!);
       prim.setMaterial(material);
     }
-  }
+  });
+  for (const accessor of oldAccessors)
+    if (accessor.listParents().every((parent) => parent instanceof Root)) accessor.dispose();
   for (const m of root.listMaterials()) if (m !== material) m.dispose();
   for (const t of root.listTextures()) if (t !== atlas) t.dispose();
   return {
     size: used,
-    cells: placements.map((p) => ({
+    cells: placements.map((p, i) => ({
       texture: p.texture.getName() || p.texture.getURI() || '(naamloos)',
       source: textures.indexOf(p.texture),
       size: p.size,
+      repeat: repeats[i]!,
     })),
   };
 }
 
 export interface TeamMaskRule {
-  /** Tint in graden [van, tot] (0 tot 360). */
+  /** Tint in graden [van, tot] (0 tot 360); van groter dan tot loopt over 0 heen. */
   hue: readonly [number, number];
   /** Minimale verzadiging (0 tot 1). */
   minSaturation?: number | undefined;
   /** Minimale helderheid (0 tot 1). */
   minValue?: number | undefined;
-  /** Deel van de monsters per driehoek dat moet passen (standaard 0.5). */
-  threshold?: number | undefined;
+  /** Zachtheid van de rand: sigma van een gauss-vervaging van het masker in texels (standaard 1, 0 = hard). */
+  softness?: number | undefined;
+}
+
+export interface TeamMaskInfo {
+  /** Texels met masker (alfa boven de helft) en texels in totaal, over alle diffuse textures. */
+  masked: number;
+  total: number;
+  /** Aantal textures waarvan de alfa het masker werd. */
+  textures: number;
 }
 
 function hsv(r: number, g: number, b: number): [number, number, number] {
@@ -258,108 +455,69 @@ function hsv(r: number, g: number, b: number): [number, number, number] {
   return [(h * 60 + 360) % 360, max > 0 ? d / max : 0, max];
 }
 
+/** Of een texel (rgb 0 tot 255) in het kleurbereik van de regel valt. */
+export function inTeamRange(rule: TeamMaskRule, r: number, g: number, b: number): boolean {
+  const [h0, h1] = rule.hue;
+  const [h, s, v] = hsv(r / 255, g / 255, b / 255);
+  const inHue = h0 <= h1 ? h >= h0 && h <= h1 : h >= h0 || h <= h1;
+  return inHue && s >= (rule.minSaturation ?? 0) && v >= (rule.minValue ?? 0);
+}
+
 /**
- * Splitst de driehoeken waarvan de textuur (monsters op hoeken, randmiddens en zwaartepunt) overwegend aan `rule`
- * voldoet af naar een kopie van het materiaal met "_team" in de naam; render kleurt die in de teamkleur. Geeft het
- * aantal driehoeken in het masker en in totaal.
+ * Maakt het teammasker per texel in de alfa van de diffuse (render: modus 'diffuseAlpha', manifest `teamMask`):
+ * texels in het kleurbereik van `rule` krijgen alfa 1, de rest 0, met een zachte rand (gauss-vervaging van het
+ * masker, daarna een smoothstep rond de helft). De kleur van de texels blijft ongemoeid, ook waar de alfa 0 is. Een eventuele bestaande alfa vervalt; het
+ * materiaal blijft OPAQUE, de alfa is dus geen doorzichtigheid. Textures worden PNG.
  */
-export async function splitTeamMask(
+export async function applyTeamMaskAlpha(
   document: Document,
   rule: TeamMaskRule,
-): Promise<{ masked: number; total: number }> {
+): Promise<TeamMaskInfo> {
   const sharp = await loadSharp();
-  const decoded = new Map<Texture, { data: Buffer; width: number; height: number }>();
-  const pixels = async (t: Texture) => {
-    let d = decoded.get(t);
-    if (!d) {
-      const { data, info } = await sharp(Buffer.from(t.getImage()!))
-        .ensureAlpha()
+  const sigma = rule.softness ?? 1;
+  const done = new Set<Texture>();
+  const info: TeamMaskInfo = { masked: 0, total: 0, textures: 0 };
+  for (const material of document.getRoot().listMaterials()) {
+    const texture = material.getBaseColorTexture();
+    if (!texture || done.has(texture)) continue;
+    done.add(texture);
+    const { data, info: raw } = await sharp(Buffer.from(texture.getImage()!))
+      .ensureAlpha()
+      .raw()
+      .toBuffer({ resolveWithObject: true });
+    const texels = raw.width * raw.height;
+    const mask = Buffer.alloc(texels);
+    for (let i = 0; i < texels; i++)
+      if (inTeamRange(rule, data[i * 4]!, data[i * 4 + 1]!, data[i * 4 + 2]!)) mask[i] = 255;
+    let soft: Buffer = mask;
+    let stride = 1;
+    if (sigma > 0) {
+      // sharp geeft na blur van een grijsbeeld drie kanalen terug; de stride houdt daar rekening mee.
+      const blurred = await sharp(mask, {
+        raw: { width: raw.width, height: raw.height, channels: 1 },
+      })
+        .blur(sigma)
         .raw()
         .toBuffer({ resolveWithObject: true });
-      d = { data, width: info.width, height: info.height };
-      decoded.set(t, d);
+      soft = blurred.data;
+      stride = blurred.info.channels;
     }
-    return d;
-  };
-  const threshold = rule.threshold ?? 0.5;
-  const [h0, h1] = rule.hue;
-  const matches = (
-    img: { data: Buffer; width: number; height: number },
-    u: number,
-    v: number,
-  ): boolean => {
-    const x = Math.min(img.width - 1, Math.max(0, Math.floor((u - Math.floor(u)) * img.width)));
-    const y = Math.min(img.height - 1, Math.max(0, Math.floor((v - Math.floor(v)) * img.height)));
-    const o = (y * img.width + x) * 4;
-    const [h, s, val] = hsv(img.data[o]! / 255, img.data[o + 1]! / 255, img.data[o + 2]! / 255);
-    const inHue = h0 <= h1 ? h >= h0 && h <= h1 : h >= h0 || h <= h1;
-    return inHue && s >= (rule.minSaturation ?? 0) && val >= (rule.minValue ?? 0);
-  };
-
-  let masked = 0;
-  let total = 0;
-  const teamMaterials = new Map<Material, Material>();
-  for (const mesh of document.getRoot().listMeshes()) {
-    for (const prim of [...mesh.listPrimitives()]) {
-      const material = prim.getMaterial();
-      const tex = material?.getBaseColorTexture();
-      const uv = prim.getAttribute('TEXCOORD_0');
-      const idx = prim.getIndices();
-      if (!material || !tex || !uv || !idx || /team/i.test(material.getName())) continue;
-      const img = await pixels(tex);
-      const keep: number[] = [];
-      const team: number[] = [];
-      const a = [0, 0];
-      const b = [0, 0];
-      const c = [0, 0];
-      for (let i = 0; i + 2 < idx.getCount(); i += 3) {
-        const tri = [idx.getScalar(i), idx.getScalar(i + 1), idx.getScalar(i + 2)];
-        uv.getElement(tri[0]!, a);
-        uv.getElement(tri[1]!, b);
-        uv.getElement(tri[2]!, c);
-        const samples: [number, number][] = [
-          [a[0]!, a[1]!],
-          [b[0]!, b[1]!],
-          [c[0]!, c[1]!],
-          [(a[0]! + b[0]!) / 2, (a[1]! + b[1]!) / 2],
-          [(b[0]! + c[0]!) / 2, (b[1]! + c[1]!) / 2],
-          [(a[0]! + c[0]!) / 2, (a[1]! + c[1]!) / 2],
-          [(a[0]! + b[0]! + c[0]!) / 3, (a[1]! + b[1]! + c[1]!) / 3],
-        ];
-        // Iets naar het zwaartepunt toe, zodat randtexels van een andere UV-eiland niet meetellen.
-        const cu = samples[6]![0];
-        const cv = samples[6]![1];
-        const hits = samples.filter(([u, v]) =>
-          matches(img, u + (cu - u) * 0.15, v + (cv - v) * 0.15),
-        ).length;
-        (hits / samples.length > threshold ? team : keep).push(...tri);
-        total++;
-      }
-      if (team.length === 0) continue;
-      masked += team.length / 3;
-      let teamMaterial = teamMaterials.get(material);
-      if (!teamMaterial) {
-        // extras houdt het materiaal apart bij dedup() in de LOD-bouw (die negeert namen).
-        teamMaterial = material
-          .clone()
-          .setName(`${material.getName() || 'material'}_team`)
-          .setExtras({ ...material.getExtras(), teamMask: true });
-        teamMaterials.set(material, teamMaterial);
-      }
-      const accessor = (list: number[]) =>
-        document
-          .createAccessor()
-          .setType('SCALAR')
-          .setArray(uv.getCount() > 65535 ? new Uint32Array(list) : new Uint16Array(list))
-          .setBuffer(idx.getBuffer());
-      const teamPrim = prim.clone().setIndices(accessor(team)).setMaterial(teamMaterial);
-      mesh.addPrimitive(teamPrim);
-      if (keep.length > 0) prim.setIndices(accessor(keep));
-      else {
-        mesh.removePrimitive(prim);
-        prim.dispose();
-      }
+    for (let i = 0; i < texels; i++) {
+      // Smoothstep rond de helft: een rand loopt over ongeveer twee texels, en losse speldeprikken (ruis in de
+      // textuur die net buiten het kleurbereik valt) verdwijnen in plaats van een gespikkeld masker te geven.
+      const blurred = soft[i * stride]! / 255;
+      const t = sigma > 0 ? Math.min(1, Math.max(0, (blurred - 0.25) / 0.5)) : blurred;
+      data[i * 4 + 3] = Math.round((sigma > 0 ? t * t * (3 - 2 * t) : t) * 255);
+      if (mask[i]) info.masked++;
     }
+    info.total += texels;
+    info.textures++;
+    const png = await sharp(data, { raw: { width: raw.width, height: raw.height, channels: 4 } })
+      .png()
+      .toBuffer();
+    texture.setMimeType('image/png').setImage(new Uint8Array(png));
   }
-  return { masked, total };
+  for (const material of document.getRoot().listMaterials())
+    if (material.getBaseColorTexture()) material.setAlphaMode('OPAQUE');
+  return info;
 }

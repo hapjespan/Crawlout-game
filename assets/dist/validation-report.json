@@ -165,9 +165,9 @@
         "team_trim"
       ],
       "textureSizes": [
+        1024,
         512,
-        256,
-        128
+        256
       ]
     },
     {
@@ -188,9 +188,9 @@
         "team_trim"
       ],
       "textureSizes": [
+        1024,
         512,
-        256,
-        128
+        256
       ]
     },
     {
@@ -201,19 +201,20 @@
       "kind": "building",
       "sourceTriangles": 86,
       "lodTriangles": [
-        1474,
-        483,
-        122
+        2437,
+        996,
+        134
       ],
       "materials": [
+        "dirt",
         "roof",
         "team_trim",
         "wall_proxy"
       ],
       "textureSizes": [
+        1024,
         512,
-        256,
-        128
+        256
       ]
     },
     {
@@ -224,20 +225,21 @@
       "kind": "building",
       "sourceTriangles": 172,
       "lodTriangles": [
-        2202,
-        809,
-        287
+        2369,
+        944,
+        286
       ],
       "materials": [
+        "dirt",
         "metal",
         "roof",
         "team_trim",
         "wall_proxy"
       ],
       "textureSizes": [
+        1024,
         512,
-        256,
-        128
+        256
       ]
     },
     {
@@ -248,8 +250,8 @@
       "kind": "building",
       "sourceTriangles": 86,
       "lodTriangles": [
-        1710,
-        598,
+        1790,
+        712,
         216
       ],
       "materials": [
@@ -259,9 +261,9 @@
         "wall_proxy"
       ],
       "textureSizes": [
+        1024,
         512,
-        256,
-        128
+        256
       ]
     },
     {
@@ -273,7 +275,7 @@
       "sourceTriangles": 86,
       "lodTriangles": [
         1672,
-        587,
+        673,
         198
       ],
       "materials": [
@@ -284,9 +286,9 @@
         "wall_proxy"
       ],
       "textureSizes": [
+        1024,
         512,
-        256,
-        128
+        256
       ]
     },
     {
@@ -307,9 +309,9 @@
         "team_trim"
       ],
       "textureSizes": [
+        1024,
         512,
-        256,
-        128
+        256
       ]
     },
     {
@@ -320,20 +322,21 @@
       "kind": "building",
       "sourceTriangles": 86,
       "lodTriangles": [
-        1635,
-        556,
-        166
+        1697,
+        674,
+        178
       ],
       "materials": [
+        "dirt",
         "metal",
         "roof",
         "team_trim",
         "wall_proxy"
       ],
       "textureSizes": [
+        1024,
         512,
-        256,
-        128
+        256
       ]
     },
     {

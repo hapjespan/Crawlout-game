@@ -16,7 +16,7 @@ export interface UnitAssetConfig {
   resolveUrl?: (path: string) => string;
   /** Asset id for every unit whose loadout has no loaded asset of its own. */
   defaultUnit?: string;
-  /** Where the team mask comes from (gltfUnitGeometry.ts). Default 'auto': the atlas alpha when it holds a mask. */
+  /** Where the team mask comes from (gltfUnitGeometry.ts). Default: the manifest's teamMask per asset. */
   teamMask?: TeamMaskSource;
   /**
    * Extra bindings of asset id to unit typeIds, for units without a loadout body slot (the hero: 1000 + heroId). Loaded
@@ -41,7 +41,7 @@ export interface UnitAssetStatus {
   typeIds: number[];
   /** Triangles per LOD when ready. */
   triangles?: [number, number, number];
-  /** Where the team mask came from when ready ('auto' resolved: the atlas alpha or the material names). */
+  /** Where the team mask came from when ready (an 'auto' request resolved to the atlas alpha or the material names). */
   teamMask?: Exclude<TeamMaskSource, 'auto'>;
 }
 

@@ -32,8 +32,9 @@ export class UnitGeometryError extends Error {
  * take the owner's color, the rest keep their own. An asset without a "team" material falls back to its main
  * material (name "main" or "body" as a word, e.g. Quaternius' M_Main): that whole material takes the owner's color,
  * on a neutral base so the team color reads clean (TEAM_FALLBACK_BASE). 'diffuseAlpha': the alpha of the diffuse texture is the mask
- * per texel (artist brief; 1 = team color). 'auto' (default): 'diffuseAlpha' when the atlas carries a mask in its alpha
- * (some texels below ALPHA_MASK_MAX; an opaque atlas or a JPEG has none), else 'materialName'. 'none': no team color
+ * per texel (artist brief; 1 = team color). 'auto' (this function's default; the loader passes the manifest's
+ * teamMask): 'diffuseAlpha' when the atlas carries a mask in its alpha (some texels below ALPHA_MASK_MAX; an opaque
+ * atlas or a JPEG has none), else 'materialName'. 'none': no team color
  * on the model; the selection ring and blob still show the owner.
  */
 export type TeamMaskSource = 'auto' | 'materialName' | 'diffuseAlpha' | 'none';

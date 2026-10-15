@@ -55,9 +55,23 @@ const houseSelectSchema = z.object({
 const houseSchema = z.object({
   type: z.literal('house'),
   source: z.string().min(1),
-  /** Breedte (x) en diepte (z) in meters van het onderdeel (of van het geselecteerde deel, dat zijn eigen bounds krijgt). */
+  /**
+   * Breedte (x) en diepte (z) in meters waarin het onderdeel past (na `rotation`). Bij `fit` 'contain' en 'house' is de
+   * schaal uniform: het onderdeel past in dit vak en vult de ene as precies, de andere hooguit. Bij 'stretch' vult het
+   * vak exact (niet-uniform).
+   */
   size: z.tuple([positive, positive]),
-  /** Hoogte als factor op de natuurlijke hoogte bij gelijkmatige schaal (gemiddelde van x en z). 1 = onvervormd. */
+  /**
+   * Hoe het onderdeel in `size` komt. 'contain' (standaard): uniforme schaal op de bounds van het geselecteerde deel,
+   * gecentreerd. 'house': uniforme schaal en plaatsing op de bounds van het hele bronhuis, ook voor een geselecteerd
+   * deel; zo staan de dakvlakken op LOD2 precies op het huis van LOD0 en 1, en verschuiven de LODs niet. 'stretch':
+   * niet-uniform op de bounds van het geselecteerde deel (vervormt ramen en dak; alleen voor een bewuste rek).
+   */
+  fit: z.enum(['contain', 'house', 'stretch']).optional(),
+  /**
+   * Extra schaal op de hoogte, boven op de uniforme schaal ('contain', 'house') of op het gemiddelde van x en z
+   * ('stretch'). 1 = onvervormd; een andere waarde rekt het onderdeel in de hoogte.
+   */
   heightFactor: positive,
   select: houseSelectSchema.optional(),
   /** Aandeel in het driehoekbudget; standaard breedte keer diepte. */
@@ -100,7 +114,10 @@ export const partSchema = z.discriminatedUnion('type', [
 ]);
 
 export const variantSchema = z.object({
-  /** Footprint in cellen van 1 m; de bounds van het model vullen w x h in x en z (5 procent tolerantie). */
+  /**
+   * Footprint in cellen van 1 m; de bounds van het model vullen w x h in x en z (5 procent tolerantie). Een uniform
+   * geschaald huis vult de footprint zelden helemaal: vul de rest met een grondplaat (box) of aanbouw.
+   */
   footprint: z.object({ w: z.number().int().positive(), h: z.number().int().positive() }),
   /** Tint per uitvoermateriaal (bronmaterialen op uitvoernaam), vermenigvuldigd met de basiskleur. */
   tints: z.record(hexColor).optional(),

@@ -22,10 +22,11 @@ export const BUDGETS = {
   /** Verhouding van LOD1 en LOD2 tot het LOD0-doel van een gebouw (`lod0Triangles` in de config), begrensd door het plafond. */
   buildingLodRatios: [1, 0.4, 0.12] as const,
   /**
-   * Textuurmaat per LOD (maximale zijde, JPEG). De bron-textures (512 tot 1024) worden hier naartoe verkleind zodat de
-   * LOD-GLB's klein blijven; LOD0 mag tot `buildingMaxTextureSize`.
+   * Textuurmaat per LOD (maximale zijde, JPEG). De bron-textures (512 tot 1024) worden hier naartoe verkleind (nooit
+   * vergroot) zodat de LOD-GLB's klein blijven; LOD0 mag tot `buildingMaxTextureSize`. Render houdt de gebouwen in een
+   * texture-array met 1024 px per laag.
    */
-  buildingTextureSizes: [512, 256, 128] as const,
+  buildingTextureSizes: [1024, 512, 256] as const,
   buildingMaxTextureSize: 1024,
   /**
    * Vereenvoudiging van de bronmeshes van gebouwen (meshopt). `Prune` laat losse kleine onderdelen (de planken en
