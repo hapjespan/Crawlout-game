@@ -192,7 +192,6 @@ export interface AiScriptData {
   /** site: index in AI_SITES (0 = hq). */
   buildOrder: { atTick: number; buildingId: number; site: number }[];
   attackTimersTicks: number[];
-  rallyPointU: { x: number; y: number };
   /** Deel van de bewoners dat de AI omschoolt tot militie, in promille (aan het begin). */
   militiaPermille: number;
   militiaPermilleMax: number;
@@ -543,7 +542,6 @@ export function loadGameData(raw: RawGameData): GameData {
         site: AI_SITES.indexOf(o.site ?? 'hq'),
       })),
       attackTimersTicks: a.attackTimersS.map((s) => secondsToTicks(s)),
-      rallyPointU: { x: metersToUnits(a.rallyPoint.x), y: metersToUnits(a.rallyPoint.y) },
       militiaPermille: pctToPermille(a.militiaPct),
       militiaPermilleMax: pctToPermille(a.militiaPctMax),
       militiaPermillePerMin: pctToPermille(a.militiaPctPerMin),

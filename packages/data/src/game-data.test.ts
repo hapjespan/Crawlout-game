@@ -401,7 +401,7 @@ describe('balans speltest 14 oktober: AI-script', () => {
       'claim',
       'front',
       'hq',
-      'claim',
+      'hq',
     ]);
     expect(ai.buildOrder[2]).toEqual({
       atTick: secondsToTicks(150),
@@ -433,17 +433,31 @@ describe('balans speltest 14 oktober: AI-script', () => {
       ai.waveJitterTicks,
       ai.waveMaxWaitTicks,
       ai.pushFromTicks,
-    ]).toEqual([3600, 600, 1800, 33600]);
+    ]).toEqual([3600, 1200, 1800, 28800]);
     expect([ai.claimFromTicks, ai.claimFarFromTicks, ai.researchFromTicks]).toEqual([
-      1200, 9600, 3600,
+      1200, 19800, 3600,
+    ]);
+    expect(ai.richScrap).toBe(300);
+    expect(ai.richBuilds.map((o) => AI_SITES[o.site])).toEqual([
+      'front',
+      'claim',
+      'front',
+      'hq',
+      'claim',
     ]);
     expect([ai.claimSafeRadiusU, ai.defendRadiusU, ai.rallyRadiusU]).toEqual([
       metersToUnits(30),
       metersToUnits(38),
       metersToUnits(6),
     ]);
-    expect(AI_SITES[ai.rallySite]).toBe('hq');
+    expect(AI_SITES[ai.rallySite]).toBe('front');
     expect(ai.allInWithoutNodes).toBe(true);
+  });
+
+  it('rallyPoint is weg uit het script (data 0.12.0): het strikte schema weigert het veld', () => {
+    const old = clone(raw());
+    (old.ai[0] as Record<string, unknown>).rallyPoint = { x: 64, y: 64 };
+    expect(() => loadGameData(old)).toThrow();
   });
 
   it('weigert een onbekende tech, loadout of plaats en een leeg leger', () => {

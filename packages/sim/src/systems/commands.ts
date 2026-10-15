@@ -451,6 +451,7 @@ export function claimSite(
   for (let d = 1; d <= maxRing; d++) {
     let best = -1;
     let bestD = 0;
+    let bestM = 0;
     scanRing(map, px >> 8, py >> 8, 1, 1, d, (cx, cy) => {
       const fx = cx - (fw >> 1);
       const fy = cy - (fh >> 1);
@@ -463,9 +464,15 @@ export function claimSite(
       const dx = (cx << 8) + 128 - px;
       const dy = (cy << 8) + 128 - py;
       const dd = dx * dx + dy * dy;
-      if (best < 0 || dd < bestD) {
+      // gelijke afstand: de plek het dichtst bij het midden van de map (in halve cellen), zodat beide spelers op een
+      // puntsymmetrische map gespiegeld bouwen; dan de scanvolgorde
+      const mx = 2 * cx + 1 - map.w;
+      const my = 2 * cy + 1 - map.h;
+      const dm = mx * mx + my * my;
+      if (best < 0 || dd < bestD || (dd === bestD && dm < bestM)) {
         best = cy * map.w + cx;
         bestD = dd;
+        bestM = dm;
       }
       return false;
     });

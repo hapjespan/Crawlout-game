@@ -2,8 +2,12 @@ import type { MapDef } from '@crawlout/data';
 import { encodeGrid } from '../grid-format.js';
 import { encodeProps, scatterProps, type PropsSpec } from '../props.js';
 import { BLOCKED, OPEN } from './cells.js';
+import { buildForest, type ForestSpec } from './forest.js';
+import { carveRiver, WATER_DEEP, WATER_SHALLOW, type RiverSpec } from './river.js';
 import {
   applyHeightCurve,
+  closeDiagonalLeaks,
+  composeTiles,
   parseHeightfield,
   passabilityFromSlope,
   symmetrize,
@@ -11,7 +15,9 @@ import {
 } from './terrain.js';
 
 export { BLOCKED, OPEN };
-export type { TerrainSpec } from './terrain.js';
+export type { TerrainSpec, TileSpec } from './terrain.js';
+export type { RiverSpec, RiverPoint, RiverCrossing } from './river.js';
+export type { ForestSpec, GroveSpec } from './forest.js';
 
 // Deterministische kaartgenerator, alleen integers. Puntsymmetrisch (180 graden): cel (x,y) spiegelt naar (w-1-x, h-1-y),
 // zodat beide spelers een identieke positie hebben. Draait bij build-tijd, de sim leest alleen de uitvoerbestanden.
@@ -70,6 +76,15 @@ export interface MapSpec {
   groundAmplitude?: number; // 0..255 ruis wordt hiermee geschaald (>> 8); alleen zonder `terrain`
   /** Optioneel: decoratieve props (data/maps/<id>.props.json, MapDef.props). */
   props?: PropsSpec;
+  /** Optioneel (alleen met `terrain`): een rivier met oversteken; levert data/maps/<id>.water.json (MapDef.water). */
+  river?: RiverSpec;
+  /** Optioneel: bosrand en bosjes (onbegaanbaar); de bomen zelf zijn props. */
+  forest?: ForestSpec;
+  /**
+   * Begaanbare cellen die niet met de eerste spawn verbonden zijn, worden onbegaanbaar (afgesloten plateaus en
+   * zakken: een unit kan er nooit komen, dus ze zijn voor de sim gelijk aan rots). Standaard uit.
+   */
+  keepMainComponent?: boolean;
 }
 
 /** Dominantie per map (menselijke eenheden; de data-loader rekent om naar ticks). */
@@ -84,8 +99,16 @@ export interface GeneratedMap {
   heightmapFile: string;
   /** Alleen als de spec props heeft. */
   propsFile?: string;
+  /** Alleen als de spec een rivier heeft: het watermasker (0 droog, 1 water, 2 ondiep en begaanbaar). */
+  waterFile?: string;
   passable: Uint8Array;
   heights: Int16Array;
+  /** Watermasker (alleen met rivier). */
+  water?: Uint8Array;
+  /** Bos: 0 geen, 1 bosrand, 2 kern van een bosje (alleen met `forest`). */
+  forest?: Uint8Array;
+  /** Middens van de rivieroversteken (cellen), alleen met rivier. */
+  crossings?: Array<{ x: number; y: number; kind: 'ford' | 'bridge' }>;
 }
 
 function hash2(x: number, y: number, seed: number): number {
@@ -152,17 +175,37 @@ export function generateMap(spec: MapSpec, io?: GenIo): GeneratedMap {
   const heights = new Int16Array(w * h);
 
   const terrainMode = spec.terrain !== undefined;
+  let water: Uint8Array | undefined;
+  let crossings: GeneratedMap['crossings'];
   if (spec.terrain !== undefined) {
     if (io === undefined)
       throw new Error(`gen ${spec.id}: terrein vraagt een GenIo (bronbestand lezen)`);
     if (w !== h) throw new Error(`gen ${spec.id}: terrein vraagt een vierkante map`);
     const field = parseHeightfield(io.readSource(spec.terrain.source));
-    const cm = applyHeightCurve(symmetrize(field, spec.terrain, w), spec.terrain.heightCurve);
+    let raw: Int32Array;
+    if (spec.terrain.tiles !== undefined) {
+      // Middentegel: het puntsymmetrische veld op de maat van de bron; daaromheen de buitentegels.
+      const centre = symmetrize(field, spec.terrain, field.w);
+      const composed = composeTiles(field, spec.terrain, spec.terrain.tiles, centre);
+      if (composed.size !== w)
+        throw new Error(`gen ${spec.id}: tegels geven ${composed.size}, de map is ${w}`);
+      raw = composed.cm;
+    } else raw = symmetrize(field, spec.terrain, w);
+    const cm = applyHeightCurve(raw, spec.terrain.heightCurve);
+    const offset = spec.terrain.baseOffsetCm ?? 0;
+    if (offset !== 0) for (let i = 0; i < cm.length; i++) cm[i] = (cm[i] as number) + offset;
     for (const pad of spec.pads ?? []) {
       applyPad(cm, w, pad.x, pad.y, pad.radius, pad.blend);
       applyPad(cm, w, w - 1 - pad.x, h - 1 - pad.y, pad.radius, pad.blend);
     }
+    if (spec.river !== undefined) {
+      const river = carveRiver(cm, w, spec.river);
+      water = river.mask;
+      crossings = river.crossings;
+    }
     passable.set(passabilityFromSlope(cm, w, spec.terrain));
+    if (water !== undefined)
+      for (let i = 0; i < water.length; i++) if (water[i] === WATER_DEEP) passable[i] = BLOCKED;
     for (let i = 0; i < cm.length; i++) heights[i] = Math.round((cm[i] as number) * 2.56); // cm -> 1/256 m
   } else {
     // Basisreliëf, puntsymmetrisch gemaakt door te middelen met het gespiegelde punt.
@@ -225,6 +268,18 @@ export function generateMap(spec: MapSpec, io?: GenIo): GeneratedMap {
     closeEdge({ x0: w - b, y0: 0, x1: w - 1, y1: h - 1 });
   }
 
+  let forest: Uint8Array | undefined;
+  if (spec.forest !== undefined) {
+    forest = buildForest(w, h, spec.forest).forest;
+    for (let i = 0; i < forest.length; i++) if (forest[i] !== 0) passable[i] = BLOCKED;
+  }
+  if (spec.forest !== undefined || spec.river !== undefined) closeDiagonalLeaks(passable, w);
+  if (spec.keepMainComponent === true) keepMainComponent(passable, w, h, spec.spawns, spec.id);
+  if (water !== undefined)
+    // Ondiep betekent begaanbaar: een voorde-cel die door het opschonen dicht ging, telt als water.
+    for (let i = 0; i < water.length; i++)
+      if (water[i] === WATER_SHALLOW && passable[i] !== OPEN) water[i] = WATER_DEEP;
+
   const mirror = (f: Feature): Feature => ({ x: w - 1 - f.x, y: h - 1 - f.y });
   const both = <T extends Feature>(list: T[]): T[] =>
     list.flatMap((f) => [f, { ...f, ...mirror(f) }]);
@@ -235,6 +290,7 @@ export function generateMap(spec: MapSpec, io?: GenIo): GeneratedMap {
     heightmap: `maps/${spec.id}.heightmap.json`,
     passability: `maps/${spec.id}.passability.json`,
     ...(spec.props === undefined ? {} : { props: `maps/${spec.id}.props.json` }),
+    ...(water === undefined ? {} : { water: `maps/${spec.id}.water.json` }),
     scrapNodes: both(spec.scrapNodes),
     claimPoints: [...both(spec.claimPoints), ...spec.centerClaims],
     spawns: both(spec.spawns),
@@ -261,8 +317,57 @@ export function generateMap(spec: MapSpec, io?: GenIo): GeneratedMap {
     heightmapFile: encodeGrid(w, h, 'i16', heights),
     ...(spec.props === undefined
       ? {}
-      : { propsFile: encodeProps(scatterProps(def, passable, spec.props)) }),
+      : {
+          propsFile: encodeProps(
+            scatterProps(def, passable, spec.props, {
+              ...(forest === undefined ? {} : { forest }),
+              ...(water === undefined ? {} : { water }),
+            }),
+          ),
+        }),
+    ...(water === undefined ? {} : { waterFile: encodeGrid(w, h, 'u8', water), water }),
+    ...(forest === undefined ? {} : { forest }),
+    ...(crossings === undefined ? {} : { crossings }),
     passable,
     heights,
   };
+}
+
+/** Zet begaanbare cellen die niet (4-verbonden) met de eerste spawn verbonden zijn op onbegaanbaar. */
+function keepMainComponent(
+  passable: Uint8Array,
+  w: number,
+  h: number,
+  spawns: Feature[],
+  id: string,
+): void {
+  const first = spawns[0];
+  if (first === undefined) return;
+  const seen = new Uint8Array(w * h);
+  const qx = new Int32Array(w * h);
+  const qy = new Int32Array(w * h);
+  let head = 0;
+  let tail = 0;
+  if (passable[first.y * w + first.x] !== OPEN)
+    throw new Error(`gen ${id}: de eerste spawn ligt op een onbegaanbare cel`);
+  seen[first.y * w + first.x] = 1;
+  qx[tail] = first.x;
+  qy[tail++] = first.y;
+  const DX = [1, 0, -1, 0];
+  const DY = [0, 1, 0, -1];
+  while (head < tail) {
+    const cx = qx[head] as number;
+    const cy = qy[head++] as number;
+    for (let d = 0; d < 4; d++) {
+      const nx = cx + (DX[d] as number);
+      const ny = cy + (DY[d] as number);
+      if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
+      const j = ny * w + nx;
+      if (passable[j] !== OPEN || seen[j] === 1) continue;
+      seen[j] = 1;
+      qx[tail] = nx;
+      qy[tail++] = ny;
+    }
+  }
+  for (let i = 0; i < passable.length; i++) if (seen[i] === 0) passable[i] = BLOCKED;
 }

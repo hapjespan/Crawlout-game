@@ -227,6 +227,7 @@ export const MapDef = z
     heightmap: z.string(),
     passability: z.string(),
     props: z.string().optional(), // optioneel, buiten de sim: decoratieve props (data/maps/<id>.props.json), alleen voor de renderer
+    water: z.string().optional(), // optioneel, buiten de sim: watermasker (data/maps/<id>.water.json, crawlout-grid/1 u8: 0 droog, 1 water, 2 ondiep en begaanbaar), alleen voor de renderer; de sim leest de passability
     scrapNodes: z.array(
       z.object({ x: z.number().int(), y: z.number().int(), amount: nonneg }).strict(),
     ),
@@ -263,7 +264,6 @@ export const AiScript = z
       z.object({ atS: nonneg, buildingId: id, site: AiSite.optional() }).strict(),
     ),
     attackTimersS: z.array(nonneg), // de eerste aanvalsgolven; daarna elke waveIntervalS
-    rallyPoint: z.object({ x: z.number().int(), y: z.number().int() }).strict(),
     militiaPct: pct, // deel van de bewoners dat de AI tot militie omschoolt aan het begin (besluit sprint 2: uit sim.json)
     // Balans speltest 14 oktober: een AI die bijbouwt, onderzoekt, claimt, verdedigt en in groeiende golven aanvalt.
     militiaPctMax: pct, // bovengrens van het militie-aandeel

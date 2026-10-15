@@ -3,26 +3,26 @@ import { TICKS_PER_MINUTE, playMatch } from './balance.js';
 import type { MatchResult } from './balance.js';
 
 // Potjelengte (Spelfundament 2.6: 25 tot 35 minuten, dus 30.000 tot 42.000 frames) en de twee winroutes van de slice
-// (Spelfundament 12): scripted AI tegen scripted AI op Rustbelt (Rock Terrain 4, data 0.11.0) over vijf seeds. De
-// seeds verschillen via sim.rng (kritieke schoten van de held, de jitter op de golven van de AI). EXPECTED legt de
-// uitkomst per seed vast: een andere uitkomst is een bewuste balanswijziging en hoort bij een nieuwe meting
-// (pnpm --filter @crawlout/replay balance) en een regel in de CHANGELOG. Beide winroutes moeten voorkomen: minstens
-// één seed eindigt op vernietiging en minstens één op dominantie.
+// (Spelfundament 12): scripted AI tegen scripted AI op Rustbelt XL (384 x 384 m, data 0.12.0) over vijf seeds. De seeds
+// verschillen via sim.rng (kritieke schoten van de held, de jitter op de golven en op het moment dat de AI naar het
+// midden gaat). EXPECTED legt de uitkomst per seed vast: een andere uitkomst is een bewuste balanswijziging en hoort bij
+// een nieuwe meting (pnpm --filter @crawlout/replay balance) en een regel in de CHANGELOG. Beide winroutes moeten
+// voorkomen: minstens één seed eindigt op vernietiging en minstens één op dominantie.
 
-// Data 0.11.0 (sim-xl, hiërarchische padvinding): opnieuw vastgelegd. Units vertrekken nu in de tick van hun bevel in
-// plaats van recht op hun doel af te lopen tot het veld klaar is, dus elke ontmoeting verschuift. Gemeten over de seeds
-// 1 tot 9, 42, 99 en 123: lengte 27,0 tot 35,3 minuten, dominantie in 4 van de 12, beide spelers winnen. Seed 123 is
-// vervangen door 5: 123 eindigt nu op dominantie terwijl de verliezende AI zonder werkplaats en bouwers vastzit en
-// scrap oppot (piek 762, een AI-zwakte los van de padvinding; open punt in packages/sim/CHANGELOG.md).
+// Data 0.12.0 (xl-int, de grote map): opnieuw vastgelegd op dezelfde seeds als 0.11.0. Gemeten over de seeds 1 tot 30,
+// 42, 99 en 123: alle 33 tussen 25,7 en 28,3 minuten, 19 op dominantie en 14 op vernietiging; speler 1 wint 28 van de 33
+// (de AI-spiegel is niet volledig symmetrisch, zie packages/sim/CHANGELOG.md 0.9.0). Elk potje duurt hier 3 tot 4 s.
 const EXPECTED = [
-  { seed: 1, winner: 0, reason: 'destruction', frame: 36153 },
-  { seed: 5, winner: 0, reason: 'dominance', frame: 35984 },
-  { seed: 7, winner: 1, reason: 'destruction', frame: 38462 },
-  { seed: 42, winner: 0, reason: 'destruction', frame: 38559 },
-  { seed: 99, winner: 0, reason: 'destruction', frame: 38765 },
+  { seed: 1, winner: 0, reason: 'destruction', frame: 31805 },
+  { seed: 5, winner: 1, reason: 'dominance', frame: 30895 },
+  { seed: 7, winner: 1, reason: 'destruction', frame: 32944 },
+  { seed: 42, winner: 1, reason: 'destruction', frame: 32666 },
+  { seed: 99, winner: 1, reason: 'dominance', frame: 32074 },
 ] as const;
 
-describe('potjelengte: AI tegen AI op Rustbelt', () => {
+// REPLAY_FAST=1 slaat deze vijf potjes (ongeveer 40 s) over in de snelle lus van een werkstroom; CI en een gewone
+// `pnpm test` draaien ze altijd (fase-0 sectie 17, besluit 5).
+describe.skipIf(process.env.REPLAY_FAST === '1')('potjelengte: AI tegen AI op Rustbelt XL', () => {
   const results: MatchResult[] = [];
   for (const e of EXPECTED) {
     it(

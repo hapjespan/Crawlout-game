@@ -1,86 +1,177 @@
 {
   "id": "rustbelt",
   "size": {
-    "w": 128,
-    "h": 128
+    "w": 384,
+    "h": 384
   },
   "heightmap": "maps/rustbelt.heightmap.json",
   "passability": "maps/rustbelt.passability.json",
   "props": "maps/rustbelt.props.json",
+  "water": "maps/rustbelt.water.json",
   "scrapNodes": [
     {
-      "x": 46,
-      "y": 14,
+      "x": 286,
+      "y": 92,
       "amount": 1500
     },
     {
-      "x": 81,
-      "y": 113,
+      "x": 97,
+      "y": 291,
       "amount": 1500
     },
     {
-      "x": 8,
-      "y": 36,
+      "x": 318,
+      "y": 94,
       "amount": 1500
     },
     {
-      "x": 119,
-      "y": 91,
+      "x": 65,
+      "y": 289,
       "amount": 1500
     },
     {
-      "x": 86,
-      "y": 28,
+      "x": 262,
+      "y": 42,
+      "amount": 1500
+    },
+    {
+      "x": 121,
+      "y": 341,
+      "amount": 1500
+    },
+    {
+      "x": 220,
+      "y": 64,
       "amount": 2500
     },
     {
-      "x": 41,
-      "y": 99,
+      "x": 163,
+      "y": 319,
       "amount": 2500
+    },
+    {
+      "x": 232,
+      "y": 54,
+      "amount": 1500
+    },
+    {
+      "x": 151,
+      "y": 329,
+      "amount": 1500
+    },
+    {
+      "x": 318,
+      "y": 186,
+      "amount": 2500
+    },
+    {
+      "x": 65,
+      "y": 197,
+      "amount": 2500
+    },
+    {
+      "x": 334,
+      "y": 200,
+      "amount": 1500
+    },
+    {
+      "x": 49,
+      "y": 183,
+      "amount": 1500
+    },
+    {
+      "x": 160,
+      "y": 74,
+      "amount": 2000
+    },
+    {
+      "x": 223,
+      "y": 309,
+      "amount": 2000
+    },
+    {
+      "x": 252,
+      "y": 146,
+      "amount": 1500
+    },
+    {
+      "x": 131,
+      "y": 237,
+      "amount": 1500
     }
   ],
   "claimPoints": [
     {
-      "x": 86,
-      "y": 24,
+      "x": 220,
+      "y": 60,
       "kind": "settlement"
     },
     {
-      "x": 41,
-      "y": 103,
+      "x": 163,
+      "y": 323,
       "kind": "settlement"
     },
     {
-      "x": 64,
-      "y": 64,
+      "x": 318,
+      "y": 190,
+      "kind": "settlement"
+    },
+    {
+      "x": 65,
+      "y": 193,
+      "kind": "settlement"
+    },
+    {
+      "x": 191,
+      "y": 191,
       "kind": "powerArmor"
     }
   ],
   "spawns": [
     {
-      "x": 30,
-      "y": 22
+      "x": 300,
+      "y": 76
     },
     {
-      "x": 97,
-      "y": 105
+      "x": 83,
+      "y": 307
     }
   ],
   "creepCamps": [
     {
-      "x": 40,
-      "y": 46,
+      "x": 176,
+      "y": 56,
       "tier": 1
     },
     {
-      "x": 87,
-      "y": 81,
+      "x": 207,
+      "y": 327,
+      "tier": 1
+    },
+    {
+      "x": 236,
+      "y": 132,
+      "tier": 1
+    },
+    {
+      "x": 147,
+      "y": 251,
+      "tier": 1
+    },
+    {
+      "x": 274,
+      "y": 140,
+      "tier": 1
+    },
+    {
+      "x": 109,
+      "y": 243,
       "tier": 1
     }
   ],
   "dominance": {
-    "pointsRequired": 2,
+    "pointsRequired": 3,
     "minutes": 8
   },
-  "_comment": "Slice-map Rustbelt op Rock Terrain 4. Gegenereerd door packages/map/src/gen/rustbelt.ts uit assets/dist/terrain (pnpm --filter @crawlout/map gen); niet met de hand bewerken. Puntsymmetrisch (180 graden) voor eerlijk spel. dominance: 2 van de 3 claimpunten gedurende 8 minuten (besluit Martien, advies architect fase-0 sectie 17; was 3 en daarna 12 minuten)."
+  "_comment": "Slice-map Rustbelt (384 x 384 m, 3 x 3 tegels van 128 m) op Rock Terrain 4. Gegenereerd door packages/map/src/gen/rustbelt.ts uit assets/dist/terrain (pnpm --filter @crawlout/map gen); niet met de hand bewerken. Puntsymmetrisch (180 graden) voor eerlijk spel. Rivier met drie oversteken (twee voordes en een landbrug in het midden); watermasker in maps/rustbelt.water.json, het wateroppervlak ligt op hoogte 0. dominance: 3 van de 5 claimpunten gedurende 8 minuten (was 2 van 3; 3 van 5 vraagt naast de eigen twee settlements het midden of een punt van de tegenstander)."
 }

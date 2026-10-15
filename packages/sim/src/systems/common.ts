@@ -5,6 +5,7 @@ import type { World } from '../ecs/world.js';
 import { BSTATE_DONE, C, NO_FIELD, NO_GOAL } from '../ecs/world.js';
 import type { EventBuffer } from '../events.js';
 import type { FlowFields } from '../flowfield.js';
+import type { TerrainDistances } from '../pathdist.js';
 import { idiv } from '../math/int.js';
 import { atan2A } from '../math/trig.js';
 import type { Rng } from '../rng.js';
@@ -26,6 +27,11 @@ export class PlayerState {
   readonly aiAttack = new Int32Array(MAX_PLAYERS);
   /** Scripted AI: vanaf dit frame mag de volgende golf na de attackTimers vertrekken (balans speltest 14 oktober). */
   readonly aiWaveAt = new Int32Array(MAX_PLAYERS);
+  /**
+   * Scripted AI (xl-int): frame + 1 vanaf wanneer hij claimpunten neemt die niet aan zijn kant liggen
+   * (claimFarFromTicks plus 0..waveJitterTicks via sim.rng, getrokken zodra claimFarFromTicks bereikt is); 0 = nog niet.
+   */
+  readonly aiClaimAt = new Int32Array(MAX_PLAYERS);
   /** Onderzochte techs als bitset (bit k = techId k, MAX_TECHS). */
   readonly tech = new Uint32Array(MAX_PLAYERS);
   // Held (één per speler; systems/hero.ts). De held-entity draagt C.hero; dit blijft bestaan als hij dood is.
@@ -162,6 +168,8 @@ export interface SimContext {
   readonly auras: Auras;
   /** Gebouwen en scrap-nodes als lijst (afgeleid, ververst zich zelf; zie EntityIndex). */
   readonly index: EntityIndex;
+  /** Padafstanden over het terrein voor de keuzes van de AI (afgeleid, gecachet; zie pathdist.ts). */
+  readonly terrainDist: TerrainDistances;
   unitType(typeId: number): SimUnitType | undefined;
   buildingType(typeId: number): SimBuildingType | undefined;
 }
@@ -451,7 +459,12 @@ export function nearestFreeCellAround(
   return -1;
 }
 
-/** De k-de vrije cel rond een rechthoek (ring voor ring, rij voor rij). -1 als er minder zijn. */
+/**
+ * De k-de vrije cel rond een rechthoek: ring voor ring, en binnen een ring de cel het dichtst bij het midden van de map
+ * eerst (dan rij voor rij). Op een puntsymmetrische map krijgen beide spelers zo elkaars spiegelbeeld (rij voor rij
+ * alleen is dat niet: de bovenste rij ligt voor de ene speler aan de kant van het midden en voor de ander aan de rand).
+ * -1 als er minder zijn.
+ */
 export function nthFreeCellAround(
   ctx: SimContext,
   fx: number,
@@ -461,15 +474,34 @@ export function nthFreeCellAround(
   k: number,
 ): number {
   const map = ctx.map;
+  const mx2 = map.w - 1;
+  const my2 = map.h - 1;
   let left = k;
+  const ring: number[] = [];
+  const key: number[] = [];
   for (let d = 1; d <= MAX_FREE_RING; d++) {
-    const c = scanRing(map, fx, fy, fw, fh, d, (cx, cy) => {
+    ring.length = 0;
+    key.length = 0;
+    scanRing(map, fx, fy, fw, fh, d, (cx, cy) => {
       if (ctx.terrain.walk[cy * map.w + cx] !== 1) return false;
-      if (left === 0) return true;
-      left--;
+      // afstand tot het midden van de map, in halve cellen (het midden kan op een celgrens liggen)
+      const dx = 2 * cx - mx2;
+      const dy = 2 * cy - my2;
+      const v = dx * dx + dy * dy;
+      let j = ring.length;
+      ring.push(0);
+      key.push(0);
+      while (j > 0 && key[j - 1]! > v) {
+        ring[j] = ring[j - 1]!;
+        key[j] = key[j - 1]!;
+        j--;
+      }
+      ring[j] = cy * map.w + cx;
+      key[j] = v;
       return false;
     });
-    if (c >= 0) return c;
+    if (left < ring.length) return ring[left]!;
+    left -= ring.length;
   }
   return -1;
 }

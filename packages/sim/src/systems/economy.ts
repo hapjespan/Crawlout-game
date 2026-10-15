@@ -1,4 +1,6 @@
+import { ROLES } from '@crawlout/data';
 import {
+  BSTATE_DONE,
   BSTATE_SITE,
   C,
   ORDER_BUILD,
@@ -42,6 +44,7 @@ import {
   withinReach,
 } from './common.js';
 import { DEPOT_MASK } from './orders.js';
+import { PROVIDES_WORKSHOP } from '../fromData.js';
 
 // Systeem 6: economie. Verzamelen (een rit duurt gatherTicks en levert gatherAmount), afleveren bij een depot,
 // bouwen (elke bouwer in bereik telt één tick voortgang), omscholen in de werkplaats (betalen, dan craftTicks
@@ -158,6 +161,34 @@ function craftWork(ctx: SimContext, i: number): void {
   w.popOrder(i);
 }
 
+const ROLE_BUILDER = ROLES.indexOf('builder');
+
+/** Of speler p geen voltooide werkplaats heeft en geen bouwer (ook niet in opleiding tot bouwer). */
+function needsBuilder(ctx: SimContext, p: number): boolean {
+  const w = ctx.world;
+  for (let i = 0; i < w.highWater; i++) {
+    if (w.alive[i] !== 1 || w.owner[i] !== p) continue;
+    if (w.has(i, C.building)) {
+      const bt = ctx.buildingType(w.typeId[i]!);
+      if (
+        w.bstate[i] === BSTATE_DONE &&
+        bt !== undefined &&
+        (bt.provides & PROVIDES_WORKSHOP) !== 0
+      )
+        return false;
+      continue;
+    }
+    if (!w.has(i, C.unit | C.orders | C.health) || w.has(i, C.hero)) continue;
+    if (w.role[i] === ROLE_BUILDER) return false;
+    if (
+      w.orderType(i) === ORDER_CRAFT &&
+      ctx.unitType(w.ordX[w.currentOrder(i)]!)?.role === ROLE_BUILDER
+    )
+      return false;
+  }
+  return true;
+}
+
 function growth(ctx: SimContext, census: Census, p: number): void {
   const ps = ctx.ps;
   const hq = census.hq[p]!;
@@ -189,7 +220,12 @@ function growth(ctx: SimContext, census: Census, p: number): void {
   );
   if (c < 0) return;
   const at = cellCenterOf(ctx.map, c);
-  createUnit(ctx, settler, p, at.x, at.y, 0);
+  // vangnet (Spelfundament 2.7): zonder werkplaats en zonder bouwer kan niemand meer omscholen of bouwen; dan is de
+  // nieuwe bewoner een bouwer (het goedkoopste loadout van die rol), zodat de speler een werkplaats kan herbouwen
+  const builderType = faction.roleTypeIds[ROLE_BUILDER] ?? 0;
+  const t =
+    builderType !== 0 && needsBuilder(ctx, p) ? (ctx.unitType(builderType) ?? settler) : settler;
+  createUnit(ctx, t, p, at.x, at.y, 0);
   census.settlers[p] = census.settlers[p]! + 1;
   census.pop[p] = census.pop[p]! + settler.popCost;
 }

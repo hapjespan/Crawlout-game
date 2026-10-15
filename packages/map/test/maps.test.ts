@@ -6,6 +6,7 @@ import { readDataDir } from '@crawlout/data/node';
 import {
   allConnected,
   decodeGrid,
+  floodReachable,
   encodeGrid,
   generateMap,
   generateRustbelt,
@@ -15,6 +16,7 @@ import {
   isPassable,
   loadHeightmap,
   loadMap,
+  loadWater,
   MARK_CLAIM_RGB,
   MARK_SCRAP_RGB,
   type GeneratedMap,
@@ -51,6 +53,9 @@ const expectedFiles = (name: string, g: GeneratedMap): Array<[string, string]> =
   ...(g.propsFile === undefined
     ? []
     : ([[`maps/${name}.props.json`, g.propsFile + '\n']] as Array<[string, string]>)),
+  ...(g.waterFile === undefined
+    ? []
+    : ([[`maps/${name}.water.json`, g.waterFile + '\n']] as Array<[string, string]>)),
 ];
 
 // UPDATE_MAPS=1 pnpm --filter @crawlout/map gen schrijft data/maps/* opnieuw (voor de tests hieronder lezen).
@@ -68,17 +73,28 @@ describe('gegenereerde bestanden', () => {
   }
 });
 
+const N = 384;
+const MID = N - 1; // spiegel: (x, y) -> (MID - x, MID - y)
+
 describe('rustbelt', () => {
   const def = readDef('rustbelt');
   const map = loadMap(def, assets);
 
   it('valideert tegen het MapDef-schema en heeft de afgesproken aantallen', () => {
-    expect(def.size).toEqual({ w: 128, h: 128 });
+    expect(def.size).toEqual({ w: N, h: N });
     expect(def.spawns).toHaveLength(2);
-    expect(def.scrapNodes).toHaveLength(6);
-    expect(def.claimPoints).toHaveLength(3);
-    expect(def.creepCamps).toHaveLength(2);
-    expect(map.passable).toHaveLength(128 * 128);
+    expect(def.scrapNodes).toHaveLength(18);
+    expect(def.claimPoints).toHaveLength(5);
+    expect(def.creepCamps).toHaveLength(6);
+    expect(def.water).toBe('maps/rustbelt.water.json');
+    expect(map.passable).toHaveLength(N * N);
+    // Het watermasker is alleen voor de renderer: de sim-gerichte MapGrid is gelijk met en zonder de ref.
+    const copy: Record<string, unknown> = { ...def };
+    delete copy['water'];
+    expect(MapDef.safeParse(copy).success).toBe(true);
+    expect(loadMap(copy as MapDef, assets)).toEqual(map);
+    expect(loadWater(def, assets)).toHaveLength(N * N);
+    expect(loadWater(copy as MapDef, assets)).toBeNull();
   });
 
   it('spawns, scrap-nodes, claimpunten en creep-kampen liggen op begaanbare cellen', () => {
@@ -87,45 +103,60 @@ describe('rustbelt', () => {
     }
   });
 
-  it('alle spawns, scrap-nodes en claimpunten zijn met elkaar verbonden (flood fill)', () => {
+  it('alle spawns, scrap-nodes en claimpunten zijn met elkaar verbonden, en elke begaanbare cel hoort erbij', () => {
     expect(
       allConnected(map, [...map.spawns, ...map.scrapNodes, ...map.claimPoints, ...map.creepCamps]),
     ).toBe(true);
+    // keepMainComponent: geen afgesloten begaanbare zakken of plateaus.
+    const seen = floodReachable(map, map.spawns[0]!.x, map.spawns[0]!.y);
+    for (let i = 0; i < N * N; i++) if (map.passable[i] === 1) expect(seen[i]).toBe(1);
   });
 
-  it('heeft onbegaanbare ruines en kliffen, maar blijft grotendeels open', () => {
+  it('heeft onbegaanbare kliffen, water, bos en ruines, maar blijft grotendeels open', () => {
     let blocked = 0;
     for (const v of map.passable) if (v === 0) blocked++;
-    expect(blocked).toBeGreaterThan(500);
-    expect(blocked).toBeLessThan((128 * 128) / 3);
+    expect(blocked).toBeGreaterThan((N * N) / 8);
+    expect(blocked).toBeLessThan((N * N) / 3);
   });
 
-  it('is puntsymmetrisch (bitmap en hoogtes) en eerlijk', () => {
+  it('is puntsymmetrisch (bitmap, hoogtes en water) en eerlijk', () => {
     const heights = loadHeightmap(def, assets);
-    for (let y = 0; y < 128; y++) {
-      for (let x = 0; x < 128; x++) {
-        const i = y * 128 + x;
-        const j = (127 - y) * 128 + (127 - x);
-        expect(map.passable[i]).toBe(map.passable[j]);
-        expect(heights.data[i]).toBe(heights.data[j]);
-      }
+    const water = decodeGrid(assets.read(def.water!), N, N, 'u8');
+    for (let i = 0; i < N * N; i++) {
+      const j = N * N - 1 - i;
+      if (map.passable[i] !== map.passable[j]) expect.fail(`passability ${i}`);
+      if (heights.data[i] !== heights.data[j]) expect.fail(`hoogte ${i}`);
+      if (water[i] !== water[j]) expect.fail(`water ${i}`);
     }
     const mirrored = (list: Array<{ x: number; y: number }>): boolean =>
       list.every((p) =>
-        list.some((q) => Math.abs(q.x - (127 - p.x)) <= 1 && Math.abs(q.y - (127 - p.y)) <= 1),
+        list.some((q) => Math.abs(q.x - (MID - p.x)) <= 1 && Math.abs(q.y - (MID - p.y)) <= 1),
       );
     expect(mirrored(map.spawns)).toBe(true);
     expect(mirrored(map.scrapNodes)).toBe(true);
     expect(mirrored(map.claimPoints)).toBe(true);
     expect(mirrored(map.creepCamps)).toBe(true);
+    // Gelijke loopafstanden: elke speler even ver van zijn eigen punten als de ander van de gespiegelde.
+    const [a, b] = map.spawns;
+    const fromA = bfsDist(map, a!.x, a!.y);
+    const fromB = bfsDist(map, b!.x, b!.y);
+    for (const p of [...map.scrapNodes, ...map.claimPoints, ...map.creepCamps]) {
+      const q = { x: MID - p.x, y: MID - p.y };
+      const mq = [...map.scrapNodes, ...map.claimPoints, ...map.creepCamps].find(
+        (r) => Math.abs(r.x - q.x) <= 1 && Math.abs(r.y - q.y) <= 1,
+      )!;
+      expect(Math.abs(fromA[p.y * N + p.x]! - fromB[mq.y * N + mq.x]!)).toBeLessThanOrEqual(2);
+    }
   });
 
   it('elk settlement-claimpunt heeft een scrap-node binnen claimRadiusM (besluit 9)', () => {
     const radius = claimRadiusM();
     const settlements = map.claimPoints.filter((c) => c.kind === 'settlement');
-    expect(settlements.length).toBeGreaterThanOrEqual(2);
+    expect(settlements).toHaveLength(4);
     for (const c of settlements) {
-      const near = map.scrapNodes.filter((n) => Math.hypot(n.x - c.x, n.y - c.y) <= radius);
+      const near = map.scrapNodes.filter(
+        (n) => n.amount === 2500 && Math.hypot(n.x - c.x, n.y - c.y) <= radius,
+      );
       expect(near.length, `claimpunt (${c.x},${c.y})`).toBeGreaterThanOrEqual(1);
     }
   });
@@ -143,7 +174,6 @@ describe('rustbelt', () => {
             for (let x = fx; x < fx + fw; x++)
               if (!isPassable(map, x, y) || occupied.has(y * map.w + x)) ok = false;
           }
-          // Afstand van het punt tot de footprint (dichtstbijzijnde cel), zoals de sim het rekent.
           const dx = Math.max(fx - c.x, 0, c.x - (fx + fw - 1));
           const dy = Math.max(fy - c.y, 0, c.y - (fy + fh - 1));
           if (ok && Math.hypot(dx, dy) <= radius) found = true;
@@ -165,54 +195,39 @@ describe('rustbelt', () => {
     }
   });
 
-  it('creep-kampen liggen op de route tussen een basis en het middenpunt (omweg hooguit 8 m)', () => {
-    const center = map.claimPoints.find((c) => c.kind === 'powerArmor')!;
-    const spawnOf = (camp: { x: number }): { x: number; y: number } =>
-      camp.x < 64 ? map.spawns[0]! : map.spawns[1]!;
-    const distFrom = (sx: number, sy: number): Int32Array => {
-      const d = new Int32Array(map.w * map.h).fill(-1);
-      const q = [sy * map.w + sx];
-      d[q[0]!] = 0;
-      for (let h = 0; h < q.length; h++) {
-        const i = q[h]!;
-        const x = i % map.w;
-        const y = (i - x) / map.w;
-        for (const [dx, dy] of [
-          [1, 0],
-          [0, 1],
-          [-1, 0],
-          [0, -1],
-        ] as const) {
-          if (!isPassable(map, x + dx, y + dy)) continue;
-          const j = (y + dy) * map.w + x + dx;
-          if (d[j] !== -1) continue;
-          d[j] = d[i]! + 1;
-          q.push(j);
-        }
-      }
-      return d;
-    };
+  it('creep-kampen liggen op een route van de eigen basis naar een claimpunt of oversteek (omweg hooguit 30 m)', () => {
+    const g = generateRustbelt(nodeGenIo);
+    const targets = [...map.claimPoints, ...g.crossings!];
     for (const camp of map.creepCamps) {
-      const s = spawnOf(camp);
-      const fromSpawn = distFrom(s.x, s.y);
-      const fromCenter = distFrom(center.x, center.y);
-      const i = camp.y * map.w + camp.x;
-      expect(fromSpawn[i]! + fromCenter[i]!).toBeLessThanOrEqual(
-        fromSpawn[center.y * map.w + center.x]! + 8,
+      const own = [...map.spawns].sort(
+        (p, q) => Math.hypot(p.x - camp.x, p.y - camp.y) - Math.hypot(q.x - camp.x, q.y - camp.y),
+      )[0]!;
+      const fromSpawn = bfsDist(map, own.x, own.y);
+      const fromCamp = bfsDist(map, camp.x, camp.y);
+      const detour = Math.min(
+        ...targets.map(
+          (t) =>
+            fromSpawn[camp.y * N + camp.x]! + fromCamp[t.y * N + t.x]! - fromSpawn[t.y * N + t.x]!,
+        ),
       );
+      expect(detour, `kamp (${camp.x},${camp.y})`).toBeLessThanOrEqual(30);
+      expect(Math.hypot(camp.x - own.x, camp.y - own.y)).toBeGreaterThan(30);
     }
   });
 
-  it('heeft precies 2 spawns, in playerId-volgorde (spawn i is van speler i)', () => {
+  it('heeft precies 2 spawns in tegenover elkaar liggende hoektegels, in playerId-volgorde', () => {
     expect(map.spawns).toHaveLength(2);
-    // A-helft (linksboven) eerst, gespiegelde B-helft (rechtsonder) tweede.
-    expect(map.spawns[0]!.x).toBeLessThan(64);
-    expect(map.spawns[1]!.x).toBeGreaterThanOrEqual(64);
+    const [a, b] = map.spawns;
+    // Speler 0 rechtsboven (tegel 2,0), speler 1 linksonder (tegel 0,2).
+    expect(a!.x).toBeGreaterThanOrEqual(256);
+    expect(a!.y).toBeLessThan(128);
+    expect(b!.x).toBeLessThan(128);
+    expect(b!.y).toBeGreaterThanOrEqual(256);
   });
 
-  it('heeft dominance 2 van 3 punten gedurende 8 minuten (besluit Martien, advies architect sectie 17)', () => {
-    expect(readDominance('rustbelt')).toEqual({ pointsRequired: 2, minutes: 8 });
-    expect(2).toBeLessThanOrEqual(def.claimPoints.length);
+  it('heeft dominance 3 van 5 punten gedurende 8 minuten', () => {
+    expect(readDominance('rustbelt')).toEqual({ pointsRequired: 3, minutes: 8 });
+    expect(def.claimPoints).toHaveLength(5);
   });
 
   it('geeft posities in sim-eenheden als celmiddelpunt', () => {
@@ -222,64 +237,105 @@ describe('rustbelt', () => {
   });
 });
 
-describe('rustbelt: terrein, routes en bases', () => {
+/** BFS-afstand (4-buren) in cellen over begaanbare cellen, minus `blocked`; -1 = onbereikbaar. */
+function bfsDist(
+  map: ReturnType<typeof loadMap>,
+  sx: number,
+  sy: number,
+  blocked?: Uint8Array,
+): Int32Array {
+  const w = map.w;
+  const d = new Int32Array(w * map.h).fill(-1);
+  const q = new Int32Array(w * map.h);
+  let tail = 0;
+  q[tail++] = sy * w + sx;
+  d[sy * w + sx] = 0;
+  for (let head = 0; head < tail; head++) {
+    const i = q[head]!;
+    const x = i % w;
+    const y = (i - x) / w;
+    for (const [dx, dy] of [
+      [1, 0],
+      [0, 1],
+      [-1, 0],
+      [0, -1],
+    ] as const) {
+      if (!isPassable(map, x + dx, y + dy)) continue;
+      const j = (y + dy) * w + x + dx;
+      if (d[j] !== -1 || blocked?.[j] === 1) continue;
+      d[j] = d[i]! + 1;
+      q[tail++] = j;
+    }
+  }
+  return d;
+}
+
+/** Pad (celindices) van a naar b langs dalende afstand; null als b onbereikbaar is. */
+function pathTo(
+  map: ReturnType<typeof loadMap>,
+  a: { x: number; y: number },
+  b: { x: number; y: number },
+  blocked?: Uint8Array,
+): number[] | null {
+  const d = bfsDist(map, b.x, b.y, blocked);
+  const w = map.w;
+  let i = a.y * w + a.x;
+  if (d[i] === -1) return null;
+  const out = [i];
+  while (d[i] !== 0) {
+    const x = i % w;
+    const y = (i - x) / w;
+    for (const [dx, dy] of [
+      [1, 0],
+      [0, 1],
+      [-1, 0],
+      [0, -1],
+    ] as const) {
+      const j = (y + dy) * w + x + dx;
+      if (isPassable(map, x + dx, y + dy) && d[j] === d[i]! - 1) {
+        i = j;
+        break;
+      }
+    }
+    out.push(i);
+  }
+  return out;
+}
+
+describe('rustbelt: terrein, rivier, bos en routes', () => {
   const def = readDef('rustbelt');
   const map = loadMap(def, assets);
   const heights = loadHeightmap(def, assets);
-  const N = 128;
+  const water = decodeGrid(assets.read(def.water!), N, N, 'u8') as Uint8Array;
+  const g = generateRustbelt(nodeGenIo);
+  const crossings = g.crossings!;
   const dist2 = (ax: number, ay: number, bx: number, by: number): number =>
     (ax - bx) * (ax - bx) + (ay - by) * (ay - by);
-
-  /** BFS-pad (4-buren) van a naar b over begaanbare cellen, minus de cellen in `blocked`. null als er geen pad is. */
-  const path = (
-    a: { x: number; y: number },
-    b: { x: number; y: number },
-    blocked: Uint8Array,
-  ): number[] | null => {
-    const parent = new Int32Array(N * N).fill(-2);
-    const queue = [a.y * N + a.x];
-    parent[queue[0]!] = -1;
-    for (let head = 0; head < queue.length; head++) {
-      const i = queue[head]!;
-      if (i === b.y * N + b.x) {
-        const out: number[] = [];
-        for (let c = i; c >= 0; c = parent[c]!) out.push(c);
-        return out;
-      }
-      const x = i % N;
-      const y = (i - x) / N;
-      for (const [dx, dy] of [
-        [1, 0],
-        [0, 1],
-        [-1, 0],
-        [0, -1],
-      ] as const) {
-        const j = (y + dy) * N + x + dx;
-        if (!isPassable(map, x + dx, y + dy) || blocked[j] === 1 || parent[j] !== -2) continue;
-        parent[j] = i;
-        queue.push(j);
-      }
-    }
-    return null;
+  const disc = (list: Array<{ x: number; y: number }>, r: number): Uint8Array => {
+    const out = new Uint8Array(N * N);
+    for (const c of list)
+      for (let y = c.y - r; y <= c.y + r; y++)
+        for (let x = c.x - r; x <= c.x + r; x++)
+          if (x >= 0 && y >= 0 && x < N && y < N && dist2(x, y, c.x, c.y) <= r * r)
+            out[y * N + x] = 1;
+    return out;
   };
 
-  it('heeft de hoogteschaal van de spec: begaanbaar terrein van 0 tot ongeveer 7 m, een klifwand van meer dan 0,5 m per cel', () => {
+  it('heeft de hoogteschaal van de spec: begaanbaar land van 0 tot ongeveer 7 m, een klifwand van meer dan 0,5 m per cel', () => {
     let min = Infinity;
     let max = -Infinity;
     for (let i = 0; i < heights.data.length; i++) {
-      // Ruines (2,5 m boven het terrein) en de klifwand zelf tellen niet mee; het begaanbare terrein wel.
-      if (map.passable[i] !== 1) continue;
+      if (map.passable[i] !== 1 || water[i] !== 0) continue;
       min = Math.min(min, heights.data[i]!);
       max = Math.max(max, heights.data[i]!);
     }
     expect(min).toBeGreaterThanOrEqual(0);
-    expect(max).toBeGreaterThan(4 * 256);
-    expect(max).toBeLessThan(7 * 256);
-    // Grootste hoogteverschil over een klifwand: onbegaanbare terreincel naast een begaanbare cel, zonder ruines (die zitten er 2,5 m bovenop).
+    expect(max).toBeGreaterThan(5 * 256);
+    expect(max).toBeLessThan(7.5 * 256);
     let wall = 0;
-    for (let y = 3; y < N - 3; y++)
-      for (let x = 3; x < N - 3; x++) {
-        if (map.passable[y * N + x] !== 0) continue;
+    for (let y = 30; y < N - 30; y++)
+      for (let x = 30; x < N - 30; x++) {
+        if (map.passable[y * N + x] !== 0 || water[y * N + x] !== 0) continue;
         for (const [dx, dy] of [
           [1, 0],
           [-1, 0],
@@ -295,8 +351,7 @@ describe('rustbelt: terrein, routes en bases', () => {
   });
 
   it('kliffen volgen de helling: open cellen naast open cellen zijn zelden steiler dan de drempel (32 graden)', () => {
-    // De generator ruimt klifspikkels op (minCliffCells), dus een enkele cel mag boven de drempel blijven.
-    const maxStep = 0.625 * 256 + 2; // 0,625 m per cel, in 1/256 m
+    const maxStep = 0.625 * 256 + 2;
     let pairs = 0;
     let over = 0;
     for (let y = 0; y < N; y++)
@@ -315,29 +370,164 @@ describe('rustbelt: terrein, routes en bases', () => {
     expect(over).toBeLessThan(pairs / 200);
   });
 
-  it('heeft minstens twee onafhankelijke routes tussen de bases (geen flessenhals van minder dan 7 m breed)', () => {
-    const a = map.spawns[0]!;
-    const b = map.spawns[1]!;
-    const none = new Uint8Array(N * N);
-    const first = path(a, b, none);
-    expect(first).not.toBeNull();
-    // Blokkeer alles binnen 4 cellen van de eerste route, behalve rond de bases zelf (daar lopen alle routes uit).
-    const block = new Uint8Array(N * N);
-    for (const i of first!) {
-      const x = i % N;
-      const y = (i - x) / N;
-      if (dist2(x, y, a.x, a.y) < 20 * 20 || dist2(x, y, b.x, b.y) < 20 * 20) continue;
-      for (let dy = -4; dy <= 4; dy++)
-        for (let dx = -4; dx <= 4; dx++) {
-          const bx = x + dx;
-          const by = y + dy;
-          if (bx >= 0 && by >= 0 && bx < N && by < N) block[by * N + bx] = 1;
-        }
+  it('watermasker klopt met de passability: water is onbegaanbaar, ondiep is begaanbaar, en het water ligt onder 0', () => {
+    let deep = 0;
+    let shallow = 0;
+    for (let i = 0; i < N * N; i++) {
+      const v = water[i]!;
+      expect([0, 1, 2]).toContain(v);
+      if (v === 1) {
+        deep++;
+        if (map.passable[i] !== 0) expect.fail(`water ${i} is begaanbaar`);
+      }
+      if (v === 2) {
+        shallow++;
+        if (map.passable[i] !== 1) expect.fail(`voorde ${i} is onbegaanbaar`);
+      }
+      if (v !== 0 && heights.data[i]! >= 0)
+        expect.fail(`water ${i} ligt niet onder het wateroppervlak`);
+      if (v === 0 && map.passable[i] === 1 && heights.data[i]! < 0)
+        expect.fail(`droge cel ${i} ligt onder water`);
     }
-    const second = path(a, b, block);
-    expect(second, 'tweede route').not.toBeNull();
-    // De tweede route is een echte omweg, maar geen labyrint.
-    expect(second!.length).toBeLessThan(first!.length * 3);
+    // Een rivier van 6 tot 10 m breed over ruim 500 m.
+    expect(deep).toBeGreaterThan(3000);
+    expect(deep).toBeLessThan(6000);
+    expect(shallow).toBeGreaterThan(60);
+    expect(water).toEqual(g.water);
+  });
+
+  it('de rivier is 6 tot 10 m breed (gemeten loodrecht op de middellijn, buiten de oversteken)', () => {
+    // Breedte per rij in het noordelijke dal: aantal waterscellen op rij y, gecorrigeerd voor de schuinte is lastig,
+    // dus: de grootste schijf die in het water past (straal 3 tot 5) langs de hele rivier.
+    const inWater = (x: number, y: number): boolean =>
+      x >= 0 && y >= 0 && x < N && y < N && water[y * N + x] === 1;
+    let maxR = 0;
+    for (let y = 0; y < N; y++)
+      for (let x = 0; x < N; x++) {
+        if (!inWater(x, y)) continue;
+        let r = 0;
+        for (;;) {
+          let all = true;
+          for (let dy = -(r + 1); dy <= r + 1 && all; dy++)
+            for (let dx = -(r + 1); dx <= r + 1 && all; dx++)
+              if (dx * dx + dy * dy <= (r + 1) * (r + 1) && !inWater(x + dx, y + dy)) all = false;
+          if (!all) break;
+          r++;
+        }
+        maxR = Math.max(maxR, r);
+      }
+    expect(maxR).toBeGreaterThanOrEqual(2); // minstens ongeveer 5 m doorsnede ergens
+    expect(maxR).toBeLessThanOrEqual(5); // nergens breder dan ongeveer 11 m
+  });
+
+  it('de rivier heeft precies 3 oversteken: twee voordes en een landbrug in het midden, elk 6 tot 8 m', () => {
+    expect(crossings.filter((c) => c.kind === 'ford')).toHaveLength(2);
+    const bridge = crossings.filter((c) => c.kind === 'bridge');
+    expect(bridge).toHaveLength(1);
+    expect(Math.abs(bridge[0]!.x - 191.5)).toBeLessThanOrEqual(1);
+    expect(Math.abs(bridge[0]!.y - 191.5)).toBeLessThanOrEqual(1);
+    const [a, b] = map.spawns;
+    // Zonder de drie oversteken zijn de bases gescheiden; met elk alleen verbonden.
+    expect(bfsDist(map, a!.x, a!.y, disc(crossings, 14))[b!.y * N + b!.x]).toBe(-1);
+    for (const c of crossings) {
+      const others = crossings.filter((o) => o !== c);
+      expect(
+        bfsDist(map, a!.x, a!.y, disc(others, 14))[b!.y * N + b!.x],
+        `${c.kind} (${c.x},${c.y})`,
+      ).toBeGreaterThan(0);
+    }
+    // Twee ondiepe stukken (de voordes), elk een samenhangend stuk van de oever tot de oever.
+    const seen = new Uint8Array(N * N);
+    let parts = 0;
+    for (let i = 0; i < N * N; i++) {
+      if (water[i] !== 2 || seen[i] === 1) continue;
+      parts++;
+      const q = [i];
+      seen[i] = 1;
+      for (let h = 0; h < q.length; h++) {
+        const x = q[h]! % N;
+        const y = (q[h]! - x) / N;
+        for (const [dx, dy] of [
+          [1, 0],
+          [0, 1],
+          [-1, 0],
+          [0, -1],
+        ] as const) {
+          const j = (y + dy) * N + x + dx;
+          if (water[j] === 2 && seen[j] === 0) {
+            seen[j] = 1;
+            q.push(j);
+          }
+        }
+      }
+    }
+    expect(parts).toBe(2);
+    // Breedte: een rij van 6 open cellen dwars op de stroom past op elke oversteek; de stroom loopt hier schuin,
+    // dus: in een vierkant van 6 x 6 rond het midden van de oversteek zijn alle cellen begaanbaar.
+    for (const c of crossings) {
+      let best = 0;
+      for (let oy = -4; oy <= 4; oy++)
+        for (let ox = -4; ox <= 4; ox++) {
+          let side = 0;
+          while (side < 12) {
+            let ok = true;
+            for (let y = 0; y <= side && ok; y++)
+              for (let x = 0; x <= side && ok; x++)
+                if (!isPassable(map, c.x + ox + x - (side >> 1), c.y + oy + y - (side >> 1)))
+                  ok = false;
+            if (!ok) break;
+            side++;
+          }
+          best = Math.max(best, side);
+        }
+      expect(best, `${c.kind} (${c.x},${c.y})`).toBeGreaterThanOrEqual(4);
+    }
+  });
+
+  it('heeft minstens 3 routes tussen de bases, waarvan 2 ver van het midden', () => {
+    const [a, b] = map.spawns;
+    const lengths: number[] = [];
+    for (const c of crossings) {
+      const others = crossings.filter((o) => o !== c);
+      const route = pathTo(map, a!, b!, disc(others, 14));
+      expect(route, `${c.kind}`).not.toBeNull();
+      lengths.push(route!.length);
+      if (c.kind === 'ford') {
+        // De route over een voorde blijft minstens 50 m van het midden.
+        for (const i of route!) {
+          const x = i % N;
+          const y = (i - x) / N;
+          expect(dist2(x, y, 191.5, 191.5)).toBeGreaterThan(50 * 50);
+        }
+      }
+    }
+    expect(Math.max(...lengths)).toBeLessThan(Math.min(...lengths) * 1.5);
+  });
+
+  it('de bosrand is dicht: 12 tot 20 m diep, onbegaanbaar, met een onregelmatige binnenrand', () => {
+    for (let y = 0; y < N; y++)
+      for (let x = 0; x < N; x++) {
+        const edge = Math.min(x, y, MID - x, MID - y);
+        if (edge < 12 && map.passable[y * N + x] !== 0)
+          expect.fail(`(${x},${y}) in de bosrand is open`);
+      }
+    const forest = g.forest!;
+    for (let i = 0; i < N * N; i++)
+      if (forest[i] !== 0 && map.passable[i] !== 0) expect.fail(`bos-cel ${i} is begaanbaar`);
+    // Diepte van de rand per kolom (boven): tussen 12 en 20 en niet overal gelijk.
+    const depths = new Set<number>();
+    for (let x = 40; x < N - 40; x++) {
+      let d = 0;
+      while (forest[d * N + x] === 1) d++;
+      expect(d).toBeGreaterThanOrEqual(12);
+      expect(d).toBeLessThanOrEqual(20);
+      depths.add(d);
+    }
+    expect(depths.size).toBeGreaterThanOrEqual(5);
+    // Bosjes binnen de rand.
+    let grove = 0;
+    for (const v of forest) if (v === 2) grove++;
+    expect(grove).toBeGreaterThan(500);
   });
 
   it('elke basis ligt op een vlak, open bouwvlak (hoofdgebouw 5x5 plus bouwruimte, straal 7 m)', () => {
@@ -355,17 +545,36 @@ describe('rustbelt: terrein, routes en bases', () => {
     }
   });
 
-  it('heeft 3 claimpunten waarvan een in het midden, 2 creep-kampen en 6 scrap-nodes, waarvan 2 bij de settlements', () => {
-    expect(map.claimPoints.filter((c) => c.x === 64 && c.y === 64)).toHaveLength(1);
-    expect(map.creepCamps).toHaveLength(2);
-    expect(map.scrapNodes).toHaveLength(6);
+  it('5 claimpunten (een in het midden), 6 creep-kampen en 18 scrap-nodes, waarvan 4 van 2500 bij de settlements', () => {
+    expect(
+      map.claimPoints.filter((c) => c.kind === 'powerArmor' && c.x === 191 && c.y === 191),
+    ).toHaveLength(1);
+    expect(map.creepCamps).toHaveLength(6);
+    expect(map.scrapNodes).toHaveLength(18);
     const radius = claimRadiusM();
     const nearSettlement = map.scrapNodes.filter((n) =>
       map.claimPoints.some(
         (c) => c.kind === 'settlement' && Math.hypot(n.x - c.x, n.y - c.y) <= radius,
       ),
     );
-    expect(nearSettlement).toHaveLength(2);
+    expect(nearSettlement.filter((n) => n.amount === 2500)).toHaveLength(4);
+    // Settlements aan de eigen kant: dichter bij de eigen spawn dan bij die van de tegenstander.
+    const [a, b] = map.spawns;
+    const fromA = bfsDist(map, a!.x, a!.y);
+    const fromB = bfsDist(map, b!.x, b!.y);
+    const own = map.claimPoints
+      .filter((c) => c.kind === 'settlement')
+      .map((c) => Math.sign(fromA[c.y * N + c.x]! - fromB[c.y * N + c.x]!));
+    expect(own.filter((v) => v < 0)).toHaveLength(2);
+    expect(own.filter((v) => v > 0)).toHaveLength(2);
+  });
+
+  it('de generator is snel genoeg (onder 30 s) en reproduceerbaar', () => {
+    const t0 = performance.now();
+    const again = generateRustbelt(nodeGenIo);
+    expect(performance.now() - t0).toBeLessThan(30000);
+    expect(again.passabilityFile).toBe(g.passabilityFile);
+    expect(again.propsFile).toBe(g.propsFile);
   });
 });
 
@@ -374,8 +583,11 @@ describe('een tweede map is alleen data', () => {
     const spec: MapSpec = {
       ...RUSTBELT_SPEC,
       props: undefined as never,
+      river: undefined as never,
+      forest: undefined as never,
       id: 'rustbelt-b',
       terrain: { ...RUSTBELT_SPEC.terrain!, orientation: 6 },
+      pads: [],
       ruins: [],
       spawns: [],
       scrapNodes: [],
@@ -384,11 +596,10 @@ describe('een tweede map is alleen data', () => {
       creepCamps: [],
     };
     const g = generateMap(spec, nodeGenIo);
-    for (let y = 0; y < 128; y++)
-      for (let x = 0; x < 128; x++) {
-        expect(g.heights[y * 128 + x]).toBe(g.heights[(127 - y) * 128 + 127 - x]);
-        expect(g.passable[y * 128 + x]).toBe(g.passable[(127 - y) * 128 + 127 - x]);
-      }
+    for (let i = 0; i < N * N; i++) {
+      if (g.heights[i] !== g.heights[N * N - 1 - i]) expect.fail(`hoogte ${i}`);
+      if (g.passable[i] !== g.passable[N * N - 1 - i]) expect.fail(`passability ${i}`);
+    }
     expect(JSON.stringify(g.def)).not.toBe(JSON.stringify(readDef('rustbelt')));
   });
 

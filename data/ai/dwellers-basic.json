@@ -27,17 +27,13 @@
     {
       "atS": 540,
       "buildingId": "turret",
-      "site": "claim"
+      "site": "hq"
     }
   ],
   "attackTimersS": [
     480,
     720
   ],
-  "rallyPoint": {
-    "x": 64,
-    "y": 64
-  },
   "militiaPct": 20,
   "militiaPctMax": 60,
   "militiaPctPerMin": 2.5,
@@ -58,7 +54,7 @@
     "patrol",
     "militie"
   ],
-  "richScrap": 400,
+  "richScrap": 300,
   "richBuilds": [
     {
       "buildingId": "turret",
@@ -71,22 +67,30 @@
     {
       "buildingId": "turret",
       "site": "front"
+    },
+    {
+      "buildingId": "turret",
+      "site": "hq"
+    },
+    {
+      "buildingId": "turret",
+      "site": "claim"
     }
   ],
   "scavengersPerNode": 5,
   "claimFromS": 60,
   "claimSafeRadiusM": 30,
-  "claimFarFromS": 480,
+  "claimFarFromS": 990,
   "defendRadiusM": 38,
-  "rallySite": "hq",
+  "rallySite": "front",
   "rallyRadiusM": 6,
   "waveIntervalS": 180,
-  "waveJitterS": 30,
+  "waveJitterS": 60,
   "waveMinArmy": 5,
   "waveArmyGrowth": 3,
   "waveMaxWaitS": 90,
   "pushMinArmy": 12,
-  "pushFromS": 1680,
+  "pushFromS": 1440,
   "allInWithoutNodes": true,
-  "_comment": "Balans speltest 14 oktober (de AI was te zwak: twee woningen, pop-cap rond 14, kleine legers, exclusieve nodes nauwelijks gedolven). Alle getallen sturen de AI in packages/sim/src/systems/ai.ts; hij geeft gewone commando's, geen cheats. Bouwvolgorde (buildOrder, site hq tenzij anders): woning op 5 s, werkplaats op 30 s, een tweede werkplaats als depot bij het eigen claimpunt naast de exclusieve node op 150 s (site claim), een turret aan het front op 240 s (site front: bij het eigen claimpunt het dichtst bij de vijand), lab op 300 s en een turret bij het eigen claimpunt op 540 s; het radiobaken is eruit, het doet nog niets in de sim. Huisvesting: een woning (housingBuildingId) zodra er 2 of minder vrije bedden zijn (housingFreeBeds), tot popCapMax. Onderzoek (research): alle zes techs in deze volgorde vanaf 180 s, zodra hij ze kan betalen. Leger (armyLoadouts): patrol zodra geweerrek er is, anders militie. Militie-aandeel militiaPct 20 procent, plus militiaPctPerMin 2,5 procentpunt per minuut tot militiaPctMax 60; staat er een vijand binnen defendRadiusM 38 m van een eigen gebouw, dan minstens threatMilitiaPct 50 en gaat de vrije militie erop af (nieuwe Rustbelt, data 0.10.0: was 14; met 38 m komt het leger vanaf het hoofdgebouw op tijd bij een raid op het midden, 54 m verderop, zodat een raid ook kan mislukken). Hij houdt 2 bouwers (builders). Plunderaars: hoogstens 5 per node (scavengersPerNode), nodes die een eigen claimpunt exclusief maakt eerst; wie geen plek heeft, wordt militie. Boven 400 scrap (richScrap) schoolt hij militie om naar patrol en bouwt hij richBuilds (turrets aan het front en bij het claimpunt; een verloren turret komt terug). Claimen: vanaf 60 s (claimFromS) eerst de neutrale punten aan de eigen kant (het settlement-punt bij de 2500-node), dan de rest, elk het dichtst bij het hoofdgebouw; een punt verder dan 30 m (claimSafeRadiusM) krijgt de vrije militie als escorte, en een punt dat niet aan de eigen kant ligt (het midden) pas vanaf 480 s (claimFarFromS). Verzamelpunt tussen de golven: het hoofdgebouw (rallySite hq, data 0.10.0: was claim, wat op de nieuwe Rustbelt het midden is; daar won de eerste houder van het midden elk potje op dominantie), binnen 6 m (rallyRadiusM). Golven: op 480 en 720 s (attackTimersS), daarna elke 180 s (waveIntervalS) plus 0 tot 30 s via sim.rng (waveJitterS); minstens 5 militie (waveMinArmy) plus 3 per eerdere golf (waveArmyGrowth), of na 90 s wachten (waveMaxWaitS) met 5. Vóór 1680 s (pushFromS, minuut 28) of met minder dan 12 militie (pushMinArmy) is een golf een raid, en alleen als de vijand genoeg claimpunten voor dominantie houdt: op zijn claimpunt het dichtst bij huis, met een bouwer die er een claimpaal naast zet (tot hij die kan betalen wacht de raid en spaart hij), daarna terug; anders vervalt de golf en spaart hij zijn leger. Daarna een push op het hoofdgebouw. allInWithoutNodes: zonder bruikbare scrap-node (de map is leeg) gaat elke golf met de plunderaars mee naar het hoofdgebouw, zodat een potje zonder inkomen niet stil blijft staan. rallyPoint is een ongebruikte placeholder uit sprint 1 (het verzamelpunt komt uit rallySite). Gemeten met pnpm --filter @crawlout/replay balance (seeds 1, 7, 42, 99, 123) op de Rustbelt van Rock Terrain 4 (data 0.10.0): AI tegen AI eindigt tussen 30,2 en 32,9 minuten, één seed (99) op dominantie, vier op vernietiging, winnaars gemengd; scrap op de bank piekt rond 240."
+  "_comment": "Scripted AI van de Dwellers. Alle getallen sturen packages/sim/src/systems/ai.ts; hij geeft gewone commando's, geen cheats, en meet verre afstanden (nodes, claimpunten, doelen) over land. Bouwvolgorde (buildOrder, site hq tenzij anders): woning op 5 s, werkplaats op 30 s, een tweede werkplaats als depot bij het eigen claimpunt het dichtst bij huis op 150 s (site claim), een turret aan het front op 240 s (site front: bij het eigen claimpunt het dichtst bij de vijand), lab op 300 s en een turret bij het hoofdgebouw op 540 s (data 0.12.0, was bij het eigen claimpunt: op de grote map komt een push op het hoofdgebouw nooit langs dat punt, dus die turret schoot nooit). Een gesloopte werkplaats bouwt hij als eerste opnieuw. Huisvesting: een woning (housingBuildingId) zodra er housingFreeBeds of minder vrije bedden zijn, tot popCapMax. Onderzoek (research): de techs in deze volgorde vanaf researchFromS, zodra hij ze kan betalen. Leger (armyLoadouts): patrol zodra geweerrek er is, anders militie. Militie-aandeel: militiaPct, plus militiaPctPerMin procentpunt per minuut tot militiaPctMax; met een vijand binnen defendRadiusM van een eigen gebouw minstens threatMilitiaPct, en de vrije militie gaat erop af. Hij houdt builders bouwers. Plunderaars: hoogstens scavengersPerNode per node, exclusieve nodes eerst, dan de kortste rit; wie geen plek heeft, wordt militie. Boven richScrap schoolt hij militie om naar patrol en bouwt hij richBuilds (een verloren turret komt terug); data 0.12.0: richScrap 300 (was 400) en vijf turrets (was drie), zodat een winnende AI met een vol leger zijn scrap blijft uitgeven. Zolang hij spaart voor de bouwvolgorde, schoolt hij alleen om tot militie van wat erboven zit. Claimen: vanaf claimFromS eerst de neutrale punten aan de eigen kant, dan de rest, elk het dichtst bij huis; verder dan claimSafeRadiusM met de vrije militie als escorte, een punt dat niet aan de eigen kant ligt (het midden) pas vanaf claimFarFromS plus 0 tot waveJitterS (sim.rng, één keer per potje): data 0.12.0 990 s (was 480), zodat wie het midden houdt pas rond minuut 25 op dominantie kan winnen en de push van de ander op tijd komt. Verzamelpunt tussen de golven: rallySite front (data 0.12.0, was hq), het eigen claimpunt het dichtst bij de vijand, binnen rallyRadiusM: op de grote Rustbelt staat het leger zo bij het midden als hij dat houdt, zodat dominantie te verdedigen is (met hq brak elke raid het midden en won dominantie nooit). Golven: op attackTimersS, daarna elke waveIntervalS plus 0 tot waveJitterS (sim.rng; data 0.12.0 60 s, was 30, ook als een golf vervalt); minstens waveMinArmy militie plus waveArmyGrowth per eerdere golf, of na waveMaxWaitS wachten met waveMinArmy. Vóór pushFromS of met minder dan pushMinArmy militie is een golf een raid, alleen als de vijand genoeg claimpunten voor dominantie houdt: op een van zijn claimpunten (om de beurt, het dichtst bij huis eerst), met een bouwer die er een claimpaal naast zet (tot hij die kan betalen wacht de raid en spaart hij), daarna terug; anders vervalt de golf. Daarna een push op het hoofdgebouw: pushFromS 1440 s (minuut 24; data 0.12.0, was 1680) zodat het potje op de grote map tussen 25 en 35 minuten beslist. allInWithoutNodes: zonder bruikbare scrap-node gaat elke golf met de plunderaars mee naar het hoofdgebouw. Metingen staan in packages/data/CHANGELOG.md."
 }

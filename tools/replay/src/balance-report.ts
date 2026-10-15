@@ -1,4 +1,4 @@
-// Balansrapport: AI tegen AI op Rustbelt over een reeks seeds (standaard 1, 7, 42, 99, 123), per seed winnaar, reden,
+// Balansrapport: AI tegen AI op Rustbelt over een reeks seeds (standaard 1, 5, 7, 42, 99, zoals match-length.test.ts), per seed winnaar, reden,
 // lengte, scrap-verloop, leger en held-level. Gebruik: node --import tsx src/balance-report.ts [seed ...]
 import { BOT_PLANS, playMatch } from './balance.js';
 import type { MatchResult } from './balance.js';
@@ -8,7 +8,7 @@ const seeds = process.argv
   .slice(2)
   .map(Number)
   .filter((n) => Number.isInteger(n));
-const list = seeds.length > 0 ? seeds : [1, 7, 42, 99, 123];
+const list = seeds.length > 0 ? seeds : [1, 5, 7, 42, 99];
 
 const fmt = (xs: number[], every = 3): string =>
   xs.filter((_, i) => i % every === every - 1 || i === xs.length - 1).join(' ');

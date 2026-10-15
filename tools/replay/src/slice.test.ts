@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { ROLES, buildingTypeId } from '@crawlout/data';
 import { EVENT_TYPE } from '@crawlout/protocol';
 import type { LobbyPlayer, Replay } from '@crawlout/protocol';
-import { createSim } from '@crawlout/sim';
+import { ORDER_ATTACK_MOVE, createSim } from '@crawlout/sim';
 import type { Sim } from '@crawlout/sim';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -16,8 +16,10 @@ import { createReplaySim, parseReplay } from './run.js';
 //  - turrets schieten en de AI onderzoekt de prereqTech van zijn bouworder (fixture s4-rustbelt-turrets);
 //  - de scripted AI tegen zichzelf levert een winnaar binnen een redelijk aantal ticks;
 //  - bouwers hervatten na een onderbreking, Stop houdt ze stil, vrije bouwers helpen (fixture s5-rustbelt-builder-resume);
-//  - winroute B: een bot houdt twee punten tegen de AI en wint op dominantie (fixture s6-rustbelt-dominance), met
-//    PlayerStatus.dominance zoals de HUD hem leest.
+//  - winroute B: een bot houdt drie punten (beide settlement-punten en het midden; Rustbelt XL vraagt 3 van de 5) tegen
+//    de AI en wint op dominantie (fixture s6-rustbelt-dominance), met PlayerStatus.dominance zoals de HUD hem leest;
+//  - de AI-legers blijven niet hangen: geen unit staat een minuut op een AttackMove zonder doel en zonder vooruit te
+//    komen (de rivier over de voordes en de landbrug, via de padvinding).
 
 const FIXTURES_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'fixtures');
 const fixture = (name: string): Replay =>
@@ -176,7 +178,7 @@ describe('slice: Rustbelt met echte data', () => {
   );
 
   it(
-    'winroute B: de bot houdt twee punten tegen de raids van de AI en wint op dominantie (fixture s6-rustbelt-dominance)',
+    'winroute B: de bot houdt drie punten tegen de raids van de AI en wint op dominantie (fixture s6-rustbelt-dominance)',
     { timeout: 60_000 },
     () => {
       const r = fixture('s6-rustbelt-dominance');
@@ -207,52 +209,85 @@ describe('slice: Rustbelt met echte data', () => {
       expect(won.ticksHeld).toBe(required);
       expect(won.pointsHeld).toBeGreaterThanOrEqual(won.pointsRequired);
       expect(lastStatus[0]!.dominance!.ticksHeld).toBe(required - 1);
-      // de AI ziet de bot als leider, houdt zelf zijn settlement-punt en raidde het midden
+      // de AI ziet de bot als leider, houdt zelf minder punten dan nodig en raidde het midden
       const ai = lastStatus[1]!.dominance!;
-      expect(ai.pointsHeld).toBe(1);
-      expect(ai.leader).toEqual({ playerId: 0, pointsHeld: 2, ticksHeld: required - 1 });
+      expect(ai.pointsHeld).toBeGreaterThanOrEqual(1);
+      expect(ai.pointsHeld).toBeLessThan(ai.pointsRequired);
+      expect(ai.leader).toEqual({
+        playerId: 0,
+        pointsHeld: lastStatus[0]!.dominance!.pointsHeld,
+        ticksHeld: required - 1,
+      });
+      expect(ai.leader!.pointsHeld).toBeGreaterThanOrEqual(ai.pointsRequired);
       expect(raidShots).toBeGreaterThan(0);
     },
   );
 
-  it('scripted AI tegen scripted AI levert een winnaar', { timeout: 60_000 }, () => {
-    const env = buildEnv('rustbelt', lobby(true), settings);
-    const sim = createSim({ seed: 42, ...env });
-    const limit = 42_000; // 35 minuten speeltijd (Spelfundament 2.6; de lengte per seed staat in match-length.test.ts)
-    const claims = [0, 0];
-    let lockdowns = 0;
-    let turretShots = 0;
-    const turret = building('turret');
-    for (let f = 0; f < limit && sim.winner() === null; f++) {
-      sim.applyBundle({ frame: f, commands: [] });
-      sim.tick();
-      for (let k = 0; k < sim.events.count; k++) {
-        if (sim.events.type[k] === EVENT_TYPE.claimTaken && sim.events.b[k]! < 2)
-          claims[sim.events.b[k]!]!++;
-        if (
-          sim.events.type[k] === EVENT_TYPE.shotFired &&
-          sim.getUnit(sim.events.a[k]!)?.typeId === turret
-        )
-          turretShots++;
+  // REPLAY_FAST=1 slaat dit potje over (ongeveer 9 s); CI en een gewone `pnpm test` draaien het altijd
+  it.skipIf(process.env.REPLAY_FAST === '1')(
+    'scripted AI tegen scripted AI levert een winnaar',
+    { timeout: 60_000 },
+    () => {
+      const env = buildEnv('rustbelt', lobby(true), settings);
+      const sim = createSim({ seed: 42, ...env });
+      const limit = 42_000; // 35 minuten speeltijd (Spelfundament 2.6; de lengte per seed staat in match-length.test.ts)
+      const claims = [0, 0];
+      let lockdowns = 0;
+      let turretShots = 0;
+      const turret = building('turret');
+      // geen leger dat blijft hangen: per unit op AttackMove zonder doel de laatste plek en het frame waarop hij daar
+      // was; wie in een minuut geen 2 m verder komt, hangt (bijvoorbeeld voor de rivier of kop op kop met een ander)
+      const still = new Map<number, { x: number; y: number; f: number }>();
+      let longestStill = 0;
+      for (let f = 0; f < limit && sim.winner() === null; f++) {
+        sim.applyBundle({ frame: f, commands: [] });
+        sim.tick();
+        if (f % 100 === 0) {
+          for (const id of sim.entityIds()) {
+            const u = sim.getUnit(id)!;
+            if (
+              (u.kind !== 'unit' && u.kind !== 'hero') ||
+              u.order !== ORDER_ATTACK_MOVE ||
+              u.target !== 0
+            ) {
+              still.delete(id);
+              continue;
+            }
+            const s = still.get(id);
+            if (s === undefined || (u.x - s.x) ** 2 + (u.y - s.y) ** 2 > (2 * 256) ** 2)
+              still.set(id, { x: u.x, y: u.y, f });
+            else longestStill = Math.max(longestStill, f - s.f);
+          }
+        }
+        for (let k = 0; k < sim.events.count; k++) {
+          if (sim.events.type[k] === EVENT_TYPE.claimTaken && sim.events.b[k]! < 2)
+            claims[sim.events.b[k]!]!++;
+          if (
+            sim.events.type[k] === EVENT_TYPE.shotFired &&
+            sim.getUnit(sim.events.a[k]!)?.typeId === turret
+          )
+            turretShots++;
+        }
+        for (let p = 0; p < 2; p++)
+          if (sim.ps.zoneTicks[p * 4] === env.config.heroes[0]!.abilities[0]!.durationTicks - 1)
+            lockdowns++;
       }
-      for (let p = 0; p < 2; p++)
-        if (sim.ps.zoneTicks[p * 4] === env.config.heroes[0]!.abilities[0]!.durationTicks - 1)
-          lockdowns++;
-    }
-    const w = sim.winner();
-    expect(w).not.toBeNull();
-    expect(w!.frame).toBeLessThan(limit);
-    // de AI bouwt claimpalen en zijn held gebruikt Lockdown
-    expect(claims[0]! > 0 && claims[1]! > 0).toBe(true);
-    expect(lockdowns).toBeGreaterThan(0);
-    // beide AI's onderzoeken geweerrek en hun turrets schieten (besluit 8)
-    const geweerrek = gameData().data.tech.find((t) => t.key === 'geweerrek')!.id;
-    for (let p = 0; p < 2; p++) expect(sim.researched(p)).toContain(geweerrek);
-    expect(turretShots).toBeGreaterThan(0);
-    for (let p = 0; p < 2; p++) expect(sim.playerStatus(p).hero).not.toBeNull();
-    // de AI zit in de sim: een andere seed geeft vanaf frame 0 een andere hash (sim.rng: kritieke schoten van de held
-    // en de jitter op de golven van de AI)
-    const other = createSim({ seed: 43, ...env });
-    expect(other.hash()).not.toBe(createSim({ seed: 42, ...env }).hash());
-  });
+      const w = sim.winner();
+      expect(w).not.toBeNull();
+      expect(w!.frame).toBeLessThan(limit);
+      expect(longestStill).toBeLessThan(1200);
+      // de AI bouwt claimpalen en zijn held gebruikt Lockdown
+      expect(claims[0]! > 0 && claims[1]! > 0).toBe(true);
+      expect(lockdowns).toBeGreaterThan(0);
+      // beide AI's onderzoeken geweerrek en hun turrets schieten (besluit 8)
+      const geweerrek = gameData().data.tech.find((t) => t.key === 'geweerrek')!.id;
+      for (let p = 0; p < 2; p++) expect(sim.researched(p)).toContain(geweerrek);
+      expect(turretShots).toBeGreaterThan(0);
+      for (let p = 0; p < 2; p++) expect(sim.playerStatus(p).hero).not.toBeNull();
+      // de AI zit in de sim: een andere seed geeft vanaf frame 0 een andere hash (sim.rng: kritieke schoten van de held
+      // en de jitter op de golven van de AI)
+      const other = createSim({ seed: 43, ...env });
+      expect(other.hash()).not.toBe(createSim({ seed: 42, ...env }).hash());
+    },
+  );
 });

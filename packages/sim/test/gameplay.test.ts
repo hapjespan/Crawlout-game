@@ -292,11 +292,26 @@ describe('economie', () => {
     expect(sim.playerStatus(0).settlers).toBe(0);
     const ev = play(sim, 1);
     expect(sim.playerStatus(0).settlers).toBe(1);
+    // vangnet: zonder werkplaats en zonder bouwer is de eerste nieuwe bewoner een bouwer, daarna plunderaars
     const spawn = ev.find((e) => e.type === EVENT_TYPE.spawn)!;
-    expect(spawn.b).toBe(SCAV);
+    expect(spawn.b).toBe(BUILDER);
+    const next = play(sim, per).find((e) => e.type === EVENT_TYPE.spawn)!;
+    expect(next.b).toBe(SCAV);
     // vol: geen groei meer
     play(sim, per * 8);
     expect(sim.playerStatus(0)).toMatchObject({ settlers: 6, pop: 6, popCap: 6 });
+  });
+
+  it('vangnet: met een werkplaats of een bouwer is de nieuwe bewoner een plunderaar', () => {
+    const per = Math.ceil(CONFIG.ticksPerMinute / CONFIG.factions[0]!.housingGrowthPerMin);
+    const withWorkshop = emptySim(3);
+    withWorkshop.spawnBuilding(HQ, 0, 6, 6);
+    withWorkshop.spawnBuilding(WERKPLAATS, 0, 20, 6);
+    expect(play(withWorkshop, per).find((e) => e.type === EVENT_TYPE.spawn)!.b).toBe(SCAV);
+    const withBuilder = emptySim(3);
+    withBuilder.spawnBuilding(HQ, 0, 6, 6);
+    withBuilder.spawnUnit({ typeId: BUILDER, owner: 0, ...cellCenter(20, 20) });
+    expect(play(withBuilder, per).find((e) => e.type === EVENT_TYPE.spawn)!.b).toBe(SCAV);
   });
 
   it('SetRole: lopen naar de werkplaats, betalen, craftTicks wachten, dan militie', () => {

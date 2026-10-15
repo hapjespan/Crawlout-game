@@ -62,10 +62,11 @@ export const techOf = (key: string): number => gameData().data.tech.find((t) => 
 
 /**
  * Waar een gebouw van de bot komt, afgeleid uit de map en de state (nooit vaste cellen): bij het eigen hoofdgebouw, bij
- * het eigen settlement-punt (het claimpunt aan de eigen kant, buiten het midden) of bij het middenpunt (het claimpunt
- * het dichtst bij het midden van de map).
+ * het eigen settlement-punt (het claimpunt aan de eigen kant, buiten het midden), bij het tweede settlement-punt aan de
+ * eigen kant (Rustbelt XL heeft er twee per kant) of bij het middenpunt (het claimpunt het dichtst bij het midden van de
+ * map).
  */
-export type SiteAnchor = 'hq' | 'settlement' | 'centre';
+export type SiteAnchor = 'hq' | 'settlement' | 'settlement2' | 'centre';
 
 /** Gebouw in de bouwlijst: type en plaats. homewardM schuift het anker zoveel meter op naar het eigen hoofdgebouw. */
 export interface PlannedBuilding {
@@ -88,18 +89,20 @@ export function centrePoint(sim: Sim): UnitView {
   )!;
 }
 
-/** Het claimpunt aan de kant van speler p: buiten het middenpunt, het dichtst bij zijn spawn. */
-export function settlementPoint(sim: Sim, p: number): UnitView {
+/**
+ * Het claimpunt aan de kant van speler p: buiten het middenpunt, het k-de dichtst bij zijn spawn (k = 0 het dichtst;
+ * tiebreak laagste id).
+ */
+export function settlementPoint(sim: Sim, p: number, k = 0): UnitView {
   const centre = centrePoint(sim);
   const spawn = sim.map.spawns[p]!;
-  return nearestOf(
-    sim
-      .entityIds()
-      .map((id) => sim.getUnit(id)!)
-      .filter((u) => u.kind === 'claimPoint' && u.id !== centre.id),
-    spawn.x,
-    spawn.y,
-  )!;
+  const list = sim
+    .entityIds()
+    .map((id) => sim.getUnit(id)!)
+    .filter((u) => u.kind === 'claimPoint' && u.id !== centre.id)
+    .map((u) => ({ u, d: (u.x - spawn.x) ** 2 + (u.y - spawn.y) ** 2 }))
+    .sort((a, b) => a.d - b.d || a.u.id - b.u.id);
+  return list[Math.min(k, list.length - 1)]!.u;
 }
 
 /** Het hoofdgebouw van speler p, of zijn spawn als het er niet (meer) staat. */
@@ -153,14 +156,21 @@ export function anchorOf(
   homewardM = 0,
 ): { x: number; y: number } {
   const home = hqOf(sim, p);
-  const a = at === 'hq' ? home : at === 'centre' ? centrePoint(sim) : settlementPoint(sim, p);
+  const a =
+    at === 'hq'
+      ? home
+      : at === 'centre'
+        ? centrePoint(sim)
+        : settlementPoint(sim, p, at === 'settlement2' ? 1 : 0);
   return homewardM > 0 ? toward(a, home, homewardM) : { x: a.x, y: a.y };
 }
 
 /**
  * Zoekt bouwplekken zoals een speler dat op zijn scherm doet: de vrije plek het dichtst bij het anker waar de footprint
- * plus een rand van één cel op begaanbare grond ligt, zonder gebouwen, scrap-nodes of claimpunten. Plekken die al
- * gekozen zijn (take) tellen als bezet, zodat een reeks gebouwen uit één startstate niet op dezelfde plek valt.
+ * plus een rand van één cel op begaanbare grond ligt, zonder gebouwen, scrap-nodes of claimpunten. "Dichtst bij" is
+ * lopend (BFS over het terrein vanaf het anker, om water en bos heen, xl-int), zodat een plek nooit aan de overkant van de rivier
+ * ligt; bij gelijke loopafstand de kleinste hemelsbrede. Plekken die al gekozen zijn (take) tellen als bezet, zodat een
+ * reeks gebouwen uit één startstate niet op dezelfde plek valt.
  */
 export class SitePlanner {
   private readonly taken: { x0: number; y0: number; x1: number; y1: number }[] = [];
@@ -177,23 +187,58 @@ export class SitePlanner {
     const blocked = this.blocked();
     const ax = a.x >> 8;
     const ay = a.y >> 8;
-    let best: { x: number; y: number } | null = null;
-    let bestD = Infinity;
     const R = 24;
+    const walk = this.walkFrom(ax, ay, R + 4);
+    let best: { x: number; y: number } | null = null;
+    let bestW = Infinity;
+    let bestD = Infinity;
     for (let cy = ay - R; cy <= ay + R; cy++) {
       for (let cx = ax - R; cx <= ax + R; cx++) {
         const fx = cx - (fw >> 1);
         const fy = cy - (fh >> 1);
+        const wd = walk.get(cy * sim.map.w + cx);
+        if (wd === undefined || wd > bestW) continue;
         // het midden van de footprint zoals de sim het zet (createBuilding)
         const x = fx * 256 + fw * 128;
         const y = fy * 256 + fh * 128;
         const d = (x - a.x) ** 2 + (y - a.y) ** 2;
-        if (d >= bestD || !this.free(blocked, fx - 1, fy - 1, fw + 2, fh + 2)) continue;
+        if (wd === bestW && d >= bestD) continue;
+        if (!this.free(blocked, fx - 1, fy - 1, fw + 2, fh + 2)) continue;
         best = { x, y };
+        bestW = wd;
         bestD = d;
       }
     }
     return best;
+  }
+
+  /** Loopafstand over het terrein (cellen, 4-buren, om water en bos heen) vanaf de cel van het anker, binnen r cellen. */
+  private walkFrom(ax: number, ay: number, r: number): Map<number, number> {
+    const { w, h } = this.sim.map;
+    const out = new Map<number, number>();
+    const start = ay * w + ax;
+    out.set(start, 0);
+    const queue = [start];
+    for (let k = 0; k < queue.length; k++) {
+      const c = queue[k]!;
+      const cx = c % w;
+      const cy = (c - cx) / w;
+      const d = out.get(c)!;
+      for (const [nx, ny] of [
+        [cx + 1, cy],
+        [cx - 1, cy],
+        [cx, cy + 1],
+        [cx, cy - 1],
+      ] as const) {
+        if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
+        if (Math.abs(nx - ax) > r || Math.abs(ny - ay) > r) continue;
+        const n = ny * w + nx;
+        if (this.sim.map.passable[n] !== 1 || out.has(n)) continue;
+        out.set(n, d + 1);
+        queue.push(n);
+      }
+    }
+    return out;
   }
 
   /** Zoals find, en de plek telt daarna als bezet. */
@@ -254,8 +299,8 @@ export interface BotPlan {
   /** Aanvallen (AttackMove naar het hoofdgebouw van de ander, held mee) zodra hij zoveel militie heeft, vanaf attackFrame. */
   readonly attackWithMilitia: number;
   readonly attackFrame?: number;
-  /** Doel van de aanval: het hoofdgebouw van de ander (standaard) of zijn settlement-punt. */
-  readonly attackTarget?: 'hq' | 'settlement';
+  /** Doel van de aanval: het hoofdgebouw van de ander (standaard) of een van zijn settlement-punten (zie SiteAnchor). */
+  readonly attackTarget?: 'hq' | 'settlement' | 'settlement2';
   /** Militie zonder taak en de held houden deze plek (AttackMove erheen zodra ze verder dan 6 m weg zijn). */
   readonly guard?: SiteAnchor;
   /**
@@ -411,7 +456,9 @@ export function settlementBot(p: number, plan: BotPlan, every = 10): Controller 
         const ids = (attacked ? idle(militia) : militia).map((u) => u.id);
         if (hero !== undefined && (!attacked || hero.order === ORDER_NONE)) ids.push(hero.id);
         const goal =
-          plan.attackTarget === 'settlement' ? settlementPoint(sim, enemyHq.owner) : enemyHq;
+          plan.attackTarget === undefined || plan.attackTarget === 'hq'
+            ? enemyHq
+            : settlementPoint(sim, enemyHq.owner, plan.attackTarget === 'settlement2' ? 1 : 0);
         if (ids.length > 0) send('AttackMove', ids, { x: goal.x, y: goal.y });
         attacked = true;
         lastAttack = f;

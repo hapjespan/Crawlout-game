@@ -14,8 +14,8 @@ import {
 } from '../ecs/world.js';
 import { footprintFree } from '../entities.js';
 import { PROVIDES_HQ, PROVIDES_WORKSHOP } from '../fromData.js';
-import { clampI, idiv } from '../math/int.js';
-import { isqrt } from '../math/sqrt.js';
+import { clampI, idiv, imod } from '../math/int.js';
+import { TERRAIN_UNREACHABLE } from '../pathdist.js';
 import type { Census } from './census.js';
 import { takeCensus } from './census.js';
 import { applyCommand, canPlaceType } from './commands.js';
@@ -26,36 +26,44 @@ import {
   cellCenterOf,
   distToRect2,
   isEnemy,
-  nearestNode,
   nodeAllowed,
-  scanRing,
 } from './common.js';
 import { pointsOf } from './claims.js';
 import { heroIndex } from './hero.js';
-import { ROLE_MILITIA } from './orders.js';
+import { DEPOT_MASK, ROLE_MILITIA } from './orders.js';
 
 // Systeem 2 (AI-deel): de scripted tegenstander, voor elke speler met ai = true, in playerId-volgorde, voor de
 // unit-orders. Geen cheats: de AI geeft gewone commando's via applyCommand (dezelfde validatie als spelers) en
 // ziet alleen wat elke speler kan zien: eigen units en gebouwen, de map, de spawns, wie een claimpunt bezit, en
 // vijandelijke units die bij zijn eigen gebouwen staan. Alle getallen komen uit het script (ai/*.json, balans
-// speltest 14 oktober). Per tick, in deze volgorde (wie eerst komt, krijgt de vrije bouwer en de scrap):
+// speltest 14 oktober). Afstanden naar verre doelen (nodes, claimpunten, raids, het front) meet hij over land, als
+// padafstand over het terrein (pathdist.ts, xl-int): op een map met een rivier is hemelsbreed misleidend.
+// Per tick, in deze volgorde (wie eerst komt, krijgt de vrije bouwer en de scrap):
 //  1. de held: oplappen, perk kiezen, ability (heroThink); zolang de held dood is en er een hoofdgebouw is, spaart hij
 //     voor het oplappen (geen bouwvolgorde, onderzoek, claims of omscholing);
-//  2. huisvesting: zijn er housingFreeBeds of minder vrije bedden en is de pop-cap niet op popCapMax, dan bouwt een
+//  2a. werkplaats kwijt (de bouwvolgorde had er een, er staat er geen, ook niet in aanbouw): een vrije bouwer zet een
+//     nieuwe bij het hoofdgebouw; tot die betaald is, spaart hij (zonder werkplaats kan hij niet omscholen);
+//  2b. huisvesting: zijn er housingFreeBeds of minder vrije bedden en is de pop-cap niet op popCapMax, dan bouwt een
 //     vrije bouwer het huisvestingsgebouw (hoogstens één bouwplaats tegelijk);
 //  3. bouwvolgorde uit het script (atTick, plaats hq, claim of front); een gebouw dat nooit kan slaat hij over. Mist
 //     de order een prereqTech (besluit 8), dan onderzoekt hij eerst de keten en wacht hij met de order. Wacht de
-//     order op scrap, dan geeft hij deze tick niets anders uit (onderzoek, claims);
+//     order op scrap, dan geeft hij deze tick niets anders uit (onderzoek, claims). Een plek ligt altijd aan de kant van
+//     het anker (lokale padafstand), een turret op de weg naar de vijand;
 //  3b. na de bouwvolgorde, boven richScrap: de eerste richBuild waarvan er nog te weinig staan (een verloren gebouw
 //     komt zo terug);
 //  4. onderzoek: de eerste tech uit `research` die er nog niet is, vanaf researchFromTicks;
-//  5. claimen: vanaf claimFromTicks neemt een vrije bouwer een neutraal claimpunt: eerst die aan de eigen kant (duidelijk
-//     dichter bij het eigen hoofdgebouw dan bij de spawn van de vijand), dan de rest, elk het dichtst bij huis. Verder
-//     dan claimSafeRadius gaat de militie zonder taak als escorte mee; een punt dat niet aan de eigen kant ligt (het
-//     midden) pas vanaf claimFarFromTicks;
+//  5. claimen: vanaf claimFromTicks neemt een vrije bouwer een neutraal claimpunt: eerst die aan de eigen kant (over land
+//     duidelijk dichter bij het eigen hoofdgebouw dan bij de spawn van de vijand), dan de rest, elk het dichtst bij huis
+//     over land; een onbereikbaar punt nooit. Verder dan claimSafeRadius gaat de militie zonder taak als escorte mee;
+//     een punt dat niet aan de eigen kant ligt (het midden) pas vanaf claimFarFromTicks plus 0..waveJitterTicks (sim.rng,
+//     één keer per potje: PlayerState.aiClaimAt);
 //  6. bouwers zonder werk helpen bij een eigen bouwplaats;
-//  7. plunderaars zonder werk gaan naar een node met minder dan scavengersPerNode plunderaars, nodes die door een
-//     eigen claimpunt exclusief zijn eerst, daarna de dichtstbijzijnde;
+//  7. plunderaars zonder werk gaan naar een node met minder dan scavengersPerNode plunderaars: nodes die door een
+//     eigen claimpunt exclusief zijn eerst, daarna de kortste rit (padafstand van de node tot het dichtstbijzijnde eigen
+//     depot);
+//  8a. geen bouwer meer (ook niet in opleiding) en wel een werkplaats: meteen een bewoner tot bouwer omscholen, ook als
+//     hij spaart (een plunderaar, zonder plunderaars een militie). Zonder werkplaats én bouwer levert de groei een
+//     bouwer (economy.ts, vangnet) en komt 2a aan de beurt;
 //  8. rolverdeling (met een werkplaats, één omscholing per tick): eerst `builders` bouwers, dan militie tot het
 //     aandeel (militiaPermille plus militiaPermillePerMin per minuut tot militiaPermilleMax, bij dreiging minstens
 //     threatMilitiaPermille); plunderaars boven scavengersPerNode maal het aantal bruikbare nodes worden ook militie.
@@ -66,16 +74,17 @@ import { ROLE_MILITIA } from './orders.js';
 //     vertrekt met minstens waveMinArmy + k maal waveArmyGrowth militie (golf k), of na waveMaxWaitTicks wachten met
 //     waveMinArmy. Vanaf pushFromTicks met minstens pushMinArmy militie is het een push op het vijandelijke hoofdgebouw.
 //     Anders is het een raid, maar alleen als de vijand genoeg claimpunten voor dominantie houdt: op zijn claimpunt het
-//     dichtst bij huis (dat breekt de dominantie en zijn exclusieve node); daarna keren ze terug naar het verzamelpunt.
-//     Een raid neemt een bouwer mee (een vrije als die er is) die naast het punt een claimgebouw zet; tot de AI dat
-//     kan betalen, wacht de raid en spaart hij (geen huisvesting, bouwvolgorde, onderzoek, claims of omscholing).
-//     Zonder push of raid vervalt de golf en spaart hij zijn leger. Alle
-//     militie en de held gaan mee. Zonder bruikbare scrap-node (allInWithoutNodes: geen inkomen meer) gaat elke golf,
-//     hoe klein ook, naar het hoofdgebouw en de plunderaars gaan mee;
-//     Een raid is voorbij zodra zijn claimpunt geen vijand meer heeft: die militie telt dan als zonder taak (stap 10).
+//     dichtst bij huis over land (dat breekt de dominantie en zijn exclusieve node); daarna keren ze terug naar het
+//     verzamelpunt. Een raid neemt een bouwer mee (een vrije als die er is) die naast het punt een claimgebouw zet; tot
+//     de AI dat kan betalen, wacht de raid en spaart hij (geen huisvesting, bouwvolgorde, onderzoek, claims of
+//     omscholing). Zonder push of raid vervalt de golf en spaart hij zijn leger. Alle militie en de held gaan mee.
+//     Zonder bruikbare scrap-node (allInWithoutNodes: geen inkomen meer) gaat elke golf, hoe klein ook, naar het
+//     hoofdgebouw en de plunderaars gaan mee. Een raid is voorbij zodra zijn claimpunt geen vijand meer heeft: die
+//     militie telt dan als zonder taak (stap 10).
 // 10. verdedigen: staat er een vijandelijke unit binnen defendRadius van een eigen gebouw, dan gaat militie zonder
-//     taak (en de held) erop af; anders verzamelen ze bij het verzamelpunt (rallySite: hoofdgebouw, eigen claimpunt
-//     het dichtst bij huis of bij de vijand) zodra ze verder dan rallyRadius weg zijn.
+//     taak (en de held) erop af; anders verzamelen ze bij het verzamelpunt zodra ze verder dan rallyRadius weg zijn:
+//     rallySite hq is een begaanbare plek voor het hoofdgebouw op de weg naar de vijand, claim en front het eigen
+//     claimpunt het dichtst bij huis of bij de vijand (over land).
 
 const ROLE_SCAVENGER = ROLES.indexOf('scavenger');
 const ROLE_BUILDER = ROLES.indexOf('builder');
@@ -93,6 +102,8 @@ export class AiScratch {
   readonly nodeLoad = new Int32Array(MAX_ENTITIES);
   /** Eigen gebouwen van de speler voor findThreat. */
   readonly own = new Int32Array(MAX_ENTITIES);
+  /** Per node-index de padafstand tot het dichtstbijzijnde eigen depot (plunderaarsverdeling). */
+  readonly nodeCost = new Int32Array(MAX_ENTITIES);
 }
 
 export function aiSystem(ctx: SimContext, census: Census, scratch: AiScratch): void {
@@ -125,16 +136,17 @@ const OWN_SIDE_DEN = 4;
 /** Geometrie: een gebouw met een wapen zoekt zijn plek vanaf zoveel cellen voorbij de rand van zijn anker, richting de vijand. */
 const TURRET_FORWARD_CELLS = 3;
 
-/** Eigen claimpunt het dichtst bij (x, y), of -1. Tiebreak laagste index. */
-function ownClaimNear(ctx: SimContext, p: number, x: number, y: number): number {
+/** Geometrie: het verzamelpunt bij het hoofdgebouw ligt zoveel cellen voorbij zijn rand, op de weg naar de vijand. */
+const RALLY_FORWARD_CELLS = 4;
+
+/** Eigen claimpunt met de kleinste waarde in afstandsveld f (padafstand tot de bron van f), of -1. Tiebreak laagste index. */
+function ownClaimNear(ctx: SimContext, p: number, f: Uint16Array): number {
   const w = ctx.world;
   let best = -1;
   let bestD = 0;
   for (const pt of ctx.claimPoints) {
     if (w.owner[pt] !== p) continue;
-    const dx = w.x[pt]! - x;
-    const dy = w.y[pt]! - y;
-    const d = dx * dx + dy * dy;
+    const d = ctx.terrainDist.at(f, w.x[pt]!, w.y[pt]!);
     if (best < 0 || d < bestD) {
       best = pt;
       bestD = d;
@@ -143,11 +155,144 @@ function ownClaimNear(ctx: SimContext, p: number, x: number, y: number): number 
   return best;
 }
 
+/** Afstandsveld over het terrein vanaf de footprint van gebouw b. */
+function fieldOf(ctx: SimContext, b: number): Uint16Array {
+  const w = ctx.world;
+  return ctx.terrainDist.field(w.fx[b]!, w.fy[b]!, w.fw[b]!, w.fh[b]!);
+}
+
+/** Afstanden die de AI deze beurt gebruikt: vanaf het eigen hoofdgebouw en vanaf de spawn van de vijand. */
+interface Fields {
+  readonly home: Uint16Array;
+  readonly enemy: Uint16Array | null;
+  /** Cel van de bron van enemy (de spawn van de vijand); alleen geldig als enemy er is. */
+  readonly enemyCx: number;
+  readonly enemyCy: number;
+}
+
+/**
+ * Een stap van `steps` cellen vanaf (cx, cy) langs veld f naar zijn bron (tx, ty) (steeds de buur met de laagste
+ * waarde, 8 richtingen, diagonaal alleen als beide rechte buren begaanbaar zijn; bij gelijke waarde de buur die
+ * hemelsbreed het dichtst bij de bron ligt, zodat beide spelers op een puntsymmetrische map gespiegeld kiezen; dan de
+ * vaste volgorde O, W, Z, N, ZO, ZW, NO, NW). Zo ligt "richting de vijand" langs de weg erheen, niet over een rivier.
+ */
+function stepAlong(
+  ctx: SimContext,
+  f: Uint16Array,
+  tx: number,
+  ty: number,
+  cx0: number,
+  cy0: number,
+  steps: number,
+): { cx: number; cy: number } {
+  const map = ctx.map;
+  const W = map.w;
+  const pass = map.passable;
+  let cx = cx0;
+  let cy = cy0;
+  for (let n = 0; n < steps; n++) {
+    const c = cy * W + cx;
+    let best = c;
+    let bestD = f[c]!;
+    let bestE = 0;
+    const pE = cx + 1 < W && pass[c + 1] === 1;
+    const pW = cx > 0 && pass[c - 1] === 1;
+    const pS = cy + 1 < map.h && pass[c + W] === 1;
+    const pN = cy > 0 && pass[c - W] === 1;
+    const cand = [
+      pE ? c + 1 : -1,
+      pW ? c - 1 : -1,
+      pS ? c + W : -1,
+      pN ? c - W : -1,
+      pE && pS && pass[c + W + 1] === 1 ? c + W + 1 : -1,
+      pW && pS && pass[c + W - 1] === 1 ? c + W - 1 : -1,
+      pE && pN && pass[c - W + 1] === 1 ? c - W + 1 : -1,
+      pW && pN && pass[c - W - 1] === 1 ? c - W - 1 : -1,
+    ];
+    for (const m of cand) {
+      if (m < 0 || f[m]! > bestD || (f[m]! === bestD && best === c)) continue;
+      const my = idiv(m, W);
+      const mx = m - my * W;
+      const e = (mx - tx) * (mx - tx) + (my - ty) * (my - ty);
+      if (f[m]! < bestD || e < bestE) {
+        best = m;
+        bestD = f[m]!;
+        bestE = e;
+      }
+    }
+    if (best === c) break;
+    cy = idiv(best, W);
+    cx = best - cy * W;
+  }
+  return { cx, cy };
+}
+
+/**
+ * Lokale padafstand (4-buren, actuele begaanbaarheid met gebouwen) vanaf de rechthoek [rx, rx+rw) x [ry, ry+rh) in
+ * een venster van straal r cellen eromheen; -1 = niet bereikbaar binnen het venster. Voor de bouwplek: een plek aan de
+ * overkant van een rivier ligt hemelsbreed dichtbij maar is ver lopen.
+ */
+function localDist(
+  ctx: SimContext,
+  rx: number,
+  ry: number,
+  rw: number,
+  rh: number,
+  r: number,
+): { d: Int32Array; x0: number; y0: number; ww: number } {
+  const map = ctx.map;
+  const walk = ctx.terrain.walk;
+  const x0 = rx - r < 0 ? 0 : rx - r;
+  const y0 = ry - r < 0 ? 0 : ry - r;
+  const x1 = rx + rw + r > map.w ? map.w : rx + rw + r;
+  const y1 = ry + rh + r > map.h ? map.h : ry + rh + r;
+  const ww = x1 - x0;
+  const wh = y1 - y0;
+  const d = new Int32Array(ww * wh).fill(-1);
+  const q = new Int32Array(ww * wh);
+  let qt = 0;
+  for (let y = ry; y < ry + rh; y++) {
+    for (let x = rx; x < rx + rw; x++) {
+      if (x < x0 || y < y0 || x >= x1 || y >= y1) continue;
+      const l = (y - y0) * ww + (x - x0);
+      d[l] = 0;
+      q[qt++] = l;
+    }
+  }
+  let qh = 0;
+  while (qh < qt) {
+    const l = q[qh++]!;
+    const ly = idiv(l, ww);
+    const lx = l - ly * ww;
+    const c = (y0 + ly) * map.w + x0 + lx;
+    const nd = d[l]! + 1;
+    if (lx + 1 < ww && walk[c + 1] === 1 && d[l + 1] === -1) {
+      d[l + 1] = nd;
+      q[qt++] = l + 1;
+    }
+    if (lx > 0 && walk[c - 1] === 1 && d[l - 1] === -1) {
+      d[l - 1] = nd;
+      q[qt++] = l - 1;
+    }
+    if (ly + 1 < wh && walk[c + map.w] === 1 && d[l + ww] === -1) {
+      d[l + ww] = nd;
+      q[qt++] = l + ww;
+    }
+    if (ly > 0 && walk[c - map.w] === 1 && d[l - ww] === -1) {
+      d[l - ww] = nd;
+      q[qt++] = l - ww;
+    }
+  }
+  return { d, x0, y0, ww };
+}
+
 /**
  * Vrije plek voor een gebouw: footprint plus een rand van één cel vrij, niet op nodes of claimpunten. Het anker is
  * het hoofdgebouw (AI_SITE_HQ), het eigen claimpunt het dichtst bij huis (AI_SITE_CLAIM) of het dichtst bij de vijand
- * (AI_SITE_FRONT); zonder eigen claimpunt het hoofdgebouw. Een gebouw met een wapen (turret) zoekt vanaf een punt voor
- * het anker richting `toward` (de spawn van de vijand), zodat een aanval binnen zijn bereik komt.
+ * (AI_SITE_FRONT), beide op padafstand; zonder eigen claimpunt het hoofdgebouw. Een gebouw met een wapen (turret) zoekt
+ * vanaf een punt voor het anker, langs de weg naar de spawn van de vijand, zodat een aanval binnen zijn bereik komt.
+ * Een plek moet vanaf het anker te belopen zijn zonder grote omweg (lokale padafstand hoogstens 2 maal de ring plus 2):
+ * nooit aan de overkant van een rivier of bosrand.
  */
 function findSite(
   ctx: SimContext,
@@ -155,83 +300,125 @@ function findSite(
   hq: number,
   bt: SimBuildingType,
   site: number,
-  toward: { x: number; y: number } | null,
+  fields: Fields,
 ): { x: number; y: number } | null {
   const w = ctx.world;
   const map = ctx.map;
   let cx = w.fx[hq]! + (w.fw[hq]! >> 1);
   let cy = w.fy[hq]! + (w.fh[hq]! >> 1);
+  let rx = w.fx[hq]!;
+  let ry = w.fy[hq]!;
+  let rw = w.fw[hq]!;
+  let rh = w.fh[hq]!;
   let half = w.fw[hq]! >> 1;
   if (site !== AI_SITE_HQ) {
-    const from = site === AI_SITE_FRONT && toward !== null ? toward : { x: w.x[hq]!, y: w.y[hq]! };
-    const pt = ownClaimNear(ctx, p, from.x, from.y);
+    const f = site === AI_SITE_FRONT && fields.enemy !== null ? fields.enemy : fields.home;
+    const pt = ownClaimNear(ctx, p, f);
     if (pt >= 0) {
       cx = w.x[pt]! >> 8;
       cy = w.y[pt]! >> 8;
+      rx = cx;
+      ry = cy;
+      rw = 1;
+      rh = 1;
       half = 1;
     }
   }
-  if (bt.damage > 0 && toward !== null) {
-    const dx = (toward.x >> 8) - cx;
-    const dy = (toward.y >> 8) - cy;
-    const len = isqrt(dx * dx + dy * dy);
-    const reach = half + TURRET_FORWARD_CELLS + (bt.footprintW >> 1);
-    if (len > reach) {
-      cx = clampI(cx + idiv(dx * reach, len), 0, map.w - 1);
-      cy = clampI(cy + idiv(dy * reach, len), 0, map.h - 1);
-    }
+  if (bt.damage > 0 && fields.enemy !== null) {
+    const at = stepAlong(
+      ctx,
+      fields.enemy,
+      fields.enemyCx,
+      fields.enemyCy,
+      cx,
+      cy,
+      half + TURRET_FORWARD_CELLS + (bt.footprintW >> 1),
+    );
+    cx = clampI(at.cx, 0, map.w - 1);
+    cy = clampI(at.cy, 0, map.h - 1);
+    rx = cx;
+    ry = cy;
+    rw = 1;
+    rh = 1;
   }
+  const local = localDist(ctx, rx, ry, rw, rh, MAX_FREE_RING + half + 2);
   // Op de eerste ring met een vrije plek: de plek het dichtst bij het midden van de map, dan het dichtst bij het anker.
-  // Op een puntsymmetrische map kiezen beide spelers zo elkaars spiegelbeeld (de scanvolgorde van de ring is dat niet).
+  // Op een puntsymmetrische map kiezen beide spelers zo elkaars spiegelbeeld (de scanvolgorde is dat niet). Gemeten
+  // tussen de middens van de footprints in halve cellen: het midden van de map en van een footprint van even breedte
+  // ligt op een celgrens, en een ring rond één cel zou voor de twee spelers andere footprints bevatten.
   const fw = bt.footprintW;
   const fh = bt.footprintH;
-  const mx = map.w >> 1;
-  const my = map.h >> 1;
-  for (let d = 1; d <= MAX_FREE_RING; d++) {
-    let found = -1;
-    let bestM = 0;
-    let bestA = 0;
-    scanRing(map, cx, cy, 1, 1, d, (x, y) => {
-      const fx = x - (fw >> 1);
-      const fy = y - (fh >> 1);
-      if (!footprintFree(ctx, fx - 1, fy - 1, fw + 2, fh + 2)) return false;
-      const idx = ctx.index;
-      idx.refresh(w);
-      for (let k = 0; k < idx.nodeCount; k++) {
+  const ax2 = 2 * rx + rw;
+  const ay2 = 2 * ry + rh;
+  // Kandidaten: elke footprint waarvan het midden binnen MAX_FREE_RING cellen (Chebyshev) van het midden van het anker
+  // ligt. Ring r2 is die afstand in halve cellen; de eerste ring met een vrije plek wint, daarbinnen m en a.
+  const R2 = 2 * MAX_FREE_RING;
+  let found = -1;
+  let bestR = 0;
+  let bestM = 0;
+  let bestA = 0;
+  const idx = ctx.index;
+  idx.refresh(w);
+  for (let fy = cy - MAX_FREE_RING - fh; fy <= cy + MAX_FREE_RING; fy++) {
+    for (let fx = cx - MAX_FREE_RING - fw; fx <= cx + MAX_FREE_RING; fx++) {
+      const x2 = 2 * fx + fw;
+      const y2 = 2 * fy + fh;
+      const ex = x2 > ax2 ? x2 - ax2 : ax2 - x2;
+      const ey = y2 > ay2 ? y2 - ay2 : ay2 - y2;
+      const r2 = ex > ey ? ex : ey;
+      if (r2 < 2 || r2 > R2) continue;
+      const m = (x2 - map.w) * (x2 - map.w) + (y2 - map.h) * (y2 - map.h);
+      const a = (x2 - ax2) * (x2 - ax2) + (y2 - ay2) * (y2 - ay2);
+      if (
+        found >= 0 &&
+        (r2 > bestR || (r2 === bestR && (m > bestM || (m === bestM && a >= bestA))))
+      )
+        continue;
+      if (!footprintFree(ctx, fx - 1, fy - 1, fw + 2, fh + 2)) continue;
+      // te belopen vanaf het anker zonder grote omweg (de dichtstbijzijnde cel van de footprint)
+      let ld = -1;
+      for (let y = fy; y < fy + fh; y++) {
+        for (let x = fx; x < fx + fw; x++) {
+          const lx = x - local.x0;
+          const ly = y - local.y0;
+          if (lx < 0 || ly < 0 || lx >= local.ww) continue;
+          const v = local.d[ly * local.ww + lx];
+          if (v !== undefined && v >= 0 && (ld < 0 || v < ld)) ld = v;
+        }
+      }
+      if (ld < 0 || ld > r2 + 2) continue;
+      let onFeature = false;
+      for (let k = 0; k < idx.nodeCount && !onFeature; k++) {
         const j = idx.nodes[k]!;
-        if (distToRect2(w.x[j]!, w.y[j]!, fx - 1, fy - 1, fw + 2, fh + 2) === 0) return false;
+        if (distToRect2(w.x[j]!, w.y[j]!, fx - 1, fy - 1, fw + 2, fh + 2) === 0) onFeature = true;
       }
       for (const j of ctx.claimPoints) {
-        if (distToRect2(w.x[j]!, w.y[j]!, fx - 1, fy - 1, fw + 2, fh + 2) === 0) return false;
+        if (distToRect2(w.x[j]!, w.y[j]!, fx - 1, fy - 1, fw + 2, fh + 2) === 0) onFeature = true;
       }
-      const m = (x - mx) * (x - mx) + (y - my) * (y - my);
-      const a = (x - cx) * (x - cx) + (y - cy) * (y - cy);
-      if (found < 0 || m < bestM || (m === bestM && a < bestA)) {
-        found = y * map.w + x;
-        bestM = m;
-        bestA = a;
-      }
-      return false;
-    });
-    if (found >= 0) return cellCenterOf(map, found);
+      if (onFeature) continue;
+      found = (fy + (fh >> 1)) * map.w + fx + (fw >> 1);
+      bestR = r2;
+      bestM = m;
+      bestA = a;
+    }
   }
+  if (found >= 0) return cellCenterOf(map, found);
   return null;
 }
 
 /**
  * Laat bouwer `builder` een neutraal claimpunt claimen. Eerst de punten aan de eigen kant (dichter bij het eigen
- * hoofdgebouw dan bij de spawn van de vijand, `enemySpawn`), daarna de rest; binnen elke groep het dichtst bij het
- * hoofdgebouw (tiebreak laagste index). Een punt verder dan claimSafeRadius krijgt de militie zonder taak als escorte
- * mee; ligt het niet aan de eigen kant, dan pas vanaf claimFarFromTicks.
+ * hoofdgebouw dan bij de spawn van de vijand), daarna de rest; binnen elke groep het dichtst bij het hoofdgebouw, alles op
+ * padafstand (tiebreak laagste index). Een onbereikbaar punt slaat hij over. Een punt verder dan claimSafeRadius (te
+ * lopen) krijgt de militie zonder taak als escorte mee; ligt het niet aan de eigen kant, dan pas vanaf claimFarFromTicks.
  */
 function claimNext(
   ctx: SimContext,
   p: number,
-  hq: number,
   builder: number,
   script: SimAiScript,
   idleMilitia: number[],
-  enemySpawn: { x: number; y: number } | null,
+  fields: Fields,
 ): boolean {
   const w = ctx.world;
   const bt = claimType(ctx, p);
@@ -242,8 +429,9 @@ function claimNext(
   let bestOwn = false;
   for (const pt of ctx.claimPoints) {
     if (w.owner[pt] !== OWNER_NEUTRAL) continue;
-    const d = distToRect2(w.x[pt]!, w.y[pt]!, w.fx[hq]!, w.fy[hq]!, w.fw[hq]!, w.fh[hq]!);
-    const own = isOwnSide(ctx, hq, pt, enemySpawn);
+    const d = ctx.terrainDist.at(fields.home, w.x[pt]!, w.y[pt]!);
+    if (d === TERRAIN_UNREACHABLE) continue;
+    const own = isOwnSide(ctx, pt, fields);
     if (best < 0 || (own && !bestOwn) || (own === bestOwn && d < bestD)) {
       best = pt;
       bestD = d;
@@ -251,8 +439,9 @@ function claimNext(
     }
   }
   if (best < 0) return false;
-  const far = bestD > script.claimSafeRadius * script.claimSafeRadius;
-  if (far && !bestOwn && ctx.frame < script.claimFarFromTicks) return false;
+  const far = bestD > script.claimSafeRadius >> 8;
+  const farAt = ctx.ps.aiClaimAt[p]!;
+  if (far && !bestOwn && (farAt === 0 || ctx.frame < farAt - 1)) return false;
   if (
     !applyCommand(ctx, {
       playerId: p,
@@ -279,22 +468,15 @@ function claimNext(
 }
 
 /**
- * Of claimpunt pt aan de eigen kant ligt: duidelijk dichter bij het midden van het eigen hoofdgebouw dan bij de spawn
- * van de vijand (OWN_SIDE_NUM/DEN). Zonder vijand ligt alles aan de eigen kant.
+ * Of claimpunt pt aan de eigen kant ligt: op padafstand duidelijk dichter bij het eigen hoofdgebouw dan bij de spawn van
+ * de vijand (OWN_SIDE_NUM/DEN op de kwadraten). Zonder vijand ligt alles aan de eigen kant.
  */
-function isOwnSide(
-  ctx: SimContext,
-  hq: number,
-  pt: number,
-  enemySpawn: { x: number; y: number } | null,
-): boolean {
-  if (enemySpawn === null) return true;
+function isOwnSide(ctx: SimContext, pt: number, fields: Fields): boolean {
+  if (fields.enemy === null) return true;
   const w = ctx.world;
-  const hx = w.x[pt]! - w.x[hq]!;
-  const hy = w.y[pt]! - w.y[hq]!;
-  const ex = w.x[pt]! - enemySpawn.x;
-  const ey = w.y[pt]! - enemySpawn.y;
-  return (hx * hx + hy * hy) * OWN_SIDE_DEN < (ex * ex + ey * ey) * OWN_SIDE_NUM;
+  const h = ctx.terrainDist.at(fields.home, w.x[pt]!, w.y[pt]!);
+  const e = ctx.terrainDist.at(fields.enemy, w.x[pt]!, w.y[pt]!);
+  return h * h * OWN_SIDE_DEN < e * e * OWN_SIDE_NUM;
 }
 
 /** Eerste tegenstander na p (cyclisch) die nog meedoet, of -1. */
@@ -349,6 +531,22 @@ function think(
   const roleTypes = ctx.config.factions[factionId]!.roleTypeIds;
   const enemy = enemyOf(ctx, p);
   const enemySpawn = enemy < 0 ? null : ctx.map.spawns[enemy]!;
+  // padafstanden over het terrein: vanaf het eigen hoofdgebouw en vanaf de spawn van de vijand
+  const fields: Fields | null =
+    hq < 0
+      ? null
+      : {
+          home: fieldOf(ctx, hq),
+          enemy: enemySpawn === null ? null : ctx.terrainDist.fieldAt(enemySpawn.x, enemySpawn.y),
+          enemyCx: enemySpawn === null ? 0 : enemySpawn.x >> 8,
+          enemyCy: enemySpawn === null ? 0 : enemySpawn.y >> 8,
+        };
+
+  // Vanaf claimFarFromTicks: wanneer hij punten neemt die niet aan zijn kant liggen, met jitter (sim.rng, één keer per
+  // potje), zodat niet altijd dezelfde speler als eerste bij het midden is.
+  if (ps.aiClaimAt[p] === 0 && tick >= script.claimFarFromTicks)
+    ps.aiClaimAt[p] =
+      tick + (script.waveJitterTicks > 0 ? ctx.rng.nextInt(script.waveJitterTicks + 1) : 0) + 1;
 
   // Telling van de eigen units, gebouwen en de vijanden bij eigen gebouwen.
   const builders: number[] = [];
@@ -357,10 +555,12 @@ function think(
   const scavs: number[] = [];
   const militia: number[] = [];
   const idleMilitia: number[] = [];
+  const depots: number[] = [];
   let units = 0;
   let militiaPlanned = 0;
   let buildersPlanned = 0;
   let workshop = false;
+  let workshopSite = false;
   let site = -1;
   let housingSite = false;
   const load = scratch.nodeLoad;
@@ -373,15 +573,15 @@ function think(
     if (w.owner[i] !== p) continue;
     if (w.has(i, C.building)) {
       const bt = ctx.buildingType(w.typeId[i]!);
-      if (
-        bt !== undefined &&
-        w.bstate[i] === BSTATE_DONE &&
-        (bt.provides & PROVIDES_WORKSHOP) !== 0
-      )
-        workshop = true;
+      const isWorkshop = bt !== undefined && (bt.provides & PROVIDES_WORKSHOP) !== 0;
+      if (w.bstate[i] === BSTATE_DONE) {
+        if (isWorkshop) workshop = true;
+        if (bt !== undefined && (bt.provides & DEPOT_MASK) !== 0) depots.push(i);
+      }
       if (w.bstate[i] === BSTATE_SITE) {
         if (site < 0) site = i;
         if (w.typeId[i] === script.housingTypeId) housingSite = true;
+        if (isWorkshop) workshopSite = true;
       }
       continue;
     }
@@ -452,13 +652,46 @@ function think(
     claimBt !== undefined &&
     ps.scrap[p]! < claimBt.scrapCost;
   const holdScrap = heroWaits || raidWaits;
+  let saving = holdScrap;
+  // waar hij voor spaart (bouwvolgorde of een nieuwe werkplaats): omscholen tot militie gaat alleen van wat erboven zit
+  let reserve = 0;
 
-  // 2 huisvesting zodra de pop-cap in zicht komt
+  // 2a werkplaats kwijt (gesloopt): eerst een nieuwe, vóór alles behalve de held. Zonder werkplaats kan hij niet
+  // omscholen (geen bouwers, geen leger). Alleen als de bouwvolgorde er al een had; tot hij betaald is, spaart hij.
+  const order = script.buildOrder;
+  let bi = ps.aiBuild[p]!;
+  if (!saving && fields !== null && !workshop && !workshopSite) {
+    let wsType: SimBuildingType | undefined;
+    for (let k = 0; k < bi && k < order.length && wsType === undefined; k++) {
+      const bt = ctx.buildingType(order[k]!.typeId);
+      if (bt !== undefined && (bt.provides & PROVIDES_WORKSHOP) !== 0) wsType = bt;
+    }
+    if (wsType !== undefined && canPlaceType(ctx, p, wsType.typeId)) {
+      if (ps.scrap[p]! < wsType.scrapCost) {
+        saving = true;
+        reserve = wsType.scrapCost;
+      } else if (idleBuilders.length > 0) {
+        const at = findSite(ctx, p, hq, wsType, AI_SITE_HQ, fields);
+        if (
+          at !== null &&
+          applyCommand(ctx, {
+            playerId: p,
+            seq: 0,
+            type: 'Build',
+            payload: { ids: [idleBuilders[0]!], typeId: wsType.typeId, x: at.x, y: at.y },
+          })
+        )
+          takeBuilder();
+      } else if (builders.length > 0) saving = true; // de bouwer is bezig: wachten tot hij vrij is
+    }
+  }
+
+  // 2b huisvesting zodra de pop-cap in zicht komt
   const popCap = census.popCap(ctx, p);
   const hbt = script.housingTypeId === 0 ? undefined : ctx.buildingType(script.housingTypeId);
   if (
-    !holdScrap &&
-    hq >= 0 &&
+    !saving &&
+    fields !== null &&
     hbt !== undefined &&
     !housingSite &&
     popCap < ctx.config.popCapMax &&
@@ -469,7 +702,7 @@ function think(
       ps.scrap[p]! >= hbt.scrapCost &&
       idleBuilders.length > 0
     ) {
-      const at = findSite(ctx, p, hq, hbt, AI_SITE_HQ, enemySpawn);
+      const at = findSite(ctx, p, hq, hbt, AI_SITE_HQ, fields);
       if (
         at !== null &&
         applyCommand(ctx, {
@@ -484,10 +717,7 @@ function think(
   }
 
   // 3 bouwvolgorde
-  let bi = ps.aiBuild[p]!;
-  const order = script.buildOrder;
-  let saving = holdScrap;
-  while (!holdScrap && hq >= 0 && bi < order.length && tick >= order[bi]!.atTick) {
+  while (!saving && fields !== null && bi < order.length && tick >= order[bi]!.atTick) {
     const typeId = order[bi]!.typeId;
     const bt = ctx.buildingType(typeId);
     if (bt === undefined || bt.factionId !== factionId || (bt.provides & PROVIDES_HQ) !== 0) {
@@ -507,12 +737,13 @@ function think(
     }
     if (ps.scrap[p]! < bt.scrapCost) {
       saving = true;
+      reserve = bt.scrapCost;
       break;
     }
     // alleen een bouwer zonder werk: een bouwer van een vorige order weghalen laat die bouwplaats half staan
     const builder = idleBuilders[0];
     if (builder === undefined) break;
-    const at = findSite(ctx, p, hq, bt, order[bi]!.site ?? AI_SITE_HQ, enemySpawn);
+    const at = findSite(ctx, p, hq, bt, order[bi]!.site ?? AI_SITE_HQ, fields);
     if (at === null) {
       bi++;
       continue;
@@ -535,7 +766,7 @@ function think(
   // 3b extra gebouwen bij genoeg scrap
   if (
     !saving &&
-    hq >= 0 &&
+    fields !== null &&
     bi >= order.length &&
     site < 0 &&
     ps.scrap[p]! >= script.richScrap &&
@@ -545,7 +776,7 @@ function think(
     if (rb >= 0) {
       const o = script.richBuilds[rb]!;
       const bt = ctx.buildingType(o.typeId)!;
-      const at = findSite(ctx, p, hq, bt, o.site, enemySpawn);
+      const at = findSite(ctx, p, hq, bt, o.site, fields);
       if (
         at !== null &&
         applyCommand(ctx, {
@@ -572,8 +803,8 @@ function think(
   }
 
   // 5 claimen
-  if (!saving && hq >= 0 && tick >= script.claimFromTicks && idleBuilders.length > 0) {
-    if (claimNext(ctx, p, hq, idleBuilders[0]!, script, idleMilitia, enemySpawn)) takeBuilder();
+  if (!saving && fields !== null && tick >= script.claimFromTicks && idleBuilders.length > 0) {
+    if (claimNext(ctx, p, idleBuilders[0]!, script, idleMilitia, fields)) takeBuilder();
   }
 
   // 6 bouwers zonder werk helpen bij een bouwplaats
@@ -586,43 +817,80 @@ function think(
     });
   }
 
-  // 7 plunderaars zonder werk naar een node met plek, exclusieve nodes eerst
-  for (const id of idleScavs) {
-    const i = w.resolve(id);
-    let best = -1;
-    let bestEx = false;
-    let bestD = 0;
-    idx.refresh(w);
+  // 7 plunderaars zonder werk naar een node met plek: exclusieve nodes eerst, dan de kortste rit (padafstand van de
+  // node tot het dichtstbijzijnde eigen depot: hoofdgebouw of werkplaats)
+  if (idleScavs.length > 0) {
+    const cost = scratch.nodeCost;
     for (let k = 0; k < idx.nodeCount; k++) {
       const j = idx.nodes[k]!;
-      if (w.amount[j]! <= 0 || load[j]! >= script.scavengersPerNode || !nodeAllowed(ctx, j, p))
-        continue;
-      const ex = exclusiveFor(ctx, j, p);
-      const dx = w.x[j]! - w.x[i]!;
-      const dy = w.y[j]! - w.y[i]!;
-      const d = dx * dx + dy * dy;
-      if (best < 0 || (ex && !bestEx) || (ex === bestEx && d < bestD)) {
-        best = j;
-        bestEx = ex;
-        bestD = d;
+      let c = TERRAIN_UNREACHABLE;
+      for (const dep of depots) {
+        const d = ctx.terrainDist.at(fieldOf(ctx, dep), w.x[j]!, w.y[j]!);
+        if (d < c) c = d;
       }
+      cost[j] = c;
     }
-    if (best < 0) best = nearestNode(ctx, p, w.x[i]!, w.y[i]!);
-    if (best < 0) break;
-    load[best] = load[best]! + 1;
-    applyCommand(ctx, {
-      playerId: p,
-      seq: 0,
-      type: 'Gather',
-      payload: { ids: [id], nodeId: w.idOf(best) },
-    });
+    for (const id of idleScavs) {
+      let best = -1;
+      let bestEx = false;
+      let bestD = 0;
+      let any = -1;
+      let anyD = 0;
+      for (let k = 0; k < idx.nodeCount; k++) {
+        const j = idx.nodes[k]!;
+        if (w.amount[j]! <= 0 || cost[j] === TERRAIN_UNREACHABLE || !nodeAllowed(ctx, j, p))
+          continue;
+        const d = cost[j]!;
+        if (any < 0 || d < anyD) {
+          any = j;
+          anyD = d;
+        }
+        if (load[j]! >= script.scavengersPerNode) continue;
+        const ex = exclusiveFor(ctx, j, p);
+        if (best < 0 || (ex && !bestEx) || (ex === bestEx && d < bestD)) {
+          best = j;
+          bestEx = ex;
+          bestD = d;
+        }
+      }
+      // alle nodes vol: de dichtstbijzijnde (op padafstand) met voorraad
+      if (best < 0) best = any;
+      if (best < 0) break;
+      load[best] = load[best]! + 1;
+      applyCommand(ctx, {
+        playerId: p,
+        seq: 0,
+        type: 'Gather',
+        payload: { ids: [id], nodeId: w.idOf(best) },
+      });
+    }
   }
 
   // 10a dreiging: de vijandelijke unit bij een eigen gebouw het dichtst bij het hoofdgebouw
   const threat = hq >= 0 ? findThreat(ctx, scratch, p, hq, script.defendRadius) : -1;
 
+  // 8a geen enkele bouwer (ook niet in opleiding) en wel een werkplaats: meteen een bewoner omscholen tot bouwer, ook
+  // als hij spaart (bouwen is de uitweg); een plunderaar, en zonder plunderaars een militie
+  if (workshop && builders.length + buildersPlanned === 0 && script.builders > 0) {
+    const pick =
+      idleScavs.length > 0
+        ? idleScavs[idleScavs.length - 1]
+        : scavs.length > 0
+          ? scavs[scavs.length - 1]
+          : militia.length > 0
+            ? militia[militia.length - 1]
+            : undefined;
+    if (pick !== undefined)
+      applyCommand(ctx, {
+        playerId: p,
+        seq: 0,
+        type: 'SetRole',
+        payload: { ids: [pick], role: 'builder' },
+      });
+  }
+
   // 8 rolverdeling
-  if (workshop && scavs.length > 0 && !holdScrap) {
+  else if (workshop && scavs.length > 0 && !holdScrap) {
     const minutes = idiv(tick, ctx.config.ticksPerMinute);
     let share = script.militiaPermille + minutes * script.militiaPermillePerMin;
     if (share > script.militiaPermilleMax) share = script.militiaPermilleMax;
@@ -639,7 +907,7 @@ function think(
       });
     } else if (
       army !== 0 &&
-      affordable(ctx, p, army, militiaPlanned) &&
+      affordable(ctx, p, army, militiaPlanned, reserve) &&
       (militia.length + militiaPlanned < idiv(units * share, 1000) || excess > 0)
     ) {
       applyCommand(ctx, {
@@ -659,10 +927,12 @@ function think(
     let target: { x: number; y: number } | null = null;
     if (wave.push) target = enemySpawn;
     else if (wave.raidPt >= 0) target = { x: w.x[wave.raidPt]!, y: w.y[wave.raidPt]! };
+    const jitter = script.waveJitterTicks > 0 ? ctx.rng.nextInt(script.waveJitterTicks + 1) : 0;
     if (target === null) {
-      // geen push en geen dominantie te breken: deze golf overslaan, het leger blijft bij het verzamelpunt
+      // geen push en geen dominantie te breken: deze golf overslaan, het leger blijft bij het verzamelpunt (ook dan
+      // met jitter, zodat de volgende golf niet voorspelbaar is)
       ps.aiAttack[p] = k + 1;
-      ps.aiWaveAt[p] = tick + script.waveIntervalTicks;
+      ps.aiWaveAt[p] = tick + script.waveIntervalTicks + jitter;
       return;
     }
     const send = wave.allIn ? [...militia, ...scavs] : [...militia];
@@ -679,7 +949,6 @@ function think(
         payload: { ids, x: target.x, y: target.y },
       });
     ps.aiAttack[p] = k + 1;
-    const jitter = script.waveJitterTicks > 0 ? ctx.rng.nextInt(script.waveJitterTicks + 1) : 0;
     ps.aiWaveAt[p] = tick + script.waveIntervalTicks + jitter;
     return;
   }
@@ -687,19 +956,31 @@ function think(
   // 10b verdedigen of verzamelen: militie (en de held) zonder taak
   const idle = [...idleMilitia];
   if (heroId >= 0 && w.orderType(hero) === ORDER_NONE) idle.push(heroId);
-  if (idle.length === 0 || hq < 0) return;
+  if (idle.length === 0 || fields === null) return;
   let to: { x: number; y: number };
   let r = script.rallyRadius;
   if (threat >= 0) {
     to = { x: w.x[threat]!, y: w.y[threat]! };
     r = 0;
   } else {
-    const from =
-      script.rallySite === AI_SITE_FRONT && enemySpawn !== null
-        ? enemySpawn
-        : { x: w.x[hq]!, y: w.y[hq]! };
-    const pt = script.rallySite === AI_SITE_HQ ? -1 : ownClaimNear(ctx, p, from.x, from.y);
-    to = pt >= 0 ? { x: w.x[pt]!, y: w.y[pt]! } : { x: w.x[hq]!, y: w.y[hq]! };
+    const f =
+      script.rallySite === AI_SITE_FRONT && fields.enemy !== null ? fields.enemy : fields.home;
+    const pt = script.rallySite === AI_SITE_HQ ? -1 : ownClaimNear(ctx, p, f);
+    if (pt >= 0) to = { x: w.x[pt]!, y: w.y[pt]! };
+    else if (fields.enemy !== null) {
+      // voor het hoofdgebouw, op de weg naar de vijand: het midden van het gebouw zelf is niet te bereiken, dus een
+      // groep die daarheen loopt komt nooit aan (en is dan nooit vrij voor verdediging of escorte)
+      const c = stepAlong(
+        ctx,
+        fields.enemy,
+        fields.enemyCx,
+        fields.enemyCy,
+        w.fx[hq]! + (w.fw[hq]! >> 1),
+        w.fy[hq]! + (w.fh[hq]! >> 1),
+        (w.fw[hq]! >> 1) + RALLY_FORWARD_CELLS,
+      );
+      to = { x: (c.cx << 8) + 128, y: (c.cy << 8) + 128 };
+    } else to = { x: w.x[hq]!, y: w.y[hq]! };
   }
   const go: number[] = [];
   for (const id of idle) {
@@ -756,10 +1037,19 @@ function raidOver(ctx: SimContext, p: number, i: number): boolean {
   return false;
 }
 
-/** Of speler p nog een omscholing naar `typeId` kan betalen naast de `planned` die al onderweg zijn (die betalen pas bij de werkplaats). */
-function affordable(ctx: SimContext, p: number, typeId: number, planned: number): boolean {
+/**
+ * Of speler p nog een omscholing naar `typeId` kan betalen naast de `planned` die al onderweg zijn (die betalen pas bij
+ * de werkplaats) en de `reserve` waarvoor hij spaart.
+ */
+function affordable(
+  ctx: SimContext,
+  p: number,
+  typeId: number,
+  planned: number,
+  reserve: number,
+): boolean {
   const t = ctx.unitType(typeId);
-  return t !== undefined && ctx.ps.scrap[p]! >= t.scrapCost * (planned + 1);
+  return t !== undefined && ctx.ps.scrap[p]! >= t.scrapCost * (planned + 1) + reserve;
 }
 
 /** Eén militie-unit van een ander type dan `best` omscholen naar `best` (de laagste id). */
@@ -864,26 +1154,45 @@ function waveReady(
   const waited = tick >= due + script.waveMaxWaitTicks && militia >= script.waveMinArmy;
   if (!((militia > 0 || allIn) && (militia >= need || waited || allIn))) return null;
   const push = allIn || (tick >= script.pushFromTicks && militia >= script.pushMinArmy);
-  // een raid alleen tegen dominantie: houdt de vijand genoeg punten, dan zijn claimpunt het dichtst bij huis
+  // een raid alleen tegen dominantie: houdt de vijand genoeg punten, dan een van zijn claimpunten (enemyClaimFor)
   const raid = !push && pointsOf(ctx, enemy) >= ctx.map.dominance.pointsRequired;
-  return { push, allIn, raidPt: raid ? enemyClaimNear(ctx, hq, enemy) : -1 };
+  return {
+    push,
+    allIn,
+    raidPt: raid ? enemyClaimFor(ctx, hq >= 0 ? fieldOf(ctx, hq) : null, enemy, k) : -1,
+  };
 }
 
-/** Het claimpunt van de vijand het dichtst bij het eigen hoofdgebouw (tiebreak laagste index), of -1. */
-function enemyClaimNear(ctx: SimContext, hq: number, enemy: number): number {
+/**
+ * Het doel van raid k: de claimpunten van de vijand op volgorde van padafstand tot het eigen hoofdgebouw (tiebreak
+ * laagste index), en daarvan nummer k modulo hun aantal; -1 zonder punten. Zo valt niet elke raid hetzelfde punt aan
+ * (meestal het midden, waar de vijand zijn leger heeft staan) maar ook zijn settlements: één punt breken is genoeg om
+ * zijn dominantie te stoppen.
+ */
+function enemyClaimFor(
+  ctx: SimContext,
+  home: Uint16Array | null,
+  enemy: number,
+  k: number,
+): number {
   const w = ctx.world;
-  let best = -1;
-  let bestD = 0;
+  const pts: number[] = [];
+  const ds: number[] = [];
   for (const pt of ctx.claimPoints) {
     if (w.owner[pt] !== enemy) continue;
-    const d =
-      hq >= 0 ? distToRect2(w.x[pt]!, w.y[pt]!, w.fx[hq]!, w.fy[hq]!, w.fw[hq]!, w.fh[hq]!) : 0;
-    if (best < 0 || d < bestD) {
-      best = pt;
-      bestD = d;
+    const d = home === null ? 0 : ctx.terrainDist.at(home, w.x[pt]!, w.y[pt]!);
+    let j = pts.length;
+    pts.push(pt);
+    ds.push(d);
+    while (j > 0 && (ds[j - 1]! > d || (ds[j - 1] === d && pts[j - 1]! > pt))) {
+      pts[j] = pts[j - 1]!;
+      ds[j] = ds[j - 1]!;
+      j--;
     }
+    pts[j] = pt;
+    ds[j] = d;
   }
-  return best;
+  return pts.length === 0 ? -1 : pts[imod(k, pts.length)]!;
 }
 
 /** Het claimgebouw van de factie van speler p, of undefined. */
