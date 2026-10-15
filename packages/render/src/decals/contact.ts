@@ -13,10 +13,10 @@ export interface ContactDecal {
 
 const CONTACT_BASE: DecalStyle = {
   shape: DECAL_SHAPE.contact,
-  shadow: 0.62,
+  shadow: 0.75,
   ring: 0,
   ringWidth: 0,
-  fill: 0.55,
+  fill: 0.62,
   grid: 0,
   color: DECAL_COLOR.dirt,
 };

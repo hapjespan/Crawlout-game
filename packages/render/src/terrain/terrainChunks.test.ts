@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { MeshBasicNodeMaterial, PerspectiveCamera, Scene, Vector3 } from 'three/webgpu';
 import { createGridTerrain, TerrainHeightField } from './heightField.js';
 import { buildChunkGeometry, TerrainChunks, type TerrainChunk } from './terrainChunks.js';
+import { wantsDetailLayer } from './terrainLayer.js';
 import {
   buildTerrainField,
   GridHeightField,
@@ -155,5 +156,16 @@ describe('TerrainChunks', () => {
     const leaf = t.nodes.find((n) => n.level === 0 && n.i0 === 32 && n.j0 === 0)!; // x 16..32, across the cliff
     // Its box reaches below the ground by the skirt (twice the worst gap to a 4 m neighbor plus a margin).
     expect(leaf.box.min.y).toBeLessThan(-0.3);
+  });
+});
+
+describe('wantsDetailLayer', () => {
+  it('is on by default and off on the cheaper detail path', () => {
+    expect(wantsDetailLayer({})).toBe(true);
+    expect(wantsDetailLayer({ detail: { subdivide: 2 } })).toBe(true);
+    expect(wantsDetailLayer({ detail: { subdivide: 1 } })).toBe(false);
+    expect(wantsDetailLayer({ detail: { subdivide: 0 } })).toBe(false);
+    expect(wantsDetailLayer({ detail: { subdivide: 1 }, detailLayer: true })).toBe(true);
+    expect(wantsDetailLayer({ detailLayer: false })).toBe(false);
   });
 });
