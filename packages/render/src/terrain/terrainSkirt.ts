@@ -13,6 +13,7 @@ import {
   type Material,
   type Scene,
 } from 'three/webgpu';
+import { sanitizeNormals } from './safeNormal.js';
 
 /** Ring offsets outside the bounds (m): dense near the edge, where it is seen, sparse far out. The last is hidden by the fog. */
 export const SKIRT_RINGS = [
@@ -166,6 +167,7 @@ export function buildSkirtGeometry(
     geo.setIndex(idx);
     geo.computeVertexNormals();
   }
+  sanitizeNormals(geo);
   geo.computeBoundingSphere();
   return geo;
 }

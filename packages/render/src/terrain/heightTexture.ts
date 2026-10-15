@@ -1,6 +1,6 @@
 // Terrain heights as a data texture, so ground decals (blob shadows, selection rings, claim rings, the placement
 // preview) can follow hills in the vertex shader instead of floating or cutting into slopes.
-import type { DataTexture, Node } from 'three/webgpu';
+import { DataUtils, type DataTexture, type Node } from 'three/webgpu';
 import { clamp, floor, int, ivec2, mix, textureLoad, vec2 } from 'three/tsl';
 import { createDataTexture, type DataTexturePrecision } from '../gpu/dataTextures.js';
 import type { HeightSource } from './terrainField.js';
@@ -50,6 +50,32 @@ export function createHeightTexture(
     cols: baked.cols,
     rows: baked.rows,
   };
+}
+
+/**
+ * Rewrites the texels inside a world rectangle from `hf` (after a local height change), in place: the texture object
+ * and everything built on it stay valid.
+ */
+export function refreshHeightTexture(
+  ht: HeightTexture,
+  hf: HeightSource,
+  rect: { minX: number; maxX: number; minZ: number; maxZ: number },
+): void {
+  const i0 = Math.max(0, Math.floor((rect.minX - ht.minX) / ht.step));
+  const i1 = Math.min(ht.cols - 1, Math.ceil((rect.maxX - ht.minX) / ht.step));
+  const j0 = Math.max(0, Math.floor((rect.minZ - ht.minZ) / ht.step));
+  const j1 = Math.min(ht.rows - 1, Math.ceil((rect.maxZ - ht.minZ) / ht.step));
+  const data = ht.texture.image.data as Float32Array | Uint16Array;
+  const half = !(data instanceof Float32Array);
+  for (let j = j0; j <= j1; j++) {
+    const z = Math.min(hf.maxZ, ht.minZ + j * ht.step);
+    for (let i = i0; i <= i1; i++) {
+      const x = Math.min(hf.maxX, ht.minX + i * ht.step);
+      const h = hf.heightAt(x, z, 0);
+      data[(j * ht.cols + i) * 4] = half ? DataUtils.toHalfFloat(h) : h;
+    }
+  }
+  if (i0 <= i1 && j0 <= j1) ht.texture.needsUpdate = true;
 }
 
 /** TSL: bilinear terrain height at world (x, z). Constants are baked in; rebuild the material when the terrain changes. */

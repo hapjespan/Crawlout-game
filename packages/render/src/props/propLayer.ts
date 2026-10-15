@@ -379,7 +379,10 @@ export class PropLayer {
       const b = new InstanceBatch(this.scene, own, g.material!, g.count, `props-${g.id}-${i}`);
       b.mesh.raycast = () => {}; // props are never picked and never block a pick
       const shadow = this.opts.shadow;
-      b.mesh.castShadow = !!shadow && castsShadow(g.category, shadow.smallProps);
+      // Small props (rocks, crates) at their coarsest LOD leave the shadow pass: a few pixels of shadow for a draw call.
+      const coarseOnly =
+        g.lodBatch[2] === i && g.lodBatch[1] !== i && !castsShadow(g.category, false);
+      b.mesh.castShadow = !!shadow && castsShadow(g.category, shadow.smallProps) && !coarseOnly;
       return b;
     });
   }

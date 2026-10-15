@@ -39,6 +39,7 @@ import { BUILDING_LOD_PX, ScreenLod, type ScreenLodThresholds } from '../lod/scr
 import { NEUTRAL_TEAM, teamIndex } from '../palette.js';
 import type { PickShape } from '../picking/selection.js';
 import type { InterpolatedFrame } from '../snapshot/interpolate.js';
+import type { PlatformSpec } from '../terrain/terrainPlatforms.js';
 import {
   createBuildingGeometry,
   createClaimGeometry,
@@ -279,6 +280,30 @@ export class StructureLayer {
       ...this.buildings.map((b) => b.mesh),
       ...this.assetDraws.flatMap((d) => d.batches.map((b) => b.mesh)),
     ];
+  }
+
+  /**
+   * The footprints of the buildings and building sites in the frame, as platforms for the terrain to level
+   * (terrain/terrainPlatforms.ts), in `out` (cleared first; the specs are reused between calls). The entity id is the
+   * platform id.
+   */
+  platforms(frame: InterpolatedFrame, out: PlatformSpec[]): PlatformSpec[] {
+    let n = 0;
+    for (let i = 0; i < frame.count; i++) {
+      const typeId = frame.typeId[i]!;
+      if (classifyTypeId(typeId) !== ENTITY_KIND.building) continue;
+      if ((frame.flags[i]! & ENTITY_FLAG.dead) !== 0) continue;
+      const f = this.footprints.get(typeId);
+      const spec = (out[n] ??= { id: 0, x: 0, z: 0, hx: 0, hz: 0 });
+      spec.id = frame.id[i]!;
+      spec.x = frame.x[i]!;
+      spec.z = frame.z[i]!;
+      spec.hx = f.w * 0.5;
+      spec.hz = f.h * 0.5;
+      n++;
+    }
+    out.length = n;
+    return out;
   }
 
   /** Lowest terrain point under a footprint, so the building's foundation never floats. */

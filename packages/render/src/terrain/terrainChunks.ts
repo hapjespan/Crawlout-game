@@ -21,8 +21,9 @@ import {
   type Camera,
   type Material,
   type Scene,
+  type Vector3,
 } from 'three/webgpu';
-import type { TerrainField } from './terrainField.js';
+import type { FieldRegion, TerrainField } from './terrainField.js';
 
 export interface TerrainChunkOptions {
   /** Edge of a leaf chunk in meters (rounded to whole field steps). Default 32. */
@@ -41,6 +42,8 @@ export interface TerrainChunkOptions {
   buildsPerFrame?: number;
   /** Leaf chunks kept built (least recently drawn are dropped). Default 64. */
   maxLeaves?: number;
+  /** Coarse nodes rebuilt per frame at most after a local height change (invalidate). Default 6. */
+  rebuildsPerFrame?: number;
 }
 
 /** Default sRGB color of a field without colors (the greybox's sand). */
@@ -152,10 +155,12 @@ export function buildChunkGeometry(
       const jr = Math.min(nz - 1, j + stride);
       const dx = (h(ir, j) - h(il, j)) / ((ir - il || 1) * step);
       const dz = (h(i, jr) - h(i, jl)) / ((jr - jl || 1) * step);
+      // len >= 1 for finite slopes; a NaN height (a hole in the source) falls back to straight up (safeNormal.ts).
       const len = Math.hypot(dx, 1, dz);
-      normals[o] = -dx / len;
-      normals[o + 1] = 1 / len;
-      normals[o + 2] = -dz / len;
+      const ok = Number.isFinite(len);
+      normals[o] = ok ? -dx / len : 0;
+      normals[o + 1] = ok ? 1 / len : 1;
+      normals[o + 2] = ok ? -dz / len : 0;
       for (let k = 0; k < 3; k++)
         colors[o + k] = SRGB_TO_LINEAR[src ? src[s * 3 + k]! : DEFAULT_SRGB[k]!]!;
       occlusion[v] = field.occlusion[s]!;
@@ -225,6 +230,12 @@ export class TerrainChunks {
   private readonly frustum = new Frustum();
   private readonly projView = new Matrix4();
   private readonly skirt = new Map<TerrainChunk, number>();
+  /** The box of a node before its skirt depth is taken off the bottom (what its children and heights say). */
+  private readonly raw = new Map<TerrainChunk, Box3>();
+  /** Coarse nodes (and far twins) whose heights changed and whose mesh is still the old one. */
+  private readonly stale = new Set<TerrainChunk>();
+  private readonly rebuildsPerFrame: number;
+  private readonly coarsest: number;
   private frameNo = 0;
   private budget = 0;
   private builtLeaves = 0;
@@ -252,6 +263,7 @@ export class TerrainChunks {
     this.far2 = farD * farD;
     this.buildsPerFrame = opts.buildsPerFrame ?? 2;
     this.maxLeaves = opts.maxLeaves ?? 64;
+    this.rebuildsPerFrame = Math.max(1, Math.floor(opts.rebuildsPerFrame ?? 6));
     this.group.name = 'terrain';
     scene.add(this.group);
 
@@ -328,20 +340,97 @@ export class TerrainChunks {
         this.nodes.push(twin);
       }
     // The coarsest spacing a neighbor can have decides how deep the skirts hang.
-    const coarsest = (1 << levels) * (Number.isFinite(farD) ? 2 : 1);
+    this.coarsest = (1 << levels) * (Number.isFinite(farD) ? 2 : 1);
     for (const node of this.nodes) {
-      const w = node.i1 - node.i0;
-      const hgt = node.j1 - node.j0;
-      const err = Math.max(
-        edgeError(field, node.i0, node.j0, 1, 0, w, coarsest),
-        edgeError(field, node.i0, node.j1, 1, 0, w, coarsest),
-        edgeError(field, node.i0, node.j0, 0, 1, hgt, coarsest),
-        edgeError(field, node.i1, node.j0, 0, 1, hgt, coarsest),
-      );
-      this.skirt.set(node, 2 * err + SKIRT_MARGIN);
-      node.box.min.y -= 2 * err + SKIRT_MARGIN;
+      this.raw.set(node, node.box.clone());
+      this.fitSkirt(node);
     }
     for (const node of this.nodes) if (node.level > 0 || node.far) this.build(node);
+  }
+
+  /** Skirt depth of a node, and its box with the skirt (frustum culling) from the raw box. */
+  private fitSkirt(node: TerrainChunk): void {
+    const field = this.field;
+    const w = node.i1 - node.i0;
+    const hgt = node.j1 - node.j0;
+    const c = this.coarsest;
+    const err = Math.max(
+      edgeError(field, node.i0, node.j0, 1, 0, w, c),
+      edgeError(field, node.i0, node.j1, 1, 0, w, c),
+      edgeError(field, node.i0, node.j0, 0, 1, hgt, c),
+      edgeError(field, node.i1, node.j0, 0, 1, hgt, c),
+    );
+    const depth = 2 * err + SKIRT_MARGIN;
+    this.skirt.set(node, depth);
+    node.box.copy(this.raw.get(node)!);
+    node.box.min.y -= depth;
+  }
+
+  /**
+   * The field's heights changed in `region` (samples, inclusive): refits the boxes and skirts of the nodes that read
+   * them, drops their finest chunks (rebuilt on demand) and queues the coarser nodes for a rebuild, a few per frame.
+   */
+  invalidate(region: FieldRegion): void {
+    const field = this.field;
+    const touched: TerrainChunk[] = [];
+    // this.nodes lists children before their parent and the far twins last, so boxes can be rebuilt in order.
+    for (const node of this.nodes) {
+      const pad = node.stride;
+      if (
+        node.i0 - pad > region.i1 ||
+        node.i1 + pad < region.i0 ||
+        node.j0 - pad > region.j1 ||
+        node.j1 + pad < region.j0
+      )
+        continue;
+      touched.push(node);
+      const raw = this.raw.get(node)!;
+      if (node.far) {
+        const root = this.roots.find((r) => this.far.get(r) === node);
+        if (root) raw.copy(this.raw.get(root)!);
+      } else if (node.level === 0) {
+        let lo = Infinity;
+        let hi = -Infinity;
+        for (let j = node.j0; j <= node.j1; j++)
+          for (let i = node.i0; i <= node.i1; i++) {
+            const y = field.heights[j * field.nx + i]!;
+            if (y < lo) lo = y;
+            if (y > hi) hi = y;
+          }
+        raw.min.y = lo;
+        raw.max.y = hi;
+      } else {
+        raw.min.y = Infinity;
+        raw.max.y = -Infinity;
+        for (const c of node.children) {
+          const cb = this.raw.get(c)!;
+          raw.min.y = Math.min(raw.min.y, cb.min.y);
+          raw.max.y = Math.max(raw.max.y, cb.max.y);
+        }
+      }
+    }
+    for (const node of touched) {
+      this.fitSkirt(node);
+      if (node.level === 0 && !node.far) this.drop(node);
+      else this.stale.add(node);
+    }
+  }
+
+  /** Rebuilds the stale coarse nodes nearest the camera, `rebuildsPerFrame` at most. */
+  private rebuildStale(cam: Vector3): void {
+    if (this.stale.size === 0) return;
+    const queue = [...this.stale].sort(
+      (a, b) => a.box.distanceToPoint(cam) - b.box.distanceToPoint(cam),
+    );
+    for (const node of queue.slice(0, this.rebuildsPerFrame)) {
+      this.stale.delete(node);
+      if (node.mesh) {
+        node.mesh.removeFromParent();
+        node.mesh.geometry.dispose();
+        node.mesh = null;
+      }
+      this.build(node);
+    }
   }
 
   /** Quads per node edge, the same on every level. */
@@ -381,7 +470,7 @@ export class TerrainChunks {
     node.mesh.removeFromParent();
     node.mesh.geometry.dispose();
     node.mesh = null;
-    this.builtLeaves--;
+    if (node.level === 0 && !node.far) this.builtLeaves--;
   }
 
   /** Built now or within this frame's budget. */
@@ -399,10 +488,11 @@ export class TerrainChunks {
     this.budget = this.buildsPerFrame;
     this.projView.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
     this.frustum.setFromProjectionMatrix(this.projView);
-    for (const node of this.drawn) node.mesh!.visible = false;
+    for (const node of this.drawn) if (node.mesh) node.mesh.visible = false;
     this.drawn.length = 0;
     this.triangles = 0;
     const cam = camera.position;
+    this.rebuildStale(cam);
     const draw = (node: TerrainChunk): void => {
       node.used = this.frameNo;
       node.mesh!.visible = true;
@@ -445,6 +535,7 @@ export class TerrainChunks {
   }
 
   dispose(): void {
+    this.stale.clear();
     for (const node of this.nodes)
       if (node.mesh) {
         node.mesh.removeFromParent();

@@ -206,7 +206,8 @@ export class RigidUnitLayer {
         `rigid-${src.name}-lod${lod}`,
         [POSE_ATTRIBUTE],
       );
-      b.mesh.castShadow = this.shadow !== null;
+      // A batch that only draws the coarsest LOD leaves the shadow pass (its shadow is a few pixels, the draw call is not).
+      b.mesh.castShadow = this.shadow !== null && lod < src.lods.length - 1;
       batches.push(b);
       return b;
     }) as [InstanceBatch, InstanceBatch, InstanceBatch];
