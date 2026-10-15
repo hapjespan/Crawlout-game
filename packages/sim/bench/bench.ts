@@ -12,6 +12,7 @@ import { loadGameDataFromDir } from '@crawlout/data/node';
 import { EVENT_TYPE } from '@crawlout/protocol';
 import type { CommandEnvelope } from '@crawlout/protocol';
 import { now, reportBench } from '../host/clock.js';
+import type { BenchHooks } from './profile.js';
 import { createSim, simConfigFromGameData } from '../src/index.js';
 import type { Sim } from '../src/index.js';
 import { cellCenter, createOpenMap, testPlayers } from '../src/testing.js';
@@ -27,6 +28,8 @@ export interface BenchResult {
   /** Som en maximum van tick 1 en verder; tick 0 (graafbouw, koude JIT) staat apart in firstMs. */
   totalMs: number;
   maxMs: number;
+  /** Tick van het maximum. */
+  maxAt: number;
   /** Duur van tick 0. */
   firstMs: number;
   finalHash: number;
@@ -49,7 +52,7 @@ function unitsOf(sim: Sim, owner: number, role: number): number[] {
   });
 }
 
-export function runBench(clock: () => number): BenchResult {
+export function runBench(clock: () => number, hooks: BenchHooks = {}): BenchResult {
   const data = loadGameDataFromDir(fileURLToPath(new URL('../../../data', import.meta.url)));
   const config = simConfigFromGameData(data);
   const faction = config.factions[0]!;
@@ -116,6 +119,7 @@ export function runBench(clock: () => number): BenchResult {
 
   let total = 0;
   let max = 0;
+  let maxAt = 0;
   let firstMs = 0;
   let units = 0;
   let shots = 0;
@@ -125,12 +129,16 @@ export function runBench(clock: () => number): BenchResult {
     const before = sim.playerStatus(0).scrap + sim.playerStatus(1).scrap;
     sim.applyBundle({ frame: f, commands: f % TOP_UP_EVERY === 0 ? topUp(f) : [] });
     const t0 = clock();
-    sim.tick();
+    sim.tick(hooks.probe?.(f));
     const dt = clock() - t0;
+    hooks.onTick?.(f, dt);
     if (f === 0) firstMs = dt;
     else {
       total += dt;
-      if (dt > max) max = dt;
+      if (dt > max) {
+        max = dt;
+        maxAt = f;
+      }
     }
     for (let k = 0; k < sim.events.count; k++) {
       if (sim.events.type[k] === EVENT_TYPE.shotFired) shots++;
@@ -145,6 +153,7 @@ export function runBench(clock: () => number): BenchResult {
     ticks: TICKS,
     totalMs: total,
     maxMs: max,
+    maxAt,
     firstMs,
     finalHash: sim.hash(),
     shots,
@@ -153,13 +162,49 @@ export function runBench(clock: () => number): BenchResult {
   };
 }
 
-if (process.argv.includes('--xl')) {
+const runsArg = process.argv.indexOf('--runs');
+const runs = runsArg >= 0 ? Number(process.argv[runsArg + 1]) : 3;
+if (process.argv.includes('--top')) {
+  // de duurste ticks van één koude run (met JIT en GC), per variant
+  const ts: [number, number][] = [];
+  const onTick = (f: number, dt: number): number => ts.push([f, dt]);
+  if (process.argv.includes('--xl')) (await import('./bench-xl.js')).runBenchXl(now, { onTick });
+  else if (process.argv.includes('--ai'))
+    (await import('./bench-xl.js')).runAiXl(now, 12_000, { onTick });
+  else runBench(now, { onTick });
+  ts.sort((a, b) => b[1] - a[1] || a[0] - b[0]);
+  console.log(
+    `duurste ticks: ${ts
+      .slice(0, 8)
+      .map(([f, d]) => `${f} ${d.toFixed(2)} ms`)
+      .join(', ')}`,
+  );
+} else if (process.argv.includes('--profile')) {
+  const { profile, reportProfile } = await import('./profile.js');
+  if (process.argv.includes('--xl')) {
+    const { runBenchXl } = await import('./bench-xl.js');
+    reportProfile(
+      'profiel bench-xl',
+      profile(now, 10_000, runs, (h) => runBenchXl(now, h)),
+    );
+  } else if (process.argv.includes('--ai')) {
+    const { runAiXl } = await import('./bench-xl.js');
+    reportProfile(
+      'profiel AI-XL',
+      profile(now, 12_000, runs, (h) => runAiXl(now, 12_000, h)),
+    );
+  } else
+    reportProfile(
+      'profiel bench',
+      profile(now, TICKS, runs, (h) => runBench(now, h)),
+    );
+} else if (process.argv.includes('--xl')) {
   const { runBenchXl, reportBenchXl, runAiXl } = await import('./bench-xl.js');
   reportBenchXl(runBenchXl(now));
   const ai = runAiXl(now);
   const avg = ai.totalMs / (ai.ticks - 1);
   console.log(
-    `bench-xl AI tegen AI: ${ai.ticks} ticks, gemiddeld ${avg.toFixed(3)} ms/tick, max ${ai.maxMs.toFixed(2)} ms (zonder tick 0; tick 0 apart: ${ai.firstMs.toFixed(2)} ms), ` +
+    `bench-xl AI tegen AI: ${ai.ticks} ticks, gemiddeld ${avg.toFixed(3)} ms/tick, max ${ai.maxMs.toFixed(2)} ms in tick ${ai.maxAt} (zonder tick 0; tick 0 apart: ${ai.firstMs.toFixed(2)} ms), ` +
       `${ai.units} units en ${ai.buildings} gebouwen aan het eind, eindhash 0x${ai.finalHash.toString(16).padStart(8, '0')} ` +
       `(budget 5 ms: ${avg < 5 ? 'binnen' : 'BOVEN'})`,
   );

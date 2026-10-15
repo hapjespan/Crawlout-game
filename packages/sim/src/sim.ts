@@ -131,6 +131,26 @@ export interface CreateSimOptions {
  * uit de bundel voor dat frame uit, daarna de systemen in vaste volgorde, en eindigt met hash(). De hash die
  * tick() teruggeeft hoort bij het zojuist uitgevoerde frame (frame - 1 na afloop).
  */
+/**
+ * Meetpunt voor de benchmark (bench/profile.ts): tick(probe) roept probe(k) aan na stap k (TICK_STAGES). Geen klok in de
+ * sim; de harnas meet de tijd tussen twee aanroepen. Zonder probe verandert er niets.
+ */
+export type TickProbe = (stage: number) => void;
+
+/** Namen van de meetpunten van TickProbe, op index. */
+export const TICK_STAGES = [
+  'commands',
+  'ai',
+  'orders',
+  'flow',
+  'move',
+  'combat',
+  'economy',
+  'claims',
+  'cleanup',
+  'hash',
+] as const;
+
 export class Sim implements SimContext {
   readonly world = new World();
   readonly flow: FlowFields;
@@ -248,7 +268,7 @@ export class Sim implements SimContext {
   }
 
   /** Eén tick: systemen 1 tot en met 9 in vaste volgorde (contract 1). Geeft de state-hash na deze tick. */
-  tick(): number {
+  tick(probe?: TickProbe): number {
     const f = this.tickNo;
     this.events.clear();
     // 1 commando's van deze tick
@@ -257,27 +277,37 @@ export class Sim implements SimContext {
       this.pending.delete(f);
       applyCommands(this, cmds);
     }
+    probe?.(0);
     // 2 orders en AI
     aiSystem(this, this.census, this.aiScratch);
+    probe?.(1);
     ordersSystem(this, this.ordersScratch);
+    probe?.(2);
     // 3 flow fields: de padgraaf bijwerken na gewijzigde begaanbaarheid; velden zelf lui en exact (flowfield.ts)
     this.flow.step();
+    probe?.(3);
     // 4 beweging plus separatie (eerst de ability-zones van deze tick, ook voor gevecht)
     auraSystem(this, this.auras);
     robotRulesSystem(this, this.robotRates);
     movementSystem(this, this.moveScratch);
+    probe?.(4);
     // 5 gevecht
     combatSystem(this);
+    probe?.(5);
     // 6 economie: verzamelen, bouwen, omscholen, huisvestingsgroei
     economySystem(this, this.census);
+    probe?.(6);
     // 7 claims en winroutes
     claimsSystem(this, this.claimScratch, this.census);
+    probe?.(7);
     // 8 dood en opruimen, presentatie voor de snapshot
     cleanupSystem(this);
+    probe?.(8);
     this.tickNo = f + 1;
     // 9 hash
     this.lastHash = this.computeHash();
     this.hashDirty = false;
+    probe?.(9);
     return this.lastHash;
   }
 

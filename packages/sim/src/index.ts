@@ -86,7 +86,8 @@ export type {
   UnitView,
   WinReason,
 } from './sim.js';
-export { Sim, createSim, deserialize } from './sim.js';
+export { Sim, TICK_STAGES, createSim, deserialize } from './sim.js';
+export type { TickProbe } from './sim.js';
 export type {
   SimWorkerCore,
   SimWorkerInbound,

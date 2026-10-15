@@ -16,6 +16,7 @@ import type { CommandEnvelope } from '@crawlout/protocol';
 import { createSim, simConfigFromGameData } from '../src/index.js';
 import type { Sim } from '../src/index.js';
 import { NO_FIELD } from '../src/ecs/world.js';
+import type { BenchHooks } from './profile.js';
 import {
   XL_CROSSINGS,
   cellCenter,
@@ -40,6 +41,8 @@ export interface BenchXlResult {
   /** Som en maximum van tick 1 en verder. */
   totalMs: number;
   maxMs: number;
+  /** Tick van het maximum. */
+  maxAt: number;
   /** Tick 0 apart: koude JIT plus de eerste zoekopdrachten van alle bevelen op frame 0. */
   firstMs: number;
   finalHash: number;
@@ -90,7 +93,7 @@ function freeCells(sim: Sim, cx: number, cy: number, n: number): { x: number; y:
   return out;
 }
 
-export function runBenchXl(clock: () => number): BenchXlResult {
+export function runBenchXl(clock: () => number, hooks: BenchHooks = {}): BenchXlResult {
   const data = loadGameDataFromDir(fileURLToPath(new URL('../../../data', import.meta.url)));
   const config = simConfigFromGameData(data);
   const faction = config.factions[0]!;
@@ -177,6 +180,7 @@ export function runBenchXl(clock: () => number): BenchXlResult {
 
   let total = 0;
   let max = 0;
+  let maxAt = 0;
   let firstMs = 0;
   let units = 0;
   let shots = 0;
@@ -192,12 +196,16 @@ export function runBenchXl(clock: () => number): BenchXlResult {
     const before = sim.playerStatus(0).scrap + sim.playerStatus(1).scrap;
     sim.applyBundle({ frame: f, commands: f % TOP_UP_EVERY === 0 ? topUp(f) : [] });
     const t0 = clock();
-    sim.tick();
+    sim.tick(hooks.probe?.(f));
     const dt = clock() - t0;
+    hooks.onTick?.(f, dt);
     if (f === 0) firstMs = dt;
     else {
       total += dt;
-      if (dt > max) max = dt;
+      if (dt > max) {
+        max = dt;
+        maxAt = f;
+      }
     }
     for (let k = 0; k < sim.events.count; k++) {
       if (sim.events.type[k] === EVENT_TYPE.shotFired) shots++;
@@ -243,6 +251,7 @@ export function runBenchXl(clock: () => number): BenchXlResult {
     ticks: TICKS,
     totalMs: total,
     maxMs: max,
+    maxAt,
     firstMs,
     finalHash: sim.hash(),
     shots,
@@ -264,6 +273,8 @@ export interface BenchXlAiResult {
   ticks: number;
   totalMs: number;
   maxMs: number;
+  /** Tick van het maximum. */
+  maxAt: number;
   firstMs: number;
   units: number;
   buildings: number;
@@ -271,7 +282,11 @@ export interface BenchXlAiResult {
 }
 
 /** Tweede deel: de scripted AI tegen zichzelf op de XL-testmap (zoekfuncties over de hele map, bouwen, golven). */
-export function runAiXl(clock: () => number, ticks = 12_000): BenchXlAiResult {
+export function runAiXl(
+  clock: () => number,
+  ticks = 12_000,
+  hooks: BenchHooks = {},
+): BenchXlAiResult {
   const data = loadGameDataFromDir(fileURLToPath(new URL('../../../data', import.meta.url)));
   const config = simConfigFromGameData(data);
   const sim = createSim({
@@ -282,16 +297,21 @@ export function runAiXl(clock: () => number, ticks = 12_000): BenchXlAiResult {
   });
   let total = 0;
   let max = 0;
+  let maxAt = 0;
   let firstMs = 0;
   for (let f = 0; f < ticks; f++) {
     sim.applyBundle({ frame: f, commands: [] });
     const t0 = clock();
-    sim.tick();
+    sim.tick(hooks.probe?.(f));
     const dt = clock() - t0;
+    hooks.onTick?.(f, dt);
     if (f === 0) firstMs = dt;
     else {
       total += dt;
-      if (dt > max) max = dt;
+      if (dt > max) {
+        max = dt;
+        maxAt = f;
+      }
     }
   }
   let units = 0;
@@ -301,14 +321,23 @@ export function runAiXl(clock: () => number, ticks = 12_000): BenchXlAiResult {
     if (k === 'unit' || k === 'hero') units++;
     else if (k === 'building') buildings++;
   }
-  return { ticks, totalMs: total, maxMs: max, firstMs, units, buildings, finalHash: sim.hash() };
+  return {
+    ticks,
+    totalMs: total,
+    maxMs: max,
+    maxAt,
+    firstMs,
+    units,
+    buildings,
+    finalHash: sim.hash(),
+  };
 }
 
 export function reportBenchXl(r: BenchXlResult): void {
   const avg = r.totalMs / (r.ticks - 1);
   console.log(
     `bench-xl: ${r.mapCells} cellen, ${r.units} units, ${r.ticks} ticks, gemiddeld ${avg.toFixed(3)} ms/tick, ` +
-      `max ${r.maxMs.toFixed(2)} ms (zonder tick 0; tick 0 apart: ${r.firstMs.toFixed(2)} ms), eindhash 0x${r.finalHash.toString(16).padStart(8, '0')} ` +
+      `max ${r.maxMs.toFixed(2)} ms in tick ${r.maxAt} (zonder tick 0; tick 0 apart: ${r.firstMs.toFixed(2)} ms), eindhash 0x${r.finalHash.toString(16).padStart(8, '0')} ` +
       `(budget 5 ms: ${avg < 5 ? 'binnen' : 'BOVEN'})`,
   );
   console.log(

@@ -50,7 +50,10 @@ export interface PathTuning {
 /** Per sector: aantal regio's, de grensingangen (oost en zuid, als cel-paren) en de knopen aan deze kant. */
 class Sector {
   regions = 0;
-  /** Alle cellen begaanbaar: afstanden binnen de sector zijn dan Manhattan (geen BFS nodig). */
+  /**
+   * De begaanbare cellen vormen één rechthoek (de hele sector, of de sector min een rand langs de map): afstanden
+   * binnen de sector zijn dan Manhattan (geen BFS nodig).
+   */
   open = false;
   /** Ingangen op de oostgrens: cel in deze sector (a) en in de oosterbuur (b), midden van elk stuk. */
   eastA: Int32Array = EMPTY;
@@ -81,9 +84,18 @@ class SlotSearch {
   epoch = -1;
   g: Int32Array = EMPTY;
   done = new Uint8Array(0);
-  heapNode: Int32Array = EMPTY;
-  heapPos: Int32Array = EMPTY;
-  heapSize = 0;
+  /**
+   * Wachtrij van Dijkstra als ring van emmers op afstand (Dial): emmer g & bucketMask houdt de knopen met voorlopige
+   * afstand g, als dubbel gelinkte lijst (next, prev per knoop). Alle afstanden in de rij liggen in [cur, cur + emmers),
+   * want een rand kost hoogstens maxEdge en de beginknopen hoogstens hun vensterafstand; de ring is groter dan beide.
+   * Een knoop staat in de rij precies als g >= 0 en niet done.
+   */
+  head: Int32Array = EMPTY;
+  next: Int32Array = EMPTY;
+  prev: Int32Array = EMPTY;
+  bucketMask = 0;
+  cur = 0;
+  queued = 0;
   /** Per globale regio de index in de pool, -1 als het regioveld er (nog) niet is. */
   regionField: Int32Array = EMPTY;
   /** Doelvenster in cellen en in sectoren (inclusief), met de exacte BFS-afstand tot het doel. */
@@ -135,6 +147,8 @@ export class FlowFields {
   private readonly regionBase: Int32Array;
   nodeCount = 0;
   regionCount = 0;
+  /** Duurste rand van de knopengraaf (minstens 1, de oversteek van een grens); maat van de emmerring van Dijkstra. */
+  private maxEdge = 1;
   private gNodeSec: Int32Array = EMPTY;
   private gNodeK: Int32Array = EMPTY;
   private gNodeCross: Int32Array = EMPTY;
@@ -156,6 +170,7 @@ export class FlowFields {
   private readonly scratchQ: Int32Array;
   private readonly scratchD: Int32Array;
   private readonly scratchT: Uint8Array;
+  private readonly oldPart = new Int32Array(5);
   private seedV: Int32Array = new Int32Array(64);
   private seedC: Int32Array = new Int32Array(64);
   private winQ: Int32Array = EMPTY;
@@ -329,7 +344,7 @@ export class FlowFields {
       if (s >= this.sx) nodesDirty[s - this.sx] = 1;
       if (s + this.sx < n) nodesDirty[s + this.sx] = 1;
     }
-    for (let s = 0; s < n; s++) if (nodesDirty[s] === 1) this.computeNodes(s);
+    for (let s = 0; s < n; s++) if (nodesDirty[s] === 1) this.computeNodes(s, this.dirty[s] === 1);
     this.dirty.fill(0);
     this.renumber();
     this.graphDirty = false;
@@ -388,10 +403,22 @@ export class FlowFields {
     }
     const sec = this.sectors[s]!;
     sec.regions = count;
-    let blocked = 0;
+    // rechthoek: het aantal begaanbare cellen is het oppervlak van hun omhullende
+    let walkable = 0;
+    let bx0 = x1;
+    let by0 = y1;
+    let bx1 = x0 - 1;
+    let by1 = y0 - 1;
     for (let y = y0; y < y1; y++)
-      for (let x = x0; x < x1; x++) if (walk[y * w + x] !== 1) blocked++;
-    sec.open = blocked === 0;
+      for (let x = x0; x < x1; x++) {
+        if (walk[y * w + x] !== 1) continue;
+        walkable++;
+        if (x < bx0) bx0 = x;
+        if (x > bx1) bx1 = x;
+        if (y < by0) by0 = y;
+        if (y > by1) by1 = y;
+      }
+    sec.open = walkable > 0 && walkable === (bx1 - bx0 + 1) * (by1 - by0 + 1);
   }
 
   /** Ingangen op de oost- en zuidgrens van sector s (als die buur er is). */
@@ -485,14 +512,23 @@ export class FlowFields {
     }
   }
 
-  /** Knopen van sector s (noord, west, oost, zuid) en hun onderlinge afstanden binnen de regio (BFS per knoop). */
-  private computeNodes(s: number): void {
+  /**
+   * Knopen van sector s (noord, west, oost, zuid) en hun onderlinge afstanden binnen de regio (BFS per knoop).
+   * `changed`: de begaanbaarheid van de sector zelf is veranderd. Zo niet (een buur van een vuile sector: alleen de
+   * ingangen op een gedeelde grens kunnen anders zijn), dan zijn de regio's en dus de afstand tussen twee cellen
+   * dezelfde als bij de vorige opbouw: zijn de knopen gelijk, dan blijft alles staan, anders komen de afstanden tussen
+   * knopen die er al waren uit de vorige matrix en rekent de BFS alleen voor de nieuwe paren. Zelfde uitkomst als alles
+   * opnieuw (bench: een gebouw op een sectorgrens kostte hier het grootste deel van de tick).
+   */
+  private computeNodes(s: number, changed: boolean): void {
     const sec = this.sectors[s]!;
     const sxi = s - idiv(s, this.sx) * this.sx;
     const north = s >= this.sx ? this.sectors[s - this.sx]!.southB : EMPTY;
     const west = sxi > 0 ? this.sectors[s - 1]!.eastB : EMPTY;
     const n = north.length + west.length + sec.eastA.length + sec.southA.length;
     const cell = new Int32Array(n);
+    const oldPart = this.oldPart;
+    oldPart.set(sec.part);
     let k = 0;
     sec.part[0] = k;
     for (const c of north) cell[k++] = c;
@@ -502,7 +538,25 @@ export class FlowFields {
     for (const c of sec.eastA) cell[k++] = c;
     sec.part[3] = k;
     for (const c of sec.southA) cell[k++] = c;
+    const oldCell = changed ? EMPTY : sec.nodeCell;
+    const on = oldCell.length;
     sec.part[4] = k;
+    if (!changed && on === n) {
+      let same = true;
+      for (let i = 0; i < 5 && same; i++) if (sec.part[i] !== oldPart[i]) same = false;
+      for (let i = 0; i < n && same; i++) if (cell[i] !== oldCell[i]) same = false;
+      // dezelfde knopen in dezelfde volgorde en delen: regio's, afstanden en randen blijven zoals ze waren
+      if (same) return;
+    }
+    // per knoop de index in de vorige opbouw (een cel met dezelfde afstanden), -1 voor een nieuwe knoop
+    const prev = new Int32Array(n).fill(-1);
+    for (let i = 0; i < n && on > 0; i++)
+      for (let o = 0; o < on; o++)
+        if (oldCell[o] === cell[i]) {
+          prev[i] = o;
+          break;
+        }
+    const oldDist = sec.nodeDist;
     const region = new Int32Array(n);
     for (let i = 0; i < n; i++) region[i] = this.regLocal[cell[i]!]!;
     const dist = new Int32Array(n * n).fill(-1);
@@ -511,9 +565,7 @@ export class FlowFields {
     const x1 = Math.min(this.w, x0 + this.S);
     const y1 = Math.min(this.h, y0 + this.S);
     const d = this.scratchD;
-    const q = this.scratchQ;
     const w = this.w;
-    const reg = this.regLocal;
     for (let i = 0; i < n; i++) {
       dist[i * n + i] = 0;
       if (sec.open) {
@@ -531,58 +583,37 @@ export class FlowFields {
         }
         continue;
       }
-      // alleen naar knopen met een hogere index rekenen; de matrix is symmetrisch
+      // alleen naar knopen met een hogere index rekenen; de matrix is symmetrisch. Een paar dat er al was, komt uit de
+      // vorige opbouw (zelfde regio's, dus dezelfde afstand); alleen de overige paren vragen een BFS.
+      const pi = prev[i]!;
       let need = false;
-      for (let j = i + 1; j < n; j++) if (region[j] === region[i]) need = true;
+      for (let j = i + 1; j < n; j++) {
+        if (region[j] !== region[i]) continue;
+        const pj = prev[j]!;
+        if (pi >= 0 && pj >= 0) {
+          const dd = oldDist[pi * on + pj]!;
+          dist[i * n + j] = dd;
+          dist[j * n + i] = dd;
+        } else need = true;
+      }
       if (!need) continue;
       d.fill(-1);
       const r = region[i]!;
-      // doelcellen (knopen j > i in dezelfde regio): de BFS stopt zodra ze allemaal bereikt zijn
+      // doelcellen (nieuwe paren met knopen j > i in dezelfde regio): de BFS stopt zodra ze allemaal bereikt zijn
       const tgt = this.scratchT;
       let left = 0;
       for (let j = i + 1; j < n; j++) {
-        if (region[j] !== r) continue;
+        if (region[j] !== r || (pi >= 0 && prev[j]! >= 0)) continue;
         const lj = this.localOf(cell[j]!, x0, y0);
         if (tgt[lj] === 0) {
           tgt[lj] = 1;
           left++;
         }
       }
-      const ls = this.localOf(cell[i]!, x0, y0);
-      d[ls] = 0;
-      if (tgt[ls] === 1) {
-        tgt[ls] = 0;
-        left--;
-      }
-      let qh = 0;
-      let qt = 0;
-      q[qt++] = ls;
-      const S = this.S;
-      while (qh < qt && left > 0) {
-        const l = q[qh++]!;
-        const ly = l >> this.shift;
-        const lx = l & this.mask;
-        const c = (y0 + ly) * w + x0 + lx;
-        const nd = d[l]! + 1;
-        // buren O, W, Z, N; een doelcel telt af zodra hij een afstand krijgt
-        for (let k = 0; k < 4; k++) {
-          let m: number;
-          if (k === 0) m = x0 + lx + 1 < x1 && reg[c + 1] === r ? l + 1 : -1;
-          else if (k === 1) m = lx > 0 && reg[c - 1] === r ? l - 1 : -1;
-          else if (k === 2) m = y0 + ly + 1 < y1 && reg[c + w] === r ? l + S : -1;
-          else m = ly > 0 && reg[c - w] === r ? l - S : -1;
-          if (m < 0 || d[m] !== -1) continue;
-          d[m] = nd;
-          q[qt++] = m;
-          if (tgt[m] === 1) {
-            tgt[m] = 0;
-            left--;
-          }
-        }
-      }
+      this.nodeBfs(this.localOf(cell[i]!, x0, y0), r, left, x0, y0, x1, y1);
       for (let j = i + 1; j < n; j++) tgt[this.localOf(cell[j]!, x0, y0)] = 0;
       for (let j = i + 1; j < n; j++) {
-        if (region[j] !== r) continue;
+        if (region[j] !== r || (pi >= 0 && prev[j]! >= 0)) continue;
         const lj = this.localOf(cell[j]!, x0, y0);
         dist[i * n + j] = d[lj]!;
         dist[j * n + i] = d[lj]!;
@@ -591,30 +622,98 @@ export class FlowFields {
     sec.nodeCell = cell;
     sec.nodeRegion = region;
     sec.nodeDist = dist;
-    // overbodige randen weglaten (zie Sector.adjStart)
+    // overbodige randen weglaten (zie Sector.adjStart). De matrix is symmetrisch, dus ook "overbodig": één keer per paar
+    // i < j, met d(k, j) als d(j, k) zodat beide rijen aaneengesloten gelezen worden.
+    const keep = new Uint8Array(n * n);
+    for (let i = 0; i < n; i++) {
+      const ri = i * n;
+      for (let j = i + 1; j < n; j++) {
+        const dij = dist[ri + j]!;
+        if (dij < 0) continue;
+        const rj = j * n;
+        let redundant = false;
+        for (let k = 0; k < n; k++) {
+          const a = dist[ri + k]!;
+          const b = dist[rj + k]!;
+          if (a > 0 && b > 0 && a + b === dij) {
+            redundant = true;
+            break;
+          }
+        }
+        if (redundant) continue;
+        keep[ri + j] = 1;
+        keep[rj + i] = 1;
+      }
+    }
     const start = new Int32Array(n + 1);
     const adjN: number[] = [];
     const adjC: number[] = [];
     for (let i = 0; i < n; i++) {
       start[i] = adjN.length;
       for (let j = 0; j < n; j++) {
-        const dij = dist[i * n + j]!;
-        if (j === i || dij < 0) continue;
-        let redundant = false;
-        for (let k = 0; k < n && !redundant; k++) {
-          const a = dist[i * n + k]!;
-          const b = dist[k * n + j]!;
-          if (a > 0 && b > 0 && a + b === dij) redundant = true;
-        }
-        if (redundant) continue;
+        if (keep[i * n + j] !== 1) continue;
         adjN.push(j);
-        adjC.push(dij);
+        adjC.push(dist[i * n + j]!);
       }
     }
     start[n] = adjN.length;
     sec.adjStart = start;
     sec.adjNode = Int32Array.from(adjN);
     sec.adjCost = Int32Array.from(adjC);
+  }
+
+  /**
+   * BFS (4-buren, binnen regio r van de sector [x0, x1) x [y0, y1)) vanaf lokale cel ls in scratchD (vooraf -1), tot de
+   * `left` doelcellen in scratchT bereikt zijn; die worden onderweg weer 0. Een eigen methode: de zware lus van
+   * computeNodes, zodat hij geoptimaliseerd blijft als computeNodes een nieuwe tak neemt (bench: een koude deopt kostte
+   * bij de eerste wijziging na de start ruim 1 ms per sector).
+   */
+  private nodeBfs(
+    ls: number,
+    r: number,
+    left0: number,
+    x0: number,
+    y0: number,
+    x1: number,
+    y1: number,
+  ): void {
+    const d = this.scratchD;
+    const q = this.scratchQ;
+    const tgt = this.scratchT;
+    const reg = this.regLocal;
+    const w = this.w;
+    const S = this.S;
+    let left = left0;
+    d[ls] = 0;
+    if (tgt[ls] === 1) {
+      tgt[ls] = 0;
+      left--;
+    }
+    let qh = 0;
+    let qt = 0;
+    q[qt++] = ls;
+    while (qh < qt && left > 0) {
+      const l = q[qh++]!;
+      const ly = l >> this.shift;
+      const lx = l & this.mask;
+      const c = (y0 + ly) * w + x0 + lx;
+      const nd = d[l]! + 1;
+      // buren O, W, Z, N; een doelcel telt af zodra hij een afstand krijgt
+      for (let k = 0; k < 4; k++) {
+        let m: number;
+        if (k === 0) m = x0 + lx + 1 < x1 && reg[c + 1] === r ? l + 1 : -1;
+        else if (k === 1) m = lx > 0 && reg[c - 1] === r ? l - 1 : -1;
+        else if (k === 2) m = y0 + ly + 1 < y1 && reg[c + w] === r ? l + S : -1;
+        else m = ly > 0 && reg[c - w] === r ? l - S : -1;
+        if (m < 0 || d[m] !== -1) continue;
+        d[m] = nd;
+        q[qt++] = m;
+        if (tgt[m] === 1) {
+          tgt[m] = 0;
+          left--;
+        }
+      }
+    }
   }
 
   /** Lokale index (rij maal S plus kolom) van globale cel c in de sector met oorsprong (x0, y0). */
@@ -638,6 +737,12 @@ export class FlowFields {
     this.regionBase[n] = regions;
     this.nodeCount = nodes;
     this.regionCount = regions;
+    let maxEdge = 1;
+    for (let s = 0; s < n; s++) {
+      const cost = this.sectors[s]!.adjCost;
+      for (let e = 0; e < cost.length; e++) if (cost[e]! > maxEdge) maxEdge = cost[e]!;
+    }
+    this.maxEdge = maxEdge;
     if (this.gNodeSec.length < nodes) {
       this.gNodeSec = new Int32Array(nodes);
       this.gNodeK = new Int32Array(nodes);
@@ -678,13 +783,13 @@ export class FlowFields {
     if (q.g.length < nodes) {
       q.g = new Int32Array(nodes);
       q.done = new Uint8Array(nodes);
-      q.heapNode = new Int32Array(nodes);
-      q.heapPos = new Int32Array(nodes);
+      q.next = new Int32Array(nodes);
+      q.prev = new Int32Array(nodes);
     }
     q.g.fill(-1, 0, nodes);
     q.done.fill(0, 0, nodes);
-    q.heapPos.fill(-1, 0, nodes);
-    q.heapSize = 0;
+    q.cur = 0;
+    q.queued = 0;
     if (q.regionField.length < this.regionCount) q.regionField = new Int32Array(this.regionCount);
     q.regionField.fill(-1, 0, this.regionCount);
     // doelvenster: sectoren die het doel (plus één cel) raken, plus één sector rand
@@ -701,17 +806,30 @@ export class FlowFields {
     q.ww = Math.min(this.w, (q.ws1x + 1) << this.shift) - q.wx0;
     q.wh = Math.min(this.h, (q.ws1y + 1) << this.shift) - q.wy0;
     this.windowBfs(s, q);
-    // beginknopen: knopen in het venster met hun vensterafstand
-    for (let sy = q.ws0y; sy <= q.ws1y; sy++) {
-      for (let sx = q.ws0x; sx <= q.ws1x; sx++) {
-        const sec = sy * this.sx + sx;
-        const cells = this.sectors[sec]!.nodeCell;
-        const base = this.nodeBase[sec]!;
-        for (let k = 0; k < cells.length; k++) {
-          const c = cells[k]!;
-          const cy = idiv(c, this.w);
-          const v = q.win[(cy - q.wy0) * q.ww + (c - cy * this.w - q.wx0)]!;
-          if (v >= 0) this.relax(q, base + k, v);
+    // beginknopen: knopen in het venster met hun vensterafstand (eerst de grootste, voor de maat van de emmerring)
+    let span = this.maxEdge;
+    for (let pass = 0; pass < 2; pass++) {
+      if (pass === 1) {
+        let b = 1;
+        while (b <= span) b <<= 1;
+        if (q.head.length < b) q.head = new Int32Array(b);
+        q.head.fill(-1, 0, b);
+        q.bucketMask = b - 1;
+      }
+      for (let sy = q.ws0y; sy <= q.ws1y; sy++) {
+        for (let sx = q.ws0x; sx <= q.ws1x; sx++) {
+          const sec = sy * this.sx + sx;
+          const cells = this.sectors[sec]!.nodeCell;
+          const base = this.nodeBase[sec]!;
+          for (let k = 0; k < cells.length; k++) {
+            const c = cells[k]!;
+            const cy = idiv(c, this.w);
+            const v = q.win[(cy - q.wy0) * q.ww + (c - cy * this.w - q.wx0)]!;
+            if (v < 0) continue;
+            if (pass === 0) {
+              if (v > span) span = v;
+            } else this.relax(q, base + k, v);
+          }
         }
       }
     }
@@ -768,70 +886,51 @@ export class FlowFields {
     }
   }
 
-  private heapLess(q: SlotSearch, a: number, b: number): boolean {
-    const ga = q.g[a]!;
-    const gb = q.g[b]!;
-    return ga < gb || (ga === gb && a < b);
+  /** Knoop v in emmer b (vooraan). */
+  private link(q: SlotSearch, v: number, b: number): void {
+    const n = q.head[b]!;
+    q.next[v] = n;
+    q.prev[v] = -1;
+    if (n >= 0) q.prev[n] = v;
+    q.head[b] = v;
+    q.queued++;
   }
 
-  private heapUp(q: SlotSearch, i0: number): void {
-    const hn = q.heapNode;
-    let i = i0;
-    const v = hn[i]!;
-    while (i > 0) {
-      const p = (i - 1) >> 1;
-      const u = hn[p]!;
-      if (!this.heapLess(q, v, u)) break;
-      hn[i] = u;
-      q.heapPos[u] = i;
-      i = p;
-    }
-    hn[i] = v;
-    q.heapPos[v] = i;
-  }
-
-  private heapDown(q: SlotSearch, i0: number): void {
-    const hn = q.heapNode;
-    const n = q.heapSize;
-    let i = i0;
-    const v = hn[i]!;
-    for (;;) {
-      const l = 2 * i + 1;
-      if (l >= n) break;
-      const r = l + 1;
-      const c = r < n && this.heapLess(q, hn[r]!, hn[l]!) ? r : l;
-      if (!this.heapLess(q, hn[c]!, v)) break;
-      hn[i] = hn[c]!;
-      q.heapPos[hn[i]!] = i;
-      i = c;
-    }
-    hn[i] = v;
-    q.heapPos[v] = i;
+  /** Knoop v uit emmer b. */
+  private unlink(q: SlotSearch, v: number, b: number): void {
+    const p = q.prev[v]!;
+    const n = q.next[v]!;
+    if (p >= 0) q.next[p] = n;
+    else q.head[b] = n;
+    if (n >= 0) q.prev[n] = p;
+    q.queued--;
   }
 
   private relax(q: SlotSearch, v: number, d: number): void {
     if (q.done[v] === 1) return;
     const old = q.g[v]!;
-    if (old !== -1 && old <= d) return;
-    q.g[v] = d;
-    if (q.heapPos[v] === -1) {
-      q.heapNode[q.heapSize] = v;
-      q.heapPos[v] = q.heapSize;
-      q.heapSize++;
+    if (old !== -1) {
+      if (old <= d) return;
+      this.unlink(q, v, old & q.bucketMask);
     }
-    this.heapUp(q, q.heapPos[v]!);
+    q.g[v] = d;
+    this.link(q, v, d & q.bucketMask);
   }
 
-  /** Eén knoop definitief maken (Dijkstra, vaste tiebreak op knoopindex) en zijn buren ontspannen. */
+  /**
+   * Eén knoop definitief maken (Dijkstra) en zijn buren ontspannen: een knoop met de kleinste voorlopige afstand. Bij
+   * gelijke afstand maakt de volgorde voor geen enkele waarde uit (Dijkstra geeft elke knoop zijn exacte afstand), alleen
+   * hoe ver een luie zoekopdracht al is; niets in de sim leest dat.
+   */
   private settleOne(q: SlotSearch): void {
-    const u = q.heapNode[0]!;
-    q.heapSize--;
-    q.heapPos[u] = -1;
-    if (q.heapSize > 0) {
-      q.heapNode[0] = q.heapNode[q.heapSize]!;
-      q.heapPos[q.heapNode[0]!] = 0;
-      this.heapDown(q, 0);
+    const mask = q.bucketMask;
+    let b = q.cur & mask;
+    while (q.head[b] === -1) {
+      q.cur++;
+      b = q.cur & mask;
     }
+    const u = q.head[b]!;
+    this.unlink(q, u, b);
     q.done[u] = 1;
     const gu = q.g[u]!;
     const cross = this.gNodeCross[u]!;
@@ -841,9 +940,11 @@ export class FlowFields {
     const k = this.gNodeK[u]!;
     const base = this.nodeBase[s]!;
     const end = sec.adjStart[k + 1]!;
+    const adjNode = sec.adjNode;
+    const adjCost = sec.adjCost;
     for (let e = sec.adjStart[k]!; e < end; e++) {
-      const v = base + sec.adjNode[e]!;
-      if (q.done[v] === 0) this.relax(q, v, gu + sec.adjCost[e]!);
+      const v = base + adjNode[e]!;
+      if (q.done[v] === 0) this.relax(q, v, gu + adjCost[e]!);
     }
   }
 
@@ -853,7 +954,7 @@ export class FlowFields {
     const base = this.nodeBase[sec]!;
     for (let k = 0; k < S.nodeCell.length; k++) {
       if (S.nodeRegion[k] !== r) continue;
-      while (q.done[base + k] === 0 && q.heapSize > 0) this.settleOne(q);
+      while (q.done[base + k] === 0 && q.queued > 0) this.settleOne(q);
     }
   }
 
@@ -1043,7 +1144,12 @@ export class FlowFields {
       b += sec.adjStart.byteLength + sec.adjNode.byteLength + sec.adjCost.byteLength;
     }
     for (const q of this.search) {
-      b += q.g.byteLength + q.done.byteLength + q.heapNode.byteLength + q.heapPos.byteLength;
+      b +=
+        q.g.byteLength +
+        q.done.byteLength +
+        q.next.byteLength +
+        q.prev.byteLength +
+        q.head.byteLength;
       b += q.regionField.byteLength + q.win.byteLength;
     }
     b += this.pool.byteLength + this.poolSlot.byteLength * 4;
