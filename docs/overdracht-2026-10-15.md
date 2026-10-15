@@ -49,3 +49,16 @@ Chrome op batterij draait op 30 fps; aan de lader krijg je 120.
 - Prettier: 53 bestanden zijn nog niet conform (vooral docs en data). Dat is werk voor bulk.
 - Teamkleur op de grote cilinder van het hoofdgebouw is egaal; dat ligt aan het asset (UV's).
 - Turret-, held- en loadout-namen staan deels in de client; een `naam` per loadout in de data zou netter zijn.
+
+## Update 15 oktober, middag
+
+- **Rustbelt XL:** 384 x 384 m (3 x 3 tegels), met een rivier (2 voordes en een landbrug), een bosrand en bosjes, 18 nodes, 5 claimpunten (dominantie 3 van 5 punten, 8 minuten) en 6 creep-kampen.
+- **Sim:** hiërarchische padvinding (units vertrekken binnen 1 tick, 4,6 MB in plaats van 36 MB), een AI die op padafstand rekent, en eerlijk onder de spiegel (77 tegen 76 over 153 seeds).
+- **Visueel:**
+  - de witte rim-glans is opgelost;
+  - het terrein toont de echte rotskleuren;
+  - het teammasker werkt per pixel, er is hemellicht en LOD op schermgrootte;
+  - de ranger blijft bewust modderig.
+- **Echte schaal:** de deur van het bronhuis is gemeten (2,11 m), en alle gebouwen staan in één wereldschaal. De woning is 13 x 19 m (5 bedden), het hoofdgebouw 21 x 21 m, en de grondplaten zijn weg.
+- **40 nieuwe props** (DJMaesen, CC-BY; de bronnen staan in assets/src/packs, buiten git) met bladeren als alpha-cutout, wind en kleurvariatie: in totaal 7904 props, met kits bij kampen en voordes.
+- **Besluiten van de architect:** fase-0 sectie 19. Nog aan jou: dominantie 8 of 9 minuten op XL, het tempo op de grote map, de meting op een laptop met geïntegreerde GPU, en een PR naar main zodat CI draait.
