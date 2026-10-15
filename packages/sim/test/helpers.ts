@@ -21,6 +21,8 @@ export const COMPACT_FOOTPRINTS: Readonly<Record<string, readonly [number, numbe
   radiobaken: [1, 1],
   claimpaal: [1, 1],
   turret: [2, 2],
+  turret_laser: [2, 2],
+  robotfabriek: [5, 5],
   lab: [3, 3],
   trainingsfaciliteit: [3, 3],
 };

@@ -28,6 +28,10 @@
       "atS": 540,
       "buildingId": "turret",
       "site": "hq"
+    },
+    {
+      "atS": 660,
+      "buildingId": "robotfabriek"
     }
   ],
   "attackTimersS": [
@@ -47,7 +51,13 @@
     "composiet_pantser",
     "snelle_voeten",
     "bouwrobots",
-    "lasergeleiding"
+    "lasergeleiding",
+    "robotica",
+    "lasertechniek",
+    "turret_netwerk",
+    "turret_schade",
+    "turret_bereik",
+    "sentinel_protocol"
   ],
   "researchFromS": 180,
   "armyLoadouts": [
@@ -65,15 +75,15 @@
       "site": "claim"
     },
     {
-      "buildingId": "turret",
+      "buildingId": "turret_laser",
       "site": "front"
     },
     {
-      "buildingId": "turret",
+      "buildingId": "turret_laser",
       "site": "hq"
     },
     {
-      "buildingId": "turret",
+      "buildingId": "turret_laser",
       "site": "claim"
     }
   ],
@@ -91,6 +101,11 @@
   "waveMaxWaitS": 90,
   "pushMinArmy": 12,
   "pushFromS": 1440,
+  "robots": {
+    "sequence": ["beveiligingsrobot", "beveiligingsrobot", "reparatiedrone", "sentinel"],
+    "fromS": 840,
+    "max": 8
+  },
   "allInWithoutNodes": true,
-  "_comment": "Scripted AI van de Dwellers. Alle getallen sturen packages/sim/src/systems/ai.ts; hij geeft gewone commando's, geen cheats, en meet verre afstanden (nodes, claimpunten, doelen) over land. Bouwvolgorde (buildOrder, site hq tenzij anders): woning op 5 s, werkplaats op 30 s, een tweede werkplaats als depot bij het eigen claimpunt het dichtst bij huis op 150 s (site claim), een turret aan het front op 240 s (site front: bij het eigen claimpunt het dichtst bij de vijand), lab op 300 s en een turret bij het hoofdgebouw op 540 s (data 0.12.0, was bij het eigen claimpunt: op de grote map komt een push op het hoofdgebouw nooit langs dat punt, dus die turret schoot nooit). Een gesloopte werkplaats bouwt hij als eerste opnieuw. Huisvesting: een woning (housingBuildingId) zodra er housingFreeBeds of minder vrije bedden zijn, tot popCapMax. Onderzoek (research): de techs in deze volgorde vanaf researchFromS, zodra hij ze kan betalen. Leger (armyLoadouts): patrol zodra geweerrek er is, anders militie. Militie-aandeel: militiaPct, plus militiaPctPerMin procentpunt per minuut tot militiaPctMax; met een vijand binnen defendRadiusM van een eigen gebouw minstens threatMilitiaPct, en de vrije militie gaat erop af. Hij houdt builders bouwers. Plunderaars: hoogstens scavengersPerNode per node, exclusieve nodes eerst, dan de kortste rit; wie geen plek heeft, wordt militie. Boven richScrap schoolt hij militie om naar patrol en bouwt hij richBuilds (een verloren turret komt terug); data 0.12.0: richScrap 300 (was 400) en vijf turrets (was drie), zodat een winnende AI met een vol leger zijn scrap blijft uitgeven. Zolang hij spaart voor de bouwvolgorde, schoolt hij alleen om tot militie van wat erboven zit. Claimen: vanaf claimFromS eerst de neutrale punten aan de eigen kant, dan de rest, elk het dichtst bij huis; verder dan claimSafeRadiusM met de vrije militie als escorte, een punt dat niet aan de eigen kant ligt (het midden) pas vanaf claimFarFromS plus 0 tot waveJitterS (sim.rng, één keer per potje): data 0.12.0 990 s (was 480), zodat wie het midden houdt pas rond minuut 25 op dominantie kan winnen en de push van de ander op tijd komt. Verzamelpunt tussen de golven: rallySite front (data 0.12.0, was hq), het eigen claimpunt het dichtst bij de vijand, binnen rallyRadiusM: op de grote Rustbelt staat het leger zo bij het midden als hij dat houdt, zodat dominantie te verdedigen is (met hq brak elke raid het midden en won dominantie nooit). Golven: op attackTimersS, daarna elke waveIntervalS plus 0 tot waveJitterS (sim.rng; data 0.12.0 60 s, was 30, ook als een golf vervalt); minstens waveMinArmy militie plus waveArmyGrowth per eerdere golf, of na waveMaxWaitS wachten met waveMinArmy. Vóór pushFromS of met minder dan pushMinArmy militie is een golf een raid, alleen als de vijand genoeg claimpunten voor dominantie houdt: op een van zijn claimpunten (om de beurt, het dichtst bij huis eerst), met een bouwer die er een claimpaal naast zet (tot hij die kan betalen wacht de raid en spaart hij), daarna terug; anders vervalt de golf. Daarna een push op het hoofdgebouw: pushFromS 1440 s (minuut 24; data 0.12.0, was 1680) zodat het potje op de grote map tussen 25 en 35 minuten beslist. allInWithoutNodes: zonder bruikbare scrap-node gaat elke golf met de plunderaars mee naar het hoofdgebouw. Metingen staan in packages/data/CHANGELOG.md."
+  "_comment": "Scripted AI van de Dwellers. Alle getallen sturen packages/sim/src/systems/ai.ts; hij geeft gewone commando's, geen cheats, en meet verre afstanden (nodes, claimpunten, doelen) over land. Bouwvolgorde (buildOrder, site hq tenzij anders): woning op 5 s, werkplaats op 30 s, een tweede werkplaats als depot bij het eigen claimpunt het dichtst bij huis op 150 s (site claim), een turret aan het front op 240 s (site front: bij het eigen claimpunt het dichtst bij de vijand), lab op 300 s en een turret bij het hoofdgebouw op 540 s (data 0.12.0, was bij het eigen claimpunt: op de grote map komt een push op het hoofdgebouw nooit langs dat punt, dus die turret schoot nooit). Een gesloopte werkplaats bouwt hij als eerste opnieuw. Huisvesting: een woning (housingBuildingId) zodra er housingFreeBeds of minder vrije bedden zijn, tot popCapMax. Onderzoek (research): de techs in deze volgorde vanaf researchFromS, zodra hij ze kan betalen. Leger (armyLoadouts): patrol zodra geweerrek er is, anders militie. Militie-aandeel: militiaPct, plus militiaPctPerMin procentpunt per minuut tot militiaPctMax; met een vijand binnen defendRadiusM van een eigen gebouw minstens threatMilitiaPct, en de vrije militie gaat erop af. Hij houdt builders bouwers. Plunderaars: hoogstens scavengersPerNode per node, exclusieve nodes eerst, dan de kortste rit; wie geen plek heeft, wordt militie. Boven richScrap schoolt hij militie om naar patrol en bouwt hij richBuilds (een verloren turret komt terug); data 0.12.0: richScrap 300 (was 400) en vijf turrets (was drie), zodat een winnende AI met een vol leger zijn scrap blijft uitgeven. Zolang hij spaart voor de bouwvolgorde, schoolt hij alleen om tot militie van wat erboven zit. Claimen: vanaf claimFromS eerst de neutrale punten aan de eigen kant, dan de rest, elk het dichtst bij huis; verder dan claimSafeRadiusM met de vrije militie als escorte, een punt dat niet aan de eigen kant ligt (het midden) pas vanaf claimFarFromS plus 0 tot waveJitterS (sim.rng, één keer per potje): data 0.12.0 990 s (was 480), zodat wie het midden houdt pas rond minuut 25 op dominantie kan winnen en de push van de ander op tijd komt. Verzamelpunt tussen de golven: rallySite front (data 0.12.0, was hq), het eigen claimpunt het dichtst bij de vijand, binnen rallyRadiusM: op de grote Rustbelt staat het leger zo bij het midden als hij dat houdt, zodat dominantie te verdedigen is (met hq brak elke raid het midden en won dominantie nooit). Golven: op attackTimersS, daarna elke waveIntervalS plus 0 tot waveJitterS (sim.rng; data 0.12.0 60 s, was 30, ook als een golf vervalt); minstens waveMinArmy militie plus waveArmyGrowth per eerdere golf, of na waveMaxWaitS wachten met waveMinArmy. Vóór pushFromS of met minder dan pushMinArmy militie is een golf een raid, alleen als de vijand genoeg claimpunten voor dominantie houdt: op een van zijn claimpunten (om de beurt, het dichtst bij huis eerst), met een bouwer die er een claimpaal naast zet (tot hij die kan betalen wacht de raid en spaart hij), daarna terug; anders vervalt de golf. Daarna een push op het hoofdgebouw: pushFromS 1440 s (minuut 24; data 0.12.0, was 1680) zodat het potje op de grote map tussen 25 en 35 minuten beslist. allInWithoutNodes: zonder bruikbare scrap-node gaat elke golf met de plunderaars mee naar het hoofdgebouw. Metingen staan in packages/data/CHANGELOG.md. Data 0.15.0 (content, de nieuwe Dwellers-content; ter afstemming door de sim-agent, NIET gemeten): bouwvolgorde krijgt op 660 s een robotfabriek (hq; de AI onderzoekt eerst robotica via de keten van prereqTech); research krijgt achteraan robotica, lasertechniek, turret_netwerk, turret_schade, turret_bereik en sentinel_protocol (de bestaande volgorde is ongewijzigd); de laatste drie richBuilds zijn laserturrets (turret_laser, zelfde plaatsen: front, hq, claim; de AI onderzoekt lasertechniek eerst); nieuw veld robots: vanaf fromS 840 s (minuut 14) bouwt de AI in de robotfabriek robots in de cyclische volgorde van sequence (beveiligingsrobot, beveiligingsrobot, reparatiedrone, sentinel; een nog niet beschikbaar loadout slaat hij over, dus zonder sentinel_protocol alleen de eerste drie), zodra hij het kan betalen en de pop-cap het toelaat, tot hoogstens max (8) levende robots. max is bewust hoogstens builders maal robotsPerTechnician (2 maal 4): met de twee bouwers heeft elke robot een technicus (een test bewaakt dit). Robots zijn geen militia: ze tellen niet mee in waveMinArmy of pushMinArmy en omscholing (richScrap) raakt ze niet; of ze met een golf meegaan bepaalt de sim-agent. armyLoadouts is ongewijzigd (patrol, militie); de nieuwe wapentiers (geweer_leer, shotgun_*, slagwapen_*) gebruikt de AI niet."
 }

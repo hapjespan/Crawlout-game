@@ -9,7 +9,9 @@ const comment = z.string().optional(); // _comment: bedoeling van de waarde; ver
 export const ArmorType = z.enum(['none', 'light', 'medium', 'heavy', 'robot']);
 export const DamageType = z.enum(['ballistic', 'energy', 'melee', 'fire']);
 export const BodyType = z.enum(['human', 'robot']);
-export const Role = z.enum(['scavenger', 'builder', 'militia']);
+// Volgorde = index in ROLES (GameData). Nieuwe rollen staan achteraan zodat bestaande indices gelijk blijven.
+// technician en robot (data 0.15.0): de technicus-regel en de Robotfabriek van de Dwellers.
+export const Role = z.enum(['scavenger', 'builder', 'militia', 'technician', 'robot']);
 export const Archetype = z.enum(['bouwer', 'krijger', 'tacticus']);
 export const Provides = z.enum([
   'werkplaats',
@@ -23,6 +25,39 @@ export const Provides = z.enum([
 ]);
 export const Stat = z.enum(['S', 'P', 'E', 'C', 'I', 'A', 'L']);
 
+// Vangnet (Spelfundament 4, data 0.15.0). Per factie een eigen actie; nu bekend: radiobaken_instroom (Dwellers).
+// De arrival-velden (intervalS, maxArrivals, loadoutId) zijn verplicht bij die actie en verboden bij een andere.
+export const SafetyNetAction = z.enum(['radiobaken_instroom']);
+export const SafetyNet = z
+  .object({
+    threshold: z.number().int().nonnegative(),
+    action: SafetyNetAction,
+    intervalS: nonneg.optional(),
+    maxArrivals: z.number().int().positive().optional(),
+    loadoutId: id.optional(),
+  })
+  .strict()
+  .superRefine((n, ctx) => {
+    const needed = n.action === 'radiobaken_instroom';
+    for (const field of ['intervalS', 'maxArrivals', 'loadoutId'] as const) {
+      if (needed && n[field] === undefined)
+        ctx.addIssue({ code: 'custom', path: [field], message: `verplicht bij ${n.action}` });
+      if (!needed && n[field] !== undefined)
+        ctx.addIssue({ code: 'custom', path: [field], message: `niet toegestaan bij ${n.action}` });
+    }
+    if (needed && n.intervalS !== undefined && n.intervalS <= 0)
+      ctx.addIssue({ code: 'custom', path: ['intervalS'], message: 'moet groter dan 0 zijn' });
+  });
+
+// Robotregels van een factie met robots (data 0.15.0): de technicus-regel. Zie het _comment in data/factions.json.
+export const RobotRules = z
+  .object({
+    robotsPerTechnician: z.number().int().positive(),
+    technicianRoles: z.array(Role).min(1),
+    robotPenaltyPct: z.number().min(0).max(100),
+  })
+  .strict();
+
 export const Faction = z
   .object({
     id,
@@ -31,11 +66,38 @@ export const Faction = z
     startUnits: z.array(z.object({ loadoutId: id, count: z.number().int().positive() }).strict()),
     startScrap: nonneg,
     housingGrowthPerMin: nonneg,
-    safetyNet: z.object({ threshold: z.number().int().nonnegative(), action: z.string() }).strict(),
+    safetyNet: SafetyNet,
+    robotRules: RobotRules.optional(), // alleen een factie met bodyType robot
     uniqueUnits: z.array(id),
     uniqueBuildings: z.array(id),
     specialChannel: z.enum(['training', 'chems', 'tech']),
     _comment: comment,
+  })
+  .strict()
+  .superRefine((f, ctx) => {
+    if (f.bodyTypes.includes('robot') !== (f.robotRules !== undefined))
+      ctx.addIssue({
+        code: 'custom',
+        path: ['robotRules'],
+        message: 'verplicht bij bodyType robot en anders niet toegestaan',
+      });
+  });
+
+// Reparatie van een support-robot (data 0.15.0). targets: wat hij repareert (eigen units van bodyType robot en eigen gebouwen).
+export const RepairTarget = z.enum(['building', 'robot']);
+export const Repair = z
+  .object({
+    repairRateHpPerS: nonneg, // hp per seconde die hij op een doel in bereik herstelt
+    rangeM: nonneg, // afstand (tot de rand van een footprint of het midden van een unit) waarbinnen hij repareert
+    seekRangeM: nonneg, // afstand waarbinnen hij zelf een beschadigd doel zoekt als hij niets te doen heeft
+    targets: z.array(RepairTarget).min(1),
+  })
+  .strict();
+// Belegering (data 0.15.0): extra schade tegen gebouwen, bovenop de damage-matrix.
+export const Siege = z
+  .object({
+    vsBuildingsDamagePct: nonneg, // 150 = 150 procent extra (dus 250 procent in totaal) tegen gebouwen
+    buildingsFirst: z.boolean(), // kiest zelf eerst een gebouw als doel, daarna pas units
   })
   .strict();
 
@@ -60,7 +122,47 @@ export const Loadout = z
     popCost: z.number().int().positive(),
     prereqTech: z.array(id),
     visuals: z.object({ meshSlots: z.record(z.string(), z.string()) }).strict(), // slot -> manifest-id
+    // Data 0.15.0: waar een unit gemaakt wordt. Afwezig = omscholen van een bewoner in de werkplaats (alle bewoners).
+    // Aanwezig = gebouw-id waar de unit nieuw gebouwd wordt (robots); verplicht bij bodyType robot, verboden bij human.
+    producedAt: id.optional(),
+    repair: Repair.optional(), // alleen role robot
+    siege: Siege.optional(), // alleen role robot
     _comment: comment,
+  })
+  .strict()
+  .superRefine((l, ctx) => {
+    const robot = l.bodyType === 'robot';
+    if (robot !== (l.role === 'robot'))
+      ctx.addIssue({
+        code: 'custom',
+        path: ['role'],
+        message: 'role robot hoort bij bodyType robot en andersom',
+      });
+    if (robot && l.producedAt === undefined)
+      ctx.addIssue({
+        code: 'custom',
+        path: ['producedAt'],
+        message: 'verplicht bij bodyType robot',
+      });
+    if (!robot && l.producedAt !== undefined)
+      ctx.addIssue({
+        code: 'custom',
+        path: ['producedAt'],
+        message: 'niet toegestaan bij bodyType human',
+      });
+    for (const field of ['repair', 'siege'] as const)
+      if (l[field] !== undefined && !robot)
+        ctx.addIssue({ code: 'custom', path: [field], message: 'alleen voor een robot' });
+  });
+
+// Turret-netwerk (data 0.15.0): een turret krijgt extra schade voor elke andere eigen voltooide turret binnen radiusM,
+// gemaximeerd, zodra requiresTech onderzocht is. Alleen voor een gebouw met provides turret.
+export const TurretNetwork = z
+  .object({
+    requiresTech: id, // tech die het netwerk activeert
+    radiusM: nonneg, // straal rond het midden van de turret
+    damagePctPerTurret: nonneg, // procent extra schade per andere turret in de straal
+    maxDamagePct: nonneg, // bovengrens van het totale netwerkbonus
   })
   .strict();
 
@@ -84,11 +186,20 @@ export const Building = z
     damageType: DamageType.optional(),
     rangeM: nonneg.optional(),
     cooldownS: nonneg.optional(),
+    network: TurretNetwork.optional(), // data 0.15.0, alleen bij provides turret
     _comment: comment,
   })
   .strict()
   .superRefine((b, ctx) => {
-    if (!b.provides.includes('turret')) return;
+    if (!b.provides.includes('turret')) {
+      if (b.network !== undefined)
+        ctx.addIssue({
+          code: 'custom',
+          path: ['network'],
+          message: 'alleen voor een gebouw met provides turret',
+        });
+      return;
+    }
     for (const field of ['damage', 'damageType', 'rangeM', 'cooldownS'] as const) {
       if (b[field] === undefined)
         ctx.addIssue({
@@ -116,6 +227,8 @@ export const EffectStat = z.enum([
   'I',
   'A',
   'L',
+  // Data 0.15.0: kosten van onderzoek in procenten (negatief = goedkoper); target 'alle'. Achteraan, zodat de indices gelijk blijven.
+  'researchCostPct',
 ]);
 export const Effect = z
   .object({ stat: EffectStat, target: z.string(), delta: z.number() })
@@ -188,6 +301,9 @@ export const Hero = z
     xpPerAssist: z.number().int().nonnegative(),
     xpAssistRadiusM: nonneg,
     abilities: z.array(Ability),
+    // Data 0.15.0: passieve effecten van de held voor zijn speler, zolang hij leeft; zelfde semantiek als perk-effecten
+    // (optelbaar, geschaald met revivePenaltyPct per oplap, weg als de held dood of leeg is).
+    passives: z.array(Effect),
     perkPool: z.array(id),
     reviveScrap: nonneg,
     reviveS: nonneg,
@@ -204,6 +320,26 @@ export const Perk = z
     flavourText: z.string(),
     requires: z.object({ stat: Stat, min: z.number().int() }).strict(),
     effects: z.array(Effect),
+    _comment: comment,
+  })
+  .strict();
+
+// Trainingsprogramma (data 0.15.0, SPECIAL-kanaal 'training' van de Dwellers): koopt +pointsPerRun punten op een SPECIAL-letter
+// van de held van de speler, in een gebouw met provides training. Elke run kost scrapCost + scrapCostStep maal het aantal
+// al getrainde punten op die letter en duurt trainS + trainSStep maal dat aantal; hoogstens maxPoints punten per letter.
+export const Training = z
+  .object({
+    id,
+    faction: id,
+    special: Stat,
+    building: id,
+    scrapCost: nonneg,
+    scrapCostStep: nonneg,
+    trainS: nonneg,
+    trainSStep: nonneg,
+    pointsPerRun: z.number().int().positive(),
+    maxPoints: z.number().int().positive(),
+    prereqTech: z.array(id),
     _comment: comment,
   })
   .strict();
@@ -291,6 +427,15 @@ export const AiScript = z
     waveMaxWaitS: nonneg, // na zoveel seconden wachten vertrekt de golf ook met waveMinArmy
     pushMinArmy: z.number().int().nonnegative(), // een golf van minder militie valt alleen claimpunten aan (een raid); vanaf zoveel gaat hij naar het hoofdgebouw
     pushFromS: nonneg, // en dat pas vanaf deze speeltijd; daarvoor is elke golf een raid
+    // Data 0.15.0: robotproductie van de AI (optioneel, alleen een factie met robots)
+    robots: z
+      .object({
+        sequence: z.array(id).min(1), // loadouts in cyclische volgorde; een nog niet beschikbare slaat hij over
+        fromS: nonneg, // vanaf deze speeltijd
+        max: z.number().int().positive(), // hoogstens zoveel levende robots
+      })
+      .strict()
+      .optional(),
     allInWithoutNodes: z.boolean(), // zonder bruikbare scrap-node (geen inkomen meer) gaan elke golf naar het hoofdgebouw, met de plunderaars mee
     _comment: comment,
   })
@@ -346,6 +491,7 @@ export type Ability = z.infer<typeof Ability>;
 export type Hero = z.infer<typeof Hero>;
 export type EffectStat = z.infer<typeof EffectStat>;
 export type Perk = z.infer<typeof Perk>;
+export type Training = z.infer<typeof Training>;
 export type MapDef = z.infer<typeof MapDef>;
 export type AiScript = z.infer<typeof AiScript>;
 export type DamageMatrix = z.infer<typeof DamageMatrix>;

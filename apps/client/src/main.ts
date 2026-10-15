@@ -309,7 +309,12 @@ async function main(): Promise<void> {
         const e = entities.get(id)!;
         const l = loadoutOf(e.typeId);
         const name = l?.key ?? heroOf(e.typeId)?.naam ?? buildingOf(e.typeId)?.key ?? null;
-        const role = l === undefined ? null : (ROLES[l.role] ?? null);
+        // The protocol Role has only the three SetRole roles; technician and robot (data 0.15.0) show as no role for now.
+        const dataRole = l === undefined ? undefined : ROLES[l.role];
+        const role =
+          dataRole === 'scavenger' || dataRole === 'builder' || dataRole === 'militia'
+            ? dataRole
+            : null;
         return { id, typeId: e.typeId, loadoutName: name, hpPct: e.hpPct, role };
       }),
     getNetwork: () => network,

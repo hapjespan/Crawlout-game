@@ -1,0 +1,37 @@
+[
+  {
+    "id": "training_kracht", "faction": "dwellers", "special": "S", "building": "trainingsfaciliteit",
+    "scrapCost": 100, "scrapCostStep": 60, "trainS": 40, "trainSStep": 20, "pointsPerRun": 1, "maxPoints": 3, "prereqTech": [],
+    "_comment": "startwaarde, geen balans. Training Strength (Kracht): +1 punt op de letter S van de held per run, hoogstens 3 punten. Eerste run 100 scrap en 40 s, de tweede 160 scrap en 60 s, de derde 220 scrap en 80 s (samen 480 scrap en 180 s per letter, 3360 scrap en 21 minuten voor alle zeven). Effect van een punt: schade van de held (sim.json specialStrengthDamagePct per punt). TRAININGSPROGRAMMA'S (data 0.15.0, SPECIAL-kanaal van de Dwellers, Spelfundament 4 en 5), de regel voor de sim: in een voltooide eigen trainingsfaciliteit (provides training) start de speler dit programma (kosten meteen, zoals onderzoek; één programma tegelijk per gebouw; Cancel geeft de kosten terug volgens sim.json cancelRefundPct). Een run duurt trainS + trainSStep maal het aantal punten dat de speler al getraind heeft op deze letter, en kost scrapCost + scrapCostStep maal dat aantal; klaar geeft pointsPerRun (1) punt. Hoogstens maxPoints (3) getrainde punten per letter, het programma is daarna niet meer te starten. De getrainde punten horen bij de SPECIAL-letter van de held van de speler (heroSpecial = basis uit heroes.json + getraind + perk-effecten op die letter) en tellen voor perk-eisen (perks.json requires) en voor de SPECIAL-bonussen in sim.json. Ze blijven staan als de held sneuvelt of wordt opgelapt (het is training van de speler, geen perk: de oplap-straf van 20 procent raakt alleen perks en health), en ze werken ook als de held nog niet in het potje is. De basisletters van de Opziener plus maxPoints blijven hoogstens 10 (SPECIAL-plafond; een test bewaakt dat). Een programma vraagt de prereqTech van het programma (nu geen) en de trainingsfaciliteit zelf vraagt tech raffinage."
+  },
+  {
+    "id": "training_waarneming", "faction": "dwellers", "special": "P", "building": "trainingsfaciliteit",
+    "scrapCost": 100, "scrapCostStep": 60, "trainS": 40, "trainSStep": 20, "pointsPerRun": 1, "maxPoints": 3, "prereqTech": [],
+    "_comment": "startwaarde, geen balans. Training Perception (Waarneming): +1 punt op de letter P van de held per run, hoogstens 3 punten. Eerste run 100 scrap en 40 s, de tweede 160 scrap en 60 s, de derde 220 scrap en 80 s (samen 480 scrap en 180 s per letter, 3360 scrap en 21 minuten voor alle zeven). Effect van een punt: wapenbereik van de held (specialPerceptionRangeM per punt). Regels voor alle programma's: zie training_kracht."
+  },
+  {
+    "id": "training_uithouding", "faction": "dwellers", "special": "E", "building": "trainingsfaciliteit",
+    "scrapCost": 100, "scrapCostStep": 60, "trainS": 40, "trainSStep": 20, "pointsPerRun": 1, "maxPoints": 3, "prereqTech": [],
+    "_comment": "startwaarde, geen balans. Training Endurance (Uithouding): +1 punt op de letter E van de held per run, hoogstens 3 punten. Eerste run 100 scrap en 40 s, de tweede 160 scrap en 60 s, de derde 220 scrap en 80 s (samen 480 scrap en 180 s per letter, 3360 scrap en 21 minuten voor alle zeven). Effect van een punt: hp van de held (specialEnduranceHpPct per punt). Regels voor alle programma's: zie training_kracht."
+  },
+  {
+    "id": "training_charisma", "faction": "dwellers", "special": "C", "building": "trainingsfaciliteit",
+    "scrapCost": 100, "scrapCostStep": 60, "trainS": 40, "trainSStep": 20, "pointsPerRun": 1, "maxPoints": 3, "prereqTech": [],
+    "_comment": "startwaarde, geen balans. Training Charisma: +1 punt op de letter C van de held per run, hoogstens 3 punten. Eerste run 100 scrap en 40 s, de tweede 160 scrap en 60 s, de derde 220 scrap en 80 s (samen 480 scrap en 180 s per letter, 3360 scrap en 21 minuten voor alle zeven). Effect van een punt: huisvestingsgroei van de speler zolang de held leeft (specialCharismaGrowthPct per punt). Regels voor alle programma's: zie training_kracht."
+  },
+  {
+    "id": "training_intelligentie", "faction": "dwellers", "special": "I", "building": "trainingsfaciliteit",
+    "scrapCost": 100, "scrapCostStep": 60, "trainS": 40, "trainSStep": 20, "pointsPerRun": 1, "maxPoints": 3, "prereqTech": [],
+    "_comment": "startwaarde, geen balans. Training Intelligence (Intelligentie): +1 punt op de letter I van de held per run, hoogstens 3 punten. Eerste run 100 scrap en 40 s, de tweede 160 scrap en 60 s, de derde 220 scrap en 80 s (samen 480 scrap en 180 s per letter, 3360 scrap en 21 minuten voor alle zeven). Effect van een punt: onderzoekstijd van de speler zolang de held leeft (specialIntelligenceResearchPct per punt). Regels voor alle programma's: zie training_kracht."
+  },
+  {
+    "id": "training_behendigheid", "faction": "dwellers", "special": "A", "building": "trainingsfaciliteit",
+    "scrapCost": 100, "scrapCostStep": 60, "trainS": 40, "trainSStep": 20, "pointsPerRun": 1, "maxPoints": 3, "prereqTech": [],
+    "_comment": "startwaarde, geen balans. Training Agility (Behendigheid): +1 punt op de letter A van de held per run, hoogstens 3 punten. Eerste run 100 scrap en 40 s, de tweede 160 scrap en 60 s, de derde 220 scrap en 80 s (samen 480 scrap en 180 s per letter, 3360 scrap en 21 minuten voor alle zeven). Effect van een punt: snelheid van de held (specialAgilitySpeedPct per punt). Regels voor alle programma's: zie training_kracht."
+  },
+  {
+    "id": "training_geluk", "faction": "dwellers", "special": "L", "building": "trainingsfaciliteit",
+    "scrapCost": 100, "scrapCostStep": 60, "trainS": 40, "trainSStep": 20, "pointsPerRun": 1, "maxPoints": 3, "prereqTech": [],
+    "_comment": "startwaarde, geen balans. Training Luck (Geluk): +1 punt op de letter L van de held per run, hoogstens 3 punten. Eerste run 100 scrap en 40 s, de tweede 160 scrap en 60 s, de derde 220 scrap en 80 s (samen 480 scrap en 180 s per letter, 3360 scrap en 21 minuten voor alle zeven). Effect van een punt: kritieke schoten van de held (specialLuckCritPct per punt). Regels voor alle programma's: zie training_kracht."
+  }
+]

@@ -37,6 +37,7 @@ export function loadClientGameData(): GameData {
     tech: file('tech.json'),
     heroes: file('heroes.json'),
     perks: file('perks.json'),
+    training: file('training.json'),
     damageMatrix: file('damage-matrix.json'),
     sim: file('sim.json'),
     ai: Object.keys(ai)

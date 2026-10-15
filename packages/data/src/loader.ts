@@ -11,15 +11,23 @@ import {
   Hero,
   Loadout,
   Perk,
+  RepairTarget,
   Role,
   SimTuning,
   Stat,
   Tech,
+  Training,
   BodyType,
   Provides,
   Archetype,
 } from './schemas.js';
-import { metersToUnits, mpsToUnitsPerTick, pctToPermille, secondsToTicks } from './units.js';
+import {
+  metersToUnits,
+  mpsToUnitsPerTick,
+  pctToPermille,
+  perSecondToMilliPerTick,
+  secondsToTicks,
+} from './units.js';
 
 // De loader: PUUR. Geen fs, geen IO, geen klok. Krijgt geparste JSON, valideert met de zod-schema's,
 // rekent om naar sim-eenheden (integers) en geeft numerieke ids terug (index op gesorteerde string-id).
@@ -35,6 +43,8 @@ export interface RawGameData {
   tech: unknown;
   heroes: unknown;
   perks: unknown;
+  /** Inhoud van data/training.json (data 0.15.0). */
+  training: unknown;
   damageMatrix: unknown;
   /** Inhoud van data/sim.json. */
   sim: unknown;
@@ -50,6 +60,8 @@ export const ROLES = Role.options;
 export const ARCHETYPES = Archetype.options;
 export const PROVIDES = Provides.options;
 export const STATS = Stat.options;
+/** Doelen die een support-robot kan repareren; de index staat in LoadoutData.repair.targets. */
+export const REPAIR_TARGETS = RepairTarget.options;
 
 export interface EffectData {
   stat: EffectStat;
@@ -57,6 +69,15 @@ export interface EffectData {
   target: string;
   /** Pct-stat: promille. M-stat: sim-eenheden. S-stat: ticks. Anders: ruw geheel getal. Zie convertDelta. */
   delta: number;
+}
+
+export interface RobotRulesData {
+  /** Eén technicus (een levende bewoner met een rol uit technicianRoles) dekt zoveel robots. */
+  robotsPerTechnician: number;
+  /** Indices in ROLES. */
+  technicianRoles: number[];
+  /** Een robot zonder technicus werkt op (1000 - robotPenaltyPermille) promille: 1000 = werkt niet. */
+  robotPenaltyPermille: number;
 }
 
 export interface FactionData {
@@ -68,7 +89,21 @@ export interface FactionData {
   startScrap: number;
   /** Bewoners per minuut, ruw (de sim rekent zelf naar ticks). */
   housingGrowthPerMin: number;
-  safetyNet: { threshold: number; action: string };
+  /**
+   * Vangnet (data 0.15.0). Bij action radiobaken_instroom: zolang het aantal eigen bewoners (levende units van bodyType human, zonder
+   * held en robots) onder threshold ligt en er een voltooid gebouw met provides beacon staat, komt er elke intervalTicks een bewoner
+   * van loadoutId bij het baken, zonder bedden-eis en binnen popCapMax, hoogstens maxArrivals keer per speler per potje.
+   */
+  safetyNet: {
+    threshold: number;
+    action: string;
+    intervalTicks: number;
+    maxArrivals: number;
+    /** loadout-id van de bewoner die aankomt; -1 als de actie geen aankomst heeft. */
+    loadoutId: number;
+  };
+  /** De technicus-regel (data 0.15.0); null voor een factie zonder robots. */
+  robotRules: RobotRulesData | null;
   uniqueUnits: number[]; // loadout-ids
   uniqueBuildings: number[]; // building-ids
   specialChannel: 'training' | 'chems' | 'tech';
@@ -97,6 +132,37 @@ export interface LoadoutData {
   popCost: number;
   prereqTech: number[]; // tech-ids
   visuals: { meshSlots: Record<string, string> };
+  /** Gebouw-id waar de unit nieuw gebouwd wordt (robots), of -1: omscholen van een bewoner in de werkplaats. */
+  producedAt: number;
+  /** Support-robot (data 0.15.0); null voor de rest. */
+  repair: RepairData | null;
+  /** Belegering (data 0.15.0); null voor de rest. */
+  siege: SiegeData | null;
+}
+
+export interface RepairData {
+  /** Herstel in duizendsten hp per tick (12 hp/s is 600): optellen, per 1000 een hele hp. */
+  milliHpPerTick: number;
+  rangeU: number;
+  seekRangeU: number;
+  /** Indices in REPAIR_TARGETS. */
+  targets: number[];
+}
+
+export interface SiegeData {
+  /** Extra schade tegen gebouwen in promille (1500 = 150 procent extra), bovenop de damage-matrix. */
+  vsBuildingsPermille: number;
+  buildingsFirst: boolean;
+}
+
+export interface TurretNetworkData {
+  /** tech-id die het netwerk activeert. */
+  requiresTech: number;
+  radiusU: number;
+  /** Promille extra schade per andere eigen voltooide turret binnen radiusU. */
+  damagePermillePerTurret: number;
+  /** Bovengrens van de netwerkbonus in promille. */
+  maxDamagePermille: number;
 }
 
 export interface BuildingData {
@@ -117,6 +183,8 @@ export interface BuildingData {
   damageType: number; // index in DAMAGE_TYPES
   rangeU: number;
   cooldownTicks: number;
+  /** Turret-netwerk (data 0.15.0); null voor een gebouw zonder. */
+  network: TurretNetworkData | null;
 }
 
 export interface TechData {
@@ -165,6 +233,8 @@ export interface HeroData {
   xpPerAssist: number;
   xpAssistRadiusU: number;
   abilities: AbilityData[];
+  /** Passieve effecten voor de speler zolang de held leeft (data 0.15.0); zelfde omrekening en semantiek als perk-effecten. */
+  passives: EffectData[];
   perkPool: number[]; // perk-ids
   reviveScrap: number;
   reviveTicks: number;
@@ -180,6 +250,26 @@ export interface PerkData {
   flavourText: string;
   requires: { stat: number; min: number }; // stat = index in STATS
   effects: EffectData[];
+}
+
+export interface TrainingProgramData {
+  id: number;
+  key: string;
+  factionId: number;
+  /** Index in STATS (S P E C I A L). */
+  special: number;
+  /** Gebouw-id waar het programma loopt (provides training). */
+  buildingId: number;
+  /** Kosten van de eerste run en de extra kosten per al getraind punt op die letter. */
+  scrapCost: number;
+  scrapCostStep: number;
+  /** Duur van de eerste run en de extra duur per al getraind punt, in ticks. */
+  trainTicks: number;
+  trainTicksStep: number;
+  pointsPerRun: number;
+  /** Hoogstens zoveel getrainde punten per letter. */
+  maxPoints: number;
+  prereqTech: number[];
 }
 
 /** Plaats van een AI-gebouw (AiSite): index in AI_SITES. */
@@ -224,6 +314,8 @@ export interface AiScriptData {
   waveMaxWaitTicks: number;
   pushMinArmy: number;
   pushFromTicks: number;
+  /** Robotproductie (data 0.15.0); null als het script geen robots bouwt. */
+  robots: { sequence: number[]; fromTicks: number; max: number } | null;
   allInWithoutNodes: boolean;
 }
 
@@ -269,6 +361,8 @@ export interface GameData {
   tech: TechData[];
   heroes: HeroData[];
   perks: PerkData[];
+  /** Trainingsprogramma's (data 0.15.0). */
+  training: TrainingProgramData[];
   aiScripts: AiScriptData[];
   /** damageMatrix[damageTypeIndex][armorTypeIndex] = multiplier in promille (1000 = 100 procent). */
   damageMatrix: number[][];
@@ -379,6 +473,7 @@ export function loadGameData(raw: RawGameData): GameData {
   const techRaw = sortById('tech.json', parseList('tech.json', Tech, raw.tech));
   const heroesRaw = sortById('heroes.json', parseList('heroes.json', Hero, raw.heroes));
   const perksRaw = sortById('perks.json', parseList('perks.json', Perk, raw.perks));
+  const trainingRaw = sortById('training.json', parseList('training.json', Training, raw.training));
   const matrixRaw = parseWith('damage-matrix.json', DamageMatrix, raw.damageMatrix);
   const simRaw = parseWith('sim.json', SimTuning, raw.sim);
   const aiRaw = sortById(
@@ -408,7 +503,24 @@ export function loadGameData(raw: RawGameData): GameData {
       })),
       startScrap: Math.trunc(f.startScrap),
       housingGrowthPerMin: Math.trunc(f.housingGrowthPerMin),
-      safetyNet: { threshold: f.safetyNet.threshold, action: f.safetyNet.action },
+      safetyNet: {
+        threshold: f.safetyNet.threshold,
+        action: f.safetyNet.action,
+        intervalTicks: secondsToTicks(f.safetyNet.intervalS ?? 0),
+        maxArrivals: f.safetyNet.maxArrivals ?? 0,
+        loadoutId:
+          f.safetyNet.loadoutId === undefined
+            ? -1
+            : ref(loadoutIx, 'loadout', `${where} safetyNet`, f.safetyNet.loadoutId),
+      },
+      robotRules:
+        f.robotRules === undefined
+          ? null
+          : {
+              robotsPerTechnician: f.robotRules.robotsPerTechnician,
+              technicianRoles: f.robotRules.technicianRoles.map((r) => idx(ROLES, r)),
+              robotPenaltyPermille: pctToPermille(f.robotRules.robotPenaltyPct),
+            },
       uniqueUnits: f.uniqueUnits.map((u) => ref(loadoutIx, 'loadout', where, u)),
       uniqueBuildings: f.uniqueBuildings.map((b) => ref(buildingIx, 'gebouw', where, b)),
       specialChannel: f.specialChannel,
@@ -438,6 +550,26 @@ export function loadGameData(raw: RawGameData): GameData {
       popCost: l.popCost,
       prereqTech: l.prereqTech.map((t) => ref(techIx, 'tech', where, t)),
       visuals: { meshSlots: { ...l.visuals.meshSlots } },
+      producedAt:
+        l.producedAt === undefined
+          ? -1
+          : ref(buildingIx, 'gebouw', `${where} producedAt`, l.producedAt),
+      repair:
+        l.repair === undefined
+          ? null
+          : {
+              milliHpPerTick: perSecondToMilliPerTick(l.repair.repairRateHpPerS),
+              rangeU: metersToUnits(l.repair.rangeM),
+              seekRangeU: metersToUnits(l.repair.seekRangeM),
+              targets: l.repair.targets.map((t) => idx(REPAIR_TARGETS, t)),
+            },
+      siege:
+        l.siege === undefined
+          ? null
+          : {
+              vsBuildingsPermille: pctToPermille(l.siege.vsBuildingsDamagePct),
+              buildingsFirst: l.siege.buildingsFirst,
+            },
     };
   });
 
@@ -460,6 +592,15 @@ export function loadGameData(raw: RawGameData): GameData {
       damageType: b.damageType === undefined ? 0 : idx(DAMAGE_TYPES, b.damageType),
       rangeU: metersToUnits(b.rangeM ?? 0),
       cooldownTicks: secondsToTicks(b.cooldownS ?? 0),
+      network:
+        b.network === undefined
+          ? null
+          : {
+              requiresTech: ref(techIx, 'tech', `${where} network`, b.network.requiresTech),
+              radiusU: metersToUnits(b.network.radiusM),
+              damagePermillePerTurret: pctToPermille(b.network.damagePctPerTurret),
+              maxDamagePermille: pctToPermille(b.network.maxDamagePct),
+            },
     };
   });
 
@@ -513,6 +654,7 @@ export function loadGameData(raw: RawGameData): GameData {
           delta: convertDelta(e.stat, e.delta),
         })),
       })),
+      passives: convertEffects(h.passives),
       perkPool: h.perkPool.map((p) => ref(perkIx, 'perk', where, p)),
       reviveScrap: Math.trunc(h.reviveScrap),
       reviveTicks: secondsToTicks(h.reviveS),
@@ -529,6 +671,24 @@ export function loadGameData(raw: RawGameData): GameData {
     requires: { stat: idx(STATS, p.requires.stat), min: p.requires.min },
     effects: convertEffects(p.effects),
   }));
+
+  const training: TrainingProgramData[] = trainingRaw.map((t, id) => {
+    const where = `data/training.json '${t.id}'`;
+    return {
+      id,
+      key: t.id,
+      factionId: ref(factionIx, 'factie', where, t.faction),
+      special: idx(STATS, t.special),
+      buildingId: ref(buildingIx, 'gebouw', where, t.building),
+      scrapCost: Math.trunc(t.scrapCost),
+      scrapCostStep: Math.trunc(t.scrapCostStep),
+      trainTicks: secondsToTicks(t.trainS),
+      trainTicksStep: secondsToTicks(t.trainSStep),
+      pointsPerRun: t.pointsPerRun,
+      maxPoints: t.maxPoints,
+      prereqTech: t.prereqTech.map((p) => ref(techIx, 'tech', where, p)),
+    };
+  });
 
   const aiScripts: AiScriptData[] = aiRaw.map((a, id) => {
     const where = `data/ai '${a.id}'`;
@@ -571,6 +731,16 @@ export function loadGameData(raw: RawGameData): GameData {
       waveMaxWaitTicks: secondsToTicks(a.waveMaxWaitS),
       pushMinArmy: a.pushMinArmy,
       pushFromTicks: secondsToTicks(a.pushFromS),
+      robots:
+        a.robots === undefined
+          ? null
+          : {
+              sequence: a.robots.sequence.map((l) =>
+                ref(loadoutIx, 'loadout', `${where} robots`, l),
+              ),
+              fromTicks: secondsToTicks(a.robots.fromS),
+              max: a.robots.max,
+            },
       allInWithoutNodes: a.allInWithoutNodes,
     };
   });
@@ -589,6 +759,7 @@ export function loadGameData(raw: RawGameData): GameData {
     tech,
     heroes,
     perks,
+    training,
     aiScripts,
     damageMatrix,
     sim: {

@@ -2,6 +2,12 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import {
   AI_SITES,
+  ARMOR_TYPES,
+  BODY_TYPES,
+  DAMAGE_TYPES,
+  REPAIR_TARGETS,
+  ROLES,
+  STATS,
   convertDelta,
   convertDominance,
   cumulate,
@@ -11,7 +17,7 @@ import {
 } from './loader.js';
 import { EffectStat, MapDef } from './schemas.js';
 import { readDataDir } from './node.js';
-import { metersToUnits, secondsToTicks } from './units.js';
+import { metersToUnits, perSecondToMilliPerTick, secondsToTicks } from './units.js';
 
 const dataDir = fileURLToPath(new URL('../../../data', import.meta.url));
 const raw = (): RawGameData => readDataDir(dataDir);
@@ -22,9 +28,24 @@ describe('data/ valideert', () => {
 
   it('bevat de Dwellers-slice in de verwachte aantallen', () => {
     expect(data.factions).toHaveLength(1);
-    expect(data.loadouts.map((l) => l.key)).toEqual(['bouwer', 'militie', 'patrol', 'scavenger']);
-    expect(data.buildings).toHaveLength(8);
-    expect(data.tech).toHaveLength(6);
+    expect(data.loadouts.map((l) => l.key)).toEqual([
+      'beveiligingsrobot',
+      'bouwer',
+      'geweer_leer',
+      'militie',
+      'patrol',
+      'reparatiedrone',
+      'scavenger',
+      'sentinel',
+      'shotgun_composiet',
+      'shotgun_leer',
+      'slagwapen_composiet',
+      'slagwapen_leer',
+      'technicus',
+    ]);
+    expect(data.buildings).toHaveLength(10);
+    expect(data.tech).toHaveLength(14);
+    expect(data.training).toHaveLength(7);
     expect(data.heroes).toHaveLength(1);
     expect(data.perks).toHaveLength(6);
     expect(data.aiScripts).toHaveLength(1);
@@ -39,6 +60,7 @@ describe('data/ valideert', () => {
       data.tech,
       data.heroes,
       data.perks,
+      data.training,
       data.aiScripts,
     ]) {
       list.forEach((record, i) => expect(record.id).toBe(i));
@@ -90,6 +112,8 @@ describe('omrekening naar sim-eenheden', () => {
     expect(data.tech.find((t) => t.key === 'lasergeleiding')!.effects).toEqual([
       { stat: 'damagePct', target: 'turret', delta: 200 },
       { stat: 'rangeM', target: 'turret', delta: 256 },
+      { stat: 'damagePct', target: 'turret_laser', delta: 200 },
+      { stat: 'rangeM', target: 'turret_laser', delta: 256 },
     ]);
     expect(metersToUnits(8)).toBe(2048);
     expect(secondsToTicks(1)).toBe(20);
@@ -368,7 +392,8 @@ describe('sprint 4: turrets in data (besluit 8)', () => {
     expect(turret.damageType).toBe(militie.damageType);
     expect(turret.rangeU).toBe(metersToUnits(12));
     expect(turret.cooldownTicks).toBe(secondsToTicks(1));
-    for (const b of data.buildings.filter((x) => x.key !== 'turret')) {
+    const turretIx = PROVIDES.indexOf('turret');
+    for (const b of data.buildings.filter((x) => !x.provides.includes(turretIx))) {
       expect([b.damage, b.damageType, b.rangeU, b.cooldownTicks], b.key).toEqual([0, 0, 0, 0]);
     }
   });
@@ -402,7 +427,13 @@ describe('balans speltest 14 oktober: AI-script', () => {
       'front',
       'hq',
       'hq',
+      'hq',
     ]);
+    expect(ai.buildOrder[6]).toEqual({
+      atTick: secondsToTicks(660),
+      buildingId: ix(data.buildings, 'robotfabriek'),
+      site: AI_SITES.indexOf('hq'),
+    });
     expect(ai.buildOrder[2]).toEqual({
       atTick: secondsToTicks(150),
       buildingId: ix(data.buildings, 'werkplaats'),
@@ -416,11 +447,21 @@ describe('balans speltest 14 oktober: AI-script', () => {
         'snelle_voeten',
         'bouwrobots',
         'lasergeleiding',
+        'robotica',
+        'lasertechniek',
+        'turret_netwerk',
+        'turret_schade',
+        'turret_bereik',
+        'sentinel_protocol',
       ].map((k) => ix(data.tech, k)),
     );
     expect(ai.armyLoadouts).toEqual([ix(data.loadouts, 'patrol'), ix(data.loadouts, 'militie')]);
     expect(ai.housingBuildingId).toBe(ix(data.buildings, 'woning'));
-    expect(ai.richBuilds.every((o) => o.buildingId === ix(data.buildings, 'turret'))).toBe(true);
+    expect(ai.richBuilds.map((o) => o.buildingId)).toEqual(
+      ['turret', 'turret', 'turret_laser', 'turret_laser', 'turret_laser'].map((k) =>
+        ix(data.buildings, k),
+      ),
+    );
     expect({
       min: ai.militiaPermille,
       max: ai.militiaPermilleMax,
@@ -473,5 +514,379 @@ describe('balans speltest 14 oktober: AI-script', () => {
     const badSite = clone(raw());
     (badSite.ai[0] as { buildOrder: { site?: string }[] }).buildOrder[0]!.site = 'dak';
     expect(() => loadGameData(badSite)).toThrow(/site/);
+  });
+});
+
+describe('content-x (data 0.15.0): robots, technicus, vangnet', () => {
+  const data = loadGameData(raw());
+  const loadout = (key: string) => data.loadouts.find((l) => l.key === key)!;
+  const building = (key: string) => data.buildings.find((b) => b.key === key)!;
+  const tech = (key: string) => data.tech.find((t) => t.key === key)!;
+  const dwellers = data.factions[0]!;
+  const robots = data.loadouts.filter((l) => l.bodyType === BODY_TYPES.indexOf('robot'));
+
+  it('heeft drie robots met bodyType robot, rol robot en producedAt robotfabriek', () => {
+    expect(robots.map((l) => l.key).sort()).toEqual([
+      'beveiligingsrobot',
+      'reparatiedrone',
+      'sentinel',
+    ]);
+    for (const l of robots) {
+      expect(l.role, l.key).toBe(ROLES.indexOf('robot'));
+      expect(l.armorType, l.key).toBe(ARMOR_TYPES.indexOf('robot'));
+      expect(l.producedAt, l.key).toBe(building('robotfabriek').id);
+      expect(l.gatherAmount, l.key).toBe(0);
+      expect(l.prereqTech.length, l.key).toBeGreaterThan(0);
+      expect(l.visuals.meshSlots.body, l.key).toMatch(/^dweller_robot_/);
+    }
+    for (const l of data.loadouts.filter((x) => !robots.includes(x)))
+      expect(l.producedAt, l.key).toBe(-1);
+    expect(dwellers.uniqueUnits.map((u) => data.loadouts[u]!.key).sort()).toEqual([
+      'beveiligingsrobot',
+      'reparatiedrone',
+      'sentinel',
+    ]);
+  });
+
+  it('beveiligingsrobot: tank, traag en veel hp', () => {
+    const guard = loadout('beveiligingsrobot');
+    const militie = loadout('militie');
+    expect(guard.hpI).toBeGreaterThan(5 * militie.hpI);
+    expect(guard.speedUPT).toBeLessThan(militie.speedUPT);
+    expect(guard.repair).toBeNull();
+    expect(guard.siege).toBeNull();
+  });
+
+  it('reparatiedrone: repareert eigen gebouwen en robots, rekent hp per seconde om naar duizendsten per tick', () => {
+    const drone = loadout('reparatiedrone');
+    expect(drone.damage).toBe(0);
+    expect(drone.repair).toEqual({
+      milliHpPerTick: 500, // 10 hp/s: 0,5 hp per tick
+      rangeU: metersToUnits(4),
+      seekRangeU: metersToUnits(14),
+      targets: [REPAIR_TARGETS.indexOf('building'), REPAIR_TARGETS.indexOf('robot')],
+    });
+    expect(perSecondToMilliPerTick(12)).toBe(600);
+    expect(drone.repair!.seekRangeU).toBeGreaterThan(drone.repair!.rangeU);
+  });
+
+  it('sentinel: belegering, groot bereik, bonus tegen gebouwen, laat via een tech', () => {
+    const sentinel = loadout('sentinel');
+    const turret = building('turret');
+    expect(sentinel.siege).toEqual({ vsBuildingsPermille: 1500, buildingsFirst: true });
+    expect(sentinel.rangeU).toBeGreaterThan(2 * turret.rangeU);
+    expect(sentinel.damageType).toBe(DAMAGE_TYPES.indexOf('energy'));
+    expect(sentinel.prereqTech.map((t) => data.tech[t]!.key)).toEqual(['sentinel_protocol']);
+    const chain = tech('sentinel_protocol')
+      .prereqTech.map((t) => data.tech[t]!.key)
+      .sort();
+    expect(chain).toEqual(['lasergeleiding', 'robotica']);
+    expect(tech('sentinel_protocol').researchTicks).toBeGreaterThanOrEqual(secondsToTicks(60));
+  });
+
+  it('robotfabriek: eigen gebouw achter robotica, oneven footprint, zonder nieuwe provides-bit', () => {
+    const f = building('robotfabriek');
+    expect(f.prereqTech.map((t) => data.tech[t]!.key)).toEqual(['robotica']);
+    expect(f.footprint.w % 2).toBe(1);
+    expect(f.footprint.h % 2).toBe(1);
+    expect(f.visuals.mesh).toBe('dweller_building_robotfactory');
+    // provides is een bitmasker van 8 bits (sim config): de lijst mag er geen negende waarde bij krijgen
+    expect(PROVIDES.length).toBeLessThanOrEqual(8);
+    expect(dwellers.uniqueBuildings.map((b) => data.buildings[b]!.key)).toContain('robotfabriek');
+  });
+
+  it('technicus-regel: 1 technicus of bouwer per 4 robots, ongedekt half tempo', () => {
+    expect(dwellers.bodyTypes).toContain(BODY_TYPES.indexOf('robot'));
+    expect(dwellers.robotRules).toEqual({
+      robotsPerTechnician: 4,
+      technicianRoles: [ROLES.indexOf('technician'), ROLES.indexOf('builder')],
+      robotPenaltyPermille: 500,
+    });
+    for (const r of dwellers.robotRules!.technicianRoles)
+      expect(
+        data.loadouts.some((l) => l.role === r && l.bodyType === BODY_TYPES.indexOf('human')),
+      ).toBe(true);
+    expect(loadout('technicus').role).toBe(ROLES.indexOf('technician'));
+    expect(loadout('technicus').bodyType).toBe(BODY_TYPES.indexOf('human'));
+  });
+
+  it('nieuwe rollen staan achteraan zodat bestaande role-indices gelijk blijven', () => {
+    expect(ROLES.slice(0, 3)).toEqual(['scavenger', 'builder', 'militia']);
+    expect(ROLES.slice(3)).toEqual(['technician', 'robot']);
+  });
+
+  it('radiobaken-vangnet: drempel, interval, maximum en de aankomende bewoner', () => {
+    expect(dwellers.safetyNet).toEqual({
+      threshold: 3,
+      action: 'radiobaken_instroom',
+      intervalTicks: secondsToTicks(40),
+      maxArrivals: 12,
+      loadoutId: loadout('scavenger').id,
+    });
+    const beacon = building('radiobaken');
+    expect(beacon.provides).toEqual([PROVIDES.indexOf('beacon')]);
+    expect(loadout('scavenger').bodyType).toBe(BODY_TYPES.indexOf('human'));
+  });
+
+  it('weigert ongeldige robot-, vangnet- en fabrieksdata', () => {
+    const noProduced = clone(raw());
+    delete (noProduced.loadouts as Record<string, unknown>[]).find((l) => l.id === 'sentinel')!
+      .producedAt;
+    expect(() => loadGameData(noProduced)).toThrow(/producedAt/);
+    const humanProduced = clone(raw());
+    (humanProduced.loadouts as Record<string, unknown>[]).find(
+      (l) => l.id === 'militie',
+    )!.producedAt = 'robotfabriek';
+    expect(() => loadGameData(humanProduced)).toThrow(/producedAt/);
+    const humanRepair = clone(raw());
+    (humanRepair.loadouts as Record<string, unknown>[]).find((l) => l.id === 'militie')!.repair = {
+      repairRateHpPerS: 1,
+      rangeM: 1,
+      seekRangeM: 1,
+      targets: ['robot'],
+    };
+    expect(() => loadGameData(humanRepair)).toThrow(/repair/);
+    const wrongRole = clone(raw());
+    (wrongRole.loadouts as Record<string, unknown>[]).find((l) => l.id === 'sentinel')!.role =
+      'militia';
+    expect(() => loadGameData(wrongRole)).toThrow(/role/);
+    const badProducedAt = clone(raw());
+    (badProducedAt.loadouts as Record<string, unknown>[]).find(
+      (l) => l.id === 'sentinel',
+    )!.producedAt = 'bestaat_niet';
+    expect(() => loadGameData(badProducedAt)).toThrow(/bestaat_niet/);
+    for (const field of ['intervalS', 'maxArrivals', 'loadoutId']) {
+      const r = clone(raw());
+      delete ((r.factions as Record<string, unknown>[])[0]!.safetyNet as Record<string, unknown>)[
+        field
+      ];
+      expect(() => loadGameData(r), field).toThrow(field);
+    }
+    const noRules = clone(raw());
+    delete (noRules.factions as Record<string, unknown>[])[0]!.robotRules;
+    expect(() => loadGameData(noRules)).toThrow(/robotRules/);
+    const badPenalty = clone(raw());
+    (
+      (badPenalty.factions as Record<string, unknown>[])[0]!.robotRules as Record<string, unknown>
+    ).robotPenaltyPct = 120;
+    expect(() => loadGameData(badPenalty)).toThrow(/robotPenaltyPct/);
+  });
+});
+
+describe('content-x (data 0.15.0): turret-netwerk, uitrusting in tiers, held-passieven, training', () => {
+  const data = loadGameData(raw());
+  const loadout = (key: string) => data.loadouts.find((l) => l.key === key)!;
+  const building = (key: string) => data.buildings.find((b) => b.key === key)!;
+  const tech = (key: string) => data.tech.find((t) => t.key === key)!;
+  const techKey = (id: number): string => data.tech[id]!.key;
+
+  it('laserturret: tier 2, energy, achter lasertechniek in het lab', () => {
+    const laser = building('turret_laser');
+    const turret = building('turret');
+    expect(laser.provides).toEqual([PROVIDES.indexOf('turret')]);
+    expect(laser.damageType).toBe(DAMAGE_TYPES.indexOf('energy'));
+    expect(laser.damage).toBeGreaterThan(turret.damage);
+    expect(laser.rangeU).toBeGreaterThan(turret.rangeU);
+    expect(laser.scrapCost).toBeGreaterThan(turret.scrapCost);
+    expect(laser.prereqTech.map(techKey)).toEqual(['lasertechniek']);
+    expect(data.buildings[tech('lasertechniek').buildingId]!.key).toBe('lab');
+    expect(laser.visuals.mesh).toBe('dweller_building_turret_laser');
+  });
+
+  it('turret-upgrades via lab-techs gelden voor beide turrets', () => {
+    for (const key of ['lasergeleiding', 'turret_schade', 'turret_bereik']) {
+      expect(data.buildings[tech(key).buildingId]!.key, key).toBe('lab');
+      const targets = new Set(tech(key).effects.map((e) => e.target));
+      expect([...targets].sort(), key).toEqual(['turret', 'turret_laser']);
+    }
+    expect(tech('turret_schade').effects.map((e) => [e.stat, e.delta])).toEqual([
+      ['damagePct', 150],
+      ['damagePct', 150],
+    ]);
+    expect(tech('turret_bereik').effects.map((e) => [e.stat, e.delta])).toEqual([
+      ['rangeM', metersToUnits(2)],
+      ['rangeM', metersToUnits(2)],
+    ]);
+  });
+
+  it('netwerkbonus: straal, procent per turret en maximum, achter de tech turret_netwerk', () => {
+    for (const key of ['turret', 'turret_laser']) {
+      expect(building(key).network, key).toEqual({
+        requiresTech: tech('turret_netwerk').id,
+        radiusU: metersToUnits(16),
+        damagePermillePerTurret: 60,
+        maxDamagePermille: 300,
+      });
+    }
+    expect(tech('turret_netwerk').effects).toEqual([]);
+    expect(tech('turret_netwerk').prereqTech.map(techKey)).toEqual(['lasertechniek']);
+    for (const b of data.buildings.filter((x) => !x.provides.includes(PROVIDES.indexOf('turret'))))
+      expect(b.network, b.key).toBeNull();
+  });
+
+  it('weigert een netwerk op een gebouw zonder turret en een onbekende netwerk-tech', () => {
+    const onHouse = clone(raw());
+    (onHouse.buildings as Record<string, unknown>[]).find((b) => b.id === 'woning')!.network = {
+      requiresTech: 'turret_netwerk',
+      radiusM: 10,
+      damagePctPerTurret: 5,
+      maxDamagePct: 20,
+    };
+    expect(() => loadGameData(onHouse)).toThrow(/network/);
+    const badTech = clone(raw());
+    (
+      (badTech.buildings as Record<string, unknown>[]).find((b) => b.id === 'turret')!
+        .network as Record<string, unknown>
+    ).requiresTech = 'onzin';
+    expect(() => loadGameData(badTech)).toThrow(/onzin/);
+  });
+
+  it('uitrusting in tiers: vier wapens, twee pantsers, alles een eigen loadout met prereqTech', () => {
+    const mil = data.loadouts.filter((l) => l.role === ROLES.indexOf('militia'));
+    expect(mil.map((l) => l.key).sort()).toEqual([
+      'geweer_leer',
+      'militie',
+      'patrol',
+      'shotgun_composiet',
+      'shotgun_leer',
+      'slagwapen_composiet',
+      'slagwapen_leer',
+    ]);
+    const weapons = new Set(mil.map((l) => l.weapon));
+    expect([...weapons].sort()).toEqual([
+      'geweer',
+      'patrolgeweer',
+      'pipe_pistol',
+      'shotgun',
+      'slagwapen',
+    ]);
+    for (const l of mil.filter((x) => x.key.endsWith('_leer')))
+      expect(l.armorType, l.key).toBe(ARMOR_TYPES.indexOf('none'));
+    for (const l of mil.filter((x) => x.key.endsWith('_composiet') || x.key === 'patrol'))
+      expect(l.armorType, l.key).toBe(ARMOR_TYPES.indexOf('medium'));
+    expect(loadout('slagwapen_leer').damageType).toBe(DAMAGE_TYPES.indexOf('melee'));
+    expect(loadout('shotgun_leer').rangeU).toBeLessThan(loadout('militie').rangeU);
+    for (const l of mil.filter((x) => x.key.endsWith('_composiet')))
+      expect(l.prereqTech.map(techKey), l.key).toContain('composiet_pantser');
+    // een composiet-variant is duurder en trager dan zijn leer-variant (pantser kost iets)
+    for (const w of ['shotgun', 'slagwapen']) {
+      expect(loadout(`${w}_composiet`).scrapCost).toBeGreaterThan(loadout(`${w}_leer`).scrapCost);
+      expect(loadout(`${w}_composiet`).speedUPT).toBeLessThan(loadout(`${w}_leer`).speedUPT);
+    }
+    // bestaande loadouts zijn niet gewijzigd
+    expect(loadout('militie').armorType).toBe(ARMOR_TYPES.indexOf('light'));
+    expect(loadout('patrol').prereqTech.map(techKey)).toEqual(['geweerrek']);
+  });
+
+  it('snelle_voeten en composiet_pantser raken elke militia-loadout van de factie', () => {
+    const mil = data.loadouts.filter((l) => l.role === ROLES.indexOf('militia')).map((l) => l.key);
+    for (const key of ['snelle_voeten', 'composiet_pantser'])
+      expect(
+        tech(key)
+          .effects.map((e) => e.target)
+          .sort(),
+        key,
+      ).toEqual([...mil].sort());
+  });
+
+  it('held-passieven: upgrades goedkoper en turrets sterker, omgerekend', () => {
+    const passives = data.heroes[0]!.passives;
+    expect(passives).toContainEqual({ stat: 'researchCostPct', target: 'alle', delta: -150 });
+    for (const target of ['turret', 'turret_laser']) {
+      expect(passives).toContainEqual({ stat: 'damagePct', target, delta: 100 });
+      expect(passives).toContainEqual({ stat: 'rangeM', target, delta: metersToUnits(1) });
+    }
+    expect(EffectStat.options).toContain('researchCostPct');
+    expect(convertDelta('researchCostPct', -15)).toBe(-150);
+  });
+
+  it('elk effect-doel van tech, perks en held-passieven bestaat (de sim weigert onbekende doelen)', () => {
+    const known = new Set([
+      'alle',
+      'held',
+      ...data.loadouts.map((l) => l.key),
+      ...data.buildings.map((b) => b.key),
+    ]);
+    const all = [
+      ...data.tech.flatMap((t) => t.effects.map((e) => [t.key, e.target] as const)),
+      ...data.perks.flatMap((p) => p.effects.map((e) => [p.key, e.target] as const)),
+      ...data.heroes.flatMap((h) => h.passives.map((e) => [h.key, e.target] as const)),
+    ];
+    for (const [owner, target] of all)
+      expect(known.has(target), `${owner} -> ${target}`).toBe(true);
+    for (const h of data.heroes)
+      for (const e of h.passives) if (e.stat === 'researchCostPct') expect(e.target).toBe('alle');
+  });
+
+  it('trainingsprogramma: een per SPECIAL-letter, omgerekend, binnen het plafond van 10', () => {
+    expect(data.training.map((t) => STATS[t.special]).sort()).toEqual([...STATS].sort());
+    const training = building('trainingsfaciliteit');
+    const hero = data.heroes[0]!;
+    for (const t of data.training) {
+      expect(t.buildingId, t.key).toBe(training.id);
+      expect(training.provides, t.key).toContain(PROVIDES.indexOf('training'));
+      expect(t.factionId, t.key).toBe(0);
+      expect(t.pointsPerRun, t.key).toBe(1);
+      expect(t.maxPoints, t.key).toBeGreaterThanOrEqual(1);
+      expect(hero.special[t.special]! + t.maxPoints, t.key).toBeLessThanOrEqual(10);
+    }
+    const kracht = data.training.find((t) => t.key === 'training_kracht')!;
+    expect(kracht).toMatchObject({
+      scrapCost: 100,
+      scrapCostStep: 60,
+      trainTicks: secondsToTicks(40),
+      trainTicksStep: secondsToTicks(20),
+      maxPoints: 3,
+    });
+    expect(data.factions[0]!.specialChannel).toBe('training');
+  });
+
+  it('weigert ongeldige trainingsdata', () => {
+    const badLetter = clone(raw());
+    (badLetter.training as Record<string, unknown>[])[0]!.special = 'X';
+    expect(() => loadGameData(badLetter)).toThrow(/training\.json/);
+    const badBuilding = clone(raw());
+    (badBuilding.training as Record<string, unknown>[])[0]!.building = 'bestaat_niet';
+    expect(() => loadGameData(badBuilding)).toThrow(/bestaat_niet/);
+    const unknownField = clone(raw());
+    (unknownField.training as Record<string, unknown>[])[0]!.onbekend = 1;
+    expect(() => loadGameData(unknownField)).toThrow(/training\.json/);
+    const noMax = clone(raw());
+    (noMax.training as Record<string, unknown>[])[0]!.maxPoints = 0;
+    expect(() => loadGameData(noMax)).toThrow(/maxPoints/);
+  });
+
+  it('blijft binnen de grenzen van de sim: hoogstens 32 techs, loadout-ids onder het held-blok', () => {
+    expect(data.tech.length).toBeLessThanOrEqual(32); // sim MAX_TECHS: bitset per speler
+    expect(data.loadouts.length).toBeLessThan(999); // typeId-ruimte 1..999
+    expect(data.buildings.length).toBeLessThan(1024);
+  });
+
+  it('AI-robots: bestaande loadouts, hoogstens bouwers maal robotsPerTechnician', () => {
+    const ai = data.aiScripts[0]!;
+    expect(ai.robots).not.toBeNull();
+    for (const l of ai.robots!.sequence)
+      expect(data.loadouts[l]!.bodyType).toBe(BODY_TYPES.indexOf('robot'));
+    expect(ai.robots!.fromTicks).toBe(secondsToTicks(840));
+    expect(ai.robots!.max).toBeLessThanOrEqual(
+      ai.builders * data.factions[0]!.robotRules!.robotsPerTechnician,
+    );
+    const bad = clone(raw());
+    ((bad.ai[0] as Record<string, unknown>).robots as { sequence: string[] }).sequence = [
+      'raketman',
+    ];
+    expect(() => loadGameData(bad)).toThrow(/onbekende loadout 'raketman'/);
+  });
+
+  it('is deterministisch: twee keer laden geeft gelijke uitvoer, ook bij omgekeerde invoervolgorde', () => {
+    const a = loadGameData(raw());
+    const r = raw();
+    const b = loadGameData({
+      ...r,
+      loadouts: [...(r.loadouts as unknown[])].reverse(),
+      training: [...(r.training as unknown[])].reverse(),
+      tech: [...(r.tech as unknown[])].reverse(),
+    });
+    expect(b).toEqual(a);
   });
 });
