@@ -18,6 +18,7 @@ export const SURFACE_KINDS = [
   'foliage',
   'concrete',
   'roofing',
+  'lens',
 ] as const;
 
 export type SurfaceKind = (typeof SURFACE_KINDS)[number];
@@ -34,7 +35,14 @@ export interface SurfaceRecipe {
   grime: number;
   /** How much rust shows through (and how much a chipped coat reveals), 0..1. */
   rust: number;
+  /** How far a flat (untextured) fragment moves from its authored color to `tint`, 0..1. Default FLAT_TINT_BLEND. */
+  flatBlend?: number;
+  /** How far a photographed fragment moves to the tint (luminance kept), 0..1. Default 0: the texture stays. */
+  texturedBlend?: number;
 }
+
+/** How far a flat fragment moves to its kind's tint unless the recipe says otherwise. */
+export const FLAT_TINT_BLEND = 0.55;
 
 export const SURFACES: Readonly<Record<SurfaceKind, SurfaceRecipe>> = {
   // Weathered grey-brown timber (dry oak and pine, 0.15 to 0.25 reflectance).
@@ -91,7 +99,15 @@ export const SURFACES: Readonly<Record<SurfaceKind, SurfaceRecipe>> = {
     rust: 0,
   },
   // Dry granite and sandstone.
-  rock: { tint: 0x7a736a, albedo: [0.08, 0.38], roughness: 0.9, metalness: 0, grime: 0.5, rust: 0 },
+  rock: {
+    tint: 0x7a736a,
+    albedo: [0.08, 0.38],
+    roughness: 0.9,
+    metalness: 0,
+    grime: 0.5,
+    rust: 0,
+    texturedBlend: 0.2,
+  },
   // Dry leaves and grass (a leaf reflects 0.05 to 0.2 in the visible), olive rather than green.
   foliage: {
     tint: 0x6b6a3a,
@@ -100,6 +116,7 @@ export const SURFACES: Readonly<Record<SurfaceKind, SurfaceRecipe>> = {
     metalness: 0,
     grime: 0.3,
     rust: 0,
+    texturedBlend: 0.4,
   },
   // Weathered concrete (0.3 to 0.4 when new, darker with age).
   concrete: {
@@ -119,6 +136,16 @@ export const SURFACES: Readonly<Record<SurfaceKind, SurfaceRecipe>> = {
     grime: 0.8,
     rust: 0,
   },
+  // Sensor lenses and gun barrels' glow: a plain bright color, glossy, never weathered.
+  lens: {
+    tint: 0x3a6670,
+    albedo: [0.02, 0.7],
+    roughness: 0.4,
+    metalness: 0,
+    grime: 0,
+    rust: 0,
+    flatBlend: 0,
+  },
 };
 
 /** Index of a kind in SURFACE_KINDS (the value geometry and shader tables use). */
@@ -137,7 +164,9 @@ export function surfaceOfIndex(index: number): SurfaceKind {
  */
 export function surfaceKindOfMaterial(name: string): SurfaceKind {
   const n = name.toLowerCase();
+  if (/lens|visor|glass/.test(n)) return 'lens';
   if (/rust|corrod/.test(n)) return 'rustMetal';
+  if (/rubber|track|tyre|tire|opening/.test(n)) return 'leather';
   if (/metal|steel|iron|pipe|tank|pole|mast|sheet|tin/.test(n)) return 'paintedMetal';
   if (/roof|shingle|tar/.test(n)) return 'roofing';
   if (/concrete|slab|cement|brick|stone/.test(n)) return 'concrete';

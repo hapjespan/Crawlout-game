@@ -6,7 +6,7 @@
 //
 // Everything is a function of a position (world space for things that stand still, bind-pose space for units, so
 // the pattern never swims), the normal and the height above the object's ground. No texture, no extra vertex attribute.
-import { Vector3, type Node } from 'three/webgpu';
+import { Vector4, type Node } from 'three/webgpu';
 import {
   abs,
   dot,
@@ -24,7 +24,7 @@ import {
   vec3,
 } from 'three/tsl';
 import { linearOf, WASTELAND } from '../palette.js';
-import { LUMA_WEIGHTS, SOFT_KNEE, SURFACE_KINDS, SURFACES } from './surfaces.js';
+import { FLAT_TINT_BLEND, LUMA_WEIGHTS, SOFT_KNEE, SURFACE_KINDS, SURFACES } from './surfaces.js';
 
 /** The recipe of one surface kind (or of a per-fragment index) as shader nodes. */
 export interface SurfaceNodes {
@@ -35,34 +35,45 @@ export interface SurfaceNodes {
   metalness: Node<'float'>;
   grime: Node<'float'>;
   rust: Node<'float'>;
+  flatBlend: Node<'float'>;
+  texturedBlend: Node<'float'>;
 }
 
-/** The kinds as uniform arrays; `at(index)` picks one by a constant or a per-fragment int. */
+/**
+ * The kinds as three vec4 uniform arrays (a WebGPU fragment stage has at most 12 uniform buffers and every uniform
+ * array is one); `at(index)` picks one by a constant or a per-fragment int.
+ */
 export function createSurfaceTable(): { at(index: Node<'int'> | number): SurfaceNodes } {
   const recipes = SURFACE_KINDS.map((k) => SURFACES[k]);
-  const tint = uniformArray<'vec3'>(
-    recipes.map((r) => new Vector3(...linearOf(r.tint))),
-    'vec3',
+  // (tint rgb, flatBlend), (albedo min, albedo max, roughness, metalness), (grime, rust, texturedBlend, 0)
+  const a = uniformArray<'vec4'>(
+    recipes.map((r) => new Vector4(...linearOf(r.tint), r.flatBlend ?? FLAT_TINT_BLEND)),
+    'vec4',
   );
-  const floats = (pick: (r: (typeof recipes)[number]) => number) =>
-    uniformArray<'float'>(recipes.map(pick), 'float');
-  const lo = floats((r) => r.albedo[0]);
-  const hi = floats((r) => r.albedo[1]);
-  const rough = floats((r) => r.roughness);
-  const metal = floats((r) => r.metalness);
-  const grime = floats((r) => r.grime);
-  const rust = floats((r) => r.rust);
+  const b = uniformArray<'vec4'>(
+    recipes.map((r) => new Vector4(r.albedo[0], r.albedo[1], r.roughness, r.metalness)),
+    'vec4',
+  );
+  const c = uniformArray<'vec4'>(
+    recipes.map((r) => new Vector4(r.grime, r.rust, r.texturedBlend ?? 0, 0)),
+    'vec4',
+  );
   return {
     at(index) {
       const i = typeof index === 'number' ? int(index) : index;
+      const ea = a.element(i);
+      const eb = b.element(i);
+      const ec = c.element(i);
       return {
-        tint: tint.element(i),
-        albedoMin: lo.element(i),
-        albedoMax: hi.element(i),
-        roughness: rough.element(i),
-        metalness: metal.element(i),
-        grime: grime.element(i),
-        rust: rust.element(i),
+        tint: ea.xyz,
+        albedoMin: eb.x,
+        albedoMax: eb.y,
+        roughness: eb.z,
+        metalness: eb.w,
+        grime: ec.x,
+        rust: ec.y,
+        texturedBlend: ec.z,
+        flatBlend: ea.w,
       };
     },
   };

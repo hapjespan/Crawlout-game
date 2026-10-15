@@ -52,7 +52,7 @@ const sourceMaterialSchema = z.object({
   name: z.string().min(1),
 });
 
-const flatMaterialSchema = z.object({
+export const flatMaterialSchema = z.object({
   color: hexColor,
   /** Een team-materiaal (naam bevat "team") krijgt in render de spelerskleur; basiskleur is dan het neutrale masker. */
   note: z.string().optional(),

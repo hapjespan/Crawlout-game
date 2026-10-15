@@ -61,6 +61,10 @@ import { HERO_PART_ALPHA } from './humanoidGeometry.js';
 export const HERO_INSTANCE_FLAG = 256;
 /** A hero stands this much taller and wider than a regular unit of the same rig. */
 export const HERO_SCALE = 1.15;
+/** iAnim.z = team slot + TEAM_SLOTS * variation seed (animVariation.ts, 12 bits); the team slot is below TEAM_SLOTS. */
+export const TEAM_SLOTS = 16;
+/** Static per-instance variation: lean (shear of the body over its height, +-) and height scale (+-). */
+export const VARIATION = { lean: 0.03, height: 0.03 } as const;
 
 /** Strength of the clothing weathering (look/surfaceShading.ts weather): units are small, so lighter than a wall. */
 const UNIT_WEATHER = 0.6;
@@ -259,6 +263,18 @@ export function createUnitMaterial(
   const row0 = int(clip.x.add(f0));
   const row1 = int(clip.x.add(f1));
 
+  // Per-instance variation: iAnim.z carries the seed above the team slot; three 4-bit fields give a small static lean in
+  // x and z and a height scale, so idle units do not stand like clones.
+  const seed = floor(iAnim.z.div(TEAM_SLOTS));
+  const field = (shift: number): Node<'float'> =>
+    mod(floor(seed.div(shift)), 16)
+      .div(7.5)
+      .sub(1);
+  const leanX = field(1).mul(VARIATION.lean);
+  const leanZ = field(16).mul(VARIATION.lean);
+  const heightScale = field(256).mul(VARIATION.height).add(1);
+  const teamSlot = int(mod(iAnim.z, TEAM_SLOTS));
+
   // Linear blend skinning over 4 influences; each matrix is 4 column texels, blended between two frames.
   let skinnedPos: Node<'vec3'> = vec3(0, 0, 0);
   let skinnedNrm: Node<'vec3'> = vec3(0, 0, 0);
@@ -282,6 +298,13 @@ export function createUnitMaterial(
     skinnedNrm = skinnedNrm.add(n.mul(w));
   }
 
+  // Static variation on the skinned pose: shear with height (feet stay put), then the height scale.
+  skinnedPos = vec3(
+    skinnedPos.x.add(skinnedPos.y.mul(leanX)),
+    skinnedPos.y.mul(heightScale),
+    skinnedPos.z.add(skinnedPos.y.mul(leanZ)),
+  );
+
   // Yaw around +Y: Ry(a) * v = (x cos a + z sin a, y, -x sin a + z cos a); 0 keeps the model facing +Z.
   const ca = cos(iPose.w);
   const sa = sin(iPose.w);
@@ -303,7 +326,7 @@ export function createUnitMaterial(
   }
   const gain = albedoSource.gain ?? 1;
   if (gain !== 1) base = base.mul(gain);
-  const iTeam = palette.element(int(iAnim.z));
+  const iTeam = palette.element(teamSlot);
   const N = normalize(worldNrm);
   // Team readability at RTS distance: the accent on the shoulders is a pixel or two from far away, so beyond FAR_TEAM
   // the whole upper body (chest to shoulders in the bind pose, not the head) takes the team color, on the neutral base.

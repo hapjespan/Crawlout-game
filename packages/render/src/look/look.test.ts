@@ -63,7 +63,7 @@ describe('surface recipes', () => {
     for (const kind of SURFACE_KINDS) {
       const r = SURFACES[kind];
       expect(r.albedo[0]).toBeGreaterThan(0.01);
-      expect(r.albedo[1]).toBeLessThan(0.6);
+      expect(r.albedo[1]).toBeLessThan(0.8);
       expect(r.albedo[0]).toBeLessThan(r.albedo[1]);
       expect(r.roughness).toBeGreaterThanOrEqual(0.4);
       expect(r.roughness).toBeLessThanOrEqual(1);

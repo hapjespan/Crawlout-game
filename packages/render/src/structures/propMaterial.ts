@@ -22,6 +22,7 @@
 import {
   DoubleSide,
   MeshBasicNodeMaterial,
+  Vector2,
   type Texture,
   type Vector3,
   type Node,
@@ -107,8 +108,6 @@ export interface PropWindOptions {
   direction?: readonly [number, number];
 }
 
-/** How far a flat fragment moves from its authored color to the kind's wasteland tint. */
-const FLAT_TINT_BLEND = 0.55;
 /** Weathering strength on a photographed fragment (it carries its own wear): dirt and dust only, softly. */
 const TEXTURED_WEATHER = 0.3;
 
@@ -196,23 +195,37 @@ export function createPropMaterial(opts: PropMaterialOptions): MeshBasicNodeMate
     base = base.mul(texel.xyz);
     texelAlpha = texel.w;
     flat = select(plain, float(1), float(0));
-    if (opts.layerLuma && opts.layerLuma.length > 0) {
-      const means = uniformArray<'float'>([...opts.layerLuma], 'float');
-      pivot = pivot.mul(select(plain, float(1), means.element(layer)));
-    }
-    // With layerKinds (buildings) a flat fragment carries its kind in u (buildingGeometry.ts) and a textured one takes
-    // its layer's. Without (props) the whole material is one kind.
-    const layerKinds = opts.layerKinds?.map(surfaceIndex);
-    if (layerKinds && layerKinds.length > 0) {
-      const textured = int(uniformArray<'float'>(layerKinds, 'float').element(layer).add(0.5));
-      kindIndex = select(plain, int(uvl.x.add(0.5)), textured);
+    // Per layer: the mean luma (the team pivot) and, with layerKinds (buildings), the surface kind. One vec2 array, as
+    // the fragment stage has few uniform buffers. A flat fragment of a building carries its kind in u
+    // (buildingGeometry.ts); without layerKinds (props) the whole material is one kind.
+    const count = Math.max(opts.layerLuma?.length ?? 0, opts.layerKinds?.length ?? 0);
+    if (count > 0) {
+      const perLayer = uniformArray<'vec2'>(
+        Array.from(
+          { length: count },
+          (_, i) =>
+            new Vector2(
+              opts.layerLuma?.[i] ?? 1,
+              opts.layerKinds?.[i] ? surfaceIndex(opts.layerKinds[i]!) : baseKind,
+            ),
+        ),
+        'vec2',
+      );
+      const entry = perLayer.element(layer);
+      if (opts.layerLuma && opts.layerLuma.length > 0)
+        pivot = pivot.mul(select(plain, float(1), entry.x));
+      if (opts.layerKinds && opts.layerKinds.length > 0)
+        kindIndex = select(plain, int(uvl.x.add(0.5)), int(entry.y.add(0.5)));
     }
   }
   const surface = table.at(kindIndex);
   // The kind's range and tint come first (flat parts leave the authored swatch), then the weathering; the team pivot
   // follows the shift so the team color is not dimmed or lifted by it, only by the wear.
   const rawLuma = max(dot(base, luma), 1e-4);
-  base = mix(base, surface.tint, flat.mul(FLAT_TINT_BLEND));
+  base = mix(base, surface.tint, flat.mul(surface.flatBlend));
+  // A photographed kit color (the Gobkit's bright leaves) moves towards the kind's tint at its own luminance.
+  const tintAtLuma = surface.tint.mul(rawLuma.div(max(dot(surface.tint, luma), 1e-4)));
+  base = mix(base, tintAtLuma, float(1).sub(flat).mul(surface.texturedBlend));
   base = fitAlbedoNode(base, surface.albedoMin, surface.albedoMax);
   pivot = pivot.mul(max(dot(base, luma), 1e-4).div(rawLuma));
   const faceN = normalize(worldNrm);
