@@ -1,7 +1,8 @@
 // Buildings, scrap heaps and claim points: one instanced draw call per kind per LOD, plus one for the scaffolds around
 // building sites. A building type with an asset from the manifest (setBuildingAssets) is drawn with it: one instanced
 // draw per asset per LOD (three LODs, identical LODs share a draw; every material of the asset sits in that one draw
-// through the shared texture array); the others keep the placeholder block (two LODs). Buildings cast real shadows (when the renderer enables them); scrap
+// through the shared texture array); the others keep the placeholder block (two LODs). Buildings, scrap heaps and claim
+// flags cast the real sun shadow (when the renderer enables it); scrap
 // heaps get a blob shadow decal and claim points a ring decal in the owner's color. Everything is read from the
 // interpolated frame, by typeId (entities/typeIds.ts). A site (anim build) grows with its progress in animT inside a
 // scaffold (a placeholder scales up, an asset rises out of the ground: the material cuts it at the built height); a
@@ -159,6 +160,7 @@ export class StructureLayer {
   private readonly assetByBuilding = new Map<number, AssetDraw>();
   private assetMaterial: MeshBasicNodeMaterial | null = null;
   private camPos: { x: number; y: number; z: number } = { x: 0, y: 0, z: 0 };
+  private readonly scrapDecal: DecalStyle;
 
   constructor(scene: Scene, opts: StructureLayerOptions) {
     const cap = opts.capacity;
@@ -185,6 +187,10 @@ export class StructureLayer {
       b.mesh.castShadow = opts.castShadows ?? false;
     this.scrap = new InstanceBatch(scene, createScrapHeapGeometry(), m.scrap, cap, 'scrap-nodes');
     this.claims = new InstanceBatch(scene, createClaimGeometry(), m.claim, cap, 'claim-points');
+    this.scrap.mesh.castShadow = this.castShadows;
+    this.claims.mesh.castShadow = this.castShadows;
+    // With the real shadow the scrap heap's blob is only a contact darkening.
+    this.scrapDecal = this.castShadows ? { ...SCRAP_DECAL, shadow: 0.5 } : SCRAP_DECAL;
   }
 
   /**
@@ -379,7 +385,7 @@ export class StructureLayer {
       if (kind === ENTITY_KIND.scrapNode) {
         const [w, h] = scrapHeapScale(frame.hpPct[i]!, this.heap);
         this.scrap.push(x, y - 0.05, z, yaw, w, h, w, team, WHITE);
-        decals.push(x, z, 1.7 * w, 1.7 * w, SCRAP_DECAL);
+        decals.push(x, z, 1.7 * w, 1.7 * w, this.scrapDecal);
       } else {
         this.claims.push(x, y, z, yaw, 1, 1, 1, team, WHITE);
         decals.push(x, z, CLAIM_RADIUS, CLAIM_RADIUS, CLAIM_DECALS[team]!);
