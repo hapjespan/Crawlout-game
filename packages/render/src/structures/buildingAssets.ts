@@ -176,6 +176,7 @@ export async function loadBuildingAssets(
       footprint: { w: footprint.w, h: footprint.h },
       height: Math.max(entry.bounds.max[1], lods[0]!.height),
       triangles,
+      ...(entry.albedoGain !== undefined ? { gain: entry.albedoGain } : {}),
     });
     status.state = 'ready';
     status.triangles = triangles;

@@ -317,6 +317,11 @@ export class PropLayer {
     return this.groups.map((g) => g.id);
   }
 
+  /** The category an asset is drawn as (the manifest's once its visual is set, else from the id); null for an unknown id. */
+  categoryOf(assetId: string): PropCategory | null {
+    return this.byId.get(assetId)?.category ?? null;
+  }
+
   instanceCount(assetId: string): number {
     return this.byId.get(assetId)?.count ?? 0;
   }

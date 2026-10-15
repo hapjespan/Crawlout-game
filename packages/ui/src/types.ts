@@ -181,11 +181,12 @@ export interface DominanceView {
   secondsHeld: number;
   /** Seconden vasthouden voor de winst (Z). */
   secondsRequired: number;
-  /** De speler met de meeste punten, of null als niemand punten heeft. Mag jijzelf zijn; dan zijn de velden gelijk aan de bovenste vier. */
+  /** De speler met de meeste punten, of null als niemand punten heeft. Volgens het protocol altijd een tegenstander (DominanceStatus.leader is nooit de speler zelf). */
   leader: {
     name: string;
     pointsHeld: number;
     secondsHeld: number;
+    /** Altijd false vanuit de client; blijft als verdediging in threatOf (de eigen stand zit in de velden hierboven). */
     isYou: boolean;
   } | null;
 }

@@ -172,7 +172,7 @@ export class UnitAssetRegistry {
               map: lod0.map,
               maskFromMapAlpha: lod0.teamMask === 'diffuseAlpha',
               teamPivot: lod0.teamPivot,
-              gain: this.opts.albedoGain?.(assetId) ?? 1,
+              gain: this.opts.albedoGain?.(assetId) ?? asset.entry.albedoGain ?? 1,
             },
           });
           status.state = 'ready';

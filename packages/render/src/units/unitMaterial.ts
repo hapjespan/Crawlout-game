@@ -34,7 +34,6 @@ import {
   mix,
   mod,
   normalize,
-  pow,
   select,
   sin,
   smoothstep,
@@ -166,17 +165,17 @@ const LUMA = [0.2126, 0.7152, 0.0722] as const;
 
 /**
  * Team color under the mask: the team color times the albedo's luminance relative to the mean under the mask
- * (`pivot`), raised to TEAM.contrast, clamped to TEAM.min..TEAM.max and times TEAM.gain. On average the mask
+ * (`pivot`) (linear, so no pow), clamped to TEAM.min..TEAM.max and times TEAM.gain. On average the mask
  * shows the team color (a little under full, as the former curve did on a mid base), and the texture's light and dark (folds, seams, a painted pattern) stay in it: the former 0.6 * l + 0.55
  * kept only about a third of the texture's contrast and flattened a textured jumpsuit into one even color. A flat
  * base (the fallback team material, l = pivot) shows the team color times TEAM.gain. Only the luminance counts, so a colored
  * base (a blue jumpsuit masked by hue) is not tinted twice.
  */
-export const TEAM = { contrast: 1, min: 0.3, max: 1.6, gain: 0.85 } as const;
+export const TEAM = { min: 0.3, max: 1.6, gain: 0.85 } as const;
 
 /** CPU form of the team shade factor (same constants), for tests and tuning. */
 export function teamShade(luma: number, pivot: number): number {
-  const f = Math.pow(Math.max(luma, 1e-4) / Math.max(pivot, 1e-4), TEAM.contrast);
+  const f = Math.max(luma, 1e-4) / Math.max(pivot, 1e-4);
   return Math.min(TEAM.max, Math.max(TEAM.min, f)) * TEAM.gain;
 }
 
@@ -187,7 +186,7 @@ export function teamAlbedo(
   pivot: Node<'float'> | number,
 ): Node<'vec3'> {
   const l = max(dot(base, vec3(...LUMA)), 1e-4);
-  const f = clamp(pow(l.div(pivot), TEAM.contrast), TEAM.min, TEAM.max).mul(TEAM.gain);
+  const f = clamp(l.div(pivot), TEAM.min, TEAM.max).mul(TEAM.gain);
   return mix(base, team.mul(f), mask);
 }
 
