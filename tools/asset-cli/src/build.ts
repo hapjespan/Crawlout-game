@@ -17,6 +17,7 @@ import {
   type AssetEntry,
   type AssetManifest,
 } from './manifest.js';
+import { buildPacks, findPacksDir, loadPacksConfig, type PackPropDetails, type PacksConfig } from './packs.js';
 import { EMPTY_RIGMAP, parseRigmap, type Rigmap } from './rigmap.js';
 import { validateAsset } from './validate.js';
 import type { VariantsConfig } from './variants.js';
@@ -37,6 +38,10 @@ export interface BuildOptions {
   onlyConfigured?: boolean;
   /** Pad naar de gebouwenconfig; standaard `<srcDir>/buildings/variants.json`. Ontbreekt hij, dan zijn er geen gebouwen. */
   variantsPath?: string;
+  /** Pad naar de prop-packs-config; standaard `<srcDir>/packs.json`. Ontbreekt hij, dan zijn er geen pack-props. */
+  packsPath?: string;
+  /** Map met de pack-GLB's; standaard `<srcDir>/packs`, vanuit een worktree ook die van de hoofdcheckout. */
+  packsDir?: string | null;
 }
 
 export interface AssetReport {
@@ -45,7 +50,7 @@ export interface AssetReport {
   errors: string[];
   warnings: string[];
   /** Wat de buis aan de bron veranderd heeft en wat eruit kwam; komt in validation-report.json. */
-  details?: AssetDetails | BuildingDetails;
+  details?: AssetDetails | BuildingDetails | PackPropDetails;
 }
 
 export interface AssetDetails {
@@ -167,9 +172,11 @@ export async function buildAssets(options: BuildOptions): Promise<BuildResult> {
   const variantSources = new Set(
     Object.values(variants?.sources ?? {}).map((source) => source.file.split('\\').join('/')),
   );
-  const files = listGlbs(srcDir).filter(
-    (file) => !variantSources.has(relative(srcDir, file).split(sep).join('/')),
-  );
+  // assets/src/packs (de grote pack-bronnen, buiten git) loopt via packs.json, niet als losse props.
+  const files = listGlbs(srcDir).filter((file) => {
+    const relativePath = relative(srcDir, file).split(sep).join('/');
+    return !variantSources.has(relativePath) && !relativePath.startsWith('packs/');
+  });
 
   const io = createIO();
   const reports: AssetReport[] = [];
@@ -240,11 +247,50 @@ export async function buildAssets(options: BuildOptions): Promise<BuildResult> {
     reports.push(report);
   }
 
+  // Prop-packs (src/packs.ts): splitsen, echte schaal, atlas en LOD's volgens packs.json.
+  const packsSource = options.packsPath ?? join(srcDir, 'packs.json');
+  let packsConfig: PacksConfig | null = null;
+  if (existsSync(packsSource)) {
+    try {
+      packsConfig = loadPacksConfig(packsSource);
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : String(error);
+      return {
+        ok: false,
+        reports: [
+          {
+            id: basename(packsSource, '.json'),
+            source: relative(srcDir, packsSource).split(sep).join('/'),
+            errors: [`ongeldige ${basename(packsSource)}: ${reason}`],
+            warnings: [],
+          },
+        ],
+        notices,
+        manifest: null,
+      };
+    }
+  }
+  const packs = packsConfig
+    ? await buildPacks(packsConfig, {
+        packsDir: options.packsDir === undefined ? findPacksDir(srcDir) : options.packsDir,
+        previousDist: distDir,
+      })
+    : null;
+  for (const report of packs?.reports ?? []) {
+    const clash = seen.get(report.id);
+    if (clash) report.errors.push(`id "${report.id}" is al in gebruik door ${clash}; hernoem het prop.`);
+    seen.set(report.id, `packs/${report.id}`);
+    reports.push(report);
+  }
+
   if (reports.some((r) => r.errors.length > 0))
     return { ok: false, reports, notices, manifest: null };
 
-  const entries: AssetEntry[] = [...(buildings?.entries ?? [])];
-  const outputs = new Map<string, Uint8Array | string>(buildings?.outputs);
+  const entries: AssetEntry[] = [...(buildings?.entries ?? []), ...(packs?.entries ?? [])];
+  const outputs = new Map<string, Uint8Array | string>([
+    ...(buildings?.outputs ?? []),
+    ...(packs?.outputs ?? []),
+  ]);
   for (const asset of validated) {
     const lods = await buildLods(asset.buffer, asset.kind, { toktx });
     const sourceDoc = await io.readBinary(asset.buffer);

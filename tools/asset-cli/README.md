@@ -151,7 +151,7 @@ Per asset: `id`, `kind` (`character`, `prop` of `building`), `bounds` (min en ma
 
 `teamMask` (karakters en props; optioneel, ontbreekt = `materialName`): waar het teammasker vandaan komt, gelijk aan render's `TeamMaskSource`: `materialName` (materialen met "team" in de naam, of het hoofdmateriaal), `diffuseAlpha` (de alfa van de diffuse is het masker, per texel; gezet door de `teamMask`-regel in de rigmap) of `none`. Render leest het veld uit het manifest (`unitAssetLoader`, `unitAssets`); een expliciete render-optie gaat voor. Gebouwen gebruiken `teamMaterials`.
 
-Alleen voor `kind: 'building'`: `footprint` `{ w, h }` (cellen van 1 m) en `teamMaterials` (namen van de materialen die de spelerskleur krijgen). Een gebouw heeft `boneCount` 0, geen `baked` en geen `sockets`. Het model staat met het midden van de footprint op de oorsprong in x en z, de grond op y = 0, +Y omhoog; de LOD's hebben dezelfde bounds. Zonder deze velden zijn `footprint` en `teamMaterials` bij andere soorten verboden (het schema controleert dat).
+Alleen voor `kind: 'prop'` (de pack-props, zie Prop-packs): `category` (`tree-leafy`, `tree-bare`, `grass`, `plant`, `rock`, `crate`, `chest`, `barrel`, `structure`, `debris`; `PROP_CATEGORIES` in `manifest.ts`) en `alpha: 'mask'` bij bladkaarten en gras (materiaal met alphaMode MASK en alphaCutoff, diffuse als WebP met alfa: render tekent met alpha-test). De oude Gobkit-props hebben deze velden niet.\n\nAlleen voor `kind: 'building'`: `footprint` `{ w, h }` (cellen van 1 m) en `teamMaterials` (namen van de materialen die de spelerskleur krijgen). Een gebouw heeft `boneCount` 0, geen `baked` en geen `sockets`. Het model staat met het midden van de footprint op de oorsprong in x en z, de grond op y = 0, +Y omhoog; de LOD's hebben dezelfde bounds. Zonder deze velden zijn `footprint` en `teamMaterials` bij andere soorten verboden (het schema controleert dat).
 
 ### `baked` (fase-0 sectie 12)
 
@@ -186,6 +186,22 @@ Quaternius-clips hebben andere namen dan `ANIM_NAMES` (bijvoorbeeld `Walk_Loop`)
 2. Per karakter `fetch(baked.path)` (relatief aan manifest.json), `new Float32Array(buffer)` en een `DataTexture(data, baked.width, baked.height, RGBAFormat, FloatType)` maken (NearestFilter).
 3. Clip-tabel uit `baked.clips`: (`startRow`, `frames`, `loop`, `durationSeconds`), geindexeerd op `ANIM[name]`; de volgorde is die van `ANIM_NAMES`.
 4. Het skinIndex-attribuut van de LOD-meshes verwijst naar bone-index in deze texture (zelfde GLB, zelfde volgorde).
+
+## Prop-packs (DJMaesen, `assets/src/packs.json`)
+
+Negen Sketchfab-packs van DJMaesen (CC-BY-4.0, naamsvermelding in `assets/src/licenses/djmaesen-packs-CC-BY-4.0.txt` en in `asset.copyright` van elke LOD-GLB) worden door `src/packs.ts` in losse props gesplitst. De bronnen staan in `assets/src/packs/` (80 MB, gitignored, nooit in git; vanuit een worktree zoekt de buis ze ook in de hoofdcheckout). Alles wat bijgestuurd kan worden staat in **`assets/src/packs.json`**, zonder code:
+
+- `categories`: per categorie (`tree-leafy`, `tree-bare`, `grass`, `plant`, `rock`, `crate`, `chest`, `barrel`, `structure`, `debris`) de redelijke hoogte (`heightRangeM`, de maat-check naast een poppetje van 1,8 m), de driehoeken per LOD (`tris`, plafond), de maximale atlas (`atlas`: 1024, of 512 voor kleine props) en hoe het prop op x en z gecentreerd wordt (`centre`: `bounds` of `base`, de voet, voor bomen).
+- `sources.<pack>`: `file`, `unit` (meter per bron-eenheid; de FBX-exports zijn in centimeters: 0.01), de **splitsregel** `split.parent` (elk kind van die node is een kandidaat-prop) en `skip` (kinderen die geen prop worden, met reden). Een kind dat in geen van beide staat is een fout, zodat er niets stil wegvalt.
+- `sources.<pack>.props.<id>`: `node` (het kind), `category`, en de **echte maat**: `heightM` (uniforme schaal naar deze hoogte; zonder: bron-eenheden maal `unit`) of `longestM` (langste afmeting, voor lage brede props zoals een pallet), plus optioneel `heightRangeM` (strengere check dan de categorie), `lod0Triangles`, `atlas`, `centre`, `alpha` (`mask` of `none`: verwacht alfagedrag) en `note`.
+
+Per prop: de meshes onder het object (alle node-transformaties erin gebakken, de plaatsing in het pack en de FBX-draaiing van Sketchfab vallen weg, Y omhoog), uniform geschaald naar de echte maat, voet op y = 0, gecentreerd op x en z. Alle diffuse textures van het prop gaan in een atlas (maximaal `atlas` px; nooit vergroot), de primitives worden samengevoegd tot een mesh met een materiaal. Bladkaarten en gras: de bron staat op BLEND of MASK, de uitvoer altijd op **alphaMode MASK met alphaCutoff** (de cutoff van de bronmaterialen met MASK, anders 0,5; oak 0,65, pine 0,87), de atlas is WebP met alfakanaal (kleur onder volledig transparante texels is naar het gemiddelde gevuld, geen donkere randen) en het manifest-veld is `alpha: 'mask'`. Ondoorzichtige props krijgen een JPEG-atlas. LOD0 tot LOD2: meshopt-simplify (uv en normaal gewogen) op het budget van de categorie, de atlas halveert per LOD (1024, 512, 256 of 512, 256, 128), elke LOD zet zijn eigen voet op y = 0. Bomen met bladkaarten (`reduceFoliageMesh`) geven op LOD1 en LOD2 40 procent van het budget aan de stam en de rest aan de grootste kaarten, die tot 2,2 keer groter worden, zodat de kruin niet verdwijnt.
+
+Controles (een fout faalt de build met een leesbare reden): hoogte binnen het bereik, voet op y = 0, midden, driehoeken per LOD binnen het budget, een materiaal, geen PBR, MASK behouden, en de bladsoort: `tree-leafy` eist groene tot geelgroene, verzadigde kaarten, `tree-bare` bruin of grijs twijgwerk (tint en verzadiging van de dekkende texels, in `validation-report.json` onder `alpha`). Het verslag geeft per prop de bron-hoogte bij `unit`, de uiteindelijke hoogte, de schaal, de atlas en de driehoeken.
+
+Manifest: `kind: 'prop'`, `category`, `alpha` (alleen bij bladkaarten en gras), `bounds`, `teamMask: 'none'`. Ontbreekt een pack-bron (CI, een verse clone), dan blijft de bestaande uitvoer van de props uit dat pack in `assets/dist` staan en geeft de buis een waarschuwing; zonder eerdere uitvoer is het een fout.
+
+Preview: `tools/asset-cli/preview/props.html` (serveer de repo-root statisch; `?lod=0|1|2&w=<px>&only=<id,id>&manifest=<pad>`) tekent alle pack-props in rijen op echte schaal, elk naast een poppetje van 1,8 m en met de hulplijn op 1,8 m.
 
 ## Terrein (Rock Terrain 4)
 
@@ -235,6 +251,6 @@ const field = heightfieldSchema.parse(JSON.parse(read('assets/dist/terrain/rock_
 
 ## Tests
 
-`test/buildings.test.ts` toetst de gebouwen: config tegen `data/buildings.json`, footprint-schaal per LOD, grond, team-materiaal, geen PBR, budgetten, determinisme (twee runs, gelijke bytes), het manifest-schema en de meshgereedschappen.
+`test/packs.test.ts` toetst de pack-buis met een synthetische pack-GLB (splitsen, FBX-draaiing, echte schaal, voet en midden, MASK met WebP-alfa, de config, bladsoort, determinisme, behoud van de uitvoer als de bron ontbreekt); `test/packs-dist.test.ts` toetst de gecommitte uitvoer in `assets/dist` tegen `packs.json`: per categorie redelijke hoogtes, voet op y = 0, budgetten en alfagedrag.\n\n`test/buildings.test.ts` toetst de gebouwen: config tegen `data/buildings.json`, footprint-schaal per LOD, grond, team-materiaal, geen PBR, budgetten, determinisme (twee runs, gelijke bytes), het manifest-schema en de meshgereedschappen.
 
 `npx -y pnpm@9 test` (`test/bake.test.ts` voor de bakker, inclusief roundtrip van een bekende pose; `test/conform.test.ts` voor bone-snoeien, rigmap, simplify met skinning en een smoke-test op de echte UAL-GLB) genereert synthetische GLB's met gltf-transform (geldige humanoid-dummy, te zware en foute varianten) in `test/fixtures.ts`.

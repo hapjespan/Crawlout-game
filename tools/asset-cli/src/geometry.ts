@@ -215,6 +215,18 @@ function keepComponents(mesh: Mesh, keep: Set<string>, rootOfTriangle: string[])
   return compact(mesh, new Uint32Array(kept));
 }
 
+/** Alle samenhangende delen als losse meshes, groot naar klein (naar oppervlak), met hun oppervlak en driehoekenaantal. */
+export function splitComponents(
+  mesh: Mesh,
+  weldDistance: number,
+): { mesh: Mesh; area: number; triangles: number }[] {
+  const { components, rootOfTriangle } = connectedComponents(mesh, weldDistance);
+  return components.map((component) => {
+    const part = keepComponents(mesh, new Set([component.root]), rootOfTriangle);
+    return { mesh: part, area: component.area, triangles: triangleCount(part) };
+  });
+}
+
 /**
  * Houdt de `count` grootste samenhangende delen (naar oppervlak). Delen hangen samen als driehoeken een hoekpunt delen;
  * hoekpunten tellen als gelijk binnen `weldDistance` (uv-naden splitsen vertices op dezelfde plek).

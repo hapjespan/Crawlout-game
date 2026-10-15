@@ -8,6 +8,21 @@ export const MANIFEST_VERSION = 1 as const;
 
 const vec3 = z.tuple([z.number(), z.number(), z.number()]);
 
+/** Categorieen van props uit de DJMaesen-packs (assets/src/packs.json); map en render kiezen props hierop. */
+export const PROP_CATEGORIES = [
+  'tree-leafy',
+  'tree-bare',
+  'grass',
+  'plant',
+  'rock',
+  'crate',
+  'chest',
+  'barrel',
+  'structure',
+  'debris',
+] as const;
+export const propCategorySchema = z.enum(PROP_CATEGORIES);
+
 export const boundsSchema = z.object({ min: vec3, max: vec3 });
 
 export const lodSchema = z.object({
@@ -104,8 +119,21 @@ export const assetEntrySchema = z
     teamMask: z.enum(['materialName', 'diffuseAlpha', 'none']).optional(),
     /** Aanwezig voor karakters met animaties; props en karakters zonder clips hebben geen baked. */
     baked: bakedAnimationSchema.optional(),
+    /** Alleen props (de pack-props): soort, voor map (plaatsing) en render (schaduw, wind, beweegbaarheid). */
+    category: propCategorySchema.optional(),
+    /**
+     * Alleen props met transparante delen (bladkaarten, gras): 'mask' = het materiaal heeft alphaMode MASK met een
+     * alphaCutoff en de diffuse textuur (PNG of WebP) heeft een alfakanaal; render tekent het met alpha-test, niet
+     * met blending. Ontbreekt het veld, dan is het materiaal ondoorzichtig.
+     */
+    alpha: z.enum(['mask']).optional(),
   })
   .superRefine((entry, ctx) => {
+    if ((entry.category || entry.alpha) && entry.kind !== 'prop')
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'category en alpha zijn alleen voor props',
+      });
     if (entry.kind === 'building') {
       if (!entry.footprint)
         ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'een gebouw heeft een footprint' });
@@ -134,6 +162,7 @@ export const manifestSchema = z.object({
 });
 
 export type Vec3 = z.infer<typeof vec3>;
+export type PropCategory = z.infer<typeof propCategorySchema>;
 export type AssetBounds = z.infer<typeof boundsSchema>;
 export type AssetLod = z.infer<typeof lodSchema>;
 export type AssetAnimation = z.infer<typeof animationSchema>;

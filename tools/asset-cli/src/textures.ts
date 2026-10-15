@@ -273,7 +273,11 @@ function remapPrimitiveToAtlas(
  * dan N x N kopieën en de UV's worden door N gedeeld. Wrap CLAMP_TO_EDGE klemt per hoekpunt. Alle primitives krijgen
  * daarna één materiaal ("atlas").
  */
-export async function buildAtlas(document: Document, size: number): Promise<AtlasInfo> {
+export async function buildAtlas(
+  document: Document,
+  size: number,
+  options: { keepAlpha?: boolean } = {},
+): Promise<AtlasInfo> {
   const sharp = await loadSharp();
   const root = document.getRoot();
   const prims = root.listMeshes().flatMap((m) => m.listPrimitives());
@@ -376,17 +380,38 @@ export async function buildAtlas(document: Document, size: number): Promise<Atla
   );
   // Atlas zo klein mogelijk: de omhullende macht van 2 van wat gebruikt is.
   const used = pow2(Math.max(...placements.map((p) => Math.max(p.x, p.y) + p.size)));
-  const png = await sharp({
-    create: {
-      width: used,
-      height: used,
-      channels: 4,
-      background: { r: 128, g: 128, b: 128, alpha: 1 },
-    },
-  })
-    .composite(layers)
-    .png()
-    .toBuffer();
+  let png: Buffer;
+  if (options.keepAlpha) {
+    // Bladkaarten en gras: de alfa moet in de atlas blijven, dus de cellen worden pixel voor pixel gekopieerd
+    // (composite 'over' op een effen achtergrond zou de transparantie wegwerken).
+    const pixels = Buffer.alloc(used * used * 4);
+    for (let i = 0; i < pixels.length; i += 4) pixels.set([128, 128, 128, 0], i);
+    for (const layer of layers) {
+      const raw = await sharp(layer.input).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+      for (let row = 0; row < raw.info.height; row++)
+        raw.data.copy(
+          pixels,
+          ((layer.top + row) * used + layer.left) * 4,
+          row * raw.info.width * 4,
+          (row + 1) * raw.info.width * 4,
+        );
+    }
+    png = await sharp(pixels, { raw: { width: used, height: used, channels: 4 } })
+      .png()
+      .toBuffer();
+  } else {
+    png = await sharp({
+      create: {
+        width: used,
+        height: used,
+        channels: 4,
+        background: { r: 128, g: 128, b: 128, alpha: 1 },
+      },
+    })
+      .composite(layers)
+      .png()
+      .toBuffer();
+  }
   const atlas = document
     .createTexture('atlas')
     .setMimeType('image/png')

@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="utf-8" />
+    <title>asset-cli propspreview</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        background: #222a2e;
+      }
+      #wrap {
+        position: relative;
+        display: inline-block;
+      }
+      .label {
+        position: absolute;
+        transform: translateX(-50%);
+        color: #e8e2d6;
+        font: 11px/1.25 monospace;
+        text-align: center;
+        white-space: nowrap;
+        pointer-events: none;
+      }
+      .label b {
+        color: #ffd84a;
+        font-weight: normal;
+      }
+      .rowtitle {
+        position: absolute;
+        left: 8px;
+        color: #b9c4c9;
+        font: 12px monospace;
+        pointer-events: none;
+      }
+      .guide {
+        position: absolute;
+        left: 0;
+        right: 0;
+        border-top: 1px dashed rgba(255, 216, 74, 0.55);
+        color: #ffd84a;
+        font: 11px monospace;
+        text-align: right;
+        pointer-events: none;
+      }
+    </style>
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "/node_modules/.pnpm/three@0.186.1/node_modules/three/build/three.module.js",
+          "three/addons/": "/node_modules/.pnpm/three@0.186.1/node_modules/three/examples/jsm/"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <div id="wrap"><canvas id="c"></canvas></div>
+    <script type="module">
+      // Overzichtsplaat van de pack-props (geen onderdeel van de buis): alle props met een `category` uit
+      // assets/dist, op echte schaal naast een poppetje van 1,8 m, in rijen met elk een eigen schaal.
+      // Query: manifest=<pad> lod=0|1|2 w=<px> only=<id,id,...> az=<graden>
+      import * as THREE from 'three';
+      import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+      import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
+
+      const q = new URLSearchParams(location.search);
+      const lod = Number(q.get('lod') ?? 0);
+      const W = Number(q.get('w') ?? 2400);
+      const az = (Number(q.get('az') ?? 0) * Math.PI) / 180;
+      const el = (10 * Math.PI) / 180;
+      const only = q.get('only') ? new Set(q.get('only').split(',')) : null;
+
+      const base = q.get('manifest') ?? '/assets/dist/manifest.json';
+      const manifest = await (await fetch(base)).json();
+      const dir = base.slice(0, base.lastIndexOf('/') + 1);
+      const props = manifest.assets.filter((a) => a.kind === 'prop' && a.category && (!only || only.has(a.id)));
+      const heightOf = (a) => a.bounds.max[1] - a.bounds.min[1];
+
+      const rows = [
+        { title: 'bomen (tree-leafy, tree-bare)', pick: (a) => a.category.startsWith('tree'), maxScale: 60 },
+        { title: 'groot (structure, rotsen hoger dan 5 m)', pick: (a) => a.category === 'structure' || (a.category === 'rock' && heightOf(a) > 5), maxScale: 70 },
+        { title: 'rotsen, gras en planten', pick: (a) => ['rock', 'grass', 'plant'].includes(a.category), maxScale: 110 },
+        { title: 'kratten, kisten, vaten en puin (crate, chest, barrel, debris)', pick: (a) => ['crate', 'chest', 'barrel', 'debris'].includes(a.category), maxScale: 170 },
+      ];
+      const order = ['tree-leafy', 'tree-bare', 'structure', 'rock', 'grass', 'plant', 'crate', 'chest', 'barrel', 'debris'];
+      const taken = new Set();
+      for (const row of rows) {
+        row.items = props
+          .filter((a) => !taken.has(a.id) && row.pick(a))
+          .sort((a, b) => order.indexOf(a.category) - order.indexOf(b.category) || a.id.localeCompare(b.id));
+        row.items.forEach((a) => taken.add(a.id));
+      }
+
+      const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
+      const GAP = 0.8;
+      const PERSON_W = 0.55;
+      for (const row of rows) {
+        let x = 0;
+        row.layout = [];
+        for (const a of row.items) {
+          const w = Math.max(a.bounds.max[0] - a.bounds.min[0], a.bounds.max[2] - a.bounds.min[2]);
+          row.layout.push({ a, personX: x + PERSON_W / 2, propX: x + PERSON_W + 0.3 + w / 2, w });
+          x += PERSON_W + 0.3 + w + GAP;
+        }
+        row.totalW = Math.max(x, 1);
+        row.maxH = Math.max(1.8, ...row.items.map(heightOf));
+        row.scale = Math.min(row.maxScale, (W - 20) / row.totalW);
+        row.h = Math.ceil(row.maxH * row.scale + 90);
+      }
+      const visibleRows = rows.filter((r) => r.items.length > 0);
+      const H = visibleRows.reduce((s, r) => s + r.h, 0);
+
+      const canvas = document.getElementById('c');
+      const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
+      renderer.setPixelRatio(1);
+      renderer.setSize(W, H);
+      renderer.setScissorTest(true);
+      const wrap = document.getElementById('wrap');
+
+      let rowTop = 0;
+      const info = [];
+      for (const row of visibleRows) {
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x56604f);
+        scene.add(new THREE.HemisphereLight(0xfff2dc, 0x4a4030, 1.9));
+        const sun = new THREE.DirectionalLight(0xfff0d0, 2.2);
+        sun.position.set(-6, 10, 8);
+        scene.add(sun);
+        const ground = new THREE.Mesh(
+          new THREE.PlaneGeometry(row.totalW + 40, 40),
+          new THREE.MeshStandardMaterial({ color: 0x3f4a38 }),
+        );
+        ground.rotation.x = -Math.PI / 2;
+        ground.position.set(row.totalW / 2, -0.01, 0);
+        scene.add(ground);
+        for (const item of row.layout) {
+          const person = new THREE.Mesh(
+            new THREE.CapsuleGeometry(0.22, 1.36, 4, 12),
+            new THREE.MeshStandardMaterial({ color: 0x9fb4c4 }),
+          );
+          person.position.set(item.personX, 0.9, 0);
+          scene.add(person);
+          const gltf = await loader.loadAsync(dir + item.a.lods[lod].path);
+          const holder = new THREE.Group();
+          holder.add(gltf.scene);
+          holder.rotation.y = az;
+          holder.position.set(item.propX, 0, 0);
+          scene.add(holder);
+          const box = new THREE.Box3().setFromObject(gltf.scene);
+          info.push(`${item.a.id} ${item.a.category} H ${(box.max.y - box.min.y).toFixed(2)} m y0 ${box.min.y.toFixed(3)} tris ${item.a.lods[lod].triangles}${item.a.alpha ? ' alpha' : ''}`);
+        }
+        // Orthografische camera: x-schaal `row.scale` px per meter, grond op 60 px boven de onderkant van de rij.
+        const camH = row.h / row.scale;
+        const camera = new THREE.OrthographicCamera(0, W / row.scale, camH, 0, 0.1, 400);
+        const groundPx = 60;
+        const yBottom = -groundPx / row.scale / Math.cos(el);
+        camera.position.set(0, yBottom + Math.sin(el) * 100, Math.cos(el) * 100);
+        camera.rotation.set(-el, 0, 0);
+        camera.updateProjectionMatrix();
+        renderer.setViewport(0, H - rowTop - row.h, W, row.h);
+        renderer.setScissor(0, H - rowTop - row.h, W, row.h);
+        renderer.render(scene, camera);
+
+        // Labels en hulplijn (1,8 m) als DOM-overlay, in beeldpixels.
+        const groundY = rowTop + row.h - groundPx;
+        const title = document.createElement('div');
+        title.className = 'rowtitle';
+        title.style.top = `${rowTop + 4}px`;
+        title.textContent = `${row.title}, ${row.scale.toFixed(0)} px per meter`;
+        wrap.appendChild(title);
+        const guide = document.createElement('div');
+        guide.className = 'guide';
+        guide.style.top = `${groundY - 1.8 * row.scale * Math.cos(el)}px`;
+        guide.textContent = '1,8 m';
+        wrap.appendChild(guide);
+        for (const item of row.layout) {
+          const label = document.createElement('div');
+          label.className = 'label';
+          label.style.left = `${item.propX * row.scale}px`;
+          label.style.top = `${groundY + 4}px`;
+          label.innerHTML = `<b>${item.a.id}</b><br>${heightOf(item.a).toFixed(2)} m, ${item.a.lods[lod].triangles} tris${item.a.alpha ? ', alpha' : ''}`;
+          wrap.appendChild(label);
+        }
+        rowTop += row.h;
+      }
+      document.title = 'ready';
+      window.__info = info;
+      window.__ready = true;
+    </script>
+  </body>
+</html>
