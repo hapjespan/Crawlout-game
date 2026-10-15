@@ -84,20 +84,20 @@ function describe(sim: Sim, p: number, mirror: boolean): string[] {
       const fx = mirror ? W - w.fx[i]! - w.fw[i]! : w.fx[i]!;
       const fy = mirror ? H - w.fy[i]! - w.fh[i]! : w.fy[i]!;
       out.push(
-        `gebouw t${u.typeId} @${fx},${fy} st${u.buildState} prog${u.progress} hp${u.hp} res${w.research[i]} work${w.work[i]}`,
+        `gebouw t${u.typeId} @${fx},${fy} st${u.buildState} prog${u.progress} hp${u.hp} res${w.research[i]} work${w.work[i]} job${w.job[i]}/${w.jobKind[i]}/${w.jobWork[i]}`,
       );
     } else if (u.kind === 'corpse') {
       out.push(`lijk t${u.typeId} @${mx(u.x)},${my(u.y)} t${w.work[i]}`);
     } else {
       out.push(
-        `${u.kind} t${u.typeId} @${mx(u.x)},${my(u.y)} hp${u.hp} ord${u.order} ph${u.phase} rol${u.role} carry${u.carry} mv${u.moving ? 1 : 0} work${w.work[i]} cd${w.cooldown[i]}`,
+        `${u.kind} t${u.typeId} @${mx(u.x)},${my(u.y)} hp${u.hp} ord${u.order} ph${u.phase} rol${u.role} carry${u.carry} mv${u.moving ? 1 : 0} work${w.work[i]} cd${w.cooldown[i]} rm${w.repairMilli[i]}`,
       );
     }
   }
   out.sort();
   const ps = sim.ps;
   out.push(
-    `ps scrap${ps.scrap[p]} growth${ps.growth[p]} dom${ps.domTicks[p]} build${ps.aiBuild[p]} attack${ps.aiAttack[p]} waveAt${ps.aiWaveAt[p]} claimAt${ps.aiClaimAt[p]} tech${ps.tech[p]} hero${ps.heroState[p]}/${ps.heroLevel[p]}/${ps.heroXp[p]}/${ps.heroPerks[p]}/${ps.heroTimer[p]}`,
+    `ps scrap${ps.scrap[p]} growth${ps.growth[p]} dom${ps.domTicks[p]} build${ps.aiBuild[p]} attack${ps.aiAttack[p]} waveAt${ps.aiWaveAt[p]} claimAt${ps.aiClaimAt[p]} tech${ps.tech[p]} hero${ps.heroState[p]}/${ps.heroLevel[p]}/${ps.heroXp[p]}/${ps.heroPerks[p]}/${ps.heroTimer[p]} trained${ps.trained.slice(p * 7, p * 7 + 7).join('.')} net${ps.netTimer[p]}/${ps.netArrivals[p]} robot${ps.aiRobot[p]}`,
   );
   return out;
 }

@@ -20,6 +20,10 @@ import { playMatchesParallel, summarize } from './fairness.js';
 // Formatieronde (data 0.15.0, packages/sim 0.12.0: elke unit van een groeps-Move of -AttackMove een eigen plek in een
 // formatie): speler 0 wint 17 en speler 1 wint 16, 14 keer vernietiging en 19 keer dominantie, lengte 25,5 tot 36,8
 // minuten (32 van de 33 tussen 25 en 35); EXPECTED is opnieuw gemeten.
+// Content-x (data 0.16.0: robots, technicus-regel, vangnet, training, turret-netwerk, de passieven van de held; de AI
+// bouwt vanaf minuut 14 robots in de robotfabriek; de spiegel-fixes in nearestFreeCellAround en de separatie van units
+// op hetzelfde punt): speler 0 wint 15 en speler 1 wint 18, 12 keer vernietiging en 21 keer dominantie, lengte 25,5 tot
+// 27,8 minuten (33 van de 33 tussen 25 en 35); EXPECTED is opnieuw gemeten.
 // Een even footprint (hoofdgebouw 20 x 20) brak de spiegel al bij de start (speler
 // 0 won 30 van de 33), een claimpaal van 3 x 3 liet het midden altijd naar speler 0 gaan; zie packages/data/CHANGELOG.md
 // 0.14.0. Het verschil tussen de spelers is toeval (één standaardafwijking bij 33 muntworpen is 2,9 potjes), geen
@@ -27,11 +31,11 @@ import { playMatchesParallel, summarize } from './fairness.js';
 // hoogstens 21 van de 33 (36 tot 64 procent). Een sim die een speler voortrekt (zoals 28 tegen 5) valt er ruim buiten.
 
 const EXPECTED = [
-  { seed: 1, winner: 1, reason: 'dominance', frame: 32344 },
-  { seed: 5, winner: 0, reason: 'dominance', frame: 33293 },
-  { seed: 7, winner: 1, reason: 'destruction', frame: 33395 },
-  { seed: 42, winner: 0, reason: 'destruction', frame: 33967 },
-  { seed: 99, winner: 1, reason: 'destruction', frame: 31511 },
+  { seed: 1, winner: 1, reason: 'dominance', frame: 32691 },
+  { seed: 5, winner: 0, reason: 'dominance', frame: 32443 },
+  { seed: 7, winner: 0, reason: 'destruction', frame: 31582 },
+  { seed: 42, winner: 1, reason: 'destruction', frame: 30770 },
+  { seed: 99, winner: 0, reason: 'destruction', frame: 32647 },
 ] as const;
 
 // REPLAY_FAST=1 slaat deze 33 potjes (ongeveer 25 s met parallelle processen, 2 minuten na elkaar) over in de snelle

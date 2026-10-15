@@ -537,12 +537,155 @@ const FIXTURES_S7: FixtureDef[] = [
   },
 ];
 
+/**
+ * Content-x (data 0.16.0) for speler p: zodra er een voltooide robotfabriek zonder werk is, een robot uit `robots` (in
+ * volgorde, cyclisch) tot `max` robots; zodra er een voltooide trainingsfaciliteit zonder werk is, het eerste
+ * trainingsprogramma uit `train` dat nog kan. Alleen gewone commando's (Produce, Train); de sim weigert wat niet kan.
+ */
+function contentBot(p: number, robots: readonly string[], max: number, train: readonly string[]) {
+  let k = 0;
+  return (
+    sim: Sim,
+    f: number,
+    add: (p: number, type: CommandEnvelope['type'], payload: unknown) => void,
+  ): void => {
+    if (f % 10 !== (p + 5) % 10) return;
+    const mine = sim
+      .entityIds()
+      .map((id) => sim.getUnit(id)!)
+      .filter((u) => u.owner === p);
+    const busy = new Set(sim.queue(p).map((q) => q.buildingId));
+    const idle = (key: string) =>
+      mine.find(
+        (u) =>
+          u.kind === 'building' &&
+          u.typeId === building(key) &&
+          u.buildState === 2 &&
+          !busy.has(u.id),
+      );
+    const robotCount = mine.filter(
+      (u) => u.kind === 'unit' && u.role === ROLES.indexOf('robot'),
+    ).length;
+    const factory = idle('robotfabriek');
+    if (factory !== undefined && robotCount < max) {
+      add(p, 'Produce', { buildingId: factory.id, loadoutId: loadout(robots[k % robots.length]!) });
+      k++;
+    }
+    const facility = idle('trainingsfaciliteit');
+    const trained = sim.playerStatus(p).trained ?? [];
+    if (facility !== undefined) {
+      const prog = train
+        .map((key) => gameData().data.training.find((t) => t.key === key)!)
+        .find((t) => (trained[t.special] ?? 0) < t.maxPoints);
+      if (prog !== undefined) add(p, 'Train', { buildingId: facility.id, programId: prog.id });
+    }
+  };
+}
+
+const FIXTURES_S8: FixtureDef[] = [
+  {
+    // Content-x (data 0.16.0), speler 0 een bot met de nieuwe content: werkplaats, lab, robotfabriek,
+    // trainingsfaciliteit en drie turrets bij het hoofdgebouw; onderzoek tot turret_netwerk (het turret-netwerk), een
+    // reparatiedrone en vijf beveiligingsrobots met één bouwer (vier gedekt, twee ongedekt: de technicus-regel), en
+    // training van Kracht en Waarneming. Speler 1 valt met vier militie het hoofdgebouw van speler 0 aan: turrets,
+    // robots en reparatie aan het werk.
+    name: 's8-rustbelt-robots',
+    build() {
+      const r = base('rustbelt', 816, [false, false]);
+      const p0: BotPlan = {
+        builds: [
+          { key: 'werkplaats', at: 'hq' },
+          HOUSE,
+          { key: 'lab', at: 'hq' },
+          HOUSE,
+          { key: 'robotfabriek', at: 'hq' },
+          { key: 'turret', at: 'settlement', homewardM: 6 },
+          { key: 'turret', at: 'settlement', homewardM: 10 },
+          { key: 'trainingsfaciliteit', at: 'hq' },
+          { key: 'turret', at: 'settlement', homewardM: 14 },
+          HOUSE,
+          HOUSE,
+        ],
+        research: [
+          'raffinage',
+          'geweerrek',
+          'robotica',
+          'lasergeleiding',
+          'lasertechniek',
+          'turret_netwerk',
+        ],
+        builders: 1,
+        militiaAtSettlers: 99,
+        militiaCount: 0,
+        attackWithMilitia: 99,
+      };
+      const p1: BotPlan = {
+        builds: [{ key: 'werkplaats', at: 'hq' }, HOUSE, HOUSE],
+        research: [],
+        builders: 1,
+        militiaAtSettlers: 99,
+        militiaFrame: 20000,
+        militiaCount: 6,
+        attackWithMilitia: 6,
+        attackFrame: 21000,
+        attackTarget: 'hq',
+      };
+      recordControlled(r, 30000, [
+        settlementBot(0, p0),
+        contentBot(
+          0,
+          [
+            'reparatiedrone',
+            'beveiligingsrobot',
+            'beveiligingsrobot',
+            'beveiligingsrobot',
+            'beveiligingsrobot',
+            'beveiligingsrobot',
+          ],
+          6,
+          ['training_kracht', 'training_waarneming'],
+        ),
+        settlementBot(1, p1),
+      ]);
+      return r;
+    },
+  },
+  {
+    // Vangnet (data 0.16.0): speler 1 zet meteen een radiobaken en stuurt daarna al zijn bewoners (niet de held) naar
+    // het hoofdgebouw van speler 0, waar de held en de militie ze opvangen. Onder drie bewoners komt er elke 40 s een
+    // scavenger bij het baken, zonder bed.
+    name: 's8-rustbelt-safety-net',
+    build() {
+      const r = base('rustbelt', 817, [false, false]);
+      const st = startOf(r);
+      const sim = st.sim;
+      const s = new Script();
+      const plan = new SitePlanner(sim);
+      s.add(4, 1, 'Build', {
+        ids: st.builder[1]!,
+        typeId: building('radiobaken'),
+        ...plan.take(1, 'radiobaken', 'hq'),
+      });
+      const hq0 = sim.getUnit(st.hq[0]!)!;
+      s.add(700, 1, 'AttackMove', {
+        ids: [...st.scav[1]!, ...st.builder[1]!, ...st.militia[1]!],
+        x: hq0.x,
+        y: hq0.y,
+      });
+      r.bundles = s.bundles();
+      r.hashes = [{ frame: 9599, hash: 0 }];
+      return r;
+    },
+  },
+];
+
 export const FIXTURES: readonly FixtureDef[] = [
   ...FIXTURES_UP_TO_S3,
   ...FIXTURES_S4,
   ...FIXTURES_S5,
   ...FIXTURES_S6,
   ...FIXTURES_S7,
+  ...FIXTURES_S8,
 ];
 
 /** De sim na het uitvoeren van de frames 0 tot `frame` (exclusief) met de bundels die de replay tot dan heeft. */
