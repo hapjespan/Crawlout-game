@@ -5,7 +5,7 @@
 //   ripples four small directional waves (analytic slope) moved along the flow with two phases half a cycle apart
 //           (flow mapping), so the river visibly runs downstream without stretching;
 //   light   two toon bands from the ripple normal, hard-edged sun glints, a little sky at grazing angles;
-//   foam    a broken band where the water gets shallow at the shore, and white streaks over the fords;
+//   foam    a broken band where the water gets shallow at the shore, and soft, thin, drifting light streaks over the fords (no opaque blobs);
 //   alpha   the bed shows through near the shore, deep water is nearly opaque.
 // Per vertex: position on the level, attribute wInfo = (depth in meters, ford share 0..1, flow x, flow z in m/s).
 import {
@@ -56,6 +56,9 @@ const DEEP = [0.035, 0.085, 0.085] as const;
 const SHALLOW = [0.2, 0.25, 0.17] as const;
 const SKY = [0.45, 0.53, 0.55] as const;
 const FOAM = [0.78, 0.8, 0.74] as const;
+/** Ford streaks: drift speed along the flow, m/s, and the most they lighten the water (0..1). */
+const FORD_STREAK_SPEED = 1.1;
+const FORD_FOAM_MAX = 0.5;
 /** Ripples: direction (normalized below), spatial frequency rad/m, slope amplitude, angular speed rad/s. */
 const WAVES: readonly (readonly [number, number, number, number, number])[] = [
   [1, 0.3, 1.25, 0.16, 1.1],
@@ -204,9 +207,23 @@ export function createWaterMaterial(opts: WaterLayerOptions): MeshBasicNodeMater
   // Foam: a broken band at the shoreline and streaks over the fords, both moving with the ripples.
   const breakup = smoothstep(-0.02, 0.05, rippleH);
   const shoreFoam = smoothstep(0.16, 0.03, depth).mul(breakup.mul(0.7).add(0.3));
-  const fordFoam = ford.mul(smoothstep(0.125, 0.15, rippleH)).mul(0.55);
-  const foam = max(shoreFoam, fordFoam).mul(smoothstep(0.0, 0.02, depth));
-  const color = mix(base.add(vec3(glint, glint, glint.mul(0.95))), vec3(...FOAM), foam);
+  // Over a ford: thin streaks stretched along the flow, drifting with it, patchy and soft-edged. They only lighten the
+  // water (the alpha stays, so the bed shows through) and fade out with distance, where a streak would be sub-pixel.
+  const flowDir = normalize(flowV.add(vec2(0.001, 0.0005)));
+  const along = dot(p, flowDir).sub(t.mul(FORD_STREAK_SPEED));
+  const across = dot(p, vec2(flowDir.y.negate(), flowDir.x));
+  const streakA = sin(across.mul(3.6).add(sin(along.mul(0.9).add(1.3)).mul(1.7)));
+  const streakB = sin(across.mul(5.3).add(sin(along.mul(1.7)).mul(2.1)).add(2.0));
+  const patch = sin(along.mul(0.55).add(across.mul(0.7)));
+  const streaks = smoothstep(0.2, 0.9, streakA.add(streakB).mul(0.5)).mul(smoothstep(-0.6, 0.5, patch));
+  const fordFoam = ford
+    .mul(streaks)
+    .mul(FORD_FOAM_MAX)
+    .mul(float(1).sub(smoothstep(60, 200, length(toEye)).mul(0.6)))
+    .mul(smoothstep(0.0, 0.03, depth));
+  const foam = shoreFoam.mul(smoothstep(0.0, 0.02, depth));
+  const lit = base.add(vec3(glint, glint, glint.mul(0.95)));
+  const color = mix(mix(lit, vec3(...FOAM), foam), mix(lit, vec3(...FOAM), fordFoam.mul(0.5)), float(1).sub(foam));
   const alpha = max(mix(float(0.5), float(0.92), smoothstep(0.0, 0.75, depth)), foam);
 
   const m = new MeshBasicNodeMaterial();
