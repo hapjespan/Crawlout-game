@@ -230,39 +230,39 @@
       "kind": "building",
       "bounds": {
         "min": [
-          -0.5,
+          -1.5,
           0,
-          -0.5
+          -1.5
         ],
         "max": [
-          0.5,
-          4.7,
-          0.5
+          1.5,
+          7.4,
+          1.5
         ]
       },
       "lods": [
         {
           "level": 0,
           "path": "dweller_building_beacon/lod0.glb",
-          "triangles": 140
+          "triangles": 142
         },
         {
           "level": 1,
           "path": "dweller_building_beacon/lod1.glb",
-          "triangles": 140
+          "triangles": 142
         },
         {
           "level": 2,
           "path": "dweller_building_beacon/lod2.glb",
-          "triangles": 119
+          "triangles": 142
         }
       ],
       "sockets": {},
       "animations": [],
       "boneCount": 0,
       "footprint": {
-        "w": 1,
-        "h": 1
+        "w": 3,
+        "h": 3
       },
       "teamMaterials": [
         "team_trim"
@@ -279,7 +279,7 @@
         ],
         "max": [
           0.5,
-          2.72,
+          5.45,
           0.5
         ]
       },
@@ -287,17 +287,17 @@
         {
           "level": 0,
           "path": "dweller_building_claim_post/lod0.glb",
-          "triangles": 88
+          "triangles": 92
         },
         {
           "level": 1,
           "path": "dweller_building_claim_post/lod1.glb",
-          "triangles": 88
+          "triangles": 92
         },
         {
           "level": 2,
           "path": "dweller_building_claim_post/lod2.glb",
-          "triangles": 67
+          "triangles": 92
         }
       ],
       "sockets": {},
@@ -316,39 +316,39 @@
       "kind": "building",
       "bounds": {
         "min": [
-          -1.5,
+          -6.5,
           0,
-          -1.5
+          -9.5
         ],
         "max": [
-          1.5,
-          2.1,
-          1.5
+          6.5,
+          9.993019,
+          9.5
         ]
       },
       "lods": [
         {
           "level": 0,
           "path": "dweller_building_housing/lod0.glb",
-          "triangles": 2437
+          "triangles": 2467
         },
         {
           "level": 1,
           "path": "dweller_building_housing/lod1.glb",
-          "triangles": 996
+          "triangles": 992
         },
         {
           "level": 2,
           "path": "dweller_building_housing/lod2.glb",
-          "triangles": 134
+          "triangles": 158
         }
       ],
       "sockets": {},
       "animations": [],
       "boneCount": 0,
       "footprint": {
-        "w": 3,
-        "h": 3
+        "w": 13,
+        "h": 19
       },
       "teamMaterials": [
         "team_trim"
@@ -359,39 +359,39 @@
       "kind": "building",
       "bounds": {
         "min": [
-          -2.5,
+          -10.5,
           0,
-          -2.5
+          -10.5
         ],
         "max": [
-          2.5,
-          5.9,
-          2.5
+          10.5,
+          13.1,
+          10.5
         ]
       },
       "lods": [
         {
           "level": 0,
           "path": "dweller_building_hq/lod0.glb",
-          "triangles": 2369
+          "triangles": 2341
         },
         {
           "level": 1,
           "path": "dweller_building_hq/lod1.glb",
-          "triangles": 944
+          "triangles": 939
         },
         {
           "level": 2,
           "path": "dweller_building_hq/lod2.glb",
-          "triangles": 286
+          "triangles": 288
         }
       ],
       "sockets": {},
       "animations": [],
       "boneCount": 0,
       "footprint": {
-        "w": 5,
-        "h": 5
+        "w": 21,
+        "h": 21
       },
       "teamMaterials": [
         "team_trim"
@@ -402,39 +402,39 @@
       "kind": "building",
       "bounds": {
         "min": [
-          -1.5,
+          -8.5,
           0,
-          -1.5
+          -9.5
         ],
         "max": [
-          1.5,
-          2.527184,
-          1.53
+          8.5,
+          9.993019,
+          9.5
         ]
       },
       "lods": [
         {
           "level": 0,
           "path": "dweller_building_lab/lod0.glb",
-          "triangles": 1790
+          "triangles": 1983
         },
         {
           "level": 1,
           "path": "dweller_building_lab/lod1.glb",
-          "triangles": 712
+          "triangles": 792
         },
         {
           "level": 2,
           "path": "dweller_building_lab/lod2.glb",
-          "triangles": 216
+          "triangles": 234
         }
       ],
       "sockets": {},
       "animations": [],
       "boneCount": 0,
       "footprint": {
-        "w": 3,
-        "h": 3
+        "w": 17,
+        "h": 19
       },
       "teamMaterials": [
         "team_trim"
@@ -445,39 +445,39 @@
       "kind": "building",
       "bounds": {
         "min": [
-          -1.5,
+          -10.5,
           0,
-          -1.5
+          -9.5
         ],
         "max": [
-          1.5,
-          1.42,
-          1.5
+          10.5,
+          9.993019,
+          9.5
         ]
       },
       "lods": [
         {
           "level": 0,
           "path": "dweller_building_training/lod0.glb",
-          "triangles": 1672
+          "triangles": 1995
         },
         {
           "level": 1,
           "path": "dweller_building_training/lod1.glb",
-          "triangles": 673
+          "triangles": 790
         },
         {
           "level": 2,
           "path": "dweller_building_training/lod2.glb",
-          "triangles": 198
+          "triangles": 134
         }
       ],
       "sockets": {},
       "animations": [],
       "boneCount": 0,
       "footprint": {
-        "w": 3,
-        "h": 3
+        "w": 21,
+        "h": 19
       },
       "teamMaterials": [
         "team_trim"
@@ -488,39 +488,39 @@
       "kind": "building",
       "bounds": {
         "min": [
-          -1,
+          -1.5,
           0,
-          -1
+          -1.5
         ],
         "max": [
-          1,
-          1.946184,
-          1
+          1.5,
+          2.72,
+          1.5
         ]
       },
       "lods": [
         {
           "level": 0,
           "path": "dweller_building_turret/lod0.glb",
-          "triangles": 156
+          "triangles": 176
         },
         {
           "level": 1,
           "path": "dweller_building_turret/lod1.glb",
-          "triangles": 156
+          "triangles": 176
         },
         {
           "level": 2,
           "path": "dweller_building_turret/lod2.glb",
-          "triangles": 135
+          "triangles": 176
         }
       ],
       "sockets": {},
       "animations": [],
       "boneCount": 0,
       "footprint": {
-        "w": 2,
-        "h": 2
+        "w": 3,
+        "h": 3
       },
       "teamMaterials": [
         "team_trim"
@@ -531,39 +531,39 @@
       "kind": "building",
       "bounds": {
         "min": [
-          -1.5,
+          -10.5,
           0,
-          -1.5
+          -9.5
         ],
         "max": [
-          1.5,
-          1.75,
-          1.5
+          10.5,
+          6.25,
+          9.5
         ]
       },
       "lods": [
         {
           "level": 0,
           "path": "dweller_building_workshop/lod0.glb",
-          "triangles": 1697
+          "triangles": 1879
         },
         {
           "level": 1,
           "path": "dweller_building_workshop/lod1.glb",
-          "triangles": 674
+          "triangles": 754
         },
         {
           "level": 2,
           "path": "dweller_building_workshop/lod2.glb",
-          "triangles": 178
+          "triangles": 104
         }
       ],
       "sockets": {},
       "animations": [],
       "boneCount": 0,
       "footprint": {
-        "w": 3,
-        "h": 3
+        "w": 21,
+        "h": 19
       },
       "teamMaterials": [
         "team_trim"

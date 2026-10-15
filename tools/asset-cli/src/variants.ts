@@ -15,6 +15,32 @@ const sourceSchema = z.object({
   file: z.string().min(1),
   /** Naamsvermelding (CC-BY); alleen documentatie, de licentietekst staat in assets/src/licenses. */
   attribution: z.string().optional(),
+  /**
+   * De wereldschaal: meters per bron-eenheid. Elk huisonderdeel van elke variant krijgt precies deze uniforme schaal
+   * (1 unit = 1 meter, poppetje 1,8 m; Spelfundament sectie 9), dus geen gebouw krimpt om in een footprint te passen.
+   */
+  metersPerUnit: positive,
+  /**
+   * De deuropening in bron-eenheden (na de node-transformaties, y omhoog): de vloer onder de deur en de onderkant van de
+   * bovendorpel. Hiermee is `metersPerUnit` gekozen; een test eist een deur van minstens 2,1 m en controleert de getallen
+   * tegen de geometrie.
+   */
+  door: z
+    .object({
+      floorY: z.number(),
+      lintelY: z.number(),
+      /** Een punt in de deuropening (x, z) in bron-eenheden, voor de controle tegen het kozijn. */
+      at: z.tuple([z.number(), z.number()]),
+    })
+    .optional(),
+  /**
+   * Alleen samenhangende delen die helemaal in dit blok liggen (bron-eenheden, na de node-transformaties) horen bij het
+   * huis; los rommel ernaast (een plank op de grond, een touw dat buiten het dak hangt) valt weg en telt niet mee in de
+   * bounds.
+   */
+  keep: z.object({ min: vec3, max: vec3 }).optional(),
+  /** Uitleg bij de schaal en de deurmaat; alleen documentatie. */
+  note: z.string().optional(),
 });
 
 /** Een bronmateriaal (spec-gloss) wordt een effen basiskleur plus diffuse textuur onder deze uitvoernaam. */
@@ -52,32 +78,21 @@ const houseSelectSchema = z.object({
   components: z.number().int().positive().optional(),
 });
 
-const houseSchema = z.object({
-  type: z.literal('house'),
-  source: z.string().min(1),
-  /**
-   * Breedte (x) en diepte (z) in meters waarin het onderdeel past (na `rotation`). Bij `fit` 'contain' en 'house' is de
-   * schaal uniform: het onderdeel past in dit vak en vult de ene as precies, de andere hooguit. Bij 'stretch' vult het
-   * vak exact (niet-uniform).
-   */
-  size: z.tuple([positive, positive]),
-  /**
-   * Hoe het onderdeel in `size` komt. 'contain' (standaard): uniforme schaal op de bounds van het geselecteerde deel,
-   * gecentreerd. 'house': uniforme schaal en plaatsing op de bounds van het hele bronhuis, ook voor een geselecteerd
-   * deel; zo staan de dakvlakken op LOD2 precies op het huis van LOD0 en 1, en verschuiven de LODs niet. 'stretch':
-   * niet-uniform op de bounds van het geselecteerde deel (vervormt ramen en dak; alleen voor een bewuste rek).
-   */
-  fit: z.enum(['contain', 'house', 'stretch']).optional(),
-  /**
-   * Extra schaal op de hoogte, boven op de uniforme schaal ('contain', 'house') of op het gemiddelde van x en z
-   * ('stretch'). 1 = onvervormd; een andere waarde rekt het onderdeel in de hoogte.
-   */
-  heightFactor: positive,
-  select: houseSelectSchema.optional(),
-  /** Aandeel in het driehoekbudget; standaard breedte keer diepte. */
-  weight: positive.optional(),
-  ...place,
-});
+/**
+ * Een kopie (of een deel) van het bronhuis op de wereldschaal van de bron (`metersPerUnit`): geen eigen maat, geen
+ * vervorming. `position` is de voet van het hele bronhuis (midden van zijn bounds in x en z, onderkant op y), ook voor een
+ * geselecteerd deel; zo staan de dakvlakken op LOD2 precies op het huis van LOD0 en 1, en verschuiven de LODs niet.
+ */
+const houseSchema = z
+  .object({
+    type: z.literal('house'),
+    source: z.string().min(1),
+    select: houseSelectSchema.optional(),
+    /** Aandeel in het driehoekbudget; standaard 1 per huisonderdeel. */
+    weight: positive.optional(),
+    ...place,
+  })
+  .strict();
 
 const boxSchema = z.object({
   type: z.literal('box'),
