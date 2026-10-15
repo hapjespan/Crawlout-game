@@ -35,7 +35,8 @@
       ],
       "sockets": {},
       "animations": [],
-      "boneCount": 0
+      "boneCount": 0,
+      "teamMask": "materialName"
     },
     {
       "id": "bush002",
@@ -71,7 +72,8 @@
       ],
       "sockets": {},
       "animations": [],
-      "boneCount": 0
+      "boneCount": 0,
+      "teamMask": "materialName"
     },
     {
       "id": "dweller_body_human",
@@ -157,6 +159,7 @@
         }
       ],
       "boneCount": 20,
+      "teamMask": "materialName",
       "baked": {
         "path": "dweller_body_human/dweller_body_human.anim.f32",
         "width": 80,
@@ -319,7 +322,7 @@
         ],
         "max": [
           1,
-          2.495053,
+          1.5,
           1
         ]
       },
@@ -327,17 +330,17 @@
         {
           "level": 0,
           "path": "dweller_building_housing/lod0.glb",
-          "triangles": 1474
+          "triangles": 2437
         },
         {
           "level": 1,
           "path": "dweller_building_housing/lod1.glb",
-          "triangles": 483
+          "triangles": 996
         },
         {
           "level": 2,
           "path": "dweller_building_housing/lod2.glb",
-          "triangles": 122
+          "triangles": 134
         }
       ],
       "sockets": {},
@@ -370,17 +373,17 @@
         {
           "level": 0,
           "path": "dweller_building_hq/lod0.glb",
-          "triangles": 2202
+          "triangles": 2369
         },
         {
           "level": 1,
           "path": "dweller_building_hq/lod1.glb",
-          "triangles": 809
+          "triangles": 944
         },
         {
           "level": 2,
           "path": "dweller_building_hq/lod2.glb",
-          "triangles": 287
+          "triangles": 286
         }
       ],
       "sockets": {},
@@ -405,7 +408,7 @@
         ],
         "max": [
           1.5,
-          4.011904,
+          2.527184,
           1.53
         ]
       },
@@ -413,12 +416,12 @@
         {
           "level": 0,
           "path": "dweller_building_lab/lod0.glb",
-          "triangles": 1710
+          "triangles": 1790
         },
         {
           "level": 1,
           "path": "dweller_building_lab/lod1.glb",
-          "triangles": 598
+          "triangles": 712
         },
         {
           "level": 2,
@@ -448,7 +451,7 @@
         ],
         "max": [
           1.5,
-          2.13924,
+          1.42,
           1.5
         ]
       },
@@ -461,7 +464,7 @@
         {
           "level": 1,
           "path": "dweller_building_training/lod1.glb",
-          "triangles": 587
+          "triangles": 673
         },
         {
           "level": 2,
@@ -491,7 +494,7 @@
         ],
         "max": [
           1,
-          2.06688,
+          1.946184,
           1
         ]
       },
@@ -534,7 +537,7 @@
         ],
         "max": [
           1.5,
-          2.5,
+          1.75,
           1.5
         ]
       },
@@ -542,17 +545,17 @@
         {
           "level": 0,
           "path": "dweller_building_workshop/lod0.glb",
-          "triangles": 1635
+          "triangles": 1697
         },
         {
           "level": 1,
           "path": "dweller_building_workshop/lod1.glb",
-          "triangles": 556
+          "triangles": 674
         },
         {
           "level": 2,
           "path": "dweller_building_workshop/lod2.glb",
-          "triangles": 166
+          "triangles": 178
         }
       ],
       "sockets": {},
@@ -600,7 +603,8 @@
       ],
       "sockets": {},
       "animations": [],
-      "boneCount": 0
+      "boneCount": 0,
+      "teamMask": "materialName"
     },
     {
       "id": "reed001",
@@ -636,7 +640,8 @@
       ],
       "sockets": {},
       "animations": [],
-      "boneCount": 0
+      "boneCount": 0,
+      "teamMask": "materialName"
     },
     {
       "id": "rock001",
@@ -672,7 +677,8 @@
       ],
       "sockets": {},
       "animations": [],
-      "boneCount": 0
+      "boneCount": 0,
+      "teamMask": "materialName"
     },
     {
       "id": "rock002",
@@ -708,7 +714,8 @@
       ],
       "sockets": {},
       "animations": [],
-      "boneCount": 0
+      "boneCount": 0,
+      "teamMask": "materialName"
     },
     {
       "id": "rock003",
@@ -744,7 +751,8 @@
       ],
       "sockets": {},
       "animations": [],
-      "boneCount": 0
+      "boneCount": 0,
+      "teamMask": "materialName"
     },
     {
       "id": "treehigh001",
@@ -780,7 +788,8 @@
       ],
       "sockets": {},
       "animations": [],
-      "boneCount": 0
+      "boneCount": 0,
+      "teamMask": "materialName"
     },
     {
       "id": "treelow001",
@@ -816,7 +825,8 @@
       ],
       "sockets": {},
       "animations": [],
-      "boneCount": 0
+      "boneCount": 0,
+      "teamMask": "materialName"
     },
     {
       "id": "treemed001",
@@ -852,7 +862,8 @@
       ],
       "sockets": {},
       "animations": [],
-      "boneCount": 0
+      "boneCount": 0,
+      "teamMask": "materialName"
     }
   ]
 }
