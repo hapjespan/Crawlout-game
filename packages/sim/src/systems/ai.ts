@@ -12,7 +12,6 @@ import {
   ORDER_GATHER,
   ORDER_NONE,
 } from '../ecs/world.js';
-import { footprintFree } from '../entities.js';
 import { PROVIDES_HQ, PROVIDES_WORKSHOP } from '../fromData.js';
 import { clampI, idiv, imod } from '../math/int.js';
 import { TERRAIN_UNREACHABLE } from '../pathdist.js';
@@ -21,7 +20,6 @@ import { takeCensus } from './census.js';
 import { applyCommand, canPlaceType } from './commands.js';
 import type { SimContext } from './common.js';
 import {
-  MAX_FREE_RING,
   NO_WINNER,
   cellCenterOf,
   distToRect2,
@@ -132,6 +130,12 @@ export function aiSystem(ctx: SimContext, census: Census, scratch: AiScratch): v
  * en liet twee gespiegelde escortes een eenheid verschillend lopen (woning 3x3: spiegel brak in frame 3606).
  */
 const ESCORT_OFFSET = 1;
+/**
+ * Geometrie: zover (Chebyshev, in cellen van het midden van het anker tot het midden van de footprint) zoekt de AI een
+ * bouwplek. Echte-schaalronde (data 0.14.0): een woning is 13 x 19 m en het hoofdgebouw 21 x 21 m, dus negen woningen,
+ * een werkplaats en een lab liggen tot ongeveer 50 m van het hoofdgebouw (was MAX_FREE_RING, 24 cellen).
+ */
+const AI_SITE_RING = 56;
 
 /**
  * Geometrie: een claimpunt ligt aan de eigen kant als zijn afstand tot het eigen hoofdgebouw onder ongeveer 87 procent
@@ -319,6 +323,27 @@ function localDist(
 }
 
 /**
+ * Somtabel ((w + 1) x (h + 1), integer) van de actuele begaanbaarheid (met gebouwen) over het venster
+ * [x0, x0 + w) x [y0, y0 + h); cellen buiten de map tellen als 0. Afgeleid, geen state.
+ */
+function walkSums(ctx: SimContext, x0: number, y0: number, w: number, h: number): Int32Array {
+  const map = ctx.map;
+  const walk = ctx.terrain.walk;
+  const W1 = w + 1;
+  const sat = new Int32Array(W1 * (h + 1));
+  for (let y = 0; y < h; y++) {
+    const my = y0 + y;
+    let row = 0;
+    for (let x = 0; x < w; x++) {
+      const mx = x0 + x;
+      if (mx >= 0 && my >= 0 && mx < map.w && my < map.h && walk[my * map.w + mx] === 1) row++;
+      sat[(y + 1) * W1 + x + 1] = sat[y * W1 + x + 1]! + row;
+    }
+  }
+  return sat;
+}
+
+/**
  * Vrije plek voor een gebouw: footprint plus een rand van één cel vrij, niet op nodes of claimpunten. Het anker is
  * het hoofdgebouw (AI_SITE_HQ), het eigen claimpunt het dichtst bij huis (AI_SITE_CLAIM) of het dichtst bij de vijand
  * (AI_SITE_FRONT), beide op padafstand; zonder eigen claimpunt het hoofdgebouw. Een gebouw met een wapen (turret) zoekt
@@ -376,7 +401,7 @@ function findSite(
   // Het verzamelpunt bij het hoofdgebouw blijft vrij: een groep die naar een punt in een gebouw loopt komt nooit aan en
   // blijft op AttackMove staan (een woning van 3x3 kwam er in een potje precies op te staan).
   const rally = rallyCell(ctx, hq, fields);
-  const local = localDist(ctx, rx, ry, rw, rh, MAX_FREE_RING + half + 2);
+  const local = localDist(ctx, rx, ry, rw, rh, AI_SITE_RING + half + 2);
   // Op de eerste ring met een vrije plek: de plek het dichtst bij het midden van de map, dan het dichtst bij het anker,
   // dan rechts van de richting anker naar midden.
   // Op een puntsymmetrische map kiezen beide spelers zo elkaars spiegelbeeld (de scanvolgorde is dat niet). Gemeten
@@ -386,9 +411,28 @@ function findSite(
   const fh = bt.footprintH;
   const ax2 = 2 * rx + rw;
   const ay2 = 2 * ry + rh;
-  // Kandidaten: elke footprint waarvan het midden binnen MAX_FREE_RING cellen (Chebyshev) van het midden van het anker
+  // Kandidaten: elke footprint waarvan het midden binnen AI_SITE_RING cellen (Chebyshev) van het midden van het anker
   // ligt. Ring r2 is die afstand in halve cellen; de eerste ring met een vrije plek wint, daarbinnen m en a.
-  const R2 = 2 * MAX_FREE_RING;
+  const R2 = 2 * AI_SITE_RING;
+  // Begaanbaarheid als somtabel over het zoekvenster (plus de rand van één cel): een footprint is vrij als zijn som
+  // gelijk is aan zijn oppervlak. Buiten de map telt als onbegaanbaar, zoals in footprintFree.
+  const sx0 = cx - AI_SITE_RING - fw - 1;
+  const sy0 = cy - AI_SITE_RING - fh - 1;
+  const sw = 2 * AI_SITE_RING + 2 * fw + 4;
+  const sh = 2 * AI_SITE_RING + 2 * fh + 4;
+  const sat = walkSums(ctx, sx0, sy0, sw, sh);
+  const freeRect = (x: number, y: number, ww: number, hh: number): boolean => {
+    const ax = x - sx0;
+    const ay = y - sy0;
+    if (ax < 0 || ay < 0 || ax + ww > sw || ay + hh > sh) return false;
+    const W1 = sw + 1;
+    const sum =
+      sat[(ay + hh) * W1 + ax + ww]! -
+      sat[ay * W1 + ax + ww]! -
+      sat[(ay + hh) * W1 + ax]! +
+      sat[ay * W1 + ax]!;
+    return sum === ww * hh;
+  };
   let found = -1;
   let bestR = 0;
   let bestM = 0;
@@ -396,8 +440,8 @@ function findSite(
   let bestX = 0;
   const idx = ctx.index;
   idx.refresh(w);
-  for (let fy = cy - MAX_FREE_RING - fh; fy <= cy + MAX_FREE_RING; fy++) {
-    for (let fx = cx - MAX_FREE_RING - fw; fx <= cx + MAX_FREE_RING; fx++) {
+  for (let fy = cy - AI_SITE_RING - fh; fy <= cy + AI_SITE_RING; fy++) {
+    for (let fx = cx - AI_SITE_RING - fw; fx <= cx + AI_SITE_RING; fx++) {
       const x2 = 2 * fx + fw;
       const y2 = 2 * fy + fh;
       const ex = x2 > ax2 ? x2 - ax2 : ax2 - x2;
@@ -415,7 +459,7 @@ function findSite(
             (m > bestM || (m === bestM && (a > bestA || (a === bestA && xr <= bestX))))))
       )
         continue;
-      if (!footprintFree(ctx, fx - 1, fy - 1, fw + 2, fh + 2)) continue;
+      if (!freeRect(fx - 1, fy - 1, fw + 2, fh + 2)) continue;
       if (
         rally !== null &&
         rally.cx >= fx &&
