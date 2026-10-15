@@ -64,6 +64,7 @@ import {
   vec3,
   vec4,
 } from 'three/tsl';
+import { worldGrade } from '../look/grade.js';
 import {
   ALBEDO_SEAMS,
   MAX_ALBEDO_TILES,
@@ -96,6 +97,8 @@ export const ALBEDO_TARGET_LUMA = 0.15;
 export const ALBEDO_CONTRAST = 0.8;
 /** Share of the way to grey: the photo's moss and lichen stay, but quieter than in the source. */
 export const ALBEDO_DESATURATE = 0.3;
+/** Strength of the shared world grade on the terrain albedo (look/grade.ts), 0..1. */
+const TERRAIN_GRADE = 0.5;
 /** Warm grade on the albedo (rgb), towards the wasteland palette of props and buildings. */
 const ALBEDO_WARMTH = [1.07, 1.0, 0.88] as const;
 /** Share of the map's vertex colors (relative to the sand) on top of the albedo: ruins and marks still read. */
@@ -347,7 +350,9 @@ export function createTerrainMaterial(opts: TerrainMaterialOptions): TerrainMate
     const grass = grassSampler.x.mul(grassOn).mul(GRASS_TINT_STRENGTH);
     return mix(out, out.mul(vec3(...GRASS_TINT)), grass);
   });
-  const albedo = terrainAlbedo();
+  // The shared world grade (look/grade.ts) at half strength: the terrain already carries its own warm desaturation
+  // (ALBEDO_WARMTH, ALBEDO_DESATURATE), the grade adds the contrast and the same dusty tint as buildings and units.
+  const albedo = worldGrade(terrainAlbedo(), TERRAIN_GRADE);
 
   // Soft-edged toon ramp: the bands of unitMaterial.ts toonRamp, each edge spread over a little light.
   const hl = dot(N, light).mul(0.5).add(0.5);

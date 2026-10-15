@@ -13,7 +13,9 @@
 // rotates by yaw.
 // Shading: 3-step toon ramp (soft band edges) plus a small sky fill, rimlight on the screen silhouette, team color
 // through the team mask (vertex alpha or, per texel, the atlas alpha) relative to the albedo's mean under the mask.
-// No PBR.
+// No PBR. The base is clothing (cloth surface of look/surfaces.ts): grain and dust at the boots from the shared
+// weathering, then the shared world grade (look/grade.ts), the team color itself only lightly graded so it stays the
+// one saturated accent on a dusty unit.
 // Hero (typeId 1000 + heroId): the unit layer adds HERO_INSTANCE_FLAG to the flags in iAnim.w. A hero is drawn
 // HERO_SCALE times bigger, and only a hero shows the hero parts of the placeholder (color alpha >= HERO_PART_ALPHA,
 // humanoidGeometry.ts); for other instances those vertices collapse onto their bone and rasterize nothing.
@@ -47,15 +49,23 @@ import {
   vertexStage,
 } from 'three/tsl';
 import { createDataTexture, type DataTexturePrecision } from '../gpu/dataTextures.js';
+import { TEAM_GRADE, worldGrade } from '../look/grade.js';
+import { surfaceIndex } from '../look/surfaces.js';
+import { createSurfaceTable, weather } from '../look/surfaceShading.js';
 import { teamPalette } from '../palette.js';
 import type { BakedAnimations } from './bake.js';
-import { TEAM_PIVOT_DEFAULT } from './gltfUnitGeometry.js';
+import { TEAM_FALLBACK_BASE, TEAM_PIVOT_DEFAULT } from './gltfUnitGeometry.js';
 import { HERO_PART_ALPHA } from './humanoidGeometry.js';
 
 /** Added to the instance flags (iAnim.w) of a hero; above the uint8 snapshot flags. */
 export const HERO_INSTANCE_FLAG = 256;
 /** A hero stands this much taller and wider than a regular unit of the same rig. */
 export const HERO_SCALE = 1.15;
+
+/** Strength of the clothing weathering (look/surfaceShading.ts weather): units are small, so lighter than a wall. */
+const UNIT_WEATHER = 0.6;
+/** Camera distance (m) over which a unit's team accent widens to its whole upper body (full at the far end). */
+const FAR_TEAM = [28, 75] as const;
 
 export interface ToonLighting {
   /** Direction towards the light, world space. */
@@ -294,13 +304,33 @@ export function createUnitMaterial(
   const gain = albedoSource.gain ?? 1;
   if (gain !== 1) base = base.mul(gain);
   const iTeam = palette.element(int(iAnim.z));
-  const albedo = teamAlbedo(
-    base,
-    iTeam,
-    mask,
-    (albedoSource.teamPivot ?? TEAM_PIVOT_DEFAULT) * gain,
-  );
   const N = normalize(worldNrm);
+  // Team readability at RTS distance: the accent on the shoulders is a pixel or two from far away, so beyond FAR_TEAM
+  // the whole upper body (chest to shoulders in the bind pose, not the head) takes the team color, on the neutral base.
+  const far = smoothstep(FAR_TEAM[0], FAR_TEAM[1], length(cameraPosition.sub(vWorldPos)));
+  const bindY = attribute('position', 'vec3').y;
+  const upper = smoothstep(0.85, 0.98, bindY).mul(float(1).sub(smoothstep(1.52, 1.6, bindY)));
+  const wide = far.mul(vertexStage(upper));
+  base = mix(
+    base,
+    vec3(TEAM_FALLBACK_BASE, TEAM_FALLBACK_BASE, TEAM_FALLBACK_BASE),
+    wide.mul(float(1).sub(mask)),
+  );
+  mask = max(mask, wide);
+  // Weathering of the clothing in bind-pose space (the pattern sticks to the body), dust from the boots up.
+  base = weather({
+    albedo: base,
+    pos: vertexStage(attribute('position', 'vec3')),
+    normal: N,
+    height: vertexStage(skinnedPos.y),
+    surface: createSurfaceTable().at(surfaceIndex('cloth')),
+    amount: float(UNIT_WEATHER),
+    team: mask,
+  });
+  const albedo = worldGrade(
+    teamAlbedo(base, iTeam, mask, (albedoSource.teamPivot ?? TEAM_PIVOT_DEFAULT) * gain),
+    mix(float(1), float(TEAM_GRADE), mask),
+  );
   const shade = toonRamp(dot(N, lightDir));
   const V = normalize(cameraPosition.sub(vWorldPos));
   const rim = rimLight(N, V, lightDir, albedo);

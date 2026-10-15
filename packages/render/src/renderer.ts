@@ -67,6 +67,7 @@ import {
   type BuildingAssetStatus,
   type BuildingVisual,
 } from './structures/buildingAssets.js';
+import { surfaceKindOfCategory } from './look/surfaces.js';
 import { createPropMaterial } from './structures/propMaterial.js';
 import { DEFAULT_LAYER_SIZE } from './structures/textureArray.js';
 import { StructureLayer } from './structures/structureLayer.js';
@@ -302,10 +303,6 @@ const HEIGHT_TEXTURE_EDGE = 512;
 const PARTICLES_PER_POOL = 4096;
 /** Default most prop blob shadows, on top of the entity decals. */
 const PROP_BLOBS = 768;
-/** How far prop art is pulled towards the warm wasteland grey (structures/propMaterial.ts grade). */
-const PROP_GRADE = 0.22;
-/** The same for building assets: lighter, their tints per building type should stay readable. */
-const BUILDING_GRADE = 0.12;
 const PREVIEW_VALID: DecalStyle = {
   shape: DECAL_SHAPE.rect,
   shadow: 0,
@@ -459,8 +456,17 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
         name: 'crawlout-building-toon',
         shadow: sun?.factor,
       }),
-      scrap: createPropMaterial({ lightDir: DEFAULT_LIGHT_DIR, name: 'crawlout-scrap-toon' }),
-      claim: createPropMaterial({ lightDir: DEFAULT_LIGHT_DIR, name: 'crawlout-claim-toon', time }),
+      scrap: createPropMaterial({
+        lightDir: DEFAULT_LIGHT_DIR,
+        name: 'crawlout-scrap-toon',
+        surface: 'rustMetal',
+      }),
+      claim: createPropMaterial({
+        lightDir: DEFAULT_LIGHT_DIR,
+        name: 'crawlout-claim-toon',
+        time,
+        surface: 'paintedMetal',
+      }),
     },
   });
   const windStrength = uniform(opts.props?.wind === false ? 0 : 1);
@@ -477,7 +483,7 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
         shadow: sun?.factor,
         map,
         layers,
-        grade: PROP_GRADE,
+        surface: surfaceKindOfCategory(category),
         alphaMask: mask,
         ...(wind && height > 1e-4
           ? { wind: { ...wind, height, time, strength: windStrength } }
@@ -550,8 +556,8 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
             shadow: sun?.factor,
             layers: set.layers,
             layerLuma: set.layerLuma,
+            layerKinds: set.layerKinds,
             reveal: true,
-            grade: BUILDING_GRADE,
           }),
     );
     disposeSet(); // the structure layer drew its own copies

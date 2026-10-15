@@ -22,6 +22,7 @@ import {
   type Texture,
 } from 'three/webgpu';
 import { texelLuminance, type Rasterize } from '../structures/textureArray.js';
+import { hasBodyRegions, vertexRegion, type VertexRegion } from './bodyRegions.js';
 
 export class UnitGeometryError extends Error {
   override name = 'UnitGeometryError';
@@ -31,7 +32,9 @@ export class UnitGeometryError extends Error {
  * Where the team mask comes from. 'materialName' (default): primitives whose glTF material name contains "team"
  * take the owner's color, the rest keep their own. An asset without a "team" material falls back to its main
  * material (name "main" or "body" as a word, e.g. Quaternius' M_Main): that whole material takes the owner's color,
- * on a neutral base so the team color reads clean (TEAM_FALLBACK_BASE). 'diffuseAlpha': the alpha of the diffuse texture is the mask
+ * on a neutral base so the team color reads clean (TEAM_FALLBACK_BASE). With a body skeleton (bodyRegions.ts) the
+ * team color is an accent on the upper chest and shoulders instead and the rest of the body gets clothing colors.
+ * 'diffuseAlpha': the alpha of the diffuse texture is the mask
  * per texel (artist brief; 1 = team color). 'auto' (this function's default; the loader passes the manifest's
  * teamMask): 'diffuseAlpha' when the atlas carries a mask in its alpha (some texels below ALPHA_MASK_MAX; an opaque
  * atlas or a JPEG has none), else 'materialName'. 'none': no team color
@@ -210,6 +213,13 @@ export function unitGeometryFromGltf(
         ? TEAM_MATERIAL
         : TEAM_MATERIAL_FALLBACK;
 
+  // A mannequin (the main material takes the team color) with a body skeleton: team accent plus clothing regions.
+  const boneNames = reference.map((b) => b.name);
+  const regions = teamPattern === TEAM_MATERIAL_FALLBACK && hasBodyRegions(boneNames);
+  const region: VertexRegion = { team: 0, color: [0, 0, 0] };
+  const vertexNames: (string | undefined)[] = [];
+  const vertexWeights: number[] = [];
+
   const pos: number[] = [];
   const nrm: number[] = [];
   const col: number[] = [];
@@ -251,8 +261,8 @@ export function unitGeometryFromGltf(
       (map === atlas || map.source === atlas.source) &&
       uv !== undefined;
     base.copy(material.color ?? new Color(1, 1, 1));
-    const mask = teamPattern?.test(material.name) ? 1 : 0;
-    if (mask && teamPattern === TEAM_MATERIAL_FALLBACK)
+    const materialMask = teamPattern?.test(material.name) ? 1 : 0;
+    if (materialMask && teamPattern === TEAM_MATERIAL_FALLBACK)
       base.setRGB(TEAM_FALLBACK_BASE, TEAM_FALLBACK_BASE, TEAM_FALLBACK_BASE);
 
     const T = isQuantized(p) ? dequantizationOf(mesh) : new Matrix4();
@@ -275,25 +285,9 @@ export function unitGeometryFromGltf(
       pos.push(v.x, v.y, v.z);
       v.fromBufferAttribute(n, i).applyMatrix3(normalMatrix).normalize();
       nrm.push(v.x, v.y, v.z);
-      const r = vc ? vc.getX(i) : 1;
-      const gg = vc ? vc.getY(i) : 1;
-      const b = vc ? vc.getZ(i) : 1;
-      col.push(base.r * r, base.g * gg, base.b * b, mask);
-      if (atlas) {
-        if (textured) uvs.push(uv.getX(i), uv.getY(i));
-        else uvs.push(NO_UV, NO_UV);
-      }
-      if (mask) {
-        const t =
-          textured && atlasPx ? texelLuma(atlasPx, STATS_SIZE, uv!.getX(i), uv!.getY(i)) : 1;
-        pivotSum += lumaOf(base.r * r, base.g * gg, base.b * b) * t;
-        pivotCount++;
-      } else if (textured && teamMask === 'diffuseAlpha') {
-        vertexLumaSum += lumaOf(base.r * r, base.g * gg, base.b * b);
-        texturedCount++;
-      }
       let sum = 0;
       for (let k = 0; k < 4; k++) sum += sw.getComponent(i, k);
+      vertexNames.length = vertexWeights.length = 0;
       for (let k = 0; k < 4; k++) {
         const w = sum > 0 ? sw.getComponent(i, k) / sum : k === 0 ? 1 : 0;
         const j = si.getComponent(i, k);
@@ -306,6 +300,34 @@ export function unitGeometryFromGltf(
           skinIndex.push(0);
         } else skinIndex.push(ref);
         skinWeight.push(w);
+        vertexNames.push(ref === undefined ? undefined : boneNames[ref]);
+        vertexWeights.push(w);
+      }
+      const r = vc ? vc.getX(i) : 1;
+      const gg = vc ? vc.getY(i) : 1;
+      const b = vc ? vc.getZ(i) : 1;
+      let mask = materialMask;
+      let cr = base.r * r;
+      let cg = base.g * gg;
+      let cb = base.b * b;
+      if (regions) {
+        vertexRegion(vertexNames, vertexWeights, TEAM_FALLBACK_BASE, region);
+        mask = region.team;
+        [cr, cg, cb] = region.color;
+      }
+      col.push(cr, cg, cb, mask);
+      if (atlas) {
+        if (textured) uvs.push(uv.getX(i), uv.getY(i));
+        else uvs.push(NO_UV, NO_UV);
+      }
+      if (mask > 0.5) {
+        const t =
+          textured && atlasPx ? texelLuma(atlasPx, STATS_SIZE, uv!.getX(i), uv!.getY(i)) : 1;
+        pivotSum += lumaOf(cr, cg, cb) * t;
+        pivotCount++;
+      } else if (textured && teamMask === 'diffuseAlpha') {
+        vertexLumaSum += lumaOf(cr, cg, cb);
+        texturedCount++;
       }
     }
     const gi = g.getIndex();
