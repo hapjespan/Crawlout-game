@@ -342,7 +342,7 @@ export const MAX_SPEED = UNITS_PER_METER >> 1;
 /** Geometrie: bovengrens unitstraal; de separatie-grid gaat uit van buckets van 2 m. */
 export const MAX_RADIUS = UNITS_PER_METER;
 /** Geometrie: grootste footprint-zijde in cellen (past in Uint8 en in de ringzoeker rond gebouwen). */
-export const MAX_FOOTPRINT = 16;
+export const MAX_FOOTPRINT = 32;
 /** Geometrie van de state: onderzochte techs staan per speler in een uint32-bitset. */
 export const MAX_TECHS = 32;
 /** Geometrie van de state: gekozen perks staan per held in een uint32-bitset. */

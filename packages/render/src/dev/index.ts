@@ -13,3 +13,10 @@ export {
   type EventRecord,
 } from './snapshotWriter.js';
 export { createGridTerrain } from '../terrain/heightField.js';
+export {
+  foliageProps,
+  foliagePropSource,
+  foliageSources,
+  type FoliageCounts,
+  type FoliageWorld,
+} from './foliageAssets.js';

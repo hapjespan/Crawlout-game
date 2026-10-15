@@ -11,6 +11,7 @@ import { MeshoptEncoder, MeshoptSimplifier } from 'meshoptimizer';
 import { BUDGETS } from './budgets.js';
 import {
   compact,
+  componentsInside,
   dropSmallComponents,
   inverseTranspose3,
   largestComponents,
@@ -48,6 +49,14 @@ interface SourceMaterial {
 export interface SourceHouse {
   meshes: { material: string; mesh: Mesh }[];
   materials: Map<string, SourceMaterial>;
+  /** Wereldschaal: meters per bron-eenheid (variants.json `sources.<id>.metersPerUnit`). */
+  metersPerUnit: number;
+}
+
+/** Hoe een bron geladen wordt: de wereldschaal en eventueel het blok waarbinnen de delen van het huis liggen. */
+export interface SourceOptions {
+  metersPerUnit: number;
+  keep?: { min: Vec3; max: Vec3 } | undefined;
 }
 
 /** Transform uit een column-major 4x4 matrix (node-wereldmatrix van het bronmodel). */
@@ -73,7 +82,7 @@ function transformFromMatrix4(matrix: ArrayLike<number>): Transform {
 }
 
 /** Leest een bron-GLB en slaat alle node-transformaties plat in de vertices; spec-gloss wordt basiskleur plus textuur. */
-export async function loadSourceHouse(file: string): Promise<SourceHouse> {
+export async function loadSourceHouse(file: string, options: SourceOptions): Promise<SourceHouse> {
   const io = createIO();
   const document = await io.readBinary(new Uint8Array(readFileSync(file)));
   const materials = new Map<string, SourceMaterial>();
@@ -121,11 +130,19 @@ export async function loadSourceHouse(file: string): Promise<SourceHouse> {
         uvs: new Float32Array(uv.getArray()!),
         indices: new Uint32Array(indices.getArray()!),
       };
-      meshes.push({ material: name, mesh: transformMesh(raw, transform) });
+      let placed = transformMesh(raw, transform);
+      if (options.keep)
+        placed = componentsInside(
+          placed,
+          options.keep.min,
+          options.keep.max,
+          BUDGETS.buildingWeldDistance,
+        );
+      if (placed.indices.length > 0) meshes.push({ material: name, mesh: placed });
     }
   }
   if (meshes.length === 0) throw new Error(`geen meshes in bron-GLB ${file}`);
-  return { meshes, materials };
+  return { meshes, materials, metersPerUnit: options.metersPerUnit };
 }
 
 function extent(positions: Float32Array): { min: Vec3; max: Vec3 } {
@@ -183,63 +200,26 @@ function allPositions(meshes: readonly { mesh: Mesh }[]): Float32Array {
 }
 
 /**
- * Het huisonderdeel in meters: voet in het midden, geplaatst en gedraaid. Bij `fit` 'stretch' vullen de bounds van
- * de meshes `size` exact (niet-uniform; de hoogte volgt uit `heightFactor`). Anders is de schaal uniform: het
- * onderdeel (na rotatie) past in `size`, gecentreerd, de voet op `position`. Bij 'house' komen de bounds uit het hele
- * bronhuis (`whole`) in plaats van uit de geselecteerde meshes, zodat een deel (het dak) op zijn plek in het huis blijft
- * staan en alle LODs dezelfde schaal krijgen. De bounds komen uit de meshes zoals ze zijn (na vereenvoudiging) bij
- * 'stretch' en 'contain', zodat de footprint exact klopt ook als een rafelrand is weggevallen.
+ * Het huisonderdeel in meters, op de wereldschaal van de bron (uniform, `metersPerUnit`): de voet van het hele bronhuis
+ * (`whole`: midden van de bounds in x en z, onderkant op y) komt op `position`, daarna de rotatie om die voet. Een
+ * geselecteerd deel (het dak) blijft zo op zijn plek in het huis staan en alle LODs krijgen dezelfde schaal en plaats.
  */
 function placeHouse(
   meshes: SourceHouse['meshes'],
   part: HousePart,
   names: Map<string, string>,
   whole: SourceHouse['meshes'],
+  metersPerUnit: number,
 ): PartMeshes['meshes'] {
-  const fit = part.fit ?? 'contain';
-  const reference = fit === 'house' ? whole : meshes;
-  const { min, max } = extent(allPositions(reference));
+  const { min, max } = extent(allPositions(whole));
   const toLocal = makeTransform({
     translation: [-(min[0] + max[0]) / 2, -min[1], -(min[2] + max[2]) / 2],
   });
-  let place: Transform;
-  if (fit === 'stretch') {
-    const sx = part.size[0] / (max[0] - min[0]);
-    const sz = part.size[1] / (max[2] - min[2]);
-    const sy = part.heightFactor * ((sx + sz) / 2);
-    place = makeTransform({
-      scale: [sx, sy, sz],
-      ...(part.rotation ? { rotation: part.rotation } : {}),
-      translation: part.position,
-    });
-  } else {
-    // Bounds van de referentie na rotatie (schaal 1): daaruit de uniforme schaal en de verschuiving naar het midden.
-    const rotate = makeTransform({ ...(part.rotation ? { rotation: part.rotation } : {}) });
-    const rotated = extent(
-      allPositions(
-        reference.map((m) => ({ mesh: transformMesh(transformMesh(m.mesh, toLocal), rotate) })),
-      ),
-    );
-    const s = Math.min(
-      part.size[0] / (rotated.max[0] - rotated.min[0]),
-      part.size[1] / (rotated.max[2] - rotated.min[2]),
-    );
-    const scale: Vec3 = [s, s * part.heightFactor, s];
-    const center: Vec3 = [
-      (rotated.min[0] + rotated.max[0]) / 2,
-      rotated.min[1],
-      (rotated.min[2] + rotated.max[2]) / 2,
-    ];
-    place = makeTransform({
-      scale,
-      ...(part.rotation ? { rotation: part.rotation } : {}),
-      translation: [
-        part.position[0] - center[0] * scale[0],
-        part.position[1] - center[1] * scale[1],
-        part.position[2] - center[2] * scale[2],
-      ],
-    });
-  }
+  const place = makeTransform({
+    scale: [metersPerUnit, metersPerUnit, metersPerUnit],
+    ...(part.rotation ? { rotation: part.rotation } : {}),
+    translation: part.position,
+  });
   return meshes.map((m) => {
     const material = names.get(m.material);
     if (!material) throw new Error(`bronmateriaal "${m.material}" staat niet in sourceMaterials`);
@@ -299,7 +279,7 @@ export async function generateBuilding(
   const shapeTriangles = shapes.reduce((sum, p) => sum + triangleCount(placeShape(p)), 0);
   const houses = active.filter((p): p is HousePart => p.type === 'house');
   const houseBudget = Math.max(houses.length * 12, target - shapeTriangles);
-  const weights = houses.map((p) => p.weight ?? p.size[0] * p.size[1]);
+  const weights = houses.map((p) => p.weight ?? 1);
   const totalWeight = weights.reduce((a, b) => a + b, 0);
 
   const accumulators = new Map<string, MeshAccumulator>();
@@ -335,7 +315,7 @@ export async function generateBuilding(
           BUDGETS.buildingSimplify,
         ),
       }));
-      for (const m of placeHouse(simplified, part, names, source.meshes))
+      for (const m of placeHouse(simplified, part, names, source.meshes, source.metersPerUnit))
         accumulate(m.material, m.mesh);
     } else {
       accumulate(part.material, placeShape(part));
@@ -611,7 +591,13 @@ export async function buildBuildings(
   };
   const sources = new Map<string, SourceHouse>();
   for (const [key, source] of Object.entries(config.sources))
-    sources.set(key, await loadSourceHouse(join(srcDir, source.file)));
+    sources.set(
+      key,
+      await loadSourceHouse(join(srcDir, source.file), {
+        metersPerUnit: source.metersPerUnit,
+        keep: source.keep,
+      }),
+    );
 
   for (const id of Object.keys(config.variants).sort()) {
     const variant = config.variants[id]!;

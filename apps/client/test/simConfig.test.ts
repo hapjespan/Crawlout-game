@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { fileURLToPath } from 'node:url';
 import { loadGameDataFromDir } from '@crawlout/data/node';
 import { createSim, validateEnv } from '@crawlout/sim';
-import { createOpenMap, testPlayers } from '@crawlout/sim/testing';
+import { cellCenter, createOpenMap, testPlayers } from '@crawlout/sim/testing';
 import { toSimConfig, typeIdOfLoadout } from '../src/game/simConfig.js';
 
 const dataDir = fileURLToPath(new URL('../../../data', import.meta.url));
@@ -28,14 +28,16 @@ describe('toSimConfig', () => {
 
   it('spawns the faction start units deterministically', () => {
     const run = (): number => {
-      const sim = createSim({ seed: 7, players: testPlayers(2), map: createOpenMap(), config });
+      // Spawns ver genoeg van de rand voor het hoofdgebouw op echte schaal (20 x 20 m, data 0.14.0).
+      const map = { ...createOpenMap(), spawns: [cellCenter(24, 24), cellCenter(103, 103)] };
+      const sim = createSim({ seed: 7, players: testPlayers(2), map, config });
       for (const u of data.factions[0]!.startUnits) {
         for (let i = 0; i < u.count; i++)
           sim.spawnUnit({
             typeId: typeIdOfLoadout(u.loadoutId),
             owner: 0,
             x: 4096 + i * 512,
-            y: 4096,
+            y: 48 * 256,
           });
       }
       for (let f = 0; f < 40; f++) {

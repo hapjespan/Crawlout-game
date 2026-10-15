@@ -8,6 +8,11 @@
 // with distance, and over all chunks at most maxVisible props are drawn (the far ones give way first). Which props a
 // chunk keeps is fixed per prop (a hash, the chunk's props sorted on it), so props never shuffle while the camera
 // moves; a thinned chunk draws its kept props a little larger, so a forest still reads as a forest from far away.
+// Thinning is per category (propThinning.ts): ground cover (grass, plants, debris) starts thinning at half the distance
+// and goes first when the budget is short, then rocks and containers, trees and structures last. Foliage (trees with
+// leaves, grass, plants) varies its tint and brightness per instance by +-8 percent (propVariation.ts) and, with the
+// wind on, sways (propWind.ts, the material); iTint.w of an instance is its wind phase. Assets with alpha-tested
+// leaf cards or blades (`mask`) get the mask variant of the material: one draw per asset per LOD stays one draw.
 import {
   Box3,
   Frustum,
@@ -29,6 +34,10 @@ import { PROP_LOD_PX, ScreenLod, type ScreenLodThresholds } from '../lod/screenL
 import { NEUTRAL_TEAM } from '../palette.js';
 import { simYawToRender } from '../snapshot/interpolate.js';
 import { InstanceBatch } from '../structures/instanceBatch.js';
+import { hasBlobShadow, propCategoryOf, type PropCategory } from './propCategory.js';
+import { ensureCutoffAttribute } from './propGeometry.js';
+import { shedPlan, THIN_TIERS, thinTier, tierDensity, type ThinTier } from './propThinning.js';
+import { instanceTint } from './propVariation.js';
 
 /**
  * One prop as the map delivers it (PropInstance of @crawlout/map fits as is): x and y in meters on the map (y is
@@ -46,6 +55,12 @@ export interface RenderProp {
 export interface PropVisual {
   lods: readonly [BufferGeometry, BufferGeometry, BufferGeometry];
   map: Texture | null;
+  /** Texture array of an asset with more than one texture (the geometry then has `uvl`, not `uv`). */
+  layers?: Texture | null;
+  /** The geometries carry the `aCut` alpha-test cutoff: draw with the mask material (alpha test, two-sided). */
+  mask?: boolean;
+  /** What the prop is (the manifest's category, else read from the asset id). */
+  category?: PropCategory;
   /** Uniform scale on top of the instance scale (propFit.ts). */
   fit: number;
   /** Mesh height and horizontal radius (m) before fit and instance scale. */
@@ -55,10 +70,23 @@ export interface PropVisual {
   gain?: number;
 }
 
+/** What a prop material is built for: its textures, whether it is alpha-tested, and the asset's category and size. */
+export interface PropMaterialSpec {
+  /** Diffuse map (null: vertex colors only). */
+  map: Texture | null;
+  /** Texture array of a multi-texture asset. */
+  layers: Texture | null;
+  /** Alpha-tested (leaf cards, blades): the mask variant, two-sided. Opaque otherwise. */
+  mask: boolean;
+  category: PropCategory;
+  /** Mesh height in meters before the fit (the wind's height scale). */
+  height: number;
+}
+
 export interface PropLayerOptions {
   heightAt: (x: number, z: number) => number;
-  /** Creates the material for a visual's map (null: vertex colors only). Called once per visual. */
-  material: (map: Texture | null) => MeshBasicNodeMaterial;
+  /** Creates the material for a visual. Called once per visual (one material, so one draw, per asset per LOD). */
+  material: (spec: PropMaterialSpec) => MeshBasicNodeMaterial;
   /** Screen-size LOD (lod/screenLod.ts), shared with the other layers; the renderer feeds it the viewport. */
   screen?: ScreenLod;
   /** Projected heights (device px) below which an asset draws LOD 1 and LOD 2. Default PROP_LOD_PX. */
@@ -67,9 +95,9 @@ export interface PropLayerOptions {
   chunkSize?: number;
   /** Most props drawn at once. Default 3000. */
   maxVisible?: number;
-  /** Chunks closer than this (meters) draw all their props. Default 160. */
+  /** Trees closer than this (meters) draw all their props; ground cover thins from half of it. Default 160. */
   thinDistance?: number;
-  /** Lowest share of its props a far chunk draws before the maxVisible cap. Default 0.15. */
+  /** Lowest share of its trees a far chunk draws before the maxVisible cap (less for ground cover). Default 0.15. */
   minDensity?: number;
   /** Most blob shadows pushed per frame. Default 768. */
   maxBlobs?: number;
@@ -91,7 +119,7 @@ const BLOB: DecalStyle = {
   grid: 0,
   color: DECAL_COLOR.selection,
 };
-const STRIDE = 6; // x, y, z, yaw (render radians), scale, brightness
+const STRIDE = 8; // x, y, z, yaw (render radians), scale, brightness hash, tint hash, wind phase (radians)
 /** Density steps per chunk: the instance buffers are only rewritten when a chunk crosses a step. */
 const DENSITY_STEPS = 32;
 /** Size boost of thinned props: (1 / density)^SPARSE_GROW, at most SPARSE_MAX. */
@@ -110,6 +138,9 @@ interface Group {
   start: Int32Array;
   end: Int32Array;
   visual: PropVisual | null;
+  category: PropCategory;
+  /** Thinning tier of the category (propThinning.ts). */
+  tier: ThinTier;
   material: MeshBasicNodeMaterial | null;
   batches: InstanceBatch[];
   /** Batch index per LOD. */
@@ -138,10 +169,11 @@ export class PropLayer {
   private chunkCenters: Vector3[] = [];
   private state = new Int8Array(0);
   private shown = new Int8Array(0);
-  /** Density step per chunk (0..DENSITY_STEPS), now and as last written. */
+  /** Density step per tier and chunk (tier * chunks + chunk; 0..DENSITY_STEPS), now and as last written. */
   private density = new Uint8Array(0);
   private shownDensity = new Uint8Array(0);
   private distance = new Float32Array(0);
+  /** Props per tier and chunk. */
   private chunkTotal = new Int32Array(0);
   private blobChunks: number[] = [];
   private readonly maxVisible: number;
@@ -216,7 +248,9 @@ export class PropLayer {
         data[o + 2] = p.y;
         data[o + 3] = simYawToRender(p.yaw);
         data[o + 4] = p.scale;
-        data[o + 5] = 0.92 + 0.14 * hash01(index); // a little brightness variation per instance
+        data[o + 5] = hash01(index); // brightness variation per instance
+        data[o + 6] = hash01(index ^ 0x68e31da4); // tint variation
+        data[o + 7] = hash01(index ^ 0x1b873593) * Math.PI * 2; // wind phase
         chunk[k] = chunkOf(p);
       });
       const ranges: number[] = [];
@@ -240,13 +274,19 @@ export class PropLayer {
         start,
         end,
         visual: null,
+        category: propCategoryOf(id),
+        tier: thinTier(propCategoryOf(id)),
         material: null,
         batches: [],
         lodBatch: [0, 0, 0],
       };
       this.groups.push(g);
       this.byId.set(id, g);
-      if (prev?.visual) this.applyVisual(g, prev.visual, prev.material);
+      if (prev?.visual) {
+        g.category = prev.visual.category ?? g.category;
+        g.tier = thinTier(g.category);
+        this.applyVisual(g, prev.visual, prev.material);
+      }
       if (prev) {
         old.delete(id);
         this.disposeBatches(prev, false);
@@ -257,12 +297,19 @@ export class PropLayer {
     this.chunkCenters = Array.from({ length: cols * rows }, () => new Vector3());
     this.state = new Int8Array(cols * rows).fill(-1);
     this.shown = new Int8Array(cols * rows).fill(-2);
-    this.density = new Uint8Array(cols * rows);
-    this.shownDensity = new Uint8Array(cols * rows);
+    this.density = new Uint8Array(THIN_TIERS * cols * rows);
+    this.shownDensity = new Uint8Array(THIN_TIERS * cols * rows);
     this.distance = new Float32Array(cols * rows);
-    this.chunkTotal = new Int32Array(cols * rows);
-    for (const g of this.groups) for (let k = 0; k < g.count; k++) this.chunkTotal[g.chunk[k]!]!++;
+    this.countTiers();
     this.relayout();
+  }
+
+  /** Props per tier and chunk, from the groups' current categories. */
+  private countTiers(): void {
+    const chunks = this.state.length;
+    this.chunkTotal = new Int32Array(THIN_TIERS * chunks);
+    for (const g of this.groups)
+      for (let k = 0; k < g.count; k++) this.chunkTotal[g.tier * chunks + g.chunk[k]!]!++;
   }
 
   /** Asset ids in the current props, in first-seen order. */
@@ -279,14 +326,26 @@ export class PropLayer {
     const g = this.byId.get(assetId);
     if (!g) return;
     this.disposeBatches(g, true);
+    g.category = visual?.category ?? propCategoryOf(assetId);
+    g.tier = thinTier(g.category);
     if (visual) this.applyVisual(g, visual, null);
+    this.countTiers();
     this.updateBounds();
     this.dirty = true;
   }
 
   private applyVisual(g: Group, visual: PropVisual, material: MeshBasicNodeMaterial | null): void {
     g.visual = visual;
-    g.material = material ?? this.opts.material(visual.map);
+    const mask = visual.mask === true;
+    g.material =
+      material ??
+      this.opts.material({
+        map: visual.map,
+        layers: visual.layers ?? null,
+        mask,
+        category: g.category,
+        height: visual.height,
+      });
     const unique: BufferGeometry[] = [];
     g.lodBatch = visual.lods.map((geo) => {
       let i = unique.indexOf(geo);
@@ -294,13 +353,9 @@ export class PropLayer {
       return i;
     }) as [number, number, number];
     g.batches = unique.map((geo, i) => {
-      const b = new InstanceBatch(
-        this.scene,
-        geo.clone(),
-        g.material!,
-        g.count,
-        `props-${g.id}-${i}`,
-      );
+      const own = geo.clone();
+      if (mask) ensureCutoffAttribute(own); // an LOD without leaf cards shares the mask material
+      const b = new InstanceBatch(this.scene, own, g.material!, g.count, `props-${g.id}-${i}`);
       b.mesh.raycast = () => {}; // props are never picked and never block a pick
       return b;
     });
@@ -370,9 +425,10 @@ export class PropLayer {
         (size * this.screen.pxPerMeter) / this.lodPixels.lod2,
       );
     }
-    let near = 0;
-    let far = 0;
-    for (let c = 0; c < state.length; c++) {
+    const chunks = state.length;
+    const near = [0, 0, 0];
+    const far = [0, 0, 0];
+    for (let c = 0; c < chunks; c++) {
       const box = this.chunkBoxes[c]!;
       let s = -1;
       if (!box.isEmpty() && this.frustum.intersectsBox(box)) {
@@ -380,43 +436,43 @@ export class PropLayer {
         dist[c] = d;
         s = 0;
         for (const b of breaks) if (d >= b) s++;
-        if (d < this.thinDistance) near += this.chunkTotal[c]!;
-        else far += this.chunkTotal[c]! * Math.max(this.minDensity, this.thinDistance / d);
+        for (let t = 0; t < THIN_TIERS; t++) {
+          const total = this.chunkTotal[t * chunks + c]!;
+          if (total === 0) continue;
+          const f = tierDensity(t as ThinTier, d, this.thinDistance, this.minDensity);
+          if (f === 1) near[t]! += total;
+          else far[t]! += total * f;
+        }
       }
       state[c] = s;
     }
-    // Over budget: the far chunks give way first, then everything alike.
-    let farScale = 1;
-    let allScale = 1;
-    if (near + far > this.maxVisible) {
-      if (near < this.maxVisible) farScale = (this.maxVisible - near) / far;
-      else allScale = this.maxVisible / (near + far);
-    }
+    // Over budget: ground cover gives way first, trees last, and within a tier the far chunks before the near ones.
+    const plan = shedPlan(near, far, this.maxVisible);
     let changed = this.dirty;
-    for (let c = 0; c < state.length; c++) {
-      let q = 0;
-      if (state[c]! >= 0) {
-        const d = dist[c]!;
-        const f =
-          d < this.thinDistance
-            ? allScale
-            : Math.max(this.minDensity, this.thinDistance / d) * farScale * allScale;
-        q = Math.max(1, Math.min(DENSITY_STEPS, Math.ceil(f * DENSITY_STEPS)));
+    for (let t = 0; t < THIN_TIERS; t++) {
+      for (let c = 0; c < chunks; c++) {
+        const i = t * chunks + c;
+        let q = 0;
+        if (state[c]! >= 0 && this.chunkTotal[i]! > 0) {
+          const f = tierDensity(t as ThinTier, dist[c]!, this.thinDistance, this.minDensity);
+          const scaled = f * (f === 1 ? plan.near[t]! : plan.far[t]!);
+          q = Math.max(1, Math.min(DENSITY_STEPS, Math.ceil(scaled * DENSITY_STEPS)));
+        }
+        this.density[i] = q;
+        if (q !== this.shownDensity[i]) changed = true;
       }
-      this.density[c] = q;
-      if (state[c] !== this.shown[c] || q !== this.shownDensity[c]) changed = true;
     }
+    for (let c = 0; c < chunks; c++) if (state[c] !== this.shown[c]) changed = true;
     if (changed) this.rebuild();
 
     let blobs = 0;
     for (const c of this.blobChunks) {
-      const q = this.density[c]!;
       for (const g of this.groups) {
-        if (!g.visual || g.batches.length === 0) continue;
+        if (!g.visual || g.batches.length === 0 || !hasBlobShadow(g.category)) continue;
         const s0 = g.start[c]!;
         const n = g.end[c]! - s0;
         if (n === 0) continue;
-        const keep = Math.round((q * n) / DENSITY_STEPS);
+        const keep = Math.round((this.density[g.tier * chunks + c]! * n) / DENSITY_STEPS);
         const d = g.data;
         const r = g.visual.radius * g.visual.fit * BLOB_SCALE;
         for (let k = s0; k < s0 + keep; k++) {
@@ -437,6 +493,7 @@ export class PropLayer {
     const counts = this.lodCounts;
     counts[0] = counts[1] = counts[2] = 0;
     const t = this.tint;
+    const chunks = this.state.length;
     for (const g of this.groups) {
       for (const b of g.batches) b.count = 0;
       if (g.batches.length === 0 || !g.visual) continue;
@@ -451,13 +508,24 @@ export class PropLayer {
         const batch = g.batches[g.lodBatch[s]!]!;
         const k0 = g.ranges[q + 1]!;
         const n = g.ranges[q + 2]! - k0;
-        const keep = Math.round((this.density[c]! * n) / DENSITY_STEPS);
+        const keep = Math.round((this.density[g.tier * chunks + c]! * n) / DENSITY_STEPS);
         const grow = keep < n ? Math.min(SPARSE_MAX, Math.pow(n / keep, SPARSE_GROW)) : 1;
         for (let k = k0; k < k0 + keep; k++) {
           const o = k * STRIDE;
           const sc = d[o + 4]! * fit * grow;
-          t[0] = t[1] = t[2] = d[o + 5]! * gain;
-          batch.push(d[o]!, d[o + 1]!, d[o + 2]!, d[o + 3]!, sc, sc, sc, NEUTRAL_TEAM, t);
+          instanceTint(g.category, d[o + 5]!, d[o + 6]!, gain, t);
+          batch.push(
+            d[o]!,
+            d[o + 1]!,
+            d[o + 2]!,
+            d[o + 3]!,
+            sc,
+            sc,
+            sc,
+            NEUTRAL_TEAM,
+            t,
+            d[o + 7]!,
+          );
           counts[s] = counts[s]! + 1;
         }
       }

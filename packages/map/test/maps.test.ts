@@ -41,6 +41,14 @@ const claimFootprint = (): { w: number; h: number } => {
   return b.footprint;
 };
 
+const footprintOf = (id: string): { w: number; h: number } => {
+  const b = (
+    readDataDir(dataDir).buildings as Array<{ id: string; footprint: { w: number; h: number } }>
+  ).find((x) => x.id === id);
+  if (b === undefined) throw new Error(`${id} ontbreekt in data/buildings.json`);
+  return b.footprint;
+};
+
 const generated: Array<[string, () => GeneratedMap]> = [
   ['rustbelt', () => generateRustbelt(nodeGenIo)],
   ['testmap', generateTestmap],
@@ -530,18 +538,80 @@ describe('rustbelt: terrein, rivier, bos en routes', () => {
     expect(grove).toBeGreaterThan(500);
   });
 
-  it('elke basis ligt op een vlak, open bouwvlak (hoofdgebouw 5x5 plus bouwruimte, straal 7 m)', () => {
+  it('elke basis ligt op een vlak, open bouwvlak (straal 30 m, de pad uit de spec)', () => {
+    const pad = RUSTBELT_SPEC.pads![0]!;
+    expect(pad.radius).toBe(30);
+    const r = pad.radius;
     for (const s of map.spawns) {
       let lo = Infinity;
       let hi = -Infinity;
-      for (let y = s.y - 7; y <= s.y + 7; y++)
-        for (let x = s.x - 7; x <= s.x + 7; x++) {
-          if (dist2(x, y, s.x, s.y) > 49) continue;
+      for (let y = s.y - r; y <= s.y + r; y++)
+        for (let x = s.x - r; x <= s.x + r; x++) {
+          if (dist2(x, y, s.x, s.y) > r * r) continue;
           expect(isPassable(map, x, y), `(${x},${y}) bij spawn (${s.x},${s.y})`).toBe(true);
           lo = Math.min(lo, heights.data[y * N + x]!);
           hi = Math.max(hi, heights.data[y * N + x]!);
         }
       expect(hi - lo).toBeLessThanOrEqual(64); // 0,25 m
+    }
+  });
+
+  it('rond elke spawn passen op echte schaal een hoofdgebouw, 10 woningen, een werkplaats, een lab en 4 turrets', () => {
+    // Gretig inpakken op de footprints van data/buildings.json: het hoofdgebouw op de spawn (zoals de sim), daarna elk
+    // gebouw op de vrije plek het dichtst bij de spawn binnen 55 m, met een looppad van minstens 2 cellen tussen twee gebouwen, niet op een node
+    // of claimpunt. Zo is "de basis past" een eigenschap van map plus data, niet van een AI.
+    // in de volgorde waarin een speler bouwt: werkplaats en lab vroeg, de woningen erna
+    const order = [
+      'werkplaats',
+      'lab',
+      'woning',
+      'woning',
+      'woning',
+      'woning',
+      'woning',
+      'woning',
+      'woning',
+      'woning',
+      'woning',
+      'woning',
+      'turret',
+      'turret',
+      'turret',
+      'turret',
+    ];
+    const gap = 1;
+    const reach = 55;
+    for (const s of map.spawns) {
+      const used = new Uint8Array(N * N);
+      for (const p of [...map.scrapNodes, ...map.claimPoints]) used[p.y * N + p.x] = 1;
+      const free = (fx: number, fy: number, w: number, h: number): boolean => {
+        for (let y = fy; y < fy + h; y++)
+          for (let x = fx; x < fx + w; x++)
+            if (!isPassable(map, x, y) || used[y * N + x] === 1) return false;
+        return true;
+      };
+      const take = (fx: number, fy: number, w: number, h: number): void => {
+        for (let y = fy - gap; y < fy + h + gap; y++)
+          for (let x = fx - gap; x < fx + w + gap; x++)
+            if (x >= 0 && y >= 0 && x < N && y < N) used[y * N + x] = 1;
+      };
+      const hq = footprintOf('hoofdgebouw');
+      const hx = s.x - (hq.w >> 1);
+      const hy = s.y - (hq.h >> 1);
+      expect(free(hx, hy, hq.w, hq.h), `hoofdgebouw op spawn (${s.x},${s.y})`).toBe(true);
+      take(hx, hy, hq.w, hq.h);
+      for (const id of order) {
+        const { w, h } = footprintOf(id);
+        let best: [number, number, number] | null = null;
+        for (let fy = s.y - reach; fy <= s.y + reach - h; fy++)
+          for (let fx = s.x - reach; fx <= s.x + reach - w; fx++) {
+            const d = dist2(fx + w / 2, fy + h / 2, s.x + 0.5, s.y + 0.5);
+            if (d > reach * reach || (best !== null && d >= best[2])) continue;
+            if (free(fx - gap, fy - gap, w + 2 * gap, h + 2 * gap)) best = [fx, fy, d];
+          }
+        expect(best, `${id} bij spawn (${s.x},${s.y})`).not.toBeNull();
+        take(best![0], best![1], w, h);
+      }
     }
   });
 
@@ -606,8 +676,8 @@ describe('een tweede map is alleen data', () => {
   it('testmap laadt via dezelfde loader zonder codewijziging', () => {
     const def = readDef('testmap');
     const map = loadMap(def, assets);
-    expect(map.w).toBe(32);
-    expect(map.h).toBe(32);
+    expect(map.w).toBe(64);
+    expect(map.h).toBe(64);
     expect(map.spawns).toHaveLength(2);
     expect(readDominance('testmap')).toEqual({ pointsRequired: 1, minutes: 1 });
     expect(
@@ -641,10 +711,10 @@ describe('greyboxMesh', () => {
   const mesh = greyboxMesh(map, heights);
 
   it('geeft consistente typed arrays', () => {
-    expect(mesh.vertexCount).toBe(32 * 32 * 4);
+    expect(mesh.vertexCount).toBe(64 * 64 * 4);
     expect(mesh.positions).toHaveLength(mesh.vertexCount * 3);
     expect(mesh.colors).toHaveLength(mesh.vertexCount * 3);
-    expect(mesh.indices).toHaveLength(32 * 32 * 6);
+    expect(mesh.indices).toHaveLength(64 * 64 * 6);
     expect(mesh.unitsPerMeter).toBe(256);
     for (const idx of mesh.indices) expect(idx).toBeLessThan(mesh.vertexCount);
   });
@@ -653,13 +723,13 @@ describe('greyboxMesh', () => {
     const again = greyboxMesh(map, heights);
     expect(Array.from(again.positions)).toEqual(Array.from(mesh.positions));
     const colorOf = (x: number, y: number): number[] =>
-      Array.from(mesh.colors.subarray((y * 32 + x) * 12, (y * 32 + x) * 12 + 3));
-    expect(colorOf(13, 7)).not.toEqual(colorOf(20, 20)); // ruine versus grond
+      Array.from(mesh.colors.subarray((y * 64 + x) * 12, (y * 64 + x) * 12 + 3));
+    expect(colorOf(31, 15)).not.toEqual(colorOf(40, 40)); // ruine versus grond
   });
 
   it('markeert scrap-node- en claimpunt-cellen met eigen kleur', () => {
     const colorAt = (x: number, y: number): number[] =>
-      Array.from(mesh.colors.subarray((y * 32 + x) * 12, (y * 32 + x) * 12 + 3));
+      Array.from(mesh.colors.subarray((y * 64 + x) * 12, (y * 64 + x) * 12 + 3));
     const node = map.scrapNodes[0]!;
     const claim = map.claimPoints[0]!;
     expect(colorAt(node.x, node.y)).toEqual(Array.from(MARK_SCRAP_RGB));

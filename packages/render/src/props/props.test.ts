@@ -136,14 +136,14 @@ describe('PropLayer', () => {
     expect(l.lodCounts).toEqual([0, 0, 0]);
   });
 
-  it('pushes a blob shadow per visible nearby prop', () => {
+  it('pushes a blob shadow per visible nearby prop, except ground cover (grass, plants)', () => {
     const l = layer();
     l.setProps(props);
     for (const id of l.assetIds()) l.setVisual(id, visual());
     const decals = fakeDecals();
     l.update(camera(new Vector3(30, 70, 30.01), new Vector3(30, 0, 30)), decals);
     expect(l.lodCounts[2]).toBe(0);
-    expect(decals.pushed).toBe(props.length);
+    expect(decals.pushed).toBe(props.filter((p) => !p.asset.startsWith('grass')).length);
   });
 
   it('is never hit by a raycast, so it neither picks nor blocks a pick', () => {

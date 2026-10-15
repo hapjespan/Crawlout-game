@@ -68,7 +68,7 @@ export const techOf = (key: string): number => gameData().data.tech.find((t) => 
  */
 export type SiteAnchor = 'hq' | 'settlement' | 'settlement2' | 'centre';
 
-/** Gebouw in de bouwlijst: type en plaats. homewardM schuift het anker zoveel meter op naar het eigen hoofdgebouw. */
+/** Gebouw in de bouwlijst: type en plaats. homewardM schuift het anker zoveel meter op naar het eigen hoofdgebouw (negatief: van huis weg, naar de vijand). */
 export interface PlannedBuilding {
   readonly key: string;
   readonly at: SiteAnchor;
@@ -162,7 +162,7 @@ export function anchorOf(
       : at === 'centre'
         ? centrePoint(sim)
         : settlementPoint(sim, p, at === 'settlement2' ? 1 : 0);
-  return homewardM > 0 ? toward(a, home, homewardM) : { x: a.x, y: a.y };
+  return homewardM !== 0 ? toward(a, home, homewardM) : { x: a.x, y: a.y };
 }
 
 /**
@@ -187,7 +187,9 @@ export class SitePlanner {
     const blocked = this.blocked();
     const ax = a.x >> 8;
     const ay = a.y >> 8;
-    const R = 24;
+    // zoekstraal in cellen (midden van de footprint), zoals AI_SITE_RING in de sim: op echte schaal (data 0.14.0) liggen
+    // tien woningen van 13 x 20 m tot ongeveer 50 m van het hoofdgebouw (was 24)
+    const R = 56;
     const walk = this.walkFrom(ax, ay, R + 4);
     let best: { x: number; y: number } | null = null;
     let bestW = Infinity;

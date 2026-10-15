@@ -8,7 +8,33 @@ import { cellCenter, createTestMap, testPlayers } from '../src/testing.js';
 
 /** Echte data uit data/, zoals de client en de replay die laden. */
 export const DATA = loadGameDataFromDir(fileURLToPath(new URL('../../../data', import.meta.url)));
-export const CONFIG = simConfigFromGameData(DATA);
+/**
+ * Footprints op de compacte maat van voor de echte-schaalronde (data 0.14.0): de sim-tests spelen op de testmap van
+ * 64 x 64 met vaste cellen, en de sim behandelt een footprint als parameter. Gebouwen op echte schaal (een woning van
+ * 13 x 19, een hoofdgebouw van 21 x 21) worden getest op de echte data in large-footprint.test.ts, ai.test.ts
+ * (Rustbelt XL) en de replay-fixtures.
+ */
+export const COMPACT_FOOTPRINTS: Readonly<Record<string, readonly [number, number]>> = {
+  hoofdgebouw: [5, 5],
+  woning: [3, 3],
+  werkplaats: [3, 3],
+  radiobaken: [1, 1],
+  claimpaal: [1, 1],
+  turret: [2, 2],
+  lab: [3, 3],
+  trainingsfaciliteit: [3, 3],
+};
+/** De sim-config uit de echte data, met de footprints van de echte schaal. */
+export const REAL_CONFIG = simConfigFromGameData(DATA);
+export const CONFIG: typeof REAL_CONFIG = {
+  ...REAL_CONFIG,
+  buildingTypes: REAL_CONFIG.buildingTypes.map((t) => {
+    const key = DATA.buildings.find((b) => b.id === t.buildingId)!.key;
+    const fp = COMPACT_FOOTPRINTS[key];
+    if (fp === undefined) throw new Error(`geen compacte footprint voor ${key}`);
+    return { ...t, footprintW: fp[0], footprintH: fp[1] };
+  }),
+};
 const roles = CONFIG.factions[0]!.roleTypeIds;
 export const SCAV = roles[ROLES.indexOf('scavenger')]!;
 export const BUILDER = roles[ROLES.indexOf('builder')]!;

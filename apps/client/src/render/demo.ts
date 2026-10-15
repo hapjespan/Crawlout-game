@@ -17,7 +17,9 @@
 // (bench.ts); ?bench starts it on load and logs the result.
 // ?xl is the synthetic 384 x 384 m map (xlWorld.ts): Rock Terrain 4 tiled three times each way, a river with three
 // fords through setWater, a forest border, groves and loose trees (6000) plus rocks and bushes; units and buildings
-// over the whole map. ?water=0 leaves the water out.
+// over the whole map. ?water=0 leaves the water out. ?xl&foliage swaps the trees for synthetic alpha-tested ones
+// (render/dev/foliageAssets.ts: leaf cards, grass, plants, crates, chests, barrels, watchtowers; ?grass=<n> sets the tufts);
+// ?wind=0 holds the foliage still and ?propmax=<n> sets the prop budget.
 import { PROVIDES } from '@crawlout/data';
 import { MAX_ENTITIES, TICK_MS, UNITS_PER_METER } from '@crawlout/protocol';
 import {
@@ -26,18 +28,19 @@ import {
   snapFootprintCenter,
   type PlacementPreview,
 } from '@crawlout/render';
-import { createGridTerrain, FakeSnapshotSource } from '@crawlout/render/dev';
+import {
+  createGridTerrain,
+  FakeSnapshotSource,
+  foliageProps,
+  foliagePropSource,
+} from '@crawlout/render/dev';
 import { assetConfig } from '../game/assets.js';
 import { loadClientGameData, loadClientMap } from '../game/content.js';
 import { runBench } from './bench.js';
 import { loadMapProps, propSource } from './props.js';
 import { greyboxFromHeights, rockTerrainGreybox, rockTerrainHeights } from './rockTerrain.js';
 import { terrainTextures } from './terrain.js';
-import {
-  albedoLayoutForMap,
-  rockDemoAlbedoLayout,
-  xlDemoAlbedoLayout,
-} from './terrainLayout.js';
+import { albedoLayoutForMap, rockDemoAlbedoLayout, xlDemoAlbedoLayout } from './terrainLayout.js';
 import { xlWorld, type XlWorld } from './xlWorld.js';
 
 const WORLD = 128;
@@ -106,6 +109,10 @@ async function main(): Promise<void> {
     buildingAssets: params.get('buildings') !== 'ph',
     ...(detail !== null ? { terrainDetail: { subdivide: Number(detail) } } : {}),
     ...(terrainChunks ? { terrainChunks } : {}),
+    props: {
+      wind: params.get('wind') !== '0',
+      ...(params.has('propmax') ? { maxVisible: intParam(params, 'propmax', 3000, 100_000) } : {}),
+    },
   });
   renderer.setGameData(data);
   const backendEl = document.getElementById('backend');
@@ -184,13 +191,20 @@ async function main(): Promise<void> {
   const propsMode = params.get('props');
   const propsEl = document.getElementById('props');
   if (propsMode !== '0') {
-    const source =
-      propsMode === 'src'
+    const foliage = params.has('foliage') && xl !== null;
+    const source = foliage
+      ? await foliagePropSource()
+      : propsMode === 'src'
         ? propSource({ manifest: false })
         : propsMode === 'ph'
           ? { manifestUrl: null }
           : propSource();
-    void renderer.setProps(xl ? xl.props : loadMapProps('rustbelt'), source).then((list) => {
+    const propList = foliage
+      ? foliageProps(xl, { grass: intParam(params, 'grass', 12000, 100_000) }).props
+      : xl
+        ? xl.props
+        : loadMapProps('rustbelt');
+    void renderer.setProps(propList, source).then((list) => {
       if (!propsEl) return;
       const by = new Map<string, number>();
       for (const p of list) by.set(p.origin, (by.get(p.origin) ?? 0) + p.instances);

@@ -53,16 +53,22 @@ export function runBench(clock: () => number): BenchResult {
   const milType = faction.roleTypeIds[ROLES.indexOf('militia')]!;
   // Nodes met ruim genoeg voorraad, zodat de scavengers de hele run blijven pendelen.
   const open = createOpenMap(MAP_SIDE, MAP_SIDE);
-  const map = { ...open, scrapNodes: open.scrapNodes.map((n) => ({ ...n, amount: 1_000_000 })) };
+  // Hoofdgebouwen op echte schaal (21 x 21, data 0.14.0) passen niet op de spawns van de open map (8, 8): de spawns
+  // schuiven op tot het gebouw past, met de rand ongeveer 8 m van de nodes (16, 6) en (111, 121), zoals voorheen.
+  const map = {
+    ...open,
+    spawns: [cellCenter(30, 24), cellCenter(MAP_SIDE - 31, MAP_SIDE - 25)],
+    scrapNodes: open.scrapNodes.map((n) => ({ ...n, amount: 1_000_000 })),
+  };
   const sim = createSim({ seed: 12345, players: testPlayers(2), map, config });
   const nodes = sim.entityIds().filter((id) => sim.getUnit(id)!.kind === 'scrapNode');
-  const home = [cellCenter(20, 30), cellCenter(MAP_SIDE - 21, MAP_SIDE - 31)];
+  const home = [cellCenter(8, 40), cellCenter(MAP_SIDE - 16, MAP_SIDE - 52)];
   for (let side = 0; side < 2; side++) {
     for (let k = 0; k < PER_SIDE; k++) {
-      const c = cellCenter(
-        10 + (k % 10) + side * (MAP_SIDE - 30),
-        14 + Math.floor(k / 10) + side * (MAP_SIDE - 30),
-      );
+      // een blok van 10 x 10 naast het hoofdgebouw (cellen 4..13 en 14..23), voor speler 1 gespiegeld
+      const x = 4 + (k % 10);
+      const y = 14 + Math.floor(k / 10);
+      const c = side === 0 ? cellCenter(x, y) : cellCenter(MAP_SIDE - 1 - x, MAP_SIDE - 1 - y);
       sim.spawnUnit({ typeId: scavType, owner: side, x: c.x, y: c.y });
     }
   }

@@ -82,6 +82,14 @@ export {
 export { type FrameStats } from './perf/perfOverlay.js';
 export { type RenderProp } from './props/propLayer.js';
 export {
+  PROP_CATEGORIES,
+  parsePropCategory,
+  propCategoryOf,
+  type PropCategory,
+} from './props/propCategory.js';
+export { thinTier, type ThinTier } from './props/propThinning.js';
+export { windOf, type WindSpec } from './props/propWind.js';
+export {
   type PropSourceOptions,
   type PropAssetStatus,
   type PropOrigin,

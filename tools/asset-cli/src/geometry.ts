@@ -240,6 +240,28 @@ export function largestComponents(mesh: Mesh, count: number, weldDistance: numbe
   );
 }
 
+/**
+ * Houdt alleen de samenhangende delen die helemaal binnen het blok [min, max] liggen (hoekpunten binnen `weldDistance`
+ * tellen als gelijk). Voor los rommel naast een bronmodel dat anders de bounds oprekt.
+ */
+export function componentsInside(mesh: Mesh, min: Vec3, max: Vec3, weldDistance: number): Mesh {
+  const { rootOfTriangle } = connectedComponents(mesh, weldDistance);
+  const outside = new Set<string>();
+  for (let t = 0; t < rootOfTriangle.length; t++)
+    for (let k = 0; k < 3; k++) {
+      const v = mesh.indices[t * 3 + k]! * 3;
+      for (let a = 0; a < 3; a++) {
+        const c = mesh.positions[v + a]!;
+        if (c < min[a]! || c > max[a]!) outside.add(rootOfTriangle[t]!);
+      }
+    }
+  return keepComponents(
+    mesh,
+    new Set(rootOfTriangle.filter((r) => !outside.has(r))),
+    rootOfTriangle,
+  );
+}
+
 /** Laat samenhangende delen vallen die samen minder dan `fraction` van het totale oppervlak hebben (klein detail). */
 export function dropSmallComponents(mesh: Mesh, fraction: number, weldDistance: number): Mesh {
   if (fraction <= 0) return mesh;

@@ -153,15 +153,14 @@
       "errors": [],
       "warnings": [],
       "kind": "building",
-      "sourceTriangles": 32,
+      "sourceTriangles": 0,
       "lodTriangles": [
-        140,
-        140,
-        119
+        142,
+        142,
+        142
       ],
       "materials": [
         "metal",
-        "roof",
         "team_trim"
       ],
       "textureSizes": [
@@ -176,15 +175,14 @@
       "errors": [],
       "warnings": [],
       "kind": "building",
-      "sourceTriangles": 32,
+      "sourceTriangles": 0,
       "lodTriangles": [
-        88,
-        88,
-        67
+        92,
+        92,
+        92
       ],
       "materials": [
         "metal",
-        "roof",
         "team_trim"
       ],
       "textureSizes": [
@@ -201,12 +199,13 @@
       "kind": "building",
       "sourceTriangles": 86,
       "lodTriangles": [
-        2437,
-        996,
-        134
+        2467,
+        992,
+        158
       ],
       "materials": [
         "dirt",
+        "metal",
         "roof",
         "team_trim",
         "wall_proxy"
@@ -223,11 +222,11 @@
       "errors": [],
       "warnings": [],
       "kind": "building",
-      "sourceTriangles": 172,
+      "sourceTriangles": 86,
       "lodTriangles": [
-        2369,
-        944,
-        286
+        2341,
+        939,
+        288
       ],
       "materials": [
         "dirt",
@@ -250,9 +249,9 @@
       "kind": "building",
       "sourceTriangles": 86,
       "lodTriangles": [
-        1790,
-        712,
-        216
+        1983,
+        792,
+        234
       ],
       "materials": [
         "metal",
@@ -274,13 +273,12 @@
       "kind": "building",
       "sourceTriangles": 86,
       "lodTriangles": [
-        1672,
-        673,
-        198
+        1995,
+        790,
+        134
       ],
       "materials": [
         "dirt",
-        "metal",
         "roof",
         "team_trim",
         "wall_proxy"
@@ -297,15 +295,14 @@
       "errors": [],
       "warnings": [],
       "kind": "building",
-      "sourceTriangles": 32,
+      "sourceTriangles": 0,
       "lodTriangles": [
-        156,
-        156,
-        135
+        176,
+        176,
+        176
       ],
       "materials": [
         "metal",
-        "roof",
         "team_trim"
       ],
       "textureSizes": [
@@ -320,16 +317,15 @@
       "errors": [],
       "warnings": [],
       "kind": "building",
-      "sourceTriangles": 86,
+      "sourceTriangles": 0,
       "lodTriangles": [
-        1697,
-        674,
-        178
+        1879,
+        754,
+        104
       ],
       "materials": [
         "dirt",
         "metal",
-        "roof",
         "team_trim",
         "wall_proxy"
       ],

@@ -167,6 +167,23 @@ export interface PropsSpec {
 export interface ScatterLayers {
   forest?: Uint8Array;
   water?: Uint8Array;
+  /**
+   * Cirkels (cellen) zonder props: de bouwvlakken rond de spawns, waar gebouwen op echte schaal komen te staan. De
+   * aanroeper geeft beide spelers op (de builder spiegelt de pads); de spiegel van een prop moet ook vrij liggen.
+   */
+  clearings?: readonly { x: number; y: number; radius: number }[];
+}
+
+/** Masker (1 = geen props) van de cellen binnen de cirkels, op een vierkante map van n cellen. */
+function clearingMask(n: number, clearings: NonNullable<ScatterLayers['clearings']>): Uint8Array {
+  const mask = new Uint8Array(n * n);
+  for (const c of clearings) {
+    const r2 = c.radius * c.radius;
+    for (let y = Math.max(0, c.y - c.radius); y <= Math.min(n - 1, c.y + c.radius); y++)
+      for (let x = Math.max(0, c.x - c.radius); x <= Math.min(n - 1, c.x + c.radius); x++)
+        if ((x - c.x) * (x - c.x) + (y - c.y) * (y - c.y) <= r2) mask[y * n + x] = 1;
+  }
+  return mask;
 }
 
 const KEY_POINT_CLEARANCE_U = PROP_CLEARANCE_M * UNITS_PER_METER;
@@ -269,6 +286,7 @@ export function scatterProps(
   const rng = createRng(spec.seed);
   const forest = layers.forest ?? new Uint8Array(n * n);
   const water = layers.water ?? new Uint8Array(n * n);
+  const clear = clearingMask(n, layers.clearings ?? []);
   const keyPoints: KeyPoint[] = [
     ...def.spawns,
     ...def.scrapNodes,
@@ -374,7 +392,7 @@ export function scatterProps(
         const cx = x >> 8;
         const cy = y >> 8;
         const i = cy * n + cx;
-        if (water[i] !== 0 || nearWater(cx, cy, 1)) continue;
+        if (water[i] !== 0 || nearWater(cx, cy, 1) || clear[i] !== 0) continue;
         if (forest[i] !== 0) {
           if (roll < f.gapPct) continue;
           tryPlace(pickWeighted(rng, f.dense), x, y, yaw, scalePct);
@@ -395,7 +413,7 @@ export function scatterProps(
   for (let cy = 0; cy < n; cy++) {
     for (let cx = 0; cx < n; cx++) {
       const i = cy * n + cx;
-      if (forest[i] !== 0 || water[i] !== 0) continue;
+      if (forest[i] !== 0 || water[i] !== 0 || clear[i] !== 0) continue;
       const inMargin = cx < margin || cy < margin || cx >= n - margin || cy >= n - margin;
       if (passable[i] !== 1) {
         if (!inMargin) onBlocked.push(i);

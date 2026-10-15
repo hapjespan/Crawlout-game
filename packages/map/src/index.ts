@@ -25,7 +25,7 @@ export {
 } from './greybox.js';
 export type { GreyboxMesh, TerrainTile } from './greybox.js';
 // Generatoren (build-tijd, voor data/maps/*): zie src/gen en test/gen.test.ts voor regenereren.
-export { generateMap } from './gen/builder.js';
+export { generateMap, padClearings } from './gen/builder.js';
 export type {
   MapSpec,
   GeneratedMap,

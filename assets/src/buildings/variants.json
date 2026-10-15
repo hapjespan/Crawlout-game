@@ -1,153 +1,1443 @@
 {
   "version": 1,
   "sources": {
-    "house": {"file": "buildings/base_house.glb", "attribution": "Low poly House by winwoods (CC-BY-4.0), zie assets/src/licenses/low-poly-house-CC-BY-4.0.txt"}
+    "house": {
+      "file": "buildings/base_house.glb",
+      "attribution": "Low poly House by winwoods (CC-BY-4.0), zie assets/src/licenses/low-poly-house-CC-BY-4.0.txt",
+      "metersPerUnit": 0.0245,
+      "door": {
+        "floorY": 58.0,
+        "lintelY": 144.3,
+        "at": [
+          149,
+          29
+        ]
+      },
+      "keep": {
+        "min": [
+          -218,
+          -10,
+          -432
+        ],
+        "max": [
+          281,
+          420,
+          331
+        ]
+      },
+      "note": "Wereldschaal: de deuropening (zijgevel, +x, achter de trap) loopt van de vloer op y 58,0 tot de bovendorpel op 144,3 bron-eenheden, dus 86,3 eenheden. 0,0245 m per eenheid geeft een deur van 2,11 m, een verdieping van 2,9 m en een huis van 12,1 x 18,6 m en 10,0 m hoog (met veranda en trap). De bron is dus geen centimeters (dan was de deur 0,86 m). keep laat een losse plank op de grond en een touw buiten het dak weg."
+    }
   },
   "sourceMaterials": {
-    "Material.001": {"name": "wall_paint"},
-    "Material.003": {"name": "wall_paint"},
-    "lambert1": {"name": "wall_paint", "color": "#ffffff"},
-    "Material.004": {"name": "roof"},
-    "Material.006": {"name": "plank_grey"},
-    "Material.007": {"name": "frame_wood"}
+    "Material.001": {
+      "name": "wall_paint"
+    },
+    "Material.003": {
+      "name": "wall_paint"
+    },
+    "lambert1": {
+      "name": "wall_paint",
+      "color": "#ffffff"
+    },
+    "Material.004": {
+      "name": "roof"
+    },
+    "Material.006": {
+      "name": "plank_grey"
+    },
+    "Material.007": {
+      "name": "frame_wood"
+    }
   },
   "flatMaterials": {
-    "metal": {"color": "#8a867c"},
-    "team_trim": {"color": "#e7e7e7", "note": "masker voor de spelerskleur; render herkent de naam (bevat team)"},
-    "dirt": {"color": "#7a6a52"},
-    "wall_proxy": {"color": "#a9987c", "note": "vervangt huis (muren en dek) op LOD2; zie parts met minLod 2"}
+    "metal": {
+      "color": "#8a867c"
+    },
+    "team_trim": {
+      "color": "#e7e7e7",
+      "note": "masker voor de spelerskleur; render herkent de naam (bevat team)"
+    },
+    "dirt": {
+      "color": "#7a6a52"
+    },
+    "wall_proxy": {
+      "color": "#a9987c",
+      "note": "vervangt huis (muren en dek) op LOD2; zie parts met minLod 2"
+    }
   },
   "variants": {
     "dweller_building_housing": {
-      "footprint": {"w": 3, "h": 3},
+      "footprint": {
+        "w": 13,
+        "h": 19
+      },
       "lod0Triangles": 2500,
-      "note": "uniform geschaald huis (2,08 x 3 m, 1,61 m hoog) op een erf van 3 x 3 m; de footprint vult het erf, de vlaggenmast steekt boven het dak uit (2,1 m)",
+      "note": "het bronhuis op wereldschaal (12,1 x 18,6 m, 10,0 m hoog, deur 2,11 m) op een erf van 13 x 19 m, met een vlaggenmast van 7 m in de hoek",
       "parts": [
-        {"type": "box", "size": [3, 0.04, 3], "material": "dirt", "position": [0, 0, 0]},
-        {"type": "house", "source": "house", "fit": "house", "size": [3, 3], "heightFactor": 1, "position": [0, 0, 0], "maxLod": 1},
-        {"type": "house", "source": "house", "fit": "house", "size": [3, 3], "heightFactor": 1, "position": [0, 0, 0], "select": {"materials": ["Material.004"], "components": 2}, "minLod": 2},
-        {"type": "box", "size": [1.608, 0.645, 1.908], "material": "wall_proxy", "position": [-0.134, 0, 0.426], "minLod": 2},
-        {"type": "box", "size": [2.078, 0.078, 3], "material": "wall_proxy", "position": [0, 0, 0], "minLod": 2},
-        {"type": "cylinder", "radius": 0.045, "height": 2.1, "segments": 6, "material": "metal", "position": [1.25, 0, 1.2], "maxLod": 1},
-        {"type": "box", "size": [0.6, 0.39, 0.03], "material": "team_trim", "position": [0.95, 1.68, 1.2]}
+        {
+          "type": "box",
+          "size": [
+            13,
+            0.04,
+            19
+          ],
+          "material": "dirt",
+          "position": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "type": "house",
+          "source": "house",
+          "position": [
+            0,
+            0,
+            0
+          ],
+          "maxLod": 1
+        },
+        {
+          "type": "house",
+          "source": "house",
+          "position": [
+            0,
+            0,
+            0
+          ],
+          "select": {
+            "materials": [
+              "Material.004"
+            ],
+            "components": 2
+          },
+          "minLod": 2
+        },
+        {
+          "type": "box",
+          "size": [
+            7.35,
+            4.08,
+            13.965
+          ],
+          "material": "wall_proxy",
+          "position": [
+            -0.774,
+            0,
+            1.89
+          ],
+          "minLod": 2
+        },
+        {
+          "type": "box",
+          "size": [
+            10.29,
+            1.336,
+            18.204
+          ],
+          "material": "wall_proxy",
+          "position": [
+            -0.921,
+            0,
+            -0.082
+          ],
+          "minLod": 2
+        },
+        {
+          "type": "cylinder",
+          "radius": 0.08,
+          "height": 7,
+          "segments": 6,
+          "material": "metal",
+          "position": [
+            -6.0,
+            0,
+            -9.4
+          ],
+          "radiusTop": 0.06
+        },
+        {
+          "type": "box",
+          "size": [
+            1.4,
+            0.9,
+            0.05
+          ],
+          "material": "team_trim",
+          "position": [
+            -5.25,
+            5.9,
+            -9.4
+          ]
+        }
       ]
     },
     "dweller_building_hq": {
-      "footprint": {"w": 5, "h": 5},
+      "footprint": {
+        "w": 21,
+        "h": 21
+      },
       "lod0Triangles": 2400,
-      "note": "twee uniform geschaalde huizen (4,33 x 3 m en 3,2 x 2,22 m, een kwartslag gedraaid) en een silo op een erf van 5 x 5 m",
+      "note": "het bronhuis op wereldschaal met een extra verdieping eronder (de begane grond van de bron, 2,9 m; samen 12,9 m hoog) en een watertoren van 11 m met de teamvlag, op een erf van 21 x 21 m",
       "parts": [
-        {"type": "box", "size": [5, 0.04, 5], "material": "dirt", "position": [0, 0, 0]},
-        {"type": "house", "source": "house", "fit": "house", "size": [5, 3], "heightFactor": 1, "position": [0, 0, 1], "rotation": [0, 90, 0], "maxLod": 1},
-        {"type": "house", "source": "house", "fit": "house", "size": [5, 3], "heightFactor": 1, "position": [0, 0, 1], "rotation": [0, 90, 0], "select": {"materials": ["Material.004"], "components": 2}, "minLod": 2},
-        {"type": "box", "size": [2.754, 0.931, 2.321], "material": "wall_proxy", "position": [0.615, 0, 1.193], "minLod": 2},
-        {"type": "box", "size": [4.331, 0.064, 3], "material": "wall_proxy", "position": [0, 0, 1], "minLod": 2},
-        {"type": "house", "source": "house", "fit": "house", "size": [3.2, 2.6], "heightFactor": 1, "position": [0, 0, -1.35], "rotation": [0, 270, 0], "maxLod": 1},
-        {"type": "house", "source": "house", "fit": "house", "size": [3.2, 2.6], "heightFactor": 1, "position": [0, 0, -1.35], "rotation": [0, 270, 0], "select": {"materials": ["Material.004"], "components": 2}, "minLod": 2},
-        {"type": "box", "size": [2.034, 0.688, 1.715], "material": "wall_proxy", "position": [-0.454, 0, -1.493], "minLod": 2},
-        {"type": "box", "size": [3.2, 0.048, 2.217], "material": "wall_proxy", "position": [0, 0, -1.35], "minLod": 2},
-        {"type": "cylinder", "radius": 0.5, "radiusTop": 0.42, "height": 3.6, "segments": 10, "material": "metal", "position": [1.9, 0, -1.9]},
-        {"type": "cone", "radius": 0.6, "height": 0.9, "segments": 10, "material": "metal", "position": [1.9, 3.6, -1.9]},
-        {"type": "cylinder", "radius": 0.03, "height": 1.4, "segments": 6, "material": "metal", "position": [1.9, 4.5, -1.9]},
-        {"type": "box", "size": [0.55, 0.34, 0.04], "material": "team_trim", "position": [2.18, 5.55, -1.9]}
+        {
+          "type": "box",
+          "size": [
+            21,
+            0.04,
+            21
+          ],
+          "material": "dirt",
+          "position": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "type": "house",
+          "source": "house",
+          "position": [
+            -4.4,
+            0,
+            0
+          ],
+          "select": {
+            "yTo": 0.423
+          },
+          "maxLod": 1,
+          "weight": 0.6
+        },
+        {
+          "type": "house",
+          "source": "house",
+          "position": [
+            -4.4,
+            2.891,
+            0
+          ],
+          "select": {
+            "materials": [
+              "Material.001",
+              "Material.003",
+              "Material.004",
+              "Material.006",
+              "Material.007"
+            ]
+          },
+          "maxLod": 1
+        },
+        {
+          "type": "house",
+          "source": "house",
+          "position": [
+            -4.4,
+            2.891,
+            0
+          ],
+          "select": {
+            "materials": [
+              "Material.004"
+            ],
+            "components": 2
+          },
+          "minLod": 2
+        },
+        {
+          "type": "box",
+          "size": [
+            7.35,
+            6.971,
+            13.965
+          ],
+          "material": "wall_proxy",
+          "position": [
+            -5.174,
+            0,
+            1.89
+          ],
+          "minLod": 2
+        },
+        {
+          "type": "box",
+          "size": [
+            10.29,
+            4.227,
+            18.204
+          ],
+          "material": "wall_proxy",
+          "position": [
+            -5.321,
+            0,
+            -0.082
+          ],
+          "minLod": 2
+        },
+        {
+          "type": "box",
+          "size": [
+            0.25,
+            6.2,
+            0.25
+          ],
+          "material": "metal",
+          "position": [
+            5.1,
+            0,
+            -5.9
+          ],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "size": [
+            0.25,
+            6.2,
+            0.25
+          ],
+          "material": "metal",
+          "position": [
+            5.1,
+            0,
+            -3.1
+          ],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "size": [
+            0.25,
+            6.2,
+            0.25
+          ],
+          "material": "metal",
+          "position": [
+            7.9,
+            0,
+            -5.9
+          ],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "size": [
+            0.25,
+            6.2,
+            0.25
+          ],
+          "material": "metal",
+          "position": [
+            7.9,
+            0,
+            -3.1
+          ],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "size": [
+            3.2,
+            6.2,
+            3.2
+          ],
+          "material": "wall_proxy",
+          "position": [
+            6.5,
+            0,
+            -4.5
+          ],
+          "minLod": 2
+        },
+        {
+          "type": "cylinder",
+          "radius": 2.1,
+          "height": 3.4,
+          "segments": 12,
+          "material": "metal",
+          "position": [
+            6.5,
+            6.2,
+            -4.5
+          ]
+        },
+        {
+          "type": "cylinder",
+          "radius": 2.14,
+          "height": 0.5,
+          "segments": 12,
+          "material": "team_trim",
+          "position": [
+            6.5,
+            7.4,
+            -4.5
+          ]
+        },
+        {
+          "type": "cone",
+          "radius": 2.3,
+          "height": 1.3,
+          "segments": 12,
+          "material": "metal",
+          "position": [
+            6.5,
+            9.6,
+            -4.5
+          ]
+        },
+        {
+          "type": "cylinder",
+          "radius": 0.06,
+          "height": 2.2,
+          "segments": 6,
+          "material": "metal",
+          "position": [
+            6.5,
+            10.9,
+            -4.5
+          ]
+        },
+        {
+          "type": "box",
+          "size": [
+            1.6,
+            1.0,
+            0.05
+          ],
+          "material": "team_trim",
+          "position": [
+            7.35,
+            12.0,
+            -4.5
+          ]
+        }
       ]
     },
     "dweller_building_workshop": {
-      "footprint": {"w": 3, "h": 3},
-      "lod0Triangles": 1700,
-      "note": "uniform geschaald huis (3 x 2,08 m, een kwartslag gedraaid) met een afdak aan de voorkant op een erf van 3 x 3 m",
+      "footprint": {
+        "w": 21,
+        "h": 19
+      },
+      "lod0Triangles": 1900,
+      "note": "breed en laag: de begane grond van het bronhuis op wereldschaal (18,6 x 12,1 m, een kwartslag gedraaid) met een plat dak en een afdak van 4 m aan de achterkant, op een erf van 21 x 19 m; 4,6 m hoog met schoorsteen 6 m",
       "parts": [
-        {"type": "box", "size": [3, 0.04, 3], "material": "dirt", "position": [0, 0, 0]},
-        {"type": "house", "source": "house", "fit": "house", "size": [3, 2.1], "heightFactor": 1, "position": [0, 0, -0.45], "rotation": [0, 90, 0], "maxLod": 1},
-        {"type": "house", "source": "house", "fit": "house", "size": [3, 2.1], "heightFactor": 1, "position": [0, 0, -0.45], "rotation": [0, 90, 0], "select": {"materials": ["Material.004"], "components": 2}, "minLod": 2},
-        {"type": "box", "size": [1.907, 0.645, 1.608], "material": "wall_proxy", "position": [0.426, 0, -0.316], "minLod": 2},
-        {"type": "box", "size": [3, 0.132, 2.078], "material": "wall_proxy", "position": [0, 0, -0.45], "minLod": 2},
-        {"type": "box", "size": [3, 0.08, 0.9], "material": "metal", "position": [0, 0.78, 1.05]},
-        {"type": "box", "size": [3, 0.16, 0.06], "material": "team_trim", "position": [0, 0.71, 1.47]},
-        {"type": "box", "size": [0.1, 0.78, 0.1], "material": "metal", "position": [-1.4, 0, 1.4], "maxLod": 1},
-        {"type": "box", "size": [0.1, 0.78, 0.1], "material": "metal", "position": [1.4, 0, 1.4], "maxLod": 1},
-        {"type": "cylinder", "radius": 0.17, "radiusTop": 0.13, "height": 1.2, "segments": 8, "material": "metal", "position": [-0.9, 0.55, -0.8]}
+        {
+          "type": "box",
+          "size": [
+            21,
+            0.04,
+            19
+          ],
+          "material": "dirt",
+          "position": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "type": "house",
+          "source": "house",
+          "position": [
+            0,
+            0,
+            -2.6
+          ],
+          "rotation": [
+            0,
+            90,
+            0
+          ],
+          "select": {
+            "yTo": 0.423
+          },
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "size": [
+            13.965,
+            4.08,
+            7.35
+          ],
+          "material": "wall_proxy",
+          "position": [
+            1.89,
+            0,
+            -1.826
+          ],
+          "minLod": 2
+        },
+        {
+          "type": "box",
+          "size": [
+            18.204,
+            1.336,
+            10.29
+          ],
+          "material": "wall_proxy",
+          "position": [
+            -0.082,
+            0,
+            -1.679
+          ],
+          "minLod": 2
+        },
+        {
+          "type": "box",
+          "size": [
+            15.0,
+            0.3,
+            8.4
+          ],
+          "material": "metal",
+          "position": [
+            1.89,
+            4.15,
+            -1.826
+          ]
+        },
+        {
+          "type": "box",
+          "size": [
+            15.0,
+            0.35,
+            0.08
+          ],
+          "material": "team_trim",
+          "position": [
+            1.89,
+            4.1,
+            2.38
+          ]
+        },
+        {
+          "type": "box",
+          "size": [
+            16,
+            0.15,
+            4.6
+          ],
+          "material": "metal",
+          "position": [
+            0,
+            3.2,
+            5.9
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "type": "box",
+          "size": [
+            0.2,
+            3.2,
+            0.2
+          ],
+          "material": "metal",
+          "position": [
+            -7.8,
+            0,
+            8.6
+          ],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "size": [
+            0.2,
+            3.2,
+            0.2
+          ],
+          "material": "metal",
+          "position": [
+            0,
+            0,
+            8.6
+          ],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "size": [
+            0.2,
+            3.2,
+            0.2
+          ],
+          "material": "metal",
+          "position": [
+            7.8,
+            0,
+            8.6
+          ],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "size": [
+            2.2,
+            1.0,
+            1.2
+          ],
+          "material": "metal",
+          "position": [
+            -4,
+            0,
+            6.5
+          ],
+          "maxLod": 1
+        },
+        {
+          "type": "cylinder",
+          "radius": 0.35,
+          "height": 1.8,
+          "segments": 8,
+          "material": "metal",
+          "position": [
+            -3.5,
+            4.45,
+            -1.8
+          ],
+          "radiusTop": 0.28
+        }
       ]
     },
     "dweller_building_lab": {
-      "footprint": {"w": 3, "h": 3},
-      "lod0Triangles": 1800,
-      "note": "uniform geschaald huis (2,08 x 3 m) op een betonnen plaat van 3 x 3 m",
-      "tints": {"wall_paint": "#a8e8e0", "roof": "#b8c8ff", "frame_wood": "#d0f0ec"},
+      "footprint": {
+        "w": 17,
+        "h": 19
+      },
+      "lod0Triangles": 2000,
+      "tints": {
+        "wall_paint": "#a8e8e0",
+        "roof": "#b8c8ff",
+        "frame_wood": "#d0f0ec"
+      },
+      "colors": {
+        "wall_proxy": "#9ccfc8"
+      },
+      "note": "het bronhuis op wereldschaal op een betonnen plaat van 17 x 19 m, met een schotel van 3,6 m op een mast van 6 m naast het huis",
       "parts": [
-        {"type": "box", "size": [3, 0.06, 3], "material": "metal", "position": [0, 0, 0]},
-        {"type": "house", "source": "house", "fit": "house", "size": [3, 3], "heightFactor": 1, "position": [0, 0, 0], "maxLod": 1},
-        {"type": "house", "source": "house", "fit": "house", "size": [3, 3], "heightFactor": 1, "position": [0, 0, 0], "select": {"materials": ["Material.004"], "components": 2}, "minLod": 2},
-        {"type": "box", "size": [1.608, 0.645, 1.908], "material": "wall_proxy", "position": [-0.134, 0, 0.426], "minLod": 2},
-        {"type": "box", "size": [2.078, 0.065, 3], "material": "wall_proxy", "position": [0, 0, 0], "minLod": 2},
-        {"type": "cylinder", "radius": 0.05, "height": 1, "segments": 6, "material": "metal", "position": [0.4, 1.0, 0.2]},
-        {"type": "cylinder", "radius": 0.1, "radiusTop": 0.6, "height": 0.25, "segments": 12, "material": "metal", "position": [0.4, 1.95, 0.0], "rotation": [40, 0, 0]},
-        {"type": "cylinder", "radius": 0.03, "height": 1.2, "segments": 6, "material": "metal", "position": [-0.5, 1.0, -0.6]},
-        {"type": "box", "size": [0.5, 0.12, 0.06], "material": "team_trim", "position": [0, 0.7, 1.5]}
-      ],
-      "colors": {"wall_proxy": "#9ccfc8"}
+        {
+          "type": "box",
+          "size": [
+            17,
+            0.08,
+            19
+          ],
+          "material": "metal",
+          "position": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "type": "house",
+          "source": "house",
+          "position": [
+            -2.4,
+            0,
+            0
+          ],
+          "maxLod": 1
+        },
+        {
+          "type": "house",
+          "source": "house",
+          "position": [
+            -2.4,
+            0,
+            0
+          ],
+          "select": {
+            "materials": [
+              "Material.004"
+            ],
+            "components": 2
+          },
+          "minLod": 2
+        },
+        {
+          "type": "box",
+          "size": [
+            7.35,
+            4.08,
+            13.965
+          ],
+          "material": "wall_proxy",
+          "position": [
+            -3.174,
+            0,
+            1.89
+          ],
+          "minLod": 2
+        },
+        {
+          "type": "box",
+          "size": [
+            10.29,
+            1.336,
+            18.204
+          ],
+          "material": "wall_proxy",
+          "position": [
+            -3.321,
+            0,
+            -0.082
+          ],
+          "minLod": 2
+        },
+        {
+          "type": "box",
+          "size": [
+            1.2,
+            0.6,
+            1.2
+          ],
+          "material": "metal",
+          "position": [
+            6.2,
+            0,
+            -6.2
+          ]
+        },
+        {
+          "type": "cylinder",
+          "radius": 0.18,
+          "height": 5.4,
+          "segments": 8,
+          "material": "metal",
+          "position": [
+            6.2,
+            0.6,
+            -6.2
+          ],
+          "radiusTop": 0.14
+        },
+        {
+          "type": "cylinder",
+          "radius": 0.25,
+          "height": 1.6,
+          "segments": 8,
+          "material": "metal",
+          "position": [
+            6.2,
+            5.6,
+            -6.2
+          ],
+          "radiusTop": 1.8,
+          "rotation": [
+            0,
+            0,
+            35
+          ]
+        },
+        {
+          "type": "cylinder",
+          "radius": 0.04,
+          "height": 1.2,
+          "segments": 6,
+          "material": "metal",
+          "position": [
+            6.2,
+            6.2,
+            -6.2
+          ],
+          "rotation": [
+            0,
+            0,
+            35
+          ]
+        },
+        {
+          "type": "box",
+          "size": [
+            1.6,
+            0.5,
+            0.05
+          ],
+          "material": "team_trim",
+          "position": [
+            6.2,
+            2.2,
+            -5.55
+          ]
+        }
+      ]
     },
     "dweller_building_training": {
-      "footprint": {"w": 3, "h": 3},
-      "lod0Triangles": 1700,
-      "note": "uniform geschaald huis (2,2 x 1,52 m, een kwartslag gedraaid) in een omheind erf van 3 x 3 m",
-      "tints": {"wall_paint": "#e0ecb8", "roof": "#d0dca8"},
+      "footprint": {
+        "w": 21,
+        "h": 19
+      },
+      "lod0Triangles": 2000,
+      "tints": {
+        "wall_paint": "#e0ecb8",
+        "roof": "#d0dca8"
+      },
+      "colors": {
+        "wall_proxy": "#cfd8a8"
+      },
+      "note": "het bronhuis op wereldschaal met een omheind oefenterrein van 8 x 19 m (hek 1,15 m, oefenpoppen 1,7 m) aan de trapkant, op een erf van 21 x 19 m",
       "parts": [
-        {"type": "box", "size": [3, 0.04, 3], "material": "dirt", "position": [0, 0, 0]},
-        {"type": "house", "source": "house", "fit": "house", "size": [2.2, 1.8], "heightFactor": 1, "position": [0, 0, -0.6], "rotation": [0, 90, 0], "maxLod": 1},
-        {"type": "house", "source": "house", "fit": "house", "size": [2.2, 1.8], "heightFactor": 1, "position": [0, 0, -0.6], "rotation": [0, 90, 0], "select": {"materials": ["Material.004"], "components": 2}, "minLod": 2},
-        {"type": "box", "size": [1.399, 0.473, 1.179], "material": "wall_proxy", "position": [0.313, 0, -0.502], "minLod": 2},
-        {"type": "box", "size": [2.2, 0.066, 1.524], "material": "wall_proxy", "position": [0, 0, -0.6], "minLod": 2},
-        {"type": "box", "size": [3, 0.06, 0.06], "material": "metal", "position": [0, 0.7, 1.44], "maxLod": 1},
-        {"type": "box", "size": [3, 0.06, 0.06], "material": "metal", "position": [0, 0.7, -1.44], "maxLod": 1},
-        {"type": "box", "size": [0.06, 0.06, 3], "material": "metal", "position": [1.44, 0.7, 0], "maxLod": 1},
-        {"type": "box", "size": [0.06, 0.06, 3], "material": "metal", "position": [-1.44, 0.7, 0], "maxLod": 1},
-        {"type": "box", "size": [0.12, 1.0, 0.12], "material": "metal", "position": [-1.44, 0, 1.44], "maxLod": 1},
-        {"type": "box", "size": [0.12, 1.0, 0.12], "material": "metal", "position": [1.44, 0, 1.44], "maxLod": 1},
-        {"type": "box", "size": [0.12, 1.0, 0.12], "material": "metal", "position": [-1.44, 0, -1.44], "maxLod": 1},
-        {"type": "box", "size": [0.12, 1.0, 0.12], "material": "metal", "position": [1.44, 0, -1.44], "maxLod": 1},
-        {"type": "box", "size": [0.12, 1.0, 0.12], "material": "metal", "position": [0, 0, 1.44], "maxLod": 1},
-        {"type": "box", "size": [0.12, 1.0, 0.12], "material": "metal", "position": [-1.44, 0, 0], "maxLod": 1},
-        {"type": "box", "size": [0.12, 1.0, 0.12], "material": "metal", "position": [1.44, 0, 0], "maxLod": 1},
-        {"type": "box", "size": [0.12, 1.0, 0.12], "material": "metal", "position": [0, 0, -1.44], "maxLod": 1},
-        {"type": "cylinder", "radius": 0.12, "height": 1.3, "segments": 8, "material": "metal", "position": [0.9, 0, 0.7]},
-        {"type": "cylinder", "radius": 0.2, "height": 0.12, "segments": 8, "material": "team_trim", "position": [0.9, 1.3, 0.7]},
-        {"type": "box", "size": [1.1, 0.34, 0.03], "material": "team_trim", "position": [0.3, 0.4, 1.47]}
-      ],
-      "colors": {"wall_proxy": "#cfd8a8"}
+        {
+          "type": "box",
+          "size": [
+            21,
+            0.04,
+            19
+          ],
+          "material": "dirt",
+          "position": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "type": "house",
+          "source": "house",
+          "position": [
+            -4.4,
+            0,
+            0
+          ],
+          "maxLod": 1
+        },
+        {
+          "type": "house",
+          "source": "house",
+          "position": [
+            -4.4,
+            0,
+            0
+          ],
+          "select": {
+            "materials": [
+              "Material.004"
+            ],
+            "components": 2
+          },
+          "minLod": 2
+        },
+        {
+          "type": "box",
+          "size": [
+            7.35,
+            4.08,
+            13.965
+          ],
+          "material": "wall_proxy",
+          "position": [
+            -5.174,
+            0,
+            1.89
+          ],
+          "minLod": 2
+        },
+        {
+          "type": "box",
+          "size": [
+            10.29,
+            1.336,
+            18.204
+          ],
+          "material": "wall_proxy",
+          "position": [
+            -5.321,
+            0,
+            -0.082
+          ],
+          "minLod": 2
+        },
+        {
+          "type": "box",
+          "size": [
+            8.25,
+            0.08,
+            0.08
+          ],
+          "material": "metal",
+          "position": [
+            6.225,
+            1.0,
+            -9.35
+          ],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "size": [
+            8.25,
+            0.08,
+            0.08
+          ],
+          "material": "metal",
+          "position": [
+            6.225,
+            1.0,
+            9.35
+          ],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "size": [
+            0.08,
+            0.08,
+            18.7
+          ],
+          "material": "metal",
+          "position": [
+            10.35,
+            1.0,
+            0
+          ],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "size": [
+            0.14,
+            1.15,
+            0.14
+          ],
+          "material": "metal",
+          "position": [
+            2.2,
+            0,
+            -9.35
+          ],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "size": [
+            0.14,
+            1.15,
+            0.14
+          ],
+          "material": "metal",
+          "position": [
+            2.2,
+            0,
+            9.35
+          ],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "size": [
+            0.14,
+            1.15,
+            0.14
+          ],
+          "material": "metal",
+          "position": [
+            6.225,
+            0,
+            -9.35
+          ],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "size": [
+            0.14,
+            1.15,
+            0.14
+          ],
+          "material": "metal",
+          "position": [
+            6.225,
+            0,
+            9.35
+          ],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "size": [
+            0.14,
+            1.15,
+            0.14
+          ],
+          "material": "metal",
+          "position": [
+            10.25,
+            0,
+            -9.35
+          ],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "size": [
+            0.14,
+            1.15,
+            0.14
+          ],
+          "material": "metal",
+          "position": [
+            10.25,
+            0,
+            9.35
+          ],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "size": [
+            0.14,
+            1.15,
+            0.14
+          ],
+          "material": "metal",
+          "position": [
+            10.35,
+            0,
+            -4.7
+          ],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "size": [
+            0.14,
+            1.15,
+            0.14
+          ],
+          "material": "metal",
+          "position": [
+            10.35,
+            0,
+            0
+          ],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "size": [
+            0.14,
+            1.15,
+            0.14
+          ],
+          "material": "metal",
+          "position": [
+            10.35,
+            0,
+            4.7
+          ],
+          "maxLod": 1
+        },
+        {
+          "type": "cylinder",
+          "radius": 0.18,
+          "height": 1.6,
+          "segments": 8,
+          "material": "metal",
+          "position": [
+            4.5,
+            0,
+            -4
+          ],
+          "maxLod": 1
+        },
+        {
+          "type": "cylinder",
+          "radius": 0.22,
+          "height": 0.12,
+          "segments": 8,
+          "material": "team_trim",
+          "position": [
+            4.5,
+            1.6,
+            -4
+          ],
+          "maxLod": 1
+        },
+        {
+          "type": "cylinder",
+          "radius": 0.18,
+          "height": 1.6,
+          "segments": 8,
+          "material": "metal",
+          "position": [
+            7.5,
+            0,
+            -4
+          ],
+          "maxLod": 1
+        },
+        {
+          "type": "cylinder",
+          "radius": 0.22,
+          "height": 0.12,
+          "segments": 8,
+          "material": "team_trim",
+          "position": [
+            7.5,
+            1.6,
+            -4
+          ],
+          "maxLod": 1
+        },
+        {
+          "type": "cylinder",
+          "radius": 0.18,
+          "height": 1.6,
+          "segments": 8,
+          "material": "metal",
+          "position": [
+            4.5,
+            0,
+            3
+          ],
+          "maxLod": 1
+        },
+        {
+          "type": "cylinder",
+          "radius": 0.22,
+          "height": 0.12,
+          "segments": 8,
+          "material": "team_trim",
+          "position": [
+            4.5,
+            1.6,
+            3
+          ],
+          "maxLod": 1
+        },
+        {
+          "type": "cylinder",
+          "radius": 0.18,
+          "height": 1.6,
+          "segments": 8,
+          "material": "metal",
+          "position": [
+            7.5,
+            0,
+            3
+          ],
+          "maxLod": 1
+        },
+        {
+          "type": "cylinder",
+          "radius": 0.22,
+          "height": 0.12,
+          "segments": 8,
+          "material": "team_trim",
+          "position": [
+            7.5,
+            1.6,
+            3
+          ],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "size": [
+            3.0,
+            0.9,
+            0.05
+          ],
+          "material": "team_trim",
+          "position": [
+            6.2,
+            0.25,
+            9.379999999999999
+          ]
+        }
+      ]
     },
     "dweller_building_beacon": {
-      "footprint": {"w": 1, "h": 1},
-      "lod0Triangles": 700,
-      "tints": {"roof": "#9aa0a8"},
+      "footprint": {
+        "w": 3,
+        "h": 3
+      },
+      "lod0Triangles": 600,
+      "note": "een radiomast van 6,5 m (vakwerk met drie stijlen) naast een zendhuisje van 1,6 x 2,2 m, op een plaat van 3 x 3 m",
       "parts": [
-        {"type": "box", "size": [1, 0.18, 1], "material": "metal", "position": [0, 0, 0]},
-        {"type": "cylinder", "radius": 0.1, "radiusTop": 0.06, "height": 3, "segments": 8, "material": "metal", "position": [0, 0.18, 0]},
-        {"type": "cylinder", "radius": 0.14, "height": 0.28, "segments": 10, "material": "team_trim", "position": [0, 1.9, 0]},
-        {"type": "house", "source": "house", "size": [1, 1], "heightFactor": 1, "position": [0, 3.1, 0], "select": {"materials": ["Material.004"], "components": 1}},
-        {"type": "cylinder", "radius": 0.025, "height": 1.2, "segments": 6, "material": "metal", "position": [0, 3.5, 0]}
+        {
+          "type": "box",
+          "size": [
+            3,
+            0.2,
+            3
+          ],
+          "material": "metal",
+          "position": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "type": "box",
+          "size": [
+            1.6,
+            2.2,
+            1.4
+          ],
+          "material": "metal",
+          "position": [
+            -0.55,
+            0.2,
+            0.7
+          ]
+        },
+        {
+          "type": "box",
+          "size": [
+            1.7,
+            0.08,
+            0.06
+          ],
+          "material": "team_trim",
+          "position": [
+            -0.55,
+            2.0,
+            1.43
+          ]
+        },
+        {
+          "type": "cylinder",
+          "radius": 0.45,
+          "height": 6.0,
+          "segments": 3,
+          "material": "metal",
+          "position": [
+            0.6,
+            0.2,
+            -0.6
+          ],
+          "radiusTop": 0.12
+        },
+        {
+          "type": "cylinder",
+          "radius": 0.03,
+          "height": 1.2,
+          "segments": 6,
+          "material": "metal",
+          "position": [
+            0.6,
+            6.2,
+            -0.6
+          ]
+        },
+        {
+          "type": "cylinder",
+          "radius": 0.22,
+          "height": 0.25,
+          "segments": 10,
+          "material": "team_trim",
+          "position": [
+            0.6,
+            4.6,
+            -0.6
+          ]
+        },
+        {
+          "type": "cone",
+          "radius": 0.5,
+          "height": 0.3,
+          "segments": 10,
+          "material": "metal",
+          "position": [
+            0.6,
+            5.5,
+            -0.6
+          ]
+        }
       ]
     },
     "dweller_building_claim_post": {
-      "footprint": {"w": 1, "h": 1},
-      "lod0Triangles": 500,
+      "footprint": {
+        "w": 1,
+        "h": 1
+      },
+      "lod0Triangles": 400,
+      "note": "een stalen mast van 5,2 m op een betonnen voet van 1 x 1 m met een teamwimpel van 0,45 x 1,4 m",
       "parts": [
-        {"type": "box", "size": [1, 0.12, 1], "material": "metal", "position": [0, 0, 0]},
-        {"type": "cylinder", "radius": 0.07, "radiusTop": 0.05, "height": 2.6, "segments": 8, "material": "metal", "position": [0, 0.12, 0]},
-        {"type": "house", "source": "house", "size": [0.8, 0.8], "heightFactor": 1, "position": [0, 2.3, 0], "select": {"materials": ["Material.004"], "components": 1}},
-        {"type": "box", "size": [0.5, 0.34, 0.03], "material": "team_trim", "position": [0.25, 1.85, 0]}
+        {
+          "type": "box",
+          "size": [
+            1,
+            0.25,
+            1
+          ],
+          "material": "metal",
+          "position": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "type": "box",
+          "size": [
+            0.5,
+            0.5,
+            0.5
+          ],
+          "material": "metal",
+          "position": [
+            0,
+            0.25,
+            0
+          ]
+        },
+        {
+          "type": "cylinder",
+          "radius": 0.09,
+          "height": 4.4,
+          "segments": 8,
+          "material": "metal",
+          "position": [
+            0,
+            0.75,
+            0
+          ],
+          "radiusTop": 0.06
+        },
+        {
+          "type": "cone",
+          "radius": 0.16,
+          "height": 0.3,
+          "segments": 8,
+          "material": "metal",
+          "position": [
+            0,
+            5.15,
+            0
+          ]
+        },
+        {
+          "type": "box",
+          "size": [
+            0.42,
+            1.4,
+            0.04
+          ],
+          "material": "team_trim",
+          "position": [
+            0.29,
+            3.5,
+            0
+          ]
+        }
       ]
     },
     "dweller_building_turret": {
-      "footprint": {"w": 2, "h": 2},
-      "lod0Triangles": 1000,
-      "tints": {"roof": "#8c8f94"},
+      "footprint": {
+        "w": 3,
+        "h": 3
+      },
+      "lod0Triangles": 800,
+      "note": "een geschutskoepel van 2,7 m op een betonnen voet van 3 x 3 m, met een loop van 1,8 m",
       "parts": [
-        {"type": "box", "size": [2, 0.25, 2], "material": "metal", "position": [0, 0, 0]},
-        {"type": "cylinder", "radius": 0.5, "radiusTop": 0.42, "height": 1.1, "segments": 10, "material": "metal", "position": [0, 0.25, 0]},
-        {"type": "cylinder", "radius": 0.55, "height": 0.09, "segments": 10, "material": "team_trim", "position": [0, 1.1, 0]},
-        {"type": "house", "source": "house", "size": [1.5, 1.5], "heightFactor": 1, "position": [0, 1.35, 0], "select": {"materials": ["Material.004"], "components": 1}},
-        {"type": "cylinder", "radius": 0.1, "height": 1.35, "segments": 8, "material": "metal", "position": [0, 1.55, -0.35], "rotation": [90, 0, 0]}
+        {
+          "type": "box",
+          "size": [
+            3,
+            0.4,
+            3
+          ],
+          "material": "metal",
+          "position": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "type": "cylinder",
+          "radius": 1.1,
+          "height": 1.0,
+          "segments": 12,
+          "material": "metal",
+          "position": [
+            0,
+            0.4,
+            0
+          ],
+          "radiusTop": 0.95
+        },
+        {
+          "type": "cylinder",
+          "radius": 1.0,
+          "height": 0.12,
+          "segments": 12,
+          "material": "team_trim",
+          "position": [
+            0,
+            1.4,
+            0
+          ]
+        },
+        {
+          "type": "box",
+          "size": [
+            1.5,
+            0.95,
+            1.6
+          ],
+          "material": "metal",
+          "position": [
+            0,
+            1.52,
+            -0.1
+          ]
+        },
+        {
+          "type": "box",
+          "size": [
+            1.55,
+            0.2,
+            0.06
+          ],
+          "material": "team_trim",
+          "position": [
+            0,
+            1.95,
+            0.71
+          ]
+        },
+        {
+          "type": "cylinder",
+          "radius": 0.12,
+          "height": 1.75,
+          "segments": 8,
+          "material": "metal",
+          "position": [
+            0,
+            2.0,
+            -0.25
+          ],
+          "rotation": [
+            0,
+            90,
+            90
+          ]
+        },
+        {
+          "type": "box",
+          "size": [
+            0.5,
+            0.25,
+            0.5
+          ],
+          "material": "metal",
+          "position": [
+            -0.3,
+            2.47,
+            -0.3
+          ]
+        }
       ]
     }
   }
