@@ -264,7 +264,6 @@ export const AiScript = z
       z.object({ atS: nonneg, buildingId: id, site: AiSite.optional() }).strict(),
     ),
     attackTimersS: z.array(nonneg), // de eerste aanvalsgolven; daarna elke waveIntervalS
-    rallyPoint: z.object({ x: z.number().int(), y: z.number().int() }).strict(),
     militiaPct: pct, // deel van de bewoners dat de AI tot militie omschoolt aan het begin (besluit sprint 2: uit sim.json)
     // Balans speltest 14 oktober: een AI die bijbouwt, onderzoekt, claimt, verdedigt en in groeiende golven aanvalt.
     militiaPctMax: pct, // bovengrens van het militie-aandeel
