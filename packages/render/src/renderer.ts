@@ -5,6 +5,8 @@ import {
   Color,
   Matrix4,
   PCFShadowMap,
+  type Mesh,
+  type Object3D,
   PerspectiveCamera,
   Plane,
   SRGBColorSpace,
@@ -366,7 +368,33 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
     maxTextureSize: caps.maxTextureSize,
     warn: (message) => console.warn(`[render] ${message}`),
   });
-  void unitAssets.start();
+  // Pipelines of everything in the scene, also what is hidden or off screen now, are compiled once loading settles:
+  // otherwise a material first seen later (a building type on the far side of a large map, a unit LOD, a claim
+  // flag) compiles in that frame, 50 ms or more on WebGL2. compileAsync walks the scene synchronously when called,
+  // so the visibility flip is undone before the next frame renders.
+  let warmTimer: ReturnType<typeof setTimeout> | undefined;
+  const warmUp = async (): Promise<void> => {
+    const flipped: [Object3D, boolean, boolean][] = [];
+    scene.traverse((o) => {
+      if (!(o as Mesh).isMesh) return;
+      flipped.push([o, o.visible, o.frustumCulled]);
+      o.visible = true;
+      o.frustumCulled = false;
+    });
+    const done = gpu.compileAsync(scene, camera);
+    for (const [o, visible, culled] of flipped) {
+      o.visible = visible;
+      o.frustumCulled = culled;
+    }
+    await done;
+  };
+  const scheduleWarmUp = (): void => {
+    clearTimeout(warmTimer);
+    warmTimer = setTimeout(() => {
+      warmUp().catch((err: unknown) => console.warn('[render] pipeline warm-up failed', err));
+    }, 250);
+  };
+  void unitAssets.start().then(scheduleWarmUp);
   const footprints = new FootprintTable(opts.buildingFootprint ?? null);
   const structures = new StructureLayer(scene, {
     capacity,
@@ -461,6 +489,7 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
           }),
     );
     disposeSet(); // the structure layer drew its own copies
+    scheduleWarmUp();
   };
   let buildingLayers: { dispose(): void } | null = null;
   let propStatuses = new Map<string, PropAssetStatus>();
@@ -513,6 +542,7 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
     terrain.set(geometry);
     if (waterMask) applyWater();
     afterHeights();
+    scheduleWarmUp();
     const hf = terrain.heightField;
     if (hf) {
       controls.bounds = { minX: hf.minX, maxX: hf.maxX, minZ: hf.minZ, maxZ: hf.maxZ };
@@ -630,17 +660,18 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
       waterMask = mask ? parseWaterMask(mask) : null;
       applyWater();
       afterHeights();
+      scheduleWarmUp();
       return waterInfo ? { ...waterInfo } : null;
     },
     setTerrainTextures,
     setGameData(data) {
       footprints.setLookup(footprintsFromGameData(data));
       abilities = data.heroes ? abilitiesFromGameData({ heroes: data.heroes }) : null;
-      if (data.loadouts) void unitAssets.setLoadouts(data.loadouts);
+      if (data.loadouts) void unitAssets.setLoadouts(data.loadouts).then(scheduleWarmUp);
       void loadBuildings(data.buildings);
     },
     loadUnitAsset: (manifestUrl, assetId, assetOpts) =>
-      unitAssets.load(manifestUrl, assetId, assetOpts),
+      unitAssets.load(manifestUrl, assetId, assetOpts).finally(scheduleWarmUp),
     unitAssets: () => unitAssets.statuses(),
     buildingAssets: () =>
       buildingStatuses.map((st) => ({ ...st, buildingIds: [...st.buildingIds] })),
@@ -683,6 +714,7 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
             console.warn(`[render] prop "${assetId}": ${status.reason}`);
         }),
       );
+      scheduleWarmUp();
       return [...current.values()].map((st) => ({ ...st }));
     },
     propAssets: () => [...propStatuses.values()].map((st) => ({ ...st })),
@@ -748,6 +780,7 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
       waterTriangles: water.triangles,
     }),
     dispose() {
+      clearTimeout(warmTimer);
       void gpu.setAnimationLoop(null);
       resizeObserver.disconnect();
       controls.dispose();
