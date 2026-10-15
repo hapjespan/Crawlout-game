@@ -26,6 +26,8 @@ export interface TerrainTextureStatus {
   albedo: string | null;
   rockTint: string;
   groundTint: string;
+  /** Edge (m) of the ground the albedo covers: the heightfield's w * metersPerCell from terrain.json. */
+  tileSize?: number;
   /** Attribution of the source (CC-BY) from terrain.json. */
   attribution?: string;
   reason?: string;
@@ -69,6 +71,7 @@ export async function loadTerrainTextures(
       status.rockTint = m.rockTint;
       status.groundTint = m.groundTint;
       status.attribution = m.attribution;
+      status.tileSize = m.heightfield.w * m.heightfield.metersPerCell;
       albedoUrl = opts.resolveUrl
         ? opts.resolveUrl(m.albedo.path)
         : resolveNextTo(opts.manifestUrl, m.albedo.path);

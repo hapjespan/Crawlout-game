@@ -32,6 +32,7 @@ import {
   WEBGPU_DATA_TEXTURE_CAPS,
   type DataTexturePrecision,
 } from './gpu/dataTextures.js';
+import { ScreenLod } from './lod/screenLod.js';
 import { PerfMeter, PerfOverlay, type FrameStats } from './perf/perfOverlay.js';
 import {
   pickEntity,
@@ -63,6 +64,7 @@ import {
 import { createPropMaterial } from './structures/propMaterial.js';
 import { DEFAULT_LAYER_SIZE } from './structures/textureArray.js';
 import { StructureLayer } from './structures/structureLayer.js';
+import type { TerrainAlbedoLayout } from './terrain/albedoLayout.js';
 import { createGridTerrain, type TerrainGeometry } from './terrain/heightField.js';
 import type { TerrainChunkOptions } from './terrain/terrainChunks.js';
 import { TerrainLayer } from './terrain/terrainLayer.js';
@@ -142,6 +144,24 @@ export interface CreateRendererOptions {
    * loaded by setGameData. Default true; false keeps the placeholder blocks.
    */
   buildingAssets?: boolean;
+  /**
+   * Brightness factor on the albedo per asset id (units, buildings and props from the manifest), for art that reads
+   * too dark or too light under the toon ramp next to the rest. 1 (or absent) keeps the art as it is; values are
+   * clamped to ALBEDO_GAIN_RANGE. Per asset on purpose: a dark, muddy character that is meant to be so stays so.
+   */
+  albedoGain?: Readonly<Record<string, number>>;
+}
+
+/** Allowed albedoGain values. */
+export const ALBEDO_GAIN_RANGE = [0.5, 2] as const;
+
+export interface SetTerrainOptions {
+  /**
+   * How the map was composed from the source heightfield (tiles, orientations, point mirror, blended borders), so the
+   * albedo of terrain.json is sampled as the real color of each point (terrain/albedoLayout.ts). Without it the
+   * albedo is tiled mirrored over the terrain's bounds.
+   */
+  albedoLayout?: TerrainAlbedoLayout | null;
 }
 
 export interface PickResult {
@@ -191,7 +211,7 @@ export interface CrawloutRenderer {
    * Replaces the terrain. The mesh is resampled into a smooth grid for drawing (terrainDetail); height lookups use
    * that surface. The given arrays are not modified.
    */
-  setTerrain(geometry: TerrainGeometry): void;
+  setTerrain(geometry: TerrainGeometry, opts?: SetTerrainOptions): void;
   /**
    * The map's water mask (MapDef water, decoded: w * h cells, 0 land, 1 water, 2 shallow or fordable), laid over the
    * terrain's bounds; null removes the water. Cuts a bed into the drawn terrain under the water (heights for units,
@@ -346,6 +366,7 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
       return status;
     }
     terrain.setTints(status.rockTint, status.groundTint);
+    if (status.tileSize) terrain.setAlbedoTileSize(status.tileSize);
     terrain.setAlbedo(texture);
     terrainTexture?.dispose();
     terrainTexture = texture;
@@ -355,7 +376,15 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
   if (opts.terrainTextures) void setTerrainTextures(opts.terrainTextures);
   const propBlobs = opts.props?.maxBlobs ?? PROP_BLOBS;
   const decals = new DecalLayer(scene, capacity + 64 + propBlobs);
-  const units = new UnitLayer(scene, { capacity, lightDir: DEFAULT_LIGHT_DIR, precision, anims });
+  // Screen-size LOD shared by units, buildings and props: the drawing buffer height and the camera's fov.
+  const screen = new ScreenLod();
+  const units = new UnitLayer(scene, {
+    capacity,
+    lightDir: DEFAULT_LIGHT_DIR,
+    precision,
+    anims,
+    screen,
+  });
   const assetConfig = opts.assets;
   const gltfIO = createGltfIO();
   const resolveAssetPath = (manifestUrl: string, path: string): string =>
@@ -363,10 +392,17 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
       ? assetConfig.resolveUrl(path)
       : resolveManifestPath(manifestUrl, path);
   const loader = new UnitAssetLoader(gltfIO, resolveAssetPath);
+  const gainOf = (assetId: string): number | undefined => {
+    const g = opts.albedoGain?.[assetId];
+    return g === undefined || !Number.isFinite(g)
+      ? undefined
+      : Math.min(ALBEDO_GAIN_RANGE[1], Math.max(ALBEDO_GAIN_RANGE[0], g));
+  };
   const unitAssets = new UnitAssetRegistry(units, loader, {
     config: assetConfig,
     maxTextureSize: caps.maxTextureSize,
     warn: (message) => console.warn(`[render] ${message}`),
+    albedoGain: gainOf,
   });
   // Pipelines of everything in the scene, also what is hidden or off screen now, are compiled once loading settles:
   // otherwise a material first seen later (a building type on the far side of a large map, a unit LOD, a claim
@@ -401,6 +437,7 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
     footprints,
     heightAt: (x, z) => terrain.heightAt(x, z),
     castShadows: shadowsOn,
+    screen,
     materials: {
       building: createPropMaterial({
         lightDir: DEFAULT_LIGHT_DIR,
@@ -414,6 +451,7 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
   const props = new PropLayer(scene, {
     ...opts.props,
     maxBlobs: propBlobs,
+    screen,
     heightAt: (x, z) => terrain.heightAt(x, z),
     material: (map) =>
       createPropMaterial({
@@ -469,6 +507,10 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
       if (st.state === 'failed' && st.reason !== 'not in the manifest')
         console.warn(`[render] building "${st.assetId}": ${st.reason}`);
     const byBuilding = new Map<number, BuildingVisual>();
+    for (const v of set.visuals.values()) {
+      const g = gainOf(v.assetId);
+      if (g !== undefined) v.gain = g;
+    }
     for (const [buildingId, assetId] of meshes) {
       const v = set.visuals.get(assetId);
       if (v) byBuilding.set(buildingId, v);
@@ -484,6 +526,7 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
             name: 'crawlout-building-asset-toon',
             shadow: sun?.factor,
             layers: set.layers,
+            layerLuma: set.layerLuma,
             reveal: true,
             grade: BUILDING_GRADE,
           }),
@@ -538,8 +581,8 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
     decals.setHeights(terrain.heightTexture);
     props.relayout();
   };
-  const setTerrain = (geometry: TerrainGeometry): void => {
-    terrain.set(geometry);
+  const setTerrain = (geometry: TerrainGeometry, terrainOpts: SetTerrainOptions = {}): void => {
+    terrain.set(geometry, terrainOpts.albedoLayout ?? null);
     if (waterMask) applyWater();
     afterHeights();
     scheduleWarmUp();
@@ -603,6 +646,8 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
     time.value = t;
     controls.update(dt);
     camera.updateMatrixWorld();
+    screen.setViewport(canvas.height);
+    screen.update(camera);
     terrain.update(camera);
     interp.sample(now, frame);
     for (let i = 0; i < frame.count; i++) frame.y[i] = terrain.heightAt(frame.x[i]!, frame.z[i]!);
@@ -703,7 +748,8 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
         props.assetIds().map(async (assetId) => {
           const r = await propRegistry.resolve(assetId, src);
           if (generation !== propGeneration) return;
-          props.setVisual(assetId, r.visual);
+          const g = gainOf(assetId);
+          props.setVisual(assetId, r.visual && g !== undefined ? { ...r.visual, gain: g } : r.visual);
           const status = current.get(assetId)!;
           status.state = 'ready';
           status.origin = r.origin;

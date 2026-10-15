@@ -30,6 +30,8 @@ export interface BuildingVisual {
   /** Top of the model above its ground, meters (manifest bounds). */
   height: number;
   triangles: [number, number, number];
+  /** Brightness factor on the albedo (renderer option albedoGain), through the instance tint. Default 1. */
+  gain?: number;
 }
 
 export interface BuildingAssetStatus {
@@ -48,12 +50,14 @@ export interface BuildingAssetSet {
   layers: DataArrayTexture | null;
   /** Layer edge in texels. */
   layerSize: number;
+  /** Mean linear luminance per layer (the team pivot of a textured team material, propMaterial.ts). */
+  layerLuma: number[];
   statuses: BuildingAssetStatus[];
 }
 
 export interface BuildingAssetOptions {
   rasterize?: Rasterize;
-  /** Cap on the layer edge (the GPU's max texture size, or less). Default 512. */
+  /** Cap on the layer edge (the GPU's max texture size, or less). Default DEFAULT_LAYER_SIZE (1024). */
   maxLayerSize?: number;
 }
 
@@ -88,7 +92,7 @@ export async function loadBuildingAssets(
     buildingIds: buildingIds.sort((a, b) => a - b),
     state: 'loading',
   }));
-  const result: BuildingAssetSet = { visuals: new Map(), layers: null, layerSize: 0, statuses };
+  const result: BuildingAssetSet = { visuals: new Map(), layers: null, layerSize: 0, layerLuma: [], statuses };
   let manifest: AssetManifest;
   try {
     manifest = await io.manifest(manifestUrl);
@@ -172,13 +176,14 @@ export async function loadBuildingAssets(
   }
 
   if (layers.size > 0) {
-    const { texture, size, missing } = createLayerTexture(
+    const { texture, size, missing, luma } = createLayerTexture(
       layers.layers,
       opts.rasterize,
       opts.maxLayerSize ?? DEFAULT_LAYER_SIZE,
     );
     result.layers = texture;
     result.layerSize = size;
+    result.layerLuma = luma;
     if (missing.length > 0)
       for (const s of statuses)
         if (s.state === 'ready')

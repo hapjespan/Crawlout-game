@@ -25,6 +25,7 @@ import {
   type DecalLayer,
   type DecalStyle,
 } from '../decals/decalLayer.js';
+import { PROP_LOD_PX, ScreenLod, type ScreenLodThresholds } from '../lod/screenLod.js';
 import { NEUTRAL_TEAM } from '../palette.js';
 import { simYawToRender } from '../snapshot/interpolate.js';
 import { InstanceBatch } from '../structures/instanceBatch.js';
@@ -50,14 +51,18 @@ export interface PropVisual {
   /** Mesh height and horizontal radius (m) before fit and instance scale. */
   height: number;
   radius: number;
+  /** Brightness factor on the albedo (renderer option albedoGain), through the instance tint. Default 1. */
+  gain?: number;
 }
 
 export interface PropLayerOptions {
   heightAt: (x: number, z: number) => number;
   /** Creates the material for a visual's map (null: vertex colors only). Called once per visual. */
   material: (map: Texture | null) => MeshBasicNodeMaterial;
-  /** Camera distance (m) where LOD 1 and LOD 2 start. */
-  lodDistances?: readonly [number, number];
+  /** Screen-size LOD (lod/screenLod.ts), shared with the other layers; the renderer feeds it the viewport. */
+  screen?: ScreenLod;
+  /** Projected heights (device px) below which an asset draws LOD 1 and LOD 2. Default PROP_LOD_PX. */
+  lodPixels?: ScreenLodThresholds;
   /** Chunk edge in meters. */
   chunkSize?: number;
   /** Most props drawn at once. Default 3000. */
@@ -71,6 +76,8 @@ export interface PropLayerOptions {
 }
 
 export const PROP_CHUNK_SIZE = 16;
+/** Blob shadows under props where one meter projects to at least this many device px (100 m at 1800 px, fov 45). */
+const BLOB_PX_PER_METER = 21.7;
 /** Props sink this far into the terrain, so slopes show no gap under them. */
 const SINK = 0.06;
 /** Blob radius per mesh radius. */
@@ -120,7 +127,10 @@ function hash01(n: number): number {
 export class PropLayer {
   private readonly scene: Scene;
   private readonly opts: PropLayerOptions;
-  private readonly lodDist2: [number, number];
+  private readonly screen: ScreenLod;
+  private readonly lodPixels: ScreenLodThresholds;
+  /** Camera distances at which some asset changes LOD (from the assets' heights), for change detection. */
+  private breaks: number[] = [];
   private readonly chunkSize: number;
   private groups: Group[] = [];
   private readonly byId = new Map<string, Group>();
@@ -157,8 +167,8 @@ export class PropLayer {
   constructor(scene: Scene, opts: PropLayerOptions) {
     this.scene = scene;
     this.opts = opts;
-    const [d1, d2] = opts.lodDistances ?? [45, 100];
-    this.lodDist2 = [d1 * d1, d2 * d2];
+    this.screen = opts.screen ?? new ScreenLod();
+    this.lodPixels = opts.lodPixels ?? PROP_LOD_PX;
     this.chunkSize = opts.chunkSize ?? PROP_CHUNK_SIZE;
     this.maxVisible = opts.maxVisible ?? 3000;
     this.thinDistance = opts.thinDistance ?? 160;
@@ -348,6 +358,18 @@ export class PropLayer {
     const cam = camera.position;
     const state = this.state;
     const dist = this.distance;
+    // Screen-size LOD per asset: a chunk's state counts the asset LOD switches nearer than it, so the buffers are only
+    // rewritten when some asset in some chunk changes LOD.
+    const breaks = this.breaks;
+    breaks.length = 0;
+    for (const g of this.groups) {
+      const size = this.sizeOf(g);
+      if (size <= 0) continue;
+      breaks.push(
+        (size * this.screen.pxPerMeter) / this.lodPixels.lod1,
+        (size * this.screen.pxPerMeter) / this.lodPixels.lod2,
+      );
+    }
     let near = 0;
     let far = 0;
     for (let c = 0; c < state.length; c++) {
@@ -356,8 +378,8 @@ export class PropLayer {
       if (!box.isEmpty() && this.frustum.intersectsBox(box)) {
         const d = box.distanceToPoint(cam);
         dist[c] = d;
-        const d2 = d * d;
-        s = d2 < this.lodDist2[0] ? 0 : d2 < this.lodDist2[1] ? 1 : 2;
+        s = 0;
+        for (const b of breaks) if (d >= b) s++;
         if (d < this.thinDistance) near += this.chunkTotal[c]!;
         else far += this.chunkTotal[c]! * Math.max(this.minDensity, this.thinDistance / d);
       }
@@ -419,11 +441,13 @@ export class PropLayer {
       for (const b of g.batches) b.count = 0;
       if (g.batches.length === 0 || !g.visual) continue;
       const fit = g.visual.fit;
+      const gain = g.visual.gain ?? 1;
       const d = g.data;
+      const size = this.sizeOf(g);
       for (let q = 0; q < g.ranges.length; q += 3) {
         const c = g.ranges[q]!;
-        const s = this.state[c]!;
-        if (s < 0) continue;
+        if (this.state[c]! < 0) continue;
+        const s = this.screen.lod(size, this.distance[c]!, this.lodPixels);
         const batch = g.batches[g.lodBatch[s]!]!;
         const k0 = g.ranges[q + 1]!;
         const n = g.ranges[q + 2]! - k0;
@@ -432,7 +456,7 @@ export class PropLayer {
         for (let k = k0; k < k0 + keep; k++) {
           const o = k * STRIDE;
           const sc = d[o + 4]! * fit * grow;
-          t[0] = t[1] = t[2] = d[o + 5]!;
+          t[0] = t[1] = t[2] = d[o + 5]! * gain;
           batch.push(d[o]!, d[o + 1]!, d[o + 2]!, d[o + 3]!, sc, sc, sc, NEUTRAL_TEAM, t);
           counts[s] = counts[s]! + 1;
         }
@@ -440,11 +464,17 @@ export class PropLayer {
       for (const b of g.batches) b.commit();
     }
     this.visibleCount = counts[0] + counts[1] + counts[2];
-    // Blob shadows: chunks at LOD 0 and 1, nearest first.
+    // Blob shadows: visible chunks where a meter still projects to BLOB_PX_PER_METER, nearest first.
     this.blobChunks = [];
     for (let c = 0; c < this.state.length; c++)
-      if (this.state[c]! >= 0 && this.state[c]! <= 1) this.blobChunks.push(c);
+      if (this.state[c]! >= 0 && this.screen.pixels(1, this.distance[c]!) >= BLOB_PX_PER_METER)
+        this.blobChunks.push(c);
     this.blobChunks.sort((a, b) => this.distance[a]! - this.distance[b]!);
+  }
+
+  /** Nominal drawn height of an asset (m): mesh height times its fit; 0 without a visual. */
+  private sizeOf(g: Group): number {
+    return g.visual ? g.visual.height * g.visual.fit : 0;
   }
 
   /** Instanced draws the props take this frame. */

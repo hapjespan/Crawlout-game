@@ -1,7 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import { ANIM, ANIM_NAMES } from '@crawlout/protocol';
 import { manifestSchema } from '@crawlout/asset-cli/manifest';
-import { Matrix4, Scene, Vector3, type BufferAttribute, type SkinnedMesh } from 'three/webgpu';
+import {
+  BufferAttribute as Attr,
+  Matrix4,
+  Scene,
+  Texture,
+  Vector3,
+  type BufferAttribute,
+  type MeshBasicMaterial,
+  type SkinnedMesh,
+} from 'three/webgpu';
 import { bakeAnimations } from './bake.js';
 import {
   applyCharacterFit,
@@ -10,7 +19,12 @@ import {
   CHARACTER_HEIGHT,
   characterFit,
 } from './bakedManifest.js';
-import { dequantizationOf, TEAM_FALLBACK_BASE, unitGeometryFromGltf } from './gltfUnitGeometry.js';
+import {
+  dequantizationOf,
+  hasAlphaMask,
+  TEAM_FALLBACK_BASE,
+  unitGeometryFromGltf,
+} from './gltfUnitGeometry.js';
 import { createGltfIO, resolveManifestPath, UnitAssetLoader } from './unitAssetLoader.js';
 import { UnitAssetRegistry } from './unitAssets.js';
 import { PLACEHOLDER_RIG, UnitLayer } from './unitLayer.js';
@@ -349,6 +363,54 @@ describe('real characters without a team material', () => {
         .map((v) => v.toFixed(3))
         .join(','),
     ]);
+  });
+
+  /** The fixture with one shared atlas on every primitive (uv 0.25, 0.25) and `pixels` as what the canvas reads. */
+  async function textured(names: Record<string, string>, alpha: (x: number, y: number) => number) {
+    const io = createGltfIO(async () => new ArrayBuffer(0));
+    const scene = await io.parseGltf(
+      copy(await fixtureGlb({ materialNames: names })),
+      'https://assets.test/x.glb',
+    );
+    const atlas = new Texture({ width: 4, height: 4 });
+    scene.traverse((o) => {
+      const m = o as SkinnedMesh;
+      if (!m.isSkinnedMesh) return;
+      (m.material as MeshBasicMaterial).map = atlas;
+      const n = m.geometry.getAttribute('position').count;
+      m.geometry.setAttribute('uv', new Attr(new Float32Array(n * 2).fill(0.25), 2));
+    });
+    // Mid grey (sRGB 128, linear 0.216) with the given alpha.
+    const rasterize = (_image: unknown, size: number): Uint8Array => {
+      const px = new Uint8Array(size * size * 4).fill(128);
+      for (let y = 0; y < size; y++)
+        for (let x = 0; x < size; x++) px[(y * size + x) * 4 + 3] = alpha(x / size, y / size);
+      return px;
+    };
+    return unitGeometryFromGltf(scene, { boneCount: JOINTS.length, rasterize });
+  }
+
+  it('reads the team mask from the atlas alpha when it holds one (auto), per texel instead of per material', async () => {
+    const r = await textured({ Team_Shirt: 'M_Main', Skin: 'M_Joints' }, (x) => (x < 0.5 ? 255 : 0));
+    expect(r.teamMask).toBe('diffuseAlpha');
+    expect(maskedColors(r.geometry).masked.size).toBe(0); // no vertex mask: the alpha decides
+    // The masked texels' luminance (0.216) times the mean material color of the textured primitives (shirt, skin).
+    expect(r.teamPivot).toBeGreaterThan(0.216 * 0.4);
+    expect(r.teamPivot).toBeLessThan(0.216);
+  });
+
+  it('keeps the material names for an opaque atlas (auto)', async () => {
+    const r = await textured({ Team_Shirt: 'M_Main', Skin: 'M_Joints' }, () => 255);
+    expect(r.teamMask).toBe('materialName');
+    expect(maskedColors(r.geometry).masked.size).toBe(1);
+    // Fallback grey base times the texel under the masked vertices.
+    expect(r.teamPivot).toBeCloseTo(TEAM_FALLBACK_BASE * 0.216, 2);
+  });
+
+  it('tells a mask in the alpha from an opaque alpha', () => {
+    expect(hasAlphaMask(new Uint8Array([9, 9, 9, 255, 9, 9, 9, 255]))).toBe(false);
+    expect(hasAlphaMask(new Uint8Array([9, 9, 9, 255, 9, 9, 9, 0]))).toBe(true);
+    expect(hasAlphaMask(new Uint8Array([9, 9, 9, 0, 9, 9, 9, 0]))).toBe(false); // all masked: no mask either
   });
 
   it('masks nothing when no material is team or main', async () => {

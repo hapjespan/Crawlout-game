@@ -203,7 +203,7 @@ describe('StructureLayer', () => {
       );
     });
 
-    it('cuts a site at its built height inside a scaffold, and switches LOD with distance', () => {
+    it('cuts a site at its built height inside a scaffold, and switches LOD with its size on screen', () => {
       const { layer, scene, frame, camera } = setup();
       layer.setBuildingAssets(new Map([[0, visual('hq', false)]]), material());
       place(frame, [[buildingTypeId(0), 0, 0]]);
@@ -218,7 +218,8 @@ describe('StructureLayer', () => {
       const scaffolds = batch(scene, 'building-scaffolds');
       expect(scaffolds.count).toBe(1);
       expect(instance(scaffolds, 'iScale', 0)[1]).toBeLessThanOrEqual(3 * 1.05 + 1e-6);
-      camera.position.set(0, 120, 120);
+      // 6.4 m across at 424 m: about 33 device px at the default 1800 px viewport, under BUILDING_LOD_PX.lod2.
+      camera.position.set(0, 300, 300);
       camera.lookAt(0, 0, 0);
       camera.updateMatrixWorld();
       layer.update(frame, camera, decals);

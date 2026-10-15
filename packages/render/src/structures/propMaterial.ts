@@ -1,6 +1,7 @@
 // Instanced toon material for static structures (buildings, scrap heaps, claim flags). Same look as the units:
-// 3-step toon ramp plus rimlight (shared with unitMaterial.ts, a little weaker), team color through the team mask in
-// the vertex color alpha. No PBR.
+// 3-step toon ramp plus the sky fill and rimlight (shared with unitMaterial.ts, the rim a little weaker), team color
+// through the team mask in the vertex color alpha, relative to the base's luminance (teamAlbedo). No PBR.
+// iTint also carries the per-asset albedo gain (renderer option albedoGain).
 //
 // Per instance: iPos (x, y, z meters; yaw radians around +Y, 0 keeps +Z), iScale (x, y, z; team palette slot),
 // iTint (rgb multiplier on the albedo; w unused). An optional shadow factor (1 lit, 0 shadowed) drops the light to
@@ -33,7 +34,7 @@ import {
   vertexStage,
 } from 'three/tsl';
 import { teamPalette } from '../palette.js';
-import { rimLight, teamAlbedo, toonRamp } from '../units/unitMaterial.js';
+import { rimLight, skyFill, teamAlbedo, toonRamp } from '../units/unitMaterial.js';
 
 export interface PropMaterialOptions {
   lightDir: Vector3;
@@ -46,6 +47,8 @@ export interface PropMaterialOptions {
   map?: Texture | null;
   /** Diffuse texture array, sampled with the uvl attribute (u, v, layer; layer < 0 reads white). */
   layers?: Texture | null;
+  /** Mean linear luminance per layer of `layers` (textureArray.ts): the team pivot of a textured team material. */
+  layerLuma?: readonly number[];
   /** Cut the model at iTint.w (model-space y), for buildings under construction. */
   reveal?: boolean;
   /** 0..1: pulls the albedo towards a warm grey of the same brightness (0 keeps the art's colors). Default 0. */
@@ -94,6 +97,8 @@ export function createPropMaterial(opts: PropMaterialOptions): MeshBasicNodeMate
   const palette = uniformArray<'vec3'>(teamPalette(), 'vec3');
   const team = palette.element(int(iScale.w));
   let base: Node<'vec3'> = color.xyz.mul(iTint.xyz);
+  // Team pivot (unitMaterial.ts teamAlbedo): the untextured base times the mean of its texture layer.
+  let pivot: Node<'float'> = dot(base, vec3(0.2126, 0.7152, 0.0722));
   if (opts.map) {
     const uv = attribute('uv', 'vec2');
     const texel = select(uv.x.lessThan(-0.5), vec4(1, 1, 1, 1), texture(opts.map, uv));
@@ -108,12 +113,16 @@ export function createPropMaterial(opts: PropMaterialOptions): MeshBasicNodeMate
       texture(opts.layers, uvl.xy).depth(layer),
     );
     base = base.mul(texel.xyz);
+    if (opts.layerLuma && opts.layerLuma.length > 0) {
+      const means = uniformArray<'float'>([...opts.layerLuma], 'float');
+      pivot = pivot.mul(select(uvl.z.lessThan(-0.5), float(1), means.element(layer)));
+    }
   }
   if (opts.grade) {
     const luma = dot(base, vec3(0.2126, 0.7152, 0.0722));
     base = mix(base, vec3(...GRADE_TONE).mul(luma), opts.grade);
   }
-  const albedo = teamAlbedo(base, team, color.w);
+  const albedo = teamAlbedo(base, team, color.w, max(pivot, 1e-3));
   const N = normalize(worldNrm);
   let shade = toonRamp(dot(N, light));
   if (opts.shadow) shade = mix(float(SHADOW_BAND), shade, opts.shadow);
@@ -122,7 +131,7 @@ export function createPropMaterial(opts: PropMaterialOptions): MeshBasicNodeMate
 
   const m = new MeshBasicNodeMaterial();
   m.positionNode = worldPos;
-  const out = vec4(albedo.mul(shade).add(rim), 1);
+  const out = vec4(albedo.mul(skyFill(N).add(shade)).add(rim), 1);
   // A shadow caster must not sample its own shadow map in the shadow pass: three's shadow pass reads colorNode.a,
   // so a material that receives the shadow puts its color in fragmentNode instead.
   if (opts.shadow) m.fragmentNode = out;

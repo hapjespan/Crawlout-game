@@ -8,7 +8,20 @@ export {
   type RenderBackend,
   type WaterInfo,
   type LayerStats,
+  type SetTerrainOptions,
+  ALBEDO_GAIN_RANGE,
 } from './renderer.js';
+export {
+  albedoUv,
+  mirroredAlbedoLayout,
+  validateAlbedoLayout,
+  AlbedoLayoutError,
+  MAX_ALBEDO_TILES,
+  type AlbedoSeam,
+  type AlbedoTap,
+  type TerrainAlbedoLayout,
+  type TerrainAlbedoTile,
+} from './terrain/albedoLayout.js';
 export {
   parseWaterMask,
   WaterMaskError,

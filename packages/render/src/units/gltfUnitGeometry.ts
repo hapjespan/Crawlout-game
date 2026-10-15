@@ -21,6 +21,7 @@ import {
   type SkinnedMesh,
   type Texture,
 } from 'three/webgpu';
+import { texelLuminance, type Rasterize } from '../structures/textureArray.js';
 
 export class UnitGeometryError extends Error {
   override name = 'UnitGeometryError';
@@ -31,14 +32,18 @@ export class UnitGeometryError extends Error {
  * take the owner's color, the rest keep their own. An asset without a "team" material falls back to its main
  * material (name "main" or "body" as a word, e.g. Quaternius' M_Main): that whole material takes the owner's color,
  * on a neutral base so the team color reads clean (TEAM_FALLBACK_BASE). 'diffuseAlpha': the alpha of the diffuse texture is the mask
- * (artist brief). 'none': no team color on the model; the selection ring and blob still show the owner.
+ * per texel (artist brief; 1 = team color). 'auto' (default): 'diffuseAlpha' when the atlas carries a mask in its alpha
+ * (some texels below ALPHA_MASK_MAX; an opaque atlas or a JPEG has none), else 'materialName'. 'none': no team color
+ * on the model; the selection ring and blob still show the owner.
  */
-export type TeamMaskSource = 'materialName' | 'diffuseAlpha' | 'none';
+export type TeamMaskSource = 'auto' | 'materialName' | 'diffuseAlpha' | 'none';
 
 export interface UnitGeometryOptions {
   /** Bones in the baked texture; the GLB's skin must have exactly this many joints. */
   boneCount: number;
   teamMask?: TeamMaskSource;
+  /** Reads the atlas' pixels (structures/textureArray.ts canvasRasterize in the browser); null where it cannot. */
+  rasterize?: Rasterize;
 }
 
 export interface UnitGeometryResult {
@@ -48,6 +53,40 @@ export interface UnitGeometryResult {
   triangles: number;
   /** Distinct diffuse textures found; only the first one is used (one draw per LOD needs one atlas). */
   textureCount: number;
+  /** Where the team mask came from ('auto' resolved). */
+  teamMask: Exclude<TeamMaskSource, 'auto'>;
+  /**
+   * Mean linear luminance of the albedo under the team mask: the team color is shaded relative to it, so the texture's
+   * light and dark stay (unitMaterial.ts teamAlbedo). TEAM_PIVOT_DEFAULT when nothing is masked or it cannot be read.
+   */
+  teamPivot: number;
+}
+
+/** An atlas alpha below this counts as "not team": an atlas with such texels carries a mask in its alpha. */
+export const ALPHA_MASK_MAX = 0.98;
+/** Edge (px) the atlas is read at for the mask test and the team pivot. */
+const STATS_SIZE = 128;
+export const TEAM_PIVOT_DEFAULT = 0.5;
+
+const lumaOf = (r: number, g: number, b: number): number => 0.2126 * r + 0.7152 * g + 0.0722 * b;
+
+/** True when the RGBA pixels (row 0 at the top) hold a team mask in their alpha. */
+export function hasAlphaMask(px: Uint8Array): boolean {
+  const limit = ALPHA_MASK_MAX * 255;
+  let low = 0;
+  let high = 0;
+  for (let i = 3; i < px.length; i += 4) {
+    if (px[i]! < limit) low++;
+    else high++;
+  }
+  return low > 0 && high > 0;
+}
+
+/** Linear luminance of the texel at uv (glTF convention: v down, row 0 at the top; repeat). */
+function texelLuma(px: Uint8Array, size: number, u: number, v: number): number {
+  const x = Math.min(size - 1, Math.floor((u - Math.floor(u)) * size));
+  const y = Math.min(size - 1, Math.floor((v - Math.floor(v)) * size));
+  return texelLuminance(px, (y * size + x) * 4);
 }
 
 /** Material names that carry the team mask. */
@@ -142,7 +181,7 @@ export function unitGeometryFromGltf(
     byName.set(b.name, i);
   });
 
-  const teamMask = opts.teamMask ?? 'materialName';
+  const requested = opts.teamMask ?? 'auto';
   const maps: Texture[] = [];
   const mapOf = (m: MaterialLike): Texture | null => {
     const map = m.map ?? null;
@@ -153,6 +192,14 @@ export function unitGeometryFromGltf(
   for (const mesh of meshes)
     mapOf((Array.isArray(mesh.material) ? mesh.material[0] : mesh.material) as MaterialLike);
   const atlas = maps[0] ?? null;
+  const pixels = atlas && opts.rasterize ? opts.rasterize(atlas.image, STATS_SIZE) : null;
+  const atlasPx = pixels && pixels.length === STATS_SIZE * STATS_SIZE * 4 ? pixels : null;
+  const teamMask: Exclude<TeamMaskSource, 'auto'> =
+    requested !== 'auto'
+      ? requested
+      : atlasPx && hasAlphaMask(atlasPx)
+        ? 'diffuseAlpha'
+        : 'materialName';
   const materialName = (mesh: SkinnedMesh): string =>
     ((Array.isArray(mesh.material) ? mesh.material[0] : mesh.material) as MaterialLike).name;
   const teamPattern =
@@ -173,6 +220,10 @@ export function unitGeometryFromGltf(
   const normalMatrix = new Matrix3();
   const base = new Color();
   const remap: number[] = [];
+  let pivotSum = 0;
+  let pivotCount = 0;
+  let vertexLumaSum = 0;
+  let texturedCount = 0;
 
   for (const mesh of meshes) {
     const g = mesh.geometry;
@@ -231,6 +282,14 @@ export function unitGeometryFromGltf(
         if (textured) uvs.push(uv.getX(i), uv.getY(i));
         else uvs.push(NO_UV, NO_UV);
       }
+      if (mask) {
+        const t = textured && atlasPx ? texelLuma(atlasPx, STATS_SIZE, uv!.getX(i), uv!.getY(i)) : 1;
+        pivotSum += lumaOf(base.r * r, base.g * gg, base.b * b) * t;
+        pivotCount++;
+      } else if (textured && teamMask === 'diffuseAlpha') {
+        vertexLumaSum += lumaOf(base.r * r, base.g * gg, base.b * b);
+        texturedCount++;
+      }
       let sum = 0;
       for (let k = 0; k < 4; k++) sum += sw.getComponent(i, k);
       for (let k = 0; k < 4; k++) {
@@ -265,5 +324,25 @@ export function unitGeometryFromGltf(
     new BufferAttribute(vertexCount > 65535 ? new Uint32Array(idx) : new Uint16Array(idx), 1),
   );
   geometry.computeBoundingSphere();
-  return { geometry, map: atlas, triangles: idx.length / 3, textureCount: maps.length };
+  let teamPivot = pivotCount > 0 ? pivotSum / pivotCount : TEAM_PIVOT_DEFAULT;
+  if (teamMask === 'diffuseAlpha' && atlasPx) {
+    // Mask per texel: the mean of the masked texels, times the mean vertex color of the textured primitives.
+    let sum = 0;
+    let n = 0;
+    for (let i = 0; i < atlasPx.length; i += 4)
+      if (atlasPx[i + 3]! >= 128) {
+        sum += texelLuminance(atlasPx, i);
+        n++;
+      }
+    const vertexLuma = texturedCount > 0 ? vertexLumaSum / texturedCount : 1;
+    if (n > 0) teamPivot = (sum / n) * vertexLuma;
+  }
+  return {
+    geometry,
+    map: atlas,
+    triangles: idx.length / 3,
+    textureCount: maps.length,
+    teamMask,
+    teamPivot: Math.min(1, Math.max(0.02, teamPivot)),
+  };
 }

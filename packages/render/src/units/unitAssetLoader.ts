@@ -4,6 +4,7 @@
 // (loadout.visuals.meshSlots.body) or one config value, never a path in code.
 import { manifestSchema, type AssetEntry, type AssetManifest } from '@crawlout/asset-cli/manifest';
 import type { Object3D } from 'three/webgpu';
+import { canvasRasterize, type Rasterize } from '../structures/textureArray.js';
 import type { BakedAnimations } from './bake.js';
 import { applyCharacterFit, bakedAnimationsFromManifest, characterFit } from './bakedManifest.js';
 import {
@@ -32,7 +33,10 @@ export interface LoadedUnitAsset {
 }
 
 export interface UnitAssetLoadOptions {
+  /** Default 'auto': the alpha of the atlas when it holds a mask, else the material names. */
   teamMask?: TeamMaskSource;
+  /** Reads atlas pixels for the mask test and the team pivot; default the canvas (null outside a browser). */
+  rasterize?: Rasterize;
 }
 
 /** Resolves a manifest path against the manifest's own URL (absolute or relative to the page). */
@@ -134,15 +138,21 @@ export class UnitAssetLoader {
     ]);
     const anims = bakedAnimationsFromManifest(baked, entry.boneCount, animBytes!);
     applyCharacterFit(anims, characterFit(entry.bounds)); // 1.8 m, feet on y = 0 (bakedManifest.ts)
-    const lods = await Promise.all(
-      entry.lods.map(async (lod, i) => {
-        const scene = await this.io.parseGltf(glbs[i]!, url(lod.path));
-        return unitGeometryFromGltf(scene, {
-          boneCount: entry.boneCount,
-          ...(opts.teamMask ? { teamMask: opts.teamMask } : {}),
-        });
-      }),
+    const scenes = await Promise.all(
+      entry.lods.map((lod, i) => this.io.parseGltf(glbs[i]!, url(lod.path))),
     );
-    return { id: assetId, entry, anims, lods: lods as LoadedUnitAsset['lods'] };
+    // LOD 0 decides where the team mask comes from ('auto' reads its atlas); the lighter LODs follow it.
+    const rasterize = opts.rasterize ?? canvasRasterize;
+    const lod0 = unitGeometryFromGltf(scenes[0]!, {
+      boneCount: entry.boneCount,
+      teamMask: opts.teamMask ?? 'auto',
+      rasterize,
+    });
+    const rest = scenes
+      .slice(1)
+      .map((scene) =>
+        unitGeometryFromGltf(scene, { boneCount: entry.boneCount, teamMask: lod0.teamMask, rasterize }),
+      );
+    return { id: assetId, entry, anims, lods: [lod0, rest[0]!, rest[1]!] };
   }
 }

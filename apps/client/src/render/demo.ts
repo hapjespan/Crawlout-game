@@ -33,6 +33,11 @@ import { runBench } from './bench.js';
 import { loadMapProps, propSource } from './props.js';
 import { greyboxFromHeights, rockTerrainGreybox, rockTerrainHeights } from './rockTerrain.js';
 import { terrainTextures } from './terrain.js';
+import {
+  albedoLayoutForMap,
+  rockDemoAlbedoLayout,
+  xlDemoAlbedoLayout,
+} from './terrainLayout.js';
 import { xlWorld, type XlWorld } from './xlWorld.js';
 
 const WORLD = 128;
@@ -120,16 +125,16 @@ async function main(): Promise<void> {
     const { size, heights, water } = xl;
     renderer.setTerrain(
       greyboxFromHeights(size, size, heights, (x, y) => (water.data[y * size + x] ? MUD : null)),
+      { albedoLayout: xlDemoAlbedoLayout() },
     );
     if (params.get('water') !== '0') renderer.setWater(water);
     renderer.focus((size / 2) * UNITS_PER_METER, (size / 2) * UNITS_PER_METER);
-  } else
-    renderer.setTerrain(
-      rock ??
-        (terrainMode === 'map'
-          ? loadClientMap('rustbelt').terrain
-          : createGridTerrain(WORLD, WORLD, 1, wastelandHeight, wastelandColor)),
-    );
+  } else if (rock) renderer.setTerrain(rock, { albedoLayout: rockDemoAlbedoLayout() });
+  else if (terrainMode === 'map')
+    renderer.setTerrain(loadClientMap('rustbelt').terrain, {
+      albedoLayout: albedoLayoutForMap('rustbelt'),
+    });
+  else renderer.setTerrain(createGridTerrain(WORLD, WORLD, 1, wastelandHeight, wastelandColor));
   const terrainMs = Math.round(performance.now() - started);
 
   // Unit assets load in the background; show what the units are drawn with once they settle.

@@ -27,6 +27,7 @@ import {
 } from '../decals/decalLayer.js';
 import { drawsAsUnit, TYPE_ID_BUILDING_FIRST } from '../entities/typeIds.js';
 import type { DataTexturePrecision } from '../gpu/dataTextures.js';
+import { ScreenLod, UNIT_LOD_PX, type ScreenLodThresholds } from '../lod/screenLod.js';
 import { teamIndex } from '../palette.js';
 import type { InterpolatedFrame } from '../snapshot/interpolate.js';
 import { bakeAnimations, type BakedAnimations } from './bake.js';
@@ -40,8 +41,10 @@ import {
 
 export interface UnitLayerOptions {
   capacity: number;
-  /** Camera distance (m) where LOD1 and LOD2 start. */
-  lodDistances?: readonly [number, number];
+  /** Screen-size LOD (lod/screenLod.ts), shared with the other layers; the renderer feeds it the viewport. */
+  screen?: ScreenLod;
+  /** Projected heights (device px) below which LOD 1 and LOD 2 draw. Default UNIT_LOD_PX. */
+  lodPixels?: ScreenLodThresholds;
   lightDir: Vector3;
   /** Bone and clip texture precision (gpu/dataTextures.ts). Default float. */
   precision?: DataTexturePrecision;
@@ -65,6 +68,8 @@ interface LodBatch {
 
 interface Rig {
   name: string;
+  /** Model height (m) of LOD 0 in its rest pose: the size for the screen-size LOD. */
+  height: number;
   anims: BakedAnimations;
   material: MeshBasicNodeMaterial;
   textures: Texture[];
@@ -111,7 +116,8 @@ export class UnitLayer {
   private readonly capacity: number;
   private readonly lightDir: Vector3;
   private readonly precision: DataTexturePrecision;
-  private readonly lodDist2: [number, number];
+  private readonly screen: ScreenLod;
+  private readonly lodPixels: ScreenLodThresholds;
   private readonly frustum = new Frustum();
   private readonly projView = new Matrix4();
   private readonly sphere = new Sphere();
@@ -126,8 +132,8 @@ export class UnitLayer {
     this.capacity = opts.capacity;
     this.lightDir = opts.lightDir;
     this.precision = opts.precision ?? 'float';
-    const [d1, d2] = opts.lodDistances ?? [30, 70];
-    this.lodDist2 = [d1 * d1, d2 * d2];
+    this.screen = opts.screen ?? new ScreenLod();
+    this.lodPixels = opts.lodPixels ?? UNIT_LOD_PX;
     const anims = opts.anims ?? bakeAnimations();
     this.addRig({
       name: 'placeholder',
@@ -184,8 +190,13 @@ export class UnitLayer {
       return { mesh, pose, anim };
     });
     const textures = src.albedo?.map ? [...bundle.textures, src.albedo.map] : bundle.textures;
+    const lod0 = geometries[0]!;
+    if (!lod0.boundingBox) lod0.computeBoundingBox();
+    const box = lod0.boundingBox!;
+    const height = Number.isFinite(box.max.y - box.min.y) && box.max.y > box.min.y ? box.max.y - box.min.y : 1.8;
     this.rigs.push({
       name: src.name,
+      height: Math.min(4, Math.max(1, height)),
       anims: src.anims,
       material: bundle.material,
       textures,
@@ -215,12 +226,6 @@ export class UnitLayer {
     return own === DEFAULT_RIG ? this.defaultRig : own;
   }
 
-  /** LOD index for a squared camera distance. */
-  private lodFor(distanceSq: number): number {
-    if (distanceSq < this.lodDist2[0]) return 0;
-    if (distanceSq < this.lodDist2[1]) return 1;
-    return 2;
-  }
 
   /** Distributes the units in the frame over the rig and LOD batches. `frame.y` must already hold terrain heights. */
   update(frame: InterpolatedFrame, camera: Camera, decals: DecalLayer): void {
@@ -244,8 +249,10 @@ export class UnitLayer {
       const dx = x - cam.x;
       const dy = y - cam.y;
       const dz = z - cam.z;
-      const lod = this.lodFor(dx * dx + dy * dy + dz * dz);
       const rig = this.rigs[this.rigFor(typeId)]!;
+      const isHero = heroIdOfTypeId(typeId) >= 0;
+      const size = isHero ? rig.height * HERO_SCALE : rig.height;
+      const lod = this.screen.lod(size, Math.sqrt(dx * dx + dy * dy + dz * dz), this.lodPixels);
       const batch = rig.lods[lod]!;
       const k = batch.mesh.count;
       if (k >= this.capacity) continue;
@@ -262,7 +269,6 @@ export class UnitLayer {
       anim[k * 4] = clip < rig.anims.clips.length ? clip : ANIM.idle;
       anim[k * 4 + 1] = frame.animT[i]!;
       anim[k * 4 + 2] = teamIndex(frame.owner[i]!);
-      const isHero = heroIdOfTypeId(typeId) >= 0;
       anim[k * 4 + 3] = isHero ? flags + HERO_INSTANCE_FLAG : flags;
 
       const selected = (flags & SELECTED) !== 0 && (flags & DEAD) === 0;

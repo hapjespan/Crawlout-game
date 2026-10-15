@@ -16,6 +16,11 @@ import {
   type Node,
 } from 'three/webgpu';
 import type { DataTexturePrecision } from '../gpu/dataTextures.js';
+import {
+  mirroredAlbedoLayout,
+  validateAlbedoLayout,
+  type TerrainAlbedoLayout,
+} from './albedoLayout.js';
 import { TerrainHeightField, type TerrainGeometry } from './heightField.js';
 import { createHeightTexture, type HeightTexture } from './heightTexture.js';
 import { TerrainChunks, type TerrainChunkOptions } from './terrainChunks.js';
@@ -27,7 +32,11 @@ import {
   type HeightSource,
   type TerrainField,
 } from './terrainField.js';
-import { createTerrainMaterial, type TerrainMaterialBundle } from './terrainMaterial.js';
+import {
+  createTerrainMaterial,
+  DEFAULT_ALBEDO_TILE,
+  type TerrainMaterialBundle,
+} from './terrainMaterial.js';
 import { refineTerrain, type TerrainDetailOptions } from './terrainRefine.js';
 
 export interface TerrainLayerOptions {
@@ -76,6 +85,8 @@ export class TerrainLayer {
   private readonly precision: DataTexturePrecision;
   private readonly detail: TerrainDetailOptions;
   private readonly chunkOptions: TerrainChunkOptions;
+  private albedoLayout: TerrainAlbedoLayout | null = null;
+  private albedoTile = DEFAULT_ALBEDO_TILE;
 
   constructor(
     private readonly scene: Scene,
@@ -88,7 +99,13 @@ export class TerrainLayer {
     this.look = createTerrainMaterial({ lightDir, shadow: opts.shadow });
   }
 
-  set(geometry: TerrainGeometry): void {
+  /**
+   * Replaces the terrain. `albedoLayout` says where each point samples the albedo (the map's tiles and mirroring,
+   * albedoLayout.ts); without it the albedo is tiled mirrored over the terrain's bounds.
+   */
+  set(geometry: TerrainGeometry, albedoLayout: TerrainAlbedoLayout | null = null): void {
+    if (albedoLayout) validateAlbedoLayout(albedoLayout);
+    this.albedoLayout = albedoLayout;
     const { positions, indices } = geometry;
     if (positions.length % 3 !== 0) throw new Error('terrain positions must hold xyz triples');
     if (indices.length % 3 !== 0) throw new Error('terrain indices must hold triangles');
@@ -171,9 +188,23 @@ export class TerrainLayer {
     this.scene.add(this.mesh);
   }
 
+  /** Edge (m) of the area the albedo covers, from terrain.json: the tile of the default layout. */
+  setAlbedoTileSize(meters: number): void {
+    if (!(meters > 0) || meters === this.albedoTile) return;
+    this.albedoTile = meters;
+    this.applyLayout();
+  }
+
+  private applyLayout(): void {
+    const hf = this.heightField;
+    if (this.albedoLayout) this.look.setLayout(this.albedoLayout);
+    else if (hf) this.look.setLayout(mirroredAlbedoLayout(hf, this.albedoTile));
+  }
+
   private afterHeights(): void {
     const hf = this.heightField;
     if (!hf) return;
+    this.applyLayout();
     this.heightTexture = createHeightTexture(hf, this.precision);
     const [lo, hi] = hf.heightRange();
     this.look.setHeightRange(lo, hi);

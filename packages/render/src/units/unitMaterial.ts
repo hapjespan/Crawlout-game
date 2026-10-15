@@ -11,8 +11,9 @@
 // the team mask from the color alpha or, for 'diffuseAlpha' assets, from the atlas alpha; uv = (-1, -1) marks a
 // primitive without the atlas (reads white). Vertex skinning reads 4 influences, blends two adjacent frames, then
 // rotates by yaw.
-// Shading: 3-step toon ramp (soft band edges) plus rimlight on the screen silhouette, team color through the team
-// mask on the albedo's luminance. No PBR.
+// Shading: 3-step toon ramp (soft band edges) plus a small sky fill, rimlight on the screen silhouette, team color
+// through the team mask (vertex alpha or, per texel, the atlas alpha) relative to the albedo's mean under the mask.
+// No PBR.
 // Hero (typeId 1000 + heroId): the unit layer adds HERO_INSTANCE_FLAG to the flags in iAnim.w. A hero is drawn
 // HERO_SCALE times bigger, and only a hero shows the hero parts of the placeholder (color alpha >= HERO_PART_ALPHA,
 // humanoidGeometry.ts); for other instances those vertices collapse onto their bone and rasterize nothing.
@@ -20,6 +21,7 @@ import { MeshBasicNodeMaterial, Vector3, type Node, type Texture } from 'three/w
 import {
   attribute,
   cameraPosition,
+  clamp,
   cos,
   dot,
   float,
@@ -32,6 +34,7 @@ import {
   mix,
   mod,
   normalize,
+  pow,
   select,
   sin,
   smoothstep,
@@ -47,6 +50,7 @@ import {
 import { createDataTexture, type DataTexturePrecision } from '../gpu/dataTextures.js';
 import { teamPalette } from '../palette.js';
 import type { BakedAnimations } from './bake.js';
+import { TEAM_PIVOT_DEFAULT } from './gltfUnitGeometry.js';
 import { HERO_PART_ALPHA } from './humanoidGeometry.js';
 
 /** Added to the instance flags (iAnim.w) of a hero; above the uint8 snapshot flags. */
@@ -62,8 +66,12 @@ export interface ToonLighting {
 export interface UnitAlbedo {
   /** Diffuse atlas, sampled with the uv attribute. */
   map?: Texture | null;
-  /** Team mask from the atlas alpha instead of the vertex color alpha. */
+  /** Team mask from the atlas alpha (per texel) on top of the vertex color alpha. */
   maskFromMapAlpha?: boolean;
+  /** Mean luminance of the albedo under the team mask (gltfUnitGeometry.ts teamPivot); see teamAlbedo. */
+  teamPivot?: number;
+  /** Brightness factor on the albedo (renderer option albedoGain, per asset). Default 1. */
+  gain?: number;
 }
 
 export interface UnitMaterialBundle {
@@ -157,18 +165,56 @@ export function rimLight(
 const LUMA = [0.2126, 0.7152, 0.0722] as const;
 
 /**
- * Team color under the mask: the team color times the albedo's luminance (0.6 * l + 0.55). On a neutral grey base (the
- * fallback team material, the brief's painted mask) this equals the former per-channel team * (0.6 * base + 0.55); on
- * a colored base (a blue jumpsuit masked by hue) the per-channel product multiplied the hue in twice and flattened the
- * texture into one saturated color.
+ * Team color under the mask: the team color times the albedo's luminance relative to the mean under the mask
+ * (`pivot`), raised to TEAM.contrast, clamped to TEAM.min..TEAM.max and times TEAM.gain. On average the mask
+ * shows the team color (a little under full, as the former curve did on a mid base), and the texture's light and dark (folds, seams, a painted pattern) stay in it: the former 0.6 * l + 0.55
+ * kept only about a third of the texture's contrast and flattened a textured jumpsuit into one even color. A flat
+ * base (the fallback team material, l = pivot) shows the team color times TEAM.gain. Only the luminance counts, so a colored
+ * base (a blue jumpsuit masked by hue) is not tinted twice.
  */
+export const TEAM = { contrast: 1, min: 0.3, max: 1.6, gain: 0.92 } as const;
+
+/** CPU form of the team shade factor (same constants), for tests and tuning. */
+export function teamShade(luma: number, pivot: number): number {
+  const f = Math.pow(Math.max(luma, 1e-4) / Math.max(pivot, 1e-4), TEAM.contrast);
+  return Math.min(TEAM.max, Math.max(TEAM.min, f)) * TEAM.gain;
+}
+
 export function teamAlbedo(
   base: Node<'vec3'>,
   team: Node<'vec3'>,
   mask: Node<'float'>,
+  pivot: Node<'float'> | number,
 ): Node<'vec3'> {
-  const l = dot(base, vec3(...LUMA));
-  return mix(base, team.mul(l.mul(0.6).add(0.55)), mask);
+  const l = max(dot(base, vec3(...LUMA)), 1e-4);
+  const f = clamp(pow(l.div(pivot), TEAM.contrast), TEAM.min, TEAM.max).mul(TEAM.gain);
+  return mix(base, team.mul(f), mask);
+}
+
+/**
+ * Sky fill: a small hemispheric term added to the toon light, cool from the sky on surfaces that face up and a warm
+ * bounce from the ground on those that face down; a wall gets half of each. Walls, coats and a building's shadow side
+ * no longer sit at the flat darkest band and come loose from the ground. In the shader, no extra light or draw call.
+ * Subtle on purpose: it is a multiplier on the albedo, so a dark, muddy coat stays dark and muddy.
+ */
+export const SKY_FILL = {
+  sky: [0.085, 0.1, 0.12],
+  ground: [0.06, 0.045, 0.03],
+} as const;
+
+/** CPU form: the fill per rgb channel for a normal's y. */
+export function skyFillAt(ny: number): [number, number, number] {
+  const up = Math.min(1, Math.max(0, ny * 0.5 + 0.5));
+  return [0, 1, 2].map((c) => SKY_FILL.sky[c]! * up + SKY_FILL.ground[c]! * (1 - up)) as [
+    number,
+    number,
+    number,
+  ];
+}
+
+export function skyFill(N: Node<'vec3'>): Node<'vec3'> {
+  const up = clamp(N.y.mul(0.5).add(0.5), 0, 1);
+  return mix(vec3(...SKY_FILL.ground), vec3(...SKY_FILL.sky), up);
 }
 
 export function createUnitMaterial(
@@ -246,8 +292,10 @@ export function createUnitMaterial(
     base = base.mul(texel.xyz);
     if (albedoSource.maskFromMapAlpha) mask = max(mask, texel.w);
   }
+  const gain = albedoSource.gain ?? 1;
+  if (gain !== 1) base = base.mul(gain);
   const iTeam = palette.element(int(iAnim.z));
-  const albedo = teamAlbedo(base, iTeam, mask);
+  const albedo = teamAlbedo(base, iTeam, mask, (albedoSource.teamPivot ?? TEAM_PIVOT_DEFAULT) * gain);
   const N = normalize(worldNrm);
   const shade = toonRamp(dot(N, lightDir));
   const V = normalize(cameraPosition.sub(vWorldPos));
@@ -255,7 +303,7 @@ export function createUnitMaterial(
 
   const material = new MeshBasicNodeMaterial();
   material.positionNode = worldPos;
-  material.colorNode = vec4(albedo.mul(shade).add(rim), 1);
+  material.colorNode = vec4(albedo.mul(skyFill(N).add(shade)).add(rim), 1);
   material.name = 'crawlout-unit-toon';
   return { material, textures: [boneTex, clipTex], lightDir };
 }

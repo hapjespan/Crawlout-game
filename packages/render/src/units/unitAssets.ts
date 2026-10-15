@@ -16,7 +16,7 @@ export interface UnitAssetConfig {
   resolveUrl?: (path: string) => string;
   /** Asset id for every unit whose loadout has no loaded asset of its own. */
   defaultUnit?: string;
-  /** Where the team mask comes from (gltfUnitGeometry.ts). Default 'materialName'. */
+  /** Where the team mask comes from (gltfUnitGeometry.ts). Default 'auto': the atlas alpha when it holds a mask. */
   teamMask?: TeamMaskSource;
   /**
    * Extra bindings of asset id to unit typeIds, for units without a loadout body slot (the hero: 1000 + heroId). Loaded
@@ -41,6 +41,8 @@ export interface UnitAssetStatus {
   typeIds: number[];
   /** Triangles per LOD when ready. */
   triangles?: [number, number, number];
+  /** Where the team mask came from when ready ('auto' resolved: the atlas alpha or the material names). */
+  teamMask?: Exclude<TeamMaskSource, 'auto'>;
 }
 
 export interface LoadoutVisuals {
@@ -68,6 +70,8 @@ export class UnitAssetRegistry {
       config?: UnitAssetConfig | undefined;
       maxTextureSize: number;
       warn?: (message: string) => void;
+      /** Brightness factor on an asset's albedo (renderer option albedoGain); 1 or undefined keeps it. */
+      albedoGain?: (assetId: string) => number | undefined;
     },
   ) {}
 
@@ -166,10 +170,13 @@ export class UnitAssetRegistry {
             lods: [lod0.geometry, asset.lods[1].geometry, asset.lods[2].geometry],
             albedo: {
               map: lod0.map,
-              maskFromMapAlpha: (teamMask ?? 'materialName') === 'diffuseAlpha',
+              maskFromMapAlpha: lod0.teamMask === 'diffuseAlpha',
+              teamPivot: lod0.teamPivot,
+              gain: this.opts.albedoGain?.(assetId) ?? 1,
             },
           });
           status.state = 'ready';
+          status.teamMask = lod0.teamMask;
           status.triangles = [lod0.triangles, asset.lods[1].triangles, asset.lods[2].triangles];
           if (lod0.textureCount > 1)
             this.opts.warn?.(

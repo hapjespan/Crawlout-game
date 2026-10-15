@@ -7,7 +7,11 @@ import { UNIT_ATLAS_ANISOTROPY, UnitLayer } from './unitLayer.js';
 import {
   createUnitMaterial,
   RIM,
+  SKY_FILL,
   silhouetteEdge,
+  skyFillAt,
+  TEAM,
+  teamShade,
   TOON_BANDS,
   TOON_EDGE_SOFT,
 } from './unitMaterial.js';
@@ -63,6 +67,29 @@ describe('unit shading', () => {
     expect(dark).toBeLessThan(0.06);
     expect(RIM.floor + RIM.albedo * 1).toBeLessThan(0.5);
     expect(RIM.shadeSide).toBeLessThan(1);
+  });
+
+  it('keeps the texture contrast under the team mask, and the pure team color on a flat base', () => {
+    // A flat base (fallback team material): luminance equals the pivot, the team color times TEAM.gain.
+    expect(teamShade(0.4, 0.4)).toBeCloseTo(TEAM.gain, 6);
+    // A painted jumpsuit with texels from 0.05 to 0.3 around a mean of 0.15: about the texture's own ratio stays.
+    const dark = teamShade(0.05, 0.15);
+    const light = teamShade(0.3, 0.15);
+    expect(light / dark).toBeGreaterThan(4); // the former 0.6 * l + 0.55 gave 1.27 (texture ratio 6)
+    expect(dark).toBeGreaterThanOrEqual(TEAM.min * TEAM.gain - 1e-9);
+    expect(teamShade(10, 0.1)).toBeCloseTo(TEAM.max * TEAM.gain, 6);
+  });
+
+  it('adds a subtle sky fill: cool from above, warm from below, never more than a fifth of the darkest band', () => {
+    const up = skyFillAt(1);
+    const down = skyFillAt(-1);
+    const wall = skyFillAt(0);
+    expect(up[2]).toBeGreaterThan(up[0]); // sky: blue over red
+    expect(down[0]).toBeGreaterThan(down[2]); // ground bounce: red over blue
+    for (const c of [0, 1, 2]) expect(wall[c]).toBeCloseTo((up[c]! + down[c]!) / 2, 6);
+    for (const v of [...SKY_FILL.sky, ...SKY_FILL.ground]) expect(v).toBeLessThan(TOON_BANDS.dark / 4);
+    // A dark coat (albedo 0.03) in shadow stays dark: under 0.02 linear.
+    expect(0.03 * (TOON_BANDS.dark + Math.max(...wall))).toBeLessThan(0.02);
   });
 
   it('builds the unit and structure materials with the shared shading', () => {

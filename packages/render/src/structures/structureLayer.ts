@@ -30,6 +30,7 @@ import {
   type FootprintTable,
 } from '../entities/footprint.js';
 import { buildingIdOf, classifyTypeId, ENTITY_KIND } from '../entities/typeIds.js';
+import { BUILDING_LOD_PX, ScreenLod, type ScreenLodThresholds } from '../lod/screenLod.js';
 import { NEUTRAL_TEAM, teamIndex } from '../palette.js';
 import type { PickShape } from '../picking/selection.js';
 import type { InterpolatedFrame } from '../snapshot/interpolate.js';
@@ -109,10 +110,13 @@ export interface StructureLayerOptions {
   footprints: FootprintTable;
   heightAt: (x: number, z: number) => number;
   materials: StructureMaterials;
-  /** Camera distance (m) where placeholder buildings switch to LOD1. */
-  lodDistance?: number;
-  /** Camera distances (m) where building assets switch to LOD1 and LOD2. */
-  assetLodDistances?: readonly [number, number];
+  /** Screen-size LOD (lod/screenLod.ts), shared with the other layers; the renderer feeds it the viewport. */
+  screen?: ScreenLod;
+  /**
+   * Projected size (device px, bounding diameter) below which buildings draw LOD 1 and LOD 2 (the placeholder has
+   * two LODs: LOD 1 from lod1 on). Default BUILDING_LOD_PX.
+   */
+  lodPixels?: ScreenLodThresholds;
   castShadows?: boolean;
 }
 
@@ -138,17 +142,18 @@ export class StructureLayer {
   private readonly claims: InstanceBatch;
   private readonly footprints: FootprintTable;
   private readonly heightAt: (x: number, z: number) => number;
-  private readonly lodDist2: number;
+  private readonly screen: ScreenLod;
+  private readonly lodPixels: ScreenLodThresholds;
   private readonly frustum = new Frustum();
   private readonly projView = new Matrix4();
   private readonly sphere = new Sphere();
   private readonly materials: StructureMaterials;
   private readonly siteTint: [number, number, number] = [1, 1, 1];
+  private readonly gainTint: [number, number, number] = [1, 1, 1];
   private readonly heap: [number, number] = [1, 1];
   private readonly scene: Scene;
   private readonly capacity: number;
   private readonly castShadows: boolean;
-  private readonly assetLodDist2: [number, number];
   private assetDraws: AssetDraw[] = [];
   /** Building id (index in buildings.json) to its asset draw. */
   private readonly assetByBuilding = new Map<number, AssetDraw>();
@@ -160,13 +165,11 @@ export class StructureLayer {
     this.scene = scene;
     this.capacity = cap;
     this.castShadows = opts.castShadows ?? false;
-    const [a1, a2] = opts.assetLodDistances ?? [55, 110];
-    this.assetLodDist2 = [a1 * a1, a2 * a2];
+    this.screen = opts.screen ?? new ScreenLod();
+    this.lodPixels = opts.lodPixels ?? BUILDING_LOD_PX;
     const m = (this.materials = opts.materials);
     this.footprints = opts.footprints;
     this.heightAt = opts.heightAt;
-    const d = opts.lodDistance ?? 60;
-    this.lodDist2 = d * d;
     this.buildings = [
       new InstanceBatch(scene, createBuildingGeometry(0), m.building, cap, 'buildings-lod0'),
       new InstanceBatch(scene, createBuildingGeometry(1), m.building, cap, 'buildings-lod1'),
@@ -338,7 +341,12 @@ export class StructureLayer {
         const dx = x - cam.x;
         const dy = y - cam.y;
         const dz = z - cam.z;
-        const batch = dx * dx + dy * dy + dz * dz < this.lodDist2 ? lod0 : lod1;
+        const near = this.screen.lod(
+          2 * this.sphere.radius,
+          Math.sqrt(dx * dx + dy * dy + dz * dz),
+          this.lodPixels,
+        );
+        const batch = near === 0 ? lod0 : lod1;
         const tint = BUILDING_TINTS[buildingIdOf(typeId) % BUILDING_TINTS.length] ?? WHITE;
         if (frame.anim[i] === ANIM.build) {
           const progress = frame.animT[i]!;
@@ -407,17 +415,20 @@ export class StructureLayer {
     if (!this.frustum.intersectsSphere(this.sphere)) return;
     const cam = this.camPos;
     const d2 = (x - cam.x) ** 2 + (y - cam.y) ** 2 + (z - cam.z) ** 2;
-    const lod = d2 < this.assetLodDist2[0] ? 0 : d2 < this.assetLodDist2[1] ? 1 : 2;
+    const lod = this.screen.lod(2 * this.sphere.radius, Math.sqrt(d2), this.lodPixels);
     const batch = asset.batches[asset.lodBatch[lod]]!;
+    const g = v.gain ?? 1;
+    const lit = this.gainTint;
+    lit[0] = lit[1] = lit[2] = g;
     if (frame.anim[i] === ANIM.build) {
       const progress = frame.animT[i]!;
-      const tint = constructionTint(progress, WHITE, this.siteTint);
+      const tint = constructionTint(progress, lit, this.siteTint);
       batch.push(x, y, z, 0, sx, 1, sz, team, tint, top * constructionHeight(progress));
       const m = 2 * SCAFFOLD_MARGIN;
       const scaffold = Math.min(wall * SCAFFOLD_HEIGHT, top * ASSET_SCAFFOLD_HEIGHT);
       this.scaffolds.push(x, y, z, 0, w + m, scaffold, h + m, team, WHITE);
     } else {
-      batch.push(x, y, z, 0, sx, 1, sz, team, WHITE);
+      batch.push(x, y, z, 0, sx, 1, sz, team, lit);
     }
   }
 

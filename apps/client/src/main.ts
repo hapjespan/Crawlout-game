@@ -34,6 +34,7 @@ import type { SimWinner } from '@crawlout/sim';
 import { assetConfig } from './game/assets.js';
 import { propSource } from './render/props.js';
 import { terrainTextures } from './render/terrain.js';
+import { albedoLayoutForMap } from './render/terrainLayout.js';
 import { loadClientMapWater } from './render/water.js';
 import { loadClientGameData, loadClientMap } from './game/content.js';
 import { startSession } from './game/session.js';
@@ -85,7 +86,7 @@ async function main(): Promise<void> {
     ...(assets ? { assets } : {}),
     ...(textures ? { terrainTextures: textures } : {}),
   });
-  renderer.setTerrain(map.terrain);
+  renderer.setTerrain(map.terrain, { albedoLayout: albedoLayoutForMap(SLICE_MAP) });
   renderer.setGameData(data);
   void renderer.setProps(map.props, propSource());
   const water = loadClientMapWater(SLICE_MAP);
