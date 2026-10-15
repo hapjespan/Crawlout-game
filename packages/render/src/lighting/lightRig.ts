@@ -70,9 +70,10 @@ export const FOG = { start: 1.15, range: 2.4, max: 0.85 } as const;
 
 /**
  * The map edge: the terrain and the skirt beyond it fade into the fog colour from `start` meters inside the bounds
- * to full fog `end` meters outside, whatever the zoom.
+ * to full fog `end` meters outside, whatever the zoom. The skirt continues the ground (terrain/terrainSkirt.ts), so the
+ * fade is long: there is no border, the land just thins into the haze.
  */
-export const EDGE_FOG = { start: -24, end: 60 } as const;
+export const EDGE_FOG = { start: 0, end: 420 } as const;
 
 /** CPU form of the distance fog factor (0 clear, 1 fog colour). */
 export function distanceFog(distance: number, cameraDistance: number): number {

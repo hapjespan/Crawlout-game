@@ -10,6 +10,7 @@ import {
   Color,
   Mesh,
   type Camera,
+  type Material,
   type Scene,
   type Texture,
   type Vector3,
@@ -244,6 +245,11 @@ export class TerrainLayer {
   /** Rock and ground tints, sRGB hex (#rrggbb). */
   setTints(rockTint: string, groundTint: string): void {
     this.look.setTints(rockTint, groundTint);
+  }
+
+  /** The terrain's material: the map-edge skirt is drawn with it so the ground continues. */
+  get material(): Material {
+    return this.look.material;
   }
 
   /** The chunk tree (null for the whole-mesh mode): tests and stats. */
