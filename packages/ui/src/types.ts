@@ -48,12 +48,19 @@ export interface MinimapClaim {
   y: number;
   owner: number | null;
 }
-/** Minimap-invoer. Houd het object stabiel tussen lezingen als er niets verandert (de HUD leest elke refresh). */
+/**
+ * Minimap-invoer. Houd het object stabiel tussen lezingen als er niets verandert (de HUD leest elke refresh).
+ * passable, water, terrain en visible worden als statische laag gecachet op referentie: wijzigt de inhoud, lever dan een nieuwe array.
+ */
 export interface MinimapData {
   w: number;
   h: number;
   /** w*h cellen, 1 = begaanbaar. */
   passable: Uint8Array;
+  /** w*h cellen: 0 = droog, 1 = water, 2 = ondiep of doorwaadbaar. Ontbreekt: geen water. */
+  water?: Uint8Array;
+  /** w*h cellen: 0 = open, 1 = bos of onbegaanbaar groen, 2 = rots of klif. Ontbreekt: onbegaanbaar is overal een muur. */
+  terrain?: Uint8Array;
   /** Sim-eenheden per cel; standaard 256 (1 m). */
   cellU?: number;
   blips: readonly MinimapBlip[];
