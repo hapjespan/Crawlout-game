@@ -27,11 +27,28 @@ export interface BoxSelectOptions {
   shape?: PickShapeFn;
 }
 
-/** Pick sphere of one entity, meters: radius and center height above its ground point. */
+/**
+ * Pick shape of one entity, meters: a sphere (radius, center height above its ground point) or, when `top` > 0, a
+ * box around the ground point (half sizes along x and z, from just below the ground up to `top`). Buildings use the
+ * box: a sphere around their center misses the corners, walls and roof of a 21 m building at the RTS camera angle.
+ */
 export interface PickShape {
   radius: number;
   height: number;
+  /** Half size of the box along x and z; only read when top > 0. */
+  halfX?: number;
+  halfZ?: number;
+  /** Height of the box above the ground point; 0 or absent: use the sphere. */
+  top?: number;
 }
+
+/** Box bottom below the ground point, meters: a building on a slope still has walls under its center height. */
+export const BOX_SINK = 1;
+/**
+ * A box hit counts this much further away than it is, meters, so a unit standing at the wall or on the porch wins
+ * the click over the building it stands against.
+ */
+export const BOX_HIT_BIAS = 1.5;
 
 /** Writes the pick sphere of frame entity `index` into `out` and returns it, or null for the unit default. */
 export type PickShapeFn = (index: number, out: PickShape) => PickShape | null;
@@ -113,6 +130,35 @@ export function pickNearestOnScreen(
 }
 
 /**
+ * Distance along the ray to the box x in [-hx, hx], y in [0, hy], z in [-hz, hz] (the origin is given relative to the
+ * box center on x and z and to its bottom on y), or -1 on a miss. An origin inside the box counts as distance 0.
+ */
+export function rayBox(
+  ox: number,
+  oy: number,
+  oz: number,
+  dx: number,
+  dy: number,
+  dz: number,
+  hx: number,
+  hy: number,
+  hz: number,
+): number {
+  let tMin = 0;
+  let tMax = Infinity;
+  const slab = (o: number, d: number, lo: number, hi: number): boolean => {
+    if (Math.abs(d) < 1e-9) return o >= lo && o <= hi;
+    let t0 = (lo - o) / d;
+    let t1 = (hi - o) / d;
+    if (t0 > t1) [t0, t1] = [t1, t0];
+    tMin = Math.max(tMin, t0);
+    tMax = Math.min(tMax, t1);
+    return tMin <= tMax;
+  };
+  return slab(ox, dx, -hx, hx) && slab(oy, dy, 0, hy) && slab(oz, dz, -hz, hz) ? tMin : -1;
+}
+
+/**
  * Index of the nearest entity hit by the ray (origin o, normalized direction d), or -1.
  * Units are spheres of PICK_RADIUS around their pick center; `shape` gives other entities their own sphere.
  * Dead entities are skipped.
@@ -132,7 +178,26 @@ export function pickEntity(
   const scratch: PickShape = { radius: PICK_RADIUS, height: PICK_CENTER_HEIGHT };
   for (let i = 0; i < frame.count; i++) {
     if ((frame.flags[i]! & ENTITY_FLAG.dead) !== 0) continue;
+    scratch.top = 0; // the scratch is shared: a box from the previous entity must not leak into this one
     const s = shape?.(i, scratch);
+    if (s && s.top !== undefined && s.top > 0) {
+      const t = rayBox(
+        ox - frame.x[i]!,
+        oy - (frame.y[i]! - BOX_SINK),
+        oz - frame.z[i]!,
+        dx,
+        dy,
+        dz,
+        s.halfX ?? 0,
+        s.top + BOX_SINK,
+        s.halfZ ?? 0,
+      );
+      if (t >= 0 && t + BOX_HIT_BIAS < bestT) {
+        bestT = t + BOX_HIT_BIAS;
+        best = i;
+      }
+      continue;
+    }
     const radius = s ? s.radius : PICK_RADIUS;
     const r2 = radius * radius;
     const cx = frame.x[i]! - ox;

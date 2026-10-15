@@ -315,8 +315,8 @@ describe('verouderde deps: research en recruit worden kaarten', () => {
     mounted = units.handle;
     expect(units.el.querySelector('[aria-label="Gebouw"]')).toBeNull();
     expect(units.queries.research).toEqual([]);
-    press('1');
-    expect(units.sent).toEqual([{ type: 'SetRole', payload: { ids: [1], role: 'scavenger' } }]);
+    press('2');
+    expect(units.sent).toEqual([{ type: 'SetRole', payload: { ids: [1], role: 'builder' } }]);
   });
 });
 
@@ -330,8 +330,8 @@ describe('verouderde deps: craft wordt kaarten', () => {
     const t = setup({ selection: [unit(1), unit(2), building(9, 1)], craft });
     mounted = t.handle;
     expect(t.el.querySelector('[aria-label="Gebouw"]')).toBeNull();
-    press('1'); // zonder K is 1 de rolletoets
-    expect(t.sent).toEqual([{ type: 'SetRole', payload: { ids: [1, 2, 9], role: 'scavenger' } }]);
+    press('2'); // zonder K is 2 de rolletoets, en alleen voor de bewoners (niet voor het gebouw)
+    expect(t.sent).toEqual([{ type: 'SetRole', payload: { ids: [1, 2], role: 'builder' } }]);
     t.sent.length = 0;
     press('k');
     click(t.el.querySelector('[data-card-id="3"]'));
@@ -353,7 +353,7 @@ describe('verouderde deps: craft wordt kaarten', () => {
 describe('sneltoetsen', () => {
   it('alleen A en S vallen samen met de camera-toetsen (bewust), verder geen dubbelen', () => {
     const cameraKeys = new Set(['w', 'a', 's', 'd', 'q', 'e']);
-    const hudKeys = [...ACTIONS.map((a) => a.key), 'f1', 'f2', 'f3', 'z', 'x', 'c'];
+    const hudKeys = [...ACTIONS.map((a) => a.key), 'h', 'k', 'f1', 'f2', 'f3', 'z', 'x', 'c'];
     expect(hudKeys.filter((k) => cameraKeys.has(k)).sort()).toEqual(['a', 's']);
     expect(new Set(hudKeys).size).toBe(hudKeys.length);
   });

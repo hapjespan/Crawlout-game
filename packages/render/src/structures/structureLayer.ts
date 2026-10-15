@@ -127,6 +127,9 @@ export interface StructureLayerOptions {
 
 /** Instances per building-asset batch: more of one type than this in view is not a game. */
 const ASSET_BATCH_CAPACITY = 1024;
+/** Slack around a building's footprint for its pick box, meters. */
+const PICK_BOX_MARGIN = 0.5;
+
 /** Scaffold height around an asset site, times the model height (capped by the placeholder's scaffold). */
 const ASSET_SCAFFOLD_HEIGHT = 1.05;
 
@@ -355,6 +358,10 @@ export class StructureLayer {
         out.radius = 0.5 * Math.max(f.w, f.h);
         out.height =
           0.5 * (asset ? Math.min(asset.height, buildingWallHeight(f)) : buildingWallHeight(f));
+        // Pick the whole drawn volume (footprint plus half a meter of slack, up to the top of the model), not a sphere.
+        out.halfX = 0.5 * f.w + PICK_BOX_MARGIN;
+        out.halfZ = 0.5 * f.h + PICK_BOX_MARGIN;
+        out.top = Math.max(this.buildingTop(typeId), 1);
         return out;
       }
       case ENTITY_KIND.scrapNode:

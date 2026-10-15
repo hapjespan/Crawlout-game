@@ -108,3 +108,74 @@ describe('pickNearestOnScreen', () => {
     expect(pickNearestOnScreen(frame, viewProj.elements, 800, 800, 410, 405, 4)).toBe(-1);
   });
 });
+
+describe('pickEntity with a building box', () => {
+  // A 21 x 21 m building with its top at 14 m (house plus water tower), a unit and the camera of the RTS view.
+  const HQ_HALF = 10.5 + 0.5;
+  const HQ_TOP = 14;
+  const hq = frameOf([
+    { id: 1, x: 0, z: 0 },
+    { id: 2, x: 40, z: 40 },
+  ]);
+  type Scratch = { radius: number; height: number; halfX?: number; halfZ?: number; top?: number };
+  const shape = (i: number, out: Scratch) => {
+    if (i !== 0) return null;
+    out.radius = 10.5;
+    out.height = 6;
+    out.halfX = HQ_HALF;
+    out.halfZ = HQ_HALF;
+    out.top = HQ_TOP;
+    return out;
+  };
+
+  /** Ray from an RTS-angle camera (pitch 55 degrees) at `dist` m through a world point. */
+  function rayThrough(px: number, py: number, pz: number, dist = 60) {
+    const pitch = (55 * Math.PI) / 180;
+    const ox = 0;
+    const oy = dist * Math.sin(pitch);
+    const oz = dist * Math.cos(pitch);
+    const len = Math.hypot(px - ox, py - oy, pz - oz);
+    return [ox, oy, oz, (px - ox) / len, (py - oy) / len, (pz - oz) / len] as const;
+  }
+
+  it('hits the roof, the walls and the far corner that a sphere around the center misses', () => {
+    for (const [x, y, z] of [
+      [0, HQ_TOP, 0],
+      [-9, HQ_TOP - 0.5, 9],
+      [8, 1.5, 10.4],
+      [-10, HQ_TOP - 0.2, -10],
+    ] as const) {
+      expect(pickEntity(hq, ...rayThrough(x, y, z), shape)).toBe(0);
+    }
+  });
+
+  it('misses ground beside the building and the air behind and above it', () => {
+    expect(pickEntity(hq, ...rayThrough(16, 0, 0), shape)).toBe(-1);
+    expect(pickEntity(hq, ...rayThrough(0, 25, -15), shape)).toBe(-1);
+  });
+
+  it('works at the far zoom (140 m) as well', () => {
+    expect(pickEntity(hq, ...rayThrough(0, HQ_TOP, 5, 140), shape)).toBe(0);
+    expect(pickEntity(hq, ...rayThrough(10, 2, 10, 140), shape)).toBe(0);
+  });
+
+  it('prefers a unit that stands at the wall over the building behind it', () => {
+    const f = frameOf([
+      { id: 1, x: 0, z: 0 },
+      { id: 2, x: 0, z: 11.5 }, // a builder at the front wall
+    ]);
+    const [ox, oy, oz, dx, dy, dz] = rayThrough(0, PICK_CENTER_HEIGHT, 11.5);
+    expect(pickEntity(f, ox, oy, oz, dx, dy, dz, shape)).toBe(1);
+  });
+
+  it('does not let the box of one building leak into the next entity (shared scratch)', () => {
+    const f = frameOf([
+      { id: 1, x: 0, z: 0 },
+      { id: 2, x: 30, z: 0 },
+    ]);
+    // entity 1 has no shape of its own: it is a unit sphere, not the box entity 0 left in the shared scratch
+    expect(pickEntity(f, 36, 0.9, 0, -1, 0, 0, shape)).toBe(1);
+    expect(pickEntity(f, 30, 8, 0, 0.0001, -1, 0, shape)).toBe(1);
+    expect(pickEntity(f, 30, 8, 3, 0, -1, 0, shape)).toBe(-1);
+  });
+});

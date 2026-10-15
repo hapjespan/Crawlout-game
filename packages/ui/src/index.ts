@@ -7,6 +7,8 @@ import type { HudDeps, HudHandle } from './types.js';
 export type {
   AlertKind,
   BuildOption,
+  BuildingButton,
+  BuildingSite,
   BuildingCard,
   CardIconId,
   CardKind,
@@ -61,6 +63,8 @@ export function mountHud(el: HTMLElement, deps: HudDeps): HudHandle {
     cancelPlacement: () => ctl.cancelPlacement(),
     completeTargeting: (t) => ctl.completeTargeting(t),
     cancelTargeting: () => ctl.cancelTargeting(),
+    targetingActive: () => ctl.targetingActive(),
+    placementActive: () => ctl.placementActive(),
     refresh: () => ctl.refresh(),
     unmount: () => {
       doc.removeEventListener('keydown', onKey);
