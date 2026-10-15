@@ -127,6 +127,8 @@ export class UnitAssetLoader {
     const baked = entry.baked;
     if (!baked) throw new UnitAssetError(`asset "${assetId}" has no baked animations`);
     const url = (path: string): string => this.resolveUrl(manifestUrl, path);
+    // An explicit option wins; otherwise the asset says where its team mask lives (manifest `teamMask`).
+    const teamMask = opts.teamMask ?? entry.teamMask;
 
     const [animBytes, ...glbs] = await Promise.all([
       this.io.fetchBytes(url(baked.path)),
@@ -139,7 +141,7 @@ export class UnitAssetLoader {
         const scene = await this.io.parseGltf(glbs[i]!, url(lod.path));
         return unitGeometryFromGltf(scene, {
           boneCount: entry.boneCount,
-          ...(opts.teamMask ? { teamMask: opts.teamMask } : {}),
+          ...(teamMask ? { teamMask } : {}),
         });
       }),
     );

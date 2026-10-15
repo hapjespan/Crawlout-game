@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="utf-8" />
+    <title>asset-cli karakterpreview</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        background: #222a2e;
+        overflow: hidden;
+      }
+      #info {
+        position: absolute;
+        left: 8px;
+        top: 8px;
+        color: #e8e2d6;
+        font: 12px/1.4 monospace;
+        white-space: pre;
+        pointer-events: none;
+      }
+    </style>
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "/node_modules/.pnpm/three@0.186.1/node_modules/three/build/three.module.js",
+          "three/addons/": "/node_modules/.pnpm/three@0.186.1/node_modules/three/examples/jsm/"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <div id="info"></div>
+    <script type="module">
+      // Preview voor eigen controle (geen onderdeel van de buis): tekent de karakters (kind 'character') uit een
+      // manifest in de rustpose, met het teammasker uit het manifest (veld `teamMask`) in een spelerskleur.
+      // Query: manifest=<pad> lod=0|1|2 only=<id,id> az=<graden> el=<graden> team=<hex> w= h= debug=mask|normals|flat
+      //   mask: de alfa van de diffuse als grijswaarde; normals: normalen als kleur; flat: alleen de diffuse.
+      import * as THREE from 'three';
+      import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+      import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
+
+      const q = new URLSearchParams(location.search);
+      const lod = Number(q.get('lod') ?? 0);
+      const az = (Number(q.get('az') ?? 20) * Math.PI) / 180;
+      const el = (Number(q.get('el') ?? 8) * Math.PI) / 180;
+      const teamColor = new THREE.Color(q.get('team') ?? '#d23b2a');
+      const debug = q.get('debug');
+      const W = Number(q.get('w') ?? 1400);
+      const H = Number(q.get('h') ?? 800);
+
+      const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+      renderer.setSize(W, H);
+      document.body.appendChild(renderer.domElement);
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x56604f);
+      scene.add(new THREE.HemisphereLight(0xfff2dc, 0x4a4030, 1.7));
+      const sun = new THREE.DirectionalLight(0xfff0d0, 2.4);
+      sun.position.set(-3, 5, 4);
+      scene.add(sun);
+      const grid = new THREE.GridHelper(20, 20, 0xffffff, 0xffffff);
+      grid.material.transparent = true;
+      grid.material.opacity = 0.18;
+      scene.add(grid);
+
+      const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
+
+      // Zelfde regel als render: bij 'diffuseAlpha' is de alfa van de diffuse het masker, daar komt de teamkleur
+      // (op de grijswaarde van de diffuse, zodat de schaduw in de textuur blijft) voor in de plaats.
+      function teamMaterial(source, mode) {
+        const material = new THREE.MeshLambertMaterial({ map: source.map, color: source.color });
+        if (mode === 'diffuseAlpha' && source.map) {
+          material.onBeforeCompile = (shader) => {
+            shader.uniforms.uTeam = { value: teamColor };
+            shader.fragmentShader = shader.fragmentShader
+              .replace('void main() {', 'uniform vec3 uTeam;\nvoid main() {')
+              .replace(
+                '#include <map_fragment>',
+                `#include <map_fragment>
+                 #ifdef USE_MAP
+                   vec4 maskTexel = texture2D( map, vMapUv );
+                   float lum = dot( maskTexel.rgb, vec3( 0.299, 0.587, 0.114 ) );
+                   diffuseColor.rgb = mix( diffuseColor.rgb, uTeam * ( 0.35 + lum ), maskTexel.a );
+                 #endif`,
+              );
+          };
+        } else if (mode === 'materialName' && /team/i.test(source.name)) {
+          material.color.copy(teamColor);
+          material.map = null;
+        }
+        return material;
+      }
+
+      function prepare(gltf, mode) {
+        gltf.scene.traverse((o) => {
+          if (!o.isMesh) return;
+          const source = o.material;
+          if (debug === 'normals') {
+            o.material = new THREE.MeshNormalMaterial();
+            console.log('normals', o.name, o.geometry.getAttribute('normal') ? 'ja' : 'ONTBREEKT');
+          } else if (debug === 'mask') {
+            o.material = new THREE.ShaderMaterial({
+              uniforms: { map: { value: source.map } },
+              vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * skinning_vertex_placeholder; }'.replace(
+                'skinning_vertex_placeholder',
+                'vec4(position, 1.0)',
+              ),
+              fragmentShader:
+                'uniform sampler2D map; varying vec2 vUv; void main(){ gl_FragColor = vec4(vec3(texture2D(map, vUv).a), 1.0); }',
+            });
+          } else if (debug === 'flat') {
+            o.material = new THREE.MeshBasicMaterial({ map: source.map, color: source.color });
+          } else {
+            o.material = teamMaterial(source, mode);
+          }
+        });
+      }
+
+      const base = q.get('manifest') ?? '/assets/dist/manifest.json';
+      const manifest = await (await fetch(base)).json();
+      const dir = base.slice(0, base.lastIndexOf('/') + 1);
+      const only = q.get('only') ? new Set(q.get('only').split(',')) : null;
+      const items = manifest.assets.filter((a) => a.kind === 'character' && (!only || only.has(a.id)));
+      const spacing = Number(q.get('spacing') ?? 1.4);
+      const info = [];
+      let idx = 0;
+      for (const item of items) {
+        const gltf = await loader.loadAsync(dir + item.lods[lod].path);
+        const mode = item.teamMask ?? 'materialName';
+        prepare(gltf, mode);
+        const root = new THREE.Group();
+        root.position.set((idx - (items.length - 1) / 2) * spacing, 0, 0);
+        root.add(gltf.scene);
+        scene.add(root);
+        info.push(`${item.id} tris ${item.lods[lod].triangles} teamMask ${mode}`);
+        idx++;
+      }
+      document.getElementById('info').textContent = info.join('\n');
+
+      const camera = new THREE.PerspectiveCamera(28, W / H, 0.1, 100);
+      const box = new THREE.Box3();
+      scene.traverse((o) => {
+        if (o.isMesh) box.expandByObject(o);
+      });
+      const sphere = box.getBoundingSphere(new THREE.Sphere());
+      const target = sphere.center.clone();
+      const aspectFit = Math.max(1, 1 / Math.min(1, W / H));
+      const dist = (sphere.radius / Math.sin((camera.fov * Math.PI) / 360)) * 0.9 * aspectFit;
+      camera.position.set(
+        target.x + Math.sin(az) * Math.cos(el) * dist,
+        target.y + Math.sin(el) * dist,
+        target.z + Math.cos(az) * Math.cos(el) * dist,
+      );
+      camera.lookAt(target);
+      renderer.render(scene, camera);
+      document.title = 'ready';
+      window.__ready = true;
+    </script>
+  </body>
+</html>

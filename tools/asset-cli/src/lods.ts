@@ -115,7 +115,8 @@ export async function buildLods(
     if (level > 0) await simplifyToTarget(document, targets[level]);
     await document.transform(
       dedup(),
-      prune({ keepSolidTextures: true }),
+      // keepAttributes: prune gooit anders NORMAL weg bij unlit materialen (Sketchfab-unlit), en render heeft normalen nodig.
+      prune({ keepSolidTextures: true, keepAttributes: true }),
       reorder({ encoder: MeshoptEncoder }),
     );
     if (options.toktx) convertTexturesToKtx2(document, options.toktx);

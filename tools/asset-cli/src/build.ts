@@ -66,6 +66,8 @@ export interface AssetDetails {
   retarget?: ConformInfo['retarget'];
   atlas?: ConformInfo['atlas'];
   teamMask?: ConformInfo['teamMask'];
+  /** Primitives die geen normalen hadden en gladde normalen kregen. */
+  normalsComputed?: number;
 }
 
 export interface BuildResult {
@@ -320,6 +322,7 @@ export async function buildAssets(options: BuildOptions): Promise<BuildResult> {
       ...(asset.conform.retarget ? { retarget: asset.conform.retarget } : {}),
       ...(asset.conform.atlas ? { atlas: asset.conform.atlas } : {}),
       ...(asset.conform.teamMask ? { teamMask: asset.conform.teamMask } : {}),
+      ...(asset.conform.normalsComputed ? { normalsComputed: asset.conform.normalsComputed } : {}),
     };
     entries.push({
       id: asset.id,
@@ -333,6 +336,7 @@ export async function buildAssets(options: BuildOptions): Promise<BuildResult> {
       sockets: asset.kind === 'character' ? findSockets(sourceDoc) : {},
       animations: animationIndex(sourceDoc),
       boneCount,
+      teamMask: asset.conform.teamMask ? 'diffuseAlpha' : 'materialName',
       ...(baked ? { baked } : {}),
     });
   }

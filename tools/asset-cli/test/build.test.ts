@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { NodeIO } from '@gltf-transform/core';
 import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
 import { MeshoptDecoder } from 'meshoptimizer';
+import sharp from 'sharp';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { buildAssets } from '../src/build.js';
 import { manifestSchema } from '../src/manifest.js';
@@ -119,6 +120,37 @@ describe('buis', () => {
     }
     // Leesbaar door onze eigen IO (zoals render het laadt).
     await createIO().readBinary(new Uint8Array(readFileSync(join(dist, 'hero_dummy/lod2.glb'))));
+  });
+
+  it('zet de modus van het teammasker in het manifest: materialName als default, diffuseAlpha met een masker', async () => {
+    writeFileSync(join(src, 'plain.glb'), await makeHumanoid());
+    writeFileSync(join(src, 'masked.glb'), await makeHumanoid());
+    writeFileSync(
+      join(src, 'rigmap.json'),
+      JSON.stringify({ assets: { masked: { teamMask: { hue: [0, 360] } } } }),
+    );
+    const result = await buildAssets({ srcDir: src, distDir: dist, toktx: null });
+    expect(result.reports.flatMap((r) => r.errors)).toEqual([]);
+    const manifest = manifestSchema.parse(
+      JSON.parse(readFileSync(join(dist, 'manifest.json'), 'utf8')),
+    );
+    expect(manifest.assets.map((a) => [a.id, a.teamMask])).toEqual([
+      ['masked', 'diffuseAlpha'],
+      ['plain', 'materialName'],
+    ]);
+    // Het masker zit per texel in de alfa van de diffuse van elke LOD (alle texels vallen binnen hue 0 tot 360).
+    for (const lod of manifest.assets[0]!.lods) {
+      const doc = await new NodeIO()
+        .registerExtensions(ALL_EXTENSIONS)
+        .registerDependencies({ 'meshopt.decoder': MeshoptDecoder })
+        .readBinary(new Uint8Array(readFileSync(join(dist, lod.path))));
+      const image = doc.getRoot().listTextures()[0]!.getImage()!;
+      const { data, info } = await sharp(Buffer.from(image))
+        .raw()
+        .toBuffer({ resolveWithObject: true });
+      expect(info.channels).toBe(4);
+      expect(data[3]).toBe(255);
+    }
   });
 
   it('faalt met leesbare reden, exit-status ok=false en schrijft niets', async () => {

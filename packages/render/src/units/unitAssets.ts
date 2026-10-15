@@ -166,7 +166,8 @@ export class UnitAssetRegistry {
             lods: [lod0.geometry, asset.lods[1].geometry, asset.lods[2].geometry],
             albedo: {
               map: lod0.map,
-              maskFromMapAlpha: (teamMask ?? 'materialName') === 'diffuseAlpha',
+              maskFromMapAlpha:
+                (teamMask ?? asset.entry.teamMask ?? 'materialName') === 'diffuseAlpha',
             },
           });
           status.state = 'ready';

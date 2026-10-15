@@ -96,6 +96,12 @@ export const assetEntrySchema = z
       .optional(),
     /** Alleen gebouwen: namen van de materialen die de spelerskleur krijgen (naam bevat "team"); altijd minstens een. */
     teamMaterials: z.array(z.string().min(1)).optional(),
+    /**
+     * Waar het teammasker (de delen die de spelerskleur krijgen) vandaan komt, zoals render's `TeamMaskSource`:
+     * 'materialName' (materialen met "team" in de naam), 'diffuseAlpha' (de alfa van de diffuse, per texel) of 'none'.
+     * Aanwezig bij karakters en props; ontbreekt het, dan geldt 'materialName'. Gebouwen gebruiken `teamMaterials`.
+     */
+    teamMask: z.enum(['materialName', 'diffuseAlpha', 'none']).optional(),
     /** Aanwezig voor karakters met animaties; props en karakters zonder clips hebben geen baked. */
     baked: bakedAnimationSchema.optional(),
   })
