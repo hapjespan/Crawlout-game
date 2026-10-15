@@ -2,6 +2,7 @@
 // bron-huisje (en eenvoudige vormen) gebouwd wordt. Alle vormgetallen staan in dat bestand, niet in code. Alleen zod
 // als afhankelijkheid, dus ook los te valideren.
 import { z } from 'zod';
+import { albedoGainSchema } from './manifest.js';
 
 export const VARIANTS_VERSION = 1 as const;
 
@@ -141,6 +142,8 @@ export const variantSchema = z.object({
   colors: z.record(hexColor).optional(),
   /** Doel-aantal driehoeken van LOD0 (hooguit het budget van `budgets.ts`); LOD1 en LOD2 volgen de verhoudingen. */
   lod0Triangles: z.number().int().positive(),
+  /** Helderheidsfactor op de albedo (0,5 tot 2); komt als `albedoGain` in het manifest. Standaard 1. */
+  albedoGain: albedoGainSchema.optional(),
   parts: z.array(partSchema).min(1),
   note: z.string().optional(),
 });

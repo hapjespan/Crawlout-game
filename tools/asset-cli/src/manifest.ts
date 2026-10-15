@@ -23,6 +23,11 @@ export const PROP_CATEGORIES = [
 ] as const;
 export const propCategorySchema = z.enum(PROP_CATEGORIES);
 
+/** Allowed `albedoGain` values; render clamps its explicit override to the same range. */
+export const ALBEDO_GAIN_RANGE = [0.5, 2] as const;
+
+export const albedoGainSchema = z.number().min(ALBEDO_GAIN_RANGE[0]).max(ALBEDO_GAIN_RANGE[1]);
+
 export const boundsSchema = z.object({ min: vec3, max: vec3 });
 
 export const lodSchema = z.object({
@@ -127,6 +132,12 @@ export const assetEntrySchema = z
      * met blending. Ontbreekt het veld, dan is het materiaal ondoorzichtig.
      */
     alpha: z.enum(['mask']).optional(),
+    /**
+     * Helderheidsfactor op de albedo van dit asset (0,5 tot 2), voor kunst die onder de toon-ramp te donker of te licht
+     * naast de rest staat. Ontbreekt het, dan is het 1. Render leest het; de renderer-optie `albedoGain` blijft een
+     * expliciete override per asset-id. Bron: `albedoGain` bij het prop in packs.json of bij de variant in variants.json.
+     */
+    albedoGain: albedoGainSchema.optional(),
   })
   .superRefine((entry, ctx) => {
     if ((entry.category || entry.alpha) && entry.kind !== 'prop')
