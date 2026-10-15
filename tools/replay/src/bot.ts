@@ -287,6 +287,9 @@ export class SitePlanner {
   }
 }
 
+/** A guarding bot meets enemy units within this many metres of its guard point (formation round, data 0.15.0). */
+const GUARD_REACT_M = 18;
+
 export interface BotPlan {
   /** Bouwlijst in volgorde; een gebouw met prereqTech wacht tot de tech er is. */
   readonly builds: readonly PlannedBuilding[];
@@ -437,10 +440,28 @@ export function settlementBot(p: number, plan: BotPlan, every = 10): Controller 
       const g = anchorOf(sim, p, plan.guard);
       const guards =
         hero !== undefined && hero.order === ORDER_NONE ? [...idle(militia), hero] : idle(militia);
+      // an enemy unit near the guarded point (a raid of patrols outranges the aggro range of idle militia): the idle
+      // guards go and meet it, as a player would
+      let raider: UnitView | undefined;
+      let raiderD = (GUARD_REACT_M * 256) ** 2;
+      for (const u of all) {
+        if ((u.kind !== 'unit' && u.kind !== 'hero') || u.owner === p || u.owner >= 8) continue;
+        const d = (u.x - g.x) ** 2 + (u.y - g.y) ** 2;
+        if (d < raiderD) {
+          raider = u;
+          raiderD = d;
+        }
+      }
+      if (raider !== undefined && guards.length > 0)
+        send(
+          'AttackMove',
+          guards.map((u) => u.id),
+          { x: raider.x, y: raider.y },
+        );
       const go = guards
         .filter((u) => (u.x - g.x) ** 2 + (u.y - g.y) ** 2 > (6 * 256) ** 2)
         .map((u) => u.id);
-      if (go.length > 0) send('AttackMove', go, g);
+      if (raider === undefined && go.length > 0) send('AttackMove', go, g);
     }
     const enemyHq = all.find(
       (u) =>

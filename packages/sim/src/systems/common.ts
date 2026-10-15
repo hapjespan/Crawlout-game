@@ -241,10 +241,27 @@ export function steerToPoint(
   arriveR: number,
   groupR: number,
 ): void {
-  const b = ctx.terrain.occ[cellAt(ctx.map, x, y)]! - 1;
+  steerVia(ctx, i, x, y, x, y, arriveR, groupR);
+}
+
+/**
+ * Like steerToPoint toward (tx, ty) (its cell, or the footprint of the building on it, as the target of the flow
+ * field), but with its own goal (gx, gy) near it: a worker's spot on the ring around a node shares the node's field.
+ */
+export function steerVia(
+  ctx: SimContext,
+  i: number,
+  tx: number,
+  ty: number,
+  gx: number,
+  gy: number,
+  arriveR: number,
+  groupR: number,
+): void {
+  const b = ctx.terrain.occ[cellAt(ctx.map, tx, ty)]! - 1;
   const w = ctx.world;
-  if (b >= 0) steerTo(ctx, i, x, y, w.fx[b]!, w.fy[b]!, w.fw[b]!, w.fh[b]!, arriveR, groupR);
-  else steerTo(ctx, i, x, y, x >> 8, y >> 8, 1, 1, arriveR, groupR);
+  if (b >= 0) steerTo(ctx, i, gx, gy, w.fx[b]!, w.fy[b]!, w.fw[b]!, w.fh[b]!, arriveR, groupR);
+  else steerTo(ctx, i, gx, gy, tx >> 8, ty >> 8, 1, 1, arriveR, groupR);
 }
 
 /** Achter een bewegend doel aan: het veld blijft zolang het oude doel dicht genoeg bij de nieuwe positie ligt. */

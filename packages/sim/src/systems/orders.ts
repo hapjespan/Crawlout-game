@@ -27,10 +27,11 @@ import {
   nodeAllowed,
   steerChase,
   steerToEntity,
-  steerToPoint,
+  steerVia,
   stopMoving,
   withinReach,
 } from './common.js';
+import { gatherSlot, resolvePendingSlots, steerToSlot, walkPoint } from './formation.js';
 
 // Systeem 2 (unit-deel): per unit de huidige order uitvoeren in oplopende id-volgorde. Bepaalt waar een unit naartoe
 // loopt (steerTo, uitgevoerd door systeem 4) en welk doel hij heeft (gevecht in systeem 5). Het werk zelf
@@ -218,7 +219,7 @@ function attackMove(ctx: SimContext, s: OrdersScratch, i: number, o: number): vo
     if (w.mvOn[i] === 0) w.popOrder(i); // aangekomen
     return;
   }
-  steerToPoint(ctx, i, x, y, ctx.config.arriveRadius, w.ordT[o]!);
+  steerToSlot(ctx, i, x, y, w.ordT[o]!); // own formation slot (systems/formation.ts)
   w.phase[i] = PHASE_WORK;
 }
 
@@ -260,17 +261,16 @@ function gather(ctx: SimContext, i: number, o: number): void {
           stopMoving(ctx, i);
           return;
         }
-      } else w.ordT[o] = w.idOf(node);
+      } else {
+        // another node: a spot on its ring instead of the old one
+        w.ordT[o] = w.idOf(node);
+        const slot = gatherSlot(ctx, i, node, NO_SKIP);
+        w.ordX[o] = slot?.x ?? 0;
+        w.ordY[o] = slot?.y ?? 0;
+      }
     }
     if (w.phase[i] === PHASE_GO) {
-      if (withinReach(w, i, node, reach)) {
-        stopMoving(ctx, i);
-        face(w, i, w.x[node]!, w.y[node]!);
-        w.phase[i] = PHASE_WORK;
-        w.work[i] = 0;
-      } else {
-        steerToEntity(ctx, i, node);
-      }
+      approachNode(ctx, i, o, node, reach);
       return;
     }
   }
@@ -283,6 +283,40 @@ function gather(ctx: SimContext, i: number, o: number): void {
     } else {
       steerToEntity(ctx, i, dep);
     }
+  }
+}
+
+const NO_SKIP: ReadonlySet<number> = new Set<number>();
+
+/**
+ * Worker on its way to a node. With a ring spot (ordX/ordY, systems/formation.ts) it walks to that spot and starts
+ * once it is within reach and at the spot (or stopped). Within formation slack of the spot, or stopped short of it by
+ * another unit in the way (the contact rule of movement), it walks straight at the node for the last bit, so a
+ * blocked spot never keeps it out of reach. Without a spot (or one that is no longer walkable) it walks to the node
+ * and starts as soon as it is within reach, as before.
+ */
+function approachNode(ctx: SimContext, i: number, o: number, node: number, reach: number): void {
+  const w = ctx.world;
+  const ox = w.ordX[o]!;
+  const oy = w.ordY[o]!;
+  const sx = w.x[node]! + ox;
+  const sy = w.y[node]! + oy;
+  const slack = ctx.config.formation.slack;
+  const hasSpot = (ox !== 0 || oy !== 0) && walkPoint(ctx, sx, sy);
+  const dx = sx - w.x[i]!;
+  const dy = sy - w.y[i]!;
+  const near = dx * dx + dy * dy <= slack * slack;
+  if ((!hasSpot || near || w.mvOn[i] === 0) && withinReach(w, i, node, reach)) {
+    stopMoving(ctx, i);
+    face(w, i, w.x[node]!, w.y[node]!);
+    w.phase[i] = PHASE_WORK;
+    w.work[i] = 0;
+  } else if (hasSpot && !near && !(w.mvOn[i] === 0 && w.goalX[i] === sx && w.goalY[i] === sy)) {
+    // contact rule within reach of the spot: a stopped worker standing closer to the spot stops this one
+    steerVia(ctx, i, w.x[node]!, w.y[node]!, sx, sy, ctx.config.arriveRadius, reach);
+  } else {
+    // at the spot, or stopped short of it by another unit: the last bit straight at the node
+    steerToEntity(ctx, i, node);
   }
 }
 
@@ -324,6 +358,7 @@ function craft(ctx: SimContext, i: number): void {
 
 export function ordersSystem(ctx: SimContext, s: OrdersScratch): void {
   const w = ctx.world;
+  resolvePendingSlots(ctx);
   collectTargets(ctx, s);
   const need = C.unit | C.orders;
   for (let i = 0; i < w.highWater; i++) {

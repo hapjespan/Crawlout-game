@@ -255,6 +255,17 @@ export interface SimTuningData {
   critDamagePermille: number;
   /** Een bouwer zonder taak helpt bij een eigen bouwplaats binnen deze afstand (tot de rand van de footprint; data 0.8.0). */
   builderAutoHelpRadiusU: number;
+  /** Group-order spreading (data 0.15.0): formation slots, arrival slack, straight-walk range, worker ring. */
+  formation: FormationTuningData;
+}
+
+/** sim.json `formation` in sim units. */
+export interface FormationTuningData {
+  gapU: number;
+  widthPermille: number;
+  slackU: number;
+  directRangeU: number;
+  gatherRingU: number;
 }
 
 export interface GameData {
@@ -614,6 +625,13 @@ export function loadGameData(raw: RawGameData): GameData {
       specialLuckCritPermille: pctToPermille(simRaw.specialLuckCritPct),
       critDamagePermille: pctToPermille(simRaw.critDamagePct),
       builderAutoHelpRadiusU: metersToUnits(simRaw.builderAutoHelpRadiusM),
+      formation: {
+        gapU: metersToUnits(simRaw.formation.gapM),
+        widthPermille: pctToPermille(simRaw.formation.widthPct),
+        slackU: metersToUnits(simRaw.formation.slackM),
+        directRangeU: metersToUnits(simRaw.formation.directRangeM),
+        gatherRingU: metersToUnits(simRaw.formation.gatherRingM),
+      },
     },
   };
 }

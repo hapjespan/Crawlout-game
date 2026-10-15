@@ -311,6 +311,22 @@ export interface SimConfig {
   readonly cancelRefundPermille: number;
   /** Een bouwer zonder taak helpt vanzelf bij een eigen bouwplaats binnen deze afstand (tot de rand van de footprint). */
   readonly builderAutoHelpRadius: number;
+  /** Group-order spreading: formation slots, arrival slack, straight-walk range and the worker ring at a node. */
+  readonly formation: SimFormationTuning;
+}
+
+/** Formation and arrival spreading for group orders (sim.json `formation`), in sim units. */
+export interface SimFormationTuning {
+  /** Free space between neighbouring slots; slot spacing is twice the largest unit radius plus this. */
+  readonly gap: number;
+  /** Columns ~ sqrt(units * widthPermille / 1000); above 1000 a formation is wider than deep. */
+  readonly widthPermille: number;
+  /** Within this distance of its slot, touching a blocking stationary unit counts as arrived (contact rule). */
+  readonly slack: number;
+  /** Within this distance of its slot, with a clear line, a unit leaves its flow field and walks straight. */
+  readonly directRange: number;
+  /** Radius of the ring of worker slots around a scrap node. */
+  readonly gatherRing: number;
 }
 
 /** Eén speler in de startopstelling, in playerId-volgorde. */
@@ -422,6 +438,12 @@ export function validateEnv(env: SimEnv): void {
   req(intIn(config.corpseTicks, 0, U16), 'corpseTicks');
   req(intIn(config.cancelRefundPermille, 0, 1000), 'cancelRefundPermille');
   req(intIn(config.builderAutoHelpRadius, 0, MAX_MAP_CELLS_SIDE << 8), 'builderAutoHelpRadius');
+  const f = config.formation;
+  req(intIn(f.gap, 0, MAX_RADIUS * 8), 'formation.gap');
+  req(intIn(f.widthPermille, 1, 100000), 'formation.widthPermille');
+  req(intIn(f.slack, 0, MAX_RADIUS * 16), 'formation.slack');
+  req(intIn(f.directRange, 0, MAX_MAP_CELLS_SIDE << 8), 'formation.directRange');
+  req(intIn(f.gatherRing, 0, MAX_RADIUS * 16), 'formation.gatherRing');
 
   const armorCount = config.damageMatrix[0]?.length ?? 0;
   req(config.damageMatrix.length > 0 && armorCount > 0, 'damageMatrix leeg');
@@ -734,6 +756,11 @@ export function envHash(env: SimEnv): number {
     c.corpseTicks,
     c.cancelRefundPermille,
     c.builderAutoHelpRadius,
+    c.formation.gap,
+    c.formation.widthPermille,
+    c.formation.slack,
+    c.formation.directRange,
+    c.formation.gatherRing,
   ]);
   h = fnv1aInt(h, c.unitTypes.length);
   for (const u of c.unitTypes) {

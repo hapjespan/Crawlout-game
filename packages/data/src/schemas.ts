@@ -296,6 +296,18 @@ export const AiScript = z
   })
   .strict();
 
+// Formation and arrival spreading for group orders (data/sim.json `formation`, data 0.15.0).
+export const FormationTuning = z
+  .object({
+    gapM: nonneg, // free space between neighbouring formation slots
+    widthPct: z.number().positive(), // columns ~ sqrt(units * widthPct / 100): wider than deep above 100
+    slackM: nonneg, // a unit this close to its slot that touches a blocking stationary unit has arrived
+    directRangeM: nonneg, // within this range of its slot, with a clear line, a unit leaves the flow field and walks straight
+    gatherRingM: nonneg, // radius of the ring of worker slots around a scrap node
+    _comment: comment,
+  })
+  .strict();
+
 // Sim-tuning (data/sim.json): globale getallen die de sim nodig heeft maar die bij geen loadout horen.
 export const SimTuning = z
   .object({
@@ -331,6 +343,8 @@ export const SimTuning = z
     // Data 0.8.0 (sim-core, speltest): een bouwer zonder taak helpt vanzelf bij een eigen bouwplaats binnen deze straal (tot de rand van de footprint)
     builderAutoHelpRadiusM: nonneg,
     _comment: comment,
+    // Data 0.15.0 (sim-core, visual review item 5): group-order spreading (see _comment in data/sim.json)
+    formation: FormationTuning,
   })
   .strict()
   .refine((t) => t.pathEntranceMaxCells <= t.pathSectorCells, {
@@ -350,3 +364,4 @@ export type MapDef = z.infer<typeof MapDef>;
 export type AiScript = z.infer<typeof AiScript>;
 export type DamageMatrix = z.infer<typeof DamageMatrix>;
 export type SimTuning = z.infer<typeof SimTuning>;
+export type FormationTuning = z.infer<typeof FormationTuning>;

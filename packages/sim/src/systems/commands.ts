@@ -20,7 +20,6 @@ import { PROVIDES_CLAIM, PROVIDES_HQ } from '../fromData.js';
 import { inClaimRadius } from './claims.js';
 import { applyHeroAbility, applyPickPerk, applyRecruit, cancelRevive } from './hero.js';
 import { idiv, isInt } from '../math/int.js';
-import { isqrt } from '../math/sqrt.js';
 import type { SimContext } from './common.js';
 import {
   WIN_SURRENDER,
@@ -29,9 +28,9 @@ import {
   inMap,
   isEnemy,
   scanRing,
-  steerToPoint,
   stopMoving,
 } from './common.js';
+import { SLOT_PENDING, SPOT_PENDING } from './formation.js';
 
 // Systeem 1: commando's van deze tick toepassen. Volgorde: playerId, dan seq, dan positie in de bundel.
 // De zod-validatie gebeurt eenmalig bij binnenkomst (normalizeCommand, vanuit Sim.applyBundle); hier alleen
@@ -189,17 +188,12 @@ function applyMove(
   if (!isInt(x) || !isInt(y) || !inMap(ctx.map, x, y)) return false;
   const units = ownedWith(ctx, ids, p, attack ? UNIT | C.combat : UNIT);
   if (units.length === 0) return false;
-  const w = ctx.world;
-  // Eerst iedereen loskoppelen, zodat een veld dat alleen deze groep gebruikte weer beschikbaar is.
+  // Detach everyone first, so a field that only this group used becomes available again.
   for (const i of units) stopMoving(ctx, i);
-  // Straal van de cirkel waarin de groep dicht gepakt past (pakkingsdichtheid ongeveer 0,8), plus één straal marge.
-  const n = units.length;
-  for (const i of units) {
-    const r = w.radius[i]!;
-    const groupR = isqrt(idiv(r * r * n * 5, 4)) + r;
-    replaceOrder(ctx, i, attack ? ORDER_ATTACK_MOVE : ORDER_MOVE, x, y, groupR);
-    steerToPoint(ctx, i, x, y, ctx.config.arriveRadius, groupR);
-  }
+  // Every unit gets its own slot in a formation around the point (systems/formation.ts), chosen for all orders of this
+  // tick together at the start of the unit part of system 2; the order keeps the point itself in ordX/ordY.
+  for (const i of units)
+    replaceOrder(ctx, i, attack ? ORDER_ATTACK_MOVE : ORDER_MOVE, x, y, SLOT_PENDING);
   return true;
 }
 
@@ -245,7 +239,8 @@ function applyGather(ctx: SimContext, p: number, pl: CommandPayload<'Gather'>): 
     const t = ctx.unitType(w.typeId[i]!);
     if (t === undefined || t.gatherAmount <= 0) continue;
     const carry = w.carry[i]!;
-    replaceOrder(ctx, i, ORDER_GATHER, 0, 0, pl.nodeId);
+    // its own spot on the ring around the node follows at the start of the unit part of system 2 (formation.ts)
+    replaceOrder(ctx, i, ORDER_GATHER, SPOT_PENDING, SPOT_PENDING, pl.nodeId);
     w.carry[i] = carry;
     any = true;
   }

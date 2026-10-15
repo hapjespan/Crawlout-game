@@ -192,6 +192,13 @@ describe('sim-tuning', () => {
       specialLuckCritPermille: 20,
       critDamagePermille: 1000,
       builderAutoHelpRadiusU: 3072,
+      formation: {
+        gapU: 64,
+        widthPermille: 2000,
+        slackU: 192,
+        directRangeU: 5120,
+        gatherRingU: 0,
+      },
     });
   });
 
