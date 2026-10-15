@@ -126,7 +126,11 @@ export function aiSystem(ctx: SimContext, census: Census, scratch: AiScratch): v
   }
 }
 
-/** Geometrie: de escorte van een claim loopt naar een punt zoveel eenheden naast het claimpunt (zie raidOver). */
+/**
+ * Geometrie: de escorte van een claim loopt naar een punt zoveel eenheden naast het claimpunt (zie raidOver), aan de
+ * kant van de eigen spawn vandaan. Dat is onder de 180-gradenspiegel gelijk: een vaste +1 werd bij het spiegelbeeld -1
+ * en liet twee gespiegelde escortes een eenheid verschillend lopen (woning 3x3: spiegel brak in frame 3606).
+ */
 const ESCORT_OFFSET = 1;
 
 /**
@@ -235,6 +239,24 @@ function stepAlong(
     cx = best - cy * W;
   }
   return { cx, cy };
+}
+
+/**
+ * Het verzamelpunt voor het hoofdgebouw hq (cel), op de weg naar de vijand; null zonder vijand. Alleen terrein, geen
+ * gebouwen: het ligt vast, ook als er later iets omheen wordt gebouwd. findSite houdt de cel vrij.
+ */
+function rallyCell(ctx: SimContext, hq: number, fields: Fields): { cx: number; cy: number } | null {
+  if (fields.enemy === null) return null;
+  const w = ctx.world;
+  return stepAlong(
+    ctx,
+    fields.enemy,
+    fields.enemyCx,
+    fields.enemyCy,
+    w.fx[hq]! + (w.fw[hq]! >> 1),
+    w.fy[hq]! + (w.fh[hq]! >> 1),
+    (w.fw[hq]! >> 1) + RALLY_FORWARD_CELLS,
+  );
 }
 
 /**
@@ -351,6 +373,9 @@ function findSite(
     rw = 1;
     rh = 1;
   }
+  // Het verzamelpunt bij het hoofdgebouw blijft vrij: een groep die naar een punt in een gebouw loopt komt nooit aan en
+  // blijft op AttackMove staan (een woning van 3x3 kwam er in een potje precies op te staan).
+  const rally = rallyCell(ctx, hq, fields);
   const local = localDist(ctx, rx, ry, rw, rh, MAX_FREE_RING + half + 2);
   // Op de eerste ring met een vrije plek: de plek het dichtst bij het midden van de map, dan het dichtst bij het anker,
   // dan rechts van de richting anker naar midden.
@@ -391,6 +416,14 @@ function findSite(
       )
         continue;
       if (!footprintFree(ctx, fx - 1, fy - 1, fw + 2, fh + 2)) continue;
+      if (
+        rally !== null &&
+        rally.cx >= fx &&
+        rally.cx < fx + fw &&
+        rally.cy >= fy &&
+        rally.cy < fy + fh
+      )
+        continue;
       // te belopen vanaf het anker zonder grote omweg (de dichtstbijzijnde cel van de footprint)
       let ld = -1;
       for (let y = fy; y < fy + fh; y++) {
@@ -471,7 +504,7 @@ function claimNext(
   if (far) {
     // de escorte loopt naar een punt net naast het claimpunt (ESCORT_OFFSET), zodat raidOver hem niet voor een
     // afgelopen raid houdt terwijl het punt nog neutraal is
-    const x = w.x[best]! + ESCORT_OFFSET;
+    const x = w.x[best]! + (w.x[best]! >= ctx.map.spawns[p]!.x ? ESCORT_OFFSET : -ESCORT_OFFSET);
     for (const ids of chunks(idleMilitia))
       applyCommand(ctx, {
         playerId: p,
@@ -987,15 +1020,7 @@ function think(
     else if (fields.enemy !== null) {
       // voor het hoofdgebouw, op de weg naar de vijand: het midden van het gebouw zelf is niet te bereiken, dus een
       // groep die daarheen loopt komt nooit aan (en is dan nooit vrij voor verdediging of escorte)
-      const c = stepAlong(
-        ctx,
-        fields.enemy,
-        fields.enemyCx,
-        fields.enemyCy,
-        w.fx[hq]! + (w.fw[hq]! >> 1),
-        w.fy[hq]! + (w.fh[hq]! >> 1),
-        (w.fw[hq]! >> 1) + RALLY_FORWARD_CELLS,
-      );
+      const c = rallyCell(ctx, hq, fields)!;
       to = { x: (c.cx << 8) + 128, y: (c.cy << 8) + 128 };
     } else to = { x: w.x[hq]!, y: w.y[hq]! };
   }

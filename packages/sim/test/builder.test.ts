@@ -193,9 +193,9 @@ describe('vrije bouwers helpen binnen builderAutoHelpRadius', () => {
   it('pakt de dichtstbijzijnde eigen bouwplaats op, tiebreak laagste id, niet daarbuiten en niet van een ander', () => {
     expect(RADIUS).toBe(12 * 256);
     const sim = emptySim(5);
-    // gelijke afstand (1153 eenheden tot de rand) links en onder: laagste id wint; een vijandelijke plaats dichterbij telt niet
+    // gelijke afstand (1153 eenheden tot de rand; de woning is 3x3) links en onder: laagste id wint; een vijandelijke plaats dichterbij telt niet
     const b = sim.spawnUnit({ typeId: BUILDER, owner: 0, x: 4225, y: 7807 });
-    const left = sim.spawnBuilding(WONING, 0, 10, 30, false);
+    const left = sim.spawnBuilding(WONING, 0, 9, 30, false);
     const below = sim.spawnBuilding(WONING, 0, 16, 35, false);
     sim.spawnBuilding(WONING, 1, 19, 30, false);
     expect(left).toBeLessThan(below);
@@ -209,7 +209,7 @@ describe('vrije bouwers helpen binnen builderAutoHelpRadius', () => {
     const simR = emptySim(5);
     const bR = simR.spawnUnit({ typeId: BUILDER, owner: 0, x: 4225, y: 7807 });
     const belowR = simR.spawnBuilding(WONING, 0, 16, 35, false);
-    simR.spawnBuilding(WONING, 0, 10, 30, false);
+    simR.spawnBuilding(WONING, 0, 9, 30, false);
     play(simR, 1);
     expect(simR.getUnit(bR)!.orderTarget).toBe(belowR);
     // dichterbij wint van de id
