@@ -98,9 +98,9 @@ export const HUD_CSS = `
 .co-card-notice{margin:0 0 6px;padding:4px 6px;border-radius:4px;background:#4a2a1a;color:#ffcc80;font-size:12px}
 .co-cards h2{margin:0 0 6px;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#9aa0a6}
 .co-cards-hint{font-size:12px;margin:0 0 6px}
-.co-card-list{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.co-card-list{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
 .co-card{display:flex;flex-direction:column;background:#24282c;border:1px solid #3a4046;border-radius:6px;overflow:hidden}
-.co-card-main{display:grid;grid-template-columns:28px 1fr auto;column-gap:6px;row-gap:2px;align-items:center;align-content:start;width:100%;flex:1;padding:6px;background:none;border:0;color:inherit;font:12px/1.25 system-ui,sans-serif;text-align:left;cursor:pointer}
+.co-card-main{display:grid;grid-template-columns:28px minmax(0,1fr) auto;column-gap:6px;row-gap:2px;align-items:center;align-content:start;width:100%;flex:1;padding:6px;background:none;border:0;color:inherit;font:12px/1.25 system-ui,sans-serif;text-align:left;cursor:pointer}
 .co-card-main:hover:not([aria-disabled=true]){background:#2f353b}
 .co-card-main:focus-visible,.co-card-cancel:focus-visible{outline:3px solid #ffd54f;outline-offset:-2px}
 .co-card-main[aria-disabled=true]{cursor:not-allowed}
@@ -110,7 +110,7 @@ export const HUD_CSS = `
 .co-card-name{font-weight:600;font-size:13px}
 .co-card-meta{grid-column:2 / span 2;display:flex;gap:8px;color:#c4c7ca}
 .co-card-cost.co-full{color:#ff8a65;font-weight:600}
-.co-card-effects,.co-card-unlocks,.co-card-status{grid-column:1 / span 3;color:#c4c7ca}
+.co-card-effects,.co-card-unlocks,.co-card-status{grid-column:1 / span 3;color:#c4c7ca;min-width:0;overflow-wrap:anywhere}
 .co-card-unlocks{color:#9aa0a6}
 .co-card-status{display:flex;align-items:center;gap:4px;font-size:11px;text-transform:uppercase;letter-spacing:.04em;margin-top:2px}
 .co-card-glyph{flex:none}
