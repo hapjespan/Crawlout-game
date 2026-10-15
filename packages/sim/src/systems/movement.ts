@@ -11,7 +11,8 @@ import { cellAt, setFlowField, walkableAt } from './common.js';
 // Systeem 4: beweging plus separatie.
 //  a) gewenste snelheid per unit met mvOn: flow field naar de volgende cel, vlak bij het doel recht erop af;
 //     binnen goalR van het doel is de unit er (mvOn = 0, veld los; goalX/goalY blijven voor de contactregel);
-//  b) separatie: overlappende units duwen elkaar uit elkaar (integer-sommen, dus volgorde-onafhankelijk);
+//  b) separatie: overlappende units duwen elkaar uit elkaar (integer-sommen, dus volgorde-onafhankelijk); een
+//     lopende unit die een andere voor zich raakt, wijkt daarbij ook naar rechts uit (geen kop-op-kop-blokkade);
 //     een groeps-Move (groupR > 0) die een al gearriveerde unit met hetzelfde doel raakt, is ook klaar;
 //  c) toepassen met botsing tegen geblokkeerde cellen (eerst diagonaal, dan per as glijden).
 // Alles leest de posities van het begin van de stap en schrijft pas in c). Welke kant op een unit wil, bepaalt
@@ -184,6 +185,18 @@ export function movementSystem(ctx: SimContext, s: MovementScratch): void {
           const push = Math.max(1, idiv((rr - d) * perm, 2000));
           sx += idiv(dx * push, d);
           sy += idiv(dy * push, d);
+          // Uitwijken: staat j voor i op zijn looprichting, dan stapt i ook opzij, altijd naar rechts van zijn eigen
+          // richting. Twee units die recht op elkaar af lopen, gaan zo elk een andere kant op langs elkaar heen in plaats
+          // van elkaar eindeloos tegen te houden (duw en snelheid heffen elkaar dan precies op).
+          const vix = s.vx[i]!;
+          const viy = s.vy[i]!;
+          if (s.moving[i] === 1 && vix * dx + viy * dy < 0) {
+            const vl = isqrt(vix * vix + viy * viy);
+            if (vl > 0) {
+              sx += idiv(-viy * push, vl);
+              sy += idiv(vix * push, vl);
+            }
+          }
         }
       }
     }

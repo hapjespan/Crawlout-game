@@ -30,6 +30,7 @@ import { setupStart } from './start.js';
 import type { StateParts } from './state.js';
 import { StateHeader, deserializeState, hashState, serializeState } from './state.js';
 import { AiScratch, aiSystem } from './systems/ai.js';
+import { TerrainDistances } from './pathdist.js';
 import { Census, takeCensus } from './systems/census.js';
 import {
   ClaimScratch,
@@ -142,6 +143,7 @@ export class Sim implements SimContext {
   readonly claimPoints: number[] = [];
   readonly auras = new Auras();
   readonly index = new EntityIndex();
+  readonly terrainDist: TerrainDistances;
 
   private tickNo = 0;
   private readonly envHashValue: number;
@@ -167,6 +169,7 @@ export class Sim implements SimContext {
     this.playerCount = env.players.length;
     this.envHashValue = envHash(env);
     this.terrain = new Terrain(env.map);
+    this.terrainDist = new TerrainDistances(env.map);
     this.flow = new FlowFields(env.map.w, env.map.h, this.terrain.walk, {
       sectorCells: env.config.pathSectorCells,
       entranceMaxCells: env.config.pathEntranceMaxCells,

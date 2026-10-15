@@ -8,6 +8,7 @@ import {
   createSim,
 } from '../src/index.js';
 import type { Sim, SimAiScript, SimConfig, SimMap } from '../src/index.js';
+import { ROLES } from '@crawlout/data';
 import { cellCenter, createOpenMap, testPlayers } from '../src/testing.js';
 import { CONFIG, DATA, MILITIA, SCAV, bundle, cmd, typeByKey } from './helpers.js';
 
@@ -290,5 +291,99 @@ describe('scripted AI (balans speltest 14 oktober)', () => {
     sim.setScrap(0, CONFIG.heroes[0]!.reviveScrap + 10);
     play(sim, 1);
     expect(sim.playerStatus(0).hero!.state).toBe('reviving');
+  });
+});
+
+/** Open map van 64 bij 64 met een rivier (een muur) op kolom x, van boven tot rij gapY; daaronder een oversteek. */
+function riverMap(x: number, gapY: number): SimMap {
+  const open = createOpenMap(64, 64);
+  const passable = new Uint8Array(open.passable);
+  for (let y = 1; y < gapY; y++) passable[y * 64 + x] = 0;
+  return { ...open, passable };
+}
+
+describe('scripted AI op padafstand en zonder vast te lopen (xl-int)', () => {
+  it('plunderaars kiezen de node met de kortste rit over land, niet de node die hemelsbreed het dichtst bij ligt', () => {
+    // node A ligt 16 m van het hoofdgebouw aan de overkant van de rivier (de oversteek is 50 m verder), node B 28 m
+    // verderop aan de eigen kant
+    const map: SimMap = {
+      ...riverMap(20, 56),
+      scrapNodes: [
+        { ...cellCenter(24, 8), amount: 5000 },
+        { ...cellCenter(8, 36), amount: 5000 },
+      ],
+    };
+    const sim = aiSim({ scavengersPerNode: 10 }, map);
+    play(sim, 2);
+    const b = sim.entityIds().find((id) => sim.getUnit(id)!.x === cellCenter(8, 36).x)!;
+    const gather = unitsOf(sim, 0).filter((u) => u.order === ORDER_GATHER);
+    expect(gather).toHaveLength(4);
+    expect(gather.every((u) => u.orderTarget === b)).toBe(true);
+  });
+
+  it('claimt het punt dat over land het dichtst bij ligt; een onbereikbaar punt nooit', () => {
+    const map: SimMap = {
+      ...riverMap(20, 56),
+      claimPoints: [
+        { ...cellCenter(26, 10), kind: 0 }, // hemelsbreed dichtbij, over land ver
+        { ...cellCenter(8, 40), kind: 0 },
+      ],
+    };
+    const sim = aiSim({ claimFromTicks: 0, claimSafeRadius: 200 * 256 }, map);
+    play(sim, 2);
+    const posts = sim
+      .entityIds()
+      .map((id) => sim.getUnit(id)!)
+      .filter((u) => u.typeId === CLAIMPAAL);
+    expect(posts).toHaveLength(1);
+    expect(Math.abs(posts[0]!.x - cellCenter(8, 40).x)).toBeLessThanOrEqual(6 * 256);
+    expect(Math.abs(posts[0]!.y - cellCenter(8, 40).y)).toBeLessThanOrEqual(6 * 256);
+    // een punt achter een gesloten muur bestaat voor de AI niet
+    const closed = riverMap(20, 64);
+    const only: SimMap = { ...closed, claimPoints: [{ ...cellCenter(26, 10), kind: 0 }] };
+    const sim2 = aiSim({ claimFromTicks: 0, claimSafeRadius: 200 * 256 }, only);
+    play(sim2, 2);
+    expect(sim2.entityIds().some((id) => sim2.getUnit(id)!.typeId === CLAIMPAAL)).toBe(false);
+  });
+
+  it('een gesloopte werkplaats komt terug, vóór de rest van de bouwvolgorde; tot hij betaald is, spaart hij', () => {
+    const sim = aiSim({
+      buildOrder: [{ atTick: 0, typeId: WERKPLAATS }],
+      housingTypeId: WONING,
+      housingFreeBeds: 10,
+    });
+    // de werkplaats uit de bouwvolgorde was er al en is weg
+    sim.ps.aiBuild[0] = 1;
+    const cost = CONFIG.buildingTypes.find((b) => b.typeId === WERKPLAATS)!.scrapCost;
+    sim.setScrap(0, cost - 1);
+    play(sim, 3);
+    // geen woning: hij spaart voor de werkplaats
+    expect(sim.entityIds().some((id) => sim.getUnit(id)!.typeId === WONING)).toBe(false);
+    sim.setScrap(0, cost);
+    play(sim, 1);
+    expect(sim.entityIds().some((id) => sim.getUnit(id)!.typeId === WERKPLAATS)).toBe(true);
+  });
+
+  it('zonder bouwer: met een werkplaats schoolt hij een bewoner om (ook militie), zonder werkplaats levert de groei een bouwer en herbouwt hij', () => {
+    // met werkplaats, zonder plunderaars en bouwers: de militie wordt bouwer
+    const a = aiSim({});
+    a.spawnBuilding(WERKPLAATS, 0, 16, 4, true);
+    a.setScrap(0, 100);
+    for (const u of unitsOf(a, 0)) if (u.typeId !== MILITIA) a.world.hp[a.world.resolve(u.id)] = 0;
+    play(a, 3);
+    const mil = unitsOf(a, 0).find((u) => u.typeId === MILITIA)!;
+    expect(mil.order).toBe(ORDER_CRAFT);
+    // zonder werkplaats en zonder bouwer: de volgende bewoner uit de groei is een bouwer en die zet de werkplaats neer
+    const b = aiSim({ buildOrder: [{ atTick: 0, typeId: WERKPLAATS }] });
+    b.ps.aiBuild[0] = 1;
+    b.setScrap(0, 500);
+    for (const u of unitsOf(b, 0))
+      if (u.role === ROLES.indexOf('builder')) b.world.hp[b.world.resolve(u.id)] = 0;
+    play(b, 2);
+    expect(unitsOf(b, 0).some((u) => u.role === ROLES.indexOf('builder'))).toBe(false);
+    const per = Math.ceil(CONFIG.ticksPerMinute / CONFIG.factions[0]!.housingGrowthPerMin);
+    play(b, per + 2);
+    expect(unitsOf(b, 0).some((u) => u.role === ROLES.indexOf('builder'))).toBe(true);
+    expect(b.entityIds().some((id) => b.getUnit(id)!.typeId === WERKPLAATS)).toBe(true);
   });
 });

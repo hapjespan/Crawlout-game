@@ -1030,8 +1030,10 @@ export class FlowFields {
 
   /**
    * Beste volgende cel vanaf `cell` in veld s: de buur (8 richtingen, diagonaal alleen als beide rechte buren
-   * begaanbaar zijn) met de laagste waarde; gelijke waarde: de eerste in vaste volgorde.
-   * Geeft `cell` zelf als er geen betere begaanbare buur is (doel bereikt), -1 als het doel vanaf deze cel onbereikbaar is.
+   * begaanbaar zijn) met de laagste waarde; bij gelijke waarde de buur die hemelsbreed het dichtst bij het midden van de
+   * doelrechthoek ligt (xl-int: zo kiezen twee spelers op een puntsymmetrische map elkaars spiegelbeeld), dan de eerste
+   * in vaste volgorde. Geeft `cell` zelf als er geen betere begaanbare buur is (doel bereikt), -1 als het doel vanaf
+   * deze cel onbereikbaar is.
    */
   nextCell(s: number, cell: number): number {
     this.ensureGraph();
@@ -1052,66 +1054,34 @@ export class FlowFields {
     const pW = cx > 0 && pass[cell - 1] === 1;
     const pS = cy + 1 < this.h && pass[cell + w] === 1;
     const pN = cy > 0 && pass[cell - w] === 1;
-    // Kandidaten in vaste volgorde: O, W, Z, N, ZO, ZW, NO, NW. Strikt kleiner wint, dus gelijke afstand houdt de eerste.
+    // midden van de doelrechthoek in halve cellen; afstand van een buur (dx, dy) erheen ook in halve cellen
+    const gx = 2 * tx + this.tw[s]! - 1 - 2 * cx;
+    const gy = 2 * ty + this.th[s]! - 1 - 2 * cy;
+    // Kandidaten in vaste volgorde: O, W, Z, N, ZO, ZW, NO, NW.
     let best = cell;
     let bestD = here;
-    let d = 0;
-    if (pE) {
-      d = this.valueAt(s, q, cx + 1, cy);
-      if (d !== DIST_UNKNOWN && d < bestD) {
+    let bestE = 0;
+    const consider = (ok: boolean, dx: number, dy: number): void => {
+      if (!ok) return;
+      const d = this.valueAt(s, q, cx + dx, cy + dy);
+      if (d === DIST_UNKNOWN || d > bestD || (d === bestD && best === cell)) return;
+      const ex = gx - 2 * dx;
+      const ey = gy - 2 * dy;
+      const e = ex * ex + ey * ey;
+      if (d < bestD || e < bestE) {
         bestD = d;
-        best = cell + 1;
+        bestE = e;
+        best = cell + dy * w + dx;
       }
-    }
-    if (pW) {
-      d = this.valueAt(s, q, cx - 1, cy);
-      if (d !== DIST_UNKNOWN && d < bestD) {
-        bestD = d;
-        best = cell - 1;
-      }
-    }
-    if (pS) {
-      d = this.valueAt(s, q, cx, cy + 1);
-      if (d !== DIST_UNKNOWN && d < bestD) {
-        bestD = d;
-        best = cell + w;
-      }
-    }
-    if (pN) {
-      d = this.valueAt(s, q, cx, cy - 1);
-      if (d !== DIST_UNKNOWN && d < bestD) {
-        bestD = d;
-        best = cell - w;
-      }
-    }
-    if (pE && pS && pass[cell + w + 1] === 1) {
-      d = this.valueAt(s, q, cx + 1, cy + 1);
-      if (d !== DIST_UNKNOWN && d < bestD) {
-        bestD = d;
-        best = cell + w + 1;
-      }
-    }
-    if (pW && pS && pass[cell + w - 1] === 1) {
-      d = this.valueAt(s, q, cx - 1, cy + 1);
-      if (d !== DIST_UNKNOWN && d < bestD) {
-        bestD = d;
-        best = cell + w - 1;
-      }
-    }
-    if (pE && pN && pass[cell - w + 1] === 1) {
-      d = this.valueAt(s, q, cx + 1, cy - 1);
-      if (d !== DIST_UNKNOWN && d < bestD) {
-        bestD = d;
-        best = cell - w + 1;
-      }
-    }
-    if (pW && pN && pass[cell - w - 1] === 1) {
-      d = this.valueAt(s, q, cx - 1, cy - 1);
-      if (d !== DIST_UNKNOWN && d < bestD) {
-        bestD = d;
-        best = cell - w - 1;
-      }
-    }
+    };
+    consider(pE, 1, 0);
+    consider(pW, -1, 0);
+    consider(pS, 0, 1);
+    consider(pN, 0, -1);
+    consider(pE && pS && pass[cell + w + 1] === 1, 1, 1);
+    consider(pW && pS && pass[cell + w - 1] === 1, -1, 1);
+    consider(pE && pN && pass[cell - w + 1] === 1, 1, -1);
+    consider(pW && pN && pass[cell - w - 1] === 1, -1, -1);
     return best;
   }
 }
