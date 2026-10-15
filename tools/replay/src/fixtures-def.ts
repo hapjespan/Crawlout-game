@@ -347,11 +347,11 @@ const houses = (n: number): PlannedBuilding[] => Array.from({ length: n }, () =>
 const FIXTURES_S4: FixtureDef[] = [
   {
     // Turrets en onderzoek op Rustbelt, mens tegen AI. Speler 0 (een bot die gewone commando's geeft): werkplaats,
-    // geweerrek, claimpalen bij zijn settlement-punt en in het midden met een turret ernaast, lab, raffinage en
-    // lasergeleiding (turret +20% schade, +1 m), daarna een kleine aanval met held op het settlement-punt van de AI,
-    // waar zijn turret aan het front staat. De AI (speler 1) onderzoekt geweerrek voor zijn turret (besluit 8), claimt
-    // het midden niet zolang het van de bot is en stuurt een raid met een bouwer op het midden omdat de bot genoeg
-    // punten voor dominantie houdt. Beide turrets schieten; Lockdown, dood en oplappen komen voor.
+    // geweerrek, claimpalen bij zijn twee settlement-punten en in het midden met een turret ernaast, lab, raffinage en
+    // lasergeleiding (turret +20% schade, +1 m), daarna een kleine aanval met held op het hoofdgebouw van de AI, waar
+    // zijn tweede turret staat. De AI (speler 1) onderzoekt geweerrek voor zijn turret (besluit 8), claimt het midden
+    // niet zolang het van de bot is en stuurt een raid met een bouwer op het midden omdat de bot genoeg punten voor
+    // dominantie houdt (3 van de 5 op Rustbelt XL), zodat beide turrets schieten. Lockdown, dood en oplappen komen voor.
     name: 's4-rustbelt-turrets',
     build() {
       const r = base('rustbelt', 404, [false, true]);
@@ -360,6 +360,7 @@ const FIXTURES_S4: FixtureDef[] = [
           { key: 'werkplaats', at: 'hq' },
           HOUSE,
           { key: 'claimpaal', at: 'settlement' },
+          { key: 'claimpaal', at: 'settlement2' },
           { key: 'claimpaal', at: 'centre' },
           { key: 'turret', at: 'centre', homewardM: 3 },
           { key: 'lab', at: 'hq' },
@@ -371,8 +372,8 @@ const FIXTURES_S4: FixtureDef[] = [
         militiaFrame: 2500,
         militiaCount: 4,
         attackWithMilitia: 4,
-        attackFrame: 10000,
-        attackTarget: 'settlement',
+        attackFrame: 15500,
+        attackTarget: 'hq',
       };
       recordControlled(r, 20000, [settlementBot(0, plan)]);
       return r;
@@ -462,10 +463,11 @@ const FIXTURES_S5: FixtureDef[] = [
 
 const FIXTURES_S6: FixtureDef[] = [
   {
-    // Winroute B op Rustbelt (fase-0 sectie 17, advies 3): speler 0 is een bot die zijn settlement-punt en het midden
-    // claimt, bij het midden twee turrets zet (geweerrek in de werkplaats) en zijn militie het midden laat houden; de
-    // scripted AI (speler 1, de echte data) claimt zijn eigen punt en raidt het midden zodra de bot twee punten houdt.
-    // De bot houdt ze dominance.minutes vast en wint op dominantie; de fixture loopt tot net na de winst.
+    // Winroute B op Rustbelt (fase-0 sectie 17, advies 3): speler 0 is een bot die zijn twee settlement-punten en het
+    // midden claimt (3 van de 5 op Rustbelt XL), bij het midden twee turrets zet (geweerrek in de werkplaats) en zijn
+    // militie het midden laat houden; de scripted AI (speler 1, de echte data) claimt zijn eigen punten en raidt het
+    // midden zodra de bot genoeg punten houdt. De bot houdt ze dominance.minutes vast en wint op dominantie; de fixture
+    // loopt tot net na de winst.
     name: 's6-rustbelt-dominance',
     build() {
       const r = base('rustbelt', 600, [false, true]);
@@ -474,6 +476,7 @@ const FIXTURES_S6: FixtureDef[] = [
           { key: 'werkplaats', at: 'hq' },
           { key: 'claimpaal', at: 'settlement' },
           HOUSE,
+          { key: 'claimpaal', at: 'settlement2' },
           { key: 'claimpaal', at: 'centre' },
           { key: 'turret', at: 'centre', homewardM: 3 },
           { key: 'turret', at: 'centre', homewardM: 3 },
