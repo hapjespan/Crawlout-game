@@ -60,26 +60,6 @@ export interface BenchXlResult {
   blockedTicks: number;
 }
 
-interface FlowLike {
-  guides?: (slot: number, cell: number) => boolean;
-  memoryBytes?: () => number;
-  dist?: Int32Array[];
-}
-
-/** Of het veld van slot de cel kent (zonder iets op te bouwen). */
-function guided(sim: Sim, slot: number, cell: number): boolean {
-  const f = sim.flow as unknown as FlowLike;
-  if (f.guides !== undefined) return f.guides(slot, cell);
-  return f.dist![slot]![cell] !== -1;
-}
-
-function flowMemory(sim: Sim): number {
-  const f = sim.flow as unknown as FlowLike;
-  if (f.memoryBytes !== undefined) return f.memoryBytes();
-  // oude flow fields: per slot dist en queue van w*h int32
-  return (f.dist?.length ?? 0) * sim.map.w * sim.map.h * 8;
-}
-
 function chunks(ids: readonly number[]): number[][] {
   const out: number[][] = [];
   for (let k = 0; k < ids.length; k += 64) out.push(ids.slice(k, k + 64));
@@ -225,7 +205,7 @@ export function runBenchXl(clock: () => number): BenchXlResult {
       }
       const cell = (u.y >> 8) * W + (u.x >> 8);
       const waited = f + 1 - at;
-      const known = u.flowField !== NO_FIELD && guided(sim, u.flowField, cell);
+      const known = u.flowField !== NO_FIELD && sim.flow.guides(u.flowField, cell);
       if (known || !u.moving || waited >= DEPART_CAP) {
         pending.delete(id);
         if (u.moving && u.flowField === NO_FIELD) noField++;
@@ -243,11 +223,11 @@ export function runBenchXl(clock: () => number): BenchXlResult {
       if (u.kind !== 'unit') continue;
       if (sim.terrain.walk[(u.y >> 8) * W + (u.x >> 8)] !== 1) blockedTicks++;
     }
-    if (f % 500 === 0) memoryBytes = Math.max(memoryBytes, flowMemory(sim));
+    if (f % 500 === 0) memoryBytes = Math.max(memoryBytes, sim.flow.memoryBytes());
     if (f === TICKS - 1)
       units = sim.entityIds().filter((id) => sim.getUnit(id)!.kind === 'unit').length;
   }
-  memoryBytes = Math.max(memoryBytes, flowMemory(sim));
+  memoryBytes = Math.max(memoryBytes, sim.flow.memoryBytes());
   return {
     buildMs,
     mapCells: map.w * map.h,

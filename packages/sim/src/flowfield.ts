@@ -266,23 +266,22 @@ export class FlowFields {
     for (let y = sy0; y <= sy1; y++)
       for (let x = sx0; x <= sx1; x++) this.dirty[y * this.sx + x] = 1;
     this.graphDirty = true;
-    this.dropAll();
+    this.dropCaches();
+    this.freeUnusedSlots();
   }
 
-  /** Alles opnieuw (na deserialize of als de hele begaanbaarheid is vervangen). */
-  invalidateAll(): void {
-    this.dirty.fill(1);
-    this.graphDirty = true;
-    this.dropAll();
-  }
-
-  private dropAll(): void {
+  /** Alle afgeleide caches vervallen: zoekopdrachten beginnen opnieuw, de pool is leeg. */
+  private dropCaches(): void {
     this.epoch++;
     this.poolTop = 0;
     this.poolFreeTop = 0;
     this.poolSlot.fill(-1);
+    for (let s = 0; s < MAX_FLOW_FIELDS; s++) this.search[s]!.epoch = -1;
+  }
+
+  /** Slots die geen unit gebruikt, vallen vrij (state). */
+  private freeUnusedSlots(): void {
     for (let s = 0; s < MAX_FLOW_FIELDS; s++) {
-      this.search[s]!.epoch = -1;
       if (this.active[s] !== 1 || this.refcount[s] !== 0) continue;
       this.active[s] = 0;
       this.tx0[s] = 0;
@@ -292,15 +291,11 @@ export class FlowFields {
     }
   }
 
-  /** Na deserialize: de afgeleide graaf en caches opnieuw (lui). De state zelf (slots) is al geladen. */
+  /** Na deserialize: de afgeleide graaf en caches opnieuw. De state zelf (slots) is al geladen en blijft staan. */
   rebuild(): void {
     this.dirty.fill(1);
     this.graphDirty = true;
-    this.epoch++;
-    this.poolTop = 0;
-    this.poolFreeTop = 0;
-    this.poolSlot.fill(-1);
-    for (let s = 0; s < MAX_FLOW_FIELDS; s++) this.search[s]!.epoch = -1;
+    this.dropCaches();
     this.ensureGraph();
   }
 
