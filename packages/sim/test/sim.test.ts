@@ -106,10 +106,10 @@ describe('determinisme', () => {
     expect(h3[120]).not.toBe(h4[120]);
   });
 
-  it('serialize gevolgd door deserialize geeft dezelfde hash, ook midden in een flow-field-opbouw', () => {
+  it('serialize gevolgd door deserialize geeft dezelfde hash, ook vlak na een bevel (padcaches half gevuld)', () => {
     const { sim, a, b } = setup();
     const script = scriptedBundles(a, b);
-    runFrames(sim, 3, script); // flow fields zijn nog niet af (budget)
+    runFrames(sim, 3, script); // de padvinding heeft net zijn eerste regiovelden (afgeleid, niet in de state)
     for (const stop of [3, 45, 81, 150]) {
       if (sim.frame < stop) runFrames(sim, stop - sim.frame, script);
       const buf = sim.serialize();

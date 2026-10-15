@@ -16,7 +16,7 @@ if (new Uint8Array(new Uint16Array([1]).buffer)[0] !== 1)
   throw new Error('sim: big-endian platform; state en hash vereisen little-endian');
 
 export const STATE_MAGIC = 0x4c575243; // 'CRWL' als little-endian bytes
-export const STATE_FORMAT_VERSION = 5;
+export const STATE_FORMAT_VERSION = 6;
 
 /** Header-velden (uint32), in volgorde. */
 const H = {
@@ -75,8 +75,7 @@ function bodyChunks(p: StateParts): Uint8Array[] {
   const { world: w, flow: ff, ps } = p;
   const out: Uint8Array[] = [bytesOf(w.freeStack, w.freeCount)];
   for (const s of w.stateArrays) out.push(bytesOf(s.array, w.highWater * s.perEntity));
-  for (const a of [ff.active, ff.tx0, ff.ty0, ff.tw, ff.th, ff.processed])
-    out.push(bytesOf(a, MAX_FLOW_FIELDS));
+  for (const a of [ff.active, ff.tx0, ff.ty0, ff.tw, ff.th]) out.push(bytesOf(a, MAX_FLOW_FIELDS));
   const players = [
     ps.scrap,
     ps.growth,

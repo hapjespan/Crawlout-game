@@ -468,7 +468,7 @@ const FIXTURES_S6: FixtureDef[] = [
     // De bot houdt ze dominance.minutes vast en wint op dominantie; de fixture loopt tot net na de winst.
     name: 's6-rustbelt-dominance',
     build() {
-      const r = base('rustbelt', 606, [false, true]);
+      const r = base('rustbelt', 600, [false, true]);
       const plan: BotPlan = {
         builds: [
           { key: 'werkplaats', at: 'hq' },

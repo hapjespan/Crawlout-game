@@ -113,7 +113,7 @@ export function createBuilding(
   if ((bt.provides & PROVIDES_HQ) !== 0) ctx.ps.hadHq[owner] = 1;
   ctx.terrain.setRect(i, fx, fy, bt.footprintW, bt.footprintH, true);
   displaceUnits(ctx, fx, fy, bt.footprintW, bt.footprintH);
-  ctx.flow.invalidateAll();
+  ctx.flow.invalidate(fx, fy, bt.footprintW, bt.footprintH);
   ctx.events.push(EVENT_TYPE.buildingPlaced, w.idOf(i), bt.typeId, w.x[i]!, w.y[i]!);
   if (instant) completeBuilding(ctx, i, bt);
   return i;
@@ -155,7 +155,7 @@ function displaceUnits(ctx: SimContext, fx: number, fy: number, fw: number, fh: 
 export function removeBuilding(ctx: SimContext, i: number): void {
   const w = ctx.world;
   ctx.terrain.setRect(i, w.fx[i]!, w.fy[i]!, w.fw[i]!, w.fh[i]!, false);
-  ctx.flow.invalidateAll();
+  ctx.flow.invalidate(w.fx[i]!, w.fy[i]!, w.fw[i]!, w.fh[i]!);
   w.free(i);
 }
 

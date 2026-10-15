@@ -302,7 +302,15 @@ export const SimTuning = z
     unitRadiusM: nonneg, // globale unitstraal voor separatie, in meters
     arriveRadiusM: nonneg, // een Move-order is klaar binnen deze afstand
     separationPct: z.number().min(0).max(100), // deel van de overlap dat separatie per tick oplost
-    flowFieldBudgetCells: z.number().int().positive(), // max flow-field-cellen per tick, alle velden samen
+    // Data 0.11.0 (sim-core, grote map): hiërarchische padvinding in cellen van 1 m (zie _comment in data/sim.json)
+    pathSectorCells: z
+      .number()
+      .int()
+      .min(4)
+      .max(64)
+      .refine((v) => (v & (v - 1)) === 0, 'een macht van 2'), // sectorzijde van de padgraaf
+    pathEntranceMaxCells: z.number().int().positive(), // langste ingang per knopenpaar op een sectorgrens, hoogstens pathSectorCells
+    pathCacheCells: z.number().int().positive(), // geheugenbudget van de regiovelden; snelheid, nooit de uitkomst
     walkAnimStep: z.number().int().min(0).max(65535), // ruwe animT-stap per tick (0..65535 wrapt), geen menselijke eenheid
     // Sprint 2 (sim-core, ter review door de architect en content):
     aggroRangeM: nonneg, // militie en units op AttackMove kiezen zelf een doel binnen deze afstand
@@ -324,7 +332,11 @@ export const SimTuning = z
     builderAutoHelpRadiusM: nonneg,
     _comment: comment,
   })
-  .strict();
+  .strict()
+  .refine((t) => t.pathEntranceMaxCells <= t.pathSectorCells, {
+    message: 'pathEntranceMaxCells is hoogstens pathSectorCells',
+    path: ['pathEntranceMaxCells'],
+  });
 
 export type Faction = z.infer<typeof Faction>;
 export type Loadout = z.infer<typeof Loadout>;

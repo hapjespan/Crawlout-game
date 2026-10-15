@@ -173,7 +173,9 @@ describe('sim-tuning', () => {
       unitRadiusU: 96,
       arriveRadiusU: 64,
       separationPermille: 500,
-      flowFieldBudget: 2048,
+      pathSectorCells: 32,
+      pathEntranceMaxCells: 4,
+      pathCacheCells: 1048576,
       walkAnimStep: 2048,
       aggroRangeU: 2560,
       interactRangeU: 512,
@@ -191,6 +193,22 @@ describe('sim-tuning', () => {
       critDamagePermille: 1000,
       builderAutoHelpRadiusU: 3072,
     });
+  });
+
+  it('padvinding: sectorzijde een macht van 2 (4..64), ingang hoogstens de sectorzijde', () => {
+    const r = raw();
+    const sim = (patch: object): unknown => ({
+      ...r,
+      sim: { ...(clone(r.sim) as object), ...patch },
+    });
+    expect(() => loadGameData(sim({ pathSectorCells: 24 }) as never)).toThrow(/pathSectorCells/);
+    expect(() => loadGameData(sim({ pathSectorCells: 128 }) as never)).toThrow(/pathSectorCells/);
+    expect(() =>
+      loadGameData(sim({ pathSectorCells: 16, pathEntranceMaxCells: 17 }) as never),
+    ).toThrow(/pathEntranceMaxCells/);
+    expect(
+      loadGameData(sim({ pathSectorCells: 8, pathEntranceMaxCells: 8 }) as never).sim,
+    ).toMatchObject({ pathSectorCells: 8, pathEntranceMaxCells: 8 });
   });
 
   it('weigert een onbekend veld in sim.json', () => {

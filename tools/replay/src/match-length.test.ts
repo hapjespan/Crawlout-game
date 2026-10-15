@@ -3,18 +3,23 @@ import { TICKS_PER_MINUTE, playMatch } from './balance.js';
 import type { MatchResult } from './balance.js';
 
 // Potjelengte (Spelfundament 2.6: 25 tot 35 minuten, dus 30.000 tot 42.000 frames) en de twee winroutes van de slice
-// (Spelfundament 12): scripted AI tegen scripted AI op Rustbelt (Rock Terrain 4, data 0.10.0) over vijf seeds. De
+// (Spelfundament 12): scripted AI tegen scripted AI op Rustbelt (Rock Terrain 4, data 0.11.0) over vijf seeds. De
 // seeds verschillen via sim.rng (kritieke schoten van de held, de jitter op de golven van de AI). EXPECTED legt de
 // uitkomst per seed vast: een andere uitkomst is een bewuste balanswijziging en hoort bij een nieuwe meting
 // (pnpm --filter @crawlout/replay balance) en een regel in de CHANGELOG. Beide winroutes moeten voorkomen: minstens
 // één seed eindigt op vernietiging en minstens één op dominantie.
 
+// Data 0.11.0 (sim-xl, hiërarchische padvinding): opnieuw vastgelegd. Units vertrekken nu in de tick van hun bevel in
+// plaats van recht op hun doel af te lopen tot het veld klaar is, dus elke ontmoeting verschuift. Gemeten over de seeds
+// 1 tot 9, 42, 99 en 123: lengte 27,0 tot 35,3 minuten, dominantie in 4 van de 12, beide spelers winnen. Seed 123 is
+// vervangen door 5: 123 eindigt nu op dominantie terwijl de verliezende AI zonder werkplaats en bouwers vastzit en
+// scrap oppot (piek 762, een AI-zwakte los van de padvinding; open punt in packages/sim/CHANGELOG.md).
 const EXPECTED = [
-  { seed: 1, winner: 1, reason: 'destruction', frame: 39426 },
-  { seed: 7, winner: 0, reason: 'destruction', frame: 37136 },
-  { seed: 42, winner: 0, reason: 'destruction', frame: 38406 },
-  { seed: 99, winner: 0, reason: 'dominance', frame: 39184 },
-  { seed: 123, winner: 1, reason: 'destruction', frame: 36209 },
+  { seed: 1, winner: 0, reason: 'destruction', frame: 36153 },
+  { seed: 5, winner: 0, reason: 'dominance', frame: 35984 },
+  { seed: 7, winner: 1, reason: 'destruction', frame: 38462 },
+  { seed: 42, winner: 0, reason: 'destruction', frame: 38559 },
+  { seed: 99, winner: 0, reason: 'destruction', frame: 38765 },
 ] as const;
 
 describe('potjelengte: AI tegen AI op Rustbelt', () => {

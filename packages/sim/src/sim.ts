@@ -43,6 +43,7 @@ import type { SimCommand } from './systems/commands.js';
 import { applyCommands, normalizeCommand } from './systems/commands.js';
 import type { SimContext } from './systems/common.js';
 import {
+  EntityIndex,
   GlobalState,
   NO_WINNER,
   PlayerState,
@@ -140,6 +141,7 @@ export class Sim implements SimContext {
   /** Indices van de claimpunten (afgeleid; opgebouwd in start() en na deserialize). */
   readonly claimPoints: number[] = [];
   readonly auras = new Auras();
+  readonly index = new EntityIndex();
 
   private tickNo = 0;
   private readonly envHashValue: number;
@@ -165,7 +167,11 @@ export class Sim implements SimContext {
     this.playerCount = env.players.length;
     this.envHashValue = envHash(env);
     this.terrain = new Terrain(env.map);
-    this.flow = new FlowFields(env.map.w, env.map.h, this.terrain.walk);
+    this.flow = new FlowFields(env.map.w, env.map.h, this.terrain.walk, {
+      sectorCells: env.config.pathSectorCells,
+      entranceMaxCells: env.config.pathEntranceMaxCells,
+      cacheCells: env.config.pathCacheCells,
+    });
     this.moveScratch = new MovementScratch(env.map.w, env.map.h);
     for (const u of env.config.unitTypes) this.unitTypes[u.typeId] = u;
     for (const b of env.config.buildingTypes) this.buildingTypes[b.typeId] = b;
@@ -198,6 +204,8 @@ export class Sim implements SimContext {
     this.indexClaimPoints();
     // Punten binnen de straal van een hoofdgebouw zijn meteen van die speler (besluit sprint 2), zonder events.
     updateClaimPoints(this, this.claimScratch, true);
+    // de padgraaf na de hoofdgebouwen meteen bijwerken (afgeleid), zodat tick 0 dat niet hoeft te doen
+    this.flow.step();
     this.hashDirty = true;
   }
 
@@ -244,8 +252,8 @@ export class Sim implements SimContext {
     // 2 orders en AI
     aiSystem(this, this.census, this.aiScratch);
     ordersSystem(this, this.ordersScratch);
-    // 3 flow fields, gebudgetteerd
-    this.flow.step(this.config.flowFieldBudget);
+    // 3 flow fields: de padgraaf bijwerken na gewijzigde begaanbaarheid; velden zelf lui en exact (flowfield.ts)
+    this.flow.step();
     // 4 beweging plus separatie (eerst de ability-zones van deze tick, ook voor gevecht)
     auraSystem(this, this.auras);
     movementSystem(this, this.moveScratch);
@@ -533,6 +541,7 @@ export class Sim implements SimContext {
     const s = deserializeState(buf, this.parts, this.envHashValue);
     this.tickNo = s.tick;
     this.rng.state = s.rng;
+    this.world.structVersion++;
     // afgeleide data opnieuw opbouwen: begaanbaarheid, refcounts, flow fields
     const w = this.world;
     this.terrain.rebuild(w);
