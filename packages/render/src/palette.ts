@@ -11,6 +11,30 @@ export const NEUTRAL_COLOR = 0x9a948a;
 /** Palette slot for neutral owners. */
 export const NEUTRAL_TEAM = MAX_PLAYERS;
 
+/**
+ * The wasteland palette (sRGB): dusty, desaturated earth tones every custom material draws from (surface tints, grime,
+ * rust, dust, the dirt at the foot of things). Team colors stay outside it on purpose: they are the one saturated
+ * accent. Values read as the weathered materials of physicallybased.info (dry sand, oxidized iron, dusty canvas), not
+ * as picked hues.
+ */
+export const WASTELAND = {
+  dust: 0xa89a7e,
+  sand: 0xb5a47e,
+  bone: 0xcfc6ae,
+  ochre: 0x9a7a4c,
+  rust: 0x704a34,
+  olive: 0x6e6c46,
+  fadedTeal: 0x5f766f,
+  soot: 0x2b2622,
+  dirt: 0x4a3c2e,
+} as const;
+
+/** A palette color in the linear working space, for shader uniforms and tables. */
+export function linearOf(hex: number): [number, number, number] {
+  const c = new Color().setHex(hex);
+  return [c.r, c.g, c.b];
+}
+
 /** Palette slot for an owner: players keep their own slot, everything at or above MAX_PLAYERS clamps to neutral. */
 export function teamIndex(owner: number): number {
   return owner < NEUTRAL_TEAM ? owner : NEUTRAL_TEAM;
