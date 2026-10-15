@@ -27,12 +27,14 @@ import {
 import { TYPE_ID_BUILDING_FIRST } from '../entities/typeIds.js';
 import { ScreenLod, UNIT_LOD_PX, type ScreenLodThresholds } from '../lod/screenLod.js';
 import { teamIndex } from '../palette.js';
+import type { SunShadowTerm } from '../shadows/sunShadow.js';
 import type { InterpolatedFrame } from '../snapshot/interpolate.js';
 import { InstanceBatch, NO_CUT } from '../structures/instanceBatch.js';
 import type { PickShape } from '../picking/selection.js';
 import { InstanceVariation } from './animVariation.js';
 import { createRigidPose, idlePeriod, rigidPose, type RigidMotionParams } from './rigidMotion.js';
 import { createRigidUnitMaterial } from './rigidUnitMaterial.js';
+import { BLOB_WITH_SHADOW } from './unitLayer.js';
 
 /** Instance attribute of the pose, read by rigidUnitMaterial.ts. */
 const POSE_ATTRIBUTE = 'iMotion';
@@ -95,6 +97,12 @@ export interface RigidUnitLayerOptions {
   lightDir: Vector3;
   screen?: ScreenLod;
   lodPixels?: ScreenLodThresholds;
+  /**
+   * The sun's shadow: robots cast it (a drone's falls on the ground under its hover, from the posed model in the
+   * shadow pass) and receive it; the blob drops to a contact darkening, and culling keeps a margin for shadows that
+   * reach into the view. Without it, the full blob.
+   */
+  shadow?: SunShadowTerm | null;
 }
 
 const SELECTED = ENTITY_FLAG.selected;
@@ -112,6 +120,11 @@ const BLOB: DecalStyle = {
   color: DECAL_COLOR.selection,
 };
 const BLOB_SELECTED: DecalStyle = { ...BLOB, ring: 1 };
+/** With the real shadow: a faint contact darkening (unitLayer.ts BLOB_WITH_SHADOW). */
+const CONTACT: DecalStyle = { ...BLOB, shadow: BLOB_WITH_SHADOW };
+const CONTACT_SELECTED: DecalStyle = { ...CONTACT, ring: 1 };
+/** Extra culling radius with shadows (m): a robot just outside the view still casts into it. */
+const SHADOW_CULL_MARGIN = 2.5;
 
 export class RigidUnitLayer {
   private readonly assets: RigidAsset[] = [];
@@ -120,6 +133,7 @@ export class RigidUnitLayer {
   private readonly lightDir: Vector3;
   private readonly screen: ScreenLod;
   private readonly lodPixels: ScreenLodThresholds;
+  private readonly shadow: SunShadowTerm | null;
   private readonly frustum = new Frustum();
   private readonly projView = new Matrix4();
   private readonly sphere = new Sphere();
@@ -141,6 +155,7 @@ export class RigidUnitLayer {
     this.lightDir = opts.lightDir;
     this.screen = opts.screen ?? new ScreenLod();
     this.lodPixels = opts.lodPixels ?? UNIT_LOD_PX;
+    this.shadow = opts.shadow ?? null;
   }
 
   get assetCount(): number {
@@ -176,6 +191,7 @@ export class RigidUnitLayer {
       layerLuma: src.layerLuma ?? [],
       pivotY: hover > 0 ? hover + height / 2 : 0,
       ...(src.grade ? { grade: src.grade } : {}),
+      shadow: this.shadow,
     });
     const index = this.assets.length;
     const batches: InstanceBatch[] = [];
@@ -190,6 +206,7 @@ export class RigidUnitLayer {
         `rigid-${src.name}-lod${lod}`,
         [POSE_ATTRIBUTE],
       );
+      b.mesh.castShadow = this.shadow !== null;
       batches.push(b);
       return b;
     }) as [InstanceBatch, InstanceBatch, InstanceBatch];
@@ -267,7 +284,7 @@ export class RigidUnitLayer {
         const y = frame.y[i]!;
         const z = frame.z[i]!;
         center.set(x, y + asset.cullHeight, z);
-        this.sphere.radius = asset.cullRadius;
+        this.sphere.radius = asset.cullRadius + (this.shadow ? SHADOW_CULL_MARGIN : 0);
         if (!this.frustum.intersectsSphere(this.sphere)) continue;
         const dx = x - cam.x;
         const dy = y + asset.cullHeight - cam.y;
@@ -310,7 +327,14 @@ export class RigidUnitLayer {
         counts[lod] = counts[lod]! + 1;
 
         const selected = (flags & SELECTED) !== 0 && (flags & DEAD) === 0;
-        decals.push(x, z, asset.blobHalf, asset.blobHalf, selected ? BLOB_SELECTED : BLOB);
+        const blob = this.shadow
+          ? selected
+            ? CONTACT_SELECTED
+            : CONTACT
+          : selected
+            ? BLOB_SELECTED
+            : BLOB;
+        decals.push(x, z, asset.blobHalf, asset.blobHalf, blob);
       }
     }
     for (const a of this.assets) for (const b of a.batches) b.commit();

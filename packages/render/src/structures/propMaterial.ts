@@ -4,8 +4,8 @@
 // iTint also carries the per-asset albedo gain (renderer option albedoGain).
 //
 // Per instance: iPos (x, y, z meters; yaw radians around +Y, 0 keeps +Z), iScale (x, y, z; team palette slot),
-// iTint (rgb multiplier on the albedo; w unused). An optional shadow factor (1 lit, 0 shadowed) drops the light to
-// the darkest band; an optional wave animates team-masked vertices (claim flags).
+// iTint (rgb multiplier on the albedo; w unused). The optional sun shadow (shadows/sunShadow.ts) takes the direct sun
+// away (toonLight: down to the darkest band); an optional wave animates team-masked vertices (claim flags).
 // Decorative props (props/propLayer.ts) add a diffuse map sampled with uv (uv = (-1, -1) reads white, as on units)
 // and an optional grade that pulls the art's colors towards the wasteland palette, so lush kit colors sit under the
 // same toon ramp as everything else.
@@ -14,8 +14,10 @@
 // iTint.w (model space) is pulled down onto that height: a building site rises out of the ground as it is built.
 // Foliage (props/propLayer.ts): `alphaMask` discards texels whose alpha is below the per-vertex cutoff `aCut` (leaf
 // cards and grass blades, glTF alphaMode MASK) and draws the material two-sided, flipping the normal on back faces;
-// an opaque material stays single-sided and has no discard. `wind` sways vertices along the wind by the square of
-// their height in the model, with iTint.w as the per-instance phase (props/propWind.ts).
+// an opaque material stays single-sided and has no discard. The same alpha test runs in the shadow pass
+// (maskShadowNode), so a tree's shadow has leaves, not cards. `wind` sways vertices along the wind by the square of
+// their height in the model, with iTint.w as the per-instance phase (props/propWind.ts); it lives in positionNode, which
+// the shadow pass uses too, so the shadow sways with the tree.
 import {
   DoubleSide,
   MeshBasicNodeMaterial,
@@ -48,13 +50,14 @@ import {
 } from 'three/tsl';
 import { teamPalette } from '../palette.js';
 import { WIND_DIRECTION } from '../props/propWind.js';
-import { rimLight, skyFill, teamAlbedo, toonRamp } from '../units/unitMaterial.js';
+import type { SunShadowTerm } from '../shadows/sunShadow.js';
+import { rimLight, skyFill, teamAlbedo, toonLight } from '../units/unitMaterial.js';
 
 export interface PropMaterialOptions {
   lightDir: Vector3;
   name: string;
-  /** Shadow factor node (1 lit, 0 in shadow), e.g. three's shadow(light). */
-  shadow?: Node<'float'> | undefined;
+  /** The sun's shadow (shadows/sunShadow.ts), received by this material. */
+  shadow?: SunShadowTerm | null | undefined;
   /** Seconds (a uniform the renderer advances), drives the flag wave. */
   time?: Node<'float'>;
   /** Diffuse map, sampled with the uv attribute; albedo = vertex color * map. */
@@ -96,9 +99,6 @@ const GRADE_TONE = [1.08, 1.0, 0.82] as const;
 
 /** Rim on structures and props relative to units (unitMaterial.ts RIM): they should not compete with the units. */
 const PROP_RIM = 0.7;
-
-/** The darkest toon band, what a surface in shadow gets. */
-const SHADOW_BAND = 0.52;
 
 export function createPropMaterial(opts: PropMaterialOptions): MeshBasicNodeMaterial {
   const iPos = attribute('iPos', 'vec4');
@@ -185,8 +185,7 @@ export function createPropMaterial(opts: PropMaterialOptions): MeshBasicNodeMate
   const faceN = normalize(worldNrm);
   // Two-sided foliage: a back face is lit by its flipped normal.
   const N = opts.alphaMask ? faceN.mul(faceDirection) : faceN;
-  let shade = toonRamp(dot(N, light));
-  if (opts.shadow) shade = mix(float(SHADOW_BAND), shade, opts.shadow);
+  const shade = toonLight(N, light, opts.shadow?.factor);
   const V = normalize(cameraPosition.sub(vWorldPos));
   const rim = rimLight(N, V, light, albedo).mul(PROP_RIM);
 
@@ -202,9 +201,11 @@ export function createPropMaterial(opts: PropMaterialOptions): MeshBasicNodeMate
       Discard(alpha.lessThan(cutoff));
       return out;
     })();
+    m.maskShadowNode = alpha.greaterThanEqual(cutoff);
     m.side = DoubleSide;
   } else if (opts.shadow) m.fragmentNode = out;
   else m.colorNode = out;
+  if (opts.shadow) m.receivedShadowPositionNode = opts.shadow.receivePosition(vWorldPos, N);
   m.name = opts.name;
   return m;
 }

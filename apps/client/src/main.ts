@@ -34,6 +34,7 @@ import type { SimWinner } from '@crawlout/sim';
 import { assetConfig } from './game/assets.js';
 import { propSource } from './render/props.js';
 import { terrainTextures } from './render/terrain.js';
+import { shadowOption } from './render/shadows.js';
 import { albedoLayoutForMap } from './render/terrainLayout.js';
 import { loadClientMapWater } from './render/water.js';
 import { loadClientGameData, loadClientMap } from './game/content.js';
@@ -80,6 +81,7 @@ async function main(): Promise<void> {
   const renderer = await createRenderer({
     canvas,
     forceWebGL: params.has('webgl'),
+    shadows: shadowOption(params),
     stats: perf,
     // A and S are HUD hotkeys (attack-move, stop); W, D, arrows and Q/E keep moving the camera.
     camera: { panKeys: { KeyA: null, KeyS: null } },

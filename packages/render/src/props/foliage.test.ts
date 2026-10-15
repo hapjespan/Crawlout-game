@@ -19,6 +19,7 @@ import {
   Texture,
   Vector3,
   type InstancedBufferAttribute,
+  type Node,
 } from 'three/webgpu';
 import { uniform } from 'three/tsl';
 import type { DecalLayer } from '../decals/decalLayer.js';
@@ -167,12 +168,20 @@ describe('createPropMaterial: mask against opaque', () => {
   });
 
   it('keeps the shadow-receiving opaque variant single-sided and the mask variant two-sided', () => {
-    const shadow = uniform(1);
+    const shadow = { factor: uniform(1), receivePosition: (p: Node<'vec3'>) => p };
     const opaque = createPropMaterial({ lightDir: LIGHT, name: 'o', map, shadow });
     const mask = createPropMaterial({ lightDir: LIGHT, name: 'm', map, shadow, alphaMask: true });
     expect(opaque.side).toBe(FrontSide);
     expect(opaque.fragmentNode).not.toBeNull();
+    expect(opaque.receivedShadowPositionNode).not.toBeNull();
     expect(mask.side).toBe(DoubleSide);
+  });
+
+  it('runs the alpha test in the shadow pass too, so a tree casts leaves, not cards', () => {
+    const mask = createPropMaterial({ lightDir: LIGHT, name: 'm', map, alphaMask: true });
+    const opaque = createPropMaterial({ lightDir: LIGHT, name: 'o', map });
+    expect(mask.maskShadowNode).not.toBeNull();
+    expect(opaque.maskShadowNode).toBeNull();
   });
 
   it('does not make a material two-sided that has nothing to alpha-test', () => {

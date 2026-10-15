@@ -2,8 +2,11 @@
 // One instanced draw per prop asset per distinct LOD geometry (identical LODs share one draw), with frustum culling
 // per chunk of CHUNK_SIZE meters: the layer only rewrites the instance buffers when the set of visible chunks, their
 // LOD or their density changes, so a still camera costs no uploads. Height comes from the terrain at each prop
-// (relayout() after setTerrain). Props get a soft blob shadow decal near the camera (LOD 0 and 1 chunks, at most
-// maxBlobs, nearest chunks first), no real shadow: that keeps the shadow pass at buildings only.
+// (relayout() after setTerrain). With the sun shadow on (option `shadow`), trees and structures cast it, and rocks,
+// crates, chests and barrels too at high quality (propCategory.ts castsShadow); ground cover never does. Props also
+// get a soft blob decal near the camera (LOD 0 and 1 chunks, at most maxBlobs, nearest chunks first): the full blob
+// without the real shadow, a faint contact darkening with it. Chunks are culled with a margin when shadows are on, so
+// a tree just outside the view still casts into it.
 // Scale (thousands of trees on a 384 m map): beyond thinDistance a chunk draws only part of its props, falling off
 // with distance, and over all chunks at most maxVisible props are drawn (the far ones give way first). Which props a
 // chunk keeps is fixed per prop (a hash, the chunk's props sorted on it), so props never shuffle while the camera
@@ -35,7 +38,7 @@ import { PROP_LOD_PX, ScreenLod, type ScreenLodThresholds } from '../lod/screenL
 import { NEUTRAL_TEAM } from '../palette.js';
 import { simYawToRender } from '../snapshot/interpolate.js';
 import { InstanceBatch } from '../structures/instanceBatch.js';
-import { hasBlobShadow, propCategoryOf, type PropCategory } from './propCategory.js';
+import { castsShadow, hasBlobShadow, propCategoryOf, type PropCategory } from './propCategory.js';
 import { ensureCutoffAttribute } from './propGeometry.js';
 import { shedPlan, THIN_TIERS, thinTier, tierDensity, type ThinTier } from './propThinning.js';
 import { instanceTint } from './propVariation.js';
@@ -102,6 +105,11 @@ export interface PropLayerOptions {
   minDensity?: number;
   /** Most blob shadows pushed per frame. Default 768. */
   maxBlobs?: number;
+  /**
+   * The sun shadow is on: props cast it by category (`smallProps`: rocks, crates, chests and barrels as well as trees
+   * and structures), the blobs turn into contact darkening and culling keeps a margin. Default off.
+   */
+  shadow?: { smallProps: boolean } | null;
 }
 
 export const PROP_CHUNK_SIZE = 16;
@@ -120,6 +128,10 @@ const BLOB: DecalStyle = {
   grid: 0,
   color: DECAL_COLOR.selection,
 };
+/** The blob next to a real shadow: contact darkening under the trunk or the rock. */
+const CONTACT: DecalStyle = { ...BLOB, shadow: 0.32 };
+/** Culling margin (m) with shadows: about the shadow length of a 14 m tree under the 40 degree sun. */
+export const SHADOW_CULL_MARGIN = 16;
 const STRIDE = 8; // x, y, z, yaw (render radians), scale, brightness hash, tint hash, wind phase (radians)
 /** Density steps per chunk: the instance buffers are only rewritten when a chunk crosses a step. */
 const DENSITY_STEPS = 32;
@@ -181,6 +193,8 @@ export class PropLayer {
   private readonly thinDistance: number;
   private readonly minDensity: number;
   private readonly maxBlobs: number;
+  private readonly blob: DecalStyle;
+  private readonly cullBox = new Box3();
   /** Props drawn in the last update. */
   visibleCount = 0;
 
@@ -207,6 +221,7 @@ export class PropLayer {
     this.thinDistance = opts.thinDistance ?? 160;
     this.minDensity = opts.minDensity ?? 0.15;
     this.maxBlobs = opts.maxBlobs ?? 768;
+    this.blob = opts.shadow ? CONTACT : BLOB;
   }
 
   /** Replaces all props. Visuals of asset ids that stay are kept. */
@@ -363,6 +378,8 @@ export class PropLayer {
       if (mask) ensureCutoffAttribute(own); // an LOD without leaf cards shares the mask material
       const b = new InstanceBatch(this.scene, own, g.material!, g.count, `props-${g.id}-${i}`);
       b.mesh.raycast = () => {}; // props are never picked and never block a pick
+      const shadow = this.opts.shadow;
+      b.mesh.castShadow = !!shadow && castsShadow(g.category, shadow.smallProps);
       return b;
     });
   }
@@ -437,7 +454,11 @@ export class PropLayer {
     for (let c = 0; c < chunks; c++) {
       const box = this.chunkBoxes[c]!;
       let s = -1;
-      if (!box.isEmpty() && this.frustum.intersectsBox(box)) {
+      const margin = this.opts.shadow ? SHADOW_CULL_MARGIN : 0;
+      if (
+        !box.isEmpty() &&
+        this.frustum.intersectsBox(this.cullBox.copy(box).expandByScalar(margin))
+      ) {
         const d = box.distanceToPoint(cam);
         dist[c] = d;
         s = 0;
@@ -490,7 +511,7 @@ export class PropLayer {
           const contact = propContact(g.category, g.visual.radius * g.visual.fit * scale);
           if (contact)
             decals.pushContact(d[o]!, d[o + 2]!, half, half, contact.margin, contact.style);
-          else decals.push(d[o]!, d[o + 2]!, half, half, BLOB);
+          else decals.push(d[o]!, d[o + 2]!, half, half, this.blob);
           blobs++;
         }
       }

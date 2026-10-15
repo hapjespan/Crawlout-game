@@ -30,7 +30,8 @@ import {
   vertexStage,
 } from 'three/tsl';
 import { teamPalette } from '../palette.js';
-import { rimLight, skyFill, teamAlbedo, toonRamp } from './unitMaterial.js';
+import type { SunShadowTerm } from '../shadows/sunShadow.js';
+import { rimLight, skyFill, teamAlbedo, toonLight } from './unitMaterial.js';
 
 export interface RigidUnitMaterialOptions {
   lightDir: Vector3;
@@ -43,6 +44,8 @@ export interface RigidUnitMaterialOptions {
   pivotY: number;
   /** 0..1: pulls the albedo towards a warm grey of the same brightness, like the props. Default 0. */
   grade?: number;
+  /** The sun's shadow (shadows/sunShadow.ts), received by the robots (they cast it too, see rigidUnitLayer.ts). */
+  shadow?: SunShadowTerm | null;
 }
 
 /** How much a fully dimmed unit keeps of its color (a powered-down robot goes nearly black). */
@@ -111,14 +114,19 @@ export function createRigidUnitMaterial(opts: RigidUnitMaterialOptions): MeshBas
   const lit = teamAlbedo(base, team, color.w, max(pivotLuma, 1e-3));
   const albedo = lit.mul(float(1).sub(iMotion.z.mul(1 - DIM_KEEP)));
   const N = normalize(worldNrm);
-  const shade = toonRamp(dot(N, light));
+  const shade = toonLight(N, light, opts.shadow?.factor);
   const V = normalize(cameraPosition.sub(vWorldPos));
   const rim = rimLight(N, V, light, albedo).mul(RIM_SHARE);
   const glow = team.mul(iMotion.w.mul(GLOW_GAIN)).mul(max(color.w, GLOW_FLOOR));
 
   const m = new MeshBasicNodeMaterial();
   m.positionNode = worldPos;
-  m.colorNode = vec4(albedo.mul(skyFill(N).add(shade)).add(rim).add(glow), 1);
+  const out = vec4(albedo.mul(skyFill(N).add(shade)).add(rim).add(glow), 1);
+  // A shadow caster must not sample its own shadow map in the shadow pass (three reads colorNode.a there).
+  if (opts.shadow) {
+    m.fragmentNode = out;
+    m.receivedShadowPositionNode = opts.shadow.receivePosition(vWorldPos, N);
+  } else m.colorNode = out;
   m.name = opts.name;
   return m;
 }
