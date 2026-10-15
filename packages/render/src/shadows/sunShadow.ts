@@ -38,6 +38,15 @@ export const SHADOW_QUALITY: Readonly<Record<ShadowQuality, ShadowQualitySetting
   low: { mapSize: 2048, maxDistance: 260, smallProps: false },
 };
 
+/**
+ * The quality when the caller does not pick one: high on WebGPU, low on the WebGL2 fallback. WebGL2 draws every
+ * shadow caster again with its own state changes (about twice the draw calls, three times the triangles of the main
+ * pass in a robot-heavy view), so it takes the cheaper map, the shorter distance and no small props.
+ */
+export function defaultShadowQuality(backend: 'webgpu' | 'webgl2'): ShadowQuality {
+  return backend === 'webgl2' ? 'low' : 'high';
+}
+
 /** Penumbra width the PCF radius aims for (m), and its range in texels. */
 export const SOFTNESS = 0.14;
 export const RADIUS_TEXELS = [1, 3] as const;

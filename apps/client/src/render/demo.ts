@@ -15,7 +15,7 @@
 // detail texture and tints come from assets/dist/terrain/terrain.json (?tex=0: tints only). ?detail=<n> sets the
 // render-only subdivision (0 draws the greybox as delivered). window.crawloutBench() runs the camera measurement
 // (bench.ts); ?bench starts it on load and logs the result. ?shadows=0 turns the sun shadow off, ?shadows=low or
-// ?detail=1 lowers its quality (shadows.ts).
+// ?shadows=high picks a quality (the default is high on WebGPU and low on WebGL2), ?detail=1 goes without (shadows.ts).
 // ?xl is the synthetic 384 x 384 m map (xlWorld.ts): Rock Terrain 4 tiled three times each way, a river with three
 // fords through setWater, a forest border, groves and loose trees (6000) plus rocks and bushes; units and buildings
 // over the whole map. ?water=0 leaves the water out. ?xl&foliage swaps the trees for synthetic alpha-tested ones

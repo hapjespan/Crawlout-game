@@ -1,7 +1,7 @@
 // Test-only: synthetic rigid-unit (robot) assets the way the asset side will deliver them, without real art: LOD GLBs
 // of stacked boxes (a "Metal" and a "Team_Plate" material, optionally with the model's origin in the middle of the
-// body), and a raw manifest (rigid entries are not in the asset-cli's manifest schema, see rigidUnitManifest.ts) that
-// also carries the skinned character fixture, so tests can check the routing between the two.
+// body), and a raw manifest (rigid entries are kind 'rigid-unit', validated by the asset-cli schema, see
+// rigidUnitManifest.ts) that also carries the skinned character fixture, so tests can check the routing between the two.
 import { Document, Logger, NodeIO } from '@gltf-transform/core';
 import { BoxGeometry } from 'three/webgpu';
 import { FIXTURE_ID, fixtureManifest } from './skinnedFixture.js';
@@ -83,8 +83,6 @@ export interface RigidFixtureEntry {
   /** y of the lowest point as authored (a floating unit: its hover height, baked in). */
   lowest?: number;
   hover?: number;
-  /** `rigid: true` (default) or kind 'rigid-unit'. */
-  spelling?: 'flag' | 'kind';
   /** Team material name in the manifest's teamMaterials (and in the GLB unless `glbMaterial` says otherwise). */
   teamName?: string;
   /** Name of the GLB's team plate material, when it should differ from the manifest's teamMaterials. */
@@ -93,7 +91,7 @@ export interface RigidFixtureEntry {
 
 export const FIXTURE_ENTRIES: readonly RigidFixtureEntry[] = [
   { id: GUARD_ID, height: 2.2 },
-  { id: DRONE_ID, height: 0.8, hover: 1.35, lowest: 1.35, spelling: 'kind' }, // hover baked: bounds.min.y = hover
+  { id: DRONE_ID, height: 0.8, hover: 1.35, lowest: 1.35 }, // hover baked: bounds.min.y = hover
   { id: SENTINEL_ID, height: 3.5 },
 ];
 
@@ -107,8 +105,7 @@ export function rigidManifest(entries: readonly RigidFixtureEntry[] = FIXTURE_EN
     const lowest = e.lowest ?? 0;
     const entry: Record<string, unknown> = {
       id: e.id,
-      kind: e.spelling === 'kind' ? 'rigid-unit' : 'character',
-      ...(e.spelling === 'kind' ? {} : { rigid: true }),
+      kind: 'rigid-unit',
       bounds: { min: [-0.45, lowest, -0.35], max: [0.45, lowest + e.height, 0.35] },
       lods: PARTS_PER_LOD.map((_, level) => ({
         level,

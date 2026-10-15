@@ -21,6 +21,10 @@
 //             distance; rock on steep slopes (stronger relief, cooler), dust on the flat (warmer, softer); at tens of
 //             meters a macro variation of brightness and hue keeps large flat areas from being one colour. Off with
 //             `detailLayer: false` (the cheaper ?detail=1 path).
+//   beyond the map (the skirt, terrainSkirt.ts): the albedo mirrors there, which reads as a kaleidoscope. The sample
+//             position is domain-warped by smooth value noise that grows from zero at the edge (no seam), the photo's
+//             contrast fades towards a generic dust colour with the distance, and a macro brightness/hue noise
+//             breaks up what mirroring and warping leave (outsideMeters, EDGE_*).
 //   no texture: the tints of terrain.json on fixed brightness, rock from about 30 degrees slope (the former look).
 //   light   = the shared light rig (unitMaterial.ts toonLight: hemisphere fill in the dark band, warm direct sun on
 //             top, the toon ramp's soft band edges, as terrain normals vary smoothly and hard steps would shimmer),
@@ -50,17 +54,18 @@ import {
   dot,
   float,
   floor,
+  fract,
   Fn,
   If,
   int,
   max,
   mix,
   mod,
-  normalize,
   normalWorld,
   positionWorld,
   pow,
   select,
+  sin,
   smoothstep,
   step,
   texture,
@@ -71,6 +76,7 @@ import {
   vec4,
 } from 'three/tsl';
 import { worldGrade } from '../look/grade.js';
+import { safeNormalNode } from './safeNormal.js';
 import type { SunShadowTerm } from '../shadows/sunShadow.js';
 import { toonLight } from '../units/unitMaterial.js';
 import { createDetailTexture } from './detailTexture.js';
@@ -145,6 +151,17 @@ const DETAIL_COOL = [0.93, 0.98, 1.05] as const;
 /** Dust drifts into the flat: its multiplier on the albedo, and the share of flat ground it covers at most. */
 const DETAIL_DUST = [1.16, 1.09, 0.92] as const;
 const DETAIL_DUST_SHARE = 0.55;
+/** Beyond the map edge (m outside): the warp of the albedo's sample position grows over WARP_RAMP to WARP_AMPLITUDE meters at wavelength WARP_WAVELENGTH. */
+export const EDGE_WARP_RAMP = 70;
+export const EDGE_WARP_AMPLITUDE = 54;
+export const EDGE_WARP_WAVELENGTH = 300;
+/** The photo's detail fades to a generic dust colour between these distances outside the map (m), by at most EDGE_DUST_SHARE. */
+export const EDGE_DUST_FADE = [10, 170] as const;
+export const EDGE_DUST_SHARE = 0.8;
+/** Generic dust colour (linear rgb, before light) the far skirt tends to, and the macro brightness variation outside. */
+const EDGE_DUST_COLOR = [0.205, 0.172, 0.123] as const;
+const EDGE_MACRO_WAVELENGTH = 85;
+const EDGE_MACRO_BRIGHTNESS = 0.42;
 /** Default tile size (m) before terrain.json says otherwise: Rock Terrain 4 at 1 m per cell. */
 export const DEFAULT_ALBEDO_TILE = 128;
 
@@ -227,7 +244,31 @@ export function createTerrainMaterial(opts: TerrainMaterialOptions): TerrainMate
   };
   const lumaOf = (c: Node<'vec3'>): Node<'float'> => dot(c, vec3(...LUMA));
 
-  const N = normalize(normalWorld);
+  /** Hash and smooth value noise in 0..1 (TSL, no texture): the warp and macro variation outside the map. */
+  const hash21 = (p: Node<'vec2'>): Node<'float'> =>
+    fract(sin(dot(p, vec2(127.1, 311.7))).mul(43758.5453));
+  const vnoise = (p: Node<'vec2'>): Node<'float'> => {
+    const i = floor(p);
+    const f = fract(p);
+    const u = f.mul(f).mul(float(3).sub(f.mul(2)));
+    const a = hash21(i);
+    const b = hash21(i.add(vec2(1, 0)));
+    const c = hash21(i.add(vec2(0, 1)));
+    const d = hash21(i.add(vec2(1, 1)));
+    return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
+  };
+  /** Meters outside the layout's tile grid (0 inside): the skirt's distance from the map. */
+  const outsideMeters = (): Node<'float'> => {
+    const g = wp.xz.sub(layoutGrid.xy).mul(layoutGrid.z);
+    const over = max(
+      max(g.x.negate(), g.x.sub(layoutSize.x)),
+      max(g.y.negate(), g.y.sub(layoutSize.y)),
+    );
+    return max(over, 0).div(layoutGrid.z);
+  };
+
+  // normalWorld is unit length where the geometry is sound; the safe form (safeNormal.ts) keeps a zero or NaN normal from spreading.
+  const N = safeNormalNode(normalWorld);
   const wp = positionWorld;
   const slope = float(1).sub(N.y);
   const h01 = clamp(wp.y.sub(minY).mul(invRange), 0, 1);
@@ -310,7 +351,19 @@ export function createTerrainMaterial(opts: TerrainMaterialOptions): TerrainMate
     return color;
   };
   const sourceAlbedo = (dpx: Node<'vec3'>, dpy: Node<'vec3'>): Node<'vec3'> => {
-    const g = wp.xz.sub(layoutGrid.xy).mul(layoutGrid.z);
+    // Outside the map the sample position is warped by smooth noise (zero at the edge), so the mirrored tiles do not
+    // line up into a kaleidoscope; the explicit gradients below stay those of the unwarped position.
+    const warpAmount = smoothstep(0, EDGE_WARP_RAMP, outsideMeters()).mul(EDGE_WARP_AMPLITUDE);
+    const wq = wp.xz.div(EDGE_WARP_WAVELENGTH);
+    const warp = vec2(
+      vnoise(wq)
+        .add(vnoise(wq.mul(2.3).add(vec2(5.2, 1.3))).mul(0.5))
+        .sub(0.75),
+      vnoise(wq.add(vec2(31.7, 8.9)))
+        .add(vnoise(wq.mul(2.3).add(vec2(17.1, 43.4))).mul(0.5))
+        .sub(0.75),
+    ).mul(warpAmount.mul(1.3));
+    const g = wp.xz.add(warp).sub(layoutGrid.xy).mul(layoutGrid.z);
     const gx = dpx.xz.mul(layoutGrid.z);
     const gy = dpy.xz.mul(layoutGrid.z);
     const last = layoutSize.sub(1);
@@ -360,7 +413,8 @@ export function createTerrainMaterial(opts: TerrainMaterialOptions): TerrainMate
       photo.mulAssign(mix(float(1), triplanarRatio(dpx, dpy), steep.mul(CLIFF_DETAIL)));
     });
     // Grain near the camera.
-    const near = smoothstep(90, 25, distance(cameraPosition, wp));
+    // Ascending edges: smoothstep with edge0 > edge1 is undefined in WGSL/HLSL (NaN in far views on some drivers).
+    const near = float(1).sub(smoothstep(25, 90, distance(cameraPosition, wp)));
     If(near.greaterThan(0), () => {
       const g2 = tiled(
         rot(wp.xz).div(GROUND_TILE_FINE).add(vec2(0.37, 0.71)),
@@ -435,7 +489,32 @@ export function createTerrainMaterial(opts: TerrainMaterialOptions): TerrainMate
     const detailed = detailTexture ? detailLayer(out) : out;
     // Grass: one plain sample of the density mask (outside the branches), the ground mixes towards a soft green.
     const grass = grassSampler.x.mul(grassOn).mul(GRASS_TINT_STRENGTH);
-    return mix(detailed, detailed.mul(vec3(...GRASS_TINT)), grass);
+    const grassed = mix(detailed, detailed.mul(vec3(...GRASS_TINT)), grass);
+    // Beyond the map: a macro brightness and hue variation, and the photo's detail fading to a generic dust colour.
+    const outside = outsideMeters();
+    const edge = smoothstep(0, EDGE_DUST_FADE[0], outside);
+    const macro = vnoise(wp.xz.div(EDGE_MACRO_WAVELENGTH))
+      .mul(0.65)
+      .add(vnoise(wp.xz.div(EDGE_MACRO_WAVELENGTH * 0.37).add(vec2(9.1, 2.7))).mul(0.35));
+    const macroTone = mix(vec3(...DETAIL_COOL), vec3(...DETAIL_WARM), macro);
+    const varied = grassed.mul(mix(vec3(1, 1, 1), macroTone, edge.mul(0.8))).mul(
+      float(1).add(
+        macro
+          .sub(0.5)
+          .mul(2 * EDGE_MACRO_BRIGHTNESS)
+          .mul(edge),
+      ),
+    );
+    const dustShare = smoothstep(EDGE_DUST_FADE[0], EDGE_DUST_FADE[1], outside).mul(
+      EDGE_DUST_SHARE,
+    );
+    const dustLuma = max(lumaOf(varied), 1e-4);
+    // The dust keeps only a little of the photo's brightness pattern (what mirroring made symmetrical); the macro noise
+    // above carries the variation instead.
+    const dustColor = vec3(...EDGE_DUST_COLOR).mul(
+      mix(float(1), clamp(dustLuma.div(ALBEDO_TARGET_LUMA), 0.6, 1.5), 0.35),
+    );
+    return mix(varied, dustColor, dustShare);
   });
   // The shared world grade (look/grade.ts) at half strength: the terrain already carries its own warm desaturation
   // (ALBEDO_WARMTH, ALBEDO_DESATURATE), the grade adds the contrast and the same dusty tint as buildings and units.

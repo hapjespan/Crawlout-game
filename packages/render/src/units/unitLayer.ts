@@ -213,7 +213,8 @@ export class UnitLayer {
       const mesh = new Mesh(geo, bundle.material);
       mesh.name = `units-${src.name}-lod${lod}`;
       mesh.frustumCulled = false; // culled per instance on the CPU
-      mesh.castShadow = this.shadow !== null;
+      // The coarsest LOD (under about 30 px tall) leaves the shadow pass: its shadow is a few pixels, the draw call is not.
+      mesh.castShadow = this.shadow !== null && lod < UNIT_LODS[UNIT_LODS.length - 1]!;
       mesh.count = 0;
       mesh.visible = false;
       this.scene.add(mesh);

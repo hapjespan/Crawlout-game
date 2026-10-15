@@ -1,14 +1,16 @@
 // Rigid units in the asset-cli manifest. An entry is a rigid unit (a robot: static meshes, no skeleton, no baked clips)
-// when it says `rigid: true` or has kind 'rigid-unit'; either spelling works, so the asset side can pick. The shape
-// the renderer reads:
+// when its `kind` is 'rigid-unit'; nothing else tells them apart (the older `rigid: true` flag goes away at the next
+// manifest bump, so it is not read here). The entry is validated by the asset-cli's own `assetEntrySchema`, the same
+// schema every other reader uses, and the renderer keeps the fields it draws with:
 //   id, bounds { min, max } (meters, the model at real size), lods (3 GLBs: level, path, triangles),
 //   teamMaterials (names of the glTF materials that take the player's color; a name with "team" in it counts too),
 //   hover (optional, meters: the height of a floating unit's lowest point above the ground, 0 or absent for a walker;
 //   it is already baked into the model, bounds.min.y equals it, so the renderer does not lift the model by it),
 //   albedoGain (optional, brightness factor on the albedo).
-// The renderer splits these entries off before the manifest goes through manifestSchema (unitAssetLoader.ts), so the
-// schema does not have to know them and a manifest with robots stays valid for every other reader.
-import { ALBEDO_GAIN_RANGE, boundsSchema, type AssetBounds } from '@crawlout/asset-cli/manifest';
+// The renderer splits these entries off before the manifest goes through manifestSchema (unitAssetLoader.ts), so one
+// unusable robot is reported as a reason (and its loadout falls back to the humanoid) instead of invalidating the whole
+// manifest for the characters, props and buildings next to it.
+import { assetEntrySchema, type AssetBounds, type AssetEntry } from '@crawlout/asset-cli/manifest';
 
 export interface RigidAssetLod {
   path: string;
@@ -31,51 +33,38 @@ function isRecord(v: unknown): v is Raw {
   return typeof v === 'object' && v !== null && !Array.isArray(v);
 }
 
-/** True for a raw manifest entry that describes a rigid unit. */
+/** True for a raw manifest entry that describes a rigid unit: kind 'rigid-unit'. */
 export function isRigidEntry(raw: unknown): boolean {
-  return isRecord(raw) && (raw.rigid === true || raw.kind === 'rigid-unit');
+  return isRecord(raw) && raw.kind === 'rigid-unit';
 }
 
-/** Validates one raw rigid entry; returns the entry or the reason it cannot be drawn. */
-export function parseRigidEntry(raw: Raw): RigidAssetEntry | string {
-  const id = raw.id;
-  if (typeof id !== 'string' || id.length === 0) return 'rigid entry without an id';
-  const bounds = boundsSchema.safeParse(raw.bounds);
-  if (!bounds.success) return 'no valid bounds';
-  const b = bounds.data;
+/** The renderer's view of an entry the schema has accepted. */
+export function rigidEntryOf(entry: AssetEntry): RigidAssetEntry | string {
+  const b = entry.bounds;
   if (!(b.max[1] > b.min[1])) return 'bounds have no height';
-  const lods = raw.lods;
-  if (!Array.isArray(lods) || lods.length !== 3) return 'needs exactly three LODs';
-  const parsed: RigidAssetLod[] = [];
-  for (const lod of lods as unknown[]) {
-    if (!isRecord(lod) || typeof lod.path !== 'string' || lod.path.length === 0)
-      return 'a LOD without a path';
-    parsed.push({
-      path: lod.path,
-      triangles: typeof lod.triangles === 'number' ? lod.triangles : 0,
-    });
-  }
-  const hover = raw.hover === undefined ? 0 : raw.hover;
-  if (typeof hover !== 'number' || !Number.isFinite(hover) || hover < 0)
-    return `hover ${String(hover)} is not a height in meters`;
-  const team = raw.teamMaterials;
-  if (team !== undefined && (!Array.isArray(team) || team.some((n) => typeof n !== 'string')))
-    return 'teamMaterials must be a list of material names';
   return {
-    id,
+    id: entry.id,
     bounds: b,
-    lods: parsed as unknown as RigidAssetEntry['lods'],
-    teamMaterials: (team as string[] | undefined) ?? [],
-    hover,
-    ...(typeof raw.albedoGain === 'number'
-      ? {
-          albedoGain: Math.min(
-            ALBEDO_GAIN_RANGE[1],
-            Math.max(ALBEDO_GAIN_RANGE[0], raw.albedoGain),
-          ),
-        }
-      : {}),
+    lods: entry.lods.map((lod) => ({
+      path: lod.path,
+      triangles: lod.triangles,
+    })) as unknown as RigidAssetEntry['lods'],
+    teamMaterials: entry.teamMaterials ?? [],
+    hover: entry.hover ?? 0,
+    ...(entry.albedoGain !== undefined ? { albedoGain: entry.albedoGain } : {}),
   };
+}
+
+/** Validates one raw rigid entry with the asset-cli schema; returns the entry or the reason it cannot be drawn. */
+export function parseRigidEntry(raw: Raw): RigidAssetEntry | string {
+  if (typeof raw.id !== 'string' || raw.id.length === 0) return 'rigid entry without an id';
+  // The schema still asks for `rigid: true` on a rigid-unit; the kind is what says it, so supply the flag.
+  const parsed = assetEntrySchema.safeParse({ ...raw, rigid: true });
+  if (!parsed.success)
+    return parsed.error.issues
+      .map((i) => (i.path.length > 0 ? `${i.path.join('.')}: ${i.message}` : i.message))
+      .join('; ');
+  return rigidEntryOf(parsed.data);
 }
 
 /**

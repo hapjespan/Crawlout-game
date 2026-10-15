@@ -27,7 +27,7 @@ import { UnitLayer } from './unitLayer.js';
 import { RigidUnitLayer } from './rigidUnitLayer.js';
 import { createRigidUnitMaterial } from './rigidUnitMaterial.js';
 import { RigidUnitRegistry } from './rigidUnitAssets.js';
-import { splitRigidEntries } from './rigidUnitManifest.js';
+import { parseRigidEntry, splitRigidEntries } from './rigidUnitManifest.js';
 import {
   DRONE_ID,
   FIXTURE_ID,
@@ -451,9 +451,8 @@ describe('picking and selecting rigid units', () => {
 });
 
 describe('rigid entries of the manifest', () => {
-  it('takes rigid entries, in either spelling, out of the manifest the schema sees', () => {
+  it('takes the entries of kind rigid-unit out of the manifest, validated by the asset-cli schema', () => {
     const raw = rigidManifest();
-    expect(manifestSchema.safeParse(raw).success).toBe(false); // the schema does not know the robots
     const { rest, rigid } = splitRigidEntries(raw);
     expect(manifestSchema.safeParse(rest).success).toBe(true);
     expect([...rigid.keys()].sort()).toEqual([DRONE_ID, GUARD_ID, SENTINEL_ID].sort());
@@ -478,10 +477,21 @@ describe('rigid entries of the manifest', () => {
       return splitRigidEntries(copy).rigid.get(GUARD_ID);
     };
     expect(bad({ bounds: undefined })).toMatch(/bounds/);
-    expect(bad({ lods: [] })).toMatch(/three LODs/);
+    expect(bad({ lods: [] })).toMatch(/lods/);
     expect(bad({ hover: -1 })).toMatch(/hover/);
+    expect(bad({ hover: 0.5 })).toMatch(/hover/); // not the model's lowest point (bounds.min.y)
     expect(bad({ teamMaterials: 'team' })).toMatch(/teamMaterials/);
+    expect(bad({ teamMaterials: [] })).toMatch(/team-materiaal/);
     expect(bad({ bounds: { min: [0, 1, 0], max: [1, 1, 1] } })).toMatch(/height/);
+    expect(parseRigidEntry({ ...guard, id: '' })).toMatch(/without an id/);
+    // The kind alone says it is a robot; a character entry with the old flag is not one.
+    const { rigid } = splitRigidEntries({
+      ...raw,
+      assets: raw.assets.map((a) =>
+        a.id === GUARD_ID ? { ...guard, kind: 'character', rigid: true } : a,
+      ),
+    });
+    expect(rigid.has(GUARD_ID)).toBe(false);
     expect(splitRigidEntries({ nonsense: true }).rest).toEqual({ nonsense: true });
   });
 });
