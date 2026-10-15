@@ -941,20 +941,29 @@
       "warnings": [],
       "kind": "building",
       "lodTriangles": [
-        400,
-        220,
-        136
+        2166,
+        806,
+        166
       ],
       "materials": [
+        "concrete",
+        "lens_amber",
+        "lens_glass",
         "metal",
         "metal_dark",
+        "metal_hazard",
+        "metal_light",
         "opening",
+        "rubber",
+        "rust_dark",
+        "rust_metal",
+        "rust_roof",
         "team_trim"
       ],
       "sizeM": [
-        14.8,
-        9.599999,
-        12.975
+        14.92,
+        9.6,
+        13.25
       ]
     },
     {
@@ -1009,20 +1018,25 @@
       "warnings": [],
       "kind": "building",
       "lodTriangles": [
-        442,
-        322,
-        244
+        1034,
+        388,
+        152
       ],
       "materials": [
+        "concrete",
         "lens",
+        "lens_red",
         "metal",
         "metal_dark",
+        "metal_light",
+        "rubber",
+        "rust_metal",
         "team_trim"
       ],
       "sizeM": [
         3,
-        3.17,
-        3.07
+        3.16,
+        3.1
       ]
     },
     {
@@ -1055,20 +1069,24 @@
       "warnings": [],
       "kind": "rigid-unit",
       "lodTriangles": [
-        434,
-        252,
-        228
+        956,
+        508,
+        200
       ],
       "materials": [
+        "lens",
         "lens_red",
         "metal",
         "metal_dark",
+        "metal_light",
+        "rubber",
+        "rust_metal",
         "team_trim"
       ],
       "sizeM": [
-        0.875,
+        0.94,
         0.84,
-        1.195
+        1.28
       ],
       "hover": 1.3
     },
@@ -1079,20 +1097,26 @@
       "warnings": [],
       "kind": "rigid-unit",
       "lodTriangles": [
-        832,
-        372,
-        296
+        1946,
+        538,
+        202
       ],
       "materials": [
+        "lens",
+        "lens_amber",
+        "lens_red",
         "metal",
         "metal_dark",
+        "metal_light",
         "rubber",
+        "rust_dark",
+        "rust_metal",
         "team_trim"
       ],
       "sizeM": [
-        2.9,
+        3,
         2.2,
-        3.625
+        3.511731
       ]
     },
     {
@@ -1102,20 +1126,27 @@
       "warnings": [],
       "kind": "rigid-unit",
       "lodTriangles": [
-        940,
-        424,
-        284
+        1952,
+        486,
+        178
       ],
       "materials": [
+        "lens",
+        "lens_amber",
+        "lens_red",
         "metal",
         "metal_dark",
+        "metal_hazard",
+        "metal_light",
         "rubber",
+        "rust_dark",
+        "rust_metal",
         "team_trim"
       ],
       "sizeM": [
-        3.94,
+        4.08,
         3.5,
-        6.4
+        6.408198
       ]
     },
     {
