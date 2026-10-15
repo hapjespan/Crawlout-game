@@ -214,14 +214,24 @@ export function movementSystem(ctx: SimContext, s: MovementScratch): void {
           }
           if (d2 >= rr * rr || perm === 0) continue;
           if (d2 === 0) {
-            // Zelfde punt: richting uit het indexpaar, tegengesteld voor de twee units.
+            // Zelfde punt (bijvoorbeeld twee units die een nieuw gebouw naar dezelfde vrije cel zette): de laagste index
+            // naar het midden van de map, de ander ervan af. Gelijk onder de 180-gradenspiegel (content-x; een richting
+            // uit een hash van het indexpaar was dat niet). Precies op het midden: de richting uit het indexpaar.
             const lo = i < j ? i : j;
             const hi = i < j ? j : i;
-            const k = (Math.imul(lo, 0x9e3779b1) ^ Math.imul(hi, 0x85ebca6b)) & 1023;
             const push = Math.max(1, idiv(rr * perm, 2000));
             const sign = i === lo ? 1 : -1;
-            sx += sign * ((SIN_TABLE[(k + 256) & 1023]! * push) >> TRIG_BITS);
-            sy += sign * ((SIN_TABLE[k]! * push) >> TRIG_BITS);
+            const cdx = (map.w << 7) - x;
+            const cdy = (map.h << 7) - y;
+            if (cdx !== 0 || cdy !== 0) {
+              const cl = isqrt(cdx * cdx + cdy * cdy);
+              sx += sign * idiv(cdx * push, cl);
+              sy += sign * idiv(cdy * push, cl);
+            } else {
+              const k = (Math.imul(lo, 0x9e3779b1) ^ Math.imul(hi, 0x85ebca6b)) & 1023;
+              sx += sign * ((SIN_TABLE[(k + 256) & 1023]! * push) >> TRIG_BITS);
+              sy += sign * ((SIN_TABLE[k]! * push) >> TRIG_BITS);
+            }
             continue;
           }
           const d = isqrt(d2);
