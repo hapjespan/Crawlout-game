@@ -16,6 +16,11 @@
 //             adds its brightness variation along the wall.
 //   grain   = a fine rotated sample (7.7 m) adds texture near the camera (fades out from 25 to 90 m), where the
 //             albedo (16 px per meter at 2048) is magnified.
+//   detail  = a generated tiling texture (detailTexture.ts) sampled at two scales near the camera: grit, pebbles and cracks
+//             as brightness and as a bent shading normal (smooth light delta, no extra banding), fading out with
+//             distance; rock on steep slopes (stronger relief, cooler), dust on the flat (warmer, softer); at tens of
+//             meters a macro variation of brightness and hue keeps large flat areas from being one colour. Off with
+//             `detailLayer: false` (the cheaper ?detail=1 path).
 //   no texture: the tints of terrain.json on fixed brightness, rock from about 30 degrees slope (the former look).
 //   light   = the 3-step toon ramp of the units with softened band edges (terrain normals vary smoothly; hard steps
 //             would shimmer), times the building shadow and the sky occlusion of the refined grid.
@@ -64,6 +69,7 @@ import {
   vec3,
   vec4,
 } from 'three/tsl';
+import { createDetailTexture } from './detailTexture.js';
 import {
   ALBEDO_SEAMS,
   MAX_ALBEDO_TILES,
@@ -75,6 +81,8 @@ export interface TerrainMaterialOptions {
   lightDir: Vector3;
   /** Shadow factor node, 1 lit and 0 shadowed (shadows/sunShadow.ts). */
   shadow?: Node<'float'> | undefined;
+  /** Close-up detail layer (generated tiling texture, detailTexture.ts). Default true; false is the cheaper path. */
+  detailLayer?: boolean;
 }
 
 /** Target brightness (linear luminance) of rock and ground before light; the tints only give the hue. */
@@ -106,6 +114,31 @@ const GRAIN = 0.3;
 /** Multiplier on the ground color where the grass mask is full (greener, a little darker), and how far it goes there. */
 export const GRASS_TINT = [0.78, 1.12, 0.66] as const;
 export const GRASS_TINT_STRENGTH = 0.85;
+/** Detail layer: tile edges of the generated texture (m) at its two scales, rotated against the map's axes. */
+export const DETAIL_FINE_TILE = 3.4;
+export const DETAIL_COARSE_TILE = 15;
+/** Macro variation: the same tile stretched over tens of meters, two scales. */
+const DETAIL_MACRO_TILE_A = 151;
+const DETAIL_MACRO_TILE_B = 47;
+/** Distances (m) over which the fine detail fades out (full below the first) and the coarse detail. */
+export const DETAIL_FINE_FADE = [30, 100] as const;
+export const DETAIL_COARSE_FADE = [70, 260] as const;
+/** Grit brightness per unit of the texture's R deviation, on rock (steep) and on dust (flat). */
+const DETAIL_GRIT_ROCK = 1.2;
+const DETAIL_GRIT_DUST = 0.9;
+/** Share of the texture's relief that bends the shading normal, on rock and on dust, and how strongly the bend lights. */
+const DETAIL_NORMAL_ROCK = 1.5;
+const DETAIL_NORMAL_DUST = 0.8;
+const DETAIL_LIGHT_GAIN = 0.4;
+/** Macro: brightness spread, and how far the warm/cool hue shift goes. */
+const DETAIL_MACRO_BRIGHTNESS = 0.3;
+const DETAIL_MACRO_HUE = 0.55;
+/** Colours the macro value mixes between (multipliers on the albedo): dry warm dust and cooler grey stone. */
+const DETAIL_WARM = [1.07, 1.0, 0.86] as const;
+const DETAIL_COOL = [0.93, 0.98, 1.05] as const;
+/** Dust drifts into the flat: its multiplier on the albedo, and the share of flat ground it covers at most. */
+const DETAIL_DUST = [1.16, 1.09, 0.92] as const;
+const DETAIL_DUST_SHARE = 0.55;
 /** Default tile size (m) before terrain.json says otherwise: Rock Terrain 4 at 1 m per cell. */
 export const DEFAULT_ALBEDO_TILE = 128;
 
@@ -153,6 +186,7 @@ function placeholderTexture(): DataTexture {
 
 export function createTerrainMaterial(opts: TerrainMaterialOptions): TerrainMaterialBundle {
   const light = uniform(opts.lightDir.clone().normalize());
+  const detailTexture = opts.detailLayer === false ? null : createDetailTexture();
   const rockColor = uniform(new Vector3(1, 1, 1));
   const groundColor = uniform(new Vector3(1, 1, 1));
   const meanLuma = uniform(luma(new Color(DEFAULT_ROCK_TINT)));
@@ -333,6 +367,55 @@ export function createTerrainMaterial(opts: TerrainMaterialOptions): TerrainMate
     return photo;
   };
 
+  /**
+   * The detail layer on top of an albedo: grit, pebbles and cracks near the camera, macro variation everywhere. Four
+   * plain samples of one tile in uniform control flow (the mip level comes from the screen derivatives).
+   */
+  const detailLayer = (base: Node<'vec3'>): Node<'vec3'> => {
+    const tex = detailTexture!;
+    const dist = distance(cameraPosition, wp);
+    const fineFade = float(1).sub(smoothstep(DETAIL_FINE_FADE[0], DETAIL_FINE_FADE[1], dist));
+    const coarseFade = float(1).sub(smoothstep(DETAIL_COARSE_FADE[0], DETAIL_COARSE_FADE[1], dist));
+    const flat = float(1).sub(smoothstep(0.08, 0.3, slope));
+    const fine = texture(tex, rot(wp.xz).div(DETAIL_FINE_TILE));
+    const coarse = texture(tex, rot(rot(wp.xz.add(vec2(53.7, 12.3)))).div(DETAIL_COARSE_TILE));
+    const macroA = texture(tex, wp.xz.div(DETAIL_MACRO_TILE_A).add(vec2(0.31, 0.57)));
+    const macroB = texture(tex, rot(wp.xz).div(DETAIL_MACRO_TILE_B).add(vec2(0.83, 0.12)));
+    // Grit brightness: stronger on rock, softer on dust.
+    const gritAmp = mix(float(DETAIL_GRIT_ROCK), float(DETAIL_GRIT_DUST), flat);
+    const grit = fine.x
+      .sub(0.5)
+      .mul(fineFade)
+      .mul(gritAmp)
+      .add(coarse.x.sub(0.5).mul(coarseFade).mul(gritAmp).mul(0.8));
+    // Relief as a bent shading normal (texture space is rotated against the world: rotate the offset back), lit as a
+    // smooth delta on the flat normal so the toon ramp does not band on every pebble.
+    const unrot = (v: Node<'vec2'>): Node<'vec2'> =>
+      vec2(v.x.mul(0.8).add(v.y.mul(0.6)), v.x.mul(-0.6).add(v.y.mul(0.8)));
+    const bendFine = unrot(fine.yz.sub(0.5).mul(2)).mul(fineFade);
+    const bendCoarse = unrot(unrot(coarse.yz.sub(0.5).mul(2)))
+      .mul(coarseFade)
+      .mul(0.6);
+    const strength = mix(float(DETAIL_NORMAL_ROCK), float(DETAIL_NORMAL_DUST), flat);
+    const bend = bendFine.add(bendCoarse).mul(strength);
+    // First order, no renormalising: dot(N + bend, light) - dot(N, light).
+    const lightDelta = dot(vec3(bend.x, float(0), bend.y), light).mul(DETAIL_LIGHT_GAIN);
+    // Macro: brightness and a warm/cool shift from the two stretched samples; dust drifts into the flat where it is high.
+    const macro = macroA.w.mul(0.6).add(macroB.w.mul(0.4));
+    const macroTone = mix(vec3(...DETAIL_COOL), vec3(...DETAIL_WARM), macro);
+    const hue = mix(vec3(1, 1, 1), macroTone, DETAIL_MACRO_HUE);
+    const dust = flat.mul(smoothstep(0.35, 0.8, macroB.w)).mul(DETAIL_DUST_SHARE);
+    const dusted = mix(vec3(1, 1, 1), vec3(...DETAIL_DUST), dust);
+    const brightness = float(1)
+      .add(macro.sub(0.5).mul(2 * DETAIL_MACRO_BRIGHTNESS))
+      .add(grit)
+      .add(lightDelta);
+    return base
+      .mul(hue)
+      .mul(dusted)
+      .mul(clamp(brightness, 0.45, 1.65));
+  };
+
   const terrainAlbedo = Fn(() => {
     // Gradients of the world position first, in uniform control flow: every sample below sits in a branch.
     const dpx = dFdx(wp).toVar();
@@ -343,9 +426,10 @@ export function createTerrainMaterial(opts: TerrainMaterialOptions): TerrainMate
     }).Else(() => {
       out.assign(tintAlbedo());
     });
+    const detailed = detailTexture ? detailLayer(out) : out;
     // Grass: one plain sample of the density mask (outside the branches), the ground mixes towards a soft green.
     const grass = grassSampler.x.mul(grassOn).mul(GRASS_TINT_STRENGTH);
-    return mix(out, out.mul(vec3(...GRASS_TINT)), grass);
+    return mix(detailed, detailed.mul(vec3(...GRASS_TINT)), grass);
   });
   const albedo = terrainAlbedo();
 
@@ -420,6 +504,7 @@ export function createTerrainMaterial(opts: TerrainMaterialOptions): TerrainMate
       m.dispose();
       placeholder.dispose();
       grassPlaceholder.dispose();
+      detailTexture?.dispose();
     },
   };
 }

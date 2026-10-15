@@ -47,6 +47,15 @@ export interface TerrainLayerOptions {
   detail?: TerrainDetailOptions;
   /** Chunk size, levels and LOD distances of the chunked terrain. */
   chunks?: TerrainChunkOptions;
+  /** Close-up detail layer of the material. Default: on, unless the refinement is below its default (`detail.subdivide` 0 or 1, the cheaper path). */
+  detailLayer?: boolean;
+}
+
+/** Whether the terrain material gets its close-up detail layer: explicit, else on from the default refinement (subdivide 2). */
+export function wantsDetailLayer(
+  opts: Pick<TerrainLayerOptions, 'detail' | 'detailLayer'>,
+): boolean {
+  return opts.detailLayer ?? (opts.detail?.subdivide ?? 2) >= 2;
 }
 
 /** Cuts a bed into the terrain: the drawn height at (x, z) given the field's own height there. */
@@ -96,7 +105,11 @@ export class TerrainLayer {
     this.precision = opts.precision ?? 'float';
     this.detail = opts.detail ?? {};
     this.chunkOptions = opts.chunks ?? {};
-    this.look = createTerrainMaterial({ lightDir, shadow: opts.shadow });
+    this.look = createTerrainMaterial({
+      lightDir,
+      shadow: opts.shadow,
+      detailLayer: wantsDetailLayer(opts),
+    });
   }
 
   /**

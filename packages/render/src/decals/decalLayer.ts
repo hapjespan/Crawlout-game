@@ -1,14 +1,20 @@
 // Ground decals in one instanced draw call: blob shadows under units and scrap heaps, selection rings, claim rings
-// in the owner's color, ability zones and the placement preview. The quad is a small grid that follows the terrain in the vertex
+// in the owner's color, ability zones, the placement preview and the contact decals of buildings and large props
+// (decals/contact.ts: a dark soft edge hugging the footprint plus a dusty, trodden ring, so they sit in the ground). The quad is a small grid that follows the terrain in the vertex
 // shader (terrain height texture), so large decals hug slopes.
 import { MAX_PLAYERS } from '@crawlout/protocol';
 import {
+  ClampToEdgeWrapping,
   Color,
+  DataArrayTexture,
   DynamicDrawUsage,
   InstancedBufferAttribute,
+  LinearFilter,
   Mesh,
   MeshBasicNodeMaterial,
   PlaneGeometry,
+  RedFormat,
+  UnsignedByteType,
   Vector3,
   type Scene,
 } from 'three/webgpu';
@@ -23,7 +29,9 @@ import {
   min,
   mix,
   select,
+  sin,
   smoothstep,
+  texture,
   uniformArray,
   vec2,
   vec3,
@@ -38,9 +46,12 @@ export const DECAL_COLOR = {
   selection: MAX_PLAYERS + 1,
   valid: MAX_PLAYERS + 2,
   invalid: MAX_PLAYERS + 3,
+  /** Trodden, dusty earth around a footprint (contact decals). */
+  dirt: MAX_PLAYERS + 4,
 } as const;
 
-export const DECAL_SHAPE = { circle: 0, rect: 1 } as const;
+/** contact: the object's footprint (rounded box, half sizes = quad half sizes minus the margin in ringWidth) with a soft dark edge (shadow) and a dusty ring (fill) around it. */
+export const DECAL_SHAPE = { circle: 0, rect: 1, contact: 2 } as const;
 
 export interface DecalStyle {
   shape: number;
@@ -61,10 +72,19 @@ export interface DecalStyle {
 }
 
 const LIFT = 0.05; // meters above the terrain
+/** Contact distance fields (contactMask.ts): texels per side and how many fit (one layer per building type). */
+export const CONTACT_MASK_SIZE = 128;
+export const CONTACT_MASK_LAYERS = 16;
+/** Colour of the trodden dust ring around a footprint (sRGB): warm and a little darker than the ground. */
+const DIRT_COLOR = 0x5b4a37;
+/** Where the dark contact edge ends, as a share of the margin; the dust ring runs over the whole margin. */
+const CONTACT_AO_SHARE = 0.4;
+/** Wobble of the contact edge (share of the distance from the footprint, zero at the wall), so the ring is not a clean offset. */
+const CONTACT_WOBBLE = 0.45;
 
 function decalPalette(): Vector3[] {
   const c = new Color();
-  const extra = [0x73ff73, 0x4fe36a, 0xff3b30].map((hex) => {
+  const extra = [0x73ff73, 0x4fe36a, 0xff3b30, DIRT_COLOR].map((hex) => {
     c.setHex(hex);
     return new Vector3(c.r, c.g, c.b);
   });
@@ -77,7 +97,10 @@ function dynamic(capacity: number): InstancedBufferAttribute {
   return a;
 }
 
-function createDecalMaterial(heights: HeightTexture | null): MeshBasicNodeMaterial {
+function createDecalMaterial(
+  heights: HeightTexture | null,
+  contactMasks: DataArrayTexture,
+): MeshBasicNodeMaterial {
   const iA = attribute('iDecalA', 'vec4'); // center x, center z, half x, half z (meters)
   const iB = attribute('iDecalB', 'vec4'); // shadow, ring, ring width (m), fill
   const iC = attribute('iDecalC', 'vec4'); // grid, color slot, shape, fill edge
@@ -91,7 +114,9 @@ function createDecalMaterial(heights: HeightTexture | null): MeshBasicNodeMateri
   // Fragment, in meters from the decal center.
   const p = vertexStage(local.mul(iA.zw));
   const half = vertexStage(iA.zw);
-  const rect = vertexStage(iC.z).greaterThan(0.5);
+  const shapeId = vertexStage(iC.z);
+  const rect = shapeId.greaterThan(0.5).and(shapeId.lessThan(1.5));
+  const contact = shapeId.greaterThan(1.5);
   const radial = length(p).div(half.x); // 0 at the center, 1 at the edge (circles)
   const edgeCircle = half.x.sub(length(p));
   const edgeRect = min(half.x.sub(abs(p.x)), half.y.sub(abs(p.y)));
@@ -111,10 +136,34 @@ function createDecalMaterial(heights: HeightTexture | null): MeshBasicNodeMateri
   const cell = abs(fract(p.add(half)).sub(0.5)); // 0.5 on a cell line
   const gridLine = smoothstep(0.44, 0.48, max(cell.x, cell.y)).mul(inside).mul(vertexStage(iC.x));
   const colored = max(max(ring, fill), gridLine);
-  const alpha = max(shadow, colored);
   const palette = uniformArray<'vec3'>(decalPalette(), 'vec3');
   const tint = palette.element(int(vertexStage(iC.y)));
-  m.colorNode = vec4(mix(vec3(0, 0, 0), tint, colored.div(max(alpha, 0.001))), alpha);
+  // Contact: distance from the footprint (rounded box) or, with a mask layer (iC.w - 1), from the mesh's own ground
+  // contact (contactMask.ts: a distance field over the decal quad, bytes over 0..margin), wobbled by a cheap noise.
+  const margin = max(vertexStage(iB.z), 0.01);
+  const inner = max(half.sub(margin), vec2(0, 0));
+  const boxDistance = length(max(abs(p).sub(inner), vec2(0, 0)));
+  const maskSlot = vertexStage(iC.w);
+  const maskDistance = texture(contactMasks, p.div(half.mul(2)).add(0.5))
+    .depth(int(max(maskSlot.sub(1), 0).add(0.5)))
+    .x.mul(margin);
+  const outside = select(maskSlot.greaterThan(0.5), maskDistance, boxDistance);
+  const seed = vertexStage(iA.x.mul(0.37).add(iA.y.mul(0.61)));
+  const wobble = sin(p.x.mul(1.9).add(seed))
+    .mul(sin(p.y.mul(2.3).sub(seed)))
+    .mul(0.6)
+    .add(sin(p.x.mul(4.3).add(p.y.mul(3.1)).add(seed.mul(2))).mul(0.4));
+  const reach = outside.mul(wobble.mul(CONTACT_WOBBLE).add(1));
+  const dust = float(1)
+    .sub(smoothstep(margin.mul(0.12), margin, reach))
+    .mul(vertexStage(iB.w));
+  const edgeAo = float(1).sub(smoothstep(0, margin.mul(CONTACT_AO_SHARE), reach));
+  const occlusion = edgeAo.mul(edgeAo).mul(vertexStage(iB.x));
+  const contactAlpha = float(1).sub(float(1).sub(dust).mul(float(1).sub(occlusion)));
+  const contactColored = dust.mul(float(1).sub(occlusion)); // dust shows where the dark edge does not cover it
+  const alpha = select(contact, contactAlpha, max(shadow, colored));
+  const coloredOut = select(contact, contactColored, colored);
+  m.colorNode = vec4(mix(vec3(0, 0, 0), tint, coloredOut.div(max(alpha, 0.001))), alpha);
   m.polygonOffset = true;
   m.polygonOffsetFactor = -2;
   m.name = 'crawlout-ground-decal';
@@ -128,6 +177,8 @@ export class DecalLayer {
   private readonly c: InstancedBufferAttribute;
   private material: MeshBasicNodeMaterial;
   private n = 0;
+  private readonly contactMasks: DataArrayTexture;
+  private contactUsed = 0;
   readonly capacity: number;
 
   constructor(scene: Scene, capacity: number) {
@@ -141,7 +192,22 @@ export class DecalLayer {
     geo.setAttribute('iDecalA', this.a);
     geo.setAttribute('iDecalB', this.b);
     geo.setAttribute('iDecalC', this.c);
-    this.material = createDecalMaterial(null);
+    const masks = new DataArrayTexture(
+      new Uint8Array(CONTACT_MASK_SIZE * CONTACT_MASK_SIZE * CONTACT_MASK_LAYERS).fill(255),
+      CONTACT_MASK_SIZE,
+      CONTACT_MASK_SIZE,
+      CONTACT_MASK_LAYERS,
+    );
+    masks.format = RedFormat;
+    masks.type = UnsignedByteType;
+    masks.magFilter = masks.minFilter = LinearFilter;
+    masks.wrapS = masks.wrapT = ClampToEdgeWrapping;
+    masks.generateMipmaps = false;
+    masks.flipY = false;
+    masks.name = 'crawlout-contact-masks';
+    masks.needsUpdate = true;
+    this.contactMasks = masks;
+    this.material = createDecalMaterial(null, masks);
     this.mesh = new Mesh(geo, this.material);
     this.mesh.name = 'ground-decals';
     this.mesh.frustumCulled = false;
@@ -154,7 +220,7 @@ export class DecalLayer {
   /** New terrain: the material bakes the height texture in. */
   setHeights(heights: HeightTexture | null): void {
     const old = this.material;
-    this.material = createDecalMaterial(heights);
+    this.material = createDecalMaterial(heights, this.contactMasks);
     this.mesh.material = this.material;
     old.dispose();
   }
@@ -186,6 +252,45 @@ export class DecalLayer {
     c[o + 3] = s.fillEdge ?? 0;
   }
 
+  /**
+   * A contact decal around an object: `halfX`/`halfZ` are the object's footprint (meters, centered on x, z); the decal
+   * reaches `margin` beyond it. `style` supplies shadow (dark edge) and fill (dust ring) strengths, see decals/contact.ts.
+   * With a `maskLayer` (addContactMask) the edge follows the mesh's own ground contact instead of the footprint box.
+   */
+  pushContact(
+    x: number,
+    z: number,
+    halfX: number,
+    halfZ: number,
+    margin: number,
+    style: DecalStyle,
+    maskLayer = -1,
+  ): void {
+    this.push(x, z, halfX + margin, halfZ + margin, {
+      ...style,
+      ringWidth: margin,
+      fillEdge: maskLayer + 1,
+    });
+  }
+
+  /**
+   * Stores a contact distance field (contactMask.ts, CONTACT_MASK_SIZE squared bytes) and returns its layer for
+   * pushContact, or -1 when all layers are taken.
+   */
+  addContactMask(bytes: Uint8Array): number {
+    const layerBytes = CONTACT_MASK_SIZE * CONTACT_MASK_SIZE;
+    if (bytes.length !== layerBytes || this.contactUsed >= CONTACT_MASK_LAYERS) return -1;
+    const layer = this.contactUsed++;
+    (this.contactMasks.image.data as Uint8Array).set(bytes, layer * layerBytes);
+    this.contactMasks.needsUpdate = true;
+    return layer;
+  }
+
+  /** Forgets all contact masks (new assets): the layers are reused. */
+  clearContactMasks(): void {
+    this.contactUsed = 0;
+  }
+
   end(): void {
     const n = this.n;
     this.mesh.count = n;
@@ -202,5 +307,6 @@ export class DecalLayer {
     this.mesh.removeFromParent();
     this.mesh.geometry.dispose();
     this.material.dispose();
+    this.contactMasks.dispose();
   }
 }
