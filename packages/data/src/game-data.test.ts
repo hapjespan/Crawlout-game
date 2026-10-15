@@ -221,7 +221,7 @@ describe('sim-tuning', () => {
         widthPermille: 2000,
         slackU: 192,
         directRangeU: 5120,
-        gatherRingU: 0,
+        gatherRingU: 256,
       },
     });
   });
@@ -435,7 +435,14 @@ describe('balans speltest 14 oktober: AI-script', () => {
       'hq',
       'hq',
       'hq',
+      'hq',
+      'front',
     ]);
+    expect(ai.buildOrder[8]).toEqual({
+      atTick: secondsToTicks(840),
+      buildingId: ix(data.buildings, 'turret_laser'),
+      site: AI_SITES.indexOf('front'),
+    });
     expect(ai.buildOrder[6]).toEqual({
       atTick: secondsToTicks(660),
       buildingId: ix(data.buildings, 'robotfabriek'),
@@ -456,10 +463,10 @@ describe('balans speltest 14 oktober: AI-script', () => {
         'lasergeleiding',
         'robotica',
         'lasertechniek',
+        'sentinel_protocol',
         'turret_netwerk',
         'turret_schade',
         'turret_bereik',
-        'sentinel_protocol',
       ].map((k) => ix(data.tech, k)),
     );
     expect(ai.armyLoadouts).toEqual([ix(data.loadouts, 'patrol'), ix(data.loadouts, 'militie')]);
@@ -485,13 +492,13 @@ describe('balans speltest 14 oktober: AI-script', () => {
     expect([ai.claimFromTicks, ai.claimFarFromTicks, ai.researchFromTicks]).toEqual([
       1200, 19800, 3600,
     ]);
-    expect(ai.richScrap).toBe(300);
+    expect(ai.richScrap).toBe(260);
     expect(ai.richBuilds.map((o) => AI_SITES[o.site])).toEqual([
       'front',
       'claim',
       'front',
-      'hq',
       'claim',
+      'front',
     ]);
     expect([ai.claimSafeRadiusU, ai.defendRadiusU, ai.rallyRadiusU]).toEqual([
       metersToUnits(30),
@@ -500,6 +507,35 @@ describe('balans speltest 14 oktober: AI-script', () => {
     ]);
     expect(AI_SITES[ai.rallySite]).toBe('front');
     expect(ai.allInWithoutNodes).toBe(true);
+  });
+
+  it('data 0.17.0: reserve, training and the robot army rules of the AI, in sim units', () => {
+    const d = loadGameData(raw());
+    const ai = d.aiScripts[0]!;
+    expect(ai.reserve).toEqual({ fromTicks: 13200, minArmy: 12, robotsFirstFromTicks: 21600 });
+    expect(ai.training!.fromTicks).toBe(14400);
+    expect(ai.training!.sequence.map((t) => d.training[t]!.key)).toContain('training_uithouding');
+    // a program listed n times is trained up to n points: never more than its maxPoints
+    for (const t of new Set(ai.training!.sequence)) {
+      const n = ai.training!.sequence.filter((x) => x === t).length;
+      expect(n).toBeLessThanOrEqual(d.training[t]!.maxPoints);
+    }
+    expect(ai.robots).toMatchObject({ countAsArmy: true, reservePop: 12 });
+    // without the optional blocks: null, and robots default to not counting and no reserved pop
+    const bare = clone(raw());
+    const a0 = bare.ai[0] as Record<string, unknown>;
+    delete a0.reserve;
+    delete a0.training;
+    const r = a0.robots as Record<string, unknown>;
+    delete r.countAsArmy;
+    delete r.reservePop;
+    const b = loadGameData(bare).aiScripts[0]!;
+    expect(b.reserve).toBeNull();
+    expect(b.training).toBeNull();
+    expect(b.robots).toMatchObject({ countAsArmy: false, reservePop: 0 });
+    const badTraining = clone(raw());
+    (badTraining.ai[0] as { training: { sequence: string[] } }).training.sequence.push('yoga');
+    expect(() => loadGameData(badTraining)).toThrow(/onbekende training 'yoga'/);
   });
 
   it('rallyPoint is weg uit het script (data 0.12.0): het strikte schema weigert het veld', () => {

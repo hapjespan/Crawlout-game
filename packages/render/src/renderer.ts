@@ -46,7 +46,7 @@ import {
 } from './picking/selection.js';
 import { createAtmosphere } from './lighting/atmosphere.js';
 import { TONE_EXPOSURE, TONE_MAPPING } from './lighting/lightRig.js';
-import { SunShadow, type ShadowQuality } from './shadows/sunShadow.js';
+import { defaultShadowQuality, SunShadow, type ShadowQuality } from './shadows/sunShadow.js';
 import {
   createInterpolatedFrame,
   simYawToRender,
@@ -76,6 +76,7 @@ import type { TerrainAlbedoLayout } from './terrain/albedoLayout.js';
 import { createGridTerrain, type TerrainGeometry } from './terrain/heightField.js';
 import type { TerrainChunkOptions } from './terrain/terrainChunks.js';
 import { TerrainLayer } from './terrain/terrainLayer.js';
+import type { PlatformSpec } from './terrain/terrainPlatforms.js';
 import { TerrainSkirt } from './terrain/terrainSkirt.js';
 import type { TerrainDetailOptions } from './terrain/terrainRefine.js';
 import {
@@ -121,9 +122,10 @@ export interface CreateRendererOptions {
   /** Entity capacity per batch. Default MAX_ENTITIES. */
   capacity?: number;
   /**
-   * The sun's real shadow (shadows/sunShadow.ts): buildings, units, trees and props cast it onto everything. true or
-   * 'high' (default): 4096 map, small props cast too; 'low': 2048 map, shorter shadow distance, only trees, buildings
-   * and units; false: off (blob decals only).
+   * The sun's real shadow (shadows/sunShadow.ts): buildings, units, trees and props cast it onto everything. 'high':
+   * 4096 map, small props cast too; 'low': 2048 map, shorter shadow distance, only trees, buildings and units; false:
+   * off (blob decals only). true or absent (default): the backend's choice (defaultShadowQuality): 'high' on WebGPU,
+   * 'low' on the WebGL2 fallback, where the shadow pass costs the most.
    */
   shadows?: boolean | ShadowQuality;
   /** Data texture precision: 'auto' (default) probes float32 support on WebGL2 and falls back to half-float. */
@@ -344,6 +346,9 @@ const PREVIEW_VALID: DecalStyle = {
 };
 const PREVIEW_INVALID: DecalStyle = { ...PREVIEW_VALID, color: DECAL_COLOR.invalid };
 
+/** Most milliseconds of a frame the foundations may take (terrain.setPlatforms); the rest waits for the next frame. */
+const PLATFORM_BUDGET_MS = 3;
+
 export async function createRenderer(opts: CreateRendererOptions): Promise<CrawloutRenderer> {
   const { canvas } = opts;
   const capacity = opts.capacity ?? MAX_ENTITIES;
@@ -366,7 +371,11 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
   );
 
   const shadowQuality: ShadowQuality | null =
-    opts.shadows === false ? null : opts.shadows === 'low' ? 'low' : 'high';
+    opts.shadows === false
+      ? null
+      : opts.shadows === 'low' || opts.shadows === 'high'
+        ? opts.shadows
+        : defaultShadowQuality(backend);
   const shadowsOn = shadowQuality !== null;
   gpu.shadowMap.enabled = shadowsOn;
   // r186: PCF is the soft one (Vogel disk + noise over hardware compares; PCFSoftShadowMap was folded into it).
@@ -718,6 +727,7 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
   };
   setTerrain(createGridTerrain(128, 128, 4));
 
+  const platformList: PlatformSpec[] = [];
   const interp = new SnapshotInterpolator();
   const frame = createInterpolatedFrame(capacity);
   let preview: PlacementPreview | null = null;
@@ -771,6 +781,9 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
     screen.update(camera);
     terrain.update(camera);
     interp.sample(now, frame);
+    // Foundations first: buildings level the ground under them, and everything below reads the levelled ground.
+    if (terrain.setPlatforms(structures.platforms(frame, platformList), PLATFORM_BUDGET_MS))
+      props.relayout();
     for (let i = 0; i < frame.count; i++) frame.y[i] = terrain.heightAt(frame.x[i]!, frame.z[i]!);
     decals.begin();
     zones.draw(t, decals); // first, so blobs and selection rings draw over the zone

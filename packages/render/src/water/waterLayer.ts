@@ -206,7 +206,9 @@ export function createWaterMaterial(opts: WaterLayerOptions): MeshBasicNodeMater
   base = mix(base.mul(shade), vec3(...SKY), fresnel);
   // Foam: a broken band at the shoreline and streaks over the fords, both moving with the ripples.
   const breakup = smoothstep(-0.02, 0.05, rippleH);
-  const shoreFoam = smoothstep(0.16, 0.03, depth).mul(breakup.mul(0.7).add(0.3));
+  const shoreFoam = float(1)
+    .sub(smoothstep(0.03, 0.16, depth))
+    .mul(breakup.mul(0.7).add(0.3));
   // Over a ford: thin streaks stretched along the flow, drifting with it, patchy and soft-edged. They only lighten the
   // water (the alpha stays, so the bed shows through) and fade out with distance, where a streak would be sub-pixel.
   const flowDir = normalize(flowV.add(vec2(0.001, 0.0005)));

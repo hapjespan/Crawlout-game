@@ -181,8 +181,22 @@ function sampleColors(
   return out;
 }
 
-/** Sky occlusion from the field's heights: mean positive horizon tangent over 8 directions at two radii. */
-export function computeOcclusion(field: TerrainField): void {
+/** Sample bounds (inclusive) of a part of the field. */
+export interface FieldRegion {
+  i0: number;
+  j0: number;
+  i1: number;
+  j1: number;
+}
+
+/** Reach of the occlusion samples (m): what a height change can darken or lighten around it. */
+export const OCCLUSION_REACH = OCCLUSION_RADII[OCCLUSION_RADII.length - 1]! + 0.5;
+
+/**
+ * Sky occlusion from the field's heights: mean positive horizon tangent over 8 directions at two radii. With `region`
+ * only those samples are recomputed (after a local height change: pad the changed samples by OCCLUSION_REACH).
+ */
+export function computeOcclusion(field: TerrainField, region?: FieldRegion): void {
   const { nx, nz, heights, step, occlusion } = field;
   const h = (i: number, j: number): number =>
     heights[Math.min(nz - 1, Math.max(0, j)) * nx + Math.min(nx - 1, Math.max(0, i))]!;
@@ -195,8 +209,12 @@ export function computeOcclusion(field: TerrainField): void {
         r,
       ]);
   const n = offsets.length;
-  for (let j = 0; j < nz; j++) {
-    for (let i = 0; i < nx; i++) {
+  const j0 = region ? Math.max(0, region.j0) : 0;
+  const j1 = region ? Math.min(nz - 1, region.j1) : nz - 1;
+  const i0 = region ? Math.max(0, region.i0) : 0;
+  const i1 = region ? Math.min(nx - 1, region.i1) : nx - 1;
+  for (let j = j0; j <= j1; j++) {
+    for (let i = i0; i <= i1; i++) {
       const h0 = heights[j * nx + i]!;
       let sum = 0;
       for (const [di, dj, r] of offsets) sum += Math.max(0, (h(i + di, j + dj) - h0) / r);

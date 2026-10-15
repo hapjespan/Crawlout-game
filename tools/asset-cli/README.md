@@ -141,7 +141,34 @@ Preview voor eigen controle: `tools/asset-cli/preview/characters.html` tekent de
 
 ## Robots (`src/robots.ts`, `assets/src/robots.json`)
 
-Placeholders uit basisvormen (box, cylinder, cone) op echte schaal (poppetje 1,8 m), gebouwd zoals de gebouw-varianten (zelfde `parts`-formaat, `maxLod` en `minLod` voor detail per LOD; vormen worden niet gesimplificeerd, de LODs ontstaan uit de onderdelen). Alles staat in `robots.json`: `flatMaterials`, `units` (rigide units) en `buildings` (footprint, oneven cellen, volgt de bounds). Per id moet een maat-bereik (`heightM`, bij units ook `widthM` en `depthM`) kloppen, anders faalt de build.
+Vijf procedurele assets op echte schaal (poppetje 1,8 m): de drie robots `dweller_robot_guard`, `_drone` en `_sentinel` (rigide units) en twee gebouwen, `dweller_building_robotfactory` (15 x 13) en `dweller_building_turret_laser` (3 x 3). Gebouwd zoals de gebouw-varianten (zelfde `parts`-formaat, `maxLod` en `minLod` voor detail per LOD; vormen worden niet gesimplificeerd, de LODs ontstaan uit de onderdelen), zonder downloads of externe modellen. Alles staat in `robots.json`: `flatMaterials`, `units` (rigide units) en `buildings` (footprint, oneven cellen, volgt de bounds). Per id moet een maat-bereik (`heightM`, bij units ook `widthM` en `depthM`) kloppen, anders faalt de build.
+
+**Vormen** (`src/shapes.ts`, naast `box`, `cylinder` en `cone`; een onderdeel staat in meters, de voet is het midden onder, behalve waar hieronder anders staat):
+
+| Onderdeel           | Wat het maakt                                                                                                                                                                                                         |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `box` met `chamfer` | doos met afgeschuinde randen (44 driehoeken), voor pantserplaten en rompen; `open: true` laat de onderkant weg (10 driehoeken), ook bij `cylinder` en `cone`                                                          |
+| `prism`             | een veelhoek (`profile`, ook hol) uitgetrokken over `height`: `axis` y (profiel in x en z, vanaf de voet), x (profiel in z en y) of z (profiel in x en y), de laatste twee gecentreerd op `position`; `taper`, `caps` |
+| `track`             | rups: stadion-zijaanzicht met loopvlak (`teeth`, `toothHeight`) over `width`, lang langs z, staat op y = 0                                                                                                            |
+| `corrugated`        | golfplaat als golfstrook (4 driehoeken per periode, een zijde), `length` langs x, `height` langs y, kammen `depth` naar +z; voor wanden en daken                                                                      |
+| `tube`              | gezwaaide buis langs `points` (kabels, leidingen), vloeiend geschaduwd                                                                                                                                                |
+| `sphere`            | bol of koepel (`half: 'top'`), midden op `position`                                                                                                                                                                   |
+
+Alle onderdelen kennen `mirror` (ook een gespiegelde kopie in x; positie, rotatie en asymmetrische vormen volgen) en `repeat` (`count` kopieen, elk `step` verder: wielen, klinknagels, ribben); `src/partExpand.ts` zet ze om in gewone onderdelen. De cilinders en kegels van de robots komen uit `shapes.ts` (`cleanShapes` in `generateBuilding`): de zijkant is tegen de klok in gewikkeld gezien van buiten en een kegel heeft geen ontaarde driehoeken. `makeCylinder` in `geometry.ts` windt de zijkant andersom (een gecullde render ziet dan de binnenkant); dat blijft zo voor de bestaande gebouw-varianten, zodat hun uitvoer byte-gelijk blijft.
+
+**Oppervlaksoort en team per onderdeel.** Het GLB heeft per materiaal een effen kleur en geen extra attributen; render leidt de oppervlaksoort af uit de materiaalnaam (`surfaceKindOfMaterial`, `packages/render/src/look/surfaces.ts`) en zet die per hoekpunt in `uvl.x` van de platte onderdelen (`buildingGeometryFromGltf`, hetzelfde pad voor gebouwen en rigide units; `rigidUnitMaterial.ts` leest `uvl.x` en het teammasker in `color.w`). De namen in `flatMaterials` zijn daarop gekozen en `test/robots.test.ts` bewaakt dat ze niet op de terugval (hout) uitkomen:
+
+| Materiaal                                            | Oppervlaksoort | Waar                                                      |
+| ---------------------------------------------------- | -------------- | --------------------------------------------------------- |
+| `metal`, `metal_dark`, `metal_light`, `metal_hazard` | geverfd metaal | romp, behuizingen, pantserplaten, gevels, deuren          |
+| `rust_metal`, `rust_dark`, `rust_roof`               | roest          | onderstel, wielen, uitlaten, golfplaat-dak                |
+| `rubber`                                             | leer           | rupsen, kabels, luchtroosters                             |
+| `lens`, `lens_red`, `lens_amber`, `lens_glass`       | lens           | sensorogen, vizier, laserkern, waarschuwingslampen, ramen |
+| `concrete`                                           | beton          | voet, laadperron, schoorsteen                             |
+| `opening`                                            | leer (donker)  | deuropening van de hal                                    |
+| `team_trim`                                          | geverfd metaal | team-band (het enige materiaal met de spelerskleur)       |
+
+Per asset (LOD0, LOD1, LOD2 in driehoeken; afmeting b x h x d in m): guard 1946 / 538 / 202, 3,0 x 2,2 x 3,5 (rupsen met loopvlak en wielen, geroest onderstel, romp met glacis, torso met team-band, kop met visier, twee armen met een loop, uitlaten, kabels); drone 956 / 508 / 200, 0,94 x 0,84 x 1,28 en `hover` 1,3 (schijf met koepel, camera-oog, thrusterpods, antenne, geleed reparatie-arm); sentinel 1952 / 486 / 178, 4,1 x 3,5 x 6,4 (zwaar rupsonderstel, hoekige romp, motordek met uitlaten, zeshoekige geschuttoren, kanon van 4 m met remmen en gloedringen); robotfactory 2166 / 806 / 166, 14,9 x 9,6 x 13,3 (golfplaat-loods, golfplaat-dak met lichtkoepels en ventilatoren, schuifdeur van 6 x 4 m met rail, schoorsteen tot 9,6 m, laadperron met oprit en afdak, portaalkraan); turret_laser 1034 / 388 / 152, 3,0 x 3,2 x 3,1 (betonnen voet, achthoekige behuizing met ribben en koepel, tweelingrail met cyaan kern).
 
 Rigide units (`kind: 'rigid-unit'`): geen skelet, geen animaties, geen bake; beweging is een transform van het hele model. Manifest-velden (contract met render, `src/manifest.ts`):
 
@@ -279,6 +306,8 @@ const field = heightfieldSchema.parse(
 
 ## Tests
 
-`test/packs.test.ts` toetst de pack-buis met een synthetische pack-GLB (splitsen, FBX-draaiing, echte schaal, voet en midden, MASK met WebP-alfa, de config, bladsoort, determinisme, behoud van de uitvoer als de bron ontbreekt); `test/packs-dist.test.ts` toetst de gecommitte uitvoer in `assets/dist` tegen `packs.json`: per categorie redelijke hoogtes, voet op y = 0, budgetten en alfagedrag.\n\n`test/buildings.test.ts` toetst de gebouwen: config tegen `data/buildings.json`, footprint-schaal per LOD, grond, team-materiaal, geen PBR, budgetten, determinisme (twee runs, gelijke bytes), het manifest-schema en de meshgereedschappen.
+`test/packs.test.ts` toetst de pack-buis met een synthetische pack-GLB (splitsen, FBX-draaiing, echte schaal, voet en midden, MASK met WebP-alfa, de config, bladsoort, determinisme, behoud van de uitvoer als de bron ontbreekt); `test/packs-dist.test.ts` toetst de gecommitte uitvoer in `assets/dist` tegen `packs.json`: per categorie redelijke hoogtes, voet op y = 0, budgetten en alfagedrag.\n\n`test/shapes.test.ts` toetst de vormen van `src/shapes.ts` (windrichting tegen de normalen, gesloten volumes, driehoeksaantallen, determinisme) en `repeat` en `mirror`; `test/robots.test.ts` de vijf robot-assets (maten, 10 procent van de oude placeholders, budgetten per LOD, deur van 4 m, oppervlaksoort per materiaal, manifestvelden en de LOD-GLB's in `assets/dist`).
+
+`test/buildings.test.ts` toetst de gebouwen: config tegen `data/buildings.json`, footprint-schaal per LOD, grond, team-materiaal, geen PBR, budgetten, determinisme (twee runs, gelijke bytes), het manifest-schema en de meshgereedschappen.
 
 `npx -y pnpm@9 test` (`test/bake.test.ts` voor de bakker, inclusief roundtrip van een bekende pose; `test/conform.test.ts` voor bone-snoeien, rigmap, simplify met skinning en een smoke-test op de echte UAL-GLB) genereert synthetische GLB's met gltf-transform (geldige humanoid-dummy, te zware en foute varianten) in `test/fixtures.ts`.

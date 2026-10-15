@@ -90,6 +90,7 @@ function researchWork(ctx: SimContext, i: number): void {
   const p = w.owner[i]!;
   if (t === undefined) {
     w.research[i] = 0;
+    w.researchPaid[i] = 0;
     return;
   }
   const intel = liveHeroBonus(ctx, p, SPECIAL_I, ctx.config.special.intelligenceResearchPermille);
@@ -98,6 +99,7 @@ function researchWork(ctx: SimContext, i: number): void {
     workRate(PROGRESS_ONE, effectSum(ctx, p, STAT_RESEARCH_TIME, w.typeId[i]!, false) + intel);
   if (w.work[i]! < t.researchTicks * PROGRESS_ONE) return;
   w.research[i] = 0;
+  w.researchPaid[i] = 0;
   w.work[i] = 0;
   ctx.ps.tech[p] = (ctx.ps.tech[p]! | (1 << t.techId)) >>> 0;
   refreshPlayer(ctx, p);

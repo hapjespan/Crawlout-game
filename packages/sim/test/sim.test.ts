@@ -79,6 +79,17 @@ describe('ECS en entity-ids', () => {
       unitTypes: [{ ...TEST_SIM_CONFIG.unitTypes[0]!, speed: 1000 }],
     };
     expect(() => createSim({ ...testInit(), config: fast })).toThrow();
+    // provides is a 16-bit mask (fase-0 section 20, decision 3): bit 15 is fine, bit 16 is not
+    const withProvides = (provides: number) => ({
+      ...TEST_SIM_CONFIG,
+      buildingTypes: TEST_SIM_CONFIG.buildingTypes.map((b, k) =>
+        k === TEST_SIM_CONFIG.buildingTypes.length - 1
+          ? { ...b, provides: b.provides | provides }
+          : b,
+      ),
+    });
+    expect(() => createSim({ ...testInit(), config: withProvides(1 << 15) })).not.toThrow();
+    expect(() => createSim({ ...testInit(), config: withProvides(1 << 16) })).toThrow();
   });
 });
 

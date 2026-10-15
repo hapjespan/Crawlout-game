@@ -28,11 +28,13 @@ describe('spiegel: AI tegen AI op Rustbelt XL zonder toeval', () => {
     'verwisselproef: wie het midden krijgt, verandert alleen de rollen, niet de uitkomst',
     { timeout: 120_000 },
     () => {
-      // seed 1: speler 0 krijgt het midden bij de gelijke stand, seed 2: speler 1. Het claimpunt in het midden ligt een
+      // seed 7: speler 0 krijgt het midden bij de gelijke stand, seed 2: speler 1. Het claimpunt in het midden ligt een
       // halve cel naast het symmetriepunt (de map plaatst punten op celmiddens), dus de potjes zijn daarna niet meer
       // exact elkaars spiegelbeeld; de uitkomst wel: de winnaar is verwisseld, bijna in hetzelfde frame.
-      const r = mirrorSwap(1, 2);
-      expect(r.winners).toEqual([1, 0]);
+      // Data 0.17.0: seed 1 (was het paar 1 en 2) heeft rond minuut 22 een tweede gelijke stand bij het midden, die
+      // sim.rng opnieuw beslist; dan is de verwisseling per definitie weg (beide potjes worden gelijk). Seed 7 niet.
+      const r = mirrorSwap(7, 2);
+      expect(r.winners).toEqual([0, 1]);
       expect(Math.abs(r.frames[0] - r.frames[1])).toBeLessThan(1200);
     },
   );
