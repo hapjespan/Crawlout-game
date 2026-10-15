@@ -94,7 +94,7 @@ export const bakedAnimationSchema = z
 export const assetEntrySchema = z
   .object({
     id: z.string().min(1),
-    kind: z.enum(['character', 'prop', 'building']),
+    kind: z.enum(['character', 'prop', 'building', 'rigid-unit']),
     bounds: boundsSchema,
     /** Altijd precies LOD 0, 1 en 2, in die volgorde. */
     lods: z.tuple([lodSchema, lodSchema, lodSchema]),
@@ -109,7 +109,7 @@ export const assetEntrySchema = z
     footprint: z
       .object({ w: z.number().int().positive(), h: z.number().int().positive() })
       .optional(),
-    /** Alleen gebouwen: namen van de materialen die de spelerskleur krijgen (naam bevat "team"); altijd minstens een. */
+    /** Gebouwen en rigide units: namen van de materialen die de spelerskleur krijgen (naam bevat "team"); altijd minstens een. */
     teamMaterials: z.array(z.string().min(1)).optional(),
     /**
      * Waar het teammasker (de delen die de spelerskleur krijgen) vandaan komt, zoals render's `TeamMaskSource`:
@@ -127,8 +127,46 @@ export const assetEntrySchema = z
      * met blending. Ontbreekt het veld, dan is het materiaal ondoorzichtig.
      */
     alpha: z.enum(['mask']).optional(),
+    /**
+     * Alleen kind 'rigid-unit' (robots: een star model zonder skelet, geen animaties, geen bake; beweging is een
+     * transform van het hele model): altijd `true`. Render tekent zo'n unit als een instanced mesh in plaats van een
+     * geskind karakter. Velden die render leest: `rigid`, `bounds`, `teamMaterials` en `hover`.
+     */
+    rigid: z.literal(true).optional(),
+    /**
+     * Alleen kind 'rigid-unit' die zweeft (reparatiedrone): de hoogte in meters van de onderkant van het model boven
+     * de grond. De zweefhoogte zit al in het model gebakken (`bounds.min[1]` is gelijk aan `hover`): render zet het model
+     * op de grond-y van de unit en telt `hover` er NIET nog eens bij op. Het veld dient voor wat op de grond hoort
+     * (schaduwvlek, selectiering, healthbar-afstand). Ontbreekt het, dan staat het model op de grond (min y = 0).
+     */
+    hover: z.number().positive().optional(),
   })
   .superRefine((entry, ctx) => {
+    if (entry.kind === 'rigid-unit') {
+      if (entry.rigid !== true)
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'een rigid-unit heeft rigid: true' });
+      if (!entry.teamMaterials || entry.teamMaterials.length === 0)
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'een rigid-unit heeft een team-materiaal (teamMaterials)',
+        });
+      if (entry.footprint || entry.boneCount !== 0 || entry.baked || entry.animations.length > 0)
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'een rigid-unit heeft geen footprint, bones, animaties of bake',
+        });
+      if (entry.hover !== undefined && Math.abs(entry.bounds.min[1] - entry.hover) > 0.01)
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `hover ${entry.hover} komt niet overeen met bounds.min.y ${entry.bounds.min[1]}`,
+        });
+      return;
+    }
+    if (entry.rigid || entry.hover !== undefined)
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'rigid en hover zijn alleen voor rigid-units',
+      });
     if ((entry.category || entry.alpha) && entry.kind !== 'prop')
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
