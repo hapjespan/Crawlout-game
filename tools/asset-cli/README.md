@@ -145,13 +145,13 @@ Placeholders uit basisvormen (box, cylinder, cone) op echte schaal (poppetje 1,8
 
 Rigide units (`kind: 'rigid-unit'`): geen skelet, geen animaties, geen bake; beweging is een transform van het hele model. Manifest-velden (contract met render, `src/manifest.ts`):
 
-| Veld | Betekenis |
-| --- | --- |
-| `kind: 'rigid-unit'` | star model |
-| `rigid: true` | verplicht bij dit kind |
-| `bounds` | meters, modelruimte, kijkt naar +Z, midden op x = z = 0 |
-| `teamMaterials` | namen van de materialen met de spelerskleur (`['team_trim']`), `teamMask: 'materialName'` |
-| `hover` | optioneel, alleen zwevers (drone): meter van de onderkant boven de grond. De zweefhoogte zit al in het model (`bounds.min.y == hover`); render telt `hover` er niet bij op, maar gebruikt het voor schaduwvlek, selectiering en healthbar |
+| Veld                 | Betekenis                                                                                                                                                                                                                                 |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `kind: 'rigid-unit'` | star model                                                                                                                                                                                                                                |
+| `rigid: true`        | verplicht bij dit kind                                                                                                                                                                                                                    |
+| `bounds`             | meters, modelruimte, kijkt naar +Z, midden op x = z = 0                                                                                                                                                                                   |
+| `teamMaterials`      | namen van de materialen met de spelerskleur (`['team_trim']`), `teamMask: 'materialName'`                                                                                                                                                 |
+| `hover`              | optioneel, alleen zwevers (drone): meter van de onderkant boven de grond. De zweefhoogte zit al in het model (`bounds.min.y == hover`); render telt `hover` er niet bij op, maar gebruikt het voor schaduwvlek, selectiering en healthbar |
 
 `boneCount` is 0 en `footprint` ontbreekt. Preview: `tools/asset-cli/preview/robots.html` (serveer de repo-root statisch; opties `lod`, `az`, `team`, `only`).
 
