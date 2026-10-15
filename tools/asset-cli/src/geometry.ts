@@ -288,24 +288,34 @@ export function simplifyMesh(mesh: Mesh, targetTriangles: number, options: Simpl
   }
   const nw = options.normalWeight;
   const weights = mesh.uvs ? [nw, nw, nw, options.uvWeight, options.uvWeight] : [nw, nw, nw];
-  let indices = mesh.indices;
-  let goal = target;
-  for (let pass = 0; pass < 6; pass++) {
-    const [simplified] = MeshoptSimplifier.simplifyWithAttributes(
-      indices,
-      mesh.positions,
-      3,
-      attributes,
-      stride,
-      weights,
-      null,
-      goal * 3,
-      1,
-      [...options.flags],
-    );
-    indices = simplified;
-    if (indices.length / 3 <= target) break;
-    goal = Math.max(1, Math.floor(goal * 0.85));
+  const run = (flags: readonly string[]): Uint32Array => {
+    let indices = mesh.indices;
+    let goal = target;
+    for (let pass = 0; pass < 6; pass++) {
+      const [simplified] = MeshoptSimplifier.simplifyWithAttributes(
+        indices,
+        mesh.positions,
+        3,
+        attributes,
+        stride,
+        weights,
+        null,
+        goal * 3,
+        1,
+        [...flags] as SimplifyOptions['flags'][number][],
+      );
+      indices = simplified;
+      if (indices.length / 3 <= target) break;
+      goal = Math.max(1, Math.floor(goal * 0.85));
+    }
+    return indices;
+  };
+  let indices = run(options.flags);
+  // `Prune` laat losse delen vallen zodra het budget krap is en kan daardoor ver onder het doel eindigen. Eindigt het
+  // onder 90 procent van het doel, probeer dan zonder `Prune` en neem dat resultaat als het dichter bij het doel zit.
+  if (indices.length / 3 < target * 0.9 && options.flags.includes('Prune')) {
+    const gentle = run(options.flags.filter((flag) => flag !== 'Prune'));
+    if (gentle.length / 3 <= target && gentle.length > indices.length) indices = gentle;
   }
   return compact(mesh, indices);
 }

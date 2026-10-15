@@ -177,28 +177,69 @@ function shapeMeshes(part: Exclude<VariantPart, HousePart>): Mesh {
   }
 }
 
+/** Hoekpunten van alle meshes in een lijst. */
+function allPositions(meshes: readonly { mesh: Mesh }[]): Float32Array {
+  return Float32Array.from(meshes.flatMap((m) => [...m.mesh.positions]));
+}
+
 /**
- * Het huisonderdeel in meters: voet in het midden, geschaald zodat de bounds `size` vullen (de hoogte volgt uit
- * `heightFactor`), geplaatst en gedraaid. De bounds komen uit de meshes zoals ze zijn (na vereenvoudiging), zodat de
- * footprint exact klopt ook als een rafelrand is weggevallen.
+ * Het huisonderdeel in meters: voet in het midden, geplaatst en gedraaid. Bij `fit` 'stretch' vullen de bounds van
+ * de meshes `size` exact (niet-uniform; de hoogte volgt uit `heightFactor`). Anders is de schaal uniform: het
+ * onderdeel (na rotatie) past in `size`, gecentreerd, de voet op `position`. Bij 'house' komen de bounds uit het hele
+ * bronhuis (`whole`) in plaats van uit de geselecteerde meshes, zodat een deel (het dak) op zijn plek in het huis blijft
+ * staan en alle LODs dezelfde schaal krijgen. De bounds komen uit de meshes zoals ze zijn (na vereenvoudiging) bij
+ * 'stretch' en 'contain', zodat de footprint exact klopt ook als een rafelrand is weggevallen.
  */
 function placeHouse(
   meshes: SourceHouse['meshes'],
   part: HousePart,
   names: Map<string, string>,
+  whole: SourceHouse['meshes'],
 ): PartMeshes['meshes'] {
-  const { min, max } = extent(Float32Array.from(meshes.flatMap((m) => [...m.mesh.positions])));
-  const sx = part.size[0] / (max[0] - min[0]);
-  const sz = part.size[1] / (max[2] - min[2]);
-  const sy = part.heightFactor * ((sx + sz) / 2);
+  const fit = part.fit ?? 'contain';
+  const reference = fit === 'house' ? whole : meshes;
+  const { min, max } = extent(allPositions(reference));
   const toLocal = makeTransform({
     translation: [-(min[0] + max[0]) / 2, -min[1], -(min[2] + max[2]) / 2],
   });
-  const place = makeTransform({
-    scale: [sx, sy, sz],
-    ...(part.rotation ? { rotation: part.rotation } : {}),
-    translation: part.position,
-  });
+  let place: Transform;
+  if (fit === 'stretch') {
+    const sx = part.size[0] / (max[0] - min[0]);
+    const sz = part.size[1] / (max[2] - min[2]);
+    const sy = part.heightFactor * ((sx + sz) / 2);
+    place = makeTransform({
+      scale: [sx, sy, sz],
+      ...(part.rotation ? { rotation: part.rotation } : {}),
+      translation: part.position,
+    });
+  } else {
+    // Bounds van de referentie na rotatie (schaal 1): daaruit de uniforme schaal en de verschuiving naar het midden.
+    const rotate = makeTransform({ ...(part.rotation ? { rotation: part.rotation } : {}) });
+    const rotated = extent(
+      allPositions(
+        reference.map((m) => ({ mesh: transformMesh(transformMesh(m.mesh, toLocal), rotate) })),
+      ),
+    );
+    const s = Math.min(
+      part.size[0] / (rotated.max[0] - rotated.min[0]),
+      part.size[1] / (rotated.max[2] - rotated.min[2]),
+    );
+    const scale: Vec3 = [s, s * part.heightFactor, s];
+    const center: Vec3 = [
+      (rotated.min[0] + rotated.max[0]) / 2,
+      rotated.min[1],
+      (rotated.min[2] + rotated.max[2]) / 2,
+    ];
+    place = makeTransform({
+      scale,
+      ...(part.rotation ? { rotation: part.rotation } : {}),
+      translation: [
+        part.position[0] - center[0] * scale[0],
+        part.position[1] - center[1] * scale[1],
+        part.position[2] - center[2] * scale[2],
+      ],
+    });
+  }
   return meshes.map((m) => {
     const material = names.get(m.material);
     if (!material) throw new Error(`bronmateriaal "${m.material}" staat niet in sourceMaterials`);
@@ -294,7 +335,8 @@ export async function generateBuilding(
           BUDGETS.buildingSimplify,
         ),
       }));
-      for (const m of placeHouse(simplified, part, names)) accumulate(m.material, m.mesh);
+      for (const m of placeHouse(simplified, part, names, source.meshes))
+        accumulate(m.material, m.mesh);
     } else {
       accumulate(part.material, placeShape(part));
     }
