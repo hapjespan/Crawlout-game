@@ -67,6 +67,7 @@ export {
   makeId,
 } from './ecs/world.js';
 export { MAX_FLOW_FIELDS } from './flowfield.js';
+export type { PathTuning } from './flowfield.js';
 export { STATE_FORMAT_VERSION } from './state.js';
 export type { SimCommand } from './systems/commands.js';
 export type {

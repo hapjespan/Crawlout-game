@@ -91,6 +91,8 @@ function chunks(ids: readonly number[]): number[][] {
 export class AiScratch {
   /** Plunderaars met een Gather-order per node-index. */
   readonly nodeLoad = new Int32Array(MAX_ENTITIES);
+  /** Eigen gebouwen van de speler voor findThreat. */
+  readonly own = new Int32Array(MAX_ENTITIES);
 }
 
 export function aiSystem(ctx: SimContext, census: Census, scratch: AiScratch): void {
@@ -193,8 +195,13 @@ function findSite(
       const fx = x - (fw >> 1);
       const fy = y - (fh >> 1);
       if (!footprintFree(ctx, fx - 1, fy - 1, fw + 2, fh + 2)) return false;
-      for (let j = 0; j < w.highWater; j++) {
-        if (!w.has(j, C.resource) && !w.has(j, C.claim)) continue;
+      const idx = ctx.index;
+      idx.refresh(w);
+      for (let k = 0; k < idx.nodeCount; k++) {
+        const j = idx.nodes[k]!;
+        if (distToRect2(w.x[j]!, w.y[j]!, fx - 1, fy - 1, fw + 2, fh + 2) === 0) return false;
+      }
+      for (const j of ctx.claimPoints) {
         if (distToRect2(w.x[j]!, w.y[j]!, fx - 1, fy - 1, fw + 2, fh + 2) === 0) return false;
       }
       const m = (x - mx) * (x - mx) + (y - my) * (y - my);
@@ -417,8 +424,12 @@ function think(
   const hero = heroIndex(ctx, p);
   const heroId = hero < 0 ? -1 : w.idOf(hero);
   let nodes = 0;
-  for (let j = 0; j < w.highWater; j++)
-    if (w.has(j, C.resource) && w.amount[j]! > 0 && nodeAllowed(ctx, j, p)) nodes++;
+  const idx = ctx.index;
+  idx.refresh(w);
+  for (let k = 0; k < idx.nodeCount; k++) {
+    const j = idx.nodes[k]!;
+    if (w.amount[j]! > 0 && nodeAllowed(ctx, j, p)) nodes++;
+  }
   const h = heroOf(ctx, p);
   // zonder nodes komt er geen scrap meer bij: dan wachten op het oplappen heeft geen zin
   const heroWaits =
@@ -581,13 +592,10 @@ function think(
     let best = -1;
     let bestEx = false;
     let bestD = 0;
-    for (let j = 0; j < w.highWater; j++) {
-      if (
-        !w.has(j, C.resource) ||
-        w.amount[j]! <= 0 ||
-        load[j]! >= script.scavengersPerNode ||
-        !nodeAllowed(ctx, j, p)
-      )
+    idx.refresh(w);
+    for (let k = 0; k < idx.nodeCount; k++) {
+      const j = idx.nodes[k]!;
+      if (w.amount[j]! <= 0 || load[j]! >= script.scavengersPerNode || !nodeAllowed(ctx, j, p))
         continue;
       const ex = exclusiveFor(ctx, j, p);
       const dx = w.x[j]! - w.x[i]!;
@@ -611,7 +619,7 @@ function think(
   }
 
   // 10a dreiging: de vijandelijke unit bij een eigen gebouw het dichtst bij het hoofdgebouw
-  const threat = hq >= 0 ? findThreat(ctx, p, hq, script.defendRadius) : -1;
+  const threat = hq >= 0 ? findThreat(ctx, scratch, p, hq, script.defendRadius) : -1;
 
   // 8 rolverdeling
   if (workshop && scavs.length > 0 && !holdScrap) {
@@ -770,10 +778,36 @@ function upgradeOne(ctx: SimContext, militia: readonly number[], best: number): 
   }
 }
 
-/** Index van de vijandelijke unit binnen r van een eigen gebouw van p, het dichtst bij het hoofdgebouw; -1 als er geen is. */
-function findThreat(ctx: SimContext, p: number, hq: number, r: number): number {
+/**
+ * Index van de vijandelijke unit binnen r van een eigen gebouw van p, het dichtst bij het hoofdgebouw; -1 als er geen is.
+ * Eerst de eigen gebouwen en hun omhullende (plus r), dan per vijandelijke unit alleen binnen die omhullende de
+ * gebouwen: zelfde uitkomst als alle paren, maar op een grote map met verre vijanden bijna gratis.
+ */
+function findThreat(ctx: SimContext, scratch: AiScratch, p: number, hq: number, r: number): number {
   const w = ctx.world;
   const r2 = r * r;
+  const idx = ctx.index;
+  idx.refresh(w);
+  const own = scratch.own;
+  let n = 0;
+  let bx0 = 0;
+  let by0 = 0;
+  let bx1 = 0;
+  let by1 = 0;
+  for (let k = 0; k < idx.buildingCount; k++) {
+    const b = idx.buildings[k]!;
+    if (w.owner[b] !== p) continue;
+    own[n++] = b;
+    const x0 = (w.fx[b]! << 8) - r;
+    const y0 = (w.fy[b]! << 8) - r;
+    const x1 = ((w.fx[b]! + w.fw[b]!) << 8) + r;
+    const y1 = ((w.fy[b]! + w.fh[b]!) << 8) + r;
+    if (n === 1 || x0 < bx0) bx0 = x0;
+    if (n === 1 || y0 < by0) by0 = y0;
+    if (n === 1 || x1 > bx1) bx1 = x1;
+    if (n === 1 || y1 > by1) by1 = y1;
+  }
+  if (n === 0) return -1;
   let best = -1;
   let bestD = 0;
   for (let j = 0; j < w.highWater; j++) {
@@ -782,9 +816,10 @@ function findThreat(ctx: SimContext, p: number, hq: number, r: number): number {
     if (o === p || o >= ctx.playerCount) continue;
     const x = w.x[j]!;
     const y = w.y[j]!;
+    if (x < bx0 || x > bx1 || y < by0 || y > by1) continue;
     let near = false;
-    for (let b = 0; b < w.highWater && !near; b++) {
-      if (w.owner[b] !== p || !w.has(b, C.building)) continue;
+    for (let k = 0; k < n && !near; k++) {
+      const b = own[k]!;
       if (distToRect2(x, y, w.fx[b]!, w.fy[b]!, w.fw[b]!, w.fh[b]!) <= r2) near = true;
     }
     if (!near) continue;

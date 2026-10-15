@@ -283,8 +283,15 @@ export interface SimConfig {
   readonly arriveRadius: number;
   /** Deel van de overlap dat separatie per tick oplost, in promille (0..1000). */
   readonly separationPermille: number;
-  /** Maximaal aantal flow-field-cellen dat per tick wordt uitgebreid, alle velden samen. */
-  readonly flowFieldBudget: number;
+  /** Padvinding: sectorzijde in cellen (macht van 2, 4..64); bepaalt de padgraaf en dus de paden. */
+  readonly pathSectorCells: number;
+  /** Padvinding: langste ingang per knopenpaar op een sectorgrens, in cellen (1..pathSectorCells). */
+  readonly pathEntranceMaxCells: number;
+  /**
+   * Padvinding: geheugenbudget van de regiovelden in cellen. Alleen snelheid, nooit de uitkomst (regiovelden zijn
+   * een cache van een pure functie), dus niet in de envHash.
+   */
+  readonly pathCacheCells: number;
   /** animT-stap per tick (0..65535 wrapt). */
   readonly walkAnimStep: number;
   /** Afstand waarbinnen militie (en elke unit op AttackMove) zelf een doel kiest. */
@@ -323,7 +330,12 @@ export interface SimInit {
 /** Alles wat geen state is maar wel nodig is om een geserialiseerde state te laden. */
 export type SimEnv = Omit<SimInit, 'seed'>;
 
-/** Geometrie: maximale mapzijde in cellen; houdt celindices en coordinaten ruim binnen int32. */
+/**
+ * Geometrie: maximale mapzijde in cellen; houdt celindices en coordinaten ruim binnen int32. Nagerekend voor de grote
+ * map (sim-xl): bij 1024 is een coordinaat hoogstens 1024 * 256 = 262.144 (de grote map van 384: 98.304), een celindex
+ * hoogstens 2^20, een kwadraat van een afstand hoogstens 2 * 262.144^2 (ongeveer 1,4e11, ruim onder 2^53 voor isqrt en
+ * de vergelijkingen), en past de lokale regio-index van de padvinding (hoogstens S*S/2) in een Uint16.
+ */
 export const MAX_MAP_CELLS_SIDE = 1024;
 /** Geometrie: bovengrens snelheid, kleiner dan een cel, zodat een unit nooit door een muur van 1 cel tunnelt. */
 export const MAX_SPEED = UNITS_PER_METER >> 1;
@@ -394,7 +406,13 @@ export function validateEnv(env: SimEnv): void {
   );
   req(intIn(config.arriveRadius, 0, MAX_RADIUS * 4), 'arriveRadius');
   req(intIn(config.separationPermille, 0, 1000), 'separationPermille');
-  req(intIn(config.flowFieldBudget, 1, 1 << 24), 'flowFieldBudget');
+  req(
+    intIn(config.pathSectorCells, 4, 64) &&
+      (config.pathSectorCells & (config.pathSectorCells - 1)) === 0,
+    'pathSectorCells (macht van 2, 4..64)',
+  );
+  req(intIn(config.pathEntranceMaxCells, 1, config.pathSectorCells), 'pathEntranceMaxCells');
+  req(intIn(config.pathCacheCells, 1, 1 << 26), 'pathCacheCells');
   req(intIn(config.walkAnimStep, 0, U16), 'walkAnimStep');
   req(intIn(config.ticksPerMinute, 1, I31), 'ticksPerMinute');
   req(intIn(config.aggroRange, 0, MAX_MAP_CELLS_SIDE << 8), 'aggroRange');
@@ -706,7 +724,8 @@ export function envHash(env: SimEnv): number {
     c.ticksPerMinute,
     c.arriveRadius,
     c.separationPermille,
-    c.flowFieldBudget,
+    c.pathSectorCells,
+    c.pathEntranceMaxCells,
     c.walkAnimStep,
     c.aggroRange,
     c.interactRange,

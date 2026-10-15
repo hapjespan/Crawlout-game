@@ -32,11 +32,15 @@ const BUILD_EVERY = 600;
 const DEPART_CAP = 400;
 
 export interface BenchXlResult {
+  /** createSim inclusief de padgraaf over de hele map (buiten de ticks). */
+  buildMs: number;
   mapCells: number;
   units: number;
   ticks: number;
   totalMs: number;
   maxMs: number;
+  /** Maximum zonder de eerste tick (koude JIT plus de eerste zoekopdrachten van alle bevelen op frame 0). */
+  maxLaterMs: number;
   finalHash: number;
   shots: number;
   deaths: number;
@@ -114,7 +118,9 @@ export function runBenchXl(clock: () => number): BenchXlResult {
   const xl = createXlTestMap();
   const map = { ...xl, scrapNodes: xl.scrapNodes.map((n) => ({ ...n, amount: 1_000_000 })) };
   const W = map.w;
+  const t0Build = clock();
   const sim = createSim({ seed: 4242, players: testPlayers(2), map, config });
+  const buildMs = clock() - t0Build;
   const nodes = sim.entityIds().filter((id) => sim.getUnit(id)!.kind === 'scrapNode');
   // node 2 ligt rechtsboven (over de rivier voor speler 0), node 3 linksonder (over de rivier voor speler 1)
   const farNode = [nodes[2]!, nodes[3]!];
@@ -185,6 +191,7 @@ export function runBenchXl(clock: () => number): BenchXlResult {
 
   let total = 0;
   let max = 0;
+  let maxLater = 0;
   let units = 0;
   let shots = 0;
   let deaths = 0;
@@ -203,6 +210,7 @@ export function runBenchXl(clock: () => number): BenchXlResult {
     const dt = clock() - t0;
     total += dt;
     if (dt > max) max = dt;
+    if (f > 0 && dt > maxLater) maxLater = dt;
     for (let k = 0; k < sim.events.count; k++) {
       if (sim.events.type[k] === EVENT_TYPE.shotFired) shots++;
       else if (sim.events.type[k] === EVENT_TYPE.death) deaths++;
@@ -241,11 +249,13 @@ export function runBenchXl(clock: () => number): BenchXlResult {
   }
   memoryBytes = Math.max(memoryBytes, flowMemory(sim));
   return {
+    buildMs,
     mapCells: map.w * map.h,
     units,
     ticks: TICKS,
     totalMs: total,
     maxMs: max,
+    maxLaterMs: maxLater,
     finalHash: sim.hash(),
     shots,
     deaths,
@@ -262,11 +272,50 @@ export function runBenchXl(clock: () => number): BenchXlResult {
   };
 }
 
+export interface BenchXlAiResult {
+  ticks: number;
+  totalMs: number;
+  maxMs: number;
+  units: number;
+  buildings: number;
+  finalHash: number;
+}
+
+/** Tweede deel: de scripted AI tegen zichzelf op de XL-testmap (zoekfuncties over de hele map, bouwen, golven). */
+export function runAiXl(clock: () => number, ticks = 12_000): BenchXlAiResult {
+  const data = loadGameDataFromDir(fileURLToPath(new URL('../../../data', import.meta.url)));
+  const config = simConfigFromGameData(data);
+  const sim = createSim({
+    seed: 99,
+    players: testPlayers(2, true),
+    map: createXlTestMap(),
+    config,
+  });
+  let total = 0;
+  let max = 0;
+  for (let f = 0; f < ticks; f++) {
+    sim.applyBundle({ frame: f, commands: [] });
+    const t0 = clock();
+    sim.tick();
+    const dt = clock() - t0;
+    total += dt;
+    if (dt > max) max = dt;
+  }
+  let units = 0;
+  let buildings = 0;
+  for (const id of sim.entityIds()) {
+    const k = sim.getUnit(id)!.kind;
+    if (k === 'unit' || k === 'hero') units++;
+    else if (k === 'building') buildings++;
+  }
+  return { ticks, totalMs: total, maxMs: max, units, buildings, finalHash: sim.hash() };
+}
+
 export function reportBenchXl(r: BenchXlResult): void {
   const avg = r.totalMs / r.ticks;
   console.log(
     `bench-xl: ${r.mapCells} cellen, ${r.units} units, ${r.ticks} ticks, gemiddeld ${avg.toFixed(3)} ms/tick, ` +
-      `max ${r.maxMs.toFixed(2)} ms, eindhash 0x${r.finalHash.toString(16).padStart(8, '0')} ` +
+      `max ${r.maxMs.toFixed(2)} ms (na tick 0: ${r.maxLaterMs.toFixed(2)} ms), eindhash 0x${r.finalHash.toString(16).padStart(8, '0')} ` +
       `(budget 5 ms: ${avg < 5 ? 'binnen' : 'BOVEN'})`,
   );
   console.log(
@@ -274,6 +323,7 @@ export function reportBenchXl(r: BenchXlResult): void {
       `bevelen (eerste lange route max ${r.firstDepartMax} ticks; doel 10), ${r.departMissed} niet vertrokken binnen ` +
       `${DEPART_CAP} ticks, ${r.noField} zonder veld (${r.departMax <= 10 && r.departMissed === 0 ? 'binnen' : 'BOVEN'} doel)`,
   );
+  console.log(`bench-xl: createSim met padgraaf ${r.buildMs.toFixed(1)} ms (buiten de ticks)`);
   console.log(
     `bench-xl: geheugen padvinding ${(r.memoryBytes / 1048576).toFixed(2)} MB, ${r.buildings} woningen geplaatst, ` +
       `${r.shots} schoten, ${r.deaths} doden, ${r.scrapIn} scrap afgeleverd, ${r.blockedTicks} unit-ticks op een ` +

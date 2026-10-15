@@ -1,4 +1,4 @@
-import { MAX_PLAYERS, OWNER_NEUTRAL } from '@crawlout/protocol';
+import { MAX_ENTITIES, MAX_PLAYERS, OWNER_NEUTRAL } from '@crawlout/protocol';
 import type { SimBuildingType, SimConfig, SimMap, SimPlayer, SimUnitType } from '../config.js';
 import { MAX_ABILITIES } from '../config.js';
 import type { World } from '../ecs/world.js';
@@ -111,6 +111,36 @@ export class Terrain {
   }
 }
 
+/**
+ * Afgeleide lijsten van gebouwen en scrap-nodes (oplopende index), zodat zoekfuncties (dichtstbijzijnde depot,
+ * werkplaats of node, dreiging bij de basis) niet elke keer alle entities aflopen. Geen state: de lijsten bouwen zich
+ * opnieuw op zodra World.structVersion verandert (elke alloc en free), dus ze bevatten altijd precies de levende
+ * gebouwen en nodes in dezelfde volgorde als een volledige scan. Filters op eigenaar, bouwstatus en voorraad doet de
+ * aanroeper, zoals voorheen.
+ */
+export class EntityIndex {
+  readonly buildings = new Int32Array(MAX_ENTITIES);
+  buildingCount = 0;
+  readonly nodes = new Int32Array(MAX_ENTITIES);
+  nodeCount = 0;
+  private version = -1;
+
+  refresh(w: World): void {
+    if (this.version === w.structVersion) return;
+    this.version = w.structVersion;
+    let b = 0;
+    let n = 0;
+    for (let i = 0; i < w.highWater; i++) {
+      if (w.alive[i] !== 1) continue;
+      const m = w.mask[i]!;
+      if ((m & C.building) !== 0) this.buildings[b++] = i;
+      if ((m & C.resource) !== 0) this.nodes[n++] = i;
+    }
+    this.buildingCount = b;
+    this.nodeCount = n;
+  }
+}
+
 /** Wat de systemen van de sim nodig hebben. Eén object, zodat de systemen losse functies blijven. */
 export interface SimContext {
   readonly world: World;
@@ -130,6 +160,8 @@ export interface SimContext {
   readonly claimPoints: readonly number[];
   /** Ability-zones van deze tick (afgeleid, systems/hero.ts auraSystem). */
   readonly auras: Auras;
+  /** Gebouwen en scrap-nodes als lijst (afgeleid, ververst zich zelf; zie EntityIndex). */
+  readonly index: EntityIndex;
   unitType(typeId: number): SimUnitType | undefined;
   buildingType(typeId: number): SimBuildingType | undefined;
 }
@@ -297,10 +329,13 @@ export function nearestOwnBuilding(
   providesMask: number,
 ): number {
   const w = ctx.world;
+  const idx = ctx.index;
+  idx.refresh(w);
   let best = -1;
   let bestD = 0;
-  for (let j = 0; j < w.highWater; j++) {
-    if (!w.has(j, C.building) || w.owner[j] !== owner || w.bstate[j] !== BSTATE_DONE) continue;
+  for (let k = 0; k < idx.buildingCount; k++) {
+    const j = idx.buildings[k]!;
+    if (w.owner[j] !== owner || w.bstate[j] !== BSTATE_DONE) continue;
     const bt = ctx.buildingType(w.typeId[j]!);
     if (bt === undefined || (bt.provides & providesMask) === 0) continue;
     const d = distToRect2(x, y, w.fx[j]!, w.fy[j]!, w.fw[j]!, w.fh[j]!);
@@ -336,10 +371,13 @@ export function nodeAllowed(ctx: SimContext, node: number, p: number): boolean {
 /** Dichtstbijzijnde scrap-node met voorraad waar speler p mag verzamelen (nodeAllowed), of -1. Tiebreak laagste index. */
 export function nearestNode(ctx: SimContext, p: number, x: number, y: number): number {
   const w = ctx.world;
+  const idx = ctx.index;
+  idx.refresh(w);
   let best = -1;
   let bestD = 0;
-  for (let j = 0; j < w.highWater; j++) {
-    if (!w.has(j, C.resource) || w.amount[j]! <= 0 || !nodeAllowed(ctx, j, p)) continue;
+  for (let k = 0; k < idx.nodeCount; k++) {
+    const j = idx.nodes[k]!;
+    if (w.amount[j]! <= 0 || !nodeAllowed(ctx, j, p)) continue;
     const dx = w.x[j]! - x;
     const dy = w.y[j]! - y;
     const d = dx * dx + dy * dy;

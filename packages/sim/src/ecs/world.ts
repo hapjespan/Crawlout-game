@@ -78,6 +78,11 @@ export class World {
   freeCount = 0;
   /** Aantal indices dat ooit is uitgegeven; alles daarboven is nul. */
   highWater = 0;
+  /**
+   * Telt elke alloc en free (geen state, niet gehasht): afgeleide lijsten (EntityIndex in systems/common.ts) bouwen
+   * zich opnieuw op als hij verandert. Na deserialize zet de sim hem ook omhoog.
+   */
+  structVersion = 0;
 
   // Transform
   readonly x = new Int32Array(MAX_ENTITIES);
@@ -165,6 +170,7 @@ export class World {
     if (this.freeCount > 0) i = this.freeStack[--this.freeCount]!;
     else if (this.highWater < this.n) i = this.highWater++;
     else return -1;
+    this.structVersion++;
     if (this.gen[i] === 0) this.gen[i] = 1;
     this.alive[i] = 1;
     this.mask[i] = 0;
@@ -198,6 +204,7 @@ export class World {
     this.gen[i] = g >= GEN_MASK ? 1 : g + 1;
     this.alive[i] = 0;
     this.freeStack[this.freeCount++] = i;
+    this.structVersion++;
   }
 
   /** Aantal levende entities. */

@@ -233,7 +233,10 @@ export interface SimTuningData {
   unitRadiusU: number;
   arriveRadiusU: number;
   separationPermille: number;
-  flowFieldBudget: number;
+  /** Hiërarchische padvinding (data 0.11.0): sectorzijde, langste ingang en geheugenbudget, alle drie in cellen. */
+  pathSectorCells: number;
+  pathEntranceMaxCells: number;
+  pathCacheCells: number;
   walkAnimStep: number;
   aggroRangeU: number;
   interactRangeU: number;
@@ -594,7 +597,9 @@ export function loadGameData(raw: RawGameData): GameData {
       unitRadiusU: metersToUnits(simRaw.unitRadiusM),
       arriveRadiusU: metersToUnits(simRaw.arriveRadiusM),
       separationPermille: pctToPermille(simRaw.separationPct),
-      flowFieldBudget: simRaw.flowFieldBudgetCells,
+      pathSectorCells: simRaw.pathSectorCells,
+      pathEntranceMaxCells: simRaw.pathEntranceMaxCells,
+      pathCacheCells: simRaw.pathCacheCells,
       walkAnimStep: simRaw.walkAnimStep,
       aggroRangeU: metersToUnits(simRaw.aggroRangeM),
       interactRangeU: metersToUnits(simRaw.interactRangeM),

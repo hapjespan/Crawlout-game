@@ -139,6 +139,13 @@ export function runBench(clock: () => number): BenchResult {
 }
 
 if (process.argv.includes('--xl')) {
-  const { runBenchXl, reportBenchXl } = await import('./bench-xl.js');
+  const { runBenchXl, reportBenchXl, runAiXl } = await import('./bench-xl.js');
   reportBenchXl(runBenchXl(now));
+  const ai = runAiXl(now);
+  const avg = ai.totalMs / ai.ticks;
+  console.log(
+    `bench-xl AI tegen AI: ${ai.ticks} ticks, gemiddeld ${avg.toFixed(3)} ms/tick, max ${ai.maxMs.toFixed(2)} ms, ` +
+      `${ai.units} units en ${ai.buildings} gebouwen aan het eind, eindhash 0x${ai.finalHash.toString(16).padStart(8, '0')} ` +
+      `(budget 5 ms: ${avg < 5 ? 'binnen' : 'BOVEN'})`,
+  );
 } else reportBench(runBench(now));
