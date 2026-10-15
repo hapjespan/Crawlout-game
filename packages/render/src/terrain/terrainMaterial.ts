@@ -88,7 +88,6 @@ const VERTEX_REF = new Color().setRGB(150 / 255, 128 / 255, 94 / 255, 'srgb');
 const VERTEX_WEIGHT = 0.45;
 /** Detail texture tile sizes, meters. */
 const ROCK_TILE = 13;
-const GROUND_TILE = 29;
 const GROUND_TILE_FINE = 7.7;
 const LUMA = [0.2126, 0.7152, 0.0722] as const;
 /** Mean brightness (linear luminance) the albedo is lifted to: the former ground level, a little lower for contrast. */
@@ -174,9 +173,6 @@ export function createTerrainMaterial(opts: TerrainMaterialOptions): TerrainMate
     samplers.push(t);
     return t.xyz;
   };
-  // World-space detail: mirrored tiling of the albedo (no seams), mip level from the unfolded uv.
-  const sample = (uv: Node<'vec2'>): Node<'vec3'> =>
-    sampleGrad(float(1).sub(abs(mod(uv, 2).sub(1))), dFdx(uv), dFdy(uv));
   const lumaOf = (c: Node<'vec3'>): Node<'float'> => dot(c, vec3(...LUMA));
 
   const N = normalize(normalWorld);
@@ -184,45 +180,41 @@ export function createTerrainMaterial(opts: TerrainMaterialOptions): TerrainMate
   const slope = float(1).sub(N.y);
   const h01 = clamp(wp.y.sub(minY).mul(invRange), 0, 1);
 
-  // Ground detail: xz at two scales, the fine one rotated so the two never line up.
-  const g1 = sample(wp.xz.div(GROUND_TILE));
-  const fine = vec2(wp.x.mul(0.8).sub(wp.z.mul(0.6)), wp.x.mul(0.6).add(wp.z.mul(0.8)));
-  const g2 = sample(fine.div(GROUND_TILE_FINE).add(vec2(0.37, 0.71)));
-  const groundRatio = clamp(lumaOf(g1.mul(0.6).add(g2.mul(0.4))).div(meanLuma), 0.55, 1.5);
-
-  // Rock detail: triplanar.
-  const w0 = pow(abs(N), vec3(4, 4, 4));
-  const w = w0.div(w0.x.add(w0.y).add(w0.z));
-  const p = wp.div(ROCK_TILE);
-  const rockTex = sample(p.zy).mul(w.x).add(sample(p.xz).mul(w.y)).add(sample(p.xy).mul(w.z));
-  const rockRatio = clamp(lumaOf(rockTex).div(meanLuma), 0.4, 1.8);
-
-  let rockMask: Node<'float'> = smoothstep(
-    0.12,
-    0.29,
-    slope.add(groundRatio.sub(1).mul(0.07).mul(detail)),
-  );
-  const patches = smoothstep(0.55, 0.9, h01)
-    .mul(smoothstep(0.9, 0.7, groundRatio))
-    .mul(0.4)
-    .mul(detail);
-  rockMask = max(rockMask, patches);
-
-  const rock = rockColor
-    .mul(mix(float(1), rockRatio, detail))
-    .mul(mix(float(0.86), float(1.1), h01));
-
   const vc = attribute('color', 'vec3');
   const vcRef = vec3(VERTEX_REF.r, VERTEX_REF.g, VERTEX_REF.b);
   const vcRatio = clamp(vc.div(vcRef), vec3(0.4, 0.4, 0.4), vec3(1.6, 1.6, 1.6));
-  const heightTone = mix(vec3(1.1, 1.0, 0.86), vec3(0.86, 0.9, 0.97), h01);
-  const ground = groundColor
-    .mul(mix(vec3(1, 1, 1), vcRatio, VERTEX_WEIGHT))
-    .mul(heightTone)
-    .mul(mix(float(1), groundRatio, detail.mul(0.45)));
+  // Fine detail plane: rotated so it never lines up with the map's axes.
+  const rot = (v: Node<'vec2'>): Node<'vec2'> =>
+    vec2(v.x.mul(0.8).sub(v.y.mul(0.6)), v.x.mul(0.6).add(v.y.mul(0.8)));
+  /** Mirrored world-space tiling of the albedo, with gradients passed in (the samples sit in branches). */
+  const tiled = (uv: Node<'vec2'>, gx: Node<'vec2'>, gy: Node<'vec2'>): Node<'vec3'> =>
+    sampleGrad(float(1).sub(abs(mod(uv, 2).sub(1))), gx, gy);
 
-  let albedo: Node<'vec3'> = mix(ground, rock, rockMask);
-  albedo = mix(albedo, vec3(lumaOf(albedo), lumaOf(albedo), lumaOf(albedo)), 0.12);
+  /** Brightness variation of a triplanar albedo sample around its mean (rock detail). */
+  const triplanarRatio = (dpx: Node<'vec3'>, dpy: Node<'vec3'>): Node<'float'> => {
+    const w0 = pow(abs(N), vec3(4, 4, 4));
+    const w = w0.div(w0.x.add(w0.y).add(w0.z));
+    const p = wp.div(ROCK_TILE);
+    const gx = dpx.div(ROCK_TILE);
+    const gy = dpy.div(ROCK_TILE);
+    const rockTex = tiled(p.zy, gx.zy, gy.zy)
+      .mul(w.x)
+      .add(tiled(p.xz, gx.xz, gy.xz).mul(w.y))
+      .add(tiled(p.xy, gx.xy, gy.xy).mul(w.z));
+    return clamp(lumaOf(rockTex).div(meanLuma), 0.4, 1.8);
+  };
+
+  /** Without a texture: the tints on fixed brightness, rock from about 30 degrees slope (the former look). */
+  const tintAlbedo = (): Node<'vec3'> => {
+    const rockMask = smoothstep(0.12, 0.29, slope);
+    const rock = rockColor.mul(mix(float(0.86), float(1.1), h01));
+    const heightTone = mix(vec3(1.1, 1.0, 0.86), vec3(0.86, 0.9, 0.97), h01);
+    const ground = groundColor
+      .mul(mix(vec3(1, 1, 1), vcRatio, VERTEX_WEIGHT))
+      .mul(heightTone);
+    const a = mix(ground, rock, rockMask);
+    return mix(a, vec3(lumaOf(a), lumaOf(a), lumaOf(a)), 0.12);
+  };
 
   // With a texture: the albedo itself through the map's layout (albedoLayout.ts albedoUv is the CPU form).
   const tileOf = (
@@ -271,11 +263,10 @@ export function createTerrainMaterial(opts: TerrainMaterialOptions): TerrainMate
     });
     return color;
   };
-  const sourceAlbedo = Fn(() => {
+  const sourceAlbedo = (dpx: Node<'vec3'>, dpy: Node<'vec3'>): Node<'vec3'> => {
     const g = wp.xz.sub(layoutGrid.xy).mul(layoutGrid.z);
-    // Gradients before any branch (derivatives need uniform control flow).
-    const gx = dFdx(g);
-    const gy = dFdy(g);
+    const gx = dpx.xz.mul(layoutGrid.z);
+    const gy = dpy.xz.mul(layoutGrid.z);
     const last = layoutSize.sub(1);
     const t = clamp(floor(g), vec2(0, 0), last);
     const l = g.sub(t);
@@ -300,25 +291,51 @@ export function createTerrainMaterial(opts: TerrainMaterialOptions): TerrainMate
     tap(zero, side.y, float(1).sub(w.x).mul(w.y));
     tap(side.x, side.y, w.x.mul(w.y));
     return acc;
+  };
+
+  /** With a texture: the albedo as the color, styled; cliff variation and grain only where they show. */
+  const photoAlbedo = (dpx: Node<'vec3'>, dpy: Node<'vec3'>): Node<'vec3'> => {
+    const raw = sourceAlbedo(dpx, dpy).mul(exposure);
+    const rawLuma = max(lumaOf(raw), 1e-4);
+    // Calmer than the photo: brightness pulled towards the mean, so units read against it.
+    const calmLuma = mix(float(ALBEDO_TARGET_LUMA), rawLuma, ALBEDO_CONTRAST);
+    const photo = mix(raw.mul(calmLuma.div(rawLuma)), vec3(calmLuma, calmLuma, calmLuma), ALBEDO_DESATURATE)
+      .mul(vec3(...ALBEDO_WARMTH))
+      .mul(mix(vec3(1, 1, 1), vcRatio, ALBEDO_VERTEX_WEIGHT))
+      .mul(mix(vec3(1.04, 1.0, 0.95), vec3(0.96, 0.98, 1.02), h01))
+      .toVar();
+    // Cliffs: the triplanar sample's variation along the wall (three samples, only on slopes).
+    const steep = smoothstep(0.12, 0.29, slope);
+    If(steep.greaterThan(0), () => {
+      photo.mulAssign(mix(float(1), triplanarRatio(dpx, dpy), steep.mul(CLIFF_DETAIL)));
+    });
+    // Grain near the camera.
+    const near = smoothstep(90, 25, distance(cameraPosition, wp));
+    If(near.greaterThan(0), () => {
+      const g2 = tiled(
+        rot(wp.xz).div(GROUND_TILE_FINE).add(vec2(0.37, 0.71)),
+        rot(dpx.xz).div(GROUND_TILE_FINE),
+        rot(dpy.xz).div(GROUND_TILE_FINE),
+      );
+      const grainRatio = clamp(lumaOf(g2).div(meanLuma), 0.6, 1.4);
+      photo.mulAssign(mix(float(1), grainRatio, near.mul(GRAIN)));
+    });
+    return photo;
+  };
+
+  const terrainAlbedo = Fn(() => {
+    // Gradients of the world position first, in uniform control flow: every sample below sits in a branch.
+    const dpx = dFdx(wp).toVar();
+    const dpy = dFdy(wp).toVar();
+    const out = vec3(0, 0, 0).toVar();
+    If(detail.greaterThan(0.5), () => {
+      out.assign(photoAlbedo(dpx, dpy));
+    }).Else(() => {
+      out.assign(tintAlbedo());
+    });
+    return out;
   });
-  let photo: Node<'vec3'> = sourceAlbedo().mul(exposure);
-  const photoLuma = max(lumaOf(photo), 1e-4);
-  // Calmer than the photo: brightness pulled towards the mean, so units read against it.
-  const calmLuma = mix(float(ALBEDO_TARGET_LUMA), photoLuma, ALBEDO_CONTRAST);
-  photo = photo.mul(calmLuma.div(photoLuma));
-  photo = mix(photo, vec3(calmLuma, calmLuma, calmLuma), ALBEDO_DESATURATE).mul(
-    vec3(...ALBEDO_WARMTH),
-  );
-  // Cliffs: the triplanar sample's variation along the wall; grain near the camera.
-  const steep = smoothstep(0.12, 0.29, slope);
-  photo = photo.mul(mix(float(1), rockRatio, steep.mul(CLIFF_DETAIL)));
-  const grainRatio = clamp(lumaOf(g2).div(meanLuma), 0.6, 1.4);
-  const near = smoothstep(90, 25, distance(cameraPosition, wp));
-  photo = photo
-    .mul(mix(float(1), grainRatio, near.mul(GRAIN)))
-    .mul(mix(vec3(1, 1, 1), vcRatio, ALBEDO_VERTEX_WEIGHT))
-    .mul(mix(vec3(1.04, 1.0, 0.95), vec3(0.96, 0.98, 1.02), h01));
-  albedo = mix(albedo, photo, detail);
+  const albedo = terrainAlbedo();
 
   // Soft-edged toon ramp: the bands of unitMaterial.ts toonRamp, each edge spread over a little light.
   const hl = dot(N, light).mul(0.5).add(0.5);

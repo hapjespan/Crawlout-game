@@ -227,6 +227,15 @@ describe('StructureLayer', () => {
       expect(far.count).toBe(1);
     });
 
+    it('brightens an asset by its albedo gain through the instance tint', () => {
+      const { layer, scene, frame, camera } = setup();
+      layer.setBuildingAssets(new Map([[0, { ...visual('hq', false), gain: 1.3 }]]), material());
+      place(frame, [[buildingTypeId(0), 0, 0]]);
+      layer.update(frame, camera, decals);
+      const tint = instance(batch(scene, 'building-hq-0'), 'iTint', 0);
+      expect(tint.slice(0, 3).map((v) => +v.toFixed(5))).toEqual([1.3, 1.3, 1.3]);
+    });
+
     it('picks an asset building and goes back to placeholders on an empty set', () => {
       const { layer, scene, frame, camera } = setup();
       layer.setBuildingAssets(new Map([[0, visual('hq', true)]]), material());

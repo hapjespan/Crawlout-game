@@ -172,7 +172,7 @@ const LUMA = [0.2126, 0.7152, 0.0722] as const;
  * base (the fallback team material, l = pivot) shows the team color times TEAM.gain. Only the luminance counts, so a colored
  * base (a blue jumpsuit masked by hue) is not tinted twice.
  */
-export const TEAM = { contrast: 1, min: 0.3, max: 1.6, gain: 0.92 } as const;
+export const TEAM = { contrast: 1, min: 0.3, max: 1.6, gain: 0.85 } as const;
 
 /** CPU form of the team shade factor (same constants), for tests and tuning. */
 export function teamShade(luma: number, pivot: number): number {

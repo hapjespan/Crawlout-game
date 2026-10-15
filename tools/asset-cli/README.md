@@ -189,12 +189,12 @@ Quaternius-clips hebben andere namen dan `ANIM_NAMES` (bijvoorbeeld `Walk_Loop`)
 
 ## Terrein (Rock Terrain 4)
 
-`npx -y pnpm@9 --filter @crawlout/asset-cli run terrain` maakt uit `assets/local/rock_terrain_4.glb` (CC-BY-4.0, Lassi Kaukonen; 47 MB, gitignored, de bron gaat nooit in git) afgeleide data die wel in git staat, in `assets/dist/terrain/`. Zonder bronbestand meldt de CLI dat en stopt met exit 0; vanuit een worktree zoekt hij de bron ook in de hoofdcheckout. Opties: `--src`, `--out`, `--crop-size <m>`, `--rotation <graden>`. Twee runs geven byte-identieke uitvoer; een run duurt ongeveer 3 s. Code: `src/terrain.ts` (buis) en `src/heightfield.ts` (schema's, browser-safe). Naamsvermelding: `assets/src/licenses/rock-terrain-4-CC-BY-4.0.txt`, en in `terrain.json`.
+`npx -y pnpm@9 --filter @crawlout/asset-cli run terrain` maakt uit `assets/local/rock_terrain_4.glb` (CC-BY-4.0, Lassi Kaukonen; 47 MB, gitignored, de bron gaat nooit in git) afgeleide data die wel in git staat, in `assets/dist/terrain/`. Zonder bronbestand meldt de CLI dat en stopt met exit 0; vanuit een worktree zoekt hij de bron ook in de hoofdcheckout. Opties: `--src`, `--out`, `--crop-size <m>`, `--rotation <graden>`, `--albedo-size <px>` (albedo op een eigen raster van die maat; het hoogteveld blijft gelijk; de gecommitte albedo is 2048, 16 px per meter op de map). Twee runs geven byte-identieke uitvoer; een run duurt ongeveer 3 s. Code: `src/terrain.ts` (buis) en `src/heightfield.ts` (schema's, browser-safe). Naamsvermelding: `assets/src/licenses/rock-terrain-4-CC-BY-4.0.txt`, en in `terrain.json`.
 
 ```
 assets/dist/terrain/terrain.json                 terrein-manifest (los van manifest.json, geen kind in assetManifest)
 assets/dist/terrain/rock_terrain_4.height.json   hoogteveld, 128 x 128 cellen van 1 m (ongeveer 88 kB)
-assets/dist/terrain/rock_terrain_4.albedo.jpg    kleur in bovenaanzicht, 1024 x 1024 (ongeveer 230 kB)
+assets/dist/terrain/rock_terrain_4.albedo.jpg    kleur in bovenaanzicht, 2048 x 2048 (ongeveer 650 kB)
 ```
 
 **Waarom een uitsnede met draaiing.** De bron is geen vierkant van 119 x 114 m maar een scheve rotsbult met een voetafdruk van ongeveer 8800 m2 (diagonaal ongeveer 155 m lang, 70 tot 80 m breed). Daar past hooguit een vierkant van ongeveer 70 m in. De buis kiest daarom het vierkant van 64 m (schaal precies 2 naar 128 m) met de meeste reliëfvariatie (standaardafwijking van de hoogte) onder alle draaihoeken 0 tot 89 graden en posities in stappen van 1 m, met minstens 99 procent dekking. Dat is nu: draaiing 20 graden om de y-as, linker-achterhoek op (-10, -43) in de gedraaide bronruimte. De keuze staat in `terrain.json` onder `crop`.
@@ -216,7 +216,7 @@ assets/dist/terrain/rock_terrain_4.albedo.jpg    kleur in bovenaanzicht, 1024 x 
 
 `heights[j * w + i]`: i loopt met +x, j met +z (rij 0 is de kleinste z, zoals de rijen van `data/maps`, dus map-y is veld-j). Het celmidden ligt op ((i + 0.5), (j + 0.5)) m. `heightAt(field, xM, zM)` geeft bilineair de hoogte op een positie in meters.
 
-**Textures.** `rock_terrain_4.albedo.jpg` is geen kopie van de bron-diffuse maar een bovenaanzicht van de bronkleur (basiskleur-textuur maal factor, sRGB), uitgelijnd met het hoogteveld: pixel (px, py) hoort bij x = px / 1024 * 128 m en z = py / 1024 * 128 m. Reden: de bron-diffuse is een fotogrammetrie-atlas met eilanden per brok mesh (niet tegelbaar en alleen bruikbaar met de uv's van de 871k-driehoeken-mesh, die niet in git komt). De normal map en de ORM-textuur zijn daarom niet meegenomen (render gebruikt geen PBR; normalen kan render uit het hoogteveld afleiden). `terrain.json` bevat verder `rockTint` (gemiddelde kleur van de albedo) en `groundTint` (kleur van het Base-materiaal), als effen kleuren voor de ruimte buiten het veld.
+**Textures.** `rock_terrain_4.albedo.jpg` is geen kopie van de bron-diffuse maar een bovenaanzicht van de bronkleur (basiskleur-textuur maal factor, sRGB), uitgelijnd met het hoogteveld: pixel (px, py) hoort bij x = px / breedte * 128 m en z = py / hoogte * 128 m. Gaten (minder dan 2 procent) worden opgevuld met pull-push, een zachte overgang tussen de gedekte randen. Reden: de bron-diffuse is een fotogrammetrie-atlas met eilanden per brok mesh (niet tegelbaar en alleen bruikbaar met de uv's van de 871k-driehoeken-mesh, die niet in git komt). De normal map en de ORM-textuur zijn daarom niet meegenomen (render gebruikt geen PBR; normalen kan render uit het hoogteveld afleiden). `terrain.json` bevat verder `rockTint` (gemiddelde kleur van de albedo) en `groundTint` (kleur van het Base-materiaal), als effen kleuren voor de ruimte buiten het veld.
 
 **Zo gebruikt de map-agent het.**
 
