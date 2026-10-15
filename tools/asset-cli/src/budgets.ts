@@ -49,8 +49,15 @@ export const BUDGETS = {
    * spijlen, ramen) vallen weg. Op de verre LODs blijven zo de dakvlakken en wanden over in plaats van een brij.
    */
   buildingMinComponentArea: [0, 0.01, 0.05] as const,
-  /** Tolerantie (relatief) op de footprint: de bounds vullen w x h cellen van 1 m binnen 5 procent. */
+  /**
+   * Het gebouw staat binnen de footprint van w x h cellen van 1 m (hooguit 5 procent erbuiten). Er ligt geen grondplaat
+   * meer onder de gebouwen: de footprint is wat de sim reserveert, de bounds van het model vullen hem niet exact.
+   */
   buildingFootprintTolerance: 0.05,
+  /** Per LOD: het model vult minstens dit deel van w en van h (een stuk van de footprint is veranda, erf en marge). */
+  buildingFootprintMinFill: [0.85, 0.85, 0.75] as const,
+  /** Het midden van de bounds ligt binnen dit deel van w en h van de oorsprong (LOD2 laat de veranda weg). */
+  buildingCentreTolerance: 0.08,
   /** De grond staat op y = 0, tolerantie in meter. */
   buildingGroundTolerance: 0.01,
   maxBones: 28,

@@ -130,8 +130,9 @@ export const partSchema = z.discriminatedUnion('type', [
 
 export const variantSchema = z.object({
   /**
-   * Footprint in cellen van 1 m; de bounds van het model vullen w x h in x en z (5 procent tolerantie). Een uniform
-   * geschaald huis vult de footprint zelden helemaal: vul de rest met een grondplaat (box) of aanbouw.
+   * Footprint in cellen van 1 m (wat de sim reserveert); het model staat erbinnen (hooguit 5 procent erbuiten) en
+   * vult minstens 85 procent van w en van h (LOD2 75). Een uniform geschaald huis vult de footprint zelden helemaal;
+   * de rest blijft grond: er is bewust geen grondplaat (die stak af tegen het terrein), zie README, Gebouwen.
    */
   footprint: z.object({ w: z.number().int().positive(), h: z.number().int().positive() }),
   /** Tint per uitvoermateriaal (bronmaterialen op uitvoernaam), vermenigvuldigd met de basiskleur. */

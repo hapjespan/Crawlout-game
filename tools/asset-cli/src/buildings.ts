@@ -472,7 +472,11 @@ export async function finishBuildingLod(
   return { level, glb, triangles: countTriangles(document), document };
 }
 
-/** Controleert footprint, midden en grond van een gebouw-document tegen w x h (5 procent) en de brief. */
+/**
+ * Controleert footprint, midden en grond van een gebouw-document tegen w x h: het model staat binnen de footprint
+ * (hooguit 5 procent erbuiten), vult minstens `buildingFootprintMinFill` van w en h, het midden ligt bij de oorsprong
+ * en de grond op y = 0. Er is geen grondplaat die de footprint vult.
+ */
 export function checkBuildingDocument(
   document: Document,
   footprint: { w: number; h: number },
@@ -485,17 +489,25 @@ export function checkBuildingDocument(
   const { min, max } = getBounds(scene);
   const [sx, sy, sz] = [max[0]! - min[0]!, max[1]! - min[1]!, max[2]! - min[2]!];
   const tol = BUDGETS.buildingFootprintTolerance;
-  if (Math.abs(sx - footprint.w) > footprint.w * tol)
-    errors.push(
-      `${label}: breedte (x) is ${sx.toFixed(2)} m, footprint ${footprint.w} m (tolerantie ${tol * 100} procent)`,
-    );
-  if (Math.abs(sz - footprint.h) > footprint.h * tol)
-    errors.push(
-      `${label}: diepte (z) is ${sz.toFixed(2)} m, footprint ${footprint.h} m (tolerantie ${tol * 100} procent)`,
-    );
+  const fill = BUDGETS.buildingFootprintMinFill[level];
+  const dims = [
+    { name: 'breedte (x)', size: sx, cells: footprint.w },
+    { name: 'diepte (z)', size: sz, cells: footprint.h },
+  ];
+  for (const d of dims) {
+    if (d.size > d.cells * (1 + tol))
+      errors.push(
+        `${label}: ${d.name} is ${d.size.toFixed(2)} m, footprint ${d.cells} m (hooguit ${tol * 100} procent erbuiten)`,
+      );
+    else if (d.size < d.cells * fill)
+      errors.push(
+        `${label}: ${d.name} is ${d.size.toFixed(2)} m, footprint ${d.cells} m (het model vult minstens ${fill * 100} procent)`,
+      );
+  }
   const cx = (min[0]! + max[0]!) / 2;
   const cz = (min[2]! + max[2]!) / 2;
-  if (Math.abs(cx) > footprint.w * tol || Math.abs(cz) > footprint.h * tol)
+  const ctol = BUDGETS.buildingCentreTolerance;
+  if (Math.abs(cx) > footprint.w * ctol || Math.abs(cz) > footprint.h * ctol)
     errors.push(
       `${label}: het midden staat op (${cx.toFixed(2)}, ${cz.toFixed(2)}), verwacht (0, 0)`,
     );

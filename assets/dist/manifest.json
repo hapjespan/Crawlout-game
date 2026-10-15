@@ -734,31 +734,31 @@
       "kind": "building",
       "bounds": {
         "min": [
-          -6.5,
+          -6.08,
           0,
-          -9.5
+          -9.469282
         ],
         "max": [
-          6.5,
+          6.061815,
           9.993019,
-          9.5
+          9.297614
         ]
       },
       "lods": [
         {
           "level": 0,
           "path": "dweller_building_housing/lod0.glb",
-          "triangles": 2467
+          "triangles": 2469
         },
         {
           "level": 1,
           "path": "dweller_building_housing/lod1.glb",
-          "triangles": 992
+          "triangles": 995
         },
         {
           "level": 2,
           "path": "dweller_building_housing/lod2.glb",
-          "triangles": 158
+          "triangles": 146
         }
       ],
       "sockets": {},
@@ -777,21 +777,21 @@
       "kind": "building",
       "bounds": {
         "min": [
-          -10.5,
+          -10.461815,
           0,
-          -10.5
+          -9.297614
         ],
         "max": [
-          10.5,
+          8.8,
           13.1,
-          10.5
+          9.297614
         ]
       },
       "lods": [
         {
           "level": 0,
           "path": "dweller_building_hq/lod0.glb",
-          "triangles": 2341
+          "triangles": 2345
         },
         {
           "level": 1,
@@ -820,31 +820,31 @@
       "kind": "building",
       "bounds": {
         "min": [
-          -8.5,
+          -8.461815,
           0,
-          -9.5
+          -9.297614
         ],
         "max": [
-          8.5,
+          7,
           9.993019,
-          9.5
+          9.297614
         ]
       },
       "lods": [
         {
           "level": 0,
           "path": "dweller_building_lab/lod0.glb",
-          "triangles": 1983
+          "triangles": 1985
         },
         {
           "level": 1,
           "path": "dweller_building_lab/lod1.glb",
-          "triangles": 792
+          "triangles": 795
         },
         {
           "level": 2,
           "path": "dweller_building_lab/lod2.glb",
-          "triangles": 234
+          "triangles": 222
         }
       ],
       "sockets": {},
@@ -863,31 +863,31 @@
       "kind": "building",
       "bounds": {
         "min": [
-          -10.5,
+          -10.461815,
           0,
-          -9.5
+          -9.42
         ],
         "max": [
-          10.5,
+          10.42,
           9.993019,
-          9.5
+          9.42
         ]
       },
       "lods": [
         {
           "level": 0,
           "path": "dweller_building_training/lod0.glb",
-          "triangles": 1995
+          "triangles": 1994
         },
         {
           "level": 1,
           "path": "dweller_building_training/lod1.glb",
-          "triangles": 790
+          "triangles": 795
         },
         {
           "level": 2,
           "path": "dweller_building_training/lod2.glb",
-          "triangles": 134
+          "triangles": 122
         }
       ],
       "sockets": {},
@@ -949,14 +949,14 @@
       "kind": "building",
       "bounds": {
         "min": [
-          -10.5,
+          -9.297614,
           0,
-          -9.5
+          -8.661815
         ],
         "max": [
-          10.5,
+          9.39,
           6.25,
-          9.5
+          8.7
         ]
       },
       "lods": [
@@ -973,7 +973,7 @@
         {
           "level": 2,
           "path": "dweller_building_workshop/lod2.glb",
-          "triangles": 104
+          "triangles": 92
         }
       ],
       "sockets": {},

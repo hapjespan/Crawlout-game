@@ -126,27 +126,47 @@ describe('gebouwen uit de generator', () => {
     expect(built.entries).toHaveLength(8);
   });
 
-  it('vult de footprint in x en z binnen 5 procent, midden op de oorsprong, grond op y=0 (alle LODs)', async () => {
+  it('staat binnen de footprint en vult hem grotendeels (geen grondplaat), midden bij de oorsprong, grond op y=0 (alle LODs)', async () => {
     const io = createIO();
     for (const id of ids) {
       const { w, h } = config.variants[id]!.footprint;
-      for (const level of [0, 1, 2]) {
+      for (const level of [0, 1, 2] as const) {
         const bytes = built.outputs.get(`${id}/lod${level}.glb`)!;
         const document = await io.readBinary(bytes);
         const { min, max } = getBounds(document.getRoot().listScenes()[0]!);
         const label = `${id} LOD${level}`;
-        expect(Math.abs(max[0]! - min[0]! - w) / w, `${label} breedte`).toBeLessThanOrEqual(0.05);
-        expect(Math.abs(max[2]! - min[2]! - h) / h, `${label} diepte`).toBeLessThanOrEqual(0.05);
+        const fill = BUDGETS.buildingFootprintMinFill[level];
+        const sx = max[0]! - min[0]!;
+        const sz = max[2]! - min[2]!;
+        expect(sx, `${label} breedte`).toBeLessThanOrEqual(w * 1.05);
+        expect(sz, `${label} diepte`).toBeLessThanOrEqual(h * 1.05);
+        expect(sx, `${label} breedte vulling`).toBeGreaterThanOrEqual(w * fill);
+        expect(sz, `${label} diepte vulling`).toBeGreaterThanOrEqual(h * fill);
         expect(Math.abs((max[0]! + min[0]!) / 2), `${label} midden x`).toBeLessThanOrEqual(
-          w * 0.05,
+          w * BUDGETS.buildingCentreTolerance,
         );
         expect(Math.abs((max[2]! + min[2]!) / 2), `${label} midden z`).toBeLessThanOrEqual(
-          h * 0.05,
+          h * BUDGETS.buildingCentreTolerance,
         );
         expect(Math.abs(min[1]!), `${label} grond`).toBeLessThanOrEqual(0.01);
         expect(max[1]!, `${label} hoogte`).toBeGreaterThan(1);
       }
     }
+  });
+
+  it('geen grondplaat: geen onderdeel is een vlakke box die de footprint vult (die stak af tegen het terrein)', () => {
+    for (const id of ids) {
+      const { w, h } = config.variants[id]!.footprint;
+      for (const part of config.variants[id]!.parts) {
+        if (part.type !== 'box') continue;
+        const [sx, sy, sz] = part.size;
+        const flat = sy <= 0.1 && part.position[1] <= 0.01;
+        expect(flat && sx >= w * 0.85 && sz >= h * 0.85, `${id}: grondplaat ${part.material}`).toBe(
+          false,
+        );
+      }
+    }
+    expect(config.flatMaterials['dirt']).toBeUndefined();
   });
 
   it('manifest: kind building, bounds, drie LODs, footprint en team-materialen; schema accepteert het', () => {
@@ -160,8 +180,10 @@ describe('gebouwen uit de generator', () => {
       expect(entry.boneCount).toBe(0);
       expect(entry.baked).toBeUndefined();
       const { w, h } = entry.footprint!;
-      expect(entry.bounds.max[0] - entry.bounds.min[0]).toBeCloseTo(w, 0);
-      expect(entry.bounds.max[2] - entry.bounds.min[2]).toBeCloseTo(h, 0);
+      expect(entry.bounds.max[0] - entry.bounds.min[0]).toBeLessThanOrEqual(w * 1.05);
+      expect(entry.bounds.max[0] - entry.bounds.min[0]).toBeGreaterThanOrEqual(w * 0.85);
+      expect(entry.bounds.max[2] - entry.bounds.min[2]).toBeLessThanOrEqual(h * 1.05);
+      expect(entry.bounds.max[2] - entry.bounds.min[2]).toBeGreaterThanOrEqual(h * 0.85);
       expect(entry.bounds.min[1]).toBeCloseTo(0, 2);
     }
   });
@@ -235,8 +257,8 @@ describe('controles op gebouw-documenten', () => {
     // Het huis staat op wereldschaal (12,1 x 18,6 m); een footprint van 3 x 3 past er niet omheen.
     const generated = await generateBuilding(config, id, 0, new Map([['house', source]]));
     const errors = checkBuildingDocument(generated.document, { w: 3, h: 3 }, 0);
-    expect(errors.join('\n')).toMatch(/breedte \(x\) is 13\.\d+ m, footprint 3 m/);
-    expect(errors.join('\n')).toMatch(/diepte \(z\) is 19\.\d+ m, footprint 3 m/);
+    expect(errors.join('\n')).toMatch(/breedte \(x\) is 12\.\d+ m, footprint 3 m/);
+    expect(errors.join('\n')).toMatch(/diepte \(z\) is 18\.\d+ m, footprint 3 m/);
     expect(checkBuildingDocument(generated.document, variant.footprint, 0)).toEqual([]);
 
     const floating = deepCopy(config);

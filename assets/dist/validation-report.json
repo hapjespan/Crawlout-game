@@ -870,12 +870,11 @@
       "kind": "building",
       "sourceTriangles": 86,
       "lodTriangles": [
-        2467,
-        992,
-        158
+        2469,
+        995,
+        146
       ],
       "materials": [
-        "dirt",
         "metal",
         "roof",
         "team_trim",
@@ -895,12 +894,11 @@
       "kind": "building",
       "sourceTriangles": 86,
       "lodTriangles": [
-        2341,
+        2345,
         939,
         288
       ],
       "materials": [
-        "dirt",
         "metal",
         "roof",
         "team_trim",
@@ -920,9 +918,9 @@
       "kind": "building",
       "sourceTriangles": 86,
       "lodTriangles": [
-        1983,
-        792,
-        234
+        1985,
+        795,
+        222
       ],
       "materials": [
         "metal",
@@ -944,12 +942,11 @@
       "kind": "building",
       "sourceTriangles": 86,
       "lodTriangles": [
-        1995,
-        790,
-        134
+        1994,
+        795,
+        122
       ],
       "materials": [
-        "dirt",
         "roof",
         "team_trim",
         "wall_proxy"
@@ -992,10 +989,9 @@
       "lodTriangles": [
         1879,
         754,
-        104
+        92
       ],
       "materials": [
-        "dirt",
         "metal",
         "team_trim",
         "wall_proxy"

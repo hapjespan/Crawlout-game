@@ -57,9 +57,6 @@
       "color": "#e7e7e7",
       "note": "masker voor de spelerskleur; render herkent de naam (bevat team)"
     },
-    "dirt": {
-      "color": "#7a6a52"
-    },
     "wall_proxy": {
       "color": "#a9987c",
       "note": "vervangt huis (muren en dek) op LOD2; zie parts met minLod 2"
@@ -74,20 +71,6 @@
       "lod0Triangles": 2500,
       "note": "het bronhuis op wereldschaal (12,1 x 18,6 m, 10,0 m hoog, deur 2,11 m) op een erf van 13 x 19 m, met een vlaggenmast van 7 m in de hoek",
       "parts": [
-        {
-          "type": "box",
-          "size": [
-            13,
-            0.04,
-            19
-          ],
-          "material": "dirt",
-          "position": [
-            0,
-            0,
-            0
-          ]
-        },
         {
           "type": "house",
           "source": "house",
@@ -181,20 +164,6 @@
       "lod0Triangles": 2400,
       "note": "het bronhuis op wereldschaal met een extra verdieping eronder (de begane grond van de bron, 2,9 m; samen 12,9 m hoog) en een watertoren van 11 m met de teamvlag, op een erf van 21 x 21 m",
       "parts": [
-        {
-          "type": "box",
-          "size": [
-            21,
-            0.04,
-            21
-          ],
-          "material": "dirt",
-          "position": [
-            0,
-            0,
-            0
-          ]
-        },
         {
           "type": "house",
           "source": "house",
@@ -422,20 +391,6 @@
       "note": "breed en laag: de begane grond van het bronhuis op wereldschaal (18,6 x 12,1 m, een kwartslag gedraaid) met een plat dak en een afdak van 4 m aan de achterkant, op een erf van 21 x 19 m; 4,6 m hoog met schoorsteen 6 m",
       "parts": [
         {
-          "type": "box",
-          "size": [
-            21,
-            0.04,
-            19
-          ],
-          "material": "dirt",
-          "position": [
-            0,
-            0,
-            0
-          ]
-        },
-        {
           "type": "house",
           "source": "house",
           "position": [
@@ -622,20 +577,6 @@
       "note": "het bronhuis op wereldschaal op een betonnen plaat van 17 x 19 m, met een schotel van 3,6 m op een mast van 6 m naast het huis",
       "parts": [
         {
-          "type": "box",
-          "size": [
-            17,
-            0.08,
-            19
-          ],
-          "material": "metal",
-          "position": [
-            0,
-            0,
-            0
-          ]
-        },
-        {
           "type": "house",
           "source": "house",
           "position": [
@@ -784,20 +725,6 @@
       },
       "note": "het bronhuis op wereldschaal met een omheind oefenterrein van 8 x 19 m (hek 1,15 m, oefenpoppen 1,7 m) aan de trapkant, op een erf van 21 x 19 m",
       "parts": [
-        {
-          "type": "box",
-          "size": [
-            21,
-            0.04,
-            19
-          ],
-          "material": "dirt",
-          "position": [
-            0,
-            0,
-            0
-          ]
-        },
         {
           "type": "house",
           "source": "house",
