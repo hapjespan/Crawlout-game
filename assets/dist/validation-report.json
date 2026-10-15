@@ -935,6 +935,29 @@
       ]
     },
     {
+      "id": "dweller_building_robotfactory",
+      "source": "buildings/variants.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "building",
+      "sourceTriangles": 0,
+      "lodTriangles": [
+        1877,
+        755,
+        96
+      ],
+      "materials": [
+        "metal",
+        "team_trim",
+        "wall_proxy"
+      ],
+      "textureSizes": [
+        1024,
+        512,
+        256
+      ]
+    },
+    {
       "id": "dweller_building_training",
       "source": "buildings/variants.json",
       "errors": [],
@@ -968,6 +991,28 @@
         176,
         176,
         176
+      ],
+      "materials": [
+        "metal",
+        "team_trim"
+      ],
+      "textureSizes": [
+        1024,
+        512,
+        256
+      ]
+    },
+    {
+      "id": "dweller_building_turret_laser",
+      "source": "buildings/variants.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "building",
+      "sourceTriangles": 0,
+      "lodTriangles": [
+        248,
+        248,
+        248
       ],
       "materials": [
         "metal",
