@@ -1,0 +1,4 @@
+Prop packs by DJMaesen (https://sketchfab.com/bumstrum), all CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/):
+- "Trees", "more trees", "oak trees", "Grass patches", "Plant", "Rocks set2", "Wood walls", "Outpost", "FPS Dungeon Extras".
+Split into single props, scaled to the game's real scale, simplified to LODs and re-encoded for Crawlout.
+The large source files are kept out of git (assets/src/packs); the processed output in assets/dist is committed.

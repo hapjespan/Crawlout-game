@@ -13,3 +13,6 @@ coverage/
 # Local-only assets (fan art outside the own IP); never committed
 assets/local/
 assets/dist-local/
+
+# Large third-party source packs (CC-BY); only the processed assets/dist output is committed
+assets/src/packs/
