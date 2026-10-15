@@ -30,12 +30,14 @@ import type { DataTexturePrecision } from '../gpu/dataTextures.js';
 import { ScreenLod, UNIT_LOD_PX, type ScreenLodThresholds } from '../lod/screenLod.js';
 import { teamIndex } from '../palette.js';
 import type { InterpolatedFrame } from '../snapshot/interpolate.js';
+import { InstanceVariation } from './animVariation.js';
 import { bakeAnimations, type BakedAnimations } from './bake.js';
 import { createHumanoidGeometry, UNIT_LODS } from './humanoidGeometry.js';
 import {
   createUnitMaterial,
   HERO_INSTANCE_FLAG,
   HERO_SCALE,
+  TEAM_SLOTS,
   type UnitAlbedo,
 } from './unitMaterial.js';
 
@@ -124,6 +126,8 @@ export class UnitLayer {
   /** Rig per unit typeId (1..1023), DEFAULT_RIG when the typeId has none of its own. */
   private readonly rigByType = new Uint8Array(TYPE_ID_BUILDING_FIRST).fill(DEFAULT_RIG);
   private defaultRig = PLACEHOLDER_RIG;
+  /** Per-entity animation phase, rate, start delay and turn smoothing (animVariation.ts). */
+  private readonly variation = new InstanceVariation();
   /** Instances drawn per LOD (all rigs together) in the last update. */
   readonly lodCounts: [number, number, number] = [0, 0, 0];
 
@@ -228,7 +232,12 @@ export class UnitLayer {
   }
 
   /** Distributes the units in the frame over the rig and LOD batches. `frame.y` must already hold terrain heights. */
-  update(frame: InterpolatedFrame, camera: Camera, decals: DecalLayer): void {
+  update(
+    frame: InterpolatedFrame,
+    camera: Camera,
+    decals: DecalLayer,
+    nowMs: number = performance.now(),
+  ): void {
     this.projView.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
     this.frustum.setFromProjectionMatrix(this.projView);
     const cam = camera.position;
@@ -261,14 +270,25 @@ export class UnitLayer {
       const pose = batch.pose.array as Float32Array;
       const anim = batch.anim.array as Float32Array;
       const flags = frame.flags[i]!;
-      const clip = frame.anim[i]!;
+      const simClip = frame.anim[i]!;
+      const v = this.variation.apply(
+        frame.id[i]!,
+        x,
+        z,
+        simClip < rig.anims.clips.length ? simClip : ANIM.idle,
+        frame.animT[i]!,
+        frame.yaw[i]!,
+        rig.anims.clips[ANIM.idle]?.duration ?? 1,
+        nowMs,
+      );
       pose[k * 4] = x;
       pose[k * 4 + 1] = y;
       pose[k * 4 + 2] = z;
-      pose[k * 4 + 3] = frame.yaw[i]!;
-      anim[k * 4] = clip < rig.anims.clips.length ? clip : ANIM.idle;
-      anim[k * 4 + 1] = frame.animT[i]!;
-      anim[k * 4 + 2] = teamIndex(frame.owner[i]!);
+      pose[k * 4 + 3] = v.yaw;
+      anim[k * 4] = v.clip;
+      anim[k * 4 + 1] = v.t;
+      // Team slot in the low bits, the static per-instance variation seed above them (see unitMaterial.ts).
+      anim[k * 4 + 2] = teamIndex(frame.owner[i]!) + TEAM_SLOTS * v.seed;
       anim[k * 4 + 3] = isHero ? flags + HERO_INSTANCE_FLAG : flags;
 
       const selected = (flags & SELECTED) !== 0 && (flags & DEAD) === 0;
