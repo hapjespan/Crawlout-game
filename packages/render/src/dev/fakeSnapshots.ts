@@ -42,6 +42,11 @@ export interface FakeSnapshotOptions {
   combat?: boolean;
   /** The first unit of each player is this hero (typeId 1000 + heroId); with combat it casts abilityZone (ability 0). */
   heroId?: number;
+  /**
+   * Unit typeIds the regular units (not the heroes) cycle through, in index order, instead of all being
+   * FAKE_UNIT_TYPE_ID: a mix of robots for the rigid-unit demo, say.
+   */
+  unitTypes?: readonly number[];
   /** Building typeIds that shoot (turrets), with combat: shotFired a = building, b = target, then a hit. */
   turrets?: readonly number[];
 }
@@ -121,7 +126,10 @@ export class FakeSnapshotSource {
     this.combat = opts.combat ?? false;
     this.turrets = new Set(opts.turrets ?? []);
     const heroType = opts.heroId === undefined ? FAKE_UNIT_TYPE_ID : heroTypeId(opts.heroId);
-    this.typeIds = new Uint16Array(n).map((_, i) => (i < players ? heroType : FAKE_UNIT_TYPE_ID));
+    const unitTypes = opts.unitTypes?.length ? opts.unitTypes : [FAKE_UNIT_TYPE_ID];
+    this.typeIds = new Uint16Array(n).map((_, i) =>
+      i < players ? heroType : unitTypes[(i - players) % unitTypes.length]!,
+    );
     this.size = Math.round((opts.worldSize ?? 128) * UNITS_PER_METER);
     this.rng = (opts.seed ?? 0x2f6b3a1d) >>> 0 || 1;
     this.ids = new Uint32Array(n);
