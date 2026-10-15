@@ -39,7 +39,7 @@ import {
   vec3,
   vec4,
 } from 'three/tsl';
-import { WATER_CELL, type WaterSurface } from './waterMask.js';
+import { CORNER_CELLS, WATER_CELL, type WaterSurface } from './waterMask.js';
 
 export interface WaterLayerOptions {
   lightDir: Vector3;
@@ -103,12 +103,7 @@ export function buildWaterGeometry(
       let wet = 0;
       let fx = 0;
       let fz = 0;
-      for (const [dx, dy] of [
-        [-1, -1],
-        [0, -1],
-        [-1, 0],
-        [0, 0],
-      ] as const) {
+      for (const [dx, dy] of CORNER_CELLS) {
         if (!has(x + dx, y + dy)) continue;
         const i = (y + dy) * w + x + dx;
         lv += level[i]!;

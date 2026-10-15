@@ -94,6 +94,21 @@ const NEIGHBORS8: readonly (readonly [number, number])[] = [
   [1, 1],
 ];
 
+const NEIGHBORS4: readonly (readonly [number, number])[] = [
+  [1, 0],
+  [-1, 0],
+  [0, 1],
+  [0, -1],
+];
+
+/** The cells around corner (x, y) of the grid: offsets from it to the cells it touches. */
+export const CORNER_CELLS: readonly (readonly [number, number])[] = [
+  [-1, -1],
+  [0, -1],
+  [-1, 0],
+  [0, 0],
+];
+
 /** Separable square min filter of radius r (Infinity stays where nothing finite is in reach). */
 function minFilter(src: Float32Array, w: number, h: number, r: number): Float32Array {
   const tmp = new Float32Array(w * h);
@@ -215,12 +230,7 @@ export function analyzeWater(
     const i = front[q]!;
     const x = i % w;
     const y = (i - x) / w;
-    for (const [dx, dy] of [
-      [1, 0],
-      [-1, 0],
-      [0, 1],
-      [0, -1],
-    ] as const) {
+    for (const [dx, dy] of NEIGHBORS4) {
       const nx = x + dx;
       const ny = y + dy;
       if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
@@ -277,12 +287,7 @@ export function analyzeWater(
       let k = 0;
       let lv = 0;
       let kl = 0;
-      for (const [dx, dy] of [
-        [-1, -1],
-        [0, -1],
-        [-1, 0],
-        [0, 0],
-      ] as const) {
+      for (const [dx, dy] of CORNER_CELLS) {
         const ix = x + dx;
         const iy = y + dy;
         if (ix < 0 || iy < 0 || ix >= w || iy >= h) continue;
@@ -396,12 +401,7 @@ function computeFlow(
         const i = front[q]!;
         const x = i % w;
         const y = (i - x) / w;
-        for (const [dx, dy] of [
-          [1, 0],
-          [-1, 0],
-          [0, 1],
-          [0, -1],
-        ] as const) {
+        for (const [dx, dy] of NEIGHBORS4) {
           const nx = x + dx;
           const ny = y + dy;
           if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
