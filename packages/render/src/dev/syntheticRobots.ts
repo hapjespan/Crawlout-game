@@ -1,7 +1,7 @@
 // Synthetic robots for the render demo (?robots) and the tests, until the asset side delivers real ones: a security
 // robot (2.2 m), a repair drone (0.8 m, floats 1.35 m above the ground) and a siege sentinel (3.5 m). Built from
 // primitives in the layout of a rigid unit (position, normal, color with the team mask in alpha), three LODs each,
-// the lowest point on y = 0 and the model facing +Z. They stand in for manifest assets: same RigidUnitSource, same layer.
+// the lowest point on y = 0 (the drone's on its hover height, baked in like a manifest asset) and the model facing +Z. They stand in for manifest assets: same RigidUnitSource, same layer.
 import {
   BoxGeometry,
   CylinderGeometry,
@@ -124,8 +124,9 @@ function sentinel(lod: Lod): BufferGeometry {
 }
 
 /**
- * The robot at its real height: LOD 0 sets the factor, every LOD is scaled by it and lowered onto y = 0, and the
- * width is the larger horizontal extent of LOD 0.
+ * The robot at its real height: LOD 0 sets the factor, every LOD is scaled by it and put with its lowest point at
+ * `hover` meters (a floating drone has its hover height baked into the model, like a manifest asset). The width is the
+ * mean horizontal size of LOD 0.
  */
 function build(
   name: string,
@@ -140,16 +141,19 @@ function build(
   for (const g of lods) {
     g.scale(factor, factor, factor);
     g.computeBoundingBox();
-    g.translate(0, -g.boundingBox!.min.y, 0);
+    g.translate(0, hover - g.boundingBox!.min.y, 0);
     g.computeBoundingBox();
     g.computeBoundingSphere();
   }
   const b = lods[0]!.boundingBox!;
+  const sizeX = b.max.x - b.min.x;
+  const sizeZ = b.max.z - b.min.z;
   return {
     name,
     lods: lods as unknown as RigidUnitSource['lods'],
     height,
-    width: Math.max(b.max.x - b.min.x, b.max.z - b.min.z),
+    width: Math.sqrt(sizeX * sizeZ),
+    reach: Math.hypot(Math.max(-b.min.x, b.max.x), Math.max(-b.min.z, b.max.z)),
     hover,
   };
 }

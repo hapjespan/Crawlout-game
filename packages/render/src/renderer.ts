@@ -292,10 +292,14 @@ export interface CrawloutRenderer {
   /**
    * Loads a rigid unit asset (a robot: manifest entry with `rigid: true`, rigidUnitManifest.ts) and draws the unit types
    * whose loadout names it (meshSlots.body, or `assets.bind`) with it. setGameData does this for every rigid body in
-   * the loadouts; call it for an asset that has no loadout. Resolves with the status, never rejects: on failure the
+   * the loadouts; call it for an asset that has no loadout, with the unit `typeIds` to draw with it. Resolves with the status, never rejects: on failure the
    * unit types stay on the humanoid.
    */
-  loadRigidUnit(manifestUrl: string, assetId: string): Promise<RigidUnitStatus>;
+  loadRigidUnit(
+    manifestUrl: string,
+    assetId: string,
+    typeIds?: readonly number[],
+  ): Promise<RigidUnitStatus>;
   /**
    * Draws unit typeIds with a rigid asset that is already in memory (synthetic robots of the demo, tests). Same layer as
    * the manifest assets: one draw per asset per LOD, procedural animation from the snapshot's anim fields.
@@ -803,8 +807,8 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
     loadUnitAsset: (manifestUrl, assetId, assetOpts) =>
       unitAssets.load(manifestUrl, assetId, assetOpts).finally(scheduleWarmUp),
     unitAssets: () => unitAssets.statuses(),
-    loadRigidUnit: (manifestUrl, assetId) =>
-      rigidUnits.load(manifestUrl, assetId).finally(scheduleWarmUp),
+    loadRigidUnit: (manifestUrl, assetId, typeIds) =>
+      rigidUnits.load(manifestUrl, assetId, typeIds).finally(scheduleWarmUp),
     addRigidUnit(source, typeIds) {
       const status = rigidUnits.addLoaded(source.name, source, typeIds);
       scheduleWarmUp();

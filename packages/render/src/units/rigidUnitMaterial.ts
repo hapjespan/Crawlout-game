@@ -6,7 +6,7 @@
 //   iPos   x, y, z meters (y already holds the lift), yaw radians around +Y (0 keeps +Z)
 //   iScale uniform scale x, y, z (pulse; 1 otherwise), team palette slot
 //   iTint  rgb multiplier on the albedo (the per-asset albedo gain); w unused
-//   iAnim  pitch (rad, nose down positive), roll (rad), dim 0..1 (power down), glow 0..1 (team-colored pulse)
+//   iMotion  pitch (rad, nose down positive), roll (rad), dim 0..1 (power down), glow 0..1 (team-colored pulse)
 // The pose turns the model around `pivotY` (0 at the feet for a walker, the middle for a drone), scale first, then
 // pitch, then roll, then yaw.
 import { MeshBasicNodeMaterial, type Node, type Texture, type Vector3 } from 'three/webgpu';
@@ -60,7 +60,7 @@ export function createRigidUnitMaterial(opts: RigidUnitMaterialOptions): MeshBas
   const iPos = attribute('iPos', 'vec4');
   const iScale = attribute('iScale', 'vec4');
   const iTint = attribute('iTint', 'vec4');
-  const iAnim = attribute('iAnim', 'vec4');
+  const iMotion = attribute('iMotion', 'vec4');
   const position = attribute('position', 'vec3');
   const normal = attribute('normal', 'vec3');
   const color = attribute('color', 'vec4');
@@ -68,10 +68,10 @@ export function createRigidUnitMaterial(opts: RigidUnitMaterialOptions): MeshBas
 
   // Pose around the pivot: Rx(pitch) then Rz(roll) (nose down is a positive pitch), then yaw.
   const pivot = vec3(0, opts.pivotY, 0);
-  const cp = cos(iAnim.x);
-  const sp = sin(iAnim.x);
-  const cr = cos(iAnim.y);
-  const sr = sin(iAnim.y);
+  const cp = cos(iMotion.x);
+  const sp = sin(iMotion.x);
+  const cr = cos(iMotion.y);
+  const sr = sin(iMotion.y);
   const pose = (v: Node<'vec3'>): Node<'vec3'> => {
     const rx = vec3(v.x, v.y.mul(cp).sub(v.z.mul(sp)), v.y.mul(sp).add(v.z.mul(cp)));
     return vec3(rx.x.mul(cr).sub(rx.y.mul(sr)), rx.x.mul(sr).add(rx.y.mul(cr)), rx.z);
@@ -109,12 +109,12 @@ export function createRigidUnitMaterial(opts: RigidUnitMaterialOptions): MeshBas
     base = mix(base, vec3(...GRADE_TONE).mul(luma), opts.grade);
   }
   const lit = teamAlbedo(base, team, color.w, max(pivotLuma, 1e-3));
-  const albedo = lit.mul(float(1).sub(iAnim.z.mul(1 - DIM_KEEP)));
+  const albedo = lit.mul(float(1).sub(iMotion.z.mul(1 - DIM_KEEP)));
   const N = normalize(worldNrm);
   const shade = toonRamp(dot(N, light));
   const V = normalize(cameraPosition.sub(vWorldPos));
   const rim = rimLight(N, V, light, albedo).mul(RIM_SHARE);
-  const glow = team.mul(iAnim.w.mul(GLOW_GAIN)).mul(max(color.w, GLOW_FLOOR));
+  const glow = team.mul(iMotion.w.mul(GLOW_GAIN)).mul(max(color.w, GLOW_FLOOR));
 
   const m = new MeshBasicNodeMaterial();
   m.positionNode = worldPos;

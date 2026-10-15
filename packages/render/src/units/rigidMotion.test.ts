@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { ANIM } from '@crawlout/protocol';
 import {
   createRigidPose,
+  idlePeriod,
   motionWeight,
   recoil,
   rigidPose,
@@ -44,24 +45,27 @@ describe('rigidPose', () => {
   it('lets a walker idle with a subtle sway and a drone float with a bob around its hover height', () => {
     for (const p of [GUARD, SENTINEL]) {
       for (let k = 0; k < 40; k++) {
-        const o = pose(p, ANIM.idle, 0, k * 0.37);
+        const o = pose(p, ANIM.idle, k / 40);
         expect(Math.abs(o.pitch)).toBeLessThan(0.02);
         expect(Math.abs(o.roll)).toBeLessThan(0.02);
         expect(o.lift).toBeGreaterThanOrEqual(0);
         expect(o.lift).toBeLessThan(0.01 * p.height);
       }
-      const roll = Array.from({ length: 200 }, (_, k) => pose(p, ANIM.idle, 0, k * 0.1).roll);
-      expect(range(roll)).toBeGreaterThan(0.01); // it does move
+      expect(range(over(p, ANIM.idle, 'roll'))).toBeGreaterThan(0.01); // it does move
+      // The sway closes over the idle loop, so it does not jump when the loop wraps.
+      expect(pose(p, ANIM.idle, 0).roll).toBeCloseTo(pose(p, ANIM.idle, 1).roll, 9);
+      expect(pose(p, ANIM.idle, 0).pitch).toBeCloseTo(pose(p, ANIM.idle, 1).pitch, 9);
     }
+    // The hover height is baked into the model: the float is a bob around zero lift.
     const lifts = Array.from({ length: 200 }, (_, k) => pose(DRONE, ANIM.idle, 0, k * 0.05).lift);
-    expect(Math.min(...lifts)).toBeGreaterThan(DRONE.hover - 0.1);
-    expect(Math.max(...lifts)).toBeLessThan(DRONE.hover + 0.1);
+    expect(Math.min(...lifts)).toBeGreaterThan(-0.1);
+    expect(Math.max(...lifts)).toBeLessThan(0.1);
     expect(range(lifts)).toBeGreaterThan(0.06); // a visible bob
   });
 
   it('desynchronizes units through the phase', () => {
-    const a = pose(GUARD, ANIM.idle, 0, 5, 0.1);
-    const b = pose(GUARD, ANIM.idle, 0, 5, 0.6);
+    const a = pose(GUARD, ANIM.idle, 0.3, 5, 0.1);
+    const b = pose(GUARD, ANIM.idle, 0.3, 5, 0.6);
     expect(a.roll).not.toBeCloseTo(b.roll, 3);
     expect(pose(DRONE, ANIM.idle, 0, 5, 0.1).lift).not.toBeCloseTo(
       pose(DRONE, ANIM.idle, 0, 5, 0.33).lift,
@@ -94,18 +98,9 @@ describe('rigidPose', () => {
     expect(range(over(SENTINEL, ANIM.walk, 'lift'))).toBeGreaterThan(
       range(over(GUARD, ANIM.walk, 'lift')),
     );
-    // Idle sways slower: fewer sign changes of the pitch over the same stretch of time.
-    const flips = (p: RigidMotionParams): number => {
-      let n = 0;
-      let prev = 0;
-      for (let k = 0; k < 600; k++) {
-        const s = Math.sign(pose(p, ANIM.idle, 0, k * 0.05, 0).pitch);
-        if (s !== 0 && prev !== 0 && s !== prev) n++;
-        if (s !== 0) prev = s;
-      }
-      return n;
-    };
-    expect(flips(SENTINEL)).toBeLessThan(flips(GUARD));
+    // Idle sways slower: one loop lasts longer.
+    expect(idlePeriod(SENTINEL)).toBeGreaterThan(idlePeriod(GUARD));
+    expect(idlePeriod(GUARD)).toBeCloseTo(3.2, 6);
   });
 
   it('tilts a drone forward into the movement, more on a run', () => {
@@ -114,7 +109,7 @@ describe('rigidPose', () => {
     const run = pose(DRONE, ANIM.run, 0.3, 0, 0.5);
     expect(walk.pitch - idle.pitch).toBeGreaterThan(0.1);
     expect(run.pitch).toBeGreaterThan(walk.pitch + 0.1);
-    expect(walk.lift).toBeGreaterThan(DRONE.hover - 0.15); // still floating
+    expect(walk.lift).toBeGreaterThan(-0.15); // still floating
   });
 
   it('kicks back on an attack: zero at both ends, a peak early, smaller for attack2', () => {
@@ -173,9 +168,9 @@ describe('rigidPose', () => {
     const start = pose(DRONE, ANIM.death, 0, 0, 0.3);
     const mid = pose(DRONE, ANIM.death, 0.3, 0, 0.3);
     const end = pose(DRONE, ANIM.death, 1, 0, 0.3);
-    expect(start.lift).toBeGreaterThan(DRONE.hover - 0.15);
+    expect(start.lift).toBeGreaterThan(-0.15); // floating, hover baked in
     expect(mid.lift).toBeLessThan(start.lift - 0.2);
-    expect(end.lift).toBeLessThan(0.1);
+    expect(end.lift).toBeLessThan(-DRONE.hover); // dropped the whole hover height, and a little deeper
     expect(end.pitch).toBeGreaterThan(0.9);
     expect(end.dim).toBeGreaterThan(0.75);
   });

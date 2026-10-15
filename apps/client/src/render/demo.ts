@@ -22,7 +22,8 @@
 // ?wind=0 holds the foliage still and ?propmax=<n> sets the prop budget.
 // ?robots swaps the regular units for synthetic robots (render/dev/syntheticRobots.ts): security robots (2.2 m), repair
 // drones (0.8 m, floating 1.35 m up) and sentinels (3.5 m), drawn by the rigid-unit layer with its procedural animation
-// from the anim fields; the heroes stay humanoid, ?nohero removes them. ?robots=<n> sets the share of drones (0..9 of 10).
+// from the anim fields; the heroes stay humanoid, ?nohero removes them. ?robots=<n> sets the share of drones (0..9 of 10);
+// ?robots=real draws the robots of assets/dist (dweller_robot_guard, _drone, _sentinel) instead of the synthetic ones.
 import { PROVIDES } from '@crawlout/data';
 import { MAX_ENTITIES, TICK_MS, UNITS_PER_METER } from '@crawlout/protocol';
 import {
@@ -128,7 +129,16 @@ async function main(): Promise<void> {
   });
   renderer.setGameData(data);
   const robots = params.has('robots');
-  if (robots) for (const r of syntheticRobots()) renderer.addRigidUnit(r.source, [r.typeId]);
+  if (robots && params.get('robots') === 'real' && assets) {
+    // The robots of assets/dist (manifest entries with rigid: true), on the typeIds the synthetic ones use.
+    const { guard, drone, sentinel } = SYNTHETIC_ROBOT_TYPE_IDS;
+    for (const [name, typeId] of [
+      ['guard', guard],
+      ['drone', drone],
+      ['sentinel', sentinel],
+    ] as const)
+      void renderer.loadRigidUnit(assets.manifestUrl, `dweller_robot_${name}`, [typeId]);
+  } else if (robots) for (const r of syntheticRobots()) renderer.addRigidUnit(r.source, [r.typeId]);
   const backendEl = document.getElementById('backend');
   if (backendEl) {
     const precision = renderer.dataTexturePrecision === 'half' ? ', half-float' : '';
@@ -166,7 +176,7 @@ async function main(): Promise<void> {
     if (robots) {
       unitsEl.textContent = renderer
         .rigidUnitAssets()
-        .map((a) => `${a.assetId}: ${a.state}`)
+        .map((a) => `${a.assetId}: ${a.state}${a.reason ? ` (${a.reason})` : ''}`)
         .join(' · ');
       return;
     }

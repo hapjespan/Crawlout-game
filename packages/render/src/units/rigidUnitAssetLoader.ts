@@ -1,7 +1,7 @@
 // Loads one rigid unit asset (a robot): its three LOD GLBs as static geometry in the building vertex layout
 // (structures/buildingGeometry.ts: position, normal, color with the team mask in alpha, uvl into a texture array),
-// the model lowered so its lowest point sits on y = 0 (a floating unit then hovers from there), and identical LODs
-// merged into one geometry so they cost one draw. Network and parsing come from UnitAssetIO, so tests run without a GPU.
+// the model as authored (a floating unit has its hover height baked in: bounds.min.y), and identical LODs merged into
+// one geometry so they cost one draw. Network and parsing come from UnitAssetIO, so tests run without a GPU.
 import type { BufferGeometry, DataArrayTexture, Object3D } from 'three/webgpu';
 import {
   buildingGeometryFromGltf,
@@ -26,9 +26,10 @@ export interface LoadedRigidAsset {
   /** Geometry per LOD; identical LODs are the same object. */
   lods: readonly [BufferGeometry, BufferGeometry, BufferGeometry];
   triangles: [number, number, number];
-  /** Height of the model in meters (bounds), width the largest horizontal extent. */
+  /** Height of the model in meters (bounds), the mean of its two horizontal sizes, and its farthest horizontal reach from the origin. */
   height: number;
   width: number;
+  reach: number;
   layers: DataArrayTexture | null;
   layerLuma: number[];
   /** Vertices with the team mask in LOD 0: 0 means the model shows no team color. */
@@ -56,10 +57,6 @@ export async function loadRigidUnitAsset(
   const built: BuildingMesh[] = scenes.map((scene) =>
     buildingGeometryFromGltf(scene, { teamMaterials: entry.teamMaterials, layers: table }),
   );
-  // Lowest point on the ground: the asset's own origin may sit in the middle of the body.
-  const lift = -entry.bounds.min[1];
-  if (Math.abs(lift) > 1e-3) for (const b of built) b.geometry.translate(0, lift, 0);
-
   // Identical LODs share one geometry: the same path, or the same triangle count as the LOD before.
   const geos: BufferGeometry[] = [];
   built.forEach((b, i) => {
@@ -96,7 +93,8 @@ export async function loadRigidUnitAsset(
     lods: geos as unknown as LoadedRigidAsset['lods'],
     triangles: built.map((b) => b.triangles) as [number, number, number],
     height: y1 - y0,
-    width: Math.max(x1 - x0, z1 - z0),
+    width: Math.sqrt((x1 - x0) * (z1 - z0)),
+    reach: Math.hypot(Math.max(Math.abs(x0), Math.abs(x1)), Math.max(Math.abs(z0), Math.abs(z1))),
     layers,
     layerLuma,
     teamVertices,

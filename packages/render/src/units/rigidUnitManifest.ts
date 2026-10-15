@@ -3,10 +3,12 @@
 // the renderer reads:
 //   id, bounds { min, max } (meters, the model at real size), lods (3 GLBs: level, path, triangles),
 //   teamMaterials (names of the glTF materials that take the player's color; a name with "team" in it counts too),
-//   hover (optional, meters: the height a floating unit hovers above the ground, 0 or absent for a walker).
+//   hover (optional, meters: the height of a floating unit's lowest point above the ground, 0 or absent for a walker;
+//   it is already baked into the model, bounds.min.y equals it, so the renderer does not lift the model by it),
+//   albedoGain (optional, brightness factor on the albedo).
 // The renderer splits these entries off before the manifest goes through manifestSchema (unitAssetLoader.ts), so the
 // schema does not have to know them and a manifest with robots stays valid for every other reader.
-import { boundsSchema, type AssetBounds } from '@crawlout/asset-cli/manifest';
+import { ALBEDO_GAIN_RANGE, boundsSchema, type AssetBounds } from '@crawlout/asset-cli/manifest';
 
 export interface RigidAssetLod {
   path: string;
@@ -18,8 +20,9 @@ export interface RigidAssetEntry {
   bounds: AssetBounds;
   lods: readonly [RigidAssetLod, RigidAssetLod, RigidAssetLod];
   teamMaterials: readonly string[];
-  /** Meters above the ground; 0 for a unit that stands. */
+  /** Height of the lowest point above the ground, baked into the model; 0 for a unit that stands. */
   hover: number;
+  albedoGain?: number;
 }
 
 type Raw = Record<string, unknown>;
@@ -64,6 +67,14 @@ export function parseRigidEntry(raw: Raw): RigidAssetEntry | string {
     lods: parsed as unknown as RigidAssetEntry['lods'],
     teamMaterials: (team as string[] | undefined) ?? [],
     hover,
+    ...(typeof raw.albedoGain === 'number'
+      ? {
+          albedoGain: Math.min(
+            ALBEDO_GAIN_RANGE[1],
+            Math.max(ALBEDO_GAIN_RANGE[0], raw.albedoGain),
+          ),
+        }
+      : {}),
   };
 }
 

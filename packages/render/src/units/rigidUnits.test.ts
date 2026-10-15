@@ -185,16 +185,16 @@ describe('RigidUnitLayer', () => {
     expect(pos0[1]).toBeGreaterThanOrEqual(0.5); // terrain height plus a lift of a few cm at most
     expect(pos0[1]).toBeLessThan(0.55);
     expect(pos0[2]).toBeCloseTo(-2, 5);
-    expect(pos0[3]).toBeCloseTo(1.25, 5);
+    expect(Math.abs(pos0[3]! - 1.25)).toBeLessThan(0.08); // the heading plus the small jitter of a unit at rest
     expect(row(guard, 'iScale', 0)[3]).toBe(2); // team slot = owner
     expect(row(guard, 'iScale', 1)[3]).toBe(NEUTRAL_TEAM); // clamped
     expect(NEUTRAL_TEAM).toBe(MAX_PLAYERS);
     expect(row(guard, 'iScale', 2)[3]).toBe(5);
-    // iAnim: pitch, roll, dim, glow. The idle guards barely tilt; the dead one lies down and is dimmed.
-    const idle = row(guard, 'iAnim', 0);
+    // iMotion: pitch, roll, dim, glow. The idle guards barely tilt; the dead one lies down and is dimmed.
+    const idle = row(guard, 'iMotion', 0);
     expect(Math.abs(idle[0]!)).toBeLessThan(0.02);
     expect(idle[2]).toBe(0);
-    const dead = row(guard, 'iAnim', 2);
+    const dead = row(guard, 'iMotion', 2);
     expect(Math.abs(dead[1]!)).toBeGreaterThan(1.3);
     expect(dead[2]).toBeGreaterThan(0.75);
   });
@@ -208,14 +208,18 @@ describe('RigidUnitLayer', () => {
     ]);
     layer.update(frame, camera(), recorder().decals, 0);
     const drone = byName(scene, 'rigid-synthetic_drone-lod0');
-    expect(row(drone, 'iPos', 0)[1]).toBeGreaterThan(1.2);
-    expect(row(drone, 'iPos', 0)[1]).toBeLessThan(1.5);
+    // The hover height is baked into the model (lowest point at 1.35 m): the instance stays at the ground point plus
+    // the bob, it is not lifted a second time.
+    const lod0 = drone.geometry;
+    lod0.computeBoundingBox();
+    expect(lod0.boundingBox!.min.y).toBeCloseTo(1.35, 4);
+    expect(Math.abs(row(drone, 'iPos', 0)[1]!)).toBeLessThan(0.1);
     const guard = byName(scene, 'rigid-synthetic_guard-lod0');
     // Facing +z (yaw 0): kicked back to smaller z. Facing +x (yaw pi/2): kicked back to smaller x.
     expect(row(guard, 'iPos', 0)[2]).toBeLessThan(-0.05);
-    expect(row(guard, 'iPos', 0)[0]).toBeCloseTo(5, 5);
+    expect(row(guard, 'iPos', 0)[0]).toBeCloseTo(5, 1);
     expect(row(guard, 'iPos', 1)[0]).toBeLessThan(-5.05);
-    expect(row(guard, 'iPos', 1)[2]).toBeCloseTo(0, 5);
+    expect(row(guard, 'iPos', 1)[2]).toBeCloseTo(0, 1);
   });
 
   it('shows the owner on the team mask of every robot model', () => {
@@ -317,7 +321,7 @@ describe('RigidUnitLayer', () => {
     const { scene } = robotLayer();
     for (const mesh of meshes(scene)) {
       expect(Object.keys(mesh.geometry.attributes).sort()).toEqual(
-        ['color', 'iAnim', 'iPos', 'iScale', 'iTint', 'normal', 'position'].sort(),
+        ['color', 'iMotion', 'iPos', 'iScale', 'iTint', 'normal', 'position'].sort(),
       );
       const material = mesh.material as MeshBasicNodeMaterial;
       expect(material.name).toMatch(/^crawlout-rigid-synthetic_/);
@@ -519,12 +523,15 @@ describe('rigid unit assets', () => {
         expect(g.getAttribute(name)).toBeDefined();
       expect(g.getAttribute('skinIndex')).toBeUndefined();
     }
-    // The drone's model has its origin in the middle of the body (lowest point -0.4): lowered onto the ground.
+    // The drone's model has its hover height baked in: the loader leaves it where it is authored.
     const drone = await loader.loadRigid(MANIFEST_URL, DRONE_ID);
     drone.lods[0].computeBoundingBox();
-    expect(drone.lods[0].boundingBox!.min.y).toBeCloseTo(0, 4);
-    expect(drone.lods[0].boundingBox!.max.y).toBeCloseTo(0.8, 4);
+    expect(drone.lods[0].boundingBox!.min.y).toBeCloseTo(1.35, 4);
+    expect(drone.lods[0].boundingBox!.max.y).toBeCloseTo(2.15, 4);
     expect(drone.entry.hover).toBe(1.35);
+    expect(drone.height).toBeCloseTo(0.8, 5);
+    expect(drone.width).toBeGreaterThan(0.5); // mean of the two horizontal sizes
+    expect(drone.reach).toBeGreaterThanOrEqual(0.45);
   });
 
   it('does not offer a rigid unit as a skinned character, and refuses a character as a rigid unit', async () => {
@@ -659,7 +666,7 @@ describe('rigid unit assets', () => {
   it('notes a model without a team material in its status', async () => {
     const entries = [
       { id: GUARD_ID, height: 2.2, glbMaterial: 'Hull' }, // the manifest lists Team_Plate, the GLB has no such material
-      { id: DRONE_ID, height: 0.8, hover: 1.2, teamName: 'Hull', glbMaterial: 'Hull' }, // listed by the manifest: masked
+      { id: DRONE_ID, height: 0.8, hover: 1.2, lowest: 1.2, teamName: 'Hull', glbMaterial: 'Hull' }, // listed by the manifest: masked
     ];
     const loader = await fakeDist({ entries });
     const registry = new RigidUnitRegistry(
@@ -697,6 +704,6 @@ describe('rigid unit assets', () => {
     const drone = byName(scene, `rigid-${DRONE_ID}-lod0`);
     expect(drone.count).toBe(1);
     expect(row(drone, 'iScale', 0)[3]).toBe(3);
-    expect(row(drone, 'iPos', 0)[1]).toBeGreaterThan(1.2); // hover from the manifest
+    expect(Math.abs(row(drone, 'iPos', 0)[1]!)).toBeLessThan(0.1); // the hover is baked into the model
   });
 });

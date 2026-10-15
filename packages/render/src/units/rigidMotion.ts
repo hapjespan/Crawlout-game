@@ -1,14 +1,17 @@
 // Procedural animation of rigid (not skinned) units: the robots of the Dwellers (security robot, repair drone,
-// sentinel). A rigid mesh has no clips, so the snapshot's `anim` and `animT` drive a small pose per instance instead:
-// a lift, a push back along the facing, a pitch (nose down positive) and a roll around the model's pivot, a uniform
-// scale pulse, a dim (power down) and a glow (team-colored pulse). The CPU computes it per visible instance, the vertex
+// sentinel). A rigid mesh has no clips, so the clip and its progress drive a small pose per instance instead: a lift,
+// a push back along the facing, a pitch (nose down positive) and a roll around the model's pivot, a uniform scale
+// pulse, a dim (power down) and a glow (team-colored pulse). The CPU computes it per visible instance, the vertex
 // shader (rigidUnitMaterial.ts) only applies it. Cheap, no skinning, and a pure function, so the tests can read it.
+// Clip and progress come from InstanceVariation (animVariation.ts), like the skinned units: idle, walk and run run on a
+// render-owned phase (walk and run at the pace of the ground speed, so the steps do not slide), the other clips follow
+// the sim's animT. A walker's idle loops once per `idlePeriod` seconds; a floating unit's float runs on the render clock.
 //
 // Two movement kinds, told apart by data alone (the manifest's `hover`, never by asset id):
 //   walker: feet on the ground; idle sways a little, walk and run rock and stomp (a heavier, taller body moves slower
 //           and with more weight: `weight` follows the model height), attack kicks back, death topples and sinks;
-//   hover:  floats `hover` meters above the ground with a bob; walk and run tilt it forward into the movement,
-//           gather and build pulse it, death drops it out of the air, tilting.
+//   hover:  floats with a bob (the hover height is baked into the model, the lift is relative to it); walk and run
+//           tilt it forward into the movement, gather and build pulse it, death drops it `hover` meters, tilting.
 // All amplitudes scale with the model's height, so a 3.5 m sentinel and a 2.2 m guard share the formulas.
 import { ANIM } from '@crawlout/protocol';
 
@@ -16,13 +19,13 @@ import { ANIM } from '@crawlout/protocol';
 export interface RigidMotionParams {
   /** Model height in meters (manifest bounds). */
   height: number;
-  /** Hover height in meters above the ground; 0 for a unit that stands on the ground. */
+  /** Height in meters of the model's lowest point above the ground (baked in); > 0 makes it a floating unit. */
   hover: number;
 }
 
 /** The pose of one instance. Lengths in meters, angles in radians. */
 export interface RigidPose {
-  /** Extra height above the unit's ground point (hover height included). */
+  /** Extra height relative to where the model stands (a hovering model has its hover height baked in). */
   lift: number;
   /** Displacement against the facing (recoil). */
   back: number;
@@ -45,6 +48,8 @@ export function createRigidPose(): RigidPose {
 const TAU = Math.PI * 2;
 /** Height of the guard the walker amplitudes are tuned for (m); taller bodies move heavier. */
 const REFERENCE_HEIGHT = 2.2;
+/** Seconds one idle sway of a walker of the reference height lasts. */
+const IDLE_PERIOD_S = 3.2;
 /** Where in the loop a recoil peaks. */
 const RECOIL_RISE = 0.1;
 
@@ -58,15 +63,21 @@ export function motionWeight(height: number): number {
   return Math.min(2.2, Math.max(0.6, height / REFERENCE_HEIGHT));
 }
 
+/** Duration in seconds of one idle loop (pass it to InstanceVariation as the idle duration): taller bodies sway slower. */
+export function idlePeriod(p: RigidMotionParams): number {
+  return IDLE_PERIOD_S * Math.sqrt(motionWeight(p.height));
+}
+
 /** 0 at the start of a one-shot, rises quickly to 1 at RECOIL_RISE and decays smoothly back to 0 at the end. */
 export function recoil(t: number): number {
   return smooth(0, RECOIL_RISE, t) * (1 - smooth(RECOIL_RISE, 1, t));
 }
 
 /**
- * Pose of an instance. `anim` is the snapshot's ANIM id (an unknown id acts as idle), `t` the clip progress 0..1,
- * `time` seconds of the render clock (idle motion and pulses, which have no clip progress), `phase` 0..1 a per-unit
- * offset so a group does not sway in step. Writes into `out` and returns it.
+ * Pose of an instance. `anim` is the clip to show (an unknown id acts as idle), `t` its progress 0..1 (from
+ * InstanceVariation, so units already differ in phase and pace), `time` seconds of the render clock (a floating unit's
+ * float and the pulses of a working drone), `phase` 0..1 a per-unit constant (the side a unit topples to, offsets
+ * between the motions of one unit). Writes into `out` and returns it.
  */
 export function rigidPose(
   p: RigidMotionParams,
@@ -76,7 +87,7 @@ export function rigidPose(
   phase: number,
   out: RigidPose,
 ): RigidPose {
-  out.lift = p.hover;
+  out.lift = 0;
   out.back = 0;
   out.pitch = 0;
   out.roll = 0;
@@ -93,7 +104,7 @@ export function rigidPose(
     // The float: a slow bob plus a faster flutter, and a little lean that never stops.
     const bob =
       Math.sin(TAU * (time * 0.7 + phase)) * 0.06 + Math.sin(TAU * (time * 1.9 + phase * 3)) * 0.02;
-    out.lift = p.hover + bob;
+    out.lift = bob;
     out.pitch = Math.sin(TAU * (time * 0.5 + phase)) * 0.03;
     out.roll = Math.sin(TAU * (time * 0.6 + phase * 2)) * 0.04;
   }
@@ -142,7 +153,7 @@ export function rigidPose(
       const e = fall * fall; // accelerates
       out.dim = 0.8 * smooth(0.1, 0.95, t);
       if (hovering) {
-        out.lift = p.hover * (1 - e) - 0.05 * smooth(0.5, 1, t);
+        out.lift = -p.hover * e - 0.05 * smooth(0.5, 1, t);
         out.pitch = 1 * e;
         out.roll = side * 0.7 * e + side * Math.sin(40 * t) * 0.05 * (1 - t);
       } else {
@@ -153,12 +164,11 @@ export function rigidPose(
       break;
     }
     default: {
-      // Idle (and any unknown clip): breathing and a little weight shift. Taller bodies sway slower.
+      // Idle (and any unknown clip): breathing and a little weight shift, one whole sway per idle loop.
       if (!hovering) {
-        const w = TAU * (time * (0.45 / Math.sqrt(k)) + phase);
-        out.lift += 0.004 * h * (0.5 + 0.5 * Math.sin(w));
-        out.pitch = 0.012 * Math.sin(w);
-        out.roll = 0.016 * Math.sin(0.7 * w + phase * TAU);
+        out.lift += 0.004 * h * (0.5 + 0.5 * Math.sin(cycle));
+        out.pitch = 0.012 * Math.sin(cycle);
+        out.roll = 0.016 * Math.sin(cycle + 1.3 + phase * TAU);
       }
     }
   }

@@ -6,7 +6,7 @@
 // Which unit typeIds are rigid is decided by whoever adds an asset (rigidUnitAssets.ts: the loadout's body slot names
 // a rigid manifest asset): assign() hands typeIds to an asset, and UnitLayer skips every typeId that owns() claims.
 // A unit type without an asset is not claimed and falls back to the humanoid rig.
-import { ENTITY_FLAG } from '@crawlout/protocol';
+import { ANIM, ENTITY_FLAG } from '@crawlout/protocol';
 import {
   Frustum,
   Matrix4,
@@ -30,22 +30,31 @@ import { teamIndex } from '../palette.js';
 import type { InterpolatedFrame } from '../snapshot/interpolate.js';
 import { InstanceBatch, NO_CUT } from '../structures/instanceBatch.js';
 import type { PickShape } from '../picking/selection.js';
-import { createRigidPose, rigidPose, type RigidMotionParams } from './rigidMotion.js';
+import { InstanceVariation } from './animVariation.js';
+import { createRigidPose, idlePeriod, rigidPose, type RigidMotionParams } from './rigidMotion.js';
 import { createRigidUnitMaterial } from './rigidUnitMaterial.js';
 
 /** Instance attribute of the pose, read by rigidUnitMaterial.ts. */
-const POSE_ATTRIBUTE = 'iAnim';
+const POSE_ATTRIBUTE = 'iMotion';
+/** The seed of InstanceVariation has 12 bits; /SEED_RANGE gives a constant in [0, 1) per unit. */
+const SEED_RANGE = 4096;
 
 /** A rigid asset the layer can draw: a geometry per LOD in the building vertex layout (buildingGeometry.ts). */
 export interface RigidUnitSource {
   name: string;
   /** LOD 0, 1, 2; the same object twice means the LODs are identical and share one draw. Owned by the layer. */
   lods: readonly [BufferGeometry, BufferGeometry, BufferGeometry];
-  /** Model height in meters, with its lowest point on y = 0. */
+  /** Model height in meters (bounds). */
   height: number;
-  /** Largest horizontal extent in meters (blob shadow, pick radius, culling). Default: height / 2. */
+  /** Mean horizontal size in meters, the footprint on the ground (blob shadow, selection ring, pick radius). Default: height / 2. */
   width?: number;
-  /** Hover height in meters above the ground; > 0 makes it a floating unit (drone). Default 0. */
+  /** Farthest horizontal distance of the model from its origin, meters (culling; the origin need not be the middle). Default: width. */
+  reach?: number;
+  /**
+   * Height in meters of the model's lowest point above the ground; > 0 makes it a floating unit (the repair drone). It is
+   * already baked into the geometry (manifest `hover` equals bounds.min.y): the layer does not lift the model by it, it
+   * only needs it for the pivot of the tilt, the pick sphere and the fall of a dead drone. Default 0.
+   */
   hover?: number;
   /** Diffuse texture array and its mean luma per layer (textureArray.ts), owned by the layer. */
   layers?: Texture | null;
@@ -61,6 +70,8 @@ interface RigidAsset {
   motion: RigidMotionParams;
   /** Largest horizontal extent, meters. */
   width: number;
+  /** Duration of one idle loop in seconds (rigidMotion.ts idlePeriod). */
+  idleS: number;
   /** Albedo multiplier per instance (iTint.rgb). */
   tint: readonly [number, number, number];
   /** Projected-height size of the model for the screen LOD, meters. */
@@ -102,11 +113,6 @@ const BLOB: DecalStyle = {
 };
 const BLOB_SELECTED: DecalStyle = { ...BLOB, ring: 1 };
 
-/** A float in [0, 1) per unit id (Knuth's multiplicative hash): the phase of the idle motion. */
-export function phaseOf(id: number): number {
-  return ((Math.imul(id, 2654435761) >>> 0) % 65536) / 65536;
-}
-
 export class RigidUnitLayer {
   private readonly assets: RigidAsset[] = [];
   private readonly scene: Scene;
@@ -118,6 +124,8 @@ export class RigidUnitLayer {
   private readonly projView = new Matrix4();
   private readonly sphere = new Sphere();
   private readonly pose = createRigidPose();
+  /** Per-entity phase, pace and heading smoothing (animVariation.ts), shared with the skinned units' look. */
+  private readonly variation = new InstanceVariation();
   /** Asset per unit typeId (1..1023), NO_ASSET when the typeId has none. */
   private readonly assetByType = new Uint8Array(TYPE_ID_BUILDING_FIRST).fill(NO_ASSET);
   /** Rigid instances drawn in the last update. */
@@ -166,7 +174,7 @@ export class RigidUnitLayer {
       name: `crawlout-rigid-${src.name}`,
       layers: src.layers ?? null,
       layerLuma: src.layerLuma ?? [],
-      pivotY: hover > 0 ? height / 2 : 0,
+      pivotY: hover > 0 ? hover + height / 2 : 0,
       ...(src.grade ? { grade: src.grade } : {}),
     });
     const index = this.assets.length;
@@ -188,13 +196,14 @@ export class RigidUnitLayer {
     this.assets.push({
       name: src.name,
       motion: { height, hover },
+      idleS: idlePeriod({ height, hover }),
       width,
       tint: [src.gain ?? 1, src.gain ?? 1, src.gain ?? 1],
       lodSize: height,
       pick: { radius: Math.max(0.55, 0.4 * height, 0.45 * width), height: hover + height / 2 },
-      blobHalf: Math.min(3, Math.max(0.45, 0.62 * width + 0.2)),
+      blobHalf: Math.min(3, Math.max(0.45, 0.45 * width + 0.1)),
       cullHeight: hover + height / 2,
-      cullRadius: 0.6 * Math.hypot(height, width) + 0.6,
+      cullRadius: Math.hypot(src.reach ?? width, height / 2) + 0.6,
       material,
       layers: src.layers ?? null,
       lods,
@@ -236,6 +245,7 @@ export class RigidUnitLayer {
    * heights; `time` is the render clock in seconds (idle motion and pulses).
    */
   update(frame: InterpolatedFrame, camera: Camera, decals: DecalLayer, time: number): void {
+    const nowMs = time * 1000;
     this.projView.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
     this.frustum.setFromProjectionMatrix(this.projView);
     const cam = camera.position;
@@ -270,8 +280,19 @@ export class RigidUnitLayer {
         const batch = asset.lods[lod]!;
         if (batch.count >= this.capacity) continue;
         const flags = frame.flags[i]!;
-        const yaw = frame.yaw[i]!;
-        rigidPose(asset.motion, frame.anim[i]!, frame.animT[i]!, time, phaseOf(frame.id[i]!), pose);
+        const simClip = frame.anim[i]!;
+        const v = this.variation.apply(
+          frame.id[i]!,
+          x,
+          z,
+          simClip <= ANIM.death ? simClip : ANIM.idle,
+          frame.animT[i]!,
+          frame.yaw[i]!,
+          asset.idleS,
+          nowMs,
+        );
+        const yaw = v.yaw;
+        rigidPose(asset.motion, v.clip, v.t, time, v.seed / SEED_RANGE, pose);
         batch.push(
           x - Math.sin(yaw) * pose.back,
           y + pose.lift,

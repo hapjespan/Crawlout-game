@@ -80,7 +80,7 @@ export async function rigidGlb(opts: RigidGlbOptions): Promise<Uint8Array> {
 export interface RigidFixtureEntry {
   id: string;
   height: number;
-  /** y of the lowest point as authored. */
+  /** y of the lowest point as authored (a floating unit: its hover height, baked in). */
   lowest?: number;
   hover?: number;
   /** `rigid: true` (default) or kind 'rigid-unit'. */
@@ -93,7 +93,7 @@ export interface RigidFixtureEntry {
 
 export const FIXTURE_ENTRIES: readonly RigidFixtureEntry[] = [
   { id: GUARD_ID, height: 2.2 },
-  { id: DRONE_ID, height: 0.8, hover: 1.35, lowest: -0.4, spelling: 'kind' },
+  { id: DRONE_ID, height: 0.8, hover: 1.35, lowest: 1.35, spelling: 'kind' }, // hover baked: bounds.min.y = hover
   { id: SENTINEL_ID, height: 3.5 },
 ];
 

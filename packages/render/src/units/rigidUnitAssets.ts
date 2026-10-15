@@ -108,8 +108,12 @@ export class RigidUnitRegistry {
     for (const t of typeIds) if (!status.typeIds.includes(t)) status.typeIds.push(t);
   }
 
-  /** Loads (once per manifest and id) and puts it to use. Never rejects: a failure is a status, not an exception. */
-  load(manifestUrl: string, assetId: string): Promise<RigidUnitStatus> {
+  /** Loads (once per manifest and id) and puts it to use for its loadouts and bindings, plus `extraTypeIds`. Never rejects: a failure is a status, not an exception. */
+  load(
+    manifestUrl: string,
+    assetId: string,
+    extraTypeIds: readonly number[] = [],
+  ): Promise<RigidUnitStatus> {
     const key = `${manifestUrl}#${assetId}`;
     let entry = this.entries.get(key);
     if (!entry || entry.status.state === 'failed') {
@@ -129,10 +133,11 @@ export class RigidUnitRegistry {
             lods: loaded.lods,
             height: loaded.height,
             width: loaded.width,
+            reach: loaded.reach,
             hover: loaded.entry.hover,
             layers: loaded.layers,
             layerLuma: loaded.layerLuma,
-            gain: this.opts.albedoGain?.(assetId) ?? 1,
+            gain: this.opts.albedoGain?.(assetId) ?? loaded.entry.albedoGain ?? 1,
             grade: RIGID_GRADE,
           });
           status.state = 'ready';
@@ -160,7 +165,7 @@ export class RigidUnitRegistry {
     }
     const { status, asset } = entry;
     return asset.then((index) => {
-      this.assign(status, this.typesOf(assetId), index);
+      this.assign(status, [...this.typesOf(assetId), ...extraTypeIds], index);
       return status;
     });
   }
