@@ -1,7 +1,7 @@
 // The hard-surface shapes of the robot generator (src/shapes.ts) and the repeat and mirror expansion (src/partExpand.ts):
 // winding against the normals, closed volumes, triangle counts, determinism.
 import { describe, expect, it } from 'vitest';
-import { makeBox, makeCylinder, triangleCount, type Mesh, type Vec3 } from '../src/geometry.js';
+import { makeBox, triangleCount, type Mesh, type Vec3 } from '../src/geometry.js';
 import { expandParts } from '../src/partExpand.js';
 import {
   makeBevelBox,
@@ -120,7 +120,7 @@ describe('shapes', () => {
     expect(windingErrors(makeBox([1, 1, 1]))).toBe(0);
   });
 
-  it('winds a clean cylinder and cone outward (geometry.ts makeCylinder winds its sides inward)', () => {
+  it('winds a cylinder and cone outward', () => {
     for (const [r, rt] of [
       [1, 1],
       [0.95, 0.6],
@@ -138,8 +138,6 @@ describe('shapes', () => {
     expect(volume(cone)).toBeCloseTo((Math.PI * 0.25 * 1) / 3, 1);
     expect(triangleCount(makeCone(0.5, 1, 10, true))).toBe(10);
     expect(windingErrors(makeCone(0.5, 1, 10, true))).toBe(0);
-    // The old shape the existing buildings use: its side triangles face inward.
-    expect(windingErrors(makeCylinder(1, 1, 1, 12))).toBeGreaterThan(0);
   });
 
   for (const axis of ['x', 'y', 'z'] as const)

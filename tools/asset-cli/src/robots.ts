@@ -1,7 +1,7 @@
 // Dweller robots (assets/src/robots.json): rigid units and two extra buildings, procedural hard-surface models on the real
 // scale (character 1.8 m), built the same way as the building variants (src/buildings.ts) from boxes, chamfered boxes,
 // cylinders, cones and the shapes of src/shapes.ts (prism, track, corrugated sheet, tube, sphere). The cylinders and cones
-// come from shapes.ts (`cleanShapes`): outward winding.
+// come from shapes.ts (outward winding).
 // A rigid unit (kind 'rigid-unit') has no skeleton and no animations: movement is a transform of the whole model.
 // The surface kind of a part is its material name (render: surfaceKindOfMaterial), the team band is `team_trim`.
 // All shape numbers live in robots.json; this module validates and writes the LOD GLBs and the manifest entries.
@@ -195,9 +195,7 @@ export async function buildRobots(
       const lods: BuildingLod[] = [];
       let materials: string[] = [];
       for (const level of [0, 1, 2] as const) {
-        const generated = await generateBuilding(variants, id, level, new Map(), {
-          cleanShapes: true,
-        });
+        const generated = await generateBuilding(variants, id, level, new Map());
         if (level === 0) materials = generated.materials; // the full set; the far LODs drop some
         const lod = await finishBuildingLod(generated.document, level);
         if (unit) {

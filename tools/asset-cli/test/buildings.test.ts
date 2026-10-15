@@ -20,13 +20,13 @@ import {
 import {
   largestComponents,
   makeBox,
-  makeCylinder,
   makeTransform,
   simplifyMesh,
   transformMesh,
   triangleCount,
 } from '../src/geometry.js';
 import { createIO } from '../src/lods.js';
+import { makeCylinderClean } from '../src/shapes.js';
 import { assetEntrySchema, manifestSchema } from '../src/manifest.js';
 import { parseVariants, type HousePart, type VariantsConfig } from '../src/variants.js';
 
@@ -488,7 +488,7 @@ describe('geometry', () => {
     const box = makeBox([2, 1, 3]);
     expect(triangleCount(box)).toBe(12);
     expect(Math.min(...Array.from({ length: 8 }, (_, i) => box.positions[i * 3 + 1]!))).toBe(0);
-    const cyl = makeCylinder(0.5, 0.25, 2, 8);
+    const cyl = makeCylinderClean(0.5, 0.25, 2, 8, false);
     for (let i = 0; i < cyl.normals.length; i += 3)
       expect(Math.hypot(cyl.normals[i]!, cyl.normals[i + 1]!, cyl.normals[i + 2]!)).toBeCloseTo(
         1,

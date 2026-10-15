@@ -662,17 +662,17 @@
         {
           "level": 0,
           "path": "dweller_building_beacon/lod0.glb",
-          "triangles": 142
+          "triangles": 132
         },
         {
           "level": 1,
           "path": "dweller_building_beacon/lod1.glb",
-          "triangles": 142
+          "triangles": 132
         },
         {
           "level": 2,
           "path": "dweller_building_beacon/lod2.glb",
-          "triangles": 142
+          "triangles": 132
         }
       ],
       "sockets": {},
@@ -705,17 +705,17 @@
         {
           "level": 0,
           "path": "dweller_building_claim_post/lod0.glb",
-          "triangles": 92
+          "triangles": 84
         },
         {
           "level": 1,
           "path": "dweller_building_claim_post/lod1.glb",
-          "triangles": 92
+          "triangles": 84
         },
         {
           "level": 2,
           "path": "dweller_building_claim_post/lod2.glb",
-          "triangles": 92
+          "triangles": 84
         }
       ],
       "sockets": {},
@@ -791,17 +791,17 @@
         {
           "level": 0,
           "path": "dweller_building_hq/lod0.glb",
-          "triangles": 2345
+          "triangles": 2343
         },
         {
           "level": 1,
           "path": "dweller_building_hq/lod1.glb",
-          "triangles": 939
+          "triangles": 942
         },
         {
           "level": 2,
           "path": "dweller_building_hq/lod2.glb",
-          "triangles": 288
+          "triangles": 278
         }
       ],
       "sockets": {},

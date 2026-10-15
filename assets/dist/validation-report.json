@@ -826,9 +826,9 @@
       "kind": "building",
       "sourceTriangles": 0,
       "lodTriangles": [
-        142,
-        142,
-        142
+        132,
+        132,
+        132
       ],
       "materials": [
         "metal",
@@ -848,9 +848,9 @@
       "kind": "building",
       "sourceTriangles": 0,
       "lodTriangles": [
-        92,
-        92,
-        92
+        84,
+        84,
+        84
       ],
       "materials": [
         "metal",
@@ -894,9 +894,9 @@
       "kind": "building",
       "sourceTriangles": 86,
       "lodTriangles": [
-        2345,
-        939,
-        288
+        2343,
+        942,
+        278
       ],
       "materials": [
         "metal",

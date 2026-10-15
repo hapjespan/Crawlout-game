@@ -76,9 +76,7 @@ export function makeBoxOpen(size: Vec3): Mesh {
 
 /**
  * Cylinder or frustum along y (foot at the bottom centre) with smooth sides, flat caps and the sides wound
- * counter-clockwise seen from outside. geometry.ts makeCylinder winds its sides the other way (back faces to the
- * front in a culled render); it stays as it is so the existing building assets keep their bytes, the robots use this one.
- * `open` leaves out the bottom cap.
+ * counter-clockwise seen from outside. `open` leaves out the bottom cap.
  */
 export function makeCylinderClean(
   radius: number,
@@ -126,8 +124,8 @@ export function makeCylinderClean(
 }
 
 /**
- * Cone with smooth sides: `segments` triangles for the sides plus `segments` for the base unless `open`. makeCylinder
- * with a top radius of 0 spends half of its side triangles on degenerate slivers; this one does not.
+ * Cone with smooth sides: `segments` triangles for the sides plus `segments` for the base unless `open`. A cylinder with a
+ * top radius of 0 would spend half of its side triangles on degenerate slivers; this one does not.
  */
 export function makeCone(radius: number, height: number, segments: number, open: boolean): Mesh {
   const out = new Builder();

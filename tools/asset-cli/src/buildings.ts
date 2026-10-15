@@ -16,7 +16,6 @@ import {
   inverseTranspose3,
   largestComponents,
   makeBox,
-  makeCylinder,
   makeTransform,
   MeshAccumulator,
   selectTriangles,
@@ -195,23 +194,18 @@ interface PartMeshes {
   meshes: { material: string; mesh: Mesh }[];
 }
 
-function shapeMeshes(part: Exclude<VariantPart, HousePart>, clean: boolean): Mesh {
+/** The mesh of a shape part in its own frame (foot at the origin), outward winding. */
+export function shapeMeshes(part: Exclude<VariantPart, HousePart>): Mesh {
   switch (part.type) {
     case 'box':
       if (part.chamfer) return makeBevelBox(part.size, part.chamfer);
       return part.open ? makeBoxOpen(part.size) : makeBox(part.size);
     case 'cylinder': {
       const top = part.radiusTop ?? part.radius;
-      return clean || part.open
-        ? makeCylinderClean(part.radius, top, part.height, part.segments, part.open ?? false)
-        : makeCylinder(part.radius, top, part.height, part.segments);
+      return makeCylinderClean(part.radius, top, part.height, part.segments, part.open ?? false);
     }
     case 'cone':
-      // `clean` (the robots) and `open` select the shapes.ts versions: outward winding, no degenerate triangles. The
-      // old shapes stay for the existing building assets (byte-identical output).
-      return clean || part.open
-        ? makeCone(part.radius, part.height, part.segments, part.open ?? false)
-        : makeCylinder(part.radius, 0, part.height, part.segments);
+      return makeCone(part.radius, part.height, part.segments, part.open ?? false);
     case 'prism':
       return makePrism(part.profile, part.height, {
         axis: part.axis ?? 'y',
@@ -293,18 +287,12 @@ export function buildingLodTargets(lod0Triangles: number): [number, number, numb
   ) as [number, number, number];
 }
 
-export interface GenerateOptions {
-  /** Use the shapes.ts cylinders and cones (outward winding, no degenerate triangles), as the robots do. */
-  cleanShapes?: boolean;
-}
-
 /** Bouwt het document van een gebouw op een LOD, op basis van de config en de ingeladen bronnen. */
 export async function generateBuilding(
   config: VariantsConfig,
   id: string,
   level: 0 | 1 | 2,
   sources: Map<string, SourceHouse>,
-  options: GenerateOptions = {},
 ): Promise<GeneratedBuilding> {
   const variant = config.variants[id];
   if (!variant) throw new Error(`geen variant "${id}" in variants.json`);
@@ -319,10 +307,7 @@ export async function generateBuilding(
     (p) => (p.minLod ?? 0) <= level && (p.maxLod ?? 2) >= level,
   );
   const shapes = active.filter((p): p is Exclude<VariantPart, HousePart> => p.type !== 'house');
-  const shapeTriangles = shapes.reduce(
-    (sum, p) => sum + triangleCount(placeShape(p, options.cleanShapes ?? false)),
-    0,
-  );
+  const shapeTriangles = shapes.reduce((sum, p) => sum + triangleCount(placeShape(p)), 0);
   const houses = active.filter((p): p is HousePart => p.type === 'house');
   const houseBudget = Math.max(houses.length * 12, target - shapeTriangles);
   const weights = houses.map((p) => p.weight ?? 1);
@@ -364,16 +349,16 @@ export async function generateBuilding(
       for (const m of placeHouse(simplified, part, names, source.meshes, source.metersPerUnit))
         accumulate(m.material, m.mesh);
     } else {
-      accumulate(part.material, placeShape(part, options.cleanShapes ?? false));
+      accumulate(part.material, placeShape(part));
     }
   }
 
   return { ...assemble(config, variant, id, accumulators, sources), sourceTriangles };
 }
 
-function placeShape(part: Exclude<VariantPart, HousePart>, clean: boolean): Mesh {
+export function placeShape(part: Exclude<VariantPart, HousePart>): Mesh {
   return transformMesh(
-    shapeMeshes(part, clean),
+    shapeMeshes(part),
     makeTransform({
       ...(part.rotation ? { rotation: part.rotation } : {}),
       translation: part.position,
