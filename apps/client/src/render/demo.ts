@@ -13,7 +13,11 @@
 // ?buildings=ph keeps the placeholder blocks. Terrain: ?terrain=rock (default) is Rock Terrain 4 as the map agent's
 // greybox (rockTerrain.ts), ?terrain=map is the slice map's own greybox, ?terrain=wave the old synthetic hills; the
 // detail texture and tints come from assets/dist/terrain/terrain.json (?tex=0: tints only). ?detail=<n> sets the
-// render-only subdivision (0 draws the greybox as delivered). ?bench runs the measurement in window.crawloutBench().
+// render-only subdivision (0 draws the greybox as delivered). window.crawloutBench() runs the camera measurement
+// (bench.ts); ?bench starts it on load and logs the result.
+// ?xl is the synthetic 384 x 384 m map (xlWorld.ts): Rock Terrain 4 tiled three times each way, a river with three
+// fords through setWater, a forest border, groves and loose trees (6000) plus rocks and bushes; units and buildings
+// over the whole map. ?water=0 leaves the water out.
 import { PROVIDES } from '@crawlout/data';
 import { MAX_ENTITIES, TICK_MS, UNITS_PER_METER } from '@crawlout/protocol';
 import {
@@ -25,12 +29,16 @@ import {
 import { createGridTerrain, FakeSnapshotSource } from '@crawlout/render/dev';
 import { assetConfig } from '../game/assets.js';
 import { loadClientGameData, loadClientMap } from '../game/content.js';
+import { runBench } from './bench.js';
 import { loadMapProps, propSource } from './props.js';
-import { rockTerrainGreybox } from './rockTerrain.js';
+import { greyboxFromHeights, rockTerrainGreybox, rockTerrainHeights } from './rockTerrain.js';
 import { terrainTextures } from './terrain.js';
+import { xlWorld, type XlWorld } from './xlWorld.js';
 
 const WORLD = 128;
 const PLAYER = 0;
+/** Greybox color of a river bed cell in the XL demo (sRGB bytes), darker and wetter than the sand. */
+const MUD = [104, 94, 76] as const;
 
 function wastelandHeight(x: number, z: number): number {
   return (
@@ -78,6 +86,12 @@ async function main(): Promise<void> {
 
   const textures = params.get('tex') === '0' ? { albedoUrl: null } : terrainTextures();
   const detail = params.get('detail');
+  // ?lod=60,130,260: terrain split distances of level 1 and 2 and the far distance (tuning and measuring).
+  const lod = params.get('lod')?.split(',').map(Number);
+  const terrainChunks =
+    lod && lod.length === 3 && lod.every(Number.isFinite)
+      ? { splitDistances: [lod[0]!, lod[1]!], farDistance: lod[2]! }
+      : undefined;
   const renderer = await createRenderer({
     canvas,
     forceWebGL: params.has('webgl'),
@@ -86,6 +100,7 @@ async function main(): Promise<void> {
     ...(assets ? { assets } : {}),
     buildingAssets: params.get('buildings') !== 'ph',
     ...(detail !== null ? { terrainDetail: { subdivide: Number(detail) } } : {}),
+    ...(terrainChunks ? { terrainChunks } : {}),
   });
   renderer.setGameData(data);
   const backendEl = document.getElementById('backend');
@@ -94,14 +109,28 @@ async function main(): Promise<void> {
     backendEl.textContent =
       (renderer.backend === 'webgpu' ? 'WebGPU' : 'WebGL2-fallback') + precision;
   }
-  const terrainMode = params.get('terrain') ?? 'rock';
+  const xl: XlWorld | null = params.has('xl')
+    ? xlWorld(rockTerrainHeights() ?? { n: WORLD, heights: new Float32Array(WORLD * WORLD) })
+    : null;
+  const worldSize = xl?.size ?? WORLD;
+  const terrainMode = xl ? 'xl' : (params.get('terrain') ?? 'rock');
   const rock = terrainMode === 'rock' ? rockTerrainGreybox() : null;
-  renderer.setTerrain(
-    rock ??
-      (terrainMode === 'map'
-        ? loadClientMap('rustbelt').terrain
-        : createGridTerrain(WORLD, WORLD, 1, wastelandHeight, wastelandColor)),
-  );
+  const started = performance.now();
+  if (xl) {
+    const { size, heights, water } = xl;
+    renderer.setTerrain(
+      greyboxFromHeights(size, size, heights, (x, y) => (water.data[y * size + x] ? MUD : null)),
+    );
+    if (params.get('water') !== '0') renderer.setWater(water);
+    renderer.focus((size / 2) * UNITS_PER_METER, (size / 2) * UNITS_PER_METER);
+  } else
+    renderer.setTerrain(
+      rock ??
+        (terrainMode === 'map'
+          ? loadClientMap('rustbelt').terrain
+          : createGridTerrain(WORLD, WORLD, 1, wastelandHeight, wastelandColor)),
+    );
+  const terrainMs = Math.round(performance.now() - started);
 
   // Unit assets load in the background; show what the units are drawn with once they settle.
   const unitsEl = document.getElementById('units');
@@ -135,7 +164,10 @@ async function main(): Promise<void> {
   };
   for (const delay of [500, 2000, 6000]) window.setTimeout(showBuildings, delay);
   const terrainEl = document.getElementById('terrain');
-  if (terrainEl) terrainEl.textContent = rock ? 'Rock Terrain 4' : terrainMode;
+  if (terrainEl)
+    terrainEl.textContent =
+      (xl ? `XL ${xl.size} m, Rock Terrain 4 3x3` : rock ? 'Rock Terrain 4' : terrainMode) +
+      ` (${terrainMs} ms)`;
   if (textures)
     void renderer.setTerrainTextures(textures).then((st) => {
       if (terrainEl)
@@ -153,7 +185,7 @@ async function main(): Promise<void> {
         : propsMode === 'ph'
           ? { manifestUrl: null }
           : propSource();
-    void renderer.setProps(loadMapProps('rustbelt'), source).then((list) => {
+    void renderer.setProps(xl ? xl.props : loadMapProps('rustbelt'), source).then((list) => {
       if (!propsEl) return;
       const by = new Map<string, number>();
       for (const p of list) by.set(p.origin, (by.get(p.origin) ?? 0) + p.instances);
@@ -164,7 +196,7 @@ async function main(): Promise<void> {
   const source = new FakeSnapshotSource({
     count,
     players: 4,
-    worldSize: WORLD,
+    worldSize,
     buildings: intParam(params, 'b', 40, 400),
     buildingTypes: data.buildings.length,
     footprint,
@@ -280,8 +312,17 @@ async function main(): Promise<void> {
     window.clearInterval(pump);
     renderer.dispose();
   });
-  // Handy in the console: window.crawloutRender.stats(), window.crawloutSource.structures
-  Object.assign(window as object, { crawloutRender: renderer, crawloutSource: source });
+  // Handy in the console: window.crawloutRender.stats(), window.crawloutSource.structures, await crawloutBench()
+  const bench = (opts?: { seconds?: number }) => runBench(renderer, worldSize, opts);
+  Object.assign(window as object, {
+    crawloutRender: renderer,
+    crawloutSource: source,
+    crawloutBench: bench,
+  });
+  if (params.has('bench'))
+    window.setTimeout(() => {
+      void bench().then((r) => console.info('[bench]', JSON.stringify(r, null, 1)));
+    }, 3000);
 }
 
 main().catch((err: unknown) => {

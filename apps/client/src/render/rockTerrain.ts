@@ -40,8 +40,8 @@ function curve(h: number): number {
   return out;
 }
 
-/** The demo's Rock Terrain 4 greybox, or null when assets/dist/terrain has no heightfield. */
-export function rockTerrainGreybox(): TerrainGeometry | null {
+/** Heights per 1 m cell of the demo's Rock Terrain 4 map (n x n, row by row), or null without a heightfield. */
+export function rockTerrainHeights(): { n: number; heights: Float32Array } | null {
   const field = Object.values(fields)[0];
   if (!field || field.w !== field.h) return null;
   const n = field.w;
@@ -76,8 +76,22 @@ export function rockTerrainGreybox(): TerrainGeometry | null {
       heights[j * n + i] = curve(h);
     }
   }
+  return { n, heights };
+}
+
+/**
+ * A greybox like the map agent's: one quad per 1 m cell with its own four vertices (corner height = mean of the
+ * cells around it), a flat color per cell: sand, darker cliff cells (steeper than 32 degrees), a little brighter with
+ * height, or `cellColor` where it returns one (the demo's river bed).
+ */
+export function greyboxFromHeights(
+  w: number,
+  h: number,
+  heights: Float32Array,
+  cellColor?: (x: number, y: number) => readonly [number, number, number] | null,
+): TerrainGeometry {
   const at = (i: number, j: number): number =>
-    heights[Math.min(m, Math.max(0, j)) * n + Math.min(m, Math.max(0, i))]!;
+    heights[Math.min(h - 1, Math.max(0, j)) * w + Math.min(w - 1, Math.max(0, i))]!;
   const corner = (cx: number, cy: number): number => {
     let sum = 0;
     let k = 0;
@@ -89,22 +103,22 @@ export function rockTerrainGreybox(): TerrainGeometry | null {
     ] as const) {
       const x = cx + dx;
       const y = cy + dy;
-      if (x < 0 || y < 0 || x > m || y > m) continue;
-      sum += heights[y * n + x]!;
+      if (x < 0 || y < 0 || x >= w || y >= h) continue;
+      sum += heights[y * w + x]!;
       k++;
     }
     return sum / k;
   };
 
-  const cells = n * n;
+  const cells = w * h;
   const positions = new Float32Array(cells * 12);
   const colors = new Uint8Array(cells * 12);
   const indices = new Uint32Array(cells * 6);
   let v = 0;
   let ii = 0;
-  for (let y = 0; y < n; y++) {
-    for (let x = 0; x < n; x++) {
-      const h = at(x, y);
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const hc = at(x, y);
       let steep = 0;
       for (const [dx, dy, dist] of [
         [1, 0, 1],
@@ -116,9 +130,9 @@ export function rockTerrainGreybox(): TerrainGeometry | null {
         [1, -1, Math.SQRT2],
         [-1, 1, Math.SQRT2],
       ] as const)
-        steep = Math.max(steep, Math.abs(at(x + dx, y + dy) - h) / dist);
-      const rgb = steep > MAX_SLOPE ? CLIFF : SAND;
-      const shade = Math.min(31, Math.max(0, Math.round(h * 16)));
+        steep = Math.max(steep, Math.abs(at(x + dx, y + dy) - hc) / dist);
+      const rgb = cellColor?.(x, y) ?? (steep > MAX_SLOPE ? CLIFF : SAND);
+      const shade = Math.min(31, Math.max(0, Math.round(hc * 16)));
       const first = v;
       for (const [qx, qy] of [
         [x, y],
@@ -144,4 +158,10 @@ export function rockTerrainGreybox(): TerrainGeometry | null {
     }
   }
   return { positions, colors, indices };
+}
+
+/** The demo's Rock Terrain 4 greybox, or null when assets/dist/terrain has no heightfield. */
+export function rockTerrainGreybox(): TerrainGeometry | null {
+  const base = rockTerrainHeights();
+  return base ? greyboxFromHeights(base.n, base.n, base.heights) : null;
 }
