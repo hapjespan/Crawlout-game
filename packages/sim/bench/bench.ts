@@ -1,4 +1,6 @@
 // Benchmark: 200 units met gevecht en economie, 10.000 ticks, gemiddelde ms per tick (doel: onder 5 ms).
+// `pnpm bench` draait de standaardvariant, `pnpm bench -- --xl` de XL-variant (bench/bench-xl.ts: 384 bij 384 m met
+// rivier, bosrand en bosjes, lange routes van hoek tot hoek, vertrektijd en geheugen van de padvinding).
 // Echte data (data/), open map van 128 bij 128 m. Per kant 50 scavengers die verzamelen en 50 militie die elkaar
 // met AttackMove opzoeken; elke 100 ticks vult het harnas gesneuvelde militie aan en stuurt die opnieuw, zodat er
 // de hele run ongeveer 200 units zijn. Flow fields, separatie, gevecht, verzamelen en hash worden allemaal belast.
@@ -136,4 +138,7 @@ export function runBench(clock: () => number): BenchResult {
   };
 }
 
-reportBench(runBench(now));
+if (process.argv.includes('--xl')) {
+  const { runBenchXl, reportBenchXl } = await import('./bench-xl.js');
+  reportBenchXl(runBenchXl(now));
+} else reportBench(runBench(now));
