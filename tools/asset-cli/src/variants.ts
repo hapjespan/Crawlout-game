@@ -67,6 +67,10 @@ const place = {
   maxLod: z.union([z.literal(0), z.literal(1), z.literal(2)]).optional(),
   /** Laagste LOD waarop dit onderdeel er is; standaard 0. Een vereenvoudigd vervangend onderdeel voor de verte begint hier. */
   minLod: z.union([z.literal(0), z.literal(1), z.literal(2)]).optional(),
+  /** Also place a copy mirrored in x (position, rotation and a prism profile follow); not for a part on x = 0. */
+  mirror: z.boolean().optional(),
+  /** `count` copies, each `step` meters further than the last (rivets, vents, wheels, ribs). */
+  repeat: z.object({ count: z.number().int().min(2).max(64), step: vec3 }).optional(),
 };
 
 const houseSelectSchema = z.object({
@@ -98,6 +102,10 @@ const houseSchema = z
 const boxSchema = z.object({
   type: z.literal('box'),
   size: z.tuple([positive, positive, positive]),
+  /** Chamfer of all twelve edges in meters (44 triangles instead of 12). */
+  chamfer: positive.optional(),
+  /** Leave out the bottom face (a part that sits on a surface). */
+  open: z.boolean().optional(),
   material: z.string().min(1),
   ...place,
 });
@@ -109,6 +117,8 @@ const cylinderSchema = z.object({
   radiusTop: z.number().nonnegative().optional(),
   height: positive,
   segments: z.number().int().min(3).max(32),
+  /** Leave out the bottom cap. */
+  open: z.boolean().optional(),
   material: z.string().min(1),
   ...place,
 });
@@ -118,6 +128,73 @@ const coneSchema = z.object({
   radius: positive,
   height: positive,
   segments: z.number().int().min(3).max(32),
+  /** Leave out the bottom cap. */
+  open: z.boolean().optional(),
+  material: z.string().min(1),
+  ...place,
+});
+
+const vec2 = z.tuple([z.number(), z.number()]);
+const capsSchema = z.enum(['both', 'start', 'end', 'none']);
+
+/**
+ * A simple polygon extruded `height` meters. Axis y (default): profile in (x, z), from the foot up. Axis x: profile in
+ * (z, y); axis z: profile in (x, y); both are centered on `position` along the extrusion. Wedges, hulls, armour plates,
+ * octagonal turrets, ramps. `taper` scales the far end about the profile origin; `caps` drops end faces nobody sees.
+ */
+const prismSchema = z.object({
+  type: z.literal('prism'),
+  profile: z.array(vec2).min(3).max(96),
+  height: positive,
+  axis: z.enum(['x', 'y', 'z']).optional(),
+  taper: z.union([positive, z.tuple([positive, positive])]).optional(),
+  caps: capsSchema.optional(),
+  material: z.string().min(1),
+  ...place,
+});
+
+/** A tank track along z (stadium side view with a tread), `width` across x, standing on the foot of the part. */
+const trackSchema = z.object({
+  type: z.literal('track'),
+  length: positive,
+  radius: positive,
+  width: positive,
+  teeth: z.number().int().min(0).max(48),
+  toothHeight: z.number().nonnegative(),
+  arcSegments: z.number().int().min(2).max(12),
+  caps: capsSchema.optional(),
+  material: z.string().min(1),
+  ...place,
+});
+
+/** A corrugated sheet (wave strip, one side): `length` along x, `height` along y, crests `depth` out along +z. */
+const corrugatedSchema = z.object({
+  type: z.literal('corrugated'),
+  length: positive,
+  height: positive,
+  period: positive,
+  depth: positive,
+  material: z.string().min(1),
+  ...place,
+});
+
+/** A swept tube along `points` (relative to `position`): cables and pipes, smooth shaded. */
+const tubeSchema = z.object({
+  type: z.literal('tube'),
+  points: z.array(vec3).min(2).max(16),
+  radius: positive,
+  sides: z.number().int().min(3).max(12),
+  material: z.string().min(1),
+  ...place,
+});
+
+/** A sphere (or `top` hemisphere: a dome, open below) around `position`. */
+const sphereSchema = z.object({
+  type: z.literal('sphere'),
+  radius: positive,
+  segments: z.number().int().min(3).max(24),
+  rings: z.number().int().min(2).max(12),
+  half: z.enum(['full', 'top']).optional(),
   material: z.string().min(1),
   ...place,
 });
@@ -127,6 +204,11 @@ export const partSchema = z.discriminatedUnion('type', [
   boxSchema,
   cylinderSchema,
   coneSchema,
+  prismSchema,
+  trackSchema,
+  corrugatedSchema,
+  tubeSchema,
+  sphereSchema,
 ]);
 
 export const variantSchema = z.object({

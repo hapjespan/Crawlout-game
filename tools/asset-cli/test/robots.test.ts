@@ -11,6 +11,12 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import { BUDGETS } from '../src/budgets.js';
 import { assetEntrySchema, manifestSchema, type AssetEntry } from '../src/manifest.js';
 import { buildRobots, loadRobotsConfig, parseRobots, type RobotsResult } from '../src/robots.js';
+// The render look reads the surface kind of a flat part from its glTF material name; the same table, so a robot can
+// not end up on the unknown-name fallback (wood) by accident.
+import {
+  surfaceKindOfMaterial,
+  type SurfaceKind,
+} from '../../../packages/render/src/look/surfaces.js';
 
 const repo = fileURLToPath(new URL('../../../', import.meta.url));
 const configPath = join(repo, 'assets/src/robots.json');
@@ -26,6 +32,23 @@ const EXPECTED: Record<string, { height: [number, number]; hover?: number }> = {
   dweller_robot_sentinel: { height: [3.3, 3.7] },
   dweller_building_robotfactory: { height: [8.5, 10.5] },
   dweller_building_turret_laser: { height: [2.8, 3.2] },
+};
+
+/** Bounds (b x h x d, m) of the previous primitive placeholders: the upgrade keeps within about 10 percent of them. */
+const PLACEHOLDER_SIZE: Record<string, [number, number, number]> = {
+  dweller_robot_guard: [2.9, 2.2, 3.625],
+  dweller_robot_drone: [0.875, 0.84, 1.195],
+  dweller_robot_sentinel: [3.94, 3.5, 6.4],
+  dweller_building_robotfactory: [14.8, 9.6, 12.975],
+  dweller_building_turret_laser: [3.0, 3.17, 3.07],
+};
+/** Triangles of LOD0 of the placeholders; the upgrade has clearly more silhouette detail. */
+const PLACEHOLDER_LOD0_TRIANGLES: Record<string, number> = {
+  dweller_robot_guard: 832,
+  dweller_robot_drone: 434,
+  dweller_robot_sentinel: 940,
+  dweller_building_robotfactory: 400,
+  dweller_building_turret_laser: 442,
 };
 
 let built: RobotsResult;
@@ -138,15 +161,52 @@ describe('manifest-velden in assets/dist', () => {
     expect(entry('dweller_building_turret_laser').footprint).toEqual({ w: 3, h: 3 });
   });
 
-  it('de schuifdeur van de fabriek is hoog genoeg voor een poppetje, de hal heeft echte schaal', () => {
+  it('de schuifdeur van de fabriek is 4 m hoog (een poppetje van 1,8 m past ruim), de hal heeft echte schaal', () => {
     const [w, h, d] = size(entry('dweller_building_robotfactory'));
     expect(w).toBeGreaterThan(14);
     expect(d).toBeGreaterThan(12);
     expect(h).toBeGreaterThan(CHARACTER_HEIGHT * 4);
-    const door = config.buildings.dweller_building_robotfactory!.parts.find(
-      (p) => p.type === 'box' && p.material === 'opening',
+    const openings = config.buildings.dweller_building_robotfactory!.parts.flatMap((p) =>
+      p.type === 'box' && p.material === 'opening' ? [p.size] : [],
     );
-    expect(door && door.type === 'box' && door.size[1]).toBeGreaterThanOrEqual(2.1);
+    expect(Math.max(...openings.map((s) => s[1]))).toBeGreaterThanOrEqual(4);
+    // Every door opening is wider than a poppetje (1,8 m is the height; the width of a robot is not the issue here).
+    for (const s of openings) expect(Math.max(s[0], s[2])).toBeGreaterThan(CHARACTER_HEIGHT);
+  });
+
+  it('de fabriek is een loods met golfplaat, schoorsteen, laadperron en portaalkraan', () => {
+    const parts = config.buildings.dweller_building_robotfactory!.parts;
+    expect(parts.some((p) => p.type === 'corrugated' && p.material === 'rust_roof')).toBe(true);
+    expect(parts.filter((p) => p.type === 'corrugated').length).toBeGreaterThanOrEqual(8);
+    const chimney = parts.find((p) => p.type === 'cylinder' && p.height >= 8);
+    expect(
+      chimney && chimney.position[1] + (chimney.type === 'cylinder' ? chimney.height : 0),
+    ).toBeGreaterThan(9);
+    expect(parts.some((p) => p.type === 'prism' && p.material === 'concrete')).toBe(true); // dock ramp
+    expect(
+      parts.some((p) => p.type === 'box' && p.material === 'metal_dark' && p.size[1] > 6),
+    ).toBe(true); // crane column
+  });
+
+  it('de afmetingen blijven binnen ongeveer 10 procent van de oude placeholders', () => {
+    for (const [id, old] of Object.entries(PLACEHOLDER_SIZE)) {
+      const now = size(entry(id));
+      for (let i = 0; i < 3; i++) {
+        expect(now[i]! / old[i]!).toBeGreaterThan(0.9);
+        expect(now[i]! / old[i]!).toBeLessThan(1.1);
+      }
+    }
+  });
+
+  it('LOD0 heeft duidelijk meer detail dan de placeholders en LOD1 en LOD2 blijven onder het budget', () => {
+    for (const [id, old] of Object.entries(PLACEHOLDER_LOD0_TRIANGLES)) {
+      const e = entry(id);
+      expect(e.lods[0].triangles).toBeGreaterThan(old * 1.5);
+      const budgets = e.kind === 'rigid-unit' ? BUDGETS.rigidUnitMaxTris : BUDGETS.buildingMaxTris;
+      e.lods.forEach((lod, level) => expect(lod.triangles).toBeLessThanOrEqual(budgets[level]!));
+      expect(e.lods[1].triangles).toBeLessThan(e.lods[0].triangles);
+      expect(e.lods[2].triangles).toBeLessThan(e.lods[1].triangles);
+    }
   });
 
   it('de lasertoren heeft een andere tint dan de gewone turret', () => {
@@ -168,6 +228,50 @@ describe('manifest-velden in assets/dist', () => {
     expect(assetEntrySchema.safeParse({ ...building, rigid: true }).success).toBe(false);
     expect(assetEntrySchema.safeParse({ ...building, hover: 1 }).success).toBe(false);
   });
+});
+
+/** Surface kinds a robot or the factory must show, besides the team band: what the brief asks per part. */
+const REQUIRED_KINDS: Record<string, SurfaceKind[]> = {
+  dweller_robot_guard: ['paintedMetal', 'rustMetal', 'lens', 'leather'],
+  dweller_robot_drone: ['paintedMetal', 'rustMetal', 'lens', 'leather'],
+  dweller_robot_sentinel: ['paintedMetal', 'rustMetal', 'lens', 'leather'],
+  dweller_building_robotfactory: ['paintedMetal', 'rustMetal', 'lens', 'concrete'],
+  dweller_building_turret_laser: ['paintedMetal', 'rustMetal', 'lens', 'concrete'],
+};
+
+describe('oppervlaksoort per onderdeel (materiaalnaam, zoals render hem leest)', () => {
+  it('elk materiaal van de config heeft een bedoelde oppervlaksoort, geen terugval op hout', () => {
+    const expected: Record<string, SurfaceKind> = {
+      metal: 'paintedMetal',
+      metal_dark: 'paintedMetal',
+      metal_light: 'paintedMetal',
+      metal_hazard: 'paintedMetal',
+      team_trim: 'paintedMetal',
+      rust_metal: 'rustMetal',
+      rust_dark: 'rustMetal',
+      rust_roof: 'rustMetal',
+      rubber: 'leather',
+      opening: 'leather',
+      concrete: 'concrete',
+      lens: 'lens',
+      lens_red: 'lens',
+      lens_amber: 'lens',
+      lens_glass: 'lens',
+    };
+    expect(Object.keys(config.flatMaterials).sort()).toEqual(Object.keys(expected).sort());
+    for (const [name, kind] of Object.entries(expected))
+      expect(surfaceKindOfMaterial(name), name).toBe(kind);
+  });
+
+  for (const [id, kinds] of Object.entries(REQUIRED_KINDS))
+    it(`${id}: gebruikt ${kinds.join(', ')} en een team-band`, () => {
+      const e = built.entries.find((x) => x.id === id)!;
+      expect(e.teamMaterials).toEqual(['team_trim']);
+      const report = built.reports.find((r) => r.id === id)!;
+      const used = new Set(report.details!.materials.map((name) => surfaceKindOfMaterial(name)));
+      for (const kind of kinds) expect(used.has(kind), kind).toBe(true);
+      expect(report.details!.materials).toContain('team_trim');
+    });
 });
 
 describe('LOD-GLB in assets/dist', () => {

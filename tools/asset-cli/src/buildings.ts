@@ -28,6 +28,18 @@ import {
   type Vec3,
 } from './geometry.js';
 import { countTriangles, textureSizes } from './inspect.js';
+import { expandParts } from './partExpand.js';
+import {
+  makeBevelBox,
+  makeBoxOpen,
+  makeCone,
+  makeCorrugated,
+  makeCylinderClean,
+  makePrism,
+  makeSphere,
+  makeTrack,
+  makeTube,
+} from './shapes.js';
 import { createIO } from './lods.js';
 import type { AssetEntry } from './manifest.js';
 import {
@@ -183,14 +195,37 @@ interface PartMeshes {
   meshes: { material: string; mesh: Mesh }[];
 }
 
-function shapeMeshes(part: Exclude<VariantPart, HousePart>): Mesh {
+function shapeMeshes(part: Exclude<VariantPart, HousePart>, clean: boolean): Mesh {
   switch (part.type) {
     case 'box':
-      return makeBox(part.size);
-    case 'cylinder':
-      return makeCylinder(part.radius, part.radiusTop ?? part.radius, part.height, part.segments);
+      if (part.chamfer) return makeBevelBox(part.size, part.chamfer);
+      return part.open ? makeBoxOpen(part.size) : makeBox(part.size);
+    case 'cylinder': {
+      const top = part.radiusTop ?? part.radius;
+      return clean || part.open
+        ? makeCylinderClean(part.radius, top, part.height, part.segments, part.open ?? false)
+        : makeCylinder(part.radius, top, part.height, part.segments);
+    }
     case 'cone':
-      return makeCylinder(part.radius, 0, part.height, part.segments);
+      // `clean` (the robots) and `open` select the shapes.ts versions: outward winding, no degenerate triangles. The
+      // old shapes stay for the existing building assets (byte-identical output).
+      return clean || part.open
+        ? makeCone(part.radius, part.height, part.segments, part.open ?? false)
+        : makeCylinder(part.radius, 0, part.height, part.segments);
+    case 'prism':
+      return makePrism(part.profile, part.height, {
+        axis: part.axis ?? 'y',
+        taper: typeof part.taper === 'number' ? [part.taper, part.taper] : part.taper,
+        caps: part.caps,
+      });
+    case 'track':
+      return makeTrack(part);
+    case 'corrugated':
+      return makeCorrugated(part.length, part.height, part.period, part.depth);
+    case 'tube':
+      return makeTube(part.points, part.radius, part.sides);
+    case 'sphere':
+      return makeSphere(part.radius, part.segments, part.rings, part.half ?? 'full');
   }
 }
 
@@ -258,12 +293,18 @@ export function buildingLodTargets(lod0Triangles: number): [number, number, numb
   ) as [number, number, number];
 }
 
+export interface GenerateOptions {
+  /** Use the shapes.ts cylinders and cones (outward winding, no degenerate triangles), as the robots do. */
+  cleanShapes?: boolean;
+}
+
 /** Bouwt het document van een gebouw op een LOD, op basis van de config en de ingeladen bronnen. */
 export async function generateBuilding(
   config: VariantsConfig,
   id: string,
   level: 0 | 1 | 2,
   sources: Map<string, SourceHouse>,
+  options: GenerateOptions = {},
 ): Promise<GeneratedBuilding> {
   const variant = config.variants[id];
   if (!variant) throw new Error(`geen variant "${id}" in variants.json`);
@@ -274,9 +315,14 @@ export async function generateBuilding(
   const target = buildingLodTargets(variant.lod0Triangles)[level];
 
   // Vormen blijven heel; het budget voor het huis is wat overblijft. Elk huisonderdeel krijgt een deel naar gewicht.
-  const active = variant.parts.filter((p) => (p.minLod ?? 0) <= level && (p.maxLod ?? 2) >= level);
+  const active = expandParts(variant.parts).filter(
+    (p) => (p.minLod ?? 0) <= level && (p.maxLod ?? 2) >= level,
+  );
   const shapes = active.filter((p): p is Exclude<VariantPart, HousePart> => p.type !== 'house');
-  const shapeTriangles = shapes.reduce((sum, p) => sum + triangleCount(placeShape(p)), 0);
+  const shapeTriangles = shapes.reduce(
+    (sum, p) => sum + triangleCount(placeShape(p, options.cleanShapes ?? false)),
+    0,
+  );
   const houses = active.filter((p): p is HousePart => p.type === 'house');
   const houseBudget = Math.max(houses.length * 12, target - shapeTriangles);
   const weights = houses.map((p) => p.weight ?? 1);
@@ -318,16 +364,16 @@ export async function generateBuilding(
       for (const m of placeHouse(simplified, part, names, source.meshes, source.metersPerUnit))
         accumulate(m.material, m.mesh);
     } else {
-      accumulate(part.material, placeShape(part));
+      accumulate(part.material, placeShape(part, options.cleanShapes ?? false));
     }
   }
 
   return { ...assemble(config, variant, id, accumulators, sources), sourceTriangles };
 }
 
-function placeShape(part: Exclude<VariantPart, HousePart>): Mesh {
+function placeShape(part: Exclude<VariantPart, HousePart>, clean: boolean): Mesh {
   return transformMesh(
-    shapeMeshes(part),
+    shapeMeshes(part, clean),
     makeTransform({
       ...(part.rotation ? { rotation: part.rotation } : {}),
       translation: part.position,
