@@ -20,6 +20,11 @@ const WONING = typeByKey('woning');
 const WERKPLAATS = typeByKey('werkplaats');
 const CLAIMPAAL = typeByKey('claimpaal');
 const PATROL = typeByKey('patrol');
+const LAB = typeByKey('lab');
+const TRAINING = typeByKey('trainingsfaciliteit');
+const SENTINEL = typeByKey('sentinel');
+const program = (letter: string) =>
+  CONFIG.training.find((t) => t.special === 'SPECIAL'.indexOf(letter))!;
 const techId = (key: string): number => DATA.tech.find((t) => t.key === key)!.id;
 const BASE = CONFIG.aiScripts[0]!;
 
@@ -40,6 +45,9 @@ const quiet: SimAiScript = {
   claimFarFromTicks: 1 << 30,
   waveIntervalTicks: 1 << 30,
   waveJitterTicks: 0,
+  robots: null,
+  reserve: null,
+  training: null,
 };
 
 function aiSim(
@@ -385,5 +393,118 @@ describe('scripted AI op padafstand en zonder vast te lopen (xl-int)', () => {
     play(b, per + 2);
     expect(unitsOf(b, 0).some((u) => u.role === ROLES.indexOf('builder'))).toBe(true);
     expect(b.entityIds().some((id) => b.getUnit(id)!.typeId === WERKPLAATS)).toBe(true);
+  });
+});
+
+// Data 0.17.0: the AI through the tech tree (reserve, training, robots in the army, pop kept free for robots).
+describe('scripted AI: budget rules for the tech tree (data 0.17.0)', () => {
+  const raffinage = techId('raffinage');
+  /** Scrap below the research price (the hero passive makes it cheaper) but above a militia recruit. */
+  const militiaCost = CONFIG.unitTypes.find((u) => u.typeId === MILITIA)!.scrapCost;
+  const recruiting = (sim: Sim) => unitsOf(sim, 0).filter((u) => u.order === ORDER_CRAFT).length;
+  const setup = (script: Partial<SimAiScript>): Sim => {
+    const sim = aiSim({
+      militiaPermille: 1000,
+      militiaPermilleMax: 1000,
+      armyTypeIds: [MILITIA],
+      research: [raffinage],
+      researchFromTicks: 0,
+      ...script,
+    });
+    sim.spawnBuilding(WERKPLAATS, 0, 16, 4, true);
+    sim.spawnBuilding(LAB, 0, 40, 4, true);
+    return sim;
+  };
+
+  it('reserve: saves for the next research when only scrap is missing; recruiting only spends what is above it', () => {
+    // without reserve the militia takes the scrap and the research never comes round
+    const free = setup({});
+    free.setScrap(0, 3 * militiaCost);
+    play(free, 2);
+    expect(recruiting(free)).toBeGreaterThan(0);
+    // with reserve (army 0 >= minArmy 0, no threat) it keeps the scrap for raffinage
+    const saving = setup({ reserve: { fromTicks: 0, minArmy: 0, robotsFirstFromTicks: 1 << 30 } });
+    saving.setScrap(0, 3 * militiaCost);
+    play(saving, 2);
+    expect(recruiting(saving)).toBe(0);
+    saving.setScrap(0, 1000);
+    play(saving, 1);
+    expect(saving.world.research.some((r) => r === raffinage + 1)).toBe(true);
+    // below minArmy it does not save
+    const weak = setup({ reserve: { fromTicks: 0, minArmy: 5, robotsFirstFromTicks: 1 << 30 } });
+    weak.setScrap(0, 3 * militiaCost);
+    play(weak, 2);
+    expect(recruiting(weak)).toBeGreaterThan(0);
+  });
+
+  it('robots.countAsArmy: the pop of the robots counts toward reserve.minArmy', () => {
+    const run = (countAsArmy: boolean): number => {
+      const sim = setup({
+        reserve: { fromTicks: 0, minArmy: 4, robotsFirstFromTicks: 1 << 30 },
+        robots: { typeIds: [SENTINEL], fromTicks: 1 << 30, max: 0, countAsArmy, reservePop: 0 },
+      });
+      sim.spawnUnit({ typeId: SENTINEL, owner: 0, ...cellCenter(30, 30) }); // pop 4
+      sim.setScrap(0, 3 * militiaCost);
+      play(sim, 2);
+      return recruiting(sim);
+    };
+    expect(run(false)).toBeGreaterThan(0);
+    expect(run(true)).toBe(0);
+  });
+
+  it('training: runs the sequence in order, a program listed n times up to n points, only with the reserve condition', () => {
+    const E = program('E');
+    const S = program('S');
+    const sim = aiSim({
+      reserve: { fromTicks: 0, minArmy: 0, robotsFirstFromTicks: 1 << 30 },
+      training: { programIds: [E.programId, S.programId, E.programId], fromTicks: 10 },
+    });
+    sim.setScrap(0, 5000);
+    sim.spawnBuilding(TRAINING, 0, 40, 30, true);
+    play(sim, 10);
+    expect(sim.playerStatus(0).trained).toEqual([0, 0, 0, 0, 0, 0, 0]);
+    play(sim, 2);
+    expect(sim.queue(0)[0]).toMatchObject({ kind: 'train', id: E.programId });
+    play(sim, E.trainTicks + S.trainTicks + E.trainTicks + E.trainTicksStep + 10);
+    expect(sim.playerStatus(0).trained).toEqual([1, 0, 2, 0, 0, 0, 0]);
+    play(sim, 200);
+    expect(sim.playerStatus(0).trained).toEqual([1, 0, 2, 0, 0, 0, 0]);
+    // without the reserve condition (army below minArmy) it does not train
+    const lazy = aiSim({
+      reserve: { fromTicks: 0, minArmy: 1000, robotsFirstFromTicks: 1 << 30 },
+      training: { programIds: [E.programId], fromTicks: 0 },
+    });
+    lazy.setScrap(0, 5000);
+    lazy.spawnBuilding(TRAINING, 0, 40, 30, true);
+    play(lazy, 5);
+    expect(lazy.queue(0)).toEqual([]);
+  });
+
+  it('robots.reservePop: no housing beyond popCapMax minus reservePop beds', () => {
+    const beds = (sim: Sim) => sim.playerStatus(0).beds;
+    const run = (reservePop: number): Sim => {
+      const sim = aiSim(
+        {
+          housingTypeId: WONING,
+          housingFreeBeds: 1000,
+          robots: {
+            typeIds: [SENTINEL],
+            fromTicks: 1 << 30,
+            max: 0,
+            countAsArmy: false,
+            reservePop,
+          },
+        },
+        createOpenMap(192, 192),
+      );
+      sim.setScrap(0, 100000);
+      play(sim, 8000);
+      return sim;
+    };
+    const max = CONFIG.popCapMax;
+    expect(beds(run(0))).toBeGreaterThanOrEqual(max);
+    const kept = run(20);
+    expect(beds(kept)).toBeGreaterThanOrEqual(max - 20 - 5);
+    expect(beds(kept)).toBeLessThan(max - 20 + 5);
   });
 });

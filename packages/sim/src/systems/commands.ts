@@ -332,10 +332,10 @@ function applyCancel(ctx: SimContext, p: number, ids: readonly number[]): boolea
       continue;
     }
     if (w.research[i] !== 0) {
-      const t = ctx.config.techs[w.research[i]! - 1];
-      if (t !== undefined)
-        ctx.ps.scrap[p] = ctx.ps.scrap[p]! + refundOf(ctx, researchCost(ctx, p, t));
+      // the price that was paid, not the current one (a hero passive or Intelligence can change it meanwhile)
+      ctx.ps.scrap[p] = ctx.ps.scrap[p]! + refundOf(ctx, w.researchPaid[i]!);
       w.research[i] = 0;
+      w.researchPaid[i] = 0;
       w.work[i] = 0;
       any = true;
     }
@@ -386,6 +386,7 @@ function applyResearch(ctx: SimContext, p: number, techId: number): boolean {
   if (lab < 0) return false;
   ctx.ps.scrap[p] = ctx.ps.scrap[p]! - cost;
   w.research[lab] = t.techId + 1;
+  w.researchPaid[lab] = cost;
   w.work[lab] = 0;
   return true;
 }

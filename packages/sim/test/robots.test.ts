@@ -406,6 +406,24 @@ describe('passieven van de held (Opziener)', () => {
     now(sim, 0, 'Research', { techId: t.techId });
     expect(sim.playerStatus(0).scrap).toBe(1000 - t.scrapCost);
   });
+
+  it('Cancel of research refunds the price that was paid, not the current one (section 20, decision 5)', () => {
+    const sim = createSim(testInit(5, createOpenMap(64, 64)));
+    sim.setScrap(0, 1000);
+    const lab = sim.spawnBuilding(LAB, 0, 40, 40, true);
+    const t = CONFIG.techs[techId('raffinage')]!;
+    now(sim, 0, 'Research', { techId: t.techId });
+    const paid = heroResearchCost(t.scrapCost);
+    expect(sim.playerStatus(0).scrap).toBe(1000 - paid);
+    // the hero dies mid-research: the current price is now the full one
+    sim.world.hp[sim.world.resolve(sim.ps.heroEnt[0]!)] = 0;
+    play(sim, 1);
+    expect(sim.ps.heroState[0]).toBe(HERO_DEAD);
+    now(sim, 0, 'Cancel', { ids: [lab] });
+    expect(sim.playerStatus(0).scrap).toBe(
+      1000 - paid + idiv(paid * CONFIG.cancelRefundPermille, 1000),
+    );
+  });
 });
 
 describe('SPECIAL-training (Train)', () => {

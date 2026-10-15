@@ -152,6 +152,8 @@ export class World {
   readonly progress = new Int32Array(MAX_ENTITIES);
   /** Onderzoek in een voltooid gebouw: techId + 1, 0 = geen; de voortgang staat in `work` (duizendsten van een tick). */
   readonly research = new Uint16Array(MAX_ENTITIES);
+  /** Price paid for the running research (refunded on Cancel; sim 0.14.0, architect review section 20 decision 5). */
+  readonly researchPaid = new Int32Array(MAX_ENTITIES);
   /**
    * Werk in een voltooid gebouw naast onderzoek (data 0.16.0): JOB_PRODUCE (een robot, job = loadoutId + 1) of
    * JOB_TRAIN (een trainingsprogramma, job = programId + 1); 0 = geen. De voortgang in ticks staat in `jobWork`.
@@ -347,6 +349,7 @@ export function entityStateArrays(w: World): readonly StateArray[] {
     one('bstate', w.bstate),
     one('progress', w.progress),
     one('research', w.research),
+    one('researchPaid', w.researchPaid),
     one('amount', w.amount),
     one('claimBy', w.claimBy),
     one('claimProgress', w.claimProgress),

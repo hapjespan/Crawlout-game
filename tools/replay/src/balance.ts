@@ -40,6 +40,14 @@ export interface PlayerTrace {
   techs: number;
   /** Voltooide gebouwen per type-key. */
   built: Record<string, number>;
+  /** Minuut waarin elk gebouwtype voor het eerst af was. */
+  firstBuilt: Record<string, number>;
+  /** Minuut waarin elke tech klaar was (tech-key). */
+  techAt: Record<string, number>;
+  /** Geproduceerde robots per loadout-key. */
+  robots: Record<string, number>;
+  /** Getrainde SPECIAL-punten (som over de zeven letters) aan het eind. */
+  trained: number;
   /** Eigen units die sneuvelden. */
   lost: number;
 }
@@ -89,6 +97,10 @@ function newTrace(): PlayerTrace {
     heroXp: 0,
     techs: 0,
     built: {},
+    firstBuilt: {},
+    techAt: {},
+    robots: {},
+    trained: 0,
     lost: 0,
   };
 }
@@ -102,6 +114,9 @@ export function playMatch(seed: number, opts: MatchOptions = {}): MatchResult {
   const n = ai.length;
   const traces = ai.map(() => newTrace());
   const keyOf = buildingKeys(sim);
+  const unitKeyOf = unitKeys(sim);
+  const techKeys = gameData().data.tech.map((t) => t.key);
+  const techSeen = ai.map(() => 0);
   const last = ai.map((_, p) => sim.playerStatus(p).scrap);
   const seq: number[] = [];
   let f = 0;
@@ -142,7 +157,16 @@ export function playMatch(seed: number, opts: MatchOptions = {}): MatchResult {
         const u = sim.getUnit(sim.events.a[k]!);
         if (u !== null && u.owner < n) {
           const key = keyOf.get(u.typeId) ?? String(u.typeId);
-          traces[u.owner]!.built[key] = (traces[u.owner]!.built[key] ?? 0) + 1;
+          const tr = traces[u.owner]!;
+          tr.built[key] = (tr.built[key] ?? 0) + 1;
+          tr.firstBuilt[key] ??= Math.floor((f / TICKS_PER_MINUTE) * 10) / 10;
+        }
+      } else if (t === EVENT_TYPE.spawn) {
+        const u = sim.getUnit(sim.events.a[k]!);
+        const key = unitKeyOf.get(sim.events.b[k]!);
+        if (u !== null && u.owner < n && key !== undefined) {
+          const tr = traces[u.owner]!;
+          tr.robots[key] = (tr.robots[key] ?? 0) + 1;
         }
       } else if (t === EVENT_TYPE.death) {
         const u = sim.getUnit(sim.events.a[k]!);
@@ -154,6 +178,15 @@ export function playMatch(seed: number, opts: MatchOptions = {}): MatchResult {
           traces[u.owner]!.lost++;
       }
     }
+    if ((f + 1) % 20 === 0)
+      for (let p = 0; p < n; p++) {
+        const bits = sim.ps.tech[p]!;
+        if (bits === techSeen[p]) continue;
+        for (let t = 0; t < techKeys.length; t++)
+          if (((bits >>> t) & 1) !== 0 && ((techSeen[p]! >>> t) & 1) === 0)
+            traces[p]!.techAt[techKeys[t]!] = Math.floor(((f + 1) / TICKS_PER_MINUTE) * 10) / 10;
+        techSeen[p] = bits;
+      }
     if ((f + 1) % TICKS_PER_MINUTE === 0) sample(sim, traces);
   }
   if (f % TICKS_PER_MINUTE !== 0) sample(sim, traces);
@@ -162,6 +195,7 @@ export function playMatch(seed: number, opts: MatchOptions = {}): MatchResult {
     traces[p]!.heroLevel = st.hero?.level ?? 0;
     traces[p]!.heroXp = st.hero?.xp ?? 0;
     traces[p]!.techs = (st.techs ?? []).length;
+    traces[p]!.trained = (st.trained ?? []).reduce((a: number, b: number) => a + b, 0);
   }
   const w = sim.winner();
   const frame = w === null ? f - 1 : w.frame;
@@ -199,6 +233,15 @@ function buildingKeys(sim: Sim): Map<number, string> {
   const keys = gameData().data.buildings;
   for (const b of sim.config.buildingTypes)
     out.set(b.typeId, keys[b.buildingId]?.key ?? String(b.typeId));
+  return out;
+}
+
+/** Key van elk robot-unittype (alleen robots: wat in een fabriek gebouwd wordt). */
+function unitKeys(sim: Sim): Map<number, string> {
+  const out = new Map<number, string>();
+  const keys = gameData().data.loadouts;
+  for (const u of sim.config.unitTypes)
+    if (u.producedAtTypeId !== 0) out.set(u.typeId, keys[u.loadoutId]?.key ?? String(u.typeId));
   return out;
 }
 

@@ -315,7 +315,21 @@ export interface AiScriptData {
   pushMinArmy: number;
   pushFromTicks: number;
   /** Robotproductie (data 0.16.0); null als het script geen robots bouwt. */
-  robots: { sequence: number[]; fromTicks: number; max: number } | null;
+  /**
+   * countAsArmy (data 0.17.0): robots count with their popCost toward the army thresholds; reservePop: the AI keeps
+   * this much pop free for robots (0 = none).
+   */
+  robots: {
+    sequence: number[];
+    fromTicks: number;
+    max: number;
+    countAsArmy: boolean;
+    reservePop: number;
+  } | null;
+  /** Spending rules for the tech tree (data 0.17.0); null without. */
+  reserve: { fromTicks: number; minArmy: number; robotsFirstFromTicks: number } | null;
+  /** SPECIAL training of the AI (data 0.17.0): training-program ids in order; null without. */
+  training: { sequence: number[]; fromTicks: number } | null;
   allInWithoutNodes: boolean;
 }
 
@@ -497,6 +511,7 @@ export function loadGameData(raw: RawGameData): GameData {
   const buildingIx = indexOf(buildingsRaw);
   const techIx = indexOf(techRaw);
   const perkIx = indexOf(perksRaw);
+  const trainingIx = indexOf(trainingRaw);
 
   const idx = <T extends readonly string[]>(options: T, value: T[number]): number =>
     options.indexOf(value);
@@ -751,6 +766,25 @@ export function loadGameData(raw: RawGameData): GameData {
               ),
               fromTicks: secondsToTicks(a.robots.fromS),
               max: a.robots.max,
+              countAsArmy: a.robots.countAsArmy ?? false,
+              reservePop: a.robots.reservePop ?? 0,
+            },
+      reserve:
+        a.reserve === undefined
+          ? null
+          : {
+              fromTicks: secondsToTicks(a.reserve.fromS),
+              minArmy: a.reserve.minArmy,
+              robotsFirstFromTicks: secondsToTicks(a.reserve.robotsFirstFromS),
+            },
+      training:
+        a.training === undefined
+          ? null
+          : {
+              sequence: a.training.sequence.map((t) =>
+                ref(trainingIx, 'training', `${where} training`, t),
+              ),
+              fromTicks: secondsToTicks(a.training.fromS),
             },
       allInWithoutNodes: a.allInWithoutNodes,
     };

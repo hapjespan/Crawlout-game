@@ -309,7 +309,14 @@ export function simConfigFromGameData(data: GameData): SimConfig {
               typeIds: a.robots.sequence.map((l) => unitTypeId(l)),
               fromTicks: a.robots.fromTicks,
               max: a.robots.max,
+              countAsArmy: a.robots.countAsArmy,
+              reservePop: a.robots.reservePop,
             },
+      reserve: a.reserve === null ? null : { ...a.reserve },
+      training:
+        a.training === null
+          ? null
+          : { programIds: [...a.training.sequence], fromTicks: a.training.fromTicks },
     })),
     techs: data.tech.map((t) => ({
       techId: t.id,

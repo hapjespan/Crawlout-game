@@ -1,5 +1,5 @@
 {
- "dataVersion": "0.16.0",
+ "dataVersion": "0.17.0",
  "seed": 50,
  "map": "rustbelt",
  "players": [
@@ -187,10 +187,10 @@
    ]
   },
   {
-   "frame": 901,
+   "frame": 891,
    "commands": [
     {
-     "frame": 897,
+     "frame": 887,
      "playerId": 1,
      "seq": 6,
      "type": "Build",
@@ -206,10 +206,10 @@
    ]
   },
   {
-   "frame": 1060,
+   "frame": 1080,
    "commands": [
     {
-     "frame": 1056,
+     "frame": 1076,
      "playerId": 0,
      "seq": 4,
      "type": "SetRole",
@@ -218,20 +218,6 @@
        27262977
       ],
       "role": "builder"
-     }
-    },
-    {
-     "frame": 1056,
-     "playerId": 0,
-     "seq": 5,
-     "type": "Build",
-     "payload": {
-      "ids": [
-       28311553
-      ],
-      "typeId": 1033,
-      "x": 72320,
-      "y": 19584
      }
     }
    ]
@@ -258,12 +244,12 @@
    ]
   },
   {
-   "frame": 1150,
+   "frame": 1160,
    "commands": [
     {
-     "frame": 1146,
+     "frame": 1156,
      "playerId": 0,
-     "seq": 6,
+     "seq": 5,
      "type": "Build",
      "payload": {
       "ids": [
@@ -278,12 +264,12 @@
    ]
   },
   {
-   "frame": 1290,
+   "frame": 1320,
    "commands": [
     {
-     "frame": 1286,
+     "frame": 1316,
      "playerId": 0,
-     "seq": 7,
+     "seq": 6,
      "type": "Build",
      "payload": {
       "ids": [
@@ -319,7 +305,7 @@
     {
      "frame": 1646,
      "playerId": 0,
-     "seq": 8,
+     "seq": 7,
      "type": "Gather",
      "payload": {
       "ids": [
@@ -353,7 +339,7 @@
     {
      "frame": 2146,
      "playerId": 0,
-     "seq": 9,
+     "seq": 8,
      "type": "Gather",
      "payload": {
       "ids": [
@@ -365,12 +351,12 @@
    ]
   },
   {
-   "frame": 2370,
+   "frame": 2430,
    "commands": [
     {
-     "frame": 2366,
+     "frame": 2426,
      "playerId": 0,
-     "seq": 10,
+     "seq": 9,
      "type": "Build",
      "payload": {
       "ids": [
@@ -386,10 +372,10 @@
    ]
   },
   {
-   "frame": 2471,
+   "frame": 2431,
    "commands": [
     {
-     "frame": 2467,
+     "frame": 2427,
      "playerId": 1,
      "seq": 10,
      "type": "Build",
@@ -429,7 +415,7 @@
     {
      "frame": 2646,
      "playerId": 0,
-     "seq": 11,
+     "seq": 10,
      "type": "Gather",
      "payload": {
       "ids": [
@@ -463,7 +449,7 @@
     {
      "frame": 3146,
      "playerId": 0,
-     "seq": 12,
+     "seq": 11,
      "type": "Gather",
      "payload": {
       "ids": [
@@ -475,16 +461,37 @@
    ]
   },
   {
+   "frame": 3431,
+   "commands": [
+    {
+     "frame": 3427,
+     "playerId": 1,
+     "seq": 13,
+     "type": "Build",
+     "payload": {
+      "ids": [
+       35651585,
+       36700161,
+       37748737
+      ],
+      "typeId": 1033,
+      "x": 29568,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
    "frame": 3621,
    "commands": [
     {
      "frame": 3617,
      "playerId": 1,
-     "seq": 13,
+     "seq": 14,
      "type": "Gather",
      "payload": {
       "ids": [
-       57671681
+       58720257
       ],
       "nodeId": 1048577
      }
@@ -492,29 +499,12 @@
    ]
   },
   {
-   "frame": 3650,
+   "frame": 3640,
    "commands": [
     {
-     "frame": 3646,
+     "frame": 3636,
      "playerId": 0,
-     "seq": 13,
-     "type": "Gather",
-     "payload": {
-      "ids": [
-       58720257
-      ],
-      "nodeId": 1
-     }
-    }
-   ]
-  },
-  {
-   "frame": 3710,
-   "commands": [
-    {
-     "frame": 3706,
-     "playerId": 0,
-     "seq": 14,
+     "seq": 12,
      "type": "Build",
      "payload": {
       "ids": [
@@ -530,22 +520,18 @@
    ]
   },
   {
-   "frame": 3711,
+   "frame": 3650,
    "commands": [
     {
-     "frame": 3707,
-     "playerId": 1,
-     "seq": 14,
-     "type": "Build",
+     "frame": 3646,
+     "playerId": 0,
+     "seq": 13,
+     "type": "Gather",
      "payload": {
       "ids": [
-       35651585,
-       36700161,
-       37748737
+       60817409
       ],
-      "typeId": 1033,
-      "x": 29568,
-      "y": 78720
+      "nodeId": 1
      }
     }
    ]
@@ -573,7 +559,7 @@
     {
      "frame": 4146,
      "playerId": 0,
-     "seq": 15,
+     "seq": 14,
      "type": "Gather",
      "payload": {
       "ids": [
@@ -585,16 +571,58 @@
    ]
   },
   {
+   "frame": 4201,
+   "commands": [
+    {
+     "frame": 4197,
+     "playerId": 1,
+     "seq": 16,
+     "type": "Build",
+     "payload": {
+      "ids": [
+       35651585,
+       36700161,
+       37748737
+      ],
+      "typeId": 1033,
+      "x": 17792,
+      "y": 84096
+     }
+    }
+   ]
+  },
+  {
+   "frame": 4550,
+   "commands": [
+    {
+     "frame": 4546,
+     "playerId": 0,
+     "seq": 15,
+     "type": "Build",
+     "payload": {
+      "ids": [
+       27262977,
+       28311553,
+       29360129
+      ],
+      "typeId": 1033,
+      "x": 72320,
+      "y": 14464
+     }
+    }
+   ]
+  },
+  {
    "frame": 4621,
    "commands": [
     {
      "frame": 4617,
      "playerId": 1,
-     "seq": 16,
+     "seq": 17,
      "type": "Gather",
      "payload": {
       "ids": [
-       63963137
+       66060289
       ],
       "nodeId": 1048577
      }
@@ -611,7 +639,7 @@
      "type": "Gather",
      "payload": {
       "ids": [
-       65011713
+       67108865
       ],
       "nodeId": 1
      }
@@ -619,22 +647,22 @@
    ]
   },
   {
-   "frame": 4780,
+   "frame": 4881,
    "commands": [
     {
-     "frame": 4776,
-     "playerId": 0,
-     "seq": 17,
+     "frame": 4877,
+     "playerId": 1,
+     "seq": 18,
      "type": "Build",
      "payload": {
       "ids": [
-       27262977,
-       28311553,
-       29360129
+       35651585,
+       36700161,
+       37748737
       ],
       "typeId": 1033,
-      "x": 72320,
-      "y": 14464
+      "x": 24960,
+      "y": 84096
      }
     }
    ]
@@ -645,11 +673,11 @@
     {
      "frame": 5117,
      "playerId": 1,
-     "seq": 17,
+     "seq": 19,
      "type": "Gather",
      "payload": {
       "ids": [
-       67108865
+       69206017
       ],
       "nodeId": 1048577
      }
@@ -662,11 +690,11 @@
     {
      "frame": 5146,
      "playerId": 0,
-     "seq": 18,
+     "seq": 17,
      "type": "Gather",
      "payload": {
       "ids": [
-       68157441
+       70254593
       ],
       "nodeId": 1
      }
@@ -674,22 +702,22 @@
    ]
   },
   {
-   "frame": 5311,
+   "frame": 5470,
    "commands": [
     {
-     "frame": 5307,
-     "playerId": 1,
+     "frame": 5466,
+     "playerId": 0,
      "seq": 18,
      "type": "Build",
      "payload": {
       "ids": [
-       35651585,
-       36700161,
-       37748737
+       27262977,
+       28311553,
+       29360129
       ],
       "typeId": 1033,
-      "x": 17792,
-      "y": 84096
+      "x": 81536,
+      "y": 14464
      }
     }
    ]
@@ -700,11 +728,11 @@
     {
      "frame": 5617,
      "playerId": 1,
-     "seq": 19,
+     "seq": 20,
      "type": "Gather",
      "payload": {
       "ids": [
-       70254593
+       72351745
       ],
       "nodeId": 1048577
      }
@@ -721,7 +749,7 @@
      "type": "Gather",
      "payload": {
       "ids": [
-       71303169
+       73400321
       ],
       "nodeId": 1
      }
@@ -729,22 +757,22 @@
    ]
   },
   {
-   "frame": 5660,
+   "frame": 5721,
    "commands": [
     {
-     "frame": 5656,
-     "playerId": 0,
-     "seq": 20,
+     "frame": 5717,
+     "playerId": 1,
+     "seq": 21,
      "type": "Build",
      "payload": {
       "ids": [
-       27262977,
-       28311553,
-       29360129
+       35651585,
+       36700161,
+       37748737
       ],
       "typeId": 1033,
-      "x": 81536,
-      "y": 14464
+      "x": 27008,
+      "y": 73600
      }
     }
    ]
@@ -755,11 +783,11 @@
     {
      "frame": 6117,
      "playerId": 1,
-     "seq": 20,
+     "seq": 22,
      "type": "Gather",
      "payload": {
       "ids": [
-       73400321
+       75497473
       ],
       "nodeId": 1048577
      }
@@ -772,11 +800,11 @@
     {
      "frame": 6146,
      "playerId": 0,
-     "seq": 21,
+     "seq": 20,
      "type": "Gather",
      "payload": {
       "ids": [
-       74448897
+       76546049
       ],
       "nodeId": 1
      }
@@ -784,12 +812,12 @@
    ]
   },
   {
-   "frame": 6510,
+   "frame": 6420,
    "commands": [
     {
-     "frame": 6506,
+     "frame": 6416,
      "playerId": 0,
-     "seq": 22,
+     "seq": 21,
      "type": "Build",
      "payload": {
       "ids": [
@@ -805,24 +833,12 @@
    ]
   },
   {
-   "frame": 6621,
+   "frame": 6461,
    "commands": [
     {
-     "frame": 6617,
+     "frame": 6457,
      "playerId": 1,
-     "seq": 21,
-     "type": "Gather",
-     "payload": {
-      "ids": [
-       76546049
-      ],
-      "nodeId": 1048577
-     }
-    },
-    {
-     "frame": 6617,
-     "playerId": 1,
-     "seq": 22,
+     "seq": 23,
      "type": "Build",
      "payload": {
       "ids": [
@@ -831,8 +847,25 @@
        37748737
       ],
       "typeId": 1033,
-      "x": 24960,
-      "y": 84096
+      "x": 14720,
+      "y": 73600
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6621,
+   "commands": [
+    {
+     "frame": 6617,
+     "playerId": 1,
+     "seq": 24,
+     "type": "Gather",
+     "payload": {
+      "ids": [
+       79691777
+      ],
+      "nodeId": 1048577
      }
     }
    ]
@@ -843,13 +876,34 @@
     {
      "frame": 6646,
      "playerId": 0,
-     "seq": 23,
+     "seq": 22,
      "type": "Gather",
      "payload": {
       "ids": [
-       78643201
+       80740353
       ],
       "nodeId": 1
+     }
+    }
+   ]
+  },
+  {
+   "frame": 7010,
+   "commands": [
+    {
+     "frame": 7006,
+     "playerId": 0,
+     "seq": 23,
+     "type": "Build",
+     "payload": {
+      "ids": [
+       27262977,
+       28311553,
+       29360129
+      ],
+      "typeId": 1033,
+      "x": 80512,
+      "y": 27008
      }
     }
    ]
@@ -860,11 +914,11 @@
     {
      "frame": 7117,
      "playerId": 1,
-     "seq": 23,
+     "seq": 25,
      "type": "Gather",
      "payload": {
       "ids": [
-       79691777
+       82837505
       ],
       "nodeId": 1048577
      }
@@ -881,7 +935,7 @@
      "type": "Gather",
      "payload": {
       "ids": [
-       80740353
+       83886081
       ],
       "nodeId": 1
      }
@@ -889,22 +943,22 @@
    ]
   },
   {
-   "frame": 7570,
+   "frame": 7201,
    "commands": [
     {
-     "frame": 7566,
-     "playerId": 0,
-     "seq": 25,
+     "frame": 7197,
+     "playerId": 1,
+     "seq": 26,
      "type": "Build",
      "payload": {
       "ids": [
-       27262977,
-       28311553,
-       29360129
+       35651585,
+       36700161,
+       37748737
       ],
       "typeId": 1033,
-      "x": 80512,
-      "y": 27008
+      "x": 14208,
+      "y": 83840
      }
     }
    ]
@@ -915,11 +969,11 @@
     {
      "frame": 7617,
      "playerId": 1,
-     "seq": 24,
+     "seq": 27,
      "type": "Gather",
      "payload": {
       "ids": [
-       82837505
+       85983233
       ],
       "nodeId": 1048577
      }
@@ -932,11 +986,11 @@
     {
      "frame": 7646,
      "playerId": 0,
-     "seq": 26,
+     "seq": 25,
      "type": "Gather",
      "payload": {
       "ids": [
-       83886081
+       87031809
       ],
       "nodeId": 1
      }
@@ -944,22 +998,22 @@
    ]
   },
   {
-   "frame": 7721,
+   "frame": 7660,
    "commands": [
     {
-     "frame": 7717,
-     "playerId": 1,
-     "seq": 25,
+     "frame": 7656,
+     "playerId": 0,
+     "seq": 26,
      "type": "Build",
      "payload": {
       "ids": [
-       35651585,
-       36700161,
-       37748737
+       27262977,
+       28311553,
+       29360129
       ],
       "typeId": 1033,
-      "x": 27008,
-      "y": 73600
+      "x": 69760,
+      "y": 24704
      }
     }
    ]
@@ -970,11 +1024,11 @@
     {
      "frame": 8117,
      "playerId": 1,
-     "seq": 26,
+     "seq": 28,
      "type": "Gather",
      "payload": {
       "ids": [
-       85983233
+       89128961
       ],
       "nodeId": 1048577
      }
@@ -991,51 +1045,9 @@
      "type": "Gather",
      "payload": {
       "ids": [
-       87031809
+       90177537
       ],
       "nodeId": 1
-     }
-    }
-   ]
-  },
-  {
-   "frame": 8351,
-   "commands": [
-    {
-     "frame": 8347,
-     "playerId": 1,
-     "seq": 27,
-     "type": "Build",
-     "payload": {
-      "ids": [
-       35651585,
-       36700161,
-       37748737
-      ],
-      "typeId": 1033,
-      "x": 14720,
-      "y": 73600
-     }
-    }
-   ]
-  },
-  {
-   "frame": 8390,
-   "commands": [
-    {
-     "frame": 8386,
-     "playerId": 0,
-     "seq": 28,
-     "type": "Build",
-     "payload": {
-      "ids": [
-       27262977,
-       28311553,
-       29360129
-      ],
-      "typeId": 1033,
-      "x": 69760,
-      "y": 24704
      }
     }
    ]
@@ -1046,11 +1058,11 @@
     {
      "frame": 8617,
      "playerId": 1,
-     "seq": 28,
+     "seq": 29,
      "type": "Gather",
      "payload": {
       "ids": [
-       90177537
+       91226113
       ],
       "nodeId": 1048577
      }
@@ -1063,11 +1075,11 @@
     {
      "frame": 8646,
      "playerId": 0,
-     "seq": 29,
+     "seq": 28,
      "type": "Gather",
      "payload": {
       "ids": [
-       91226113
+       92274689
       ],
       "nodeId": 1
      }
@@ -1080,11 +1092,11 @@
     {
      "frame": 9117,
      "playerId": 1,
-     "seq": 29,
+     "seq": 30,
      "type": "Gather",
      "payload": {
       "ids": [
-       92274689
+       93323265
       ],
       "nodeId": 1048577
      }
@@ -1097,34 +1109,13 @@
     {
      "frame": 9146,
      "playerId": 0,
-     "seq": 30,
+     "seq": 29,
      "type": "Gather",
      "payload": {
       "ids": [
-       93323265
+       94371841
       ],
       "nodeId": 1
-     }
-    }
-   ]
-  },
-  {
-   "frame": 9171,
-   "commands": [
-    {
-     "frame": 9167,
-     "playerId": 1,
-     "seq": 30,
-     "type": "Build",
-     "payload": {
-      "ids": [
-       35651585,
-       36700161,
-       37748737
-      ],
-      "typeId": 1033,
-      "x": 14208,
-      "y": 83840
      }
     }
    ]
@@ -1152,7 +1143,7 @@
     {
      "frame": 9646,
      "playerId": 0,
-     "seq": 31,
+     "seq": 30,
      "type": "Gather",
      "payload": {
       "ids": [
@@ -1186,7 +1177,7 @@
     {
      "frame": 10146,
      "playerId": 0,
-     "seq": 32,
+     "seq": 31,
      "type": "Gather",
      "payload": {
       "ids": [
@@ -1220,7 +1211,7 @@
     {
      "frame": 10646,
      "playerId": 0,
-     "seq": 33,
+     "seq": 32,
      "type": "Gather",
      "payload": {
       "ids": [
@@ -1254,7 +1245,7 @@
     {
      "frame": 11146,
      "playerId": 0,
-     "seq": 34,
+     "seq": 33,
      "type": "Gather",
      "payload": {
       "ids": [
@@ -1288,7 +1279,7 @@
     {
      "frame": 11646,
      "playerId": 0,
-     "seq": 35,
+     "seq": 34,
      "type": "Gather",
      "payload": {
       "ids": [
@@ -1309,9 +1300,9 @@
      "type": "Gather",
      "payload": {
       "ids": [
-       105906177
+       1048578
       ],
-      "nodeId": 1048577
+      "nodeId": 3145729
      }
     }
    ]
@@ -1322,11 +1313,11 @@
     {
      "frame": 12146,
      "playerId": 0,
-     "seq": 36,
+     "seq": 35,
      "type": "Gather",
      "payload": {
       "ids": [
-       106954753
+       105906177
       ],
       "nodeId": 1
      }
@@ -1343,9 +1334,9 @@
      "type": "Gather",
      "payload": {
       "ids": [
-       108003329
+       2
       ],
-      "nodeId": 1048577
+      "nodeId": 3145729
      }
     }
    ]
@@ -1356,13 +1347,13 @@
     {
      "frame": 12646,
      "playerId": 0,
-     "seq": 37,
+     "seq": 36,
      "type": "Gather",
      "payload": {
       "ids": [
-       109051905
+       106954753
       ],
-      "nodeId": 1
+      "nodeId": 2097153
      }
     }
    ]
@@ -1377,9 +1368,9 @@
      "type": "Gather",
      "payload": {
       "ids": [
-       110100481
+       108003329
       ],
-      "nodeId": 1048577
+      "nodeId": 3145729
      }
     }
    ]
@@ -1390,13 +1381,13 @@
     {
      "frame": 13146,
      "playerId": 0,
-     "seq": 38,
+     "seq": 37,
      "type": "Gather",
      "payload": {
       "ids": [
-       111149057
+       109051905
       ],
-      "nodeId": 1
+      "nodeId": 2097153
      }
     }
    ]
@@ -1411,7 +1402,7 @@
      "type": "Gather",
      "payload": {
       "ids": [
-       1048578
+       110100481
       ],
       "nodeId": 3145729
      }
@@ -1424,11 +1415,11 @@
     {
      "frame": 13646,
      "playerId": 0,
-     "seq": 39,
+     "seq": 38,
      "type": "Gather",
      "payload": {
       "ids": [
-       2
+       111149057
       ],
       "nodeId": 2097153
      }
@@ -1458,7 +1449,7 @@
     {
      "frame": 14146,
      "playerId": 0,
-     "seq": 40,
+     "seq": 39,
      "type": "Gather",
      "payload": {
       "ids": [
@@ -1492,7 +1483,7 @@
     {
      "frame": 14646,
      "playerId": 0,
-     "seq": 41,
+     "seq": 40,
      "type": "Gather",
      "payload": {
       "ids": [
@@ -1526,7 +1517,7 @@
     {
      "frame": 15146,
      "playerId": 0,
-     "seq": 42,
+     "seq": 41,
      "type": "Gather",
      "payload": {
       "ids": [
@@ -1560,7 +1551,7 @@
     {
      "frame": 15646,
      "playerId": 0,
-     "seq": 43,
+     "seq": 42,
      "type": "Gather",
      "payload": {
       "ids": [
@@ -1594,7 +1585,7 @@
     {
      "frame": 16146,
      "playerId": 0,
-     "seq": 44,
+     "seq": 43,
      "type": "Gather",
      "payload": {
       "ids": [
@@ -1628,7 +1619,7 @@
     {
      "frame": 16646,
      "playerId": 0,
-     "seq": 45,
+     "seq": 44,
      "type": "Gather",
      "payload": {
       "ids": [
@@ -1662,7 +1653,7 @@
     {
      "frame": 17146,
      "playerId": 0,
-     "seq": 46,
+     "seq": 45,
      "type": "Gather",
      "payload": {
       "ids": [
@@ -1683,9 +1674,9 @@
      "type": "Gather",
      "payload": {
       "ids": [
-       126877697
+       2097154
       ],
-      "nodeId": 3145729
+      "nodeId": 5242881
      }
     }
    ]
@@ -1696,13 +1687,13 @@
     {
      "frame": 17646,
      "playerId": 0,
-     "seq": 47,
+     "seq": 46,
      "type": "Gather",
      "payload": {
       "ids": [
-       127926273
+       3145730
       ],
-      "nodeId": 2097153
+      "nodeId": 4194305
      }
     }
    ]
@@ -1717,9 +1708,9 @@
      "type": "Gather",
      "payload": {
       "ids": [
-       128974849
+       126877697
       ],
-      "nodeId": 3145729
+      "nodeId": 5242881
      }
     }
    ]
@@ -1730,13 +1721,13 @@
     {
      "frame": 18146,
      "playerId": 0,
-     "seq": 48,
+     "seq": 47,
      "type": "Gather",
      "payload": {
       "ids": [
-       130023425
+       127926273
       ],
-      "nodeId": 2097153
+      "nodeId": 4194305
      }
     }
    ]
@@ -1751,7 +1742,7 @@
      "type": "Gather",
      "payload": {
       "ids": [
-       2097154
+       128974849
       ],
       "nodeId": 5242881
      }
@@ -1764,11 +1755,11 @@
     {
      "frame": 18646,
      "playerId": 0,
-     "seq": 49,
+     "seq": 48,
      "type": "Gather",
      "payload": {
       "ids": [
-       3145730
+       130023425
       ],
       "nodeId": 4194305
      }
@@ -1798,7 +1789,7 @@
     {
      "frame": 19146,
      "playerId": 0,
-     "seq": 50,
+     "seq": 49,
      "type": "Gather",
      "payload": {
       "ids": [
@@ -1832,7 +1823,7 @@
     {
      "frame": 19646,
      "playerId": 0,
-     "seq": 51,
+     "seq": 50,
      "type": "Gather",
      "payload": {
       "ids": [
@@ -1866,7 +1857,7 @@
     {
      "frame": 20146,
      "playerId": 0,
-     "seq": 52,
+     "seq": 51,
      "type": "Gather",
      "payload": {
       "ids": [
@@ -1900,7 +1891,7 @@
     {
      "frame": 20646,
      "playerId": 0,
-     "seq": 53,
+     "seq": 52,
      "type": "Gather",
      "payload": {
       "ids": [
@@ -1934,7 +1925,7 @@
     {
      "frame": 21146,
      "playerId": 0,
-     "seq": 54,
+     "seq": 53,
      "type": "Gather",
      "payload": {
       "ids": [
@@ -1968,7 +1959,7 @@
     {
      "frame": 21646,
      "playerId": 0,
-     "seq": 55,
+     "seq": 54,
      "type": "Gather",
      "payload": {
       "ids": [
@@ -2002,7 +1993,7 @@
     {
      "frame": 22146,
      "playerId": 0,
-     "seq": 56,
+     "seq": 55,
      "type": "Gather",
      "payload": {
       "ids": [
@@ -2036,7 +2027,7 @@
     {
      "frame": 22646,
      "playerId": 0,
-     "seq": 57,
+     "seq": 56,
      "type": "Gather",
      "payload": {
       "ids": [
@@ -2057,7 +2048,7 @@
      "type": "Gather",
      "payload": {
       "ids": [
-       147849217
+       4194306
       ],
       "nodeId": 5242881
      }
@@ -2069,30 +2060,30 @@
      "type": "SetRole",
      "payload": {
       "ids": [
+       2,
        1048578,
        2097154,
+       4194306,
        33554433,
        34603009,
        47185921,
        49283073,
        53477377,
        55574529,
-       57671681,
+       58720257,
        61865985,
-       63963137,
-       67108865,
-       70254593,
-       73400321,
-       76546049,
+       66060289,
+       69206017,
+       72351745,
+       75497473,
        79691777,
        82837505,
        85983233,
-       90177537,
-       92274689,
+       89128961,
+       91226113,
+       93323265,
        95420417,
-       97517569,
-       99614721,
-       101711873
+       97517569
       ],
       "role": "militia"
      }
@@ -2105,23 +2096,22 @@
     {
      "frame": 23146,
      "playerId": 0,
-     "seq": 58,
+     "seq": 57,
      "type": "Gather",
      "payload": {
       "ids": [
-       148897793
+       147849217
       ],
-      "nodeId": 4194305
+      "nodeId": 8388609
      }
     },
     {
      "frame": 23146,
      "playerId": 0,
-     "seq": 59,
+     "seq": 58,
      "type": "SetRole",
      "payload": {
       "ids": [
-       2,
        3145730,
        25165825,
        26214401,
@@ -2129,22 +2119,23 @@
        50331649,
        54525953,
        56623105,
-       58720257,
+       60817409,
        62914561,
-       65011713,
-       68157441,
-       71303169,
-       74448897,
-       78643201,
+       67108865,
+       70254593,
+       73400321,
+       76546049,
        80740353,
        83886081,
        87031809,
-       91226113,
-       93323265,
+       90177537,
+       92274689,
+       94371841,
        96468993,
        98566145,
        100663297,
-       102760449
+       102760449,
+       104857601
       ],
       "role": "militia"
      }
@@ -2152,12 +2143,12 @@
    ]
   },
   {
-   "frame": 23440,
+   "frame": 23590,
    "commands": [
     {
-     "frame": 23436,
+     "frame": 23586,
      "playerId": 0,
-     "seq": 60,
+     "seq": 59,
      "type": "AttackMove",
      "payload": {
       "ids": [
@@ -2169,22 +2160,22 @@
        50331649,
        54525953,
        56623105,
-       58720257,
+       60817409,
        62914561,
-       65011713,
-       68157441,
-       71303169,
-       74448897,
-       78643201,
+       67108865,
+       70254593,
+       73400321,
+       76546049,
        80740353,
        83886081,
        87031809,
-       91226113,
-       93323265,
+       92274689,
+       94371841,
        96468993,
        98566145,
        100663297,
        102760449,
+       104857601,
        31457281
       ],
       "x": 21376,
@@ -2194,17 +2185,19 @@
    ]
   },
   {
-   "frame": 23601,
+   "frame": 23591,
    "commands": [
     {
-     "frame": 23597,
+     "frame": 23587,
      "playerId": 1,
      "seq": 60,
      "type": "AttackMove",
      "payload": {
       "ids": [
+       2,
        1048578,
        2097154,
+       4194306,
        33554433,
        34603009,
        38797313,
@@ -2212,22 +2205,19 @@
        49283073,
        53477377,
        55574529,
-       57671681,
+       58720257,
        61865985,
-       63963137,
-       67108865,
-       70254593,
-       73400321,
-       76546049,
-       79691777,
+       66060289,
+       69206017,
+       72351745,
+       75497473,
        82837505,
        85983233,
-       90177537,
-       92274689,
+       89128961,
+       91226113,
+       93323265,
        95420417,
        97517569,
-       99614721,
-       101711873,
        39845889
       ],
       "x": 76928,
@@ -2237,16 +2227,16 @@
    ]
   },
   {
-   "frame": 23840,
+   "frame": 23990,
    "commands": [
     {
-     "frame": 23836,
+     "frame": 23986,
      "playerId": 0,
-     "seq": 61,
+     "seq": 60,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       2
+       90177537
       ],
       "x": 21376,
       "y": 78720
@@ -2255,46 +2245,64 @@
    ]
   },
   {
-   "frame": 24410,
+   "frame": 23991,
    "commands": [
     {
-     "frame": 24406,
-     "playerId": 0,
+     "frame": 23987,
+     "playerId": 1,
+     "seq": 61,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       79691777
+      ],
+      "x": 76928,
+      "y": 19584
+     }
+    }
+   ]
+  },
+  {
+   "frame": 24481,
+   "commands": [
+    {
+     "frame": 24477,
+     "playerId": 1,
      "seq": 62,
      "type": "HeroAbility",
      "payload": {
       "heroId": 0,
       "abilityId": 0,
-      "x": 45566,
-      "y": 52950
+      "x": 49252,
+      "y": 48796
      }
     }
    ]
   },
   {
-   "frame": 24411,
+   "frame": 24490,
    "commands": [
     {
-     "frame": 24407,
-     "playerId": 1,
+     "frame": 24486,
+     "playerId": 0,
      "seq": 61,
      "type": "HeroAbility",
      "payload": {
       "heroId": 0,
       "abilityId": 0,
-      "x": 47021,
-      "y": 51027
+      "x": 47797,
+      "y": 50762
      }
     }
    ]
   },
   {
-   "frame": 24550,
+   "frame": 24610,
    "commands": [
     {
-     "frame": 24546,
+     "frame": 24606,
      "playerId": 0,
-     "seq": 63,
+     "seq": 62,
      "type": "Recruit",
      "payload": {
       "buildingId": 24117249
@@ -2303,32 +2311,32 @@
    ]
   },
   {
-   "frame": 24711,
+   "frame": 24771,
    "commands": [
     {
-     "frame": 24707,
-     "playerId": 1,
-     "seq": 62,
-     "type": "PickPerk",
-     "payload": {
-      "heroId": 0,
-      "perkId": 5
-     }
-    },
-    {
-     "frame": 24707,
+     "frame": 24767,
      "playerId": 1,
      "seq": 63,
      "type": "PickPerk",
      "payload": {
       "heroId": 0,
+      "perkId": 5
+     }
+    },
+    {
+     "frame": 24767,
+     "playerId": 1,
+     "seq": 64,
+     "type": "PickPerk",
+     "payload": {
+      "heroId": 0,
       "perkId": 2
      }
     },
     {
-     "frame": 24707,
+     "frame": 24767,
      "playerId": 1,
-     "seq": 64,
+     "seq": 65,
      "type": "PickPerk",
      "payload": {
       "heroId": 0,
@@ -2336,64 +2344,64 @@
      }
     },
     {
-     "frame": 24707,
-     "playerId": 1,
-     "seq": 65,
-     "type": "PickPerk",
-     "payload": {
-      "heroId": 0,
-      "perkId": 3
-     }
-    },
-    {
-     "frame": 24707,
+     "frame": 24767,
      "playerId": 1,
      "seq": 66,
      "type": "PickPerk",
      "payload": {
       "heroId": 0,
-      "perkId": 4
+      "perkId": 3
      }
     },
     {
-     "frame": 24707,
+     "frame": 24767,
      "playerId": 1,
      "seq": 67,
      "type": "PickPerk",
      "payload": {
       "heroId": 0,
-      "perkId": 0
+      "perkId": 4
      }
-    }
-   ]
-  },
-  {
-   "frame": 24761,
-   "commands": [
+    },
     {
-     "frame": 24757,
+     "frame": 24767,
      "playerId": 1,
      "seq": 68,
      "type": "PickPerk",
      "payload": {
       "heroId": 0,
-      "perkId": 5
+      "perkId": 0
      }
-    },
+    }
+   ]
+  },
+  {
+   "frame": 24831,
+   "commands": [
     {
-     "frame": 24757,
+     "frame": 24827,
      "playerId": 1,
      "seq": 69,
      "type": "PickPerk",
      "payload": {
       "heroId": 0,
+      "perkId": 5
+     }
+    },
+    {
+     "frame": 24827,
+     "playerId": 1,
+     "seq": 70,
+     "type": "PickPerk",
+     "payload": {
+      "heroId": 0,
       "perkId": 2
      }
     },
     {
-     "frame": 24757,
+     "frame": 24827,
      "playerId": 1,
-     "seq": 70,
+     "seq": 71,
      "type": "PickPerk",
      "payload": {
       "heroId": 0,
@@ -2401,9 +2409,9 @@
      }
     },
     {
-     "frame": 24757,
+     "frame": 24827,
      "playerId": 1,
-     "seq": 71,
+     "seq": 72,
      "type": "PickPerk",
      "payload": {
       "heroId": 0,
@@ -2411,9 +2419,9 @@
      }
     },
     {
-     "frame": 24757,
+     "frame": 24827,
      "playerId": 1,
-     "seq": 72,
+     "seq": 73,
      "type": "PickPerk",
      "payload": {
       "heroId": 0,
@@ -2421,9 +2429,9 @@
      }
     },
     {
-     "frame": 24757,
+     "frame": 24827,
      "playerId": 1,
-     "seq": 73,
+     "seq": 74,
      "type": "PickPerk",
      "payload": {
       "heroId": 0,
@@ -2433,12 +2441,12 @@
    ]
   },
   {
-   "frame": 24851,
+   "frame": 24911,
    "commands": [
     {
-     "frame": 24847,
+     "frame": 24907,
      "playerId": 1,
-     "seq": 74,
+     "seq": 75,
      "type": "PickPerk",
      "payload": {
       "heroId": 0,
@@ -2446,9 +2454,9 @@
      }
     },
     {
-     "frame": 24847,
+     "frame": 24907,
      "playerId": 1,
-     "seq": 75,
+     "seq": 76,
      "type": "PickPerk",
      "payload": {
       "heroId": 0,
@@ -2456,9 +2464,9 @@
      }
     },
     {
-     "frame": 24847,
+     "frame": 24907,
      "playerId": 1,
-     "seq": 76,
+     "seq": 77,
      "type": "PickPerk",
      "payload": {
       "heroId": 0,
@@ -2466,9 +2474,9 @@
      }
     },
     {
-     "frame": 24847,
+     "frame": 24907,
      "playerId": 1,
-     "seq": 77,
+     "seq": 78,
      "type": "PickPerk",
      "payload": {
       "heroId": 0,
@@ -2476,9 +2484,9 @@
      }
     },
     {
-     "frame": 24847,
+     "frame": 24907,
      "playerId": 1,
-     "seq": 78,
+     "seq": 79,
      "type": "PickPerk",
      "payload": {
       "heroId": 0,
@@ -2486,9 +2494,9 @@
      }
     },
     {
-     "frame": 24847,
+     "frame": 24907,
      "playerId": 1,
-     "seq": 79,
+     "seq": 80,
      "type": "PickPerk",
      "payload": {
       "heroId": 0,
@@ -2498,16 +2506,16 @@
    ]
   },
   {
-   "frame": 25180,
+   "frame": 25250,
    "commands": [
     {
-     "frame": 25176,
+     "frame": 25246,
      "playerId": 0,
-     "seq": 64,
+     "seq": 63,
      "type": "Gather",
      "payload": {
       "ids": [
-       3
+       90177538
       ],
       "nodeId": 8388609
      }
@@ -2515,86 +2523,86 @@
    ]
   },
   {
-   "frame": 25201,
+   "frame": 25271,
    "commands": [
     {
-     "frame": 25197,
-     "playerId": 1,
-     "seq": 80,
-     "type": "Gather",
-     "payload": {
-      "ids": [
-       96468994
-      ],
-      "nodeId": 5242881
-     }
-    }
-   ]
-  },
-  {
-   "frame": 25701,
-   "commands": [
-    {
-     "frame": 25697,
+     "frame": 25267,
      "playerId": 1,
      "seq": 81,
      "type": "Gather",
      "payload": {
       "ids": [
-       75497474
+       5242882
       ],
-      "nodeId": 5242881
+      "nodeId": 9437185
      }
     }
    ]
   },
   {
-   "frame": 25710,
+   "frame": 25551,
    "commands": [
     {
-     "frame": 25706,
-     "playerId": 0,
-     "seq": 65,
-     "type": "Gather",
-     "payload": {
-      "ids": [
-       89128962
-      ],
-      "nodeId": 8388609
-     }
-    }
-   ]
-  },
-  {
-   "frame": 25791,
-   "commands": [
-    {
-     "frame": 25787,
+     "frame": 25547,
      "playerId": 1,
      "seq": 82,
      "type": "HeroAbility",
      "payload": {
       "heroId": 0,
       "abilityId": 0,
-      "x": 71782,
-      "y": 24063
+      "x": 70176,
+      "y": 27633
      }
     }
    ]
   },
   {
-   "frame": 25820,
+   "frame": 25620,
    "commands": [
     {
-     "frame": 25816,
+     "frame": 25616,
      "playerId": 0,
-     "seq": 66,
+     "seq": 64,
      "type": "SetRole",
      "payload": {
       "ids": [
-       148897793
+       147849217
       ],
       "role": "builder"
+     }
+    }
+   ]
+  },
+  {
+   "frame": 25771,
+   "commands": [
+    {
+     "frame": 25767,
+     "playerId": 1,
+     "seq": 83,
+     "type": "Gather",
+     "payload": {
+      "ids": [
+       88080386
+      ],
+      "nodeId": 9437185
+     }
+    }
+   ]
+  },
+  {
+   "frame": 25780,
+   "commands": [
+    {
+     "frame": 25776,
+     "playerId": 0,
+     "seq": 65,
+     "type": "Gather",
+     "payload": {
+      "ids": [
+       77594626
+      ],
+      "nodeId": 8388609
      }
     }
    ]
@@ -2603,5179 +2611,5179 @@
  "hashes": [
   {
    "frame": 0,
-   "hash": 3574999697
+   "hash": 1362466057
   },
   {
    "frame": 20,
-   "hash": 495087363
+   "hash": 3332081663
   },
   {
    "frame": 40,
-   "hash": 1466192490
+   "hash": 1860046219
   },
   {
    "frame": 60,
-   "hash": 1493114369
+   "hash": 155577208
   },
   {
    "frame": 80,
-   "hash": 4052673158
+   "hash": 3458781241
   },
   {
    "frame": 100,
-   "hash": 1995910333
+   "hash": 4015402524
   },
   {
    "frame": 120,
-   "hash": 1626704505
+   "hash": 3805275360
   },
   {
    "frame": 140,
-   "hash": 3942954252
+   "hash": 2235915642
   },
   {
    "frame": 160,
-   "hash": 504662461
+   "hash": 1406127018
   },
   {
    "frame": 180,
-   "hash": 386368701
+   "hash": 1682161875
   },
   {
    "frame": 200,
-   "hash": 608922421
+   "hash": 2034960295
   },
   {
    "frame": 220,
-   "hash": 2313806779
+   "hash": 1098853839
   },
   {
    "frame": 240,
-   "hash": 3440367791
+   "hash": 595624147
   },
   {
    "frame": 260,
-   "hash": 2430616254
+   "hash": 124075039
   },
   {
    "frame": 280,
-   "hash": 3662662112
+   "hash": 329611846
   },
   {
    "frame": 300,
-   "hash": 3004677121
+   "hash": 4048277006
   },
   {
    "frame": 320,
-   "hash": 3150301721
+   "hash": 1366864057
   },
   {
    "frame": 340,
-   "hash": 1525723632
+   "hash": 3919444658
   },
   {
    "frame": 360,
-   "hash": 2596250484
+   "hash": 3611247952
   },
   {
    "frame": 380,
-   "hash": 2450733830
+   "hash": 1439750138
   },
   {
    "frame": 400,
-   "hash": 1126121929
+   "hash": 238041020
   },
   {
    "frame": 420,
-   "hash": 2397792994
+   "hash": 1296940106
   },
   {
    "frame": 440,
-   "hash": 4256206516
+   "hash": 1071268517
   },
   {
    "frame": 460,
-   "hash": 4104162145
+   "hash": 2608110660
   },
   {
    "frame": 480,
-   "hash": 1275775699
+   "hash": 13660165
   },
   {
    "frame": 500,
-   "hash": 4265626994
+   "hash": 3706306882
   },
   {
    "frame": 520,
-   "hash": 831060392
+   "hash": 3796737541
   },
   {
    "frame": 540,
-   "hash": 4112317832
+   "hash": 3717386626
   },
   {
    "frame": 560,
-   "hash": 1280919005
+   "hash": 905385712
   },
   {
    "frame": 580,
-   "hash": 462668627
+   "hash": 2569448700
   },
   {
    "frame": 600,
-   "hash": 1855609109
+   "hash": 1621284452
   },
   {
    "frame": 620,
-   "hash": 2646883250
+   "hash": 2478965293
   },
   {
    "frame": 640,
-   "hash": 1005054127
+   "hash": 2779285171
   },
   {
    "frame": 660,
-   "hash": 4243893866
+   "hash": 3827912045
   },
   {
    "frame": 680,
-   "hash": 3630236486
+   "hash": 1511253907
   },
   {
    "frame": 700,
-   "hash": 3781374035
+   "hash": 3934868511
   },
   {
    "frame": 720,
-   "hash": 3137420548
+   "hash": 2945565337
   },
   {
    "frame": 740,
-   "hash": 106747168
+   "hash": 47637548
   },
   {
    "frame": 760,
-   "hash": 3737949759
+   "hash": 2073051772
   },
   {
    "frame": 780,
-   "hash": 2542449924
+   "hash": 3091930924
   },
   {
    "frame": 800,
-   "hash": 3643643686
+   "hash": 1038088408
   },
   {
    "frame": 820,
-   "hash": 1706150785
+   "hash": 2477599880
   },
   {
    "frame": 840,
-   "hash": 1003687060
+   "hash": 3344635172
   },
   {
    "frame": 860,
-   "hash": 579570847
+   "hash": 1256586948
   },
   {
    "frame": 880,
-   "hash": 2419273644
+   "hash": 1318504702
   },
   {
    "frame": 900,
-   "hash": 363520712
+   "hash": 1561078790
   },
   {
    "frame": 920,
-   "hash": 2621421383
+   "hash": 3331578970
   },
   {
    "frame": 940,
-   "hash": 996811503
+   "hash": 818544966
   },
   {
    "frame": 960,
-   "hash": 87280442
+   "hash": 3167880459
   },
   {
    "frame": 980,
-   "hash": 1912124396
+   "hash": 279358264
   },
   {
    "frame": 1000,
-   "hash": 1210036533
+   "hash": 2968990754
   },
   {
    "frame": 1020,
-   "hash": 3269642433
+   "hash": 2277353717
   },
   {
    "frame": 1040,
-   "hash": 1459379546
+   "hash": 2511244920
   },
   {
    "frame": 1060,
-   "hash": 1648753659
+   "hash": 1470028056
   },
   {
    "frame": 1080,
-   "hash": 83284232
+   "hash": 760373520
   },
   {
    "frame": 1100,
-   "hash": 2042083324
+   "hash": 3346560963
   },
   {
    "frame": 1120,
-   "hash": 863500987
+   "hash": 3724736848
   },
   {
    "frame": 1140,
-   "hash": 2583086502
+   "hash": 1050639304
   },
   {
    "frame": 1160,
-   "hash": 3089733333
+   "hash": 3873652929
   },
   {
    "frame": 1180,
-   "hash": 2085656609
+   "hash": 1529862382
   },
   {
    "frame": 1200,
-   "hash": 4284676382
+   "hash": 2793817873
   },
   {
    "frame": 1220,
-   "hash": 806024094
+   "hash": 130151600
   },
   {
    "frame": 1240,
-   "hash": 1545285729
+   "hash": 2380313836
   },
   {
    "frame": 1260,
-   "hash": 799104185
+   "hash": 2649281800
   },
   {
    "frame": 1280,
-   "hash": 3068003530
+   "hash": 1442144793
   },
   {
    "frame": 1300,
-   "hash": 1188837891
+   "hash": 456374350
   },
   {
    "frame": 1320,
-   "hash": 3556420202
+   "hash": 3395994772
   },
   {
    "frame": 1340,
-   "hash": 640296860
+   "hash": 4249641708
   },
   {
    "frame": 1360,
-   "hash": 1483411784
+   "hash": 3767621339
   },
   {
    "frame": 1380,
-   "hash": 2980402187
+   "hash": 1517044161
   },
   {
    "frame": 1400,
-   "hash": 2134699712
+   "hash": 2790285663
   },
   {
    "frame": 1420,
-   "hash": 2431812586
+   "hash": 894619637
   },
   {
    "frame": 1440,
-   "hash": 1421662384
+   "hash": 632608225
   },
   {
    "frame": 1460,
-   "hash": 2108853942
+   "hash": 3087063164
   },
   {
    "frame": 1480,
-   "hash": 2444234247
+   "hash": 3669610400
   },
   {
    "frame": 1500,
-   "hash": 1631305400
+   "hash": 590370338
   },
   {
    "frame": 1520,
-   "hash": 2806812763
+   "hash": 1720183590
   },
   {
    "frame": 1540,
-   "hash": 316532766
+   "hash": 2852641367
   },
   {
    "frame": 1560,
-   "hash": 2401887529
+   "hash": 2686061822
   },
   {
    "frame": 1580,
-   "hash": 2882176519
+   "hash": 1356264997
   },
   {
    "frame": 1600,
-   "hash": 1913196045
+   "hash": 1422132502
   },
   {
    "frame": 1620,
-   "hash": 1818670606
+   "hash": 3670370250
   },
   {
    "frame": 1640,
-   "hash": 3876856537
+   "hash": 99626126
   },
   {
    "frame": 1660,
-   "hash": 658853482
+   "hash": 3080801125
   },
   {
    "frame": 1680,
-   "hash": 1544387288
+   "hash": 1702167598
   },
   {
    "frame": 1700,
-   "hash": 1862208385
+   "hash": 2259522197
   },
   {
    "frame": 1720,
-   "hash": 3119181186
+   "hash": 3627161399
   },
   {
    "frame": 1740,
-   "hash": 22293575
+   "hash": 9392146
   },
   {
    "frame": 1760,
-   "hash": 2734573222
+   "hash": 1393831553
   },
   {
    "frame": 1780,
-   "hash": 1434614437
+   "hash": 2473939265
   },
   {
    "frame": 1800,
-   "hash": 2434431333
+   "hash": 1256480208
   },
   {
    "frame": 1820,
-   "hash": 733556255
+   "hash": 1209373105
   },
   {
    "frame": 1840,
-   "hash": 1231647065
+   "hash": 312225331
   },
   {
    "frame": 1860,
-   "hash": 3991163177
+   "hash": 4097662537
   },
   {
    "frame": 1880,
-   "hash": 3557610175
+   "hash": 2394814840
   },
   {
    "frame": 1900,
-   "hash": 2058000991
+   "hash": 1506931484
   },
   {
    "frame": 1920,
-   "hash": 1330822854
+   "hash": 481483149
   },
   {
    "frame": 1940,
-   "hash": 3707920636
+   "hash": 4111201114
   },
   {
    "frame": 1960,
-   "hash": 776661375
+   "hash": 3175013225
   },
   {
    "frame": 1980,
-   "hash": 1890251807
+   "hash": 2897048583
   },
   {
    "frame": 2000,
-   "hash": 3310241344
+   "hash": 707619130
   },
   {
    "frame": 2020,
-   "hash": 3169081867
+   "hash": 282329
   },
   {
    "frame": 2040,
-   "hash": 1214951201
+   "hash": 3329895983
   },
   {
    "frame": 2060,
-   "hash": 698520207
+   "hash": 4097206976
   },
   {
    "frame": 2080,
-   "hash": 2518862509
+   "hash": 401312289
   },
   {
    "frame": 2100,
-   "hash": 3890057719
+   "hash": 3730851881
   },
   {
    "frame": 2120,
-   "hash": 1137752614
+   "hash": 3705150275
   },
   {
    "frame": 2140,
-   "hash": 145817410
+   "hash": 2918347258
   },
   {
    "frame": 2160,
-   "hash": 3914050755
+   "hash": 1452671162
   },
   {
    "frame": 2180,
-   "hash": 1732356284
+   "hash": 3224550832
   },
   {
    "frame": 2200,
-   "hash": 226171323
+   "hash": 1745117519
   },
   {
    "frame": 2220,
-   "hash": 2555364489
+   "hash": 1909117156
   },
   {
    "frame": 2240,
-   "hash": 247918847
+   "hash": 3092859021
   },
   {
    "frame": 2260,
-   "hash": 2275944119
+   "hash": 1141576605
   },
   {
    "frame": 2280,
-   "hash": 4209029867
+   "hash": 775770444
   },
   {
    "frame": 2300,
-   "hash": 4007048000
+   "hash": 457760937
   },
   {
    "frame": 2320,
-   "hash": 4058292087
+   "hash": 3316059295
   },
   {
    "frame": 2340,
-   "hash": 518822346
+   "hash": 3625564391
   },
   {
    "frame": 2360,
-   "hash": 1358520507
+   "hash": 1240138565
   },
   {
    "frame": 2380,
-   "hash": 2541649364
+   "hash": 3649920719
   },
   {
    "frame": 2400,
-   "hash": 4177877440
+   "hash": 582765022
   },
   {
    "frame": 2420,
-   "hash": 140856717
+   "hash": 1503395230
   },
   {
    "frame": 2440,
-   "hash": 356725333
+   "hash": 4198421886
   },
   {
    "frame": 2460,
-   "hash": 2282276574
+   "hash": 3191437177
   },
   {
    "frame": 2480,
-   "hash": 2497605100
+   "hash": 3769940065
   },
   {
    "frame": 2500,
-   "hash": 3791051423
+   "hash": 3099445257
   },
   {
    "frame": 2520,
-   "hash": 741796405
+   "hash": 3777444461
   },
   {
    "frame": 2540,
-   "hash": 919617076
+   "hash": 3896289492
   },
   {
    "frame": 2560,
-   "hash": 3636568378
+   "hash": 1040804616
   },
   {
    "frame": 2580,
-   "hash": 1630181323
+   "hash": 806273431
   },
   {
    "frame": 2600,
-   "hash": 2512677948
+   "hash": 1872349405
   },
   {
    "frame": 2620,
-   "hash": 3091993311
+   "hash": 2537063611
   },
   {
    "frame": 2640,
-   "hash": 2943472866
+   "hash": 3229650392
   },
   {
    "frame": 2660,
-   "hash": 3024136427
+   "hash": 3622985892
   },
   {
    "frame": 2680,
-   "hash": 2612488360
+   "hash": 589651580
   },
   {
    "frame": 2700,
-   "hash": 1676066715
+   "hash": 3489456638
   },
   {
    "frame": 2720,
-   "hash": 2894614523
+   "hash": 742900430
   },
   {
    "frame": 2740,
-   "hash": 961360753
+   "hash": 3691859947
   },
   {
    "frame": 2760,
-   "hash": 3094187619
+   "hash": 715452618
   },
   {
    "frame": 2780,
-   "hash": 2776526440
+   "hash": 1549204388
   },
   {
    "frame": 2800,
-   "hash": 1290267738
+   "hash": 2720792910
   },
   {
    "frame": 2820,
-   "hash": 2149790614
+   "hash": 1620138315
   },
   {
    "frame": 2840,
-   "hash": 3876809555
+   "hash": 383617853
   },
   {
    "frame": 2860,
-   "hash": 2975726411
+   "hash": 130305156
   },
   {
    "frame": 2880,
-   "hash": 2124450376
+   "hash": 1842874413
   },
   {
    "frame": 2900,
-   "hash": 2474199986
+   "hash": 2199381787
   },
   {
    "frame": 2920,
-   "hash": 1715535589
+   "hash": 3377820751
   },
   {
    "frame": 2940,
-   "hash": 3395903248
+   "hash": 1603608889
   },
   {
    "frame": 2960,
-   "hash": 2991577925
+   "hash": 2066141215
   },
   {
    "frame": 2980,
-   "hash": 2145724033
+   "hash": 1881442818
   },
   {
    "frame": 3000,
-   "hash": 817002252
+   "hash": 2685398662
   },
   {
    "frame": 3020,
-   "hash": 2133721569
+   "hash": 1958360208
   },
   {
    "frame": 3040,
-   "hash": 857004191
+   "hash": 1801344986
   },
   {
    "frame": 3060,
-   "hash": 977958239
+   "hash": 1359117112
   },
   {
    "frame": 3080,
-   "hash": 2657445544
+   "hash": 4253767365
   },
   {
    "frame": 3100,
-   "hash": 2554742633
+   "hash": 2424967577
   },
   {
    "frame": 3120,
-   "hash": 1984371756
+   "hash": 1306992363
   },
   {
    "frame": 3140,
-   "hash": 1465452672
+   "hash": 952966226
   },
   {
    "frame": 3160,
-   "hash": 3457396128
+   "hash": 4045837540
   },
   {
    "frame": 3180,
-   "hash": 2281622530
+   "hash": 3246254750
   },
   {
    "frame": 3200,
-   "hash": 289659991
+   "hash": 468444744
   },
   {
    "frame": 3220,
-   "hash": 3633487304
+   "hash": 3441397047
   },
   {
    "frame": 3240,
-   "hash": 1209810533
+   "hash": 1436846059
   },
   {
    "frame": 3260,
-   "hash": 1002459164
+   "hash": 2672937313
   },
   {
    "frame": 3280,
-   "hash": 1038378446
+   "hash": 1284824288
   },
   {
    "frame": 3300,
-   "hash": 1914626082
+   "hash": 1090718558
   },
   {
    "frame": 3320,
-   "hash": 2852583342
+   "hash": 2326130208
   },
   {
    "frame": 3340,
-   "hash": 4287820311
+   "hash": 1016847868
   },
   {
    "frame": 3360,
-   "hash": 4192561647
+   "hash": 4117287188
   },
   {
    "frame": 3380,
-   "hash": 831407066
+   "hash": 113136486
   },
   {
    "frame": 3400,
-   "hash": 1408652566
+   "hash": 920729712
   },
   {
    "frame": 3420,
-   "hash": 3050799704
+   "hash": 970696903
   },
   {
    "frame": 3440,
-   "hash": 1719778697
+   "hash": 2252055187
   },
   {
    "frame": 3460,
-   "hash": 2770394972
+   "hash": 38487903
   },
   {
    "frame": 3480,
-   "hash": 549131798
+   "hash": 4147315570
   },
   {
    "frame": 3500,
-   "hash": 2707971588
+   "hash": 3855279159
   },
   {
    "frame": 3520,
-   "hash": 1107653580
+   "hash": 3736552463
   },
   {
    "frame": 3540,
-   "hash": 4019025159
+   "hash": 3515675199
   },
   {
    "frame": 3560,
-   "hash": 3651895267
+   "hash": 1769724690
   },
   {
    "frame": 3580,
-   "hash": 1726503895
+   "hash": 1470465257
   },
   {
    "frame": 3600,
-   "hash": 1592385219
+   "hash": 707605276
   },
   {
    "frame": 3620,
-   "hash": 2814410086
+   "hash": 1371624176
   },
   {
    "frame": 3640,
-   "hash": 138472524
+   "hash": 1699437226
   },
   {
    "frame": 3660,
-   "hash": 364973905
+   "hash": 3651462137
   },
   {
    "frame": 3680,
-   "hash": 3317984485
+   "hash": 3373076220
   },
   {
    "frame": 3700,
-   "hash": 403213097
+   "hash": 3254746530
   },
   {
    "frame": 3720,
-   "hash": 1699715018
+   "hash": 1896360814
   },
   {
    "frame": 3740,
-   "hash": 2460388765
+   "hash": 4024521198
   },
   {
    "frame": 3760,
-   "hash": 3933983805
+   "hash": 1746537748
   },
   {
    "frame": 3780,
-   "hash": 1885976174
+   "hash": 1246304303
   },
   {
    "frame": 3800,
-   "hash": 2002005528
+   "hash": 2815813273
   },
   {
    "frame": 3820,
-   "hash": 3449858024
+   "hash": 712342405
   },
   {
    "frame": 3840,
-   "hash": 3035306372
+   "hash": 3830176819
   },
   {
    "frame": 3860,
-   "hash": 872443922
+   "hash": 436637590
   },
   {
    "frame": 3880,
-   "hash": 606509811
+   "hash": 732828866
   },
   {
    "frame": 3900,
-   "hash": 2579966080
+   "hash": 3548951952
   },
   {
    "frame": 3920,
-   "hash": 106930521
+   "hash": 353616953
   },
   {
    "frame": 3940,
-   "hash": 701296519
+   "hash": 4175866200
   },
   {
    "frame": 3960,
-   "hash": 1498786504
+   "hash": 2652631909
   },
   {
    "frame": 3980,
-   "hash": 2521645398
+   "hash": 2238318868
   },
   {
    "frame": 4000,
-   "hash": 1433484710
+   "hash": 3227757309
   },
   {
    "frame": 4020,
-   "hash": 2807643965
+   "hash": 1715714595
   },
   {
    "frame": 4040,
-   "hash": 3422221217
+   "hash": 3105999702
   },
   {
    "frame": 4060,
-   "hash": 74079976
+   "hash": 2352664810
   },
   {
    "frame": 4080,
-   "hash": 3335547723
+   "hash": 3690874271
   },
   {
    "frame": 4100,
-   "hash": 67168869
+   "hash": 886868805
   },
   {
    "frame": 4120,
-   "hash": 4168636199
+   "hash": 3812202201
   },
   {
    "frame": 4140,
-   "hash": 3792287059
+   "hash": 3050736954
   },
   {
    "frame": 4160,
-   "hash": 821125011
+   "hash": 1122379179
   },
   {
    "frame": 4180,
-   "hash": 3392969158
+   "hash": 4048415648
   },
   {
    "frame": 4200,
-   "hash": 1435250782
+   "hash": 1634294993
   },
   {
    "frame": 4220,
-   "hash": 2622567139
+   "hash": 2807949556
   },
   {
    "frame": 4240,
-   "hash": 2962085767
+   "hash": 3236803540
   },
   {
    "frame": 4260,
-   "hash": 2438039030
+   "hash": 1907713832
   },
   {
    "frame": 4280,
-   "hash": 425880151
+   "hash": 619301650
   },
   {
    "frame": 4300,
-   "hash": 3728979094
+   "hash": 3592619888
   },
   {
    "frame": 4320,
-   "hash": 1242161035
+   "hash": 4099385552
   },
   {
    "frame": 4340,
-   "hash": 141354469
+   "hash": 1503577845
   },
   {
    "frame": 4360,
-   "hash": 3170941540
+   "hash": 264925223
   },
   {
    "frame": 4380,
-   "hash": 1833214690
+   "hash": 1749717085
   },
   {
    "frame": 4400,
-   "hash": 1599091458
+   "hash": 2586900668
   },
   {
    "frame": 4420,
-   "hash": 2835119422
+   "hash": 1705650042
   },
   {
    "frame": 4440,
-   "hash": 3694532343
+   "hash": 3326664036
   },
   {
    "frame": 4460,
-   "hash": 1784057726
+   "hash": 292691972
   },
   {
    "frame": 4480,
-   "hash": 1219130781
+   "hash": 2010401802
   },
   {
    "frame": 4500,
-   "hash": 447336534
+   "hash": 3270764287
   },
   {
    "frame": 4520,
-   "hash": 1916098575
+   "hash": 378457068
   },
   {
    "frame": 4540,
-   "hash": 1325462961
+   "hash": 3588573920
   },
   {
    "frame": 4560,
-   "hash": 385726502
+   "hash": 182543283
   },
   {
    "frame": 4580,
-   "hash": 1453873468
+   "hash": 168305356
   },
   {
    "frame": 4600,
-   "hash": 739158253
+   "hash": 2396945263
   },
   {
    "frame": 4620,
-   "hash": 2659369206
+   "hash": 405456587
   },
   {
    "frame": 4640,
-   "hash": 2972043308
+   "hash": 1789905711
   },
   {
    "frame": 4660,
-   "hash": 3204103463
+   "hash": 1425665320
   },
   {
    "frame": 4680,
-   "hash": 1285407562
+   "hash": 1413456192
   },
   {
    "frame": 4700,
-   "hash": 3591922238
+   "hash": 3939589692
   },
   {
    "frame": 4720,
-   "hash": 3537009765
+   "hash": 3036867463
   },
   {
    "frame": 4740,
-   "hash": 205660058
+   "hash": 3762307479
   },
   {
    "frame": 4760,
-   "hash": 606398904
+   "hash": 2224153565
   },
   {
    "frame": 4780,
-   "hash": 2850494285
+   "hash": 3417062406
   },
   {
    "frame": 4800,
-   "hash": 2136697973
+   "hash": 2687208561
   },
   {
    "frame": 4820,
-   "hash": 247953186
+   "hash": 3559771621
   },
   {
    "frame": 4840,
-   "hash": 3821308130
+   "hash": 1372195274
   },
   {
    "frame": 4860,
-   "hash": 2631344772
+   "hash": 317650465
   },
   {
    "frame": 4880,
-   "hash": 1787588760
+   "hash": 4191928276
   },
   {
    "frame": 4900,
-   "hash": 3170908408
+   "hash": 4007546180
   },
   {
    "frame": 4920,
-   "hash": 1362956759
+   "hash": 3300633706
   },
   {
    "frame": 4940,
-   "hash": 2296366476
+   "hash": 3117117353
   },
   {
    "frame": 4960,
-   "hash": 99428151
+   "hash": 904936999
   },
   {
    "frame": 4980,
-   "hash": 2256304757
+   "hash": 2778459950
   },
   {
    "frame": 5000,
-   "hash": 4211109311
+   "hash": 2641088346
   },
   {
    "frame": 5020,
-   "hash": 414198269
+   "hash": 1919105464
   },
   {
    "frame": 5040,
-   "hash": 561829858
+   "hash": 2731072734
   },
   {
    "frame": 5060,
-   "hash": 469375155
+   "hash": 2515118615
   },
   {
    "frame": 5080,
-   "hash": 1708701262
+   "hash": 11768842
   },
   {
    "frame": 5100,
-   "hash": 4172402558
+   "hash": 3471680403
   },
   {
    "frame": 5120,
-   "hash": 1923517521
+   "hash": 897838412
   },
   {
    "frame": 5140,
-   "hash": 285900215
+   "hash": 3277855136
   },
   {
    "frame": 5160,
-   "hash": 2613354589
+   "hash": 4079618939
   },
   {
    "frame": 5180,
-   "hash": 2207432371
+   "hash": 2770042719
   },
   {
    "frame": 5200,
-   "hash": 1052527874
+   "hash": 1020093510
   },
   {
    "frame": 5220,
-   "hash": 888739626
+   "hash": 2326597360
   },
   {
    "frame": 5240,
-   "hash": 296313223
+   "hash": 1293828674
   },
   {
    "frame": 5260,
-   "hash": 2502880593
+   "hash": 2659113990
   },
   {
    "frame": 5280,
-   "hash": 2962029356
+   "hash": 3077338348
   },
   {
    "frame": 5300,
-   "hash": 2053557
+   "hash": 436729369
   },
   {
    "frame": 5320,
-   "hash": 4032420644
+   "hash": 3203438060
   },
   {
    "frame": 5340,
-   "hash": 4020215112
+   "hash": 1569777351
   },
   {
    "frame": 5360,
-   "hash": 3458502362
+   "hash": 3619052542
   },
   {
    "frame": 5380,
-   "hash": 2126250078
+   "hash": 1699644121
   },
   {
    "frame": 5400,
-   "hash": 926789891
+   "hash": 661849317
   },
   {
    "frame": 5420,
-   "hash": 464919657
+   "hash": 2978834508
   },
   {
    "frame": 5440,
-   "hash": 4178632343
+   "hash": 3028869385
   },
   {
    "frame": 5460,
-   "hash": 1245575139
+   "hash": 1554388861
   },
   {
    "frame": 5480,
-   "hash": 1076216343
+   "hash": 4159720475
   },
   {
    "frame": 5500,
-   "hash": 2368440600
+   "hash": 3429678947
   },
   {
    "frame": 5520,
-   "hash": 3607039791
+   "hash": 4186925197
   },
   {
    "frame": 5540,
-   "hash": 3557338359
+   "hash": 2012237613
   },
   {
    "frame": 5560,
-   "hash": 268701605
+   "hash": 4247605962
   },
   {
    "frame": 5580,
-   "hash": 1738051271
+   "hash": 1689586868
   },
   {
    "frame": 5600,
-   "hash": 2739482396
+   "hash": 350511747
   },
   {
    "frame": 5620,
-   "hash": 3631691235
+   "hash": 1730640869
   },
   {
    "frame": 5640,
-   "hash": 1506092831
+   "hash": 3078865120
   },
   {
    "frame": 5660,
-   "hash": 219373395
+   "hash": 2578518411
   },
   {
    "frame": 5680,
-   "hash": 2611974730
+   "hash": 2168396881
   },
   {
    "frame": 5700,
-   "hash": 908272440
+   "hash": 4177514538
   },
   {
    "frame": 5720,
-   "hash": 4223120971
+   "hash": 2993336164
   },
   {
    "frame": 5740,
-   "hash": 35886868
+   "hash": 4125915916
   },
   {
    "frame": 5760,
-   "hash": 2120604748
+   "hash": 389881643
   },
   {
    "frame": 5780,
-   "hash": 2977167158
+   "hash": 2668506865
   },
   {
    "frame": 5800,
-   "hash": 2841305891
+   "hash": 3392024695
   },
   {
    "frame": 5820,
-   "hash": 1220769239
+   "hash": 3693915076
   },
   {
    "frame": 5840,
-   "hash": 2146066838
+   "hash": 483555027
   },
   {
    "frame": 5860,
-   "hash": 1617242889
+   "hash": 3743130904
   },
   {
    "frame": 5880,
-   "hash": 3250594610
+   "hash": 3282468653
   },
   {
    "frame": 5900,
-   "hash": 2567363184
+   "hash": 2718193318
   },
   {
    "frame": 5920,
-   "hash": 3284393126
+   "hash": 1046994416
   },
   {
    "frame": 5940,
-   "hash": 2300148299
+   "hash": 209332444
   },
   {
    "frame": 5960,
-   "hash": 1218643341
+   "hash": 848569051
   },
   {
    "frame": 5980,
-   "hash": 2375973001
+   "hash": 4124763198
   },
   {
    "frame": 6000,
-   "hash": 2559111155
+   "hash": 672113716
   },
   {
    "frame": 6020,
-   "hash": 3740772706
+   "hash": 2735030661
   },
   {
    "frame": 6040,
-   "hash": 1219891111
+   "hash": 385708897
   },
   {
    "frame": 6060,
-   "hash": 3468287245
+   "hash": 2503904391
   },
   {
    "frame": 6080,
-   "hash": 1407950510
+   "hash": 1826546012
   },
   {
    "frame": 6100,
-   "hash": 7515664
+   "hash": 990234495
   },
   {
    "frame": 6120,
-   "hash": 2936867734
+   "hash": 3472930984
   },
   {
    "frame": 6140,
-   "hash": 983724130
+   "hash": 3493832464
   },
   {
    "frame": 6160,
-   "hash": 3922052172
+   "hash": 1014089949
   },
   {
    "frame": 6180,
-   "hash": 2818862076
+   "hash": 493568505
   },
   {
    "frame": 6200,
-   "hash": 2664038567
+   "hash": 3596905113
   },
   {
    "frame": 6220,
-   "hash": 3811985413
+   "hash": 2425670392
   },
   {
    "frame": 6240,
-   "hash": 534202608
+   "hash": 2188800810
   },
   {
    "frame": 6260,
-   "hash": 197788389
+   "hash": 3397808070
   },
   {
    "frame": 6280,
-   "hash": 2656933229
+   "hash": 3336647620
   },
   {
    "frame": 6300,
-   "hash": 2864336688
+   "hash": 3246040401
   },
   {
    "frame": 6320,
-   "hash": 1650746000
+   "hash": 3299352413
   },
   {
    "frame": 6340,
-   "hash": 3606395
+   "hash": 2690260371
   },
   {
    "frame": 6360,
-   "hash": 1518554127
+   "hash": 3396954549
   },
   {
    "frame": 6380,
-   "hash": 212861404
+   "hash": 2613481687
   },
   {
    "frame": 6400,
-   "hash": 3282078459
+   "hash": 3900046791
   },
   {
    "frame": 6420,
-   "hash": 1295859909
+   "hash": 2328584471
   },
   {
    "frame": 6440,
-   "hash": 3614122364
+   "hash": 3387626988
   },
   {
    "frame": 6460,
-   "hash": 3340988101
+   "hash": 3911874933
   },
   {
    "frame": 6480,
-   "hash": 4127249190
+   "hash": 3855473091
   },
   {
    "frame": 6500,
-   "hash": 1330187001
+   "hash": 633343238
   },
   {
    "frame": 6520,
-   "hash": 613694914
+   "hash": 33682736
   },
   {
    "frame": 6540,
-   "hash": 2698862934
+   "hash": 3175117245
   },
   {
    "frame": 6560,
-   "hash": 1960042058
+   "hash": 2705434672
   },
   {
    "frame": 6580,
-   "hash": 3504291530
+   "hash": 1871309145
   },
   {
    "frame": 6600,
-   "hash": 3844448899
+   "hash": 3559506861
   },
   {
    "frame": 6620,
-   "hash": 967322580
+   "hash": 3681645142
   },
   {
    "frame": 6640,
-   "hash": 3144063729
+   "hash": 680130959
   },
   {
    "frame": 6660,
-   "hash": 2615899750
+   "hash": 2077761583
   },
   {
    "frame": 6680,
-   "hash": 3201165666
+   "hash": 1804325108
   },
   {
    "frame": 6700,
-   "hash": 651314930
+   "hash": 68632464
   },
   {
    "frame": 6720,
-   "hash": 3656500977
+   "hash": 2876952518
   },
   {
    "frame": 6740,
-   "hash": 2639604104
+   "hash": 3969919658
   },
   {
    "frame": 6760,
-   "hash": 3039779376
+   "hash": 113585080
   },
   {
    "frame": 6780,
-   "hash": 908526319
+   "hash": 3925995528
   },
   {
    "frame": 6800,
-   "hash": 2738434601
+   "hash": 1859107708
   },
   {
    "frame": 6820,
-   "hash": 3028174450
+   "hash": 3275267909
   },
   {
    "frame": 6840,
-   "hash": 1728922082
+   "hash": 706118261
   },
   {
    "frame": 6860,
-   "hash": 2217007459
+   "hash": 1230123839
   },
   {
    "frame": 6880,
-   "hash": 1091770809
+   "hash": 831827098
   },
   {
    "frame": 6900,
-   "hash": 446385886
+   "hash": 1893564163
   },
   {
    "frame": 6920,
-   "hash": 835187605
+   "hash": 1768756849
   },
   {
    "frame": 6940,
-   "hash": 3606988294
+   "hash": 1624783004
   },
   {
    "frame": 6960,
-   "hash": 3544812821
+   "hash": 4033175251
   },
   {
    "frame": 6980,
-   "hash": 2532312280
+   "hash": 3105733034
   },
   {
    "frame": 7000,
-   "hash": 3709212546
+   "hash": 2723151480
   },
   {
    "frame": 7020,
-   "hash": 227974190
+   "hash": 764594668
   },
   {
    "frame": 7040,
-   "hash": 2054713221
+   "hash": 4147168368
   },
   {
    "frame": 7060,
-   "hash": 876659546
+   "hash": 2378139638
   },
   {
    "frame": 7080,
-   "hash": 2369956553
+   "hash": 3882165953
   },
   {
    "frame": 7100,
-   "hash": 3741359799
+   "hash": 2329579213
   },
   {
    "frame": 7120,
-   "hash": 1142334679
+   "hash": 1739059039
   },
   {
    "frame": 7140,
-   "hash": 530063156
+   "hash": 3899267189
   },
   {
    "frame": 7160,
-   "hash": 3749488469
+   "hash": 3698994295
   },
   {
    "frame": 7180,
-   "hash": 1939284422
+   "hash": 2649329809
   },
   {
    "frame": 7200,
-   "hash": 3192129588
+   "hash": 222349958
   },
   {
    "frame": 7220,
-   "hash": 171687262
+   "hash": 3460676025
   },
   {
    "frame": 7240,
-   "hash": 3194942037
+   "hash": 272061649
   },
   {
    "frame": 7260,
-   "hash": 2368141347
+   "hash": 3616563351
   },
   {
    "frame": 7280,
-   "hash": 2377476017
+   "hash": 1140667651
   },
   {
    "frame": 7300,
-   "hash": 1451950359
+   "hash": 2795902437
   },
   {
    "frame": 7320,
-   "hash": 393137211
+   "hash": 4184541472
   },
   {
    "frame": 7340,
-   "hash": 4257074108
+   "hash": 2617003444
   },
   {
    "frame": 7360,
-   "hash": 2848613154
+   "hash": 1247923786
   },
   {
    "frame": 7380,
-   "hash": 746482565
+   "hash": 3619004154
   },
   {
    "frame": 7400,
-   "hash": 2130092826
+   "hash": 2353569262
   },
   {
    "frame": 7420,
-   "hash": 3360271399
+   "hash": 1702103875
   },
   {
    "frame": 7440,
-   "hash": 588959431
+   "hash": 1864825480
   },
   {
    "frame": 7460,
-   "hash": 3503356921
+   "hash": 3079692197
   },
   {
    "frame": 7480,
-   "hash": 1628074774
+   "hash": 2052527364
   },
   {
    "frame": 7500,
-   "hash": 979211100
+   "hash": 3117156387
   },
   {
    "frame": 7520,
-   "hash": 1905437303
+   "hash": 3618648156
   },
   {
    "frame": 7540,
-   "hash": 2606123963
+   "hash": 3879926599
   },
   {
    "frame": 7560,
-   "hash": 3739074010
+   "hash": 3264868457
   },
   {
    "frame": 7580,
-   "hash": 2295667739
+   "hash": 2414928305
   },
   {
    "frame": 7600,
-   "hash": 2559954804
+   "hash": 3798416347
   },
   {
    "frame": 7620,
-   "hash": 2458452888
+   "hash": 3684588102
   },
   {
    "frame": 7640,
-   "hash": 3796798296
+   "hash": 2797738289
   },
   {
    "frame": 7660,
-   "hash": 1022770119
+   "hash": 3837140461
   },
   {
    "frame": 7680,
-   "hash": 2286429849
+   "hash": 1675821458
   },
   {
    "frame": 7700,
-   "hash": 3670863055
+   "hash": 1893676333
   },
   {
    "frame": 7720,
-   "hash": 2414559764
+   "hash": 1711192321
   },
   {
    "frame": 7740,
-   "hash": 3026198583
+   "hash": 17350935
   },
   {
    "frame": 7760,
-   "hash": 2624196647
+   "hash": 1281667705
   },
   {
    "frame": 7780,
-   "hash": 1291061344
+   "hash": 580865962
   },
   {
    "frame": 7800,
-   "hash": 3967261323
+   "hash": 96532426
   },
   {
    "frame": 7820,
-   "hash": 1920616278
+   "hash": 229859571
   },
   {
    "frame": 7840,
-   "hash": 923018468
+   "hash": 3938893710
   },
   {
    "frame": 7860,
-   "hash": 1145750403
+   "hash": 2079555465
   },
   {
    "frame": 7880,
-   "hash": 3489766745
+   "hash": 2314293495
   },
   {
    "frame": 7900,
-   "hash": 2662072023
+   "hash": 727539728
   },
   {
    "frame": 7920,
-   "hash": 3426849661
+   "hash": 3949438893
   },
   {
    "frame": 7940,
-   "hash": 3253965877
+   "hash": 2806118220
   },
   {
    "frame": 7960,
-   "hash": 770232163
+   "hash": 2698126848
   },
   {
    "frame": 7980,
-   "hash": 578541395
+   "hash": 2142181297
   },
   {
    "frame": 8000,
-   "hash": 3557692370
+   "hash": 3735247726
   },
   {
    "frame": 8020,
-   "hash": 2469440902
+   "hash": 3921987871
   },
   {
    "frame": 8040,
-   "hash": 151404244
+   "hash": 210837022
   },
   {
    "frame": 8060,
-   "hash": 1953255490
+   "hash": 541601002
   },
   {
    "frame": 8080,
-   "hash": 2046614436
+   "hash": 865623601
   },
   {
    "frame": 8100,
-   "hash": 883384028
+   "hash": 2790671535
   },
   {
    "frame": 8120,
-   "hash": 2779305186
+   "hash": 1017739559
   },
   {
    "frame": 8140,
-   "hash": 3537700458
+   "hash": 4067792018
   },
   {
    "frame": 8160,
-   "hash": 2658100789
+   "hash": 3451062355
   },
   {
    "frame": 8180,
-   "hash": 2298631708
+   "hash": 4171604107
   },
   {
    "frame": 8200,
-   "hash": 3102296445
+   "hash": 1616273370
   },
   {
    "frame": 8220,
-   "hash": 23309571
+   "hash": 3710754129
   },
   {
    "frame": 8240,
-   "hash": 257953819
+   "hash": 3015741471
   },
   {
    "frame": 8260,
-   "hash": 1224881550
+   "hash": 1009932341
   },
   {
    "frame": 8280,
-   "hash": 1171876455
+   "hash": 3102438493
   },
   {
    "frame": 8300,
-   "hash": 2519649850
+   "hash": 2231739176
   },
   {
    "frame": 8320,
-   "hash": 2383948313
+   "hash": 1698100048
   },
   {
    "frame": 8340,
-   "hash": 1559255935
+   "hash": 4277739840
   },
   {
    "frame": 8360,
-   "hash": 3866778668
+   "hash": 251323428
   },
   {
    "frame": 8380,
-   "hash": 3040180936
+   "hash": 4152016574
   },
   {
    "frame": 8400,
-   "hash": 1594153797
+   "hash": 1927430219
   },
   {
    "frame": 8420,
-   "hash": 2287558201
+   "hash": 2462044401
   },
   {
    "frame": 8440,
-   "hash": 479622296
+   "hash": 2959395438
   },
   {
    "frame": 8460,
-   "hash": 3676223723
+   "hash": 3073837694
   },
   {
    "frame": 8480,
-   "hash": 2082883195
+   "hash": 521383612
   },
   {
    "frame": 8500,
-   "hash": 920476614
+   "hash": 1111575008
   },
   {
    "frame": 8520,
-   "hash": 2587575011
+   "hash": 3116303256
   },
   {
    "frame": 8540,
-   "hash": 3686155691
+   "hash": 2076464810
   },
   {
    "frame": 8560,
-   "hash": 1064540322
+   "hash": 544281097
   },
   {
    "frame": 8580,
-   "hash": 1609359728
+   "hash": 1414447342
   },
   {
    "frame": 8600,
-   "hash": 3605720074
+   "hash": 2877931702
   },
   {
    "frame": 8620,
-   "hash": 1100006307
+   "hash": 2524671685
   },
   {
    "frame": 8640,
-   "hash": 3332652688
+   "hash": 4136013719
   },
   {
    "frame": 8660,
-   "hash": 3686560456
+   "hash": 3694921575
   },
   {
    "frame": 8680,
-   "hash": 471443652
+   "hash": 1073542071
   },
   {
    "frame": 8700,
-   "hash": 2020278792
+   "hash": 2333489310
   },
   {
    "frame": 8720,
-   "hash": 160964042
+   "hash": 1534571011
   },
   {
    "frame": 8740,
-   "hash": 3205969377
+   "hash": 1670889681
   },
   {
    "frame": 8760,
-   "hash": 853073304
+   "hash": 1915109390
   },
   {
    "frame": 8780,
-   "hash": 2348589835
+   "hash": 1567018918
   },
   {
    "frame": 8800,
-   "hash": 3807915723
+   "hash": 2789438481
   },
   {
    "frame": 8820,
-   "hash": 2714026201
+   "hash": 3196881331
   },
   {
    "frame": 8840,
-   "hash": 1511053470
+   "hash": 2561248865
   },
   {
    "frame": 8860,
-   "hash": 1548619793
+   "hash": 1633018215
   },
   {
    "frame": 8880,
-   "hash": 2762356687
+   "hash": 104473687
   },
   {
    "frame": 8900,
-   "hash": 2968376507
+   "hash": 3482614376
   },
   {
    "frame": 8920,
-   "hash": 1330388936
+   "hash": 99349913
   },
   {
    "frame": 8940,
-   "hash": 1581906655
+   "hash": 2494022599
   },
   {
    "frame": 8960,
-   "hash": 106268530
+   "hash": 1782030068
   },
   {
    "frame": 8980,
-   "hash": 1832774994
+   "hash": 2808435336
   },
   {
    "frame": 9000,
-   "hash": 2947817074
+   "hash": 2352605254
   },
   {
    "frame": 9020,
-   "hash": 4058449082
+   "hash": 1381321315
   },
   {
    "frame": 9040,
-   "hash": 4047422275
+   "hash": 2613044546
   },
   {
    "frame": 9060,
-   "hash": 1962093418
+   "hash": 3907654319
   },
   {
    "frame": 9080,
-   "hash": 1786501588
+   "hash": 433257120
   },
   {
    "frame": 9100,
-   "hash": 2184689882
+   "hash": 1171888649
   },
   {
    "frame": 9120,
-   "hash": 2915335983
+   "hash": 824415211
   },
   {
    "frame": 9140,
-   "hash": 1529696480
+   "hash": 811708766
   },
   {
    "frame": 9160,
-   "hash": 4255656960
+   "hash": 632910276
   },
   {
    "frame": 9180,
-   "hash": 959837412
+   "hash": 1293072758
   },
   {
    "frame": 9200,
-   "hash": 190519414
+   "hash": 2238826971
   },
   {
    "frame": 9220,
-   "hash": 3449596507
+   "hash": 2671157543
   },
   {
    "frame": 9240,
-   "hash": 3657266119
+   "hash": 4283559050
   },
   {
    "frame": 9260,
-   "hash": 4198604154
+   "hash": 3588926393
   },
   {
    "frame": 9280,
-   "hash": 499120118
+   "hash": 3798893292
   },
   {
    "frame": 9300,
-   "hash": 1109180035
+   "hash": 4092093408
   },
   {
    "frame": 9320,
-   "hash": 1568856131
+   "hash": 3502407545
   },
   {
    "frame": 9340,
-   "hash": 773714636
+   "hash": 507797133
   },
   {
    "frame": 9360,
-   "hash": 4285249429
+   "hash": 1411841964
   },
   {
    "frame": 9380,
-   "hash": 13435875
+   "hash": 2122765490
   },
   {
    "frame": 9400,
-   "hash": 2922287492
+   "hash": 2719325323
   },
   {
    "frame": 9420,
-   "hash": 3545568780
+   "hash": 2512656226
   },
   {
    "frame": 9440,
-   "hash": 2637419306
+   "hash": 1212754238
   },
   {
    "frame": 9460,
-   "hash": 2835182198
+   "hash": 831510562
   },
   {
    "frame": 9480,
-   "hash": 3959546500
+   "hash": 3311884254
   },
   {
    "frame": 9500,
-   "hash": 1256232113
+   "hash": 1167578052
   },
   {
    "frame": 9520,
-   "hash": 1624384525
+   "hash": 1471109452
   },
   {
    "frame": 9540,
-   "hash": 2345943425
+   "hash": 3431818074
   },
   {
    "frame": 9560,
-   "hash": 373344629
+   "hash": 281512105
   },
   {
    "frame": 9580,
-   "hash": 3799026659
+   "hash": 1748167716
   },
   {
    "frame": 9600,
-   "hash": 3385346958
+   "hash": 170785732
   },
   {
    "frame": 9620,
-   "hash": 3601852257
+   "hash": 836887110
   },
   {
    "frame": 9640,
-   "hash": 4100852157
+   "hash": 2997491841
   },
   {
    "frame": 9660,
-   "hash": 1077261466
+   "hash": 713945452
   },
   {
    "frame": 9680,
-   "hash": 3072309113
+   "hash": 1122710761
   },
   {
    "frame": 9700,
-   "hash": 622531957
+   "hash": 893096234
   },
   {
    "frame": 9720,
-   "hash": 3368771875
+   "hash": 1175731307
   },
   {
    "frame": 9740,
-   "hash": 3307164909
+   "hash": 3460485153
   },
   {
    "frame": 9760,
-   "hash": 1169580208
+   "hash": 3192040564
   },
   {
    "frame": 9780,
-   "hash": 3561265519
+   "hash": 632637534
   },
   {
    "frame": 9800,
-   "hash": 2000728145
+   "hash": 1486274166
   },
   {
    "frame": 9820,
-   "hash": 2937078583
+   "hash": 1733411679
   },
   {
    "frame": 9840,
-   "hash": 1139509604
+   "hash": 3327085679
   },
   {
    "frame": 9860,
-   "hash": 3006144720
+   "hash": 59659577
   },
   {
    "frame": 9880,
-   "hash": 3221742930
+   "hash": 2895823641
   },
   {
    "frame": 9900,
-   "hash": 857109696
+   "hash": 104005084
   },
   {
    "frame": 9920,
-   "hash": 3482685637
+   "hash": 946182392
   },
   {
    "frame": 9940,
-   "hash": 28565412
+   "hash": 2300698673
   },
   {
    "frame": 9960,
-   "hash": 1611546791
+   "hash": 3151056454
   },
   {
    "frame": 9980,
-   "hash": 3086737518
+   "hash": 3584094004
   },
   {
    "frame": 10000,
-   "hash": 1928138797
+   "hash": 1441828035
   },
   {
    "frame": 10020,
-   "hash": 3887857898
+   "hash": 1239259573
   },
   {
    "frame": 10040,
-   "hash": 4102924380
+   "hash": 3259238793
   },
   {
    "frame": 10060,
-   "hash": 3457894264
+   "hash": 683312144
   },
   {
    "frame": 10080,
-   "hash": 2931437276
+   "hash": 1379155909
   },
   {
    "frame": 10100,
-   "hash": 2690146338
+   "hash": 3180533308
   },
   {
    "frame": 10120,
-   "hash": 2984608954
+   "hash": 1011995864
   },
   {
    "frame": 10140,
-   "hash": 1094302191
+   "hash": 2390050161
   },
   {
    "frame": 10160,
-   "hash": 4208438342
+   "hash": 867459122
   },
   {
    "frame": 10180,
-   "hash": 1663796261
+   "hash": 519135239
   },
   {
    "frame": 10200,
-   "hash": 3697012940
+   "hash": 1122589751
   },
   {
    "frame": 10220,
-   "hash": 3773951952
+   "hash": 4103803286
   },
   {
    "frame": 10240,
-   "hash": 1185336868
+   "hash": 1111275835
   },
   {
    "frame": 10260,
-   "hash": 1759976740
+   "hash": 4206993548
   },
   {
    "frame": 10280,
-   "hash": 793890228
+   "hash": 2852651142
   },
   {
    "frame": 10300,
-   "hash": 4176175435
+   "hash": 1565003675
   },
   {
    "frame": 10320,
-   "hash": 2580453514
+   "hash": 815823152
   },
   {
    "frame": 10340,
-   "hash": 2250931194
+   "hash": 2208615036
   },
   {
    "frame": 10360,
-   "hash": 1069774934
+   "hash": 453150537
   },
   {
    "frame": 10380,
-   "hash": 3324102190
+   "hash": 926022364
   },
   {
    "frame": 10400,
-   "hash": 3359028875
+   "hash": 3307212494
   },
   {
    "frame": 10420,
-   "hash": 2339208870
+   "hash": 1482034999
   },
   {
    "frame": 10440,
-   "hash": 1656651857
+   "hash": 2788141471
   },
   {
    "frame": 10460,
-   "hash": 2529877995
+   "hash": 812877888
   },
   {
    "frame": 10480,
-   "hash": 3442718164
+   "hash": 3314067848
   },
   {
    "frame": 10500,
-   "hash": 1116806475
+   "hash": 2909406507
   },
   {
    "frame": 10520,
-   "hash": 4223910763
+   "hash": 3473719097
   },
   {
    "frame": 10540,
-   "hash": 2705473545
+   "hash": 427567124
   },
   {
    "frame": 10560,
-   "hash": 2914167044
+   "hash": 3414067335
   },
   {
    "frame": 10580,
-   "hash": 1784571074
+   "hash": 515402236
   },
   {
    "frame": 10600,
-   "hash": 461207276
+   "hash": 2811007086
   },
   {
    "frame": 10620,
-   "hash": 676387495
+   "hash": 3143120473
   },
   {
    "frame": 10640,
-   "hash": 3106799983
+   "hash": 909780974
   },
   {
    "frame": 10660,
-   "hash": 3828626882
+   "hash": 1783058995
   },
   {
    "frame": 10680,
-   "hash": 590333056
+   "hash": 2801238376
   },
   {
    "frame": 10700,
-   "hash": 1608331146
+   "hash": 2494079547
   },
   {
    "frame": 10720,
-   "hash": 2391524012
+   "hash": 1328496386
   },
   {
    "frame": 10740,
-   "hash": 2855499878
+   "hash": 225066866
   },
   {
    "frame": 10760,
-   "hash": 113445300
+   "hash": 2229933104
   },
   {
    "frame": 10780,
-   "hash": 580321792
+   "hash": 2844683059
   },
   {
    "frame": 10800,
-   "hash": 2841872326
+   "hash": 2462243059
   },
   {
    "frame": 10820,
-   "hash": 2390596832
+   "hash": 1883132655
   },
   {
    "frame": 10840,
-   "hash": 808313167
+   "hash": 2824995637
   },
   {
    "frame": 10860,
-   "hash": 3329920191
+   "hash": 397408798
   },
   {
    "frame": 10880,
-   "hash": 1452216849
+   "hash": 1234527063
   },
   {
    "frame": 10900,
-   "hash": 3759262827
+   "hash": 1862198044
   },
   {
    "frame": 10920,
-   "hash": 363889295
+   "hash": 1188282009
   },
   {
    "frame": 10940,
-   "hash": 2799927632
+   "hash": 3762518557
   },
   {
    "frame": 10960,
-   "hash": 4023865384
+   "hash": 1318170995
   },
   {
    "frame": 10980,
-   "hash": 240464951
+   "hash": 1206703980
   },
   {
    "frame": 11000,
-   "hash": 3010776459
+   "hash": 3948432780
   },
   {
    "frame": 11020,
-   "hash": 3635459246
+   "hash": 31026107
   },
   {
    "frame": 11040,
-   "hash": 70313688
+   "hash": 2972102954
   },
   {
    "frame": 11060,
-   "hash": 1493451812
+   "hash": 3043966098
   },
   {
    "frame": 11080,
-   "hash": 2428283494
+   "hash": 3693445329
   },
   {
    "frame": 11100,
-   "hash": 82606201
+   "hash": 3549045487
   },
   {
    "frame": 11120,
-   "hash": 3995249427
+   "hash": 1323039394
   },
   {
    "frame": 11140,
-   "hash": 1106304120
+   "hash": 3740303072
   },
   {
    "frame": 11160,
-   "hash": 2924807152
+   "hash": 123754446
   },
   {
    "frame": 11180,
-   "hash": 1266901636
+   "hash": 1149970508
   },
   {
    "frame": 11200,
-   "hash": 3343018394
+   "hash": 422915621
   },
   {
    "frame": 11220,
-   "hash": 3579005951
+   "hash": 137636037
   },
   {
    "frame": 11240,
-   "hash": 2788673341
+   "hash": 525088531
   },
   {
    "frame": 11260,
-   "hash": 1813601656
+   "hash": 2054430659
   },
   {
    "frame": 11280,
-   "hash": 1959721768
+   "hash": 2789438682
   },
   {
    "frame": 11300,
-   "hash": 1811691205
+   "hash": 2676856544
   },
   {
    "frame": 11320,
-   "hash": 3624046517
+   "hash": 864441550
   },
   {
    "frame": 11340,
-   "hash": 2469490266
+   "hash": 550589767
   },
   {
    "frame": 11360,
-   "hash": 1210314877
+   "hash": 1564655908
   },
   {
    "frame": 11380,
-   "hash": 4156210001
+   "hash": 4230890298
   },
   {
    "frame": 11400,
-   "hash": 483447839
+   "hash": 1497014192
   },
   {
    "frame": 11420,
-   "hash": 2879070699
+   "hash": 580212377
   },
   {
    "frame": 11440,
-   "hash": 650371358
+   "hash": 3648814942
   },
   {
    "frame": 11460,
-   "hash": 1782641110
+   "hash": 3981229222
   },
   {
    "frame": 11480,
-   "hash": 2614548482
+   "hash": 949624043
   },
   {
    "frame": 11500,
-   "hash": 221226263
+   "hash": 4261022473
   },
   {
    "frame": 11520,
-   "hash": 2426015733
+   "hash": 4265342038
   },
   {
    "frame": 11540,
-   "hash": 1878944084
+   "hash": 3219122168
   },
   {
    "frame": 11560,
-   "hash": 1812162473
+   "hash": 4250744937
   },
   {
    "frame": 11580,
-   "hash": 2157714769
+   "hash": 1336852699
   },
   {
    "frame": 11600,
-   "hash": 1827577881
+   "hash": 3166549193
   },
   {
    "frame": 11620,
-   "hash": 4177497983
+   "hash": 3710809591
   },
   {
    "frame": 11640,
-   "hash": 1591099270
+   "hash": 1007512123
   },
   {
    "frame": 11660,
-   "hash": 1614103709
+   "hash": 740670119
   },
   {
    "frame": 11680,
-   "hash": 4183668379
+   "hash": 230442508
   },
   {
    "frame": 11700,
-   "hash": 838086834
+   "hash": 1840161560
   },
   {
    "frame": 11720,
-   "hash": 273293061
+   "hash": 277121588
   },
   {
    "frame": 11740,
-   "hash": 1360020994
+   "hash": 1849548576
   },
   {
    "frame": 11760,
-   "hash": 3661949426
+   "hash": 728925597
   },
   {
    "frame": 11780,
-   "hash": 1981538608
+   "hash": 3734651981
   },
   {
    "frame": 11800,
-   "hash": 3053798850
+   "hash": 4108275592
   },
   {
    "frame": 11820,
-   "hash": 2713305474
+   "hash": 1701019526
   },
   {
    "frame": 11840,
-   "hash": 2044128454
+   "hash": 2312626158
   },
   {
    "frame": 11860,
-   "hash": 360867071
+   "hash": 4260530535
   },
   {
    "frame": 11880,
-   "hash": 1455891415
+   "hash": 524557085
   },
   {
    "frame": 11900,
-   "hash": 1543061014
+   "hash": 4184017618
   },
   {
    "frame": 11920,
-   "hash": 858701356
+   "hash": 2946570236
   },
   {
    "frame": 11940,
-   "hash": 102285987
+   "hash": 3676649543
   },
   {
    "frame": 11960,
-   "hash": 2386710645
+   "hash": 3172563261
   },
   {
    "frame": 11980,
-   "hash": 1118580289
+   "hash": 4188155759
   },
   {
    "frame": 12000,
-   "hash": 1669696923
+   "hash": 535771792
   },
   {
    "frame": 12020,
-   "hash": 2093322204
+   "hash": 2758588060
   },
   {
    "frame": 12040,
-   "hash": 1006284816
+   "hash": 3966956842
   },
   {
    "frame": 12060,
-   "hash": 2315617946
+   "hash": 76207546
   },
   {
    "frame": 12080,
-   "hash": 3671799218
+   "hash": 3493430225
   },
   {
    "frame": 12100,
-   "hash": 518026851
+   "hash": 3637290940
   },
   {
    "frame": 12120,
-   "hash": 210723754
+   "hash": 3151769142
   },
   {
    "frame": 12140,
-   "hash": 3614035372
+   "hash": 997326759
   },
   {
    "frame": 12160,
-   "hash": 1555223908
+   "hash": 2174744080
   },
   {
    "frame": 12180,
-   "hash": 909171121
+   "hash": 3992170170
   },
   {
    "frame": 12200,
-   "hash": 1795013078
+   "hash": 378858277
   },
   {
    "frame": 12220,
-   "hash": 1720532303
+   "hash": 3064616274
   },
   {
    "frame": 12240,
-   "hash": 412793485
+   "hash": 421798490
   },
   {
    "frame": 12260,
-   "hash": 2161855051
+   "hash": 1468797274
   },
   {
    "frame": 12280,
-   "hash": 1098830074
+   "hash": 3194399848
   },
   {
    "frame": 12300,
-   "hash": 3278739208
+   "hash": 672782248
   },
   {
    "frame": 12320,
-   "hash": 3134622462
+   "hash": 261299056
   },
   {
    "frame": 12340,
-   "hash": 2661529369
+   "hash": 1645426616
   },
   {
    "frame": 12360,
-   "hash": 1919389467
+   "hash": 4179646595
   },
   {
    "frame": 12380,
-   "hash": 1757597485
+   "hash": 2914315627
   },
   {
    "frame": 12400,
-   "hash": 461168989
+   "hash": 1542937032
   },
   {
    "frame": 12420,
-   "hash": 266931116
+   "hash": 2147747010
   },
   {
    "frame": 12440,
-   "hash": 190746922
+   "hash": 3023590514
   },
   {
    "frame": 12460,
-   "hash": 2954381957
+   "hash": 400916002
   },
   {
    "frame": 12480,
-   "hash": 4231892522
+   "hash": 4186195916
   },
   {
    "frame": 12500,
-   "hash": 1308833766
+   "hash": 2756962194
   },
   {
    "frame": 12520,
-   "hash": 601864817
+   "hash": 465984311
   },
   {
    "frame": 12540,
-   "hash": 2547676509
+   "hash": 3265203616
   },
   {
    "frame": 12560,
-   "hash": 2765030123
+   "hash": 2123003086
   },
   {
    "frame": 12580,
-   "hash": 3781487030
+   "hash": 1698364104
   },
   {
    "frame": 12600,
-   "hash": 2438223006
+   "hash": 230904950
   },
   {
    "frame": 12620,
-   "hash": 3853304958
+   "hash": 886386284
   },
   {
    "frame": 12640,
-   "hash": 3045291151
+   "hash": 460379028
   },
   {
    "frame": 12660,
-   "hash": 2724946009
+   "hash": 3998220939
   },
   {
    "frame": 12680,
-   "hash": 1554209282
+   "hash": 4219188013
   },
   {
    "frame": 12700,
-   "hash": 3475207223
+   "hash": 4048852
   },
   {
    "frame": 12720,
-   "hash": 3567064919
+   "hash": 832043714
   },
   {
    "frame": 12740,
-   "hash": 652207363
+   "hash": 3251879068
   },
   {
    "frame": 12760,
-   "hash": 202215153
+   "hash": 2447311884
   },
   {
    "frame": 12780,
-   "hash": 1524010980
+   "hash": 2794473441
   },
   {
    "frame": 12800,
-   "hash": 1468098633
+   "hash": 3846326868
   },
   {
    "frame": 12820,
-   "hash": 2254673565
+   "hash": 1685199007
   },
   {
    "frame": 12840,
-   "hash": 4083182293
+   "hash": 350284049
   },
   {
    "frame": 12860,
-   "hash": 2636908179
+   "hash": 4000736717
   },
   {
    "frame": 12880,
-   "hash": 2477809818
+   "hash": 3273989556
   },
   {
    "frame": 12900,
-   "hash": 1443263199
+   "hash": 3319352434
   },
   {
    "frame": 12920,
-   "hash": 196144109
+   "hash": 2579833038
   },
   {
    "frame": 12940,
-   "hash": 2102008982
+   "hash": 1005676039
   },
   {
    "frame": 12960,
-   "hash": 1077690168
+   "hash": 2294440281
   },
   {
    "frame": 12980,
-   "hash": 848964661
+   "hash": 2910245319
   },
   {
    "frame": 13000,
-   "hash": 1759787714
+   "hash": 3548293805
   },
   {
    "frame": 13020,
-   "hash": 3860843712
+   "hash": 2601373004
   },
   {
    "frame": 13040,
-   "hash": 1882709044
+   "hash": 3344286932
   },
   {
    "frame": 13060,
-   "hash": 3658180725
+   "hash": 1119764152
   },
   {
    "frame": 13080,
-   "hash": 3458649452
+   "hash": 3925256012
   },
   {
    "frame": 13100,
-   "hash": 1633427256
+   "hash": 585405886
   },
   {
    "frame": 13120,
-   "hash": 2278436335
+   "hash": 1211121247
   },
   {
    "frame": 13140,
-   "hash": 1260363344
+   "hash": 2203231597
   },
   {
    "frame": 13160,
-   "hash": 2783699920
+   "hash": 2571614617
   },
   {
    "frame": 13180,
-   "hash": 1880513400
+   "hash": 4009383831
   },
   {
    "frame": 13200,
-   "hash": 2749488716
+   "hash": 3349088971
   },
   {
    "frame": 13220,
-   "hash": 154004695
+   "hash": 3544182796
   },
   {
    "frame": 13240,
-   "hash": 1596203603
+   "hash": 4275896920
   },
   {
    "frame": 13260,
-   "hash": 2309301819
+   "hash": 950431174
   },
   {
    "frame": 13280,
-   "hash": 4226793324
+   "hash": 3219600073
   },
   {
    "frame": 13300,
-   "hash": 2546097937
+   "hash": 2539214271
   },
   {
    "frame": 13320,
-   "hash": 1966317924
+   "hash": 4015320774
   },
   {
    "frame": 13340,
-   "hash": 3221567003
+   "hash": 3130710490
   },
   {
    "frame": 13360,
-   "hash": 4208395145
+   "hash": 330132686
   },
   {
    "frame": 13380,
-   "hash": 3128377164
+   "hash": 2060075632
   },
   {
    "frame": 13400,
-   "hash": 2977423253
+   "hash": 3270167019
   },
   {
    "frame": 13420,
-   "hash": 323731870
+   "hash": 414228103
   },
   {
    "frame": 13440,
-   "hash": 1859035880
+   "hash": 617006108
   },
   {
    "frame": 13460,
-   "hash": 3892770467
+   "hash": 1150988892
   },
   {
    "frame": 13480,
-   "hash": 1476527353
+   "hash": 3360107679
   },
   {
    "frame": 13500,
-   "hash": 2551245615
+   "hash": 3080465558
   },
   {
    "frame": 13520,
-   "hash": 3934507518
+   "hash": 873078177
   },
   {
    "frame": 13540,
-   "hash": 2030947107
+   "hash": 1022091814
   },
   {
    "frame": 13560,
-   "hash": 943030463
+   "hash": 2320338409
   },
   {
    "frame": 13580,
-   "hash": 3897936187
+   "hash": 743648158
   },
   {
    "frame": 13600,
-   "hash": 636071762
+   "hash": 3649097221
   },
   {
    "frame": 13620,
-   "hash": 2822479533
+   "hash": 1191741679
   },
   {
    "frame": 13640,
-   "hash": 1839806579
+   "hash": 3358959981
   },
   {
    "frame": 13660,
-   "hash": 4177601616
+   "hash": 3338733803
   },
   {
    "frame": 13680,
-   "hash": 2089319307
+   "hash": 341641053
   },
   {
    "frame": 13700,
-   "hash": 616945826
+   "hash": 3254476955
   },
   {
    "frame": 13720,
-   "hash": 2549939064
+   "hash": 3238607370
   },
   {
    "frame": 13740,
-   "hash": 3375973196
+   "hash": 3442386345
   },
   {
    "frame": 13760,
-   "hash": 2775762842
+   "hash": 4203980984
   },
   {
    "frame": 13780,
-   "hash": 3297137087
+   "hash": 3961242874
   },
   {
    "frame": 13800,
-   "hash": 1470338199
+   "hash": 804949735
   },
   {
    "frame": 13820,
-   "hash": 220339731
+   "hash": 1840234582
   },
   {
    "frame": 13840,
-   "hash": 3238383194
+   "hash": 2843406794
   },
   {
    "frame": 13860,
-   "hash": 2447992154
+   "hash": 1903781587
   },
   {
    "frame": 13880,
-   "hash": 905923350
+   "hash": 3791376343
   },
   {
    "frame": 13900,
-   "hash": 2829623276
+   "hash": 2485470335
   },
   {
    "frame": 13920,
-   "hash": 2073034789
+   "hash": 209260711
   },
   {
    "frame": 13940,
-   "hash": 1171622321
+   "hash": 215451660
   },
   {
    "frame": 13960,
-   "hash": 1622429159
+   "hash": 2443889175
   },
   {
    "frame": 13980,
-   "hash": 740143234
+   "hash": 3319750323
   },
   {
    "frame": 14000,
-   "hash": 863406091
+   "hash": 2282952132
   },
   {
    "frame": 14020,
-   "hash": 3005862966
+   "hash": 2051495853
   },
   {
    "frame": 14040,
-   "hash": 1564414717
+   "hash": 19070813
   },
   {
    "frame": 14060,
-   "hash": 3060663530
+   "hash": 4028485514
   },
   {
    "frame": 14080,
-   "hash": 1466806722
+   "hash": 135683989
   },
   {
    "frame": 14100,
-   "hash": 3171250312
+   "hash": 2724617988
   },
   {
    "frame": 14120,
-   "hash": 4213305931
+   "hash": 3469763989
   },
   {
    "frame": 14140,
-   "hash": 895935411
+   "hash": 2842125053
   },
   {
    "frame": 14160,
-   "hash": 1847209277
+   "hash": 2568382319
   },
   {
    "frame": 14180,
-   "hash": 388356447
+   "hash": 64246890
   },
   {
    "frame": 14200,
-   "hash": 2947481776
+   "hash": 960870709
   },
   {
    "frame": 14220,
-   "hash": 1074302767
+   "hash": 1839763107
   },
   {
    "frame": 14240,
-   "hash": 1163745019
+   "hash": 1151484541
   },
   {
    "frame": 14260,
-   "hash": 758750321
+   "hash": 791091929
   },
   {
    "frame": 14280,
-   "hash": 1918948515
+   "hash": 1575757158
   },
   {
    "frame": 14300,
-   "hash": 3368004615
+   "hash": 1136881735
   },
   {
    "frame": 14320,
-   "hash": 270889118
+   "hash": 1510551161
   },
   {
    "frame": 14340,
-   "hash": 3021474756
+   "hash": 581476869
   },
   {
    "frame": 14360,
-   "hash": 291346261
+   "hash": 3802079777
   },
   {
    "frame": 14380,
-   "hash": 3634755830
+   "hash": 3427659387
   },
   {
    "frame": 14400,
-   "hash": 1134329053
+   "hash": 1536561193
   },
   {
    "frame": 14420,
-   "hash": 775997440
+   "hash": 1008248789
   },
   {
    "frame": 14440,
-   "hash": 2723032730
+   "hash": 877059638
   },
   {
    "frame": 14460,
-   "hash": 3538567198
+   "hash": 3665947004
   },
   {
    "frame": 14480,
-   "hash": 3094744387
+   "hash": 2576219904
   },
   {
    "frame": 14500,
-   "hash": 3762345080
+   "hash": 1828809917
   },
   {
    "frame": 14520,
-   "hash": 905441400
+   "hash": 2594186996
   },
   {
    "frame": 14540,
-   "hash": 2536567107
+   "hash": 3553176541
   },
   {
    "frame": 14560,
-   "hash": 1454487426
+   "hash": 1917976273
   },
   {
    "frame": 14580,
-   "hash": 129807328
+   "hash": 2466904671
   },
   {
    "frame": 14600,
-   "hash": 1210376013
+   "hash": 3933697981
   },
   {
    "frame": 14620,
-   "hash": 2984442328
+   "hash": 204674332
   },
   {
    "frame": 14640,
-   "hash": 923868147
+   "hash": 2422758017
   },
   {
    "frame": 14660,
-   "hash": 3057281311
+   "hash": 613636544
   },
   {
    "frame": 14680,
-   "hash": 2536692639
+   "hash": 2953772420
   },
   {
    "frame": 14700,
-   "hash": 3129764165
+   "hash": 2765656846
   },
   {
    "frame": 14720,
-   "hash": 1312506138
+   "hash": 4147283589
   },
   {
    "frame": 14740,
-   "hash": 1015414284
+   "hash": 503620490
   },
   {
    "frame": 14760,
-   "hash": 2820771756
+   "hash": 1992628352
   },
   {
    "frame": 14780,
-   "hash": 2709816117
+   "hash": 3963148692
   },
   {
    "frame": 14800,
-   "hash": 1559321366
+   "hash": 1658652455
   },
   {
    "frame": 14820,
-   "hash": 1533031200
+   "hash": 2089247973
   },
   {
    "frame": 14840,
-   "hash": 77368374
+   "hash": 2367340233
   },
   {
    "frame": 14860,
-   "hash": 3559683491
+   "hash": 450593834
   },
   {
    "frame": 14880,
-   "hash": 2671222707
+   "hash": 402873894
   },
   {
    "frame": 14900,
-   "hash": 4240646364
+   "hash": 2929088563
   },
   {
    "frame": 14920,
-   "hash": 2540130481
+   "hash": 296207598
   },
   {
    "frame": 14940,
-   "hash": 3104125538
+   "hash": 1920820156
   },
   {
    "frame": 14960,
-   "hash": 471665521
+   "hash": 2822918705
   },
   {
    "frame": 14980,
-   "hash": 243905026
+   "hash": 2608328770
   },
   {
    "frame": 15000,
-   "hash": 2248678250
+   "hash": 2620776725
   },
   {
    "frame": 15020,
-   "hash": 1669019550
+   "hash": 4085918134
   },
   {
    "frame": 15040,
-   "hash": 971553010
+   "hash": 1538502529
   },
   {
    "frame": 15060,
-   "hash": 1849621406
+   "hash": 2545417853
   },
   {
    "frame": 15080,
-   "hash": 2177508426
+   "hash": 109740553
   },
   {
    "frame": 15100,
-   "hash": 20906305
+   "hash": 3376581093
   },
   {
    "frame": 15120,
-   "hash": 3065916759
+   "hash": 16263907
   },
   {
    "frame": 15140,
-   "hash": 1597705722
+   "hash": 2525148410
   },
   {
    "frame": 15160,
-   "hash": 948094041
+   "hash": 2295865029
   },
   {
    "frame": 15180,
-   "hash": 2490564365
+   "hash": 3976415074
   },
   {
    "frame": 15200,
-   "hash": 2908245186
+   "hash": 1755474821
   },
   {
    "frame": 15220,
-   "hash": 3545974315
+   "hash": 2744816338
   },
   {
    "frame": 15240,
-   "hash": 2349821193
+   "hash": 3308710604
   },
   {
    "frame": 15260,
-   "hash": 884556156
+   "hash": 595703983
   },
   {
    "frame": 15280,
-   "hash": 4253266286
+   "hash": 4019297847
   },
   {
    "frame": 15300,
-   "hash": 3882125558
+   "hash": 2920918362
   },
   {
    "frame": 15320,
-   "hash": 3915388919
+   "hash": 4188922191
   },
   {
    "frame": 15340,
-   "hash": 855645996
+   "hash": 132240112
   },
   {
    "frame": 15360,
-   "hash": 1155173514
+   "hash": 3236898289
   },
   {
    "frame": 15380,
-   "hash": 3516273690
+   "hash": 1866996659
   },
   {
    "frame": 15400,
-   "hash": 2847569556
+   "hash": 699293432
   },
   {
    "frame": 15420,
-   "hash": 535169936
+   "hash": 2997292877
   },
   {
    "frame": 15440,
-   "hash": 1747801808
+   "hash": 2906364582
   },
   {
    "frame": 15460,
-   "hash": 3659163738
+   "hash": 2900006441
   },
   {
    "frame": 15480,
-   "hash": 2640429750
+   "hash": 349832838
   },
   {
    "frame": 15500,
-   "hash": 3503724108
+   "hash": 2708059256
   },
   {
    "frame": 15520,
-   "hash": 922481141
+   "hash": 3027257630
   },
   {
    "frame": 15540,
-   "hash": 1423720297
+   "hash": 2632460641
   },
   {
    "frame": 15560,
-   "hash": 88940207
+   "hash": 3553844175
   },
   {
    "frame": 15580,
-   "hash": 704217466
+   "hash": 632792386
   },
   {
    "frame": 15600,
-   "hash": 3907618933
+   "hash": 2431328859
   },
   {
    "frame": 15620,
-   "hash": 2341442457
+   "hash": 428849509
   },
   {
    "frame": 15640,
-   "hash": 1516245756
+   "hash": 2067152122
   },
   {
    "frame": 15660,
-   "hash": 1015704718
+   "hash": 1639335752
   },
   {
    "frame": 15680,
-   "hash": 594293477
+   "hash": 3401722479
   },
   {
    "frame": 15700,
-   "hash": 1971618640
+   "hash": 1413558142
   },
   {
    "frame": 15720,
-   "hash": 2389996612
+   "hash": 7927088
   },
   {
    "frame": 15740,
-   "hash": 1746963367
+   "hash": 2933430789
   },
   {
    "frame": 15760,
-   "hash": 3195434233
+   "hash": 3970217403
   },
   {
    "frame": 15780,
-   "hash": 2540258384
+   "hash": 2160675334
   },
   {
    "frame": 15800,
-   "hash": 715181468
+   "hash": 3377312172
   },
   {
    "frame": 15820,
-   "hash": 3438506980
+   "hash": 1889294522
   },
   {
    "frame": 15840,
-   "hash": 3074472953
+   "hash": 2390496475
   },
   {
    "frame": 15860,
-   "hash": 2202014337
+   "hash": 3091952054
   },
   {
    "frame": 15880,
-   "hash": 1333922741
+   "hash": 3293753408
   },
   {
    "frame": 15900,
-   "hash": 4237316547
+   "hash": 1672298506
   },
   {
    "frame": 15920,
-   "hash": 3400352885
+   "hash": 2447154870
   },
   {
    "frame": 15940,
-   "hash": 2324095024
+   "hash": 3772671118
   },
   {
    "frame": 15960,
-   "hash": 1695959986
+   "hash": 3414713938
   },
   {
    "frame": 15980,
-   "hash": 2009376752
+   "hash": 3374141587
   },
   {
    "frame": 16000,
-   "hash": 892505218
+   "hash": 540185737
   },
   {
    "frame": 16020,
-   "hash": 1498536159
+   "hash": 1468528435
   },
   {
    "frame": 16040,
-   "hash": 4046549800
+   "hash": 1242244264
   },
   {
    "frame": 16060,
-   "hash": 4000065939
+   "hash": 2913933979
   },
   {
    "frame": 16080,
-   "hash": 2716327160
+   "hash": 2178694905
   },
   {
    "frame": 16100,
-   "hash": 2240764818
+   "hash": 1475414020
   },
   {
    "frame": 16120,
-   "hash": 1354540273
+   "hash": 4074179822
   },
   {
    "frame": 16140,
-   "hash": 1842317833
+   "hash": 844123468
   },
   {
    "frame": 16160,
-   "hash": 2344057851
+   "hash": 1686007102
   },
   {
    "frame": 16180,
-   "hash": 2836719849
+   "hash": 3318815062
   },
   {
    "frame": 16200,
-   "hash": 3431295840
+   "hash": 1603518246
   },
   {
    "frame": 16220,
-   "hash": 342143272
+   "hash": 4118164067
   },
   {
    "frame": 16240,
-   "hash": 3046356030
+   "hash": 3342633631
   },
   {
    "frame": 16260,
-   "hash": 1180461967
+   "hash": 2121776113
   },
   {
    "frame": 16280,
-   "hash": 113282799
+   "hash": 4049484010
   },
   {
    "frame": 16300,
-   "hash": 2669449793
+   "hash": 2320563132
   },
   {
    "frame": 16320,
-   "hash": 4011074954
+   "hash": 68829866
   },
   {
    "frame": 16340,
-   "hash": 2112596784
+   "hash": 2640371056
   },
   {
    "frame": 16360,
-   "hash": 825953284
+   "hash": 4252561356
   },
   {
    "frame": 16380,
-   "hash": 2322050403
+   "hash": 2034162601
   },
   {
    "frame": 16400,
-   "hash": 3691464911
+   "hash": 3704739605
   },
   {
    "frame": 16420,
-   "hash": 1271850492
+   "hash": 1934376088
   },
   {
    "frame": 16440,
-   "hash": 3461327358
+   "hash": 2112627388
   },
   {
    "frame": 16460,
-   "hash": 3445226135
+   "hash": 4191196905
   },
   {
    "frame": 16480,
-   "hash": 1587248379
+   "hash": 352160124
   },
   {
    "frame": 16500,
-   "hash": 1675805381
+   "hash": 1418874245
   },
   {
    "frame": 16520,
-   "hash": 3904442693
+   "hash": 662648664
   },
   {
    "frame": 16540,
-   "hash": 3974128829
+   "hash": 248466846
   },
   {
    "frame": 16560,
-   "hash": 2217550631
+   "hash": 324533059
   },
   {
    "frame": 16580,
-   "hash": 3768165133
+   "hash": 2736571036
   },
   {
    "frame": 16600,
-   "hash": 4104535389
+   "hash": 3921170530
   },
   {
    "frame": 16620,
-   "hash": 3176875956
+   "hash": 1303704914
   },
   {
    "frame": 16640,
-   "hash": 2145406137
+   "hash": 3988583081
   },
   {
    "frame": 16660,
-   "hash": 3604967736
+   "hash": 917172101
   },
   {
    "frame": 16680,
-   "hash": 1028407931
+   "hash": 4189215648
   },
   {
    "frame": 16700,
-   "hash": 542920336
+   "hash": 1517301710
   },
   {
    "frame": 16720,
-   "hash": 980554429
+   "hash": 830274857
   },
   {
    "frame": 16740,
-   "hash": 2822061627
+   "hash": 3278103125
   },
   {
    "frame": 16760,
-   "hash": 3019386281
+   "hash": 3260425770
   },
   {
    "frame": 16780,
-   "hash": 2379144989
+   "hash": 241161468
   },
   {
    "frame": 16800,
-   "hash": 2145106331
+   "hash": 1340635010
   },
   {
    "frame": 16820,
-   "hash": 1721002942
+   "hash": 116893931
   },
   {
    "frame": 16840,
-   "hash": 3044099398
+   "hash": 3181301017
   },
   {
    "frame": 16860,
-   "hash": 1716517156
+   "hash": 1441069239
   },
   {
    "frame": 16880,
-   "hash": 580984063
+   "hash": 1594397017
   },
   {
    "frame": 16900,
-   "hash": 2630527602
+   "hash": 1558625959
   },
   {
    "frame": 16920,
-   "hash": 3841536779
+   "hash": 836171933
   },
   {
    "frame": 16940,
-   "hash": 1985297467
+   "hash": 1482916706
   },
   {
    "frame": 16960,
-   "hash": 3778240524
+   "hash": 895673223
   },
   {
    "frame": 16980,
-   "hash": 2010023022
+   "hash": 2309521789
   },
   {
    "frame": 17000,
-   "hash": 2354402350
+   "hash": 438806489
   },
   {
    "frame": 17020,
-   "hash": 3197580862
+   "hash": 3362762896
   },
   {
    "frame": 17040,
-   "hash": 1435377408
+   "hash": 4215091561
   },
   {
    "frame": 17060,
-   "hash": 590672700
+   "hash": 508753962
   },
   {
    "frame": 17080,
-   "hash": 574400100
+   "hash": 1376151412
   },
   {
    "frame": 17100,
-   "hash": 805856402
+   "hash": 1313566944
   },
   {
    "frame": 17120,
-   "hash": 3311128834
+   "hash": 4012851971
   },
   {
    "frame": 17140,
-   "hash": 4239940809
+   "hash": 584847281
   },
   {
    "frame": 17160,
-   "hash": 2788134164
+   "hash": 2207106957
   },
   {
    "frame": 17180,
-   "hash": 2226200864
+   "hash": 2117909521
   },
   {
    "frame": 17200,
-   "hash": 658771846
+   "hash": 1683455146
   },
   {
    "frame": 17220,
-   "hash": 2544287642
+   "hash": 290995821
   },
   {
    "frame": 17240,
-   "hash": 3946834861
+   "hash": 1921885446
   },
   {
    "frame": 17260,
-   "hash": 616706520
+   "hash": 2426336172
   },
   {
    "frame": 17280,
-   "hash": 3260355206
+   "hash": 398162248
   },
   {
    "frame": 17300,
-   "hash": 2050533681
+   "hash": 3151109567
   },
   {
    "frame": 17320,
-   "hash": 518200754
+   "hash": 2905863176
   },
   {
    "frame": 17340,
-   "hash": 3464801804
+   "hash": 1164766999
   },
   {
    "frame": 17360,
-   "hash": 3310998871
+   "hash": 3108817369
   },
   {
    "frame": 17380,
-   "hash": 3239617354
+   "hash": 3486735746
   },
   {
    "frame": 17400,
-   "hash": 466349571
+   "hash": 2086937570
   },
   {
    "frame": 17420,
-   "hash": 2317467280
+   "hash": 4292992400
   },
   {
    "frame": 17440,
-   "hash": 1482760120
+   "hash": 3985112002
   },
   {
    "frame": 17460,
-   "hash": 4199172140
+   "hash": 2804318473
   },
   {
    "frame": 17480,
-   "hash": 832551169
+   "hash": 1012860625
   },
   {
    "frame": 17500,
-   "hash": 904153280
+   "hash": 332330023
   },
   {
    "frame": 17520,
-   "hash": 3963240991
+   "hash": 4151510442
   },
   {
    "frame": 17540,
-   "hash": 1121055380
+   "hash": 46903066
   },
   {
    "frame": 17560,
-   "hash": 61760304
+   "hash": 1605169735
   },
   {
    "frame": 17580,
-   "hash": 1031531160
+   "hash": 4030235865
   },
   {
    "frame": 17600,
-   "hash": 2676272983
+   "hash": 308799777
   },
   {
    "frame": 17620,
-   "hash": 4166174317
+   "hash": 2293203163
   },
   {
    "frame": 17640,
-   "hash": 2600254670
+   "hash": 3396455154
   },
   {
    "frame": 17660,
-   "hash": 3769924827
+   "hash": 3823459200
   },
   {
    "frame": 17680,
-   "hash": 3441672909
+   "hash": 1377479066
   },
   {
    "frame": 17700,
-   "hash": 1945346843
+   "hash": 4041782917
   },
   {
    "frame": 17720,
-   "hash": 2913538896
+   "hash": 1271944706
   },
   {
    "frame": 17740,
-   "hash": 3187291673
+   "hash": 1795135132
   },
   {
    "frame": 17760,
-   "hash": 3437676063
+   "hash": 1562047000
   },
   {
    "frame": 17780,
-   "hash": 1306322498
+   "hash": 1066435521
   },
   {
    "frame": 17800,
-   "hash": 3385514248
+   "hash": 2234041316
   },
   {
    "frame": 17820,
-   "hash": 4212504139
+   "hash": 2417016753
   },
   {
    "frame": 17840,
-   "hash": 2036751523
+   "hash": 311789584
   },
   {
    "frame": 17860,
-   "hash": 2693651786
+   "hash": 2857922250
   },
   {
    "frame": 17880,
-   "hash": 1845499070
+   "hash": 3218319906
   },
   {
    "frame": 17900,
-   "hash": 4292516811
+   "hash": 3192107621
   },
   {
    "frame": 17920,
-   "hash": 3564239750
+   "hash": 4051674076
   },
   {
    "frame": 17940,
-   "hash": 3522620896
+   "hash": 793127728
   },
   {
    "frame": 17960,
-   "hash": 1056367493
+   "hash": 2318399925
   },
   {
    "frame": 17980,
-   "hash": 1941520398
+   "hash": 547685835
   },
   {
    "frame": 18000,
-   "hash": 3452556006
+   "hash": 4023254122
   },
   {
    "frame": 18020,
-   "hash": 4131250489
+   "hash": 264689906
   },
   {
    "frame": 18040,
-   "hash": 3776826173
+   "hash": 527555982
   },
   {
    "frame": 18060,
-   "hash": 1778703418
+   "hash": 4092042282
   },
   {
    "frame": 18080,
-   "hash": 1910760808
+   "hash": 2948562198
   },
   {
    "frame": 18100,
-   "hash": 4178561266
+   "hash": 600919788
   },
   {
    "frame": 18120,
-   "hash": 2636299198
+   "hash": 2019027054
   },
   {
    "frame": 18140,
-   "hash": 2252953249
+   "hash": 2497212250
   },
   {
    "frame": 18160,
-   "hash": 205518011
+   "hash": 1535527639
   },
   {
    "frame": 18180,
-   "hash": 427105739
+   "hash": 1523308974
   },
   {
    "frame": 18200,
-   "hash": 1629574357
+   "hash": 3127173
   },
   {
    "frame": 18220,
-   "hash": 1610347919
+   "hash": 975349003
   },
   {
    "frame": 18240,
-   "hash": 3042166518
+   "hash": 1769769865
   },
   {
    "frame": 18260,
-   "hash": 921184819
+   "hash": 2226162986
   },
   {
    "frame": 18280,
-   "hash": 762701559
+   "hash": 4175792083
   },
   {
    "frame": 18300,
-   "hash": 3848341502
+   "hash": 280815041
   },
   {
    "frame": 18320,
-   "hash": 2041427368
+   "hash": 216093060
   },
   {
    "frame": 18340,
-   "hash": 2282129146
+   "hash": 605319725
   },
   {
    "frame": 18360,
-   "hash": 1031980831
+   "hash": 1973588861
   },
   {
    "frame": 18380,
-   "hash": 4165132957
+   "hash": 3484539115
   },
   {
    "frame": 18400,
-   "hash": 4109409168
+   "hash": 1651338281
   },
   {
    "frame": 18420,
-   "hash": 805095919
+   "hash": 1441040477
   },
   {
    "frame": 18440,
-   "hash": 2603640296
+   "hash": 4203271275
   },
   {
    "frame": 18460,
-   "hash": 1041780073
+   "hash": 1927816487
   },
   {
    "frame": 18480,
-   "hash": 3493710169
+   "hash": 2756993538
   },
   {
    "frame": 18500,
-   "hash": 3097671331
+   "hash": 2582055238
   },
   {
    "frame": 18520,
-   "hash": 3289964267
+   "hash": 3368673583
   },
   {
    "frame": 18540,
-   "hash": 393516182
+   "hash": 2047675298
   },
   {
    "frame": 18560,
-   "hash": 1540568090
+   "hash": 106159406
   },
   {
    "frame": 18580,
-   "hash": 4186068414
+   "hash": 1584183747
   },
   {
    "frame": 18600,
-   "hash": 931511650
+   "hash": 2744746900
   },
   {
    "frame": 18620,
-   "hash": 270051784
+   "hash": 1120455606
   },
   {
    "frame": 18640,
-   "hash": 2901213199
+   "hash": 3948022497
   },
   {
    "frame": 18660,
-   "hash": 420302339
+   "hash": 2831475847
   },
   {
    "frame": 18680,
-   "hash": 4241829556
+   "hash": 815431707
   },
   {
    "frame": 18700,
-   "hash": 1951774846
+   "hash": 2590125436
   },
   {
    "frame": 18720,
-   "hash": 3278106832
+   "hash": 3359599175
   },
   {
    "frame": 18740,
-   "hash": 1753432625
+   "hash": 1692952563
   },
   {
    "frame": 18760,
-   "hash": 1088948338
+   "hash": 2850105499
   },
   {
    "frame": 18780,
-   "hash": 2855450157
+   "hash": 3200045313
   },
   {
    "frame": 18800,
-   "hash": 2167694787
+   "hash": 2897166187
   },
   {
    "frame": 18820,
-   "hash": 3667318601
+   "hash": 1859880021
   },
   {
    "frame": 18840,
-   "hash": 2659519150
+   "hash": 2148730581
   },
   {
    "frame": 18860,
-   "hash": 3254835242
+   "hash": 3450630134
   },
   {
    "frame": 18880,
-   "hash": 3385897914
+   "hash": 315820003
   },
   {
    "frame": 18900,
-   "hash": 3391989761
+   "hash": 1358352150
   },
   {
    "frame": 18920,
-   "hash": 3947137660
+   "hash": 1051592939
   },
   {
    "frame": 18940,
-   "hash": 562565486
+   "hash": 2194575619
   },
   {
    "frame": 18960,
-   "hash": 1181836930
+   "hash": 142730785
   },
   {
    "frame": 18980,
-   "hash": 656127931
+   "hash": 700121358
   },
   {
    "frame": 19000,
-   "hash": 2996259195
+   "hash": 3776970930
   },
   {
    "frame": 19020,
-   "hash": 665551326
+   "hash": 2031475672
   },
   {
    "frame": 19040,
-   "hash": 3239060091
+   "hash": 2014477889
   },
   {
    "frame": 19060,
-   "hash": 3567307580
+   "hash": 1260290464
   },
   {
    "frame": 19080,
-   "hash": 3177544654
+   "hash": 3168920386
   },
   {
    "frame": 19100,
-   "hash": 3985204824
+   "hash": 2784984883
   },
   {
    "frame": 19120,
-   "hash": 486923591
+   "hash": 1441650636
   },
   {
    "frame": 19140,
-   "hash": 3016159634
+   "hash": 3243307673
   },
   {
    "frame": 19160,
-   "hash": 3925839821
+   "hash": 842292780
   },
   {
    "frame": 19180,
-   "hash": 3565183039
+   "hash": 400092515
   },
   {
    "frame": 19200,
-   "hash": 2550238343
+   "hash": 3954077493
   },
   {
    "frame": 19220,
-   "hash": 3807746888
+   "hash": 3867145862
   },
   {
    "frame": 19240,
-   "hash": 925433378
+   "hash": 2347434712
   },
   {
    "frame": 19260,
-   "hash": 336495406
+   "hash": 3359016037
   },
   {
    "frame": 19280,
-   "hash": 4001233050
+   "hash": 3394832258
   },
   {
    "frame": 19300,
-   "hash": 3090358844
+   "hash": 4256518346
   },
   {
    "frame": 19320,
-   "hash": 945780359
+   "hash": 914048159
   },
   {
    "frame": 19340,
-   "hash": 3793190429
+   "hash": 917643726
   },
   {
    "frame": 19360,
-   "hash": 136126497
+   "hash": 722346663
   },
   {
    "frame": 19380,
-   "hash": 789311959
+   "hash": 3869086273
   },
   {
    "frame": 19400,
-   "hash": 1945926417
+   "hash": 925050733
   },
   {
    "frame": 19420,
-   "hash": 3824855062
+   "hash": 4101879065
   },
   {
    "frame": 19440,
-   "hash": 3411852256
+   "hash": 3177195318
   },
   {
    "frame": 19460,
-   "hash": 1298702405
+   "hash": 702167344
   },
   {
    "frame": 19480,
-   "hash": 1642002005
+   "hash": 3989807358
   },
   {
    "frame": 19500,
-   "hash": 91381878
+   "hash": 2234099740
   },
   {
    "frame": 19520,
-   "hash": 3703863909
+   "hash": 1252089939
   },
   {
    "frame": 19540,
-   "hash": 575171180
+   "hash": 2044276021
   },
   {
    "frame": 19560,
-   "hash": 768981547
+   "hash": 1888086584
   },
   {
    "frame": 19580,
-   "hash": 1640706560
+   "hash": 1410635621
   },
   {
    "frame": 19600,
-   "hash": 1239212997
+   "hash": 3723503070
   },
   {
    "frame": 19620,
-   "hash": 1936186063
+   "hash": 191304698
   },
   {
    "frame": 19640,
-   "hash": 3977722323
+   "hash": 3938476237
   },
   {
    "frame": 19660,
-   "hash": 1299426681
+   "hash": 105366431
   },
   {
    "frame": 19680,
-   "hash": 2265627768
+   "hash": 2507577069
   },
   {
    "frame": 19700,
-   "hash": 1835607410
+   "hash": 2878227636
   },
   {
    "frame": 19720,
-   "hash": 3861061765
+   "hash": 3035420003
   },
   {
    "frame": 19740,
-   "hash": 2390632672
+   "hash": 67556373
   },
   {
    "frame": 19760,
-   "hash": 1350735107
+   "hash": 3855837280
   },
   {
    "frame": 19780,
-   "hash": 3472346952
+   "hash": 4294414221
   },
   {
    "frame": 19800,
-   "hash": 3344556695
+   "hash": 33968349
   },
   {
    "frame": 19820,
-   "hash": 2078697328
+   "hash": 449145344
   },
   {
    "frame": 19840,
-   "hash": 3828333119
+   "hash": 3111138042
   },
   {
    "frame": 19860,
-   "hash": 3183387924
+   "hash": 3964295821
   },
   {
    "frame": 19880,
-   "hash": 1781788988
+   "hash": 1373068886
   },
   {
    "frame": 19900,
-   "hash": 626841411
+   "hash": 3608238250
   },
   {
    "frame": 19920,
-   "hash": 570218715
+   "hash": 4233912678
   },
   {
    "frame": 19940,
-   "hash": 4092919606
+   "hash": 3445993792
   },
   {
    "frame": 19960,
-   "hash": 2625504196
+   "hash": 3500767963
   },
   {
    "frame": 19980,
-   "hash": 2205318965
+   "hash": 4025460903
   },
   {
    "frame": 20000,
-   "hash": 2010798015
+   "hash": 2461608880
   },
   {
    "frame": 20020,
-   "hash": 2749973415
+   "hash": 4174904882
   },
   {
    "frame": 20040,
-   "hash": 1390531198
+   "hash": 2727512563
   },
   {
    "frame": 20060,
-   "hash": 784658479
+   "hash": 3560034919
   },
   {
    "frame": 20080,
-   "hash": 1742063679
+   "hash": 3268669974
   },
   {
    "frame": 20100,
-   "hash": 3739749204
+   "hash": 3112368620
   },
   {
    "frame": 20120,
-   "hash": 4097819069
+   "hash": 622792048
   },
   {
    "frame": 20140,
-   "hash": 640168940
+   "hash": 1272404802
   },
   {
    "frame": 20160,
-   "hash": 2040301901
+   "hash": 1349206623
   },
   {
    "frame": 20180,
-   "hash": 2388175729
+   "hash": 3402845453
   },
   {
    "frame": 20200,
-   "hash": 242098949
+   "hash": 516409934
   },
   {
    "frame": 20220,
-   "hash": 2770133515
+   "hash": 1900895786
   },
   {
    "frame": 20240,
-   "hash": 2008483654
+   "hash": 1076762075
   },
   {
    "frame": 20260,
-   "hash": 807448807
+   "hash": 2789958182
   },
   {
    "frame": 20280,
-   "hash": 3392225813
+   "hash": 4252263619
   },
   {
    "frame": 20300,
-   "hash": 4271204715
+   "hash": 2596737568
   },
   {
    "frame": 20320,
-   "hash": 1724728271
+   "hash": 962258916
   },
   {
    "frame": 20340,
-   "hash": 2764682818
+   "hash": 2347650431
   },
   {
    "frame": 20360,
-   "hash": 2483330478
+   "hash": 570714228
   },
   {
    "frame": 20380,
-   "hash": 3345177480
+   "hash": 743023970
   },
   {
    "frame": 20400,
-   "hash": 4132793433
+   "hash": 147873596
   },
   {
    "frame": 20420,
-   "hash": 3637991882
+   "hash": 3931627751
   },
   {
    "frame": 20440,
-   "hash": 2289365318
+   "hash": 462002226
   },
   {
    "frame": 20460,
-   "hash": 3522172102
+   "hash": 27945640
   },
   {
    "frame": 20480,
-   "hash": 3650184789
+   "hash": 1065962729
   },
   {
    "frame": 20500,
-   "hash": 1976881410
+   "hash": 167295687
   },
   {
    "frame": 20520,
-   "hash": 2500246219
+   "hash": 1497786213
   },
   {
    "frame": 20540,
-   "hash": 1377323614
+   "hash": 2047578681
   },
   {
    "frame": 20560,
-   "hash": 2442769218
+   "hash": 2171060783
   },
   {
    "frame": 20580,
-   "hash": 2420728080
+   "hash": 3423502324
   },
   {
    "frame": 20600,
-   "hash": 1272907737
+   "hash": 2780262679
   },
   {
    "frame": 20620,
-   "hash": 1853492044
+   "hash": 2864460580
   },
   {
    "frame": 20640,
-   "hash": 3805075313
+   "hash": 3566395511
   },
   {
    "frame": 20660,
-   "hash": 2272387390
+   "hash": 104445483
   },
   {
    "frame": 20680,
-   "hash": 1145075061
+   "hash": 4266277592
   },
   {
    "frame": 20700,
-   "hash": 1836466496
+   "hash": 1191148233
   },
   {
    "frame": 20720,
-   "hash": 1955241335
+   "hash": 3421076807
   },
   {
    "frame": 20740,
-   "hash": 1841966843
+   "hash": 3507454868
   },
   {
    "frame": 20760,
-   "hash": 2666932689
+   "hash": 3909009823
   },
   {
    "frame": 20780,
-   "hash": 1202938162
+   "hash": 3975410224
   },
   {
    "frame": 20800,
-   "hash": 3586846273
+   "hash": 2402098322
   },
   {
    "frame": 20820,
-   "hash": 1418047597
+   "hash": 2512418866
   },
   {
    "frame": 20840,
-   "hash": 873298907
+   "hash": 4059327070
   },
   {
    "frame": 20860,
-   "hash": 4232394076
+   "hash": 226077459
   },
   {
    "frame": 20880,
-   "hash": 379547457
+   "hash": 2349637195
   },
   {
    "frame": 20900,
-   "hash": 29925875
+   "hash": 735829642
   },
   {
    "frame": 20920,
-   "hash": 2829302146
+   "hash": 4145831871
   },
   {
    "frame": 20940,
-   "hash": 4030626927
+   "hash": 3773120128
   },
   {
    "frame": 20960,
-   "hash": 4094092507
+   "hash": 2104592969
   },
   {
    "frame": 20980,
-   "hash": 2756882033
+   "hash": 178913948
   },
   {
    "frame": 21000,
-   "hash": 614921321
+   "hash": 3561757729
   },
   {
    "frame": 21020,
-   "hash": 2119950295
+   "hash": 3578950563
   },
   {
    "frame": 21040,
-   "hash": 3044785383
+   "hash": 1705088633
   },
   {
    "frame": 21060,
-   "hash": 3773169288
+   "hash": 2539019756
   },
   {
    "frame": 21080,
-   "hash": 1382257656
+   "hash": 3528125700
   },
   {
    "frame": 21100,
-   "hash": 2246993231
+   "hash": 1651661918
   },
   {
    "frame": 21120,
-   "hash": 2777802087
+   "hash": 1341062259
   },
   {
    "frame": 21140,
-   "hash": 3059353859
+   "hash": 1397733908
   },
   {
    "frame": 21160,
-   "hash": 3877475567
+   "hash": 276228214
   },
   {
    "frame": 21180,
-   "hash": 3266829836
+   "hash": 648807880
   },
   {
    "frame": 21200,
-   "hash": 2170880164
+   "hash": 3962078484
   },
   {
    "frame": 21220,
-   "hash": 42754864
+   "hash": 2126222564
   },
   {
    "frame": 21240,
-   "hash": 2614283612
+   "hash": 4162740188
   },
   {
    "frame": 21260,
-   "hash": 3665561542
+   "hash": 2047653562
   },
   {
    "frame": 21280,
-   "hash": 222891027
+   "hash": 4076093567
   },
   {
    "frame": 21300,
-   "hash": 2117480260
+   "hash": 2793616093
   },
   {
    "frame": 21320,
-   "hash": 787079344
+   "hash": 2956782189
   },
   {
    "frame": 21340,
-   "hash": 2834151364
+   "hash": 3009681756
   },
   {
    "frame": 21360,
-   "hash": 2674214790
+   "hash": 3930562175
   },
   {
    "frame": 21380,
-   "hash": 613903326
+   "hash": 3320028150
   },
   {
    "frame": 21400,
-   "hash": 865874613
+   "hash": 3402788344
   },
   {
    "frame": 21420,
-   "hash": 39424952
+   "hash": 2468108545
   },
   {
    "frame": 21440,
-   "hash": 2114475911
+   "hash": 594981515
   },
   {
    "frame": 21460,
-   "hash": 719963099
+   "hash": 79779137
   },
   {
    "frame": 21480,
-   "hash": 2267511688
+   "hash": 758857352
   },
   {
    "frame": 21500,
-   "hash": 1166545801
+   "hash": 3855465646
   },
   {
    "frame": 21520,
-   "hash": 4099383634
+   "hash": 903543733
   },
   {
    "frame": 21540,
-   "hash": 1196529143
+   "hash": 1889393008
   },
   {
    "frame": 21560,
-   "hash": 3300816051
+   "hash": 1440635033
   },
   {
    "frame": 21580,
-   "hash": 1530118314
+   "hash": 3559138422
   },
   {
    "frame": 21600,
-   "hash": 1259784138
+   "hash": 511534604
   },
   {
    "frame": 21620,
-   "hash": 484867964
+   "hash": 422828300
   },
   {
    "frame": 21640,
-   "hash": 3087504659
+   "hash": 1003904403
   },
   {
    "frame": 21660,
-   "hash": 2841334991
+   "hash": 2183950167
   },
   {
    "frame": 21680,
-   "hash": 221148807
+   "hash": 3196089641
   },
   {
    "frame": 21700,
-   "hash": 4049618259
+   "hash": 2802650277
   },
   {
    "frame": 21720,
-   "hash": 3177348575
+   "hash": 2320211518
   },
   {
    "frame": 21740,
-   "hash": 3626763255
+   "hash": 3405125079
   },
   {
    "frame": 21760,
-   "hash": 2187271933
+   "hash": 2906168281
   },
   {
    "frame": 21780,
-   "hash": 528422520
+   "hash": 539657502
   },
   {
    "frame": 21800,
-   "hash": 3140708536
+   "hash": 3881229774
   },
   {
    "frame": 21820,
-   "hash": 2895217398
+   "hash": 585659583
   },
   {
    "frame": 21840,
-   "hash": 2417046921
+   "hash": 3115818071
   },
   {
    "frame": 21860,
-   "hash": 3274195756
+   "hash": 733141352
   },
   {
    "frame": 21880,
-   "hash": 1912017259
+   "hash": 1721506406
   },
   {
    "frame": 21900,
-   "hash": 2806278206
+   "hash": 4179418449
   },
   {
    "frame": 21920,
-   "hash": 4077994308
+   "hash": 1615385717
   },
   {
    "frame": 21940,
-   "hash": 84959842
+   "hash": 3863948554
   },
   {
    "frame": 21960,
-   "hash": 20481800
+   "hash": 1739078293
   },
   {
    "frame": 21980,
-   "hash": 2646679065
+   "hash": 3889037984
   },
   {
    "frame": 22000,
-   "hash": 2939098671
+   "hash": 4174143926
   },
   {
    "frame": 22020,
-   "hash": 384190847
+   "hash": 1712919020
   },
   {
    "frame": 22040,
-   "hash": 3347053303
+   "hash": 1471254118
   },
   {
    "frame": 22060,
-   "hash": 2568280193
+   "hash": 3153364556
   },
   {
    "frame": 22080,
-   "hash": 183488858
+   "hash": 559040969
   },
   {
    "frame": 22100,
-   "hash": 3537545116
+   "hash": 2355429845
   },
   {
    "frame": 22120,
-   "hash": 1015281685
+   "hash": 3969957499
   },
   {
    "frame": 22140,
-   "hash": 75398836
+   "hash": 3212516445
   },
   {
    "frame": 22160,
-   "hash": 2533442395
+   "hash": 84301384
   },
   {
    "frame": 22180,
-   "hash": 1443771790
+   "hash": 4042794639
   },
   {
    "frame": 22200,
-   "hash": 3337777767
+   "hash": 2722657847
   },
   {
    "frame": 22220,
-   "hash": 3456027103
+   "hash": 2233644405
   },
   {
    "frame": 22240,
-   "hash": 2175712004
+   "hash": 4293064305
   },
   {
    "frame": 22260,
-   "hash": 1463560838
+   "hash": 4235882356
   },
   {
    "frame": 22280,
-   "hash": 2150027696
+   "hash": 1222645973
   },
   {
    "frame": 22300,
-   "hash": 2674592916
+   "hash": 3629625586
   },
   {
    "frame": 22320,
-   "hash": 2160361936
+   "hash": 1434810964
   },
   {
    "frame": 22340,
-   "hash": 1280413624
+   "hash": 3049370469
   },
   {
    "frame": 22360,
-   "hash": 3447681036
+   "hash": 599970396
   },
   {
    "frame": 22380,
-   "hash": 793923611
+   "hash": 3757711898
   },
   {
    "frame": 22400,
-   "hash": 541828569
+   "hash": 2493048680
   },
   {
    "frame": 22420,
-   "hash": 3572632231
+   "hash": 3686687200
   },
   {
    "frame": 22440,
-   "hash": 3310220495
+   "hash": 820862941
   },
   {
    "frame": 22460,
-   "hash": 4243070440
+   "hash": 1079058489
   },
   {
    "frame": 22480,
-   "hash": 180746061
+   "hash": 3378463567
   },
   {
    "frame": 22500,
-   "hash": 3994204586
+   "hash": 3642681484
   },
   {
    "frame": 22520,
-   "hash": 3138685701
+   "hash": 2280273074
   },
   {
    "frame": 22540,
-   "hash": 194011907
+   "hash": 2895716948
   },
   {
    "frame": 22560,
-   "hash": 1153021560
+   "hash": 3236833634
   },
   {
    "frame": 22580,
-   "hash": 318456267
+   "hash": 3914427334
   },
   {
    "frame": 22600,
-   "hash": 1557073369
+   "hash": 2635540273
   },
   {
    "frame": 22620,
-   "hash": 2116296690
+   "hash": 2990193658
   },
   {
    "frame": 22640,
-   "hash": 3883247646
+   "hash": 4246574488
   },
   {
    "frame": 22660,
-   "hash": 1913070128
+   "hash": 30902174
   },
   {
    "frame": 22680,
-   "hash": 373092884
+   "hash": 3944696864
   },
   {
    "frame": 22700,
-   "hash": 2401886132
+   "hash": 2877924928
   },
   {
    "frame": 22720,
-   "hash": 833670507
+   "hash": 2074007539
   },
   {
    "frame": 22740,
-   "hash": 1745922862
+   "hash": 3121051586
   },
   {
    "frame": 22760,
-   "hash": 3583457940
+   "hash": 3919996050
   },
   {
    "frame": 22780,
-   "hash": 2826530087
+   "hash": 1868465135
   },
   {
    "frame": 22800,
-   "hash": 4062933429
+   "hash": 2962973456
   },
   {
    "frame": 22820,
-   "hash": 3254124363
+   "hash": 1026291575
   },
   {
    "frame": 22840,
-   "hash": 1453962017
+   "hash": 280334622
   },
   {
    "frame": 22860,
-   "hash": 1626527076
+   "hash": 3045092113
   },
   {
    "frame": 22880,
-   "hash": 2438228946
+   "hash": 2558589044
   },
   {
    "frame": 22900,
-   "hash": 3021669008
+   "hash": 3332288168
   },
   {
    "frame": 22920,
-   "hash": 2178596880
+   "hash": 1842773353
   },
   {
    "frame": 22940,
-   "hash": 1979892149
+   "hash": 3290123620
   },
   {
    "frame": 22960,
-   "hash": 3666005175
+   "hash": 2666324259
   },
   {
    "frame": 22980,
-   "hash": 4216024577
+   "hash": 949874797
   },
   {
    "frame": 23000,
-   "hash": 2396132222
+   "hash": 1825280214
   },
   {
    "frame": 23020,
-   "hash": 3976154837
+   "hash": 2694385091
   },
   {
    "frame": 23040,
-   "hash": 2722172790
+   "hash": 2489969052
   },
   {
    "frame": 23060,
-   "hash": 51009657
+   "hash": 2060860704
   },
   {
    "frame": 23080,
-   "hash": 1045060096
+   "hash": 4108617615
   },
   {
    "frame": 23100,
-   "hash": 1176893655
+   "hash": 457239034
   },
   {
    "frame": 23120,
-   "hash": 1399745569
+   "hash": 2208589007
   },
   {
    "frame": 23140,
-   "hash": 465200498
+   "hash": 4018994660
   },
   {
    "frame": 23160,
-   "hash": 1090436404
+   "hash": 883363344
   },
   {
    "frame": 23180,
-   "hash": 407009890
+   "hash": 53105016
   },
   {
    "frame": 23200,
-   "hash": 2048270367
+   "hash": 1883611756
   },
   {
    "frame": 23220,
-   "hash": 2142916289
+   "hash": 2265301318
   },
   {
    "frame": 23240,
-   "hash": 4065568293
+   "hash": 3950939107
   },
   {
    "frame": 23260,
-   "hash": 2779903423
+   "hash": 1744144563
   },
   {
    "frame": 23280,
-   "hash": 3677566386
+   "hash": 2241576927
   },
   {
    "frame": 23300,
-   "hash": 3368242786
+   "hash": 4215571886
   },
   {
    "frame": 23320,
-   "hash": 3979424646
+   "hash": 3585921066
   },
   {
    "frame": 23340,
-   "hash": 2081279416
+   "hash": 1972461461
   },
   {
    "frame": 23360,
-   "hash": 2600809808
+   "hash": 1893940187
   },
   {
    "frame": 23380,
-   "hash": 1918502992
+   "hash": 548419607
   },
   {
    "frame": 23400,
-   "hash": 1333015404
+   "hash": 1434271063
   },
   {
    "frame": 23420,
-   "hash": 1925867145
+   "hash": 3151334012
   },
   {
    "frame": 23440,
-   "hash": 4129954603
+   "hash": 1454684045
   },
   {
    "frame": 23460,
-   "hash": 1866647315
+   "hash": 1755145586
   },
   {
    "frame": 23480,
-   "hash": 2796941521
+   "hash": 3713092989
   },
   {
    "frame": 23500,
-   "hash": 3749338491
+   "hash": 3234222941
   },
   {
    "frame": 23520,
-   "hash": 2276400716
+   "hash": 1322350772
   },
   {
    "frame": 23540,
-   "hash": 2396752701
+   "hash": 3612486246
   },
   {
    "frame": 23560,
-   "hash": 2268207717
+   "hash": 408118881
   },
   {
    "frame": 23580,
-   "hash": 3547316025
+   "hash": 457832255
   },
   {
    "frame": 23600,
-   "hash": 3067753377
+   "hash": 2809767054
   },
   {
    "frame": 23620,
-   "hash": 3009467750
+   "hash": 838394419
   },
   {
    "frame": 23640,
-   "hash": 3161910263
+   "hash": 3504423923
   },
   {
    "frame": 23660,
-   "hash": 2900706672
+   "hash": 3091030365
   },
   {
    "frame": 23680,
-   "hash": 3216632037
+   "hash": 1323036578
   },
   {
    "frame": 23700,
-   "hash": 1546647680
+   "hash": 3640497310
   },
   {
    "frame": 23720,
-   "hash": 1784583440
+   "hash": 3873434264
   },
   {
    "frame": 23740,
-   "hash": 1508009979
+   "hash": 4260310828
   },
   {
    "frame": 23760,
-   "hash": 1550620768
+   "hash": 3531935432
   },
   {
    "frame": 23780,
-   "hash": 2058502345
+   "hash": 543054548
   },
   {
    "frame": 23800,
-   "hash": 2298051082
+   "hash": 1666853570
   },
   {
    "frame": 23820,
-   "hash": 1363523783
+   "hash": 1877760022
   },
   {
    "frame": 23840,
-   "hash": 214292529
+   "hash": 4279030668
   },
   {
    "frame": 23860,
-   "hash": 2301821970
+   "hash": 3174038496
   },
   {
    "frame": 23880,
-   "hash": 464823474
+   "hash": 2627589553
   },
   {
    "frame": 23900,
-   "hash": 1970915633
+   "hash": 3960016117
   },
   {
    "frame": 23920,
-   "hash": 3625950407
+   "hash": 4290529022
   },
   {
    "frame": 23940,
-   "hash": 3413914778
+   "hash": 2534350148
   },
   {
    "frame": 23960,
-   "hash": 1328715493
+   "hash": 2956334346
   },
   {
    "frame": 23980,
-   "hash": 2543109884
+   "hash": 2940452617
   },
   {
    "frame": 24000,
-   "hash": 775111491
+   "hash": 2500282016
   },
   {
    "frame": 24020,
-   "hash": 3074400620
+   "hash": 1701421060
   },
   {
    "frame": 24040,
-   "hash": 2046159042
+   "hash": 2024771733
   },
   {
    "frame": 24060,
-   "hash": 1256771555
+   "hash": 2931948332
   },
   {
    "frame": 24080,
-   "hash": 2049934640
+   "hash": 872989217
   },
   {
    "frame": 24100,
-   "hash": 539277396
+   "hash": 513172511
   },
   {
    "frame": 24120,
-   "hash": 1317539320
+   "hash": 4013607988
   },
   {
    "frame": 24140,
-   "hash": 666165486
+   "hash": 165955395
   },
   {
    "frame": 24160,
-   "hash": 3237209825
+   "hash": 1921262627
   },
   {
    "frame": 24180,
-   "hash": 2342468712
+   "hash": 707813260
   },
   {
    "frame": 24200,
-   "hash": 863227467
+   "hash": 3578269913
   },
   {
    "frame": 24220,
-   "hash": 3266480209
+   "hash": 501454339
   },
   {
    "frame": 24240,
-   "hash": 2594055714
+   "hash": 1760199989
   },
   {
    "frame": 24260,
-   "hash": 2744505429
+   "hash": 2591682617
   },
   {
    "frame": 24280,
-   "hash": 1750006705
+   "hash": 901032180
   },
   {
    "frame": 24300,
-   "hash": 4173750730
+   "hash": 2157961590
   },
   {
    "frame": 24320,
-   "hash": 1328379793
+   "hash": 979120505
   },
   {
    "frame": 24340,
-   "hash": 3963878371
+   "hash": 79271355
   },
   {
    "frame": 24360,
-   "hash": 3093791153
+   "hash": 367920339
   },
   {
    "frame": 24380,
-   "hash": 77288607
+   "hash": 2528122307
   },
   {
    "frame": 24400,
-   "hash": 484612963
+   "hash": 596279802
   },
   {
    "frame": 24420,
-   "hash": 2377162174
+   "hash": 1541512813
   },
   {
    "frame": 24440,
-   "hash": 3683940147
+   "hash": 3420619597
   },
   {
    "frame": 24460,
-   "hash": 505872611
+   "hash": 3115816672
   },
   {
    "frame": 24480,
-   "hash": 4018517431
+   "hash": 2398915825
   },
   {
    "frame": 24500,
-   "hash": 3735718452
+   "hash": 4180523231
   },
   {
    "frame": 24520,
-   "hash": 3481316131
+   "hash": 3542936097
   },
   {
    "frame": 24540,
-   "hash": 2106518074
+   "hash": 3767166225
   },
   {
    "frame": 24560,
-   "hash": 254487735
+   "hash": 1607791425
   },
   {
    "frame": 24580,
-   "hash": 1745926453
+   "hash": 3669691348
   },
   {
    "frame": 24600,
-   "hash": 2569912342
+   "hash": 4156870649
   },
   {
    "frame": 24620,
-   "hash": 728192621
+   "hash": 2471890272
   },
   {
    "frame": 24640,
-   "hash": 200985628
+   "hash": 163675249
   },
   {
    "frame": 24660,
-   "hash": 1456354372
+   "hash": 958897061
   },
   {
    "frame": 24680,
-   "hash": 1432390528
+   "hash": 836294551
   },
   {
    "frame": 24700,
-   "hash": 1161248596
+   "hash": 4099541254
   },
   {
    "frame": 24720,
-   "hash": 2325668313
+   "hash": 524681983
   },
   {
    "frame": 24740,
-   "hash": 2800546939
+   "hash": 1868604082
   },
   {
    "frame": 24760,
-   "hash": 2372868144
+   "hash": 561383435
   },
   {
    "frame": 24780,
-   "hash": 4096797783
+   "hash": 1026403884
   },
   {
    "frame": 24800,
-   "hash": 3828436708
+   "hash": 2286355828
   },
   {
    "frame": 24820,
-   "hash": 2739769491
+   "hash": 2069373860
   },
   {
    "frame": 24840,
-   "hash": 411659521
+   "hash": 4024443037
   },
   {
    "frame": 24860,
-   "hash": 731497425
+   "hash": 206025918
   },
   {
    "frame": 24880,
-   "hash": 115539514
+   "hash": 435264064
   },
   {
    "frame": 24900,
-   "hash": 2884073573
+   "hash": 606495865
   },
   {
    "frame": 24920,
-   "hash": 3275900125
+   "hash": 1213475002
   },
   {
    "frame": 24940,
-   "hash": 2569169059
+   "hash": 1380552236
   },
   {
    "frame": 24960,
-   "hash": 2111477424
+   "hash": 1017052454
   },
   {
    "frame": 24980,
-   "hash": 364256165
+   "hash": 2485367491
   },
   {
    "frame": 25000,
-   "hash": 2387281674
+   "hash": 1237039682
   },
   {
    "frame": 25020,
-   "hash": 203916744
+   "hash": 746036713
   },
   {
    "frame": 25040,
-   "hash": 3332333419
+   "hash": 2054047385
   },
   {
    "frame": 25060,
-   "hash": 2459523372
+   "hash": 3249230815
   },
   {
    "frame": 25080,
-   "hash": 2501916577
+   "hash": 1906094512
   },
   {
    "frame": 25100,
-   "hash": 1073189942
+   "hash": 2239218942
   },
   {
    "frame": 25120,
-   "hash": 2767522145
+   "hash": 2257198583
   },
   {
    "frame": 25140,
-   "hash": 3769671624
+   "hash": 2623606424
   },
   {
    "frame": 25160,
-   "hash": 2520638220
+   "hash": 4206735631
   },
   {
    "frame": 25180,
-   "hash": 334667455
+   "hash": 3181614495
   },
   {
    "frame": 25200,
-   "hash": 2289884067
+   "hash": 2352163532
   },
   {
    "frame": 25220,
-   "hash": 1276159224
+   "hash": 2187162230
   },
   {
    "frame": 25240,
-   "hash": 1273747983
+   "hash": 2484354989
   },
   {
    "frame": 25260,
-   "hash": 2342990883
+   "hash": 1341185529
   },
   {
    "frame": 25280,
-   "hash": 2159523171
+   "hash": 2293461143
   },
   {
    "frame": 25300,
-   "hash": 423652998
+   "hash": 665772578
   },
   {
    "frame": 25320,
-   "hash": 1262312072
+   "hash": 1476710812
   },
   {
    "frame": 25340,
-   "hash": 439756652
+   "hash": 2229345190
   },
   {
    "frame": 25360,
-   "hash": 3107905829
+   "hash": 192077126
   },
   {
    "frame": 25380,
-   "hash": 3752111884
+   "hash": 16314025
   },
   {
    "frame": 25400,
-   "hash": 569621322
+   "hash": 3158066329
   },
   {
    "frame": 25420,
-   "hash": 2012021581
+   "hash": 3771280473
   },
   {
    "frame": 25440,
-   "hash": 3737505819
+   "hash": 3833744256
   },
   {
    "frame": 25460,
-   "hash": 2073497495
+   "hash": 1428114444
   },
   {
    "frame": 25480,
-   "hash": 4091568919
+   "hash": 4055929831
   },
   {
    "frame": 25500,
-   "hash": 1664550846
+   "hash": 2897152362
   },
   {
    "frame": 25520,
-   "hash": 918385018
+   "hash": 3940424953
   },
   {
    "frame": 25540,
-   "hash": 1917262686
+   "hash": 148636262
   },
   {
    "frame": 25560,
-   "hash": 3048013843
+   "hash": 1416385910
   },
   {
    "frame": 25580,
-   "hash": 733943235
+   "hash": 558601708
   },
   {
    "frame": 25600,
-   "hash": 3655111951
+   "hash": 1594343260
   },
   {
    "frame": 25620,
-   "hash": 1032353803
+   "hash": 3074460911
   },
   {
    "frame": 25640,
-   "hash": 2429273570
+   "hash": 1683163559
   },
   {
    "frame": 25660,
-   "hash": 954401416
+   "hash": 3926457303
   },
   {
    "frame": 25680,
-   "hash": 3407286459
+   "hash": 771300192
   },
   {
    "frame": 25700,
-   "hash": 3205273413
+   "hash": 619656474
   },
   {
    "frame": 25720,
-   "hash": 2657091389
+   "hash": 1934512287
   },
   {
    "frame": 25740,
-   "hash": 2275310348
+   "hash": 4121184396
   },
   {
    "frame": 25760,
-   "hash": 3884390098
+   "hash": 1012327359
   },
   {
    "frame": 25780,
-   "hash": 1347476308
+   "hash": 1929271277
   },
   {
    "frame": 25800,
-   "hash": 2714374698
+   "hash": 4180797672
   },
   {
    "frame": 25820,
-   "hash": 899801492
+   "hash": 3756456437
   },
   {
    "frame": 25840,
-   "hash": 477338389
+   "hash": 241035386
   },
   {
-   "frame": 25844,
-   "hash": 3975607441
+   "frame": 25850,
+   "hash": 2307876943
   }
  ]
 }

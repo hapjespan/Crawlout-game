@@ -31,6 +31,7 @@ import {
 } from './common.js';
 import { pointsOf } from './claims.js';
 import { heroIndex } from './hero.js';
+import { letterRunning, trainCost, trainedOn } from './training.js';
 import { DEPOT_MASK, ROLE_MILITIA } from './orders.js';
 
 // Systeem 2 (AI-deel): de scripted tegenstander, voor elke speler met ai = true, voor de unit-orders; de volgorde van
@@ -53,7 +54,13 @@ import { DEPOT_MASK, ROLE_MILITIA } from './orders.js';
 //     het anker (lokale padafstand), een turret op de weg naar de vijand;
 //  3b. na de bouwvolgorde, boven richScrap: de eerste richBuild waarvan er nog te weinig staan (een verloren gebouw
 //     komt zo terug);
-//  4. onderzoek: de eerste tech uit `research` die er nog niet is, vanaf researchFromTicks;
+//  4. onderzoek: de eerste tech uit `research` die er nog niet is, vanaf researchFromTicks; 4b robots uit de fabriek
+//     (robots.sequence, cyclisch); 4c SPECIAL-training (training.sequence). Data 0.17.0 (reserve): elk van de drie geeft
+//     alleen uit wat boven de reserve zit, en vanaf reserve.fromTicks, met minstens reserve.minArmy leger (militie plus,
+//     met robots.countAsArmy, de pop van de robots) en zonder dreiging, spaart hij voor het eerste doel dat alleen op
+//     scrap wacht (onderzoek, robots, training; vanaf robotsFirstFromTicks robots vóór onderzoek). Omscholen tot militie
+//     gaat dan alleen van wat boven die reserve zit. Training alleen onder die voorwaarde (luxe). Een bouworder die op
+//     de prereqTech van zijn gebouw wacht, spaart voor dat onderzoek. Huisvesting houdt robots.reservePop vrij;
 //  5. claimen: vanaf claimFromTicks neemt een vrije bouwer een neutraal claimpunt: eerst die aan de eigen kant (over land
 //     duidelijk dichter bij het eigen hoofdgebouw dan bij de spawn van de vijand), dan de rest, elk het dichtst bij huis
 //     over land; een onbereikbaar punt nooit. Verder dan claimSafeRadius gaat de militie zonder taak als escorte mee;
@@ -655,6 +662,8 @@ function think(
   // robots (data 0.16.0): geen militie (niet in golfgroottes, niet omgeschoold), wel mee met golven en verdediging
   const robots: number[] = [];
   const idleRobots: number[] = [];
+  // data 0.17.0 (robots.countAsArmy): de pop van de robots telt mee voor de legergrootte van golven, push en reserve
+  let robotArmy = 0;
   let producing = 0;
   let units = 0;
   let militiaPlanned = 0;
@@ -691,6 +700,7 @@ function think(
     const id = w.idOf(i);
     if (isRobot(ctx, i)) {
       robots.push(id);
+      robotArmy += ctx.unitType(w.typeId[i]!)?.popCost ?? 0;
       // een robot die repareert (zonder order, met een doel) is niet vrij
       const repairing = ord === ORDER_NONE && w.target[i] !== NO_ENTITY && w.damage[i]! <= 0;
       if (!repairing && (ord === ORDER_NONE || (ord === ORDER_ATTACK_MOVE && raidOver(ctx, p, i))))
@@ -726,6 +736,8 @@ function think(
   }
 
   const takeBuilder = (): number | undefined => idleBuilders.shift();
+  // legergrootte voor golven, push en reserve: militie plus (met robots.countAsArmy) de pop van de robots
+  const robotWeight = script.robots !== null && script.robots.countAsArmy ? robotArmy : 0;
 
   // 1 de held: oplappen, perk kiezen, ability. Een gesneuvelde held gaat voor: tot hij opgelapt wordt, spaart de AI
   // (geen bouwvolgorde, onderzoek, claims of omscholing die de scrap opmaken).
@@ -751,7 +763,7 @@ function think(
   // kan betalen, wacht de raid en spaart hij (geen huisvesting, bouwvolgorde, onderzoek, claims of omscholing).
   const wave =
     enemy >= 0 && enemySpawn !== null
-      ? waveReady(ctx, p, script, enemy, militia.length, nodes, hq)
+      ? waveReady(ctx, p, script, enemy, militia.length + robotWeight, nodes, hq)
       : null;
   const claimBt = claimType(ctx, p);
   const raidWaits =
@@ -764,6 +776,17 @@ function think(
   let saving = holdScrap;
   // waar hij voor spaart (bouwvolgorde of een nieuwe werkplaats): omscholen tot militie gaat alleen van wat erboven zit
   let reserve = 0;
+
+  // 10a dreiging: de vijandelijke unit bij een eigen gebouw het dichtst bij het hoofdgebouw (data 0.17.0: vooraf, want
+  // onder dreiging spaart hij niet voor onderzoek of training)
+  const threat = hq >= 0 ? findThreat(ctx, scratch, p, hq, script.defendRadius) : -1;
+  // Data 0.17.0 (reserve): vanaf reserve.fromTicks spaart hij voor zijn volgende onderzoek, robot of trainingsrun als
+  // alleen de scrap ontbreekt, zolang zijn leger minstens reserve.minArmy is en er geen dreiging is.
+  const reserveOn =
+    script.reserve !== null &&
+    tick >= script.reserve.fromTicks &&
+    militia.length + robotWeight >= script.reserve.minArmy &&
+    threat < 0;
 
   // 2a werkplaats kwijt (gesloopt): eerst een nieuwe, vóór alles behalve de held. Zonder werkplaats kan hij niet
   // omscholen (geen bouwers, geen leger). Alleen als de bouwvolgorde er al een had; tot hij betaald is, spaart hij.
@@ -798,13 +821,17 @@ function think(
   // 2b huisvesting zodra de pop-cap in zicht komt (zolang de bedden onder de ruimte voor bewoners blijven: popCapMax min
   // de pop van de robots, data 0.16.0)
   const popCap = census.popCap(ctx, p);
+  // de pop voor robots: wat ze nu innemen (ook in productie), en data 0.17.0 minstens robots.reservePop
+  let robotRoom = census.robotPop[p]! + census.reservedPop[p]!;
+  if (script.robots !== null && robotRoom < script.robots.reservePop)
+    robotRoom = script.robots.reservePop;
   const hbt = script.housingTypeId === 0 ? undefined : ctx.buildingType(script.housingTypeId);
   if (
     !saving &&
     fields !== null &&
     hbt !== undefined &&
     !housingSite &&
-    census.beds[p]! < ctx.config.popCapMax - census.robotPop[p]! - census.reservedPop[p]! &&
+    census.beds[p]! < ctx.config.popCapMax - robotRoom &&
     popCap - census.pop[p]! <= script.housingFreeBeds
   ) {
     if (
@@ -836,13 +863,22 @@ function think(
     }
     if (!hasTechs(ctx, p, bt.prereqTech)) {
       const r = researchFor(ctx, p, bt.prereqTech);
-      if (r === RESEARCH_IMPOSSIBLE) {
+      if (r.techId === RESEARCH_IMPOSSIBLE) {
         bi++;
         continue;
       }
-      if (r >= 0)
-        applyCommand(ctx, { playerId: p, seq: 0, type: 'Research', payload: { techId: r } });
-      else saving = true;
+      if (r.techId >= 0)
+        applyCommand(ctx, {
+          playerId: p,
+          seq: 0,
+          type: 'Research',
+          payload: { techId: r.techId },
+        });
+      else {
+        saving = true;
+        // data 0.17.0: wacht de keten alleen op scrap, dan spaart hij ervoor (omscholen alleen van wat erboven zit)
+        reserve = r.cost;
+      }
       break;
     }
     if (ps.scrap[p]! < bt.scrapCost) {
@@ -900,21 +936,45 @@ function think(
     }
   }
 
-  // 4 onderzoek
-  if (!saving && tick >= script.researchFromTicks) {
+  // 4 onderzoek, 4b robots en 4c training (data 0.17.0): elk geeft alleen uit wat boven de reserve zit; met reserveOn
+  // spaart hij voor het eerste doel in de volgorde dat alleen op scrap wacht. Volgorde: onderzoek, robots, training;
+  // vanaf reserve.robotsFirstFromTicks robots vóór onderzoek.
+  const researchStep = (): number => {
+    if (tick < script.researchFromTicks) return 0;
     for (const techId of script.research) {
       if (hasTechs(ctx, p, [techId])) continue;
-      const r = researchFor(ctx, p, [techId]);
-      if (r === RESEARCH_IMPOSSIBLE) continue;
-      if (r >= 0)
-        applyCommand(ctx, { playerId: p, seq: 0, type: 'Research', payload: { techId: r } });
-      break;
+      const r = researchFor(ctx, p, [techId], reserve);
+      if (r.techId === RESEARCH_IMPOSSIBLE) continue;
+      if (r.techId >= 0)
+        applyCommand(ctx, {
+          playerId: p,
+          seq: 0,
+          type: 'Research',
+          payload: { techId: r.techId },
+        });
+      return r.cost;
+    }
+    return 0;
+  };
+  // robots (data 0.16.0): vanaf fromTicks in de fabriek, cyclisch uit de volgorde, tot max levende robots
+  const robotStep = (): number =>
+    script.robots !== null && tick >= script.robots.fromTicks
+      ? produceRobot(ctx, p, script.robots, robots.length + producing, reserve)
+      : 0;
+  // training is luxe: alleen met een leger van minstens reserve.minArmy en zonder dreiging (reserveOn)
+  const trainingStep = (): number =>
+    script.training !== null && tick >= script.training.fromTicks && reserveOn
+      ? trainNext(ctx, p, script.training.programIds, reserve)
+      : 0;
+  if (!saving) {
+    const robotsFirst = script.reserve !== null && tick >= script.reserve.robotsFirstFromTicks;
+    for (const step of robotsFirst
+      ? [robotStep, researchStep, trainingStep]
+      : [researchStep, robotStep, trainingStep]) {
+      const cost = step();
+      if (reserveOn && reserve === 0) reserve = cost;
     }
   }
-
-  // 4b robots (data 0.16.0): vanaf fromTicks in de fabriek, cyclisch uit de volgorde, tot max levende robots
-  if (!saving && script.robots !== null && tick >= script.robots.fromTicks)
-    produceRobot(ctx, p, script.robots, robots.length + producing);
 
   // 5 claimen
   if (!saving && fields !== null && tick >= script.claimFromTicks && idleBuilders.length > 0) {
@@ -979,9 +1039,6 @@ function think(
       });
     }
   }
-
-  // 10a dreiging: de vijandelijke unit bij een eigen gebouw het dichtst bij het hoofdgebouw
-  const threat = hq >= 0 ? findThreat(ctx, scratch, p, hq, script.defendRadius) : -1;
 
   // 8a geen enkele bouwer (ook niet in opleiding) en wel een werkplaats: meteen een bewoner omscholen tot bouwer, ook
   // als hij spaart (bouwen is de uitweg); een plunderaar, en zonder plunderaars een militie
@@ -1108,22 +1165,23 @@ function think(
  * Robotproductie van de AI (data 0.16.0, ai/*.json robots): zolang er minder dan max robots zijn (levend plus in
  * productie), bestelt hij in een vrije eigen fabriek het volgende type uit de volgorde (cyclisch, PlayerState.aiRobot);
  * een type zonder de techs slaat hij over, een type dat hij nog niet kan betalen of dat niet in popCapMax past laat hij
- * wachten.
+ * wachten. Data 0.17.0: alleen van wat boven `reserve` zit; geeft de prijs als hij met een vrije fabriek alleen op scrap
+ * wacht (om voor te sparen), anders 0.
  */
 function produceRobot(
   ctx: SimContext,
   p: number,
   rs: NonNullable<SimAiScript['robots']>,
   have: number,
-): void {
-  if (have >= rs.max) return;
+  reserve: number,
+): number {
+  if (have >= rs.max) return 0;
   const w = ctx.world;
   const n = rs.typeIds.length;
   for (let k = 0; k < n; k++) {
     const at = imod(ctx.ps.aiRobot[p]! + k, n);
     const t = ctx.unitType(rs.typeIds[at]!);
     if (t === undefined || t.producedAtTypeId === 0 || !hasTechs(ctx, p, t.prereqTech)) continue;
-    if (ctx.ps.scrap[p]! < t.scrapCost) return;
     let b = -1;
     for (let i = 0; i < w.highWater && b < 0; i++) {
       if (
@@ -1136,7 +1194,8 @@ function produceRobot(
       )
         b = i;
     }
-    if (b < 0) return;
+    if (b < 0) return 0;
+    if (ctx.ps.scrap[p]! < t.scrapCost + reserve) return t.scrapCost;
     if (
       applyCommand(ctx, {
         playerId: p,
@@ -1146,8 +1205,57 @@ function produceRobot(
       })
     )
       ctx.ps.aiRobot[p] = at + 1 < n ? at + 1 : 0;
-    return;
+    return 0;
   }
+  return 0;
+}
+
+/**
+ * SPECIAL-training van de AI (data 0.17.0, ai/*.json training): de eerste entry k uit de volgorde die nog niet af is
+ * (speler p heeft op die letter minder punten dan het programma in entries 0..k voorkomt, en minder dan maxPoints), niet
+ * al loopt en waarvoor de techs er zijn, in een vrije eigen voltooide trainingsplek. Kan hij hem betalen naast de
+ * reserve, dan start hij hem (0); ontbreekt alleen de scrap, dan de prijs (om voor te sparen); anders 0.
+ */
+function trainNext(
+  ctx: SimContext,
+  p: number,
+  programIds: readonly number[],
+  reserve: number,
+): number {
+  const w = ctx.world;
+  for (let k = 0; k < programIds.length; k++) {
+    const tr = ctx.config.training[programIds[k]!];
+    if (tr === undefined || tr.factionId !== ctx.players[p]!.factionId) continue;
+    let want = 0;
+    for (let q = 0; q <= k; q++) if (programIds[q] === tr.programId) want++;
+    const have = trainedOn(ctx, p, tr);
+    if (have >= want || have >= tr.maxPoints || !hasTechs(ctx, p, tr.prereqTech)) continue;
+    if (letterRunning(ctx, p, tr.special)) continue;
+    let b = -1;
+    for (let i = 0; i < w.highWater && b < 0; i++) {
+      if (
+        w.has(i, C.building) &&
+        w.owner[i] === p &&
+        w.typeId[i] === tr.buildingTypeId &&
+        w.bstate[i] === BSTATE_DONE &&
+        w.hp[i]! > 0 &&
+        w.job[i] === 0 &&
+        w.research[i] === 0
+      )
+        b = i;
+    }
+    if (b < 0) return 0;
+    const cost = trainCost(ctx, p, tr);
+    if (ctx.ps.scrap[p]! < cost + reserve) return cost;
+    applyCommand(ctx, {
+      playerId: p,
+      seq: 0,
+      type: 'Train',
+      payload: { buildingId: w.idOf(b), programId: tr.programId },
+    });
+    return 0;
+  }
+  return 0;
 }
 
 /**
@@ -1371,18 +1479,34 @@ const RESEARCH_WAIT = -1;
 /** researchFor: de keten kan niet (andere factie, of geen eigen gebouw van het type, af of in aanbouw). */
 const RESEARCH_IMPOSSIBLE = -2;
 
+/** Uitkomst van researchFor. */
+interface ResearchStep {
+  /** De tech om nu te onderzoeken, of RESEARCH_WAIT of RESEARCH_IMPOSSIBLE. */
+  readonly techId: number;
+  /** Bij RESEARCH_WAIT omdat alleen de scrap ontbreekt (vrij gebouw, keten klaar): de prijs; anders 0. */
+  readonly cost: number;
+}
+
+const WAIT: ResearchStep = { techId: RESEARCH_WAIT, cost: 0 };
+const IMPOSSIBLE: ResearchStep = { techId: RESEARCH_IMPOSSIBLE, cost: 0 };
+
 /**
  * De tech die speler p nu moet onderzoeken voor `need` (diepte eerst in de prereqTech-keten, in lijstvolgorde): een
- * techId als Research nu kan, anders RESEARCH_WAIT of RESEARCH_IMPOSSIBLE.
+ * techId als Research nu kan, anders RESEARCH_WAIT (met de prijs als alleen de scrap ontbreekt) of RESEARCH_IMPOSSIBLE.
  */
-function researchFor(ctx: SimContext, p: number, need: readonly number[]): number {
+function researchFor(
+  ctx: SimContext,
+  p: number,
+  need: readonly number[],
+  reserve = 0,
+): ResearchStep {
   const w = ctx.world;
   const seen: number[] = [];
-  const visit = (techId: number): number => {
-    if (seen.includes(techId)) return RESEARCH_IMPOSSIBLE; // kring in de prereqTech-keten
+  const visit = (techId: number): ResearchStep => {
+    if (seen.includes(techId)) return IMPOSSIBLE; // kring in de prereqTech-keten
     seen.push(techId);
     const t = ctx.config.techs[techId];
-    if (t === undefined || t.factionId !== ctx.players[p]!.factionId) return RESEARCH_IMPOSSIBLE;
+    if (t === undefined || t.factionId !== ctx.players[p]!.factionId) return IMPOSSIBLE;
     for (const q of t.prereqTech) {
       if (hasTechs(ctx, p, [q])) continue;
       return visit(q);
@@ -1391,19 +1515,23 @@ function researchFor(ctx: SimContext, p: number, need: readonly number[]): numbe
     let free = false;
     for (let i = 0; i < w.highWater; i++) {
       if (!w.has(i, C.building) || w.owner[i] !== p) continue;
-      if (w.research[i] === t.techId + 1) return RESEARCH_WAIT; // loopt al
+      if (w.research[i] === t.techId + 1) return WAIT; // loopt al
       if (w.typeId[i] !== t.buildingTypeId) continue;
       exists = true;
       if (w.bstate[i] === BSTATE_DONE && w.research[i] === 0 && w.job[i] === 0) free = true;
     }
-    if (!exists) return RESEARCH_IMPOSSIBLE;
-    return free && ctx.ps.scrap[p]! >= researchCost(ctx, p, t) ? t.techId : RESEARCH_WAIT;
+    if (!exists) return IMPOSSIBLE;
+    if (!free) return WAIT;
+    const cost = researchCost(ctx, p, t);
+    return ctx.ps.scrap[p]! >= cost + reserve
+      ? { techId: t.techId, cost: 0 }
+      : { techId: RESEARCH_WAIT, cost };
   };
   for (const techId of need) {
     if (hasTechs(ctx, p, [techId])) continue;
     return visit(techId);
   }
-  return RESEARCH_WAIT;
+  return WAIT;
 }
 
 function heroThink(ctx: SimContext, p: number, hq: number): void {

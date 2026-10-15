@@ -28,7 +28,7 @@ export const trainTicks = (ctx: SimContext, p: number, tr: SimTraining): number 
   tr.trainTicks + tr.trainTicksStep * trainedOn(ctx, p, tr);
 
 /** Of speler p ergens een programma op letter `special` heeft lopen. */
-function letterRunning(ctx: SimContext, p: number, special: number): boolean {
+export function letterRunning(ctx: SimContext, p: number, special: number): boolean {
   const w = ctx.world;
   for (let i = 0; i < w.highWater; i++) {
     if (!w.has(i, C.building) || w.owner[i] !== p || w.jobKind[i] !== JOB_TRAIN) continue;

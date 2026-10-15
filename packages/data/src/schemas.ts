@@ -433,6 +433,34 @@ export const AiScript = z
         sequence: z.array(id).min(1), // loadouts in cyclische volgorde; een nog niet beschikbare slaat hij over
         fromS: nonneg, // vanaf deze speeltijd
         max: z.number().int().positive(), // hoogstens zoveel levende robots
+        // data 0.17.0 (proposal, pending architect confirmation): robots count with their popCost toward
+        // waveMinArmy, pushMinArmy and reserve.minArmy
+        countAsArmy: z.boolean().optional(),
+        // data 0.17.0 (proposal): the AI keeps this much pop free for robots (no housing beyond
+        // popCapMax - reservePop beds)
+        reservePop: z.number().int().nonnegative().optional(),
+      })
+      .strict()
+      .optional(),
+    // Data 0.17.0 (proposal, pending architect confirmation): spending rules for the tech tree (optional). From fromS
+    // on, with at least minArmy army and no enemy at its buildings, the AI saves for the first goal that only misses
+    // scrap, in the order research, robots, training (robots first from robotsFirstFromS); recruiting militia only
+    // spends what is above that reserve.
+    reserve: z
+      .object({
+        fromS: nonneg,
+        minArmy: z.number().int().nonnegative(),
+        robotsFirstFromS: nonneg, // from then on robots come before research
+      })
+      .strict()
+      .optional(),
+    // Data 0.17.0 (proposal, pending architect confirmation): SPECIAL training of the AI (optional): from fromS on,
+    // one run at a time per training building, in this order; a program listed n times is trained up to n points
+    // (never past its maxPoints); only under the reserve condition.
+    training: z
+      .object({
+        sequence: z.array(id).min(1),
+        fromS: nonneg,
       })
       .strict()
       .optional(),

@@ -338,7 +338,23 @@ export interface SimAiScript {
     readonly typeIds: readonly number[];
     readonly fromTicks: number;
     readonly max: number;
+    /** Data 0.17.0: robots count with their popCost toward waveMinArmy, pushMinArmy and reserve.minArmy. */
+    readonly countAsArmy: boolean;
+    /** Data 0.17.0: the AI keeps this much pop free for robots (housing only up to popCapMax - reservePop beds). */
+    readonly reservePop: number;
   } | null;
+  /**
+   * Spending rules for the tech tree (data 0.17.0): from fromTicks on, the next research (or training run) that only
+   * misses scrap is saved for while the AI has at least minArmy militia and no threat; null = never.
+   */
+  readonly reserve: {
+    readonly fromTicks: number;
+    readonly minArmy: number;
+    /** From then on robots come before research in the order of goals. */
+    readonly robotsFirstFromTicks: number;
+  } | null;
+  /** SPECIAL training (data 0.17.0): programIds in order (a program n times = up to n points); null = none. */
+  readonly training: { readonly programIds: readonly number[]; readonly fromTicks: number } | null;
 }
 
 export interface SimConfig {
@@ -597,7 +613,7 @@ export function validateEnv(env: SimEnv): void {
       `${at}: footprint`,
     );
     req(
-      intIn(b.provides, 0, 0xff) && intIn(b.factionId, 0, config.factions.length - 1),
+      intIn(b.provides, 0, 0xffff) && intIn(b.factionId, 0, config.factions.length - 1),
       `${at}: provides of factionId`,
     );
     for (const t of b.prereqTech) req(intIn(t, 0, U16), `${at}: prereqTech`);
@@ -866,8 +882,24 @@ export function validateEnv(env: SimEnv): void {
         s.robots.typeIds.length > 0 &&
           s.robots.typeIds.every((t) => unitIds.has(t)) &&
           intIn(s.robots.fromTicks, 0, I31) &&
-          intIn(s.robots.max, 0, 4096),
+          intIn(s.robots.max, 0, 4096) &&
+          typeof s.robots.countAsArmy === 'boolean' &&
+          intIn(s.robots.reservePop, 0, 4096),
         'aiScript robots',
+      );
+    if (s.reserve !== null)
+      req(
+        intIn(s.reserve.fromTicks, 0, I31) &&
+          intIn(s.reserve.minArmy, 0, 4096) &&
+          intIn(s.reserve.robotsFirstFromTicks, 0, I31),
+        'aiScript reserve',
+      );
+    if (s.training !== null)
+      req(
+        s.training.programIds.length > 0 &&
+          s.training.programIds.every((t) => intIn(t, 0, config.training.length - 1)) &&
+          intIn(s.training.fromTicks, 0, I31),
+        'aiScript training',
       );
   }
   for (const p of players) {
@@ -1052,8 +1084,21 @@ export function envHash(env: SimEnv): number {
       s.waveArmyGrowth,
       s.waveMaxWaitTicks,
     ]);
-    h = hashInts(h, s.robots === null ? [0] : [1, s.robots.fromTicks, s.robots.max]);
+    h = hashInts(
+      h,
+      s.robots === null
+        ? [0]
+        : [1, s.robots.fromTicks, s.robots.max, s.robots.countAsArmy ? 1 : 0, s.robots.reservePop],
+    );
     if (s.robots !== null) h = hashInts(h, s.robots.typeIds);
+    h = hashInts(
+      h,
+      s.reserve === null
+        ? [0]
+        : [1, s.reserve.fromTicks, s.reserve.minArmy, s.reserve.robotsFirstFromTicks],
+    );
+    h = hashInts(h, s.training === null ? [0] : [1, s.training.fromTicks]);
+    if (s.training !== null) h = hashInts(h, s.training.programIds);
   }
   h = fnv1aInt(h, c.techs.length);
   for (const t of c.techs) {

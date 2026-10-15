@@ -5,7 +5,7 @@ import { BSTATE_DONE, C, JOB_NONE, JOB_PRODUCE, NO_ENTITY, ORDER_NONE } from '..
 import { hasTechs } from '../effects.js';
 import { createUnit } from '../entities.js';
 import { idiv, imod, isInt } from '../math/int.js';
-import { isRobot } from './census.js';
+import { Census, isRobot, takeCensus } from './census.js';
 import type { SimContext } from './common.js';
 import {
   SPAWN_SPREAD,
@@ -87,21 +87,6 @@ export function robotRulesSystem(ctx: SimContext, r: RobotRates): void {
   }
 }
 
-/** Totale pop van speler p: bewoners, robots en robots in productie (zonder de held). */
-export function totalPop(ctx: SimContext, p: number): number {
-  const w = ctx.world;
-  let pop = 0;
-  for (let i = 0; i < w.highWater; i++) {
-    if (w.alive[i] !== 1 || w.owner[i] !== p) continue;
-    const m = w.mask[i]!;
-    if ((m & (C.unit | C.health | C.hero)) === (C.unit | C.health))
-      pop += ctx.unitType(w.typeId[i]!)?.popCost ?? 0;
-    else if ((m & C.building) !== 0 && w.jobKind[i] === JOB_PRODUCE && w.job[i] !== 0)
-      pop += ctx.unitType(w.job[i]!)?.popCost ?? 0;
-  }
-  return pop;
-}
-
 /** Het type dat een Produce in gebouw b kan bouwen (eigen factie, producedAt dit gebouw), of undefined. */
 function producible(
   ctx: SimContext,
@@ -149,7 +134,10 @@ export function applyProduce(ctx: SimContext, p: number, pl: CommandPayload<'Pro
   const t = producible(ctx, p, b, pl.loadoutId);
   if (t === undefined || !hasTechs(ctx, p, t.prereqTech) || ctx.ps.scrap[p]! < t.scrapCost)
     return false;
-  if (totalPop(ctx, p) + t.popCost > ctx.config.popCapMax) return false;
+  // total pop from a fresh census (the single source: Census.totalPop; a command can change it within a tick)
+  const census = new Census();
+  takeCensus(ctx, census);
+  if (census.totalPop(p) + t.popCost > ctx.config.popCapMax) return false;
   const w = ctx.world;
   ctx.ps.scrap[p] = ctx.ps.scrap[p]! - t.scrapCost;
   w.job[b] = t.typeId;
