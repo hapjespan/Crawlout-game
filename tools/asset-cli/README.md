@@ -139,6 +139,22 @@ Validatie per LOD (faalt de build): binnen de footprint (5 procent), vulling en 
 
 Preview voor eigen controle: `tools/asset-cli/preview/characters.html` tekent de karakters uit een manifest in rustpose met het teammasker uit het manifest (`?manifest=/assets/dist-local/manifest.json&az=0&el=6`, opties `only`, `lod`, `team`, `debug=mask|normals|flat`); `tools/asset-cli/preview/buildings.html` (three.js, geen onderdeel van de buis) tekent de gebouwen uit `assets/dist` met footprint-raster, een maatstaf van 1,8 m en team-materialen in een spelerskleur; serveer de repo-root statisch en open `/tools/asset-cli/preview/buildings.html?manifest=/assets/dist/manifest.json&lod=0` (opties: `lod`, `only`, `az`, `el`, `debug=materials`).
 
+## Robots (`src/robots.ts`, `assets/src/robots.json`)
+
+Placeholders uit basisvormen (box, cylinder, cone) op echte schaal (poppetje 1,8 m), gebouwd zoals de gebouw-varianten (zelfde `parts`-formaat, `maxLod` en `minLod` voor detail per LOD; vormen worden niet gesimplificeerd, de LODs ontstaan uit de onderdelen). Alles staat in `robots.json`: `flatMaterials`, `units` (rigide units) en `buildings` (footprint, oneven cellen, volgt de bounds). Per id moet een maat-bereik (`heightM`, bij units ook `widthM` en `depthM`) kloppen, anders faalt de build.
+
+Rigide units (`kind: 'rigid-unit'`): geen skelet, geen animaties, geen bake; beweging is een transform van het hele model. Manifest-velden (contract met render, `src/manifest.ts`):
+
+| Veld | Betekenis |
+| --- | --- |
+| `kind: 'rigid-unit'` | star model |
+| `rigid: true` | verplicht bij dit kind |
+| `bounds` | meters, modelruimte, kijkt naar +Z, midden op x = z = 0 |
+| `teamMaterials` | namen van de materialen met de spelerskleur (`['team_trim']`), `teamMask: 'materialName'` |
+| `hover` | optioneel, alleen zwevers (drone): meter van de onderkant boven de grond. De zweefhoogte zit al in het model (`bounds.min.y == hover`); render telt `hover` er niet bij op, maar gebruikt het voor schaduwvlek, selectiering en healthbar |
+
+`boneCount` is 0 en `footprint` ontbreekt. Preview: `tools/asset-cli/preview/robots.html` (serveer de repo-root statisch; opties `lod`, `az`, `team`, `only`).
+
 ## KTX2
 
 KTX2 is optioneel. Staat `toktx` (KTX-Software) op PATH, dan worden PNG-textures per LOD naar KTX2 (UASTC) omgezet. Ontbreekt hij, dan blijven textures PNG en meldt de CLI dat als waarschuwing. Dat is geen fout. De toktx-route is in sprint 1 niet getest (geen binary beschikbaar).
