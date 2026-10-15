@@ -25,10 +25,10 @@ export function thinTier(category: PropCategory): ThinTier {
   }
 }
 
-/** Per tier, the share of `thinDistance` at which thinning starts: ground cover thins from half the distance. */
-export const TIER_THIN_SCALE: readonly [number, number, number] = [0.5, 0.8, 1];
+/** Per tier, the share of `thinDistance` at which thinning starts: ground cover thins from 65 percent of the distance (it is small, so it is the first to vanish into the ground). */
+export const TIER_THIN_SCALE: readonly [number, number, number] = [0.65, 0.8, 1];
 /** Per tier, the share of `minDensity` a far chunk keeps at the least. */
-export const TIER_MIN_DENSITY_SCALE: readonly [number, number, number] = [0.3, 0.7, 1];
+export const TIER_MIN_DENSITY_SCALE: readonly [number, number, number] = [0.5, 0.7, 1];
 
 /** Share of a chunk's props of `tier` drawn at distance `d` before the budget cap: 1 up to the tier's thin distance. */
 export function tierDensity(

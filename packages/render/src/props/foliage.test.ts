@@ -321,8 +321,8 @@ describe('PropLayer: mask variants', () => {
 describe('instanceTint', () => {
   const out: [number, number, number] = [0, 0, 0];
 
-  it('keeps brightness within 8 percent and red against blue within 8 percent for trees, grass and plants', () => {
-    for (const c of ['tree-leafy', 'tree-bare', 'grass', 'plant'] as const) {
+  it('keeps brightness within 8 percent and red against blue within 8 percent for trees and plants', () => {
+    for (const c of ['tree-leafy', 'tree-bare', 'plant'] as const) {
       for (let i = 0; i <= 10; i++)
         for (let j = 0; j <= 10; j++) {
           instanceTint(c, i / 10, j / 10, 1, out);
@@ -333,6 +333,17 @@ describe('instanceTint', () => {
           expect(out[0] / out[2]).toBeLessThanOrEqual(1.09);
         }
     }
+  });
+
+  it('freshens grass: greener and brighter than the art, within its own variation', () => {
+    for (let i = 0; i <= 10; i++)
+      for (let j = 0; j <= 10; j++) {
+        instanceTint('grass', i / 10, j / 10, 1, out);
+        expect(out[1]).toBeGreaterThan(out[0]);
+        expect(out[1]).toBeGreaterThan(out[2]);
+        expect(out[1]).toBeGreaterThan(1.3);
+        expect(out[1]).toBeLessThan(2.8);
+      }
   });
 
   it('tints foliage and keeps rocks and crates grey, applying the asset gain', () => {
@@ -359,9 +370,9 @@ describe('thinning order per category', () => {
     const thin = 160;
     const min = 0.15;
     expect(tierDensity(0, 70, thin, min)).toBe(1);
-    expect(tierDensity(0, 100, thin, min)).toBeLessThan(1);
+    expect(tierDensity(0, 110, thin, min)).toBeLessThan(1);
     expect(tierDensity(2, 100, thin, min)).toBe(1);
-    for (const d of [90, 130, 200, 400]) {
+    for (const d of [110, 130, 200, 400]) {
       expect(tierDensity(0, d, thin, min)).toBeLessThan(tierDensity(1, d, thin, min));
       expect(tierDensity(1, d, thin, min)).toBeLessThanOrEqual(tierDensity(2, d, thin, min));
     }
