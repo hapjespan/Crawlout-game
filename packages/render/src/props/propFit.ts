@@ -5,6 +5,8 @@
 // The fit is a target height per asset id, with a fallback per kind (read from the id); an asset with neither keeps
 // its own size. Replacing an asset keeps the target, so a new tree mesh lands at the same height without code.
 
+import type { PropCategory } from './propCategory.js';
+
 export type PropKind = 'tree' | 'rock' | 'bush' | 'grass' | 'reed' | 'other';
 
 /** Target height in meters at scalePct 100, per asset id (manifest id, the source file name in lower case). */
@@ -31,6 +33,20 @@ export const PROP_KIND_HEIGHT: Readonly<Record<PropKind, number | null>> = {
   other: null,
 };
 
+/** Fallback target height per manifest category (more precise than the kind), null: the asset keeps its own size. */
+export const PROP_CATEGORY_HEIGHT: Readonly<Record<PropCategory, number | null>> = {
+  'tree-leafy': 5,
+  'tree-bare': 5,
+  grass: 0.45,
+  plant: 0.7,
+  rock: 1.3,
+  crate: null,
+  chest: null,
+  barrel: null,
+  structure: null,
+  debris: null,
+};
+
 /** Kind of a prop from its asset id (tree, rock, bush, grass, reed), for the fit fallback and the placeholder shape. */
 export function propKindOf(assetId: string): PropKind {
   const id = assetId.toLowerCase();
@@ -42,13 +58,19 @@ export function propKindOf(assetId: string): PropKind {
   return 'other';
 }
 
-/** Target height (m) of an asset: `overrides`, then PROP_TARGET_HEIGHT, then the kind; null keeps the asset's size. */
+/**
+ * Target height (m) of an asset: `overrides`, then PROP_TARGET_HEIGHT, then the manifest `category` (when it has a
+ * height), then the kind read from the id; null keeps the asset's size.
+ */
 export function propTargetHeight(
   assetId: string,
   overrides?: Readonly<Record<string, number>>,
+  category?: PropCategory | null,
 ): number | null {
   const own = overrides?.[assetId] ?? PROP_TARGET_HEIGHT[assetId];
   if (own !== undefined) return own;
+  const byCategory = category ? PROP_CATEGORY_HEIGHT[category] : null;
+  if (byCategory !== null) return byCategory;
   return PROP_KIND_HEIGHT[propKindOf(assetId)];
 }
 
@@ -57,8 +79,9 @@ export function propFitScale(
   assetId: string,
   meshHeight: number,
   overrides?: Readonly<Record<string, number>>,
+  category?: PropCategory | null,
 ): number {
-  const target = propTargetHeight(assetId, overrides);
+  const target = propTargetHeight(assetId, overrides, category);
   if (target === null || !(meshHeight > 1e-4)) return 1;
   return target / meshHeight;
 }

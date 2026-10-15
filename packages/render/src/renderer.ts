@@ -55,6 +55,7 @@ import {
   type ResolvedSource,
 } from './props/propAssets.js';
 import { PropLayer, type PropLayerOptions, type RenderProp } from './props/propLayer.js';
+import { windOf } from './props/propWind.js';
 import {
   buildingMeshes,
   loadBuildingAssets,
@@ -138,7 +139,13 @@ export interface CreateRendererOptions {
    * Prop budget: most props drawn at once (default 3000), full density within thinDistance (default 160 m), at least
    * minDensity of a far chunk before the cap (default 0.15), most blob shadows (default 768).
    */
-  props?: Pick<PropLayerOptions, 'maxVisible' | 'thinDistance' | 'minDensity' | 'maxBlobs'>;
+  props?: Pick<PropLayerOptions, 'maxVisible' | 'thinDistance' | 'minDensity' | 'maxBlobs'> & {
+    /**
+     * Light wind sway of foliage (trees with leaves, grass, plants; props/propWind.ts). Default true; false holds
+     * them still. Can be switched at runtime with `setPropWind`.
+     */
+    wind?: boolean;
+  };
   /**
    * Building assets (kind 'building') from the `assets` manifest for the building types whose visuals.mesh it has,
    * loaded by setGameData. Default true; false keeps the placeholder blocks.
@@ -258,6 +265,8 @@ export interface CrawloutRenderer {
   setProps(props: readonly RenderProp[], source?: PropSourceOptions): Promise<PropAssetStatus[]>;
   /** Status of every prop asset of the current props. */
   propAssets(): PropAssetStatus[];
+  /** Turns the wind sway of foliage (trees with leaves, grass, plants) on or off; no recompile. */
+  setPropWind(enabled: boolean): void;
   /** Shows a ghost footprint at a sim position, or hides it with null. */
   setPlacementPreview(preview: PlacementPreview | null): void;
   /** What lies under canvas-local CSS pixel (x, y). Units, buildings, scrap nodes and claim points can be hit. */
@@ -448,19 +457,27 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
       claim: createPropMaterial({ lightDir: DEFAULT_LIGHT_DIR, name: 'crawlout-claim-toon', time }),
     },
   });
+  const windStrength = uniform(opts.props?.wind === false ? 0 : 1);
   const props = new PropLayer(scene, {
     ...opts.props,
     maxBlobs: propBlobs,
     screen,
     heightAt: (x, z) => terrain.heightAt(x, z),
-    material: (map) =>
-      createPropMaterial({
+    material: ({ map, layers, mask, category, height }) => {
+      const wind = windOf(category);
+      return createPropMaterial({
         lightDir: DEFAULT_LIGHT_DIR,
-        name: 'crawlout-prop-toon',
+        name: mask ? 'crawlout-prop-toon-mask' : 'crawlout-prop-toon',
         shadow: sun?.factor,
         map,
+        layers,
         grade: PROP_GRADE,
-      }),
+        alphaMask: mask,
+        ...(wind && height > 1e-4
+          ? { wind: { ...wind, height, time, strength: windStrength } }
+          : {}),
+      });
+    },
   });
   const propRegistry = new PropAssetRegistry({
     manifest: (url) => loader.manifest(url),
@@ -734,6 +751,7 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
         sourceUrl: source.sourceUrl,
         placeholders: source.placeholders ?? true,
         heights: source.heights,
+        categories: source.categories,
       };
       propStatuses = new Map(
         props
@@ -749,12 +767,17 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
           const r = await propRegistry.resolve(assetId, src);
           if (generation !== propGeneration) return;
           const g = gainOf(assetId);
-          props.setVisual(assetId, r.visual && g !== undefined ? { ...r.visual, gain: g } : r.visual);
+          props.setVisual(
+            assetId,
+            r.visual && g !== undefined ? { ...r.visual, gain: g } : r.visual,
+          );
           const status = current.get(assetId)!;
           status.state = 'ready';
           status.origin = r.origin;
           if (r.reasons.length > 0) status.reason = r.reasons.join('; ');
           if (r.triangles) status.triangles = r.triangles;
+          if (r.visual?.category) status.category = r.visual.category;
+          if (r.visual?.mask) status.mask = true;
           if (r.visual) status.height = Math.round(r.visual.height * r.visual.fit * 100) / 100;
           if (r.origin !== 'manifest' && r.reasons.some((m) => !m.startsWith('not in')))
             console.warn(`[render] prop "${assetId}": ${status.reason}`);
@@ -764,6 +787,9 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
       return [...current.values()].map((st) => ({ ...st }));
     },
     propAssets: () => [...propStatuses.values()].map((st) => ({ ...st })),
+    setPropWind(enabled) {
+      windStrength.value = enabled ? 1 : 0;
+    },
     setPlacementPreview(p) {
       preview = p ? { ...p } : null;
     },
