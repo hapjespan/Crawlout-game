@@ -1,6 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it, vi } from 'vitest';
+import { Vector3 } from 'three';
 import { manifestSchema, type AssetManifest } from '@crawlout/asset-cli/manifest';
 import { createGltfIO } from '../units/unitAssetLoader.js';
 import { buildingMeshes, loadBuildingAssets, type BuildingAssetIO } from './buildingAssets.js';
@@ -58,7 +59,7 @@ describe('building assets from assets/dist', () => {
     const hq = set.visuals.get('dweller_building_hq')!;
     expect(hq.footprint).toEqual({ w: 21, h: 21 });
     expect(hq.height).toBeCloseTo(13.1, 1);
-    expect(hq.triangles).toEqual([2341, 939, 288]);
+    expect(hq.triangles).toEqual([2345, 939, 288]);
     const g = hq.lods[0];
     for (const name of ['position', 'normal', 'color', 'uvl'])
       expect(g.getAttribute(name)).toBeDefined();
@@ -82,8 +83,12 @@ describe('building assets from assets/dist', () => {
     expect(outside).toBe(true); // tiling uv's survive
     g.computeBoundingBox();
     expect(g.boundingBox!.min.y).toBeCloseTo(0, 2);
-    expect(g.boundingBox!.max.x).toBeCloseTo(10.5, 1);
-    expect(g.boundingBox!.min.z).toBeCloseTo(-10.5, 1);
+    // No ground plate under the building any more: the model stands inside its 21 x 21 footprint and fills most of it.
+    const size = g.boundingBox!.getSize(new Vector3());
+    expect(size.x).toBeGreaterThan(21 * 0.85);
+    expect(size.x).toBeLessThanOrEqual(21 * 1.05);
+    expect(size.z).toBeGreaterThan(21 * 0.85);
+    expect(size.z).toBeLessThanOrEqual(21 * 1.05);
 
     // One shared array: frame_wood, plank_grey, roof, wall_paint (LOD 1 and 2 reuse the LOD 0 layers).
     expect(set.layers).not.toBeNull();
