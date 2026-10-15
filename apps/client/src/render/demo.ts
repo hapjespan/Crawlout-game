@@ -14,7 +14,8 @@
 // greybox (rockTerrain.ts), ?terrain=map is the slice map's own greybox, ?terrain=wave the old synthetic hills; the
 // detail texture and tints come from assets/dist/terrain/terrain.json (?tex=0: tints only). ?detail=<n> sets the
 // render-only subdivision (0 draws the greybox as delivered). window.crawloutBench() runs the camera measurement
-// (bench.ts); ?bench starts it on load and logs the result.
+// (bench.ts); ?bench starts it on load and logs the result. ?shadows=0 turns the sun shadow off, ?shadows=low or
+// ?detail=1 lowers its quality (shadows.ts).
 // ?xl is the synthetic 384 x 384 m map (xlWorld.ts): Rock Terrain 4 tiled three times each way, a river with three
 // fords through setWater, a forest border, groves and loose trees (6000) plus rocks and bushes; units and buildings
 // over the whole map. ?water=0 leaves the water out. ?xl&foliage swaps the trees for synthetic alpha-tested ones
@@ -39,6 +40,7 @@ import { loadClientGameData, loadClientMap } from '../game/content.js';
 import { runBench } from './bench.js';
 import { loadMapProps, propSource } from './props.js';
 import { greyboxFromHeights, rockTerrainGreybox, rockTerrainHeights } from './rockTerrain.js';
+import { shadowOption } from './shadows.js';
 import { terrainTextures } from './terrain.js';
 import { albedoLayoutForMap, rockDemoAlbedoLayout, xlDemoAlbedoLayout } from './terrainLayout.js';
 import { xlWorld, type XlWorld } from './xlWorld.js';
@@ -103,7 +105,7 @@ async function main(): Promise<void> {
   const renderer = await createRenderer({
     canvas,
     forceWebGL: params.has('webgl'),
-    shadows: !params.has('noshadow'),
+    shadows: shadowOption(params),
     dataTextures: params.has('half') ? 'half' : 'auto',
     ...(assets ? { assets } : {}),
     buildingAssets: params.get('buildings') !== 'ph',
