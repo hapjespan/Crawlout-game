@@ -11,6 +11,15 @@ export const LOADOUT_NAMES: Record<string, string> = {
   bouwer: 'Bouwer',
   militie: 'Militie',
   patrol: 'Patrouille',
+  geweer_leer: 'Geweerschutter',
+  shotgun_leer: 'Shotgunner',
+  shotgun_composiet: 'Shotgunner (composiet)',
+  slagwapen_leer: 'Knuppelaar',
+  slagwapen_composiet: 'Knuppelaar (composiet)',
+  technicus: 'Technicus',
+  beveiligingsrobot: 'Beveiligingsrobot',
+  reparatiedrone: 'Reparatiedrone',
+  sentinel: 'Sentinel',
 };
 
 export function activityOf(e: Pick<EntityRow, 'anim' | 'flags'>): UnitActivity {
@@ -23,7 +32,10 @@ export function activityOf(e: Pick<EntityRow, 'anim' | 'flags'>): UnitActivity {
   return 'idle';
 }
 
-/** One group per loadout of the faction (also empty ones, in data order), plus the hero first when alive. */
+/**
+ * One group per loadout of the faction in data order, plus the hero first when alive. A loadout that needs research or a
+ * factory (patrol, robots, technician) only shows once you have one: empty groups of things you cannot make yet are noise.
+ */
 export function buildRoster(
   data: GameData,
   factionId: number | undefined,
@@ -52,6 +64,7 @@ export function buildRoster(
   for (const l of data.loadouts) {
     if (l.factionId !== factionId) continue;
     const units = (byKey.get(l.key) ?? []).sort((a, b) => a.id - b.id);
+    if (units.length === 0 && (l.prereqTech.length > 0 || l.producedAt >= 0)) continue;
     groups.push({ key: l.key, naam: LOADOUT_NAMES[l.key] ?? l.key, units });
   }
   return groups;

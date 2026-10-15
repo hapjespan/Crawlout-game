@@ -1,16 +1,65 @@
-// Building panel cards (research, craft, revive) for the HUD: names, effects in plain Dutch, what a card unlocks,
-// and its state from scrap, researched techs and the sim's work queue. The HUD only renders what this returns.
+// Building panel cards (research, craft, revive, robot production, SPECIAL training) for the HUD: names, effects in
+// plain Dutch, what a card unlocks, and its state from scrap, researched techs and the sim's work queue. The HUD only
+// renders what this returns. The same cards feed the building buttons in the bottom bar (buildingButtons).
 import {
   ANIM,
+  ENTITY_NONE,
   UNITS_PER_METER,
   TICK_HZ,
   type PlayerStatus,
   type QueueItem,
 } from '@crawlout/protocol';
-import { PROVIDES, kindOfTypeId, type EffectData, type GameData } from '@crawlout/data';
-import type { BuildingCard, CardIconId, CardState } from '@crawlout/ui';
+import {
+  PROVIDES,
+  heroIdOfTypeId,
+  kindOfTypeId,
+  type EffectData,
+  type GameData,
+} from '@crawlout/data';
+import type {
+  BuildingButton,
+  BuildingCard,
+  BuildingSite,
+  CardIconId,
+  CardState,
+} from '@crawlout/ui';
 import { LOADOUT_NAMES } from './roster.js';
 import type { EntityRow } from './snapshot.js';
+
+/** Display names per building key; buildings.json has no name field yet, so unknown keys are humanized. */
+export const BUILDING_NAMES: Record<string, string> = {
+  hoofdgebouw: 'Basis',
+  woning: 'Woning',
+  werkplaats: 'Werkplaats',
+  radiobaken: 'Radiobaken',
+  claimpaal: 'Claimpaal',
+  turret: 'Turret',
+  turret_laser: 'Lasertoren',
+  robotfabriek: 'Robotfabriek',
+  lab: 'Lab',
+  trainingsfaciliteit: 'Training',
+};
+
+/** Order of the building buttons: what the player works with first, then the rest in data order. */
+const BUTTON_ORDER = [
+  'hoofdgebouw',
+  'werkplaats',
+  'lab',
+  'trainingsfaciliteit',
+  'robotfabriek',
+  'woning',
+];
+
+/** The SPECIAL letters in data order (S P E C I A L), for the training cards. */
+const SPECIAL_LABELS = [
+  'Kracht',
+  'Perceptie',
+  'Uithoudingsvermogen',
+  'Charisma',
+  'Intelligentie',
+  'Behendigheid',
+  'Geluk',
+] as const;
 
 const STAT_TEXT: Record<string, { label: string; unit: 'pct' | 'm' | 'raw' }> = {
   hpPct: { label: 'leven', unit: 'pct' },
@@ -38,6 +87,9 @@ export const humanize = (key: string): string => {
   return words.charAt(0).toUpperCase() + words.slice(1);
 };
 
+/** Dutch name of a building key. */
+export const buildingName = (key: string): string => BUILDING_NAMES[key] ?? humanize(key);
+
 const targetName = (target: string): string => {
   if (target === 'turret') return 'turrets';
   if (target === 'alle') return 'alle eenheden';
@@ -60,6 +112,22 @@ export function effectText(e: EffectData): string {
   return `${amount} ${t.label} voor ${targetName(e.target)}`;
 }
 
+/** Effects in plain language, one line per stat and amount: "+15% leven voor militie, patrouille, ...". */
+export function effectTexts(effects: readonly EffectData[]): string[] {
+  const groups = new Map<string, { first: EffectData; targets: string[] }>();
+  for (const e of effects) {
+    const key = `${e.stat}:${e.delta}`;
+    const g = groups.get(key) ?? { first: e, targets: [] };
+    g.targets.push(targetName(e.target));
+    groups.set(key, g);
+  }
+  return [...groups.values()].map((g) => {
+    const line = effectText(g.first);
+    const at = line.lastIndexOf(' voor ');
+    return `${line.slice(0, at)} voor ${g.targets.join(', ')}`;
+  });
+}
+
 export interface CardContext {
   data: GameData;
   factionId: number | undefined;
@@ -78,6 +146,10 @@ const queueItem = (
   id: number,
 ): QueueItem | undefined => status?.queue?.find((q) => q.kind === kind && q.id === id);
 
+/** Work that occupies a building in the sim (idleOwnBuilding): research, robot production or training; crafting does not. */
+const occupiesBuilding = (q: QueueItem): boolean =>
+  q.kind !== 'craft' && q.buildingId !== ENTITY_NONE;
+
 export function buildingCards(ctx: CardContext): BuildingCard[] {
   const { data, factionId, status } = ctx;
   const researched = new Set(status?.techs ?? []);
@@ -85,24 +157,56 @@ export function buildingCards(ctx: CardContext): BuildingCard[] {
   const techName = (id: number): string => humanize(data.tech[id]?.key ?? String(id));
   const missing = (prereq: readonly number[]): string[] =>
     prereq.filter((t) => !researched.has(t)).map(techName);
+  const finished = (e: EntityRow): boolean => e.anim !== ANIM.build;
+  const busyBuildings = new Set(status?.queue?.filter(occupiesBuilding).map((q) => q.buildingId));
+  const tooExpensive = (cost: number): string => `Te duur: nog ${cost - scrap} scrap nodig`;
+  /** Own finished buildings of a building id (index in data.buildings). */
+  const finishedOf = (buildingIdx: number): EntityRow[] =>
+    ctx.own.filter((e) => {
+      const k = kindOfTypeId(e.typeId);
+      return k.kind === 'building' && k.index === buildingIdx && finished(e);
+    });
+  const nameOfBuilding = (idx: number): string =>
+    buildingName(data.buildings[idx]?.key ?? String(idx));
+
+  /**
+   * One state for every kind: done, running, locked (missing requirement), busy (every finished building of the type
+   * has other work, so the sim ignores the command without charging), too expensive, else available. `reason` says
+   * why a card does not start, in plain Dutch.
+   */
   const stateOf = (
     cost: number,
     prereq: readonly number[],
     running: boolean,
     done: boolean,
-  ): CardState => {
-    if (done) return 'done';
-    if (running) return 'running';
-    if (missing(prereq).length > 0) return 'locked';
-    return scrap >= cost ? 'available' : 'tooExpensive';
+    buildingIdx: number | null,
+  ): { state: CardState; reason?: string } => {
+    if (done) return { state: 'done' };
+    if (running) return { state: 'running' };
+    const lacking = missing(prereq);
+    if (lacking.length > 0)
+      return { state: 'locked', reason: `Vergrendeld: vereist ${lacking.join(', ')}` };
+    if (buildingIdx !== null) {
+      const idle = finishedOf(buildingIdx).filter((e) => !busyBuildings.has(e.id));
+      if (idle.length === 0)
+        return { state: 'busy', reason: `${nameOfBuilding(buildingIdx)} is bezig met ander werk` };
+    }
+    return scrap >= cost
+      ? { state: 'available' }
+      : { state: 'tooExpensive', reason: tooExpensive(cost) };
   };
 
   const selectedBuildings = ctx.selected.filter((e) => kindOfTypeId(e.typeId).kind === 'building');
-  const selectedUnits = ctx.selected.filter((e) => kindOfTypeId(e.typeId).kind === 'unit');
+  // Settlers only: the hero is a unit too, but he never crafts.
+  const selectedUnits = ctx.selected.filter(
+    (e) => kindOfTypeId(e.typeId).kind === 'unit' && heroIdOfTypeId(e.typeId) < 0,
+  );
   const cards: Omit<BuildingCard, 'hotkey'>[] = [];
 
   if (selectedBuildings.length > 0 && selectedUnits.length === 0) {
-    const buildingIds = new Set(selectedBuildings.map((e) => kindOfTypeId(e.typeId).index));
+    // Only finished buildings have anything to offer; a site under construction shows no cards.
+    const ready = selectedBuildings.filter(finished);
+    const buildingIds = new Set(ready.map((e) => kindOfTypeId(e.typeId).index));
     for (const t of data.tech) {
       if (t.factionId !== factionId || !buildingIds.has(t.buildingId)) continue;
       const running = queueItem(status, 'research', t.id);
@@ -113,6 +217,13 @@ export function buildingCards(ctx: CardContext): BuildingCard[] {
         ...data.buildings.filter((b) => b.prereqTech.includes(t.id)).map((b) => humanize(b.key)),
       ];
       const first = t.effects[0];
+      const st = stateOf(
+        t.scrapCost,
+        t.prereqTech,
+        running !== undefined,
+        researched.has(t.id),
+        t.buildingId,
+      );
       cards.push({
         kind: 'research',
         id: t.id,
@@ -124,15 +235,76 @@ export function buildingCards(ctx: CardContext): BuildingCard[] {
             : 'research',
         scrapCost: t.scrapCost,
         seconds: Math.round(t.researchTicks / TICK_HZ),
-        effects: t.effects.map(effectText),
+        effects: effectTexts(t.effects),
         unlocks,
         requires: missing(t.prereqTech),
-        state: stateOf(t.scrapCost, t.prereqTech, running !== undefined, researched.has(t.id)),
+        ...st,
         ...(running ? { progressPct: Math.round(running.progressPermille / 10) } : {}),
       });
     }
+    // Robots: built new in their factory (loadouts.producedAt), one at a time per building.
+    for (const idx of buildingIds) {
+      const factories = ready.filter((e) => kindOfTypeId(e.typeId).index === idx);
+      for (const l of data.loadouts) {
+        if (l.factionId !== factionId || l.producedAt !== idx) continue;
+        const run = status?.queue?.find(
+          (q) =>
+            q.kind === 'produce' && q.id === l.id && factories.some((f) => f.id === q.buildingId),
+        );
+        const target = factories.find((f) => !busyBuildings.has(f.id)) ?? factories[0]!;
+        const pop = (status?.pop ?? 0) + (status?.robotPop ?? 0) + producingPop(data, status);
+        const popFull = pop + l.popCost > data.sim.popCapMax;
+        let st = stateOf(l.scrapCost, l.prereqTech, run !== undefined, false, idx);
+        if ((st.state === 'available' || st.state === 'tooExpensive') && popFull)
+          st = {
+            state: 'locked',
+            reason: `Pop-limiet bereikt (${pop} van ${data.sim.popCapMax}, dit kost ${l.popCost})`,
+          };
+        cards.push({
+          kind: 'produce',
+          id: l.id,
+          buildingId: run?.buildingId ?? target.id,
+          naam: LOADOUT_NAMES[l.key] ?? humanize(l.key),
+          icon: 'robot',
+          scrapCost: l.scrapCost,
+          seconds: Math.round(l.craftTicks / TICK_HZ),
+          effects: [
+            `${l.hpI} leven, ${l.damage} schade${l.popCost > 1 ? `, telt voor ${l.popCost} pop` : ''}`,
+          ],
+          unlocks: [],
+          requires: missing(l.prereqTech),
+          ...st,
+          ...(run ? { progressPct: Math.round(run.progressPermille / 10) } : {}),
+        });
+      }
+    }
+    // SPECIAL training: +1 point on a letter per run, costlier and slower per point already trained.
+    for (const tr of data.training) {
+      if (tr.factionId !== factionId || !buildingIds.has(tr.buildingId)) continue;
+      const trained = status?.trained?.[tr.special] ?? 0;
+      const cost = tr.scrapCost + tr.scrapCostStep * trained;
+      const ticks = tr.trainTicks + tr.trainTicksStep * trained;
+      const run = status?.queue?.find((q) => q.kind === 'train' && q.id === tr.id);
+      const factories = ready.filter((e) => kindOfTypeId(e.typeId).index === tr.buildingId);
+      const target = factories.find((f) => !busyBuildings.has(f.id)) ?? factories[0]!;
+      const letter = SPECIAL_LABELS[tr.special] ?? humanize(tr.key);
+      cards.push({
+        kind: 'train',
+        id: tr.id,
+        buildingId: run?.buildingId ?? target.id,
+        naam: `Training ${letter.toLowerCase()}`,
+        icon: 'training',
+        scrapCost: cost,
+        seconds: Math.round(ticks / TICK_HZ),
+        effects: [`+${tr.pointsPerRun} ${letter} voor de held (nu ${trained} van ${tr.maxPoints})`],
+        unlocks: [],
+        requires: missing(tr.prereqTech),
+        ...stateOf(cost, tr.prereqTech, run !== undefined, trained >= tr.maxPoints, tr.buildingId),
+        ...(run ? { progressPct: Math.round(run.progressPermille / 10) } : {}),
+      });
+    }
     const hqIdx = PROVIDES.indexOf('hq');
-    const hq = selectedBuildings.find((e) =>
+    const hq = ready.find((e) =>
       data.buildings[kindOfTypeId(e.typeId).index]?.provides.includes(hqIdx),
     );
     const hero = data.heroes.find((h) => h.factionId === factionId);
@@ -151,6 +323,9 @@ export function buildingCards(ctx: CardContext): BuildingCard[] {
         unlocks: [],
         requires: [],
         state: reviving ? 'running' : scrap >= hero.reviveScrap ? 'available' : 'tooExpensive',
+        ...(!reviving && scrap < hero.reviveScrap
+          ? { reason: tooExpensive(hero.reviveScrap) }
+          : {}),
       });
     }
   } else if (selectedUnits.length > 0) {
@@ -186,11 +361,77 @@ export function buildingCards(ctx: CardContext): BuildingCard[] {
           effects: [`Uitrusting: ${humanize(l.weapon)}, ${l.hpI} leven, ${l.damage} schade`],
           unlocks: [],
           requires: missing(l.prereqTech),
-          state: stateOf(l.scrapCost, l.prereqTech, running !== undefined, false),
+          ...stateOf(l.scrapCost, l.prereqTech, running !== undefined, false, null),
           ...(running ? { progressPct: Math.round(running.progressPermille / 10) } : {}),
         });
       }
     }
   }
   return cards.map((c, i) => ({ ...c, hotkey: String(i + 1) }));
+}
+
+/** Pop that robots in production already claim (their popCost), for the pop-limit check of a new robot. */
+function producingPop(data: GameData, status: PlayerStatus | null): number {
+  let pop = 0;
+  for (const q of status?.queue ?? [])
+    if (q.kind === 'produce') pop += data.loadouts[q.id]?.popCost ?? 0;
+  return pop;
+}
+
+/** Revive progress 0..100 from the hero status (reviveTicksLeft against the full revive time). */
+function reviveProgress(data: GameData, status: PlayerStatus | null): number {
+  const hero = status?.hero;
+  const full = hero ? (data.heroes[hero.heroId]?.reviveTicks ?? 0) : 0;
+  return full > 0 && hero ? 100 - (hero.reviveTicksLeft * 100) / full : 0;
+}
+
+/**
+ * One button per building type among the own finished buildings (Basis, Werkplaats, Lab, Woning ...), each with its
+ * buildings in id order. A site counts its cards ready to start and its running jobs; a revive of the hero counts
+ * on the HQ. Buildings without anything to do are listed too: the player wants to click through to them.
+ */
+export function buildingButtons(ctx: CardContext): BuildingButton[] {
+  const { data, status } = ctx;
+  const groups = new Map<number, BuildingSite[]>();
+  const done = ctx.own
+    .filter((e) => kindOfTypeId(e.typeId).kind === 'building' && e.anim !== ANIM.build)
+    .sort((a, b) => a.id - b.id);
+  for (const e of done) {
+    const cards = buildingCards({ ...ctx, selected: [e] });
+    const jobs = status?.queue?.filter((q) => q.buildingId === e.id && occupiesBuilding(q)) ?? [];
+    const reviving = cards.some((c) => c.kind === 'revive' && c.state === 'running');
+    const progress = [
+      ...jobs.map((q) => q.progressPermille / 10),
+      ...(reviving ? [reviveProgress(data, status)] : []),
+    ];
+    const idx = kindOfTypeId(e.typeId).index;
+    const list = groups.get(idx) ?? [];
+    list.push({
+      id: e.id,
+      x: e.x,
+      y: e.y,
+      available: cards.filter((c) => c.state === 'available').length,
+      running: jobs.length + (reviving ? 1 : 0),
+      ...(progress.length > 0 ? { progressPct: Math.round(Math.max(...progress)) } : {}),
+    });
+    groups.set(idx, list);
+  }
+  const rank = (idx: number): number => {
+    const at = BUTTON_ORDER.indexOf(data.buildings[idx]?.key ?? '');
+    return at >= 0 ? at : BUTTON_ORDER.length + idx;
+  };
+  return [...groups.entries()]
+    .sort(([a], [b]) => rank(a) - rank(b))
+    .map(([idx, sites]) => {
+      const key = data.buildings[idx]?.key ?? String(idx);
+      const progress = sites.flatMap((s) => (s.progressPct === undefined ? [] : [s.progressPct]));
+      return {
+        key,
+        naam: buildingName(key),
+        sites,
+        available: sites.reduce((n, s) => n + s.available, 0),
+        running: sites.reduce((n, s) => n + s.running, 0),
+        ...(progress.length > 0 ? { progressPct: Math.max(...progress) } : {}),
+      };
+    });
 }

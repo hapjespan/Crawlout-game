@@ -36,7 +36,7 @@ describe('buildRoster', () => {
   const scav = loadout('scavenger');
   const faction = scav.factionId;
 
-  it('groups own units per loadout of the faction, hero first, enemies left out', () => {
+  it('groups own units per basic loadout of the faction, hero first, enemies left out', () => {
     const roster = buildRoster(data, faction, 0, [
       row(3, unitTypeId(scav.id), { anim: ANIM.gather }),
       row(2, unitTypeId(scav.id)),
@@ -51,7 +51,9 @@ describe('buildRoster', () => {
       [3, 'gathering'],
     ]);
     expect(roster.filter((g) => g.key !== 'hero').map((g) => g.key)).toEqual(
-      data.loadouts.filter((l) => l.factionId === faction).map((l) => l.key),
+      data.loadouts
+        .filter((l) => l.factionId === faction && l.prereqTech.length === 0 && l.producedAt < 0)
+        .map((l) => l.key),
     );
   });
 });

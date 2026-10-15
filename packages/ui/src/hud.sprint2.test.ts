@@ -199,14 +199,24 @@ describe('bouwmenu en plaatsing', () => {
     expect(t.sent).toEqual([]); // niet als rol-toets opgevat
   });
 
-  it('zonder bouwer is er niets te kiezen', () => {
+  it('zonder bouwer staat Bouw niet op de kaart en doet B niets', () => {
     const t = setup({}, { selection: [unit(5, 'militia')] });
     mounted = t.handle;
+    expect(t.el.querySelector('[data-action="build"]')).toBeNull();
     press('b');
-    expect(t.el.querySelector('[aria-label="Bouwmenu"]')?.textContent).toContain('bouwer');
-    expect(t.el.querySelector<HTMLButtonElement>('.co-build-option')?.disabled).toBe(true);
+    expect(t.el.querySelector('[aria-label="Bouwmenu"]')).toBeNull();
     press('1');
     expect(t.calls.placement).toEqual([]);
+  });
+
+  it('het bouwmenu sluit als de bouwer uit de selectie verdwijnt', () => {
+    const t = setup();
+    mounted = t.handle;
+    press('b');
+    expect(t.el.querySelector('[aria-label="Bouwmenu"]')).not.toBeNull();
+    t.state.selection = [];
+    act(() => t.handle.refresh());
+    expect(t.el.querySelector('[aria-label="Bouwmenu"]')).toBeNull();
   });
 
   it('Escape annuleert de plaatsing en meldt endPlacement', () => {
@@ -270,13 +280,14 @@ describe('held-paneel en perks', () => {
     expect(t.sent).toEqual([{ type: 'PickPerk', payload: { heroId: 77, perkId: 11 } }]);
   });
 
-  it('H verbergt het paneel; zonder pending perks stuurt F1 niets', () => {
+  it('het heldpaneel staat er altijd en H verbergt het niet; zonder pending perks stuurt F1 niets', () => {
     const t = setup({}, { status: heroStatus });
     mounted = t.handle;
     press('F1');
     expect(t.sent).toEqual([]);
     press('h');
-    expect(t.el.querySelector('[aria-label="Held"]')).toBeNull();
+    expect(t.el.querySelector('[aria-label="Held"]')).not.toBeNull();
+    expect(t.el.querySelector('[data-action="hero"]')).toBeNull();
   });
 });
 
@@ -328,11 +339,12 @@ describe('minimap', () => {
     expect(t.sent).toEqual([]);
   });
 
-  it('N verbergt de minimap; zonder dep geen minimap', () => {
+  it('de minimap staat er altijd (geen knop, N doet niets); zonder dep geen minimap', () => {
     const t = setup();
     mounted = t.handle;
     press('n');
-    expect(t.el.querySelector('canvas')).toBeNull();
+    expect(t.el.querySelector('canvas')).not.toBeNull();
+    expect(t.el.querySelector('[data-action="minimap"]')).toBeNull();
     t.handle.unmount();
     mounted = null;
     const t2 = setup({}, { noMinimap: true });
