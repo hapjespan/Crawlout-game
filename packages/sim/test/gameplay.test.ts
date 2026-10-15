@@ -32,6 +32,7 @@ import {
   runFrames,
   testInit,
   typeByKey,
+  heroResearchCost,
 } from './helpers.js';
 
 const WONING = typeByKey('woning');
@@ -402,7 +403,7 @@ describe('onderzoek en craft', () => {
         cmd(sim.frame, 0, 'Research', { techId: GEWEERREK.techId }),
       ),
     );
-    expect(sim.playerStatus(0).scrap).toBe(1000 - GEWEERREK.scrapCost);
+    expect(sim.playerStatus(0).scrap).toBe(1000 - heroResearchCost(GEWEERREK.scrapCost));
     expect(sim.researched(0)).toEqual([]);
     play(sim, GEWEERREK.researchTicks - 1);
     expect(sim.researched(0)).toEqual([GEWEERREK.techId]);
@@ -878,6 +879,8 @@ describe('state', () => {
         },
         techs: [],
         queue: [],
+        robotPop: 0,
+        trained: [0, 0, 0, 0, 0, 0, 0],
         dominance: {
           pointsHeld: 0,
           pointsRequired: createTestMap().dominance.pointsRequired,

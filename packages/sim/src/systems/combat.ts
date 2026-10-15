@@ -4,6 +4,7 @@ import { idiv } from '../math/int.js';
 import type { SimContext } from './common.js';
 import { distToRect2, face, isEnemy, withinReach } from './common.js';
 import { grantXp, heroIndex } from './hero.js';
+import { robotRate } from './robots.js';
 import { SPECIAL_L, heroOf, heroSpecial, scalePermille } from '../effects.js';
 
 // Systeem 5: gevecht. Elke unit met een doel in bereik en een lege cooldown schiet: schade (plus ability-zones) maal
@@ -30,8 +31,17 @@ export function combatSystem(ctx: SimContext): void {
     if (tid === NO_ENTITY || w.cooldown[i]! > 0 || w.damage[i]! <= 0) continue;
     const t = w.resolve(tid);
     if (t < 0 || !isEnemy(w, i, t) || !withinReach(w, i, t, w.range[i]!)) continue;
+    // technicus-regel (data 0.15.0): een ongedekte robot schiet trager (langere cooldown), bij 0 promille niet
+    const rate = robotRate(ctx, i);
+    if (rate <= 0) continue;
     const mult = matrix[w.damageType[i]!]![w.armorType[t]!]!;
     let dmg = ctx.auras.any ? scalePermille(w.damage[i]!, ctx.auras.damage[i]!) : w.damage[i]!;
+    // belegering (data 0.15.0): extra schade tegen gebouwen bovenop de damage-matrix
+    if ((w.mask[t]! & C.building) !== 0 && (w.mask[i]! & C.unit) !== 0) {
+      const siege = ctx.unitType(w.typeId[i]!)?.siege;
+      if (siege !== undefined && siege !== null)
+        dmg = scalePermille(dmg, siege.vsBuildingsPermille);
+    }
     const hero = (w.mask[i]! & C.hero) !== 0;
     if (hero) {
       const chance = heroSpecial(ctx, w.owner[i]!, SPECIAL_L) * ctx.config.special.luckCritPermille;
@@ -41,7 +51,7 @@ export function combatSystem(ctx: SimContext): void {
     const before = w.hp[t]!;
     w.hp[t] = before - idiv(dmg * mult, 1000);
     if (before > 0 && w.hp[t]! <= 0 && (w.mask[t]! & C.unit) !== 0) killXp(ctx, i, t, hero);
-    w.cooldown[i] = w.cooldownMax[i]!;
+    w.cooldown[i] = rate >= 1000 ? w.cooldownMax[i]! : idiv(w.cooldownMax[i]! * 1000, rate);
     face(w, i, w.x[t]!, w.y[t]!);
     const sid = w.idOf(i);
     ctx.events.push(EVENT_TYPE.shotFired, sid, tid, w.x[i]!, w.y[i]!);

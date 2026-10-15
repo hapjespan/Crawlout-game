@@ -124,9 +124,11 @@ export function movementSystem(ctx: SimContext, s: MovementScratch): void {
     const dx = ax - x;
     const dy = ay - y;
     const len = isqrt(dx * dx + dy * dy);
-    const sp = ctx.auras.any
+    let sp = ctx.auras.any
       ? clampI(scalePermille(w.speed[i]!, ctx.auras.speed[i]!), 0, MAX_SPEED)
       : w.speed[i]!;
+    // technicus-regel (data 0.15.0): een ongedekte robot loopt op robotRates.rate promille
+    if (ctx.robotRates.any) sp = idiv(sp * ctx.robotRates.rate[i]!, 1000);
     if (len === 0) continue;
     if (snap && len <= sp) {
       s.vx[i] = dx;

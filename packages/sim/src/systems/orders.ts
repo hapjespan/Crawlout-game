@@ -18,6 +18,7 @@ import {
 import { gatherAmountOf } from '../effects.js';
 import { PROVIDES_HQ, PROVIDES_WORKSHOP } from '../fromData.js';
 import type { SimContext } from './common.js';
+import { repairIdle } from './robots.js';
 import {
   distToRect2,
   face,
@@ -37,6 +38,8 @@ import {
 // (verzamelen, bouwen, omscholen) gebeurt in systeem 6.
 
 export const ROLE_MILITIA = ROLES.indexOf('militia');
+/** Robots (data 0.15.0): vechten zelf zoals militie, een robot met reparatie repareert zonder order. */
+export const ROLE_ROBOT = ROLES.indexOf('robot');
 const ROLE_BUILDER = ROLES.indexOf('builder');
 
 /** Depots voor scrap: hoofdgebouw en werkplaats. */
@@ -69,7 +72,13 @@ function collectTargets(ctx: SimContext, s: OrdersScratch): void {
  */
 function acquire(ctx: SimContext, s: OrdersScratch, i: number): number {
   const w = ctx.world;
-  const r = ctx.config.aggroRange;
+  // belegering (data 0.15.0): zoekt binnen zijn eigen bereik als dat verder is, en met buildingsFirst gebouwen eerst
+  const siege = (w.mask[i]! & C.hero) === 0 ? ctx.unitType(w.typeId[i]!)?.siege : undefined;
+  const buildingsFirst = siege !== undefined && siege !== null && siege.buildingsFirst;
+  const r =
+    siege !== undefined && siege !== null && w.range[i]! > ctx.config.aggroRange
+      ? w.range[i]!
+      : ctx.config.aggroRange;
   const r2 = r * r;
   const x = w.x[i]!;
   const y = w.y[i]!;
@@ -81,7 +90,7 @@ function acquire(ctx: SimContext, s: OrdersScratch, i: number): number {
     const j = s.targets[k]!;
     if (!isEnemy(w, i, j)) continue;
     if ((w.mask[j]! & C.building) !== 0) {
-      if (bestU >= 0) continue;
+      if (bestU >= 0 && !buildingsFirst) continue;
       const d = distToRect2(x, y, w.fx[j]!, w.fy[j]!, w.fw[j]!, w.fh[j]!);
       if (d <= r2 && (bestB < 0 || d < bestBD)) {
         bestB = j;
@@ -98,6 +107,7 @@ function acquire(ctx: SimContext, s: OrdersScratch, i: number): number {
       }
     }
   }
+  if (buildingsFirst) return bestB >= 0 ? bestB : bestU;
   return bestU >= 0 ? bestU : bestB;
 }
 
@@ -142,7 +152,11 @@ function autoEngage(ctx: SimContext, s: OrdersScratch, i: number): boolean {
 
 function idle(ctx: SimContext, s: OrdersScratch, i: number): void {
   const w = ctx.world;
-  if (w.role[i] === ROLE_MILITIA && autoEngage(ctx, s, i)) return;
+  if ((w.role[i] === ROLE_MILITIA || w.role[i] === ROLE_ROBOT) && autoEngage(ctx, s, i)) return;
+  if (w.role[i] === ROLE_ROBOT && (w.mask[i]! & C.hero) === 0) {
+    const rep = ctx.unitType(w.typeId[i]!)?.repair;
+    if (rep !== undefined && rep !== null && repairIdle(ctx, i, rep)) return;
+  }
   w.target[i] = NO_ENTITY;
   if (w.role[i] === ROLE_BUILDER && !w.has(i, C.hero)) {
     if (builderIdle(ctx, s, i)) return;

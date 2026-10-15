@@ -1,7 +1,7 @@
-import { EFFECT_TARGET_ALL, EFFECT_TARGET_HERO, MAX_SPEED } from './config.js';
-import type { SimEffect, SimHero } from './config.js';
-import { C } from './ecs/world.js';
-import { statIndex } from './fromData.js';
+import { EFFECT_TARGET_ALL, EFFECT_TARGET_HERO, MAX_SPEED, SPECIAL_COUNT } from './config.js';
+import type { SimBuildingType, SimEffect, SimHero, SimTech } from './config.js';
+import { BSTATE_DONE, C } from './ecs/world.js';
+import { PROVIDES_TURRET, statIndex } from './fromData.js';
 import { clampI, idiv } from './math/int.js';
 import type { SimContext } from './systems/common.js';
 
@@ -29,6 +29,8 @@ export const STAT_RANGE = statIndex('rangeM');
 export const STAT_GATHER = statIndex('gatherRatePct');
 export const STAT_BUILD_TIME = statIndex('buildTimePct');
 export const STAT_RESEARCH_TIME = statIndex('researchTimePct');
+/** Kosten van onderzoek (data 0.15.0, de passieven van de Opziener). */
+export const STAT_RESEARCH_COST = statIndex('researchCostPct');
 
 /** Eerste SPECIAL-stat (S); P E C I A L volgen in die volgorde. */
 export const STAT_SPECIAL = statIndex('S');
@@ -80,23 +82,78 @@ export function effectSum(
       for (const e of t.effects) if (matches(e, stat, typeId, isHero)) sum += e.delta;
     }
   }
+  if (ctx.ps.heroState[p] !== HERO_ALIVE) return sum;
+  // perks en (data 0.15.0) de passieven van de held: alleen zolang hij leeft, geschaald met de oplap-straf
   const perks = ctx.ps.heroPerks[p]!;
-  if (perks !== 0 && ctx.ps.heroState[p] === HERO_ALIVE) {
-    const h = heroOf(ctx, p);
-    const scale = h === undefined ? 0 : reviveScale(h, ctx.ps.heroRevives[p]!);
+  const h = heroOf(ctx, p);
+  if (h === undefined || (perks === 0 && h.passives.length === 0)) return sum;
+  const scale = reviveScale(h, ctx.ps.heroRevives[p]!);
+  if (perks !== 0) {
     for (const pk of ctx.config.perks) {
       if (((perks >>> pk.perkId) & 1) === 0) continue;
       for (const e of pk.effects)
         if (matches(e, stat, typeId, isHero)) sum += idiv(e.delta * scale, 1000);
     }
   }
+  for (const e of h.passives)
+    if (matches(e, stat, typeId, isHero)) sum += idiv(e.delta * scale, 1000);
   return sum;
+}
+
+/** Kosten van een onderzoek voor speler p: scrapCost plus researchCostPct (data 0.15.0), niet negatief. */
+export function researchCost(ctx: SimContext, p: number, t: SimTech): number {
+  return scalePermille(t.scrapCost, effectSum(ctx, p, STAT_RESEARCH_COST, t.buildingTypeId, false));
+}
+
+/**
+ * Bonus van het turret-netwerk (data 0.15.0) voor voltooid gebouw i, in promille schade: met de tech requiresTech,
+ * damagePermillePerTurret per andere voltooide, levende eigen turret (provides turret) waarvan het midden binnen radius
+ * van het midden van i ligt (grens inclusief), hoogstens maxDamagePermille. 0 zonder netwerk of tech.
+ */
+export function networkBonus(ctx: SimContext, i: number, bt: SimBuildingType): number {
+  const n = bt.network;
+  const w = ctx.world;
+  const p = w.owner[i]!;
+  if (n === null || w.bstate[i] !== BSTATE_DONE || !hasTechs(ctx, p, [n.requiresTech])) return 0;
+  const r = n.radius;
+  const idx = ctx.index;
+  idx.refresh(w);
+  let count = 0;
+  for (let k = 0; k < idx.buildingCount; k++) {
+    const j = idx.buildings[k]!;
+    if (j === i || w.owner[j] !== p || w.bstate[j] !== BSTATE_DONE || w.hp[j]! <= 0) continue;
+    const ot = ctx.buildingType(w.typeId[j]!);
+    if (ot === undefined || (ot.provides & PROVIDES_TURRET) === 0) continue;
+    const dx = w.x[j]! - w.x[i]!;
+    const dy = w.y[j]! - w.y[i]!;
+    if (dx > r || -dx > r || dy > r || -dy > r || dx * dx + dy * dy > r * r) continue;
+    count++;
+  }
+  const bonus = count * n.damagePermillePerTurret;
+  return bonus < n.maxDamagePermille ? bonus : n.maxDamagePermille;
+}
+
+/** Stats van alle voltooide turrets van speler p opnieuw (het netwerk na een turret die af komt, sneuvelt of weg is). */
+export function refreshTurrets(ctx: SimContext, p: number): void {
+  const w = ctx.world;
+  const idx = ctx.index;
+  idx.refresh(w);
+  for (let k = 0; k < idx.buildingCount; k++) {
+    const j = idx.buildings[k]!;
+    if (w.owner[j] !== p || w.bstate[j] !== BSTATE_DONE) continue;
+    const bt = ctx.buildingType(w.typeId[j]!);
+    if (bt !== undefined && bt.network !== null) applyStats(ctx, j, false);
+  }
 }
 
 /** SPECIAL-letter k (SPECIAL_*) van de held van p: basis uit de data plus effecten op die letter. 0 zonder held. */
 export function heroSpecial(ctx: SimContext, p: number, k: number): number {
   const h = heroOf(ctx, p);
-  return h === undefined ? 0 : h.special[k]! + effectSum(ctx, p, STAT_SPECIAL + k, h.typeId, true);
+  return h === undefined
+    ? 0
+    : h.special[k]! +
+        ctx.ps.trained[p * SPECIAL_COUNT + k]! +
+        effectSum(ctx, p, STAT_SPECIAL + k, h.typeId, true);
 }
 
 /** SPECIAL-bonus voor de hele speler (C, I): alleen zolang de held leeft. letter maal promille per punt, anders 0. */
@@ -167,7 +224,11 @@ export function applyStats(ctx: SimContext, i: number, grow: boolean): void {
     w.maxHp[i] = Math.max(1, scalePermille(bt.maxHp, effectSum(ctx, p, STAT_HP, typeId, false)));
     if (bt.damage > 0) {
       // turret (besluit 8): tech- en perk-effecten op het gebouwtype gelden net als op een unit
-      w.damage[i] = scalePermille(bt.damage, effectSum(ctx, p, STAT_DAMAGE, typeId, false));
+      // het turret-netwerk (data 0.15.0) telt op in dezelfde som als tech en perks
+      w.damage[i] = scalePermille(
+        bt.damage,
+        effectSum(ctx, p, STAT_DAMAGE, typeId, false) + networkBonus(ctx, i, bt),
+      );
       w.range[i] = Math.max(0, bt.range + effectSum(ctx, p, STAT_RANGE, typeId, false));
       w.cooldownMax[i] = bt.cooldown;
     }

@@ -2,8 +2,8 @@ import { EVENT_TYPE, OWNER_NEUTRAL } from '@crawlout/protocol';
 import { CLAIM_POINT_TYPE_ID, SCRAP_NODE_TYPE_ID } from '@crawlout/data';
 import type { SimBuildingType, SimUnitType } from './config.js';
 import { BSTATE_DONE, BSTATE_SITE, C, NO_ENTITY, NO_FIELD, NO_GOAL } from './ecs/world.js';
-import { applyStats } from './effects.js';
-import { PROVIDES_HQ } from './fromData.js';
+import { applyStats, refreshTurrets } from './effects.js';
+import { PROVIDES_HQ, PROVIDES_TURRET } from './fromData.js';
 import { idiv } from './math/int.js';
 import type { SimContext } from './systems/common.js';
 import { nearestFreeCellAround, placeOnCell, setFlowField } from './systems/common.js';
@@ -132,6 +132,8 @@ export function completeBuilding(ctx: SimContext, i: number, bt: SimBuildingType
     w.cooldown[i] = 0;
   }
   ctx.events.push(EVENT_TYPE.buildingDone, w.idOf(i), bt.typeId, w.x[i]!, w.y[i]!);
+  // turret-netwerk (data 0.15.0): een nieuwe turret versterkt zijn buren en zichzelf
+  if ((bt.provides & PROVIDES_TURRET) !== 0) refreshTurrets(ctx, w.owner[i]!);
 }
 
 /** Zet units die in een (nu geblokkeerde) rechthoek staan op de dichtstbijzijnde vrije cel ernaast. */
@@ -154,9 +156,15 @@ function displaceUnits(ctx: SimContext, fx: number, fy: number, fw: number, fh: 
 /** Haalt een gebouw weg: cellen weer vrij, flow fields opnieuw, entity vrij. */
 export function removeBuilding(ctx: SimContext, i: number): void {
   const w = ctx.world;
+  const bt = ctx.buildingType(w.typeId[i]!);
+  const turret =
+    bt !== undefined && (bt.provides & PROVIDES_TURRET) !== 0 && w.bstate[i] === BSTATE_DONE;
+  const owner = w.owner[i]!;
   ctx.terrain.setRect(i, w.fx[i]!, w.fy[i]!, w.fw[i]!, w.fh[i]!, false);
   ctx.flow.invalidate(w.fx[i]!, w.fy[i]!, w.fw[i]!, w.fh[i]!);
   w.free(i);
+  // turret-netwerk (data 0.15.0): de buren verliezen de bonus van deze turret
+  if (turret) refreshTurrets(ctx, owner);
 }
 
 export function createScrapNode(ctx: SimContext, x: number, y: number, amount: number): number {

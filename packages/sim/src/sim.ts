@@ -12,6 +12,8 @@ import type {
 import { envHash, validateEnv } from './config.js';
 import {
   C,
+  JOB_PRODUCE,
+  JOB_TRAIN,
   NO_ENTITY,
   NO_FIELD,
   ORDER_CRAFT,
@@ -58,6 +60,8 @@ import {
 } from './systems/common.js';
 import { economySystem } from './systems/economy.js';
 import { Auras, auraSystem, heroStatus } from './systems/hero.js';
+import { RobotRates, robotRulesSystem } from './systems/robots.js';
+import { trainTicks, trainedOf } from './systems/training.js';
 import { MovementScratch, movementSystem } from './systems/movement.js';
 import { OrdersScratch, ordersSystem } from './systems/orders.js';
 
@@ -142,6 +146,7 @@ export class Sim implements SimContext {
   /** Indices van de claimpunten (afgeleid; opgebouwd in start() en na deserialize). */
   readonly claimPoints: number[] = [];
   readonly auras = new Auras();
+  readonly robotRates = new RobotRates();
   readonly index = new EntityIndex();
   readonly terrainDist: TerrainDistances;
 
@@ -259,6 +264,7 @@ export class Sim implements SimContext {
     this.flow.step();
     // 4 beweging plus separatie (eerst de ability-zones van deze tick, ook voor gevecht)
     auraSystem(this, this.auras);
+    robotRulesSystem(this, this.robotRates);
     movementSystem(this, this.moveScratch);
     // 5 gevecht
     combatSystem(this);
@@ -323,6 +329,8 @@ export class Sim implements SimContext {
       techs: this.researched(playerId), // besluit sprint 3 (architect): de HUD filtert bouwmenu en craft-opties op prereqTech
       queue: this.queue(playerId),
       dominance: this.dominance(playerId), // protocol 0.6.0: winroute B voor de HUD
+      robotPop: this.census.robotPop[playerId]!, // protocol 0.8.0: robots tellen niet voor bedden
+      trained: trainedOf(this, playerId) as NonNullable<PlayerStatus['trained']>, // protocol 0.8.0
     };
   }
 
@@ -388,6 +396,32 @@ export class Sim implements SimContext {
         id: t.loadoutId,
         progressPermille: progress,
       });
+    }
+    // data 0.15.0 (protocol 0.8.0): robotproductie en training per gebouw
+    for (let i = 0; i < w.highWater; i++) {
+      if (w.alive[i] !== 1 || w.owner[i] !== playerId || w.job[i] === 0 || !w.has(i, C.building))
+        continue;
+      if (w.jobKind[i] === JOB_PRODUCE) {
+        const t = this.unitTypes[w.job[i]!];
+        if (t === undefined) continue;
+        out.push({
+          kind: 'produce',
+          buildingId: w.idOf(i),
+          unitId: ENTITY_NONE,
+          id: t.loadoutId,
+          progressPermille: permille(w.jobWork[i]!, t.craftTicks),
+        });
+      } else if (w.jobKind[i] === JOB_TRAIN) {
+        const tr = this.config.training[w.job[i]! - 1];
+        if (tr === undefined) continue;
+        out.push({
+          kind: 'train',
+          buildingId: w.idOf(i),
+          unitId: ENTITY_NONE,
+          id: tr.programId,
+          progressPermille: permille(w.jobWork[i]!, trainTicks(this, playerId, tr)),
+        });
+      }
     }
     // oplopend op buildingId, dan unitId (contract 1); bij research is unitId ENTITY_NONE en een gebouw heeft één onderzoek
     out.sort((a, b) => a.buildingId - b.buildingId || a.unitId! - b.unitId!);

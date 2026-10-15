@@ -5,6 +5,9 @@ import {
   BSTATE_DONE,
   BSTATE_SITE,
   C,
+  JOB_NONE,
+  JOB_PRODUCE,
+  JOB_TRAIN,
   NO_ENTITY,
   ORDER_ATTACK,
   ORDER_ATTACK_MOVE,
@@ -14,7 +17,10 @@ import {
   ORDER_MOVE,
   PHASE_CRAFT,
 } from '../ecs/world.js';
-import { hasTechs } from '../effects.js';
+import { hasTechs, researchCost } from '../effects.js';
+import { isRobot } from './census.js';
+import { applyProduce } from './robots.js';
+import { applyTrain, trainCost } from './training.js';
 import { createBuilding, footprintFree, footprintOrigin, removeBuilding } from '../entities.js';
 import { PROVIDES_CLAIM, PROVIDES_HQ } from '../fromData.js';
 import { inClaimRadius } from './claims.js';
@@ -114,6 +120,10 @@ export function applyCommand(ctx: SimContext, cmd: SimCommand): boolean {
       return applyHeroAbility(ctx, p, cmd.payload);
     case 'PickPerk':
       return applyPickPerk(ctx, p, cmd.payload);
+    case 'Produce':
+      return applyProduce(ctx, p, cmd.payload);
+    case 'Train':
+      return applyTrain(ctx, p, cmd.payload);
     case 'Surrender':
       ctx.ps.defeated[p] = WIN_SURRENDER;
       ctx.ps.domTicks[p] = 0;
@@ -328,9 +338,24 @@ function applyCancel(ctx: SimContext, p: number, ids: readonly number[]): boolea
     }
     if (w.research[i] !== 0) {
       const t = ctx.config.techs[w.research[i]! - 1];
-      if (t !== undefined) ctx.ps.scrap[p] = ctx.ps.scrap[p]! + refundOf(ctx, t.scrapCost);
+      if (t !== undefined)
+        ctx.ps.scrap[p] = ctx.ps.scrap[p]! + refundOf(ctx, researchCost(ctx, p, t));
       w.research[i] = 0;
       w.work[i] = 0;
+      any = true;
+    }
+    // data 0.15.0: robotproductie of training stoppen, met teruggave van wat de run kostte
+    if (w.job[i] !== 0) {
+      let cost = 0;
+      if (w.jobKind[i] === JOB_PRODUCE) cost = ctx.unitType(w.job[i]!)?.scrapCost ?? 0;
+      else if (w.jobKind[i] === JOB_TRAIN) {
+        const tr = ctx.config.training[w.job[i]! - 1];
+        cost = tr === undefined ? 0 : trainCost(ctx, p, tr);
+      }
+      ctx.ps.scrap[p] = ctx.ps.scrap[p]! + refundOf(ctx, cost);
+      w.job[i] = 0;
+      w.jobKind[i] = JOB_NONE;
+      w.jobWork[i] = 0;
       any = true;
     }
     if (cancelRevive(ctx, p, i, (cost) => refundOf(ctx, cost))) any = true;
@@ -346,11 +371,8 @@ function applyCancel(ctx: SimContext, p: number, ids: readonly number[]): boolea
 function applyResearch(ctx: SimContext, p: number, techId: number): boolean {
   const t = isInt(techId) ? ctx.config.techs[techId] : undefined;
   if (t === undefined || t.factionId !== ctx.players[p]!.factionId) return false;
-  if (
-    hasTechs(ctx, p, [t.techId]) ||
-    !hasTechs(ctx, p, t.prereqTech) ||
-    ctx.ps.scrap[p]! < t.scrapCost
-  )
+  const cost = researchCost(ctx, p, t);
+  if (hasTechs(ctx, p, [t.techId]) || !hasTechs(ctx, p, t.prereqTech) || ctx.ps.scrap[p]! < cost)
     return false;
   const w = ctx.world;
   let lab = -1;
@@ -361,12 +383,13 @@ function applyResearch(ctx: SimContext, p: number, techId: number): boolean {
       lab < 0 &&
       w.typeId[i] === t.buildingTypeId &&
       w.bstate[i] === BSTATE_DONE &&
-      w.research[i] === 0
+      w.research[i] === 0 &&
+      w.job[i] === 0
     )
       lab = i;
   }
   if (lab < 0) return false;
-  ctx.ps.scrap[p] = ctx.ps.scrap[p]! - t.scrapCost;
+  ctx.ps.scrap[p] = ctx.ps.scrap[p]! - cost;
   w.research[lab] = t.techId + 1;
   w.work[lab] = 0;
   return true;
@@ -383,12 +406,13 @@ function applyCraftTo(
   const roles = ctx.config.factions[ctx.players[p]!.factionId]!.roleTypeIds;
   let any = false;
   for (const i of ownedWith(ctx, ids, p, UNIT)) {
-    if (w.has(i, C.hero)) continue; // de held schoolt niet om
+    if (w.has(i, C.hero) || isRobot(ctx, i)) continue; // de held en robots scholen niet om
     const typeId = pick(i, roles);
     const t = typeId === 0 ? undefined : ctx.unitType(typeId);
     if (
       t === undefined ||
       t.factionId !== ctx.players[p]!.factionId ||
+      t.producedAtTypeId !== 0 || // een robot wordt nieuw gebouwd (Produce), nooit omgeschoold
       !hasTechs(ctx, p, t.prereqTech)
     )
       continue;

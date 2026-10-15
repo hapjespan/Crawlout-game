@@ -15,6 +15,7 @@ import {
   emptySim,
   testInit,
   typeByKey,
+  heroResearchCost,
 } from './helpers.js';
 
 // Turrets (besluit 8, fase-0 sectie 14), de AI die de prereqTech van zijn bouworder onderzoekt, en Cancel op het
@@ -152,8 +153,9 @@ describe('turrets', () => {
     sim.ps.zoneY[0 * MAX_ABILITIES] = mid.y;
     sim.ps.zoneTicks[0 * MAX_ABILITIES] = 100;
     play(sim, 1);
+    // +25% Lockdown en +10% van de passieven van de levende Opziener op turrets (data 0.15.0), in één som
     expect(sim.getUnit(enemy)!.hp).toBe(
-      scavType.maxHp - idiv(idiv(12 * 1250, 1000) * mult(scavType.armorType), 1000),
+      scavType.maxHp - idiv(idiv(12 * 1350, 1000) * mult(scavType.armorType), 1000),
     );
   });
 
@@ -209,7 +211,10 @@ describe('AI onderzoekt de prereqTech van zijn bouworder', () => {
     sim.setScrap(0, tech.scrapCost + 1000);
     play(sim, 1);
     expect(sim.world.research[sim.world.resolve(ws)]).toBe(techId('geweerrek') + 1);
-    expect(sim.playerStatus(0).scrap).toBe(1000);
+    // de held leeft: onderzoek is goedkoper door de passieven van de Opziener (data 0.15.0)
+    expect(sim.playerStatus(0).scrap).toBe(
+      1000 + tech.scrapCost - heroResearchCost(tech.scrapCost),
+    );
     const ev = play(sim, tech.researchTicks + 40);
     expect(sim.researched(0)).toContain(techId('geweerrek'));
     expect(ev.some((e) => e.type === EVENT_TYPE.buildingPlaced && e.b === TURRET)).toBe(true);

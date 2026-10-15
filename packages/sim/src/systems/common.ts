@@ -1,6 +1,6 @@
 import { MAX_ENTITIES, MAX_PLAYERS, OWNER_NEUTRAL } from '@crawlout/protocol';
 import type { SimBuildingType, SimConfig, SimMap, SimPlayer, SimUnitType } from '../config.js';
-import { MAX_ABILITIES } from '../config.js';
+import { MAX_ABILITIES, SPECIAL_COUNT } from '../config.js';
 import type { World } from '../ecs/world.js';
 import { BSTATE_DONE, C, NO_FIELD, NO_GOAL } from '../ecs/world.js';
 import type { EventBuffer } from '../events.js';
@@ -10,6 +10,7 @@ import { idiv, imod } from '../math/int.js';
 import { atan2A } from '../math/trig.js';
 import type { Rng } from '../rng.js';
 import type { Auras } from './hero.js';
+import type { RobotRates } from './robots.js';
 
 /** Per-speler state (SoA op MAX_PLAYERS). Gaat de hash en de serialisatie in. */
 export class PlayerState {
@@ -54,6 +55,13 @@ export class PlayerState {
   readonly zoneX = new Int32Array(MAX_PLAYERS * MAX_ABILITIES);
   readonly zoneY = new Int32Array(MAX_PLAYERS * MAX_ABILITIES);
   readonly zoneTicks = new Int32Array(MAX_PLAYERS * MAX_ABILITIES);
+  /** Getrainde SPECIAL-punten per speler en letter (data 0.15.0, training.json; S P E C I A L). Blijven na de dood van de held. */
+  readonly trained = new Uint8Array(MAX_PLAYERS * SPECIAL_COUNT);
+  /** Vangnet (data 0.15.0): ticks dat aan de voorwaarde voldaan is (één timer per speler) en het aantal aankomsten. */
+  readonly netTimer = new Int32Array(MAX_PLAYERS);
+  readonly netArrivals = new Int32Array(MAX_PLAYERS);
+  /** Scripted AI: index in de robotvolgorde (robots.sequence) van de volgende robot. */
+  readonly aiRobot = new Int32Array(MAX_PLAYERS);
 }
 
 export const NO_WINNER = OWNER_NEUTRAL;
@@ -166,6 +174,8 @@ export interface SimContext {
   readonly claimPoints: readonly number[];
   /** Ability-zones van deze tick (afgeleid, systems/hero.ts auraSystem). */
   readonly auras: Auras;
+  /** Tempo van robots zonder technicus van deze tick (afgeleid, systems/robots.ts robotRulesSystem). */
+  readonly robotRates: RobotRates;
   /** Gebouwen en scrap-nodes als lijst (afgeleid, ververst zich zelf; zie EntityIndex). */
   readonly index: EntityIndex;
   /** Padafstanden over het terrein voor de keuzes van de AI (afgeleid, gecachet; zie pathdist.ts). */
@@ -438,10 +448,18 @@ export function scanRing(
   return -1;
 }
 
+/** Geometrie: een nieuwe unit naast een gebouw komt op een van de eerste zoveel vrije cellen eromheen (roteert per tick). */
+export const SPAWN_SPREAD = 8;
+
 /** Geometrie: zover (in ringen van 1 cel) zoekt de sim naar een vrije cel rond een gebouw. */
 export const MAX_FREE_RING = 24;
 
-/** De vrije (begaanbare) cel rond een rechthoek die het dichtst bij (x, y) ligt, ring voor ring. -1 als er geen is. */
+/**
+ * De vrije (begaanbare) cel rond een rechthoek die het dichtst bij (x, y) ligt, ring voor ring. Bij gelijke afstand de
+ * cel het dichtst bij het midden van de map, dan rechts van de richting van (x, y) naar het midden (kruisproduct): gelijk
+ * onder de 180-gradenspiegel (content-x: de scanvolgorde alleen was dat niet, en een gebouw dat op twee gespiegelde
+ * groepjes plunderaars werd gezet, duwde ze verschillend weg). -1 als er geen is.
+ */
 export function nearestFreeCellAround(
   ctx: SimContext,
   fx: number,
@@ -452,18 +470,28 @@ export function nearestFreeCellAround(
   y: number,
 ): number {
   const map = ctx.map;
+  const mx = map.w << 7;
+  const my = map.h << 7;
   for (let d = 1; d <= MAX_FREE_RING; d++) {
     let best = -1;
     let bestD = 0;
+    let bestM = 0;
+    let bestX = 0;
     scanRing(map, fx, fy, fw, fh, d, (cx, cy) => {
       const c = cy * map.w + cx;
       if (ctx.terrain.walk[c] !== 1) return false;
-      const dx = (cx << 8) + 128 - x;
-      const dy = (cy << 8) + 128 - y;
+      const px = (cx << 8) + 128;
+      const py = (cy << 8) + 128;
+      const dx = px - x;
+      const dy = py - y;
       const dd = dx * dx + dy * dy;
-      if (best < 0 || dd < bestD) {
+      const m = (px - mx) * (px - mx) + (py - my) * (py - my);
+      const xr = (mx - x) * dy - (my - y) * dx;
+      if (best < 0 || dd < bestD || (dd === bestD && (m < bestM || (m === bestM && xr > bestX)))) {
         best = c;
         bestD = dd;
+        bestM = m;
+        bestX = xr;
       }
       return false;
     });

@@ -2,11 +2,13 @@ import { MAX_ENTITIES, MAX_ENTITIES_PER_COMMAND, OWNER_NEUTRAL } from '@crawlout
 import { ROLES } from '@crawlout/data';
 import type { SimAiScript, SimBuildingType } from '../config.js';
 import { AI_SITE_FRONT, AI_SITE_HQ, MAX_ABILITIES } from '../config.js';
-import { HERO_DEAD, hasTechs, heroOf } from '../effects.js';
+import { HERO_DEAD, hasTechs, heroOf, researchCost } from '../effects.js';
 import {
   BSTATE_DONE,
   BSTATE_SITE,
   C,
+  JOB_PRODUCE,
+  NO_ENTITY,
   ORDER_ATTACK_MOVE,
   ORDER_CRAFT,
   ORDER_GATHER,
@@ -16,7 +18,7 @@ import { PROVIDES_HQ, PROVIDES_WORKSHOP } from '../fromData.js';
 import { clampI, idiv, imod } from '../math/int.js';
 import { TERRAIN_UNREACHABLE } from '../pathdist.js';
 import type { Census } from './census.js';
-import { takeCensus } from './census.js';
+import { isRobot, takeCensus } from './census.js';
 import { applyCommand, canPlaceType } from './commands.js';
 import type { SimContext } from './common.js';
 import {
@@ -650,6 +652,10 @@ function think(
   const militia: number[] = [];
   const idleMilitia: number[] = [];
   const depots: number[] = [];
+  // robots (data 0.15.0): geen militie (niet in golfgroottes, niet omgeschoold), wel mee met golven en verdediging
+  const robots: number[] = [];
+  const idleRobots: number[] = [];
+  let producing = 0;
   let units = 0;
   let militiaPlanned = 0;
   let buildersPlanned = 0;
@@ -672,6 +678,7 @@ function think(
         if (isWorkshop) workshop = true;
         if (bt !== undefined && (bt.provides & DEPOT_MASK) !== 0) depots.push(i);
       }
+      if (w.jobKind[i] === JOB_PRODUCE && w.job[i] !== 0) producing++;
       if (w.bstate[i] === BSTATE_SITE) {
         if (site < 0) site = i;
         if (w.typeId[i] === script.housingTypeId) housingSite = true;
@@ -680,9 +687,17 @@ function think(
       continue;
     }
     if (!w.has(i, C.unit | C.orders) || w.has(i, C.hero)) continue;
-    units++;
     const ord = w.orderType(i);
     const id = w.idOf(i);
+    if (isRobot(ctx, i)) {
+      robots.push(id);
+      // een robot die repareert (zonder order, met een doel) is niet vrij
+      const repairing = ord === ORDER_NONE && w.target[i] !== NO_ENTITY && w.damage[i]! <= 0;
+      if (!repairing && (ord === ORDER_NONE || (ord === ORDER_ATTACK_MOVE && raidOver(ctx, p, i))))
+        idleRobots.push(id);
+      continue;
+    }
+    units++;
     if (ord === ORDER_CRAFT) {
       const to = ctx.unitType(w.ordX[w.currentOrder(i)]!);
       if (to?.role === ROLE_MILITIA) militiaPlanned++;
@@ -780,7 +795,8 @@ function think(
     }
   }
 
-  // 2b huisvesting zodra de pop-cap in zicht komt
+  // 2b huisvesting zodra de pop-cap in zicht komt (zolang de bedden onder de ruimte voor bewoners blijven: popCapMax min
+  // de pop van de robots, data 0.15.0)
   const popCap = census.popCap(ctx, p);
   const hbt = script.housingTypeId === 0 ? undefined : ctx.buildingType(script.housingTypeId);
   if (
@@ -788,7 +804,7 @@ function think(
     fields !== null &&
     hbt !== undefined &&
     !housingSite &&
-    popCap < ctx.config.popCapMax &&
+    census.beds[p]! < ctx.config.popCapMax - census.robotPop[p]! - census.reservedPop[p]! &&
     popCap - census.pop[p]! <= script.housingFreeBeds
   ) {
     if (
@@ -895,6 +911,10 @@ function think(
       break;
     }
   }
+
+  // 4b robots (data 0.15.0): vanaf fromTicks in de fabriek, cyclisch uit de volgorde, tot max levende robots
+  if (!saving && script.robots !== null && tick >= script.robots.fromTicks)
+    produceRobot(ctx, p, script.robots, robots.length + producing);
 
   // 5 claimen
   if (!saving && fields !== null && tick >= script.claimFromTicks && idleBuilders.length > 0) {
@@ -1029,7 +1049,7 @@ function think(
       ps.aiWaveAt[p] = tick + script.waveIntervalTicks + jitter;
       return;
     }
-    const send = wave.allIn ? [...militia, ...scavs] : [...militia];
+    const send = wave.allIn ? [...militia, ...scavs, ...robots] : [...militia, ...robots];
     if (heroId >= 0) send.push(heroId);
     // een raid neemt een bouwer mee (een vrije als die er is) die naast het punt een claimgebouw zet: valt het
     // claimgebouw van de vijand, dan is het punt van hem in plaats van neutraal
@@ -1048,7 +1068,7 @@ function think(
   }
 
   // 10b verdedigen of verzamelen: militie (en de held) zonder taak
-  const idle = [...idleMilitia];
+  const idle = [...idleMilitia, ...idleRobots];
   if (heroId >= 0 && w.orderType(hero) === ORDER_NONE) idle.push(heroId);
   if (idle.length === 0 || fields === null) return;
   let to: { x: number; y: number };
@@ -1082,6 +1102,52 @@ function think(
       type: 'AttackMove',
       payload: { ids, x: to.x, y: to.y },
     });
+}
+
+/**
+ * Robotproductie van de AI (data 0.15.0, ai/*.json robots): zolang er minder dan max robots zijn (levend plus in
+ * productie), bestelt hij in een vrije eigen fabriek het volgende type uit de volgorde (cyclisch, PlayerState.aiRobot);
+ * een type zonder de techs slaat hij over, een type dat hij nog niet kan betalen of dat niet in popCapMax past laat hij
+ * wachten.
+ */
+function produceRobot(
+  ctx: SimContext,
+  p: number,
+  rs: NonNullable<SimAiScript['robots']>,
+  have: number,
+): void {
+  if (have >= rs.max) return;
+  const w = ctx.world;
+  const n = rs.typeIds.length;
+  for (let k = 0; k < n; k++) {
+    const at = imod(ctx.ps.aiRobot[p]! + k, n);
+    const t = ctx.unitType(rs.typeIds[at]!);
+    if (t === undefined || t.producedAtTypeId === 0 || !hasTechs(ctx, p, t.prereqTech)) continue;
+    if (ctx.ps.scrap[p]! < t.scrapCost) return;
+    let b = -1;
+    for (let i = 0; i < w.highWater && b < 0; i++) {
+      if (
+        w.has(i, C.building) &&
+        w.owner[i] === p &&
+        w.typeId[i] === t.producedAtTypeId &&
+        w.bstate[i] === BSTATE_DONE &&
+        w.job[i] === 0 &&
+        w.research[i] === 0
+      )
+        b = i;
+    }
+    if (b < 0) return;
+    if (
+      applyCommand(ctx, {
+        playerId: p,
+        seq: 0,
+        type: 'Produce',
+        payload: { buildingId: w.idOf(b), loadoutId: t.loadoutId },
+      })
+    )
+      ctx.ps.aiRobot[p] = at + 1 < n ? at + 1 : 0;
+    return;
+  }
 }
 
 /**
@@ -1328,10 +1394,10 @@ function researchFor(ctx: SimContext, p: number, need: readonly number[]): numbe
       if (w.research[i] === t.techId + 1) return RESEARCH_WAIT; // loopt al
       if (w.typeId[i] !== t.buildingTypeId) continue;
       exists = true;
-      if (w.bstate[i] === BSTATE_DONE && w.research[i] === 0) free = true;
+      if (w.bstate[i] === BSTATE_DONE && w.research[i] === 0 && w.job[i] === 0) free = true;
     }
     if (!exists) return RESEARCH_IMPOSSIBLE;
-    return free && ctx.ps.scrap[p]! >= t.scrapCost ? t.techId : RESEARCH_WAIT;
+    return free && ctx.ps.scrap[p]! >= researchCost(ctx, p, t) ? t.techId : RESEARCH_WAIT;
   };
   for (const techId of need) {
     if (hasTechs(ctx, p, [techId])) continue;

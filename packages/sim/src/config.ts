@@ -57,6 +57,60 @@ export interface SimUnitType {
   readonly popCost: number;
   /** Tech-ids die de speler onderzocht moet hebben voor Craft of SetRole naar dit type. */
   readonly prereqTech: readonly number[];
+  /**
+   * Robots (data 0.15.0): gebouw-typeId waar dit type nieuw gebouwd wordt (Produce), 0 = omscholen van een bewoner in
+   * de werkplaats (Craft). Een unit van een type met producedAtTypeId !== 0 is een robot: geen bed, geen omscholing.
+   */
+  readonly producedAtTypeId: number;
+  /** Support-robot die repareert, of null. */
+  readonly repair: SimRepair | null;
+  /** Belegering, of null. */
+  readonly siege: SimSiege | null;
+}
+
+/** Reparatie (data 0.15.0, loadouts repair): een vrije unit zoekt zelf een beschadigd eigen doel en herstelt het. */
+export interface SimRepair {
+  /** Herstel in duizendsten hp per tick. */
+  readonly milliHpPerTick: number;
+  /** Afstand (tot de rand van een footprint, of de rand van een unit) waarbinnen hij repareert. */
+  readonly range: number;
+  /** Afstand waarbinnen een vrije unit zelf een doel zoekt. */
+  readonly seekRange: number;
+  readonly buildings: boolean;
+  readonly robots: boolean;
+}
+
+/** Belegering (data 0.15.0, loadouts siege). */
+export interface SimSiege {
+  /** Extra schade tegen gebouwen in promille, bovenop de damage-matrix. */
+  readonly vsBuildingsPermille: number;
+  /** Kiest zelf eerst gebouwen als doel (anders units eerst, zoals iedereen). */
+  readonly buildingsFirst: boolean;
+}
+
+/** Turret-netwerk (data 0.15.0, buildings network). */
+export interface SimTurretNetwork {
+  readonly requiresTech: number;
+  /** Midden tot midden, grens inclusief. */
+  readonly radius: number;
+  readonly damagePermillePerTurret: number;
+  readonly maxDamagePermille: number;
+}
+
+/** Trainingsprogramma (data 0.15.0, training.json). Op programId: training[k].programId === k. */
+export interface SimTraining {
+  readonly programId: number;
+  readonly factionId: number;
+  /** Index in de SPECIAL-volgorde S P E C I A L. */
+  readonly special: number;
+  readonly buildingTypeId: number;
+  readonly scrapCost: number;
+  readonly scrapCostStep: number;
+  readonly trainTicks: number;
+  readonly trainTicksStep: number;
+  readonly pointsPerRun: number;
+  readonly maxPoints: number;
+  readonly prereqTech: readonly number[];
 }
 
 /** Eén gebouwtype. typeId = buildingTypeId(buildingId) uit @crawlout/data. */
@@ -82,6 +136,8 @@ export interface SimBuildingType {
   readonly damageType: number;
   readonly range: number;
   readonly cooldown: number;
+  /** Turret-netwerk (data 0.15.0), of null. */
+  readonly network: SimTurretNetwork | null;
 }
 
 /** Doel van een effect: alles van de speler, de held, of één unit- of gebouwtype (typeId). */
@@ -165,6 +221,8 @@ export interface SimHero {
   readonly xpPerAssist: number;
   readonly xpAssistRadius: number;
   readonly abilities: readonly SimAbility[];
+  /** Passieve effecten voor de speler zolang de held leeft (data 0.15.0), met de semantiek van perk-effecten. */
+  readonly passives: readonly SimEffect[];
   /** perkIds waaruit de held kiest. */
   readonly perkPool: readonly number[];
   readonly reviveScrap: number;
@@ -205,6 +263,23 @@ export interface SimFaction {
   readonly claimTypeId: number;
   /** De held van deze factie (index in SimConfig.heroes), -1 = geen held. */
   readonly heroId: number;
+  /**
+   * Vangnet (data 0.15.0, safetyNet radiobaken_instroom): onder threshold bewoners en met een voltooid baken komt er elke
+   * intervalTicks een bewoner van typeId bij het baken, hoogstens maxArrivals keer per potje. null = geen vangnet.
+   */
+  readonly safetyNet: {
+    readonly threshold: number;
+    readonly intervalTicks: number;
+    readonly maxArrivals: number;
+    readonly typeId: number;
+  } | null;
+  /** Technicus-regel (data 0.15.0); null voor een factie zonder robots. */
+  readonly robotRules: {
+    readonly robotsPerTechnician: number;
+    /** Indices in ROLES. */
+    readonly technicianRoles: readonly number[];
+    readonly penaltyPermille: number;
+  } | null;
 }
 
 /** Plaats van een gebouw uit de AI-bouwvolgorde (AI_SITES in packages/data). */
@@ -258,6 +333,12 @@ export interface SimAiScript {
   readonly pushFromTicks: number;
   /** Zonder bruikbare scrap-node gaat elke golf naar het vijandelijke hoofdgebouw, met de plunderaars mee. */
   readonly allInWithoutNodes: boolean;
+  /** Robotproductie (data 0.15.0): unit-typeIds cyclisch vanaf fromTicks, tot max levende robots; null = geen. */
+  readonly robots: {
+    readonly typeIds: readonly number[];
+    readonly fromTicks: number;
+    readonly max: number;
+  } | null;
 }
 
 export interface SimConfig {
@@ -274,6 +355,8 @@ export interface SimConfig {
   readonly heroes: readonly SimHero[];
   /** Op perkId; hoogstens MAX_PERKS (bitset per held). */
   readonly perks: readonly SimPerk[];
+  /** Trainingsprogramma's op programId (data 0.15.0). */
+  readonly training: readonly SimTraining[];
   readonly special: SimSpecialTuning;
   /** damageMatrix[damageType][armorType] in promille (1000 = normale schade). */
   readonly damageMatrix: readonly (readonly number[])[];
@@ -351,8 +434,10 @@ export const MAX_PERKS = 32;
 export const MAX_ABILITIES = 4;
 /** SPECIAL heeft zeven letters. */
 export const SPECIAL_COUNT = 7;
-/** Aantal effect-stats (EffectStat in packages/data): hpPct .. researchTimePct en de zeven SPECIAL-letters. */
-export const EFFECT_STAT_COUNT = 14;
+/** Aantal effect-stats (EffectStat in packages/data): hpPct .. researchTimePct, de zeven SPECIAL-letters en researchCostPct. */
+export const EFFECT_STAT_COUNT = 15;
+/** Geometrie van de state: getrainde punten per letter staan in een uint8 per speler en letter. */
+export const MAX_TRAINED_POINTS = 255;
 /** Grens voor bouw- en onderzoekstijd in ticks: voortgang telt in duizendsten van een tick (PROGRESS_ONE) in een int32. */
 export const MAX_WORK_TICKS = 2_000_000;
 const U16 = 0xffff;
@@ -461,6 +546,14 @@ export function validateEnv(env: SimEnv): void {
       `${at}: kosten`,
     );
     for (const t of u.prereqTech) req(intIn(t, 0, U16), `${at}: prereqTech`);
+    if (u.repair !== null)
+      req(
+        intIn(u.repair.milliHpPerTick, 0, I31) &&
+          intIn(u.repair.range, 0, MAX_MAP_CELLS_SIDE << 8) &&
+          intIn(u.repair.seekRange, 0, MAX_MAP_CELLS_SIDE << 8),
+        `${at}: repair`,
+      );
+    if (u.siege !== null) req(intIn(u.siege.vsBuildingsPermille, 0, 100000), `${at}: siege`);
   }
   const buildingIds = new Set<number>();
   for (const b of config.buildingTypes) {
@@ -494,7 +587,20 @@ export function validateEnv(env: SimEnv): void {
       intIn(b.range, 0, MAX_MAP_CELLS_SIDE << 8) && intIn(b.cooldown, 0, I31),
       `${at}: range of cooldown`,
     );
+    if (b.network !== null)
+      req(
+        intIn(b.network.requiresTech, 0, U16) &&
+          intIn(b.network.radius, 0, MAX_MAP_CELLS_SIDE << 8) &&
+          intIn(b.network.damagePermillePerTurret, 0, 100000) &&
+          intIn(b.network.maxDamagePermille, 0, 100000),
+        `${at}: network`,
+      );
   }
+  for (const u of config.unitTypes)
+    req(
+      u.producedAtTypeId === 0 || buildingIds.has(u.producedAtTypeId),
+      `unittype ${u.typeId}: producedAtTypeId`,
+    );
   config.factions.forEach((f, k) => {
     const at = `factie ${k}`;
     req(f.factionId === k, `${at}: factionId moet de index zijn`);
@@ -509,6 +615,21 @@ export function validateEnv(env: SimEnv): void {
     for (const t of f.roleTypeIds) req(t === 0 || unitIds.has(t), `${at}: roleTypeIds`);
     req(intIn(f.aiScript, -1, config.aiScripts.length - 1), `${at}: aiScript`);
     req(f.claimTypeId === 0 || buildingIds.has(f.claimTypeId), `${at}: claimTypeId`);
+    if (f.safetyNet !== null)
+      req(
+        intIn(f.safetyNet.threshold, 0, 4096) &&
+          intIn(f.safetyNet.intervalTicks, 1, I31) &&
+          intIn(f.safetyNet.maxArrivals, 0, I31) &&
+          unitIds.has(f.safetyNet.typeId),
+        `${at}: safetyNet`,
+      );
+    if (f.robotRules !== null)
+      req(
+        intIn(f.robotRules.robotsPerTechnician, 0, 4096) &&
+          intIn(f.robotRules.penaltyPermille, 0, 1000) &&
+          f.robotRules.technicianRoles.every((r) => intIn(r, 0, 0xff)),
+        `${at}: robotRules`,
+      );
   });
   const checkEffects = (effects: readonly SimEffect[], at: string): void => {
     for (const e of effects) {
@@ -544,9 +665,35 @@ export function validateEnv(env: SimEnv): void {
   for (const u of config.unitTypes)
     for (const t of u.prereqTech)
       req(intIn(t, 0, config.techs.length - 1), `unittype ${u.typeId}: prereqTech`);
-  for (const b of config.buildingTypes)
+  for (const b of config.buildingTypes) {
     for (const t of b.prereqTech)
       req(intIn(t, 0, config.techs.length - 1), `gebouwtype ${b.typeId}: prereqTech`);
+    if (b.network !== null)
+      req(
+        intIn(b.network.requiresTech, 0, config.techs.length - 1),
+        `gebouwtype ${b.typeId}: network.requiresTech`,
+      );
+  }
+  config.training.forEach((tr, k) => {
+    const at = `training ${k}`;
+    req(
+      tr.programId === k &&
+        intIn(tr.factionId, 0, config.factions.length - 1) &&
+        intIn(tr.special, 0, SPECIAL_COUNT - 1) &&
+        buildingIds.has(tr.buildingTypeId),
+      `${at}: id, factie, letter of gebouw`,
+    );
+    req(
+      intIn(tr.scrapCost, 0, I31) &&
+        intIn(tr.scrapCostStep, 0, I31) &&
+        intIn(tr.trainTicks, 1, MAX_WORK_TICKS) &&
+        intIn(tr.trainTicksStep, 0, MAX_WORK_TICKS) &&
+        intIn(tr.pointsPerRun, 1, MAX_TRAINED_POINTS) &&
+        intIn(tr.maxPoints, 0, MAX_TRAINED_POINTS),
+      `${at}: kosten, tijd of punten`,
+    );
+    for (const q of tr.prereqTech) req(intIn(q, 0, config.techs.length - 1), `${at}: prereqTech`);
+  });
   req(config.perks.length <= MAX_PERKS, `meer dan ${MAX_PERKS} perks`);
   config.perks.forEach((pk, k) => {
     req(
@@ -623,6 +770,7 @@ export function validateEnv(env: SimEnv): void {
       }
     }
     for (const q of hr.perkPool) req(intIn(q, 0, config.perks.length - 1), `${at}: perkPool`);
+    checkEffects(hr.passives, `${at}: passives`);
     req(
       intIn(hr.reviveScrap, 0, I31) &&
         intIn(hr.reviveTicks, 0, I31) &&
@@ -691,6 +839,14 @@ export function validateEnv(env: SimEnv): void {
       intIn(s.claimSafeRadius, 0, MAX_MAP_CELLS_SIDE << 8) && intIn(s.claimFarFromTicks, 0, I31),
       'aiScript claim-escorte',
     );
+    if (s.robots !== null)
+      req(
+        s.robots.typeIds.length > 0 &&
+          s.robots.typeIds.every((t) => unitIds.has(t)) &&
+          intIn(s.robots.fromTicks, 0, I31) &&
+          intIn(s.robots.max, 0, 4096),
+        'aiScript robots',
+      );
   }
   for (const p of players) {
     req(
@@ -760,6 +916,24 @@ export function envHash(env: SimEnv): number {
       u.popCost,
     ]);
     h = hashInts(h, u.prereqTech);
+    h = hashInts(h, [u.producedAtTypeId]);
+    h = hashInts(
+      h,
+      u.repair === null
+        ? [0]
+        : [
+            1,
+            u.repair.milliHpPerTick,
+            u.repair.range,
+            u.repair.seekRange,
+            u.repair.buildings ? 1 : 0,
+            u.repair.robots ? 1 : 0,
+          ],
+    );
+    h = hashInts(
+      h,
+      u.siege === null ? [0] : [1, u.siege.vsBuildingsPermille, u.siege.buildingsFirst ? 1 : 0],
+    );
   }
   h = fnv1aInt(h, c.buildingTypes.length);
   for (const b of c.buildingTypes) {
@@ -778,6 +952,13 @@ export function envHash(env: SimEnv): number {
     ]);
     h = hashInts(h, b.prereqTech);
     h = hashInts(h, [b.damage, b.damageType, b.range, b.cooldown]);
+    const n = b.network;
+    h = hashInts(
+      h,
+      n === null
+        ? [0]
+        : [1, n.requiresTech, n.radius, n.damagePermillePerTurret, n.maxDamagePermille],
+    );
   }
   h = fnv1aInt(h, c.factions.length);
   for (const f of c.factions) {
@@ -794,6 +975,14 @@ export function envHash(env: SimEnv): number {
     h = fnv1aInt(h, f.startUnits.length);
     for (const s of f.startUnits) h = hashInts(h, [s.typeId, s.count]);
     h = hashInts(h, f.roleTypeIds);
+    const sn = f.safetyNet;
+    h = hashInts(
+      h,
+      sn === null ? [0] : [1, sn.threshold, sn.intervalTicks, sn.maxArrivals, sn.typeId],
+    );
+    const rr = f.robotRules;
+    h = hashInts(h, rr === null ? [0] : [1, rr.robotsPerTechnician, rr.penaltyPermille]);
+    if (rr !== null) h = hashInts(h, rr.technicianRoles);
   }
   h = fnv1aInt(h, c.aiScripts.length);
   for (const s of c.aiScripts) {
@@ -836,6 +1025,8 @@ export function envHash(env: SimEnv): number {
       s.waveArmyGrowth,
       s.waveMaxWaitTicks,
     ]);
+    h = hashInts(h, s.robots === null ? [0] : [1, s.robots.fromTicks, s.robots.max]);
+    if (s.robots !== null) h = hashInts(h, s.robots.typeIds);
   }
   h = fnv1aInt(h, c.techs.length);
   for (const t of c.techs) {
@@ -847,6 +1038,22 @@ export function envHash(env: SimEnv): number {
   for (const pk of c.perks) {
     h = hashInts(h, [pk.perkId, pk.requiresStat, pk.requiresMin]);
     h = hashEffects(h, pk.effects);
+  }
+  h = fnv1aInt(h, c.training.length);
+  for (const tr of c.training) {
+    h = hashInts(h, [
+      tr.programId,
+      tr.factionId,
+      tr.special,
+      tr.buildingTypeId,
+      tr.scrapCost,
+      tr.scrapCostStep,
+      tr.trainTicks,
+      tr.trainTicksStep,
+      tr.pointsPerRun,
+      tr.maxPoints,
+    ]);
+    h = hashInts(h, tr.prereqTech);
   }
   h = fnv1aInt(h, c.heroes.length);
   for (const hr of c.heroes) {
@@ -864,6 +1071,7 @@ export function envHash(env: SimEnv): number {
     h = hashInts(h, hr.special);
     h = hashInts(h, hr.xpThresholds);
     h = hashInts(h, hr.perkPool);
+    h = hashEffects(h, hr.passives);
     h = fnv1aInt(h, hr.abilities.length);
     for (const a of hr.abilities) {
       h = hashInts(h, [a.cooldownTicks, a.rangeU, a.radiusU, a.durationTicks]);

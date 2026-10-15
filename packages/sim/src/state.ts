@@ -16,7 +16,7 @@ if (new Uint8Array(new Uint16Array([1]).buffer)[0] !== 1)
   throw new Error('sim: big-endian platform; state en hash vereisen little-endian');
 
 export const STATE_MAGIC = 0x4c575243; // 'CRWL' als little-endian bytes
-export const STATE_FORMAT_VERSION = 7;
+export const STATE_FORMAT_VERSION = 8;
 
 /** Header-velden (uint32), in volgorde. */
 const H = {
@@ -99,6 +99,7 @@ function bodyChunks(p: StateParts): Uint8Array[] {
     ps.heroTimer,
   );
   players.push(ps.abCooldown, ps.zoneX, ps.zoneY, ps.zoneTicks);
+  players.push(ps.trained, ps.netTimer, ps.netArrivals, ps.aiRobot);
   for (const a of players) out.push(bytesOf(a, a.length));
   out.push(bytesOf(p.globals.words, p.globals.words.length));
   return out;

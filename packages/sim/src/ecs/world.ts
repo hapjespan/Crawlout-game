@@ -32,6 +32,11 @@ export const PHASE_WORK = 1; // aan het werk bij het doel (verzamelen, bouwen, w
 export const PHASE_RETURN = 2; // verzamelen: onderweg naar een depot
 export const PHASE_CRAFT = 3; // werkplaats: betaald, aan het omscholen
 
+/** Soort werk in een gebouw (veld `jobKind`, data 0.15.0). */
+export const JOB_NONE = 0;
+export const JOB_PRODUCE = 1;
+export const JOB_TRAIN = 2;
+
 /** Bouwstatus (veld `bstate`). */
 export const BSTATE_NONE = 0;
 export const BSTATE_SITE = 1; // in aanbouw
@@ -147,6 +152,15 @@ export class World {
   readonly progress = new Int32Array(MAX_ENTITIES);
   /** Onderzoek in een voltooid gebouw: techId + 1, 0 = geen; de voortgang staat in `work` (duizendsten van een tick). */
   readonly research = new Uint16Array(MAX_ENTITIES);
+  /**
+   * Werk in een voltooid gebouw naast onderzoek (data 0.15.0): JOB_PRODUCE (een robot, job = loadoutId + 1) of
+   * JOB_TRAIN (een trainingsprogramma, job = programId + 1); 0 = geen. De voortgang in ticks staat in `jobWork`.
+   */
+  readonly job = new Uint16Array(MAX_ENTITIES);
+  readonly jobKind = new Uint8Array(MAX_ENTITIES);
+  readonly jobWork = new Int32Array(MAX_ENTITIES);
+  /** Reparatie: opgespaarde duizendsten hp van een repareerde unit (0..999). */
+  readonly repairMilli = new Uint16Array(MAX_ENTITIES);
   // ResourceNode
   readonly amount = new Int32Array(MAX_ENTITIES);
   // Claim: de eigenaar staat in `owner` (OWNER_NEUTRAL als onbezet). claimBy en claimProgress tonen de voortgang van
@@ -337,6 +351,10 @@ export function entityStateArrays(w: World): readonly StateArray[] {
     one('claimBy', w.claimBy),
     one('claimProgress', w.claimProgress),
     one('seenBy', w.seenBy),
+    one('job', w.job),
+    one('jobKind', w.jobKind),
+    one('jobWork', w.jobWork),
+    one('repairMilli', w.repairMilli),
     one('anim', w.anim),
     one('animT', w.animT),
     one('flags', w.flags),

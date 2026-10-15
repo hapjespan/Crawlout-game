@@ -3,6 +3,8 @@ import {
   BSTATE_DONE,
   BSTATE_SITE,
   C,
+  JOB_PRODUCE,
+  JOB_TRAIN,
   ORDER_BUILD,
   ORDER_CRAFT,
   ORDER_GATHER,
@@ -24,6 +26,9 @@ import {
   workRate,
 } from '../effects.js';
 import { heroSystem } from './hero.js';
+import { productionWork, repairWork } from './robots.js';
+import { safetyNetSystem } from './safetyNet.js';
+import { trainingWork } from './training.js';
 import {
   PROGRESS_ONE,
   applyUnitType,
@@ -41,6 +46,7 @@ import {
   nearestOwnBuilding,
   nodeAllowed,
   nthFreeCellAround,
+  SPAWN_SPREAD,
   playerInTurn,
   withinReach,
 } from './common.js';
@@ -50,9 +56,6 @@ import { PROVIDES_WORKSHOP } from '../fromData.js';
 // Systeem 6: economie. Verzamelen (een rit duurt gatherTicks en levert gatherAmount), afleveren bij een depot,
 // bouwen (elke bouwer in bereik telt één tick voortgang), omscholen in de werkplaats (betalen, dan craftTicks
 // wachten) en huisvestingsgroei. Units in oplopende id-volgorde; dat bepaalt wie eerst betaalt.
-
-/** Geometrie: een nieuwe bewoner komt op een van de eerste zoveel vrije cellen rond het hoofdgebouw (roteert per tick). */
-const SPAWN_SPREAD = 8;
 
 export function economySystem(ctx: SimContext, census: Census): void {
   const w = ctx.world;
@@ -65,11 +68,18 @@ export function economySystem(ctx: SimContext, census: Census): void {
     else if (type === ORDER_BUILD) buildWork(ctx, i, reach);
     else if (type === ORDER_CRAFT) craftWork(ctx, i);
   }
-  for (let i = 0; i < w.highWater; i++)
-    if (w.research[i] !== 0 && w.has(i, C.building)) researchWork(ctx, i);
+  for (let i = 0; i < w.highWater; i++) {
+    if (!w.has(i, C.building)) continue;
+    if (w.research[i] !== 0) researchWork(ctx, i);
+    // data 0.15.0: robotproductie en training in voltooide gebouwen
+    if (w.jobKind[i] === JOB_PRODUCE) productionWork(ctx, i);
+    else if (w.jobKind[i] === JOB_TRAIN) trainingWork(ctx, i);
+  }
+  repairWork(ctx);
   takeCensus(ctx, census);
   // de groei in dezelfde doordraaiende beurtvolgorde als de AI: wie eerst groeit, krijgt de lagere index
   for (let k = 0; k < ctx.playerCount; k++) growth(ctx, census, playerInTurn(ctx, k));
+  safetyNetSystem(ctx, census);
   heroSystem(ctx, census);
 }
 

@@ -4,6 +4,7 @@ import { loadGameDataFromDir } from '@crawlout/data/node';
 import type { CommandEnvelope, FrameBundle } from '@crawlout/protocol';
 import { createSim, simConfigFromGameData } from '../src/index.js';
 import type { Sim, SimInit, SimMap, SimPlayer } from '../src/index.js';
+import { statIndex } from '../src/fromData.js';
 import { cellCenter, createTestMap, testPlayers } from '../src/testing.js';
 
 /** Echte data uit data/, zoals de client en de replay die laden. */
@@ -137,4 +138,15 @@ export function runFrames(
     out.push(sim.tick());
   }
   return out;
+}
+
+/**
+ * Kosten van een onderzoek zolang de held leeft (data 0.15.0): de passieven van de Opziener maken onderzoek goedkoper
+ * (researchCostPct, target alle). Zelfde afronding als de sim (scalePermille).
+ */
+export function heroResearchCost(scrapCost: number): number {
+  const stat = statIndex('researchCostPct');
+  let d = 0;
+  for (const e of CONFIG.heroes[0]!.passives) if (e.stat === stat) d += e.delta;
+  return Math.max(0, Math.trunc((scrapCost * (1000 + d)) / 1000));
 }

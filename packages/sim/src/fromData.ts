@@ -1,6 +1,7 @@
 import {
   EffectStat,
   PROVIDES,
+  REPAIR_TARGETS,
   ROLES,
   buildingTypeId,
   heroTypeId,
@@ -87,6 +88,8 @@ const providesBit = (name: (typeof PROVIDES)[number]): number => 1 << PROVIDES.i
 export const PROVIDES_HQ = providesBit('hq');
 export const PROVIDES_WORKSHOP = providesBit('werkplaats');
 export const PROVIDES_CLAIM = providesBit('claim');
+export const PROVIDES_TURRET = providesBit('turret');
+export const PROVIDES_BEACON = providesBit('beacon');
 
 const ROLE_SCAVENGER = ROLES.indexOf('scavenger');
 
@@ -98,7 +101,13 @@ function defaultLoadoutForRole(
 ): LoadoutData | undefined {
   let best: LoadoutData | undefined;
   for (const l of data.loadouts) {
-    if (l.factionId !== factionId || l.role !== role || l.prereqTech.length > 0) continue;
+    if (
+      l.factionId !== factionId ||
+      l.role !== role ||
+      l.prereqTech.length > 0 ||
+      l.producedAt >= 0
+    )
+      continue;
     if (best === undefined || l.scrapCost < best.scrapCost) best = l;
   }
   return best;
@@ -142,6 +151,23 @@ export function simConfigFromGameData(data: GameData): SimConfig {
       claimTypeId: claim === undefined ? 0 : buildingTypeId(claim.id),
       // De eerste held van de factie (laagste id): de lobby kent nog geen heldkeuze.
       heroId: data.heroes.findIndex((h) => h.factionId === f.id),
+      safetyNet:
+        f.safetyNet.loadoutId < 0
+          ? null
+          : {
+              threshold: f.safetyNet.threshold,
+              intervalTicks: f.safetyNet.intervalTicks,
+              maxArrivals: f.safetyNet.maxArrivals,
+              typeId: unitTypeId(f.safetyNet.loadoutId),
+            },
+      robotRules:
+        f.robotRules === null
+          ? null
+          : {
+              robotsPerTechnician: f.robotRules.robotsPerTechnician,
+              technicianRoles: [...f.robotRules.technicianRoles],
+              penaltyPermille: f.robotRules.robotPenaltyPermille,
+            },
     };
   });
   const heroes: SimHero[] = data.heroes.map((h) => {
@@ -165,6 +191,7 @@ export function simConfigFromGameData(data: GameData): SimConfig {
         durationTicks: a.durationTicks,
         effects: a.effects.map((e) => simAuraEffect(e, `held ${h.key} ability ${a.id}`)),
       })),
+      passives: h.passives.map((e) => simEffect(data, e, `held ${h.key} passives`)),
       perkPool: [...h.perkPool],
       reviveScrap: h.reviveScrap,
       reviveTicks: h.reviveTicks,
@@ -194,6 +221,24 @@ export function simConfigFromGameData(data: GameData): SimConfig {
       craftTicks: l.craftTicks,
       popCost: l.popCost,
       prereqTech: [...l.prereqTech],
+      producedAtTypeId: l.producedAt < 0 ? 0 : buildingTypeId(l.producedAt),
+      repair:
+        l.repair === null
+          ? null
+          : {
+              milliHpPerTick: l.repair.milliHpPerTick,
+              range: l.repair.rangeU,
+              seekRange: l.repair.seekRangeU,
+              buildings: l.repair.targets.includes(REPAIR_TARGETS.indexOf('building')),
+              robots: l.repair.targets.includes(REPAIR_TARGETS.indexOf('robot')),
+            },
+      siege:
+        l.siege === null
+          ? null
+          : {
+              vsBuildingsPermille: l.siege.vsBuildingsPermille,
+              buildingsFirst: l.siege.buildingsFirst,
+            },
     })),
     buildingTypes: data.buildings.map((b) => ({
       typeId: buildingTypeId(b.id),
@@ -212,6 +257,15 @@ export function simConfigFromGameData(data: GameData): SimConfig {
       damageType: b.damageType,
       range: b.rangeU,
       cooldown: b.cooldownTicks,
+      network:
+        b.network === null
+          ? null
+          : {
+              requiresTech: b.network.requiresTech,
+              radius: b.network.radiusU,
+              damagePermillePerTurret: b.network.damagePermillePerTurret,
+              maxDamagePermille: b.network.maxDamagePermille,
+            },
     })),
     factions,
     aiScripts: data.aiScripts.map((a) => ({
@@ -248,6 +302,14 @@ export function simConfigFromGameData(data: GameData): SimConfig {
       pushMinArmy: a.pushMinArmy,
       pushFromTicks: a.pushFromTicks,
       allInWithoutNodes: a.allInWithoutNodes,
+      robots:
+        a.robots === null
+          ? null
+          : {
+              typeIds: a.robots.sequence.map((l) => unitTypeId(l)),
+              fromTicks: a.robots.fromTicks,
+              max: a.robots.max,
+            },
     })),
     techs: data.tech.map((t) => ({
       techId: t.id,
@@ -264,6 +326,19 @@ export function simConfigFromGameData(data: GameData): SimConfig {
       requiresStat: pk.requires.stat,
       requiresMin: pk.requires.min,
       effects: pk.effects.map((e) => simEffect(data, e, `perk ${pk.key}`)),
+    })),
+    training: data.training.map((tr) => ({
+      programId: tr.id,
+      factionId: tr.factionId,
+      special: tr.special,
+      buildingTypeId: buildingTypeId(tr.buildingId),
+      scrapCost: tr.scrapCost,
+      scrapCostStep: tr.scrapCostStep,
+      trainTicks: tr.trainTicks,
+      trainTicksStep: tr.trainTicksStep,
+      pointsPerRun: tr.pointsPerRun,
+      maxPoints: tr.maxPoints,
+      prereqTech: [...tr.prereqTech],
     })),
     special: {
       strengthDamagePermille: t.specialStrengthDamagePermille,
