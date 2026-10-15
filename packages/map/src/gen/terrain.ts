@@ -40,6 +40,13 @@ export interface TerrainSpec {
   minCliffCells: number;
   /** Begaanbare zakken (4-verbonden) kleiner dan dit aantal cellen worden dichtgezet. */
   minPocketCells: number;
+  /**
+   * Optioneel: een grote map uit k x k tegels van dit bronveld (zie `composeTiles`); de middentegel is dan het
+   * puntsymmetrische veld hierboven (orientation en seam), de buitentegels hebben elk een eigen oriëntatie.
+   */
+  tiles?: TileSpec;
+  /** Optioneel: hoogte (cm) die na de hoogtecurve overal bij komt, zodat een rivier op hoogte 0 eronder ligt. */
+  baseOffsetCm?: number;
 }
 
 export interface Heightfield {
@@ -300,4 +307,120 @@ export function closeDiagonalLeaks(pass: Uint8Array, n: number): void {
     }
   }
   for (const i of toBlock) pass[i] = BLOCKED;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Tegels: een grote map uit k x k tegels van hetzelfde bronveld (k oneven). De middentegel is het puntsymmetrische
+// veld van `symmetrize`; de buitentegels zijn het (uitgevlakte) bronveld in een eigen oriëntatie. Alleen de A-helft
+// van de buitentegels staat in de spec, de tegel tegenover het midden krijgt dezelfde oriëntatie 180 graden gedraaid
+// (oriëntatie o ^ 3), dus de hele map blijft exact puntsymmetrisch. Over de tegelgrenzen wordt gemengd: elke tegel
+// loopt `blendHalfWidthCells` cellen door over de grens (gespiegelde voortzetting van zijn eigen veld) en de gewichten
+// in x en y lopen met dezelfde gladde stap als de naad van `symmetrize`.
+
+export interface TileSpec {
+  /** Aantal tegels per zijde (oneven); de map is k * n cellen breed, n = de maat van het bronveld. */
+  k: 3 | 5;
+  /** Oriëntatie (0..7, zie `sourceCell`) per buitentegel in de A-helft (tegel eerder in rijvolgorde dan zijn spiegel). */
+  outer: Array<{ tx: number; ty: number; orientation: number }>;
+  /** Halve breedte van de overgang tussen tegels, in cellen (totaal dus het dubbele). */
+  blendHalfWidthCells: 1 | 2 | 4 | 8 | 16;
+}
+
+/** Oriëntatie na een extra draaiing van 180 graden (zie `sourceCell`). */
+export function rotate180(o: number): number {
+  return o ^ 3;
+}
+
+/**
+ * Stelt het tegelveld samen (centimeters, nog niet geschaald). `field` is het ruwe bronveld (n x n), `centre` het
+ * puntsymmetrische middenveld (n x n, al uitgevlakt). Exact puntsymmetrisch: h(x, y) == h(N-1-x, N-1-y).
+ */
+export function composeTiles(
+  field: Heightfield,
+  spec: Pick<TerrainSpec, 'smoothPasses'>,
+  tiles: TileSpec,
+  centre: Int32Array,
+): { size: number; cm: Int32Array } {
+  const n = field.w;
+  if (field.h !== n) throw new Error('tegels: bronveld moet vierkant zijn');
+  const k = tiles.k;
+  const mid = k >> 1;
+  const size = k * n;
+  let base: Int32Array = field.cm;
+  for (let p = 0; p < spec.smoothPasses; p++) base = smooth(base, n, n);
+  // Oriëntatie per tegel; -1 = middentegel.
+  const orient = new Int8Array(k * k).fill(-2);
+  orient[mid * k + mid] = -1;
+  for (const t of tiles.outer) {
+    if (t.tx < 0 || t.ty < 0 || t.tx >= k || t.ty >= k)
+      throw new Error(`tegels: tegel (${t.tx},${t.ty}) ligt buiten ${k}x${k}`);
+    const a = t.ty * k + t.tx;
+    const b = (k - 1 - t.ty) * k + (k - 1 - t.tx);
+    if (a >= b) throw new Error(`tegels: tegel (${t.tx},${t.ty}) ligt niet in de A-helft`);
+    sourceCell(t.orientation, 0, 0, n); // gooit bij een ongeldige oriëntatie
+    orient[a] = t.orientation;
+    orient[b] = rotate180(t.orientation);
+  }
+  for (let i = 0; i < k * k; i++)
+    if ((orient[i] as number) === -2)
+      throw new Error('tegels: niet elke buitentegel heeft een oriëntatie');
+
+  const shift = 31 - Math.clz32(tiles.blendHalfWidthCells);
+  // Gewichten per as: voor coördinaat v de tegel links/boven (t0) en het gewicht (0..256) van de tegel erna.
+  const tileOf = new Int32Array(size);
+  const nextWt = new Int32Array(size); // gewicht van tegel t0 + 1
+  const prevWt = new Int32Array(size); // gewicht van tegel t0 - 1
+  for (let v = 0, t = 0; v < size; v++) {
+    if (v >= (t + 1) * n) t++;
+    tileOf[v] = t;
+    const local = v - t * n;
+    // Naad rechts (tussen t en t + 1) of links (tussen t - 1 en t); d2 is tweemaal de afstand tot de naad (oneven).
+    if (t + 1 < k && local >= n - (1 << shift)) {
+      const d2 = 2 * (local - n) + 1; // negatief: links van de naad
+      const tt = Math.min(256, Math.max(0, ((d2 + (2 << shift)) << 8) >> (shift + 2)));
+      nextWt[v] = smoothstep256(tt);
+    } else if (t > 0 && local < 1 << shift) {
+      const d2 = 2 * local + 1; // positief: rechts van de naad
+      const tt = Math.min(256, Math.max(0, ((d2 + (2 << shift)) << 8) >> (shift + 2)));
+      prevWt[v] = 256 - smoothstep256(tt);
+    }
+  }
+  const ext = (v: number): number => (v < 0 ? -1 - v : v >= n ? 2 * n - 1 - v : v);
+  const tileValue = (tx: number, ty: number, i: number, j: number): number => {
+    const o = orient[ty * k + tx] as number;
+    const ei = ext(i);
+    const ej = ext(j);
+    if (o === -1) return centre[ej * n + ei] as number;
+    const [si, sj] = sourceCell(o, ei, ej, n);
+    return base[sj * n + si] as number;
+  };
+  const out = new Int32Array(size * size);
+  const wx: number[] = [0, 0, 0];
+  const wy: number[] = [0, 0, 0];
+  for (let y = 0; y < size; y++) {
+    const ty = tileOf[y] as number;
+    wy[0] = prevWt[y] as number;
+    wy[2] = nextWt[y] as number;
+    wy[1] = 256 - (wy[0] as number) - (wy[2] as number);
+    for (let x = 0; x < size; x++) {
+      const tx = tileOf[x] as number;
+      wx[0] = prevWt[x] as number;
+      wx[2] = nextWt[x] as number;
+      wx[1] = 256 - (wx[0] as number) - (wx[2] as number);
+      let sum = 0;
+      for (let dy = -1; dy <= 1; dy++) {
+        const gy = wy[dy + 1] as number;
+        if (gy === 0) continue;
+        for (let dx = -1; dx <= 1; dx++) {
+          const gx = wx[dx + 1] as number;
+          if (gx === 0) continue;
+          const t2x = tx + dx;
+          const t2y = ty + dy;
+          sum += gx * gy * tileValue(t2x, t2y, x - t2x * n, y - t2y * n);
+        }
+      }
+      out[y * size + x] = (sum + 32768) >> 16;
+    }
+  }
+  return { size, cm: out };
 }

@@ -44,3 +44,14 @@ export function loadHeightmap(def: MapDef, assets: MapAssets): Heightmap {
   const { w, h } = def.size;
   return { w, h, data: decodeGrid(assets.read(def.heightmap), w, h, 'i16') as Int16Array };
 }
+
+/**
+ * Alleen voor de renderer: het watermasker (w*h, index y*w+x; 0 droog, 1 water, 2 ondiep en begaanbaar), of null
+ * als de map geen water heeft. Het wateroppervlak ligt op hoogte 0 (WATER_LEVEL_CM); de bedding in de heightmap is
+ * negatief. De sim leest dit nooit: water is al onbegaanbaar in de passability.
+ */
+export function loadWater(def: MapDef, assets: MapAssets): Uint8Array | null {
+  if (def.water === undefined) return null;
+  const { w, h } = def.size;
+  return decodeGrid(assets.read(def.water), w, h, 'u8') as Uint8Array;
+}

@@ -118,12 +118,38 @@ export function encodeProps(file: PropsFile): string {
 
 // ---------------------------------------------------------------------------------------------------------------------
 // Scatter-generator (build-tijd). Deterministisch: eigen integer-RNG, vaste volgorde, puntsymmetrisch (180 graden).
+// Werkt op elke vierkante map. Twee delen: het bos (een gejitterd raster over de bosrand, de kernen van de bosjes en
+// een rand van losse bomen eromheen) en daarna de quota (losse bomen, rotsen, struiken, gras, riet).
+
+/** Waar een quotum zijn kandidaatcellen zoekt. Standaard per soort (zie `pickCell`). */
+export type PropPlacement = 'blocked' | 'edge' | 'open' | 'shore';
 
 export interface PropQuota {
   asset: string;
   /** Aantal in de A-helft; de B-helft wordt gespiegeld, dus het totaal is tweemaal dit getal. */
   perHalf: number;
+  /** Optioneel: vaste plek in plaats van de standaardverdeling van de soort. */
+  on?: PropPlacement;
 }
+
+export interface WeightedAsset {
+  asset: string;
+  weight: number;
+}
+
+export interface ForestPropsSpec {
+  /** Rastermaat in meters (deler van de mapmaat): in dicht bos staat één boom per vak, op een willekeurige plek. */
+  cellM: number;
+  /** Kans in procenten dat een vak in dicht bos leeg blijft. */
+  gapPct: number;
+  /** Soorten in dicht bos (bosrand en kernen), met gewicht. */
+  dense: WeightedAsset[];
+  /** Rand van losse bomen (begaanbaar) rond dicht bos: breedte in meters en kans in procenten per vak. */
+  ringM: number;
+  ringPct: number;
+  ring: WeightedAsset[];
+}
+
 export interface PropsSpec {
   seed: number;
   quotas: PropQuota[];
@@ -133,11 +159,19 @@ export interface PropsSpec {
    * kliffen en ruines komen en niet op de map-rand. Standaard 0.
    */
   edgeMargin?: number;
+  /** Optioneel: bomen in het bos (vraagt `ScatterLayers.forest`). */
+  forest?: ForestPropsSpec;
+}
+
+/** Extra lagen van de generator: bos (0 geen, anders dicht bos) en water (0 droog). Zonder lagen geldt alles als 0. */
+export interface ScatterLayers {
+  forest?: Uint8Array;
+  water?: Uint8Array;
 }
 
 const KEY_POINT_CLEARANCE_U = PROP_CLEARANCE_M * UNITS_PER_METER;
 const MIN_SPACING_U = UNITS_PER_METER; // props onderling minstens 1 m uit elkaar
-const MAX_ATTEMPTS = 20000;
+const MAX_ATTEMPTS = 200000;
 
 interface KeyPoint {
   x: number;
@@ -154,8 +188,6 @@ export function pathCorridor(
   targets: KeyPoint[],
 ): Uint8Array {
   const { w, h, passable } = map;
-  if (w !== 128 || h !== 128)
-    throw new Error('pathCorridor: alleen 128x128 (celindex via bitshift)');
   const corridor = new Uint8Array(w * h);
   const mark = (cx: number, cy: number): void => {
     for (let dy = -1; dy <= 1; dy++) {
@@ -170,37 +202,58 @@ export function pathCorridor(
   };
   const DX = [1, 0, -1, 0];
   const DY = [0, 1, 0, -1];
+  const qx = new Int32Array(w * h);
+  const qy = new Int32Array(w * h);
+  const parentX = new Int32Array(w * h);
+  const parentY = new Int32Array(w * h);
   for (const s of spawns) {
-    const parent = new Int32Array(w * h).fill(-2);
-    const queue = new Int32Array(w * h);
+    parentX.fill(-2);
     let head = 0;
     let tail = 0;
-    parent[s.y * w + s.x] = -1;
-    queue[tail++] = s.y * w + s.x;
+    parentX[s.y * w + s.x] = -1;
+    qx[tail] = s.x;
+    qy[tail++] = s.y;
     while (head < tail) {
-      const i = queue[head++] as number;
-      const cx = i & 127;
-      const cy = i >> 7;
+      const cx = qx[head] as number;
+      const cy = qy[head++] as number;
       for (let d = 0; d < 4; d++) {
         const nx = cx + (DX[d] as number);
         const ny = cy + (DY[d] as number);
         if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
         const j = ny * w + nx;
-        if (passable[j] !== 1 || parent[j] !== -2) continue;
-        parent[j] = i;
-        queue[tail++] = j;
+        if (passable[j] !== 1 || parentX[j] !== -2) continue;
+        parentX[j] = cx;
+        parentY[j] = cy;
+        qx[tail] = nx;
+        qy[tail++] = ny;
       }
     }
     for (const t of [...targets, ...spawns]) {
-      let i = t.y * w + t.x;
-      if (parent[i] === -2) continue;
-      while (i >= 0) {
-        mark(i & 127, i >> 7);
-        i = parent[i] as number;
+      let x = t.x;
+      let y = t.y;
+      if (parentX[y * w + x] === -2) continue;
+      for (;;) {
+        mark(x, y);
+        const i = y * w + x;
+        const px = parentX[i] as number;
+        if (px < 0) break;
+        y = parentY[i] as number;
+        x = px;
       }
     }
   }
   return corridor;
+}
+
+function pickWeighted(r: Rng, list: WeightedAsset[]): string {
+  let total = 0;
+  for (const a of list) total += a.weight;
+  let roll = r.below(total);
+  for (const a of list) {
+    if (roll < a.weight) return a.asset;
+    roll -= a.weight;
+  }
+  return (list[list.length - 1] as WeightedAsset).asset;
 }
 
 /** Genereert de propslijst voor een gegenereerde map. Gooit als een quota niet te halen is. */
@@ -208,11 +261,14 @@ export function scatterProps(
   def: Pick<MapDef, 'id' | 'size' | 'spawns' | 'scrapNodes' | 'claimPoints' | 'creepCamps'>,
   passable: Uint8Array,
   spec: PropsSpec,
+  layers: ScatterLayers = {},
 ): PropsFile {
   const { w, h } = def.size;
-  if (w !== 128 || h !== 128)
-    throw new Error('scatterProps: alleen 128x128 (celindex via bitshift)');
+  if (w !== h) throw new Error('scatterProps: alleen vierkante maps');
+  const n = w;
   const rng = createRng(spec.seed);
+  const forest = layers.forest ?? new Uint8Array(n * n);
+  const water = layers.water ?? new Uint8Array(n * n);
   const keyPoints: KeyPoint[] = [
     ...def.spawns,
     ...def.scrapNodes,
@@ -225,36 +281,28 @@ export function scatterProps(
     x: p.x * UNITS_PER_METER + (UNITS_PER_METER >> 1),
     y: p.y * UNITS_PER_METER + (UNITS_PER_METER >> 1),
   }));
-  const maxU = w * UNITS_PER_METER - 1;
+  const maxU = n * UNITS_PER_METER - 1;
 
   const blocked = (cx: number, cy: number): boolean =>
-    cx < 0 || cy < 0 || cx >= w || cy >= h || passable[cy * w + cx] !== 1;
+    cx < 0 || cy < 0 || cx >= n || cy >= n || passable[cy * n + cx] !== 1;
   const nearBlocked = (cx: number, cy: number, r: number): boolean => {
     for (let dy = -r; dy <= r; dy++)
       for (let dx = -r; dx <= r; dx++) if (blocked(cx + dx, cy + dy)) return true;
     return false;
   };
-  // Kandidaatcellen per klasse, in rijvolgorde (deterministisch): onbegaanbaar, begaanbare rand (buiten het pad), open grond (buiten het pad).
-  const onBlocked: number[] = [];
-  const onEdge: number[] = [];
-  const onOpen: number[] = [];
-  for (let cy = 0; cy < h; cy++) {
-    for (let cx = 0; cx < w; cx++) {
-      const i = cy * w + cx;
-      const margin = spec.edgeMargin ?? 0;
-      const inMargin = cx < margin || cy < margin || cx >= w - margin || cy >= h - margin;
-      if (passable[i] !== 1) {
-        if (!inMargin) onBlocked.push(i);
-      } else if (corridor[i] === 0) {
-        onOpen.push(i);
-        if (nearBlocked(cx, cy, 1)) onEdge.push(i);
+  const nearWater = (cx: number, cy: number, r: number): boolean => {
+    for (let dy = -r; dy <= r; dy++)
+      for (let dx = -r; dx <= r; dx++) {
+        const x = cx + dx;
+        const y = cy + dy;
+        if (x >= 0 && y >= 0 && x < n && y < n && water[y * n + x] !== 0) return true;
       }
-    }
-  }
+    return false;
+  };
 
   const placed: PropRecord[] = [];
   const bucket = new Map<number, PropRecord[]>(); // 4 m-buckets voor de onderlinge afstand
-  const bucketKey = (x: number, y: number): number => ((y >> 10) << 8) | (x >> 10);
+  const bucketKey = (x: number, y: number): number => ((y >> 10) << 10) | (x >> 10);
   const farFromKeyPoints = (x: number, y: number): boolean => {
     for (const k of keyU) {
       const dx = x - k.x;
@@ -266,7 +314,7 @@ export function scatterProps(
   const spacedFromOthers = (x: number, y: number, extra: PropRecord | null): boolean => {
     for (let by = (y >> 10) - 1; by <= (y >> 10) + 1; by++) {
       for (let bx = (x >> 10) - 1; bx <= (x >> 10) + 1; bx++) {
-        for (const q of bucket.get((by << 8) | bx) ?? []) {
+        for (const q of bucket.get((by << 10) | bx) ?? []) {
           const dx = x - q.x;
           const dy = y - q.y;
           if (dx * dx + dy * dy < MIN_SPACING_U * MIN_SPACING_U) return false;
@@ -287,9 +335,90 @@ export function scatterProps(
     if (list === undefined) bucket.set(k, [p]);
     else list.push(p);
   };
+  /** Zet een prop en zijn spiegel als beide vrij liggen; true als het lukte. */
+  const tryPlace = (
+    asset: string,
+    x: number,
+    y: number,
+    yaw: number,
+    scalePct: number,
+  ): boolean => {
+    const mx = maxU - x;
+    const my = maxU - y;
+    const a: PropRecord = { asset, x, y, yaw, scalePct };
+    const b: PropRecord = { asset, x: mx, y: my, yaw: (yaw + 32768) & 65535, scalePct };
+    if (!farFromKeyPoints(x, y) || !farFromKeyPoints(mx, my)) return false;
+    if (!spacedFromOthers(x, y, null) || !spacedFromOthers(mx, my, a) || !spacedFromOthers(x, y, b))
+      return false;
+    store(a);
+    store(b);
+    return true;
+  };
 
-  const pickCell = (kind: PropKind, r: Rng): number => {
+  // 1. Bos: een gejitterd raster van `cellM` meter; per vak hooguit één boom. Vakken in de A-helft (eerder in
+  //    rijvolgorde dan hun spiegelvak), de spiegel komt erbij. Dicht bos op bos-cellen, losse bomen in de ring.
+  if (spec.forest !== undefined) {
+    const f = spec.forest;
+    const blocks = blocksPerSide(n, f.cellM);
+    const ring = forestRing(forest, n, f.ringM);
+    const cellU = f.cellM * UNITS_PER_METER;
+    for (let by = 0; by < blocks; by++) {
+      for (let bx = 0; bx < blocks; bx++) {
+        if (by * blocks + bx >= (blocks - 1 - by) * blocks + (blocks - 1 - bx)) continue;
+        // Plek binnen het vak met 1/2 m marge aan elke kant, zodat bomen in buurvakken minstens 1 m uit elkaar staan.
+        const x = bx * cellU + 128 + rng.below(cellU - UNITS_PER_METER);
+        const y = by * cellU + 128 + rng.below(cellU - UNITS_PER_METER);
+        const yaw = rng.below(65536);
+        const scalePct = rng.range(PROP_SCALE_MIN, PROP_SCALE_MAX);
+        const roll = rng.below(100);
+        const cx = x >> 8;
+        const cy = y >> 8;
+        const i = cy * n + cx;
+        if (water[i] !== 0 || nearWater(cx, cy, 1)) continue;
+        if (forest[i] !== 0) {
+          if (roll < f.gapPct) continue;
+          tryPlace(pickWeighted(rng, f.dense), x, y, yaw, scalePct);
+        } else if (ring[i] === 1 && passable[i] === 1 && corridor[i] === 0) {
+          if (roll >= f.ringPct) continue;
+          tryPlace(pickWeighted(rng, f.ring), x, y, yaw, scalePct);
+        }
+      }
+    }
+  }
+
+  // 2. Quota. Kandidaatcellen per klasse, in rijvolgorde (deterministisch), nooit in bos of water.
+  const margin = spec.edgeMargin ?? 0;
+  const onBlocked: number[] = [];
+  const onEdge: number[] = [];
+  const onOpen: number[] = [];
+  const onShore: number[] = [];
+  for (let cy = 0; cy < n; cy++) {
+    for (let cx = 0; cx < n; cx++) {
+      const i = cy * n + cx;
+      if (forest[i] !== 0 || water[i] !== 0) continue;
+      const inMargin = cx < margin || cy < margin || cx >= n - margin || cy >= n - margin;
+      if (passable[i] !== 1) {
+        if (!inMargin) onBlocked.push(i);
+      } else if (corridor[i] === 0) {
+        onOpen.push(i);
+        if (nearBlocked(cx, cy, 1)) onEdge.push(i);
+        if (nearWater(cx, cy, 2)) onShore.push(i);
+      }
+    }
+  }
+  const lists: Record<PropPlacement, number[]> = {
+    blocked: onBlocked,
+    edge: onEdge,
+    open: onOpen,
+    shore: onShore,
+  };
+  const pick = (r: Rng, list: number[]): number => {
+    if (list.length === 0) throw new Error('scatterProps: geen kandidaatcellen');
+    return list[r.below(list.length)] as number;
+  };
+  const pickCell = (kind: PropKind, on: PropPlacement | undefined, r: Rng): number => {
     const roll = r.below(100);
+    if (on !== undefined) return pick(r, lists[on]);
     switch (kind) {
       case 'tree':
         return pick(r, roll < 65 ? onBlocked : onEdge);
@@ -298,12 +427,24 @@ export function scatterProps(
       case 'bush':
         return pick(r, roll < 50 ? onEdge : onOpen);
       case 'reed':
-        return pick(r, onEdge);
+        return pick(r, onShore.length > 0 ? onShore : onEdge);
       default:
         return pick(r, onOpen);
     }
   };
-  const pick = (r: Rng, list: number[]): number => list[r.below(list.length)] as number;
+  // Celindex naar (x, y) zonder deling: een rij-tabel.
+  const rowStart = new Int32Array(n + 1);
+  for (let y = 0; y <= n; y++) rowStart[y] = y * n;
+  const rowOf = (i: number): number => {
+    let lo = 0;
+    let hi = n - 1;
+    while (lo < hi) {
+      const mid = (lo + hi + 1) >> 1;
+      if ((rowStart[mid] as number) <= i) lo = mid;
+      else hi = mid - 1;
+    }
+    return lo;
+  };
 
   for (const q of spec.quotas) {
     const kind = PROP_KINDS[q.asset];
@@ -313,30 +454,42 @@ export function scatterProps(
     while (done < q.perHalf) {
       if (++attempts > MAX_ATTEMPTS)
         throw new Error(`scatterProps: quota ${q.asset} niet te halen`);
-      const i = pickCell(kind, rng);
-      const cx = i & 127;
-      const cy = i >> 7;
+      const i = pickCell(kind, q.on, rng);
+      const cy = rowOf(i);
+      const cx = i - cy * n;
       // A-helft: cel eerder in rijvolgorde dan zijn spiegel; de spiegel wordt erbij gezet.
-      if (i >= (h - 1 - cy) * w + (w - 1 - cx)) continue;
+      if (i >= (n - 1 - cy) * n + (n - 1 - cx)) continue;
       const x = cx * UNITS_PER_METER + rng.below(UNITS_PER_METER);
       const y = cy * UNITS_PER_METER + rng.below(UNITS_PER_METER);
       const yaw = rng.below(65536);
       const scalePct = rng.range(PROP_SCALE_MIN, PROP_SCALE_MAX);
-      const mx = maxU - x;
-      const my = maxU - y;
-      const a: PropRecord = { asset: q.asset, x, y, yaw, scalePct };
-      const b: PropRecord = { asset: q.asset, x: mx, y: my, yaw: (yaw + 32768) & 65535, scalePct };
-      if (!farFromKeyPoints(x, y) || !farFromKeyPoints(mx, my)) continue;
-      if (
-        !spacedFromOthers(x, y, null) ||
-        !spacedFromOthers(mx, my, a) ||
-        !spacedFromOthers(x, y, b)
-      )
-        continue;
-      store(a);
-      store(b);
-      done++;
+      if (tryPlace(q.asset, x, y, yaw, scalePct)) done++;
     }
   }
-  return { format: PROPS_FORMAT, w, h, props: placed, _comment: spec.comment };
+  return { format: PROPS_FORMAT, w: n, h: n, props: placed, _comment: spec.comment };
+}
+
+/** Aantal vakken van `cellM` meter per zijde; `cellM` moet de mapmaat precies delen. */
+function blocksPerSide(n: number, cellM: number): number {
+  let b = 0;
+  while ((b + 1) * cellM <= n) b++;
+  if (b * cellM !== n) throw new Error(`scatterProps: forest.cellM ${cellM} deelt ${n} niet`);
+  return b;
+}
+
+/** Cellen zonder bos binnen `ringM` (Chebyshev) van een bos-cel: daar komen losse bomen. */
+function forestRing(forest: Uint8Array, n: number, ringM: number): Uint8Array {
+  const ring = new Uint8Array(n * n);
+  for (let y = 0; y < n; y++)
+    for (let x = 0; x < n; x++) {
+      if (forest[y * n + x] === 0) continue;
+      for (let dy = -ringM; dy <= ringM; dy++)
+        for (let dx = -ringM; dx <= ringM; dx++) {
+          const nx = x + dx;
+          const ny = y + dy;
+          if (nx < 0 || ny < 0 || nx >= n || ny >= n) continue;
+          if (forest[ny * n + nx] === 0) ring[ny * n + nx] = 1;
+        }
+    }
+  return ring;
 }
