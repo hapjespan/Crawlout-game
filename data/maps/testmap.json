@@ -1,49 +1,49 @@
 {
   "id": "testmap",
   "size": {
-    "w": 32,
-    "h": 32
+    "w": 64,
+    "h": 64
   },
   "heightmap": "maps/testmap.heightmap.json",
   "passability": "maps/testmap.passability.json",
   "scrapNodes": [
     {
-      "x": 8,
-      "y": 4,
+      "x": 28,
+      "y": 6,
       "amount": 1000
     },
     {
-      "x": 23,
-      "y": 27,
+      "x": 35,
+      "y": 57,
       "amount": 1000
     }
   ],
   "claimPoints": [
     {
-      "x": 16,
-      "y": 16,
+      "x": 32,
+      "y": 32,
       "kind": "scrap"
     }
   ],
   "spawns": [
     {
-      "x": 5,
-      "y": 5
+      "x": 14,
+      "y": 14
     },
     {
-      "x": 26,
-      "y": 26
+      "x": 49,
+      "y": 49
     }
   ],
   "creepCamps": [
     {
-      "x": 10,
-      "y": 24,
+      "x": 20,
+      "y": 48,
       "tier": 1
     },
     {
-      "x": 21,
-      "y": 7,
+      "x": 43,
+      "y": 15,
       "tier": 1
     }
   ],
@@ -51,5 +51,5 @@
     "pointsRequired": 1,
     "minutes": 1
   },
-  "_comment": "Testmap 32x32 voor unit-tests. Gegenereerd door packages/map/src/gen/testmap.ts; niet met de hand bewerken. dominance (1 punt, 1 minuut) is een startwaarde voor tests, geen balans."
+  "_comment": "Testmap 64x64 voor unit-tests. Gegenereerd door packages/map/src/gen/testmap.ts; niet met de hand bewerken. dominance (1 punt, 1 minuut) is een startwaarde voor tests, geen balans."
 }

@@ -169,6 +169,14 @@ function applyPad(
   }
 }
 
+/** De bouwvlakken (straal plus overgang) van beide spelers: daar komen geen props (zie scatterProps). */
+export function padClearings(spec: MapSpec): { x: number; y: number; radius: number }[] {
+  return (spec.pads ?? []).flatMap((p) => [
+    { x: p.x, y: p.y, radius: p.radius + p.blend },
+    { x: spec.w - 1 - p.x, y: spec.h - 1 - p.y, radius: p.radius + p.blend },
+  ]);
+}
+
 export function generateMap(spec: MapSpec, io?: GenIo): GeneratedMap {
   const { w, h } = spec;
   const passable = new Uint8Array(w * h).fill(OPEN);
@@ -322,6 +330,7 @@ export function generateMap(spec: MapSpec, io?: GenIo): GeneratedMap {
             scatterProps(def, passable, spec.props, {
               ...(forest === undefined ? {} : { forest }),
               ...(water === undefined ? {} : { water }),
+              clearings: padClearings(spec),
             }),
           ),
         }),

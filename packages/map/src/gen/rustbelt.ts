@@ -10,7 +10,7 @@ import { generateMap, type GenIo, type GeneratedMap, type MapSpec } from './buil
 //     midden 180 graden gedraaid); over de tegelgrenzen 8 cellen aan weerszijden gemengd (16 cellen), zodat het één
 //     landschap is: plateaus van ongeveer 6 m met laaglanddalen ertussen. Hoogtecurve en hellingdrempel zoals de
 //     128-m-map; alles 0,5 m opgetild (baseOffsetCm) zodat het wateroppervlak op hoogte 0 eronder ligt.
-//   - Spawns in de hoektegels rechtsboven (speler 0) en linksonder (speler 1), elk op een vlak bouwvlak.
+//   - Spawns in de hoektegels rechtsboven (speler 0) en linksonder (speler 1), elk op een vlak bouwvlak van 30 m straal.
 //   - Rivier: van de noordrand door het dal tussen de tegels linksboven en boven, door een kloof onder de tafelberg
 //     door en via het zuidelijke dal naar de zuidrand. 6 tot 10 m breed, onbegaanbaar, wateroppervlak op 0 m met de
 //     bedding eronder. Drie oversteken: een voorde in het noordelijke dal, de gespiegelde voorde in het zuiden, en een
@@ -52,7 +52,10 @@ export const RUSTBELT_SPEC: MapSpec = {
       ],
     },
   },
-  pads: [{ x: 300, y: 76, radius: 7, blend: 8 }],
+  // Bouwvlak rond de spawn (echte-schaalronde, data 0.14.0): straal 30 m vlak plus 8 m overgang, zodat het hoofdgebouw
+  // (20 x 20 m), een stuk of tien woningen (13 x 20 m), een werkplaats, een lab en turrets erop en in het open dal
+  // eromheen passen (maps.test.ts pakt dat na). Was 7 m voor een hoofdgebouw van 5 x 5.
+  pads: [{ x: 300, y: 76, radius: 30, blend: 8 }],
   spawns: [{ x: 300, y: 76 }],
   ruinHeight: 640, // 2,5 m boven het terrein
   cliffHeight: 1280,

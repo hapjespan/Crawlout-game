@@ -4,7 +4,7 @@ import type { MatchResult } from './balance.js';
 import { playMatchesParallel, summarize } from './fairness.js';
 
 // Potjelengte (Spelfundament 2.6: 25 tot 35 minuten, dus 30.000 tot 42.000 frames), de twee winroutes van de slice
-// (Spelfundament 12) en eerlijkheid: scripted AI tegen scripted AI op Rustbelt XL (384 x 384 m, data 0.13.0). De seeds
+// (Spelfundament 12) en eerlijkheid: scripted AI tegen scripted AI op Rustbelt XL (384 x 384 m, data 0.14.0). De seeds
 // verschillen via sim.rng (kritieke schoten van de held, de jitter op de golven en op het moment dat de AI naar het
 // midden gaat, een gelijke stand bij een claimpunt). EXPECTED legt de uitkomst van vijf seeds vast: een andere uitkomst
 // is een bewuste balanswijziging en hoort bij een nieuwe meting (pnpm --filter @crawlout/replay balance, fairness) en
@@ -13,19 +13,21 @@ import { playMatchesParallel, summarize } from './fairness.js';
 // Eerlijkheid (fair-ronde): Rustbelt XL is puntsymmetrisch, dus over veel seeds hoort elke speler ongeveer de helft te
 // winnen. Vóór de fair-ronde won speler 1 er 28 van de 33 (de spiegel brak op celgrenzen, ingangen van de padgraaf,
 // tiebreaks en de volgorde van de AI's; zie packages/sim/CHANGELOG.md 0.10.0). Nu speelt de AI zonder toeval het exacte
-// spiegelbeeld tot de gelijke stand bij het midden (mirror.test.ts) en gemeten over de 33 seeds hieronder (data 0.13.0,
-// de woning van 3x3): speler 0 wint 18, speler 1 wint 15, 17 keer vernietiging en 16 keer dominantie, alle 33 tussen 25
-// en 35 minuten (25,6 tot 31,0). Met data 0.12.0 (woning 2x2) was het 13 tegen 20 (zie packages/data/CHANGELOG.md
-// 0.13.0): het verschil tussen de speler is toeval (één standaardafwijking bij 33 muntworpen is 2,9 potjes), geen
+// spiegelbeeld tot de gelijke stand bij het midden (mirror.test.ts). Echte-schaalronde (data 0.14.0: gebouwen op echte
+// schaal, oneven footprints, woning 13 x 19 met 5 bedden voor 95 scrap): gemeten over de 33 seeds hieronder wint speler 0
+// er 13 en speler 1 er 20, 10 keer vernietiging en 23 keer dominantie, alle 33 tussen 25 en 35 minuten (25,5 tot 30,6).
+// Met data 0.13.0 was het 18 tegen 15. Een even footprint (hoofdgebouw 20 x 20) brak de spiegel al bij de start (speler
+// 0 won 30 van de 33), een claimpaal van 3 x 3 liet het midden altijd naar speler 0 gaan; zie packages/data/CHANGELOG.md
+// 0.14.0. Het verschil tussen de spelers is toeval (één standaardafwijking bij 33 muntworpen is 2,9 potjes), geen
 // voorkeur; de marge hieronder is daarom ruimer dan het doel van 40 tot 60 procent: elke speler wint minstens 12 en
 // hoogstens 21 van de 33 (36 tot 64 procent). Een sim die een speler voortrekt (zoals 28 tegen 5) valt er ruim buiten.
 
 const EXPECTED = [
-  { seed: 1, winner: 0, reason: 'destruction', frame: 30729 },
-  { seed: 5, winner: 1, reason: 'destruction', frame: 32976 },
-  { seed: 7, winner: 1, reason: 'dominance', frame: 37162 },
-  { seed: 42, winner: 1, reason: 'destruction', frame: 31809 },
-  { seed: 99, winner: 1, reason: 'dominance', frame: 31662 },
+  { seed: 1, winner: 1, reason: 'destruction', frame: 32544 },
+  { seed: 5, winner: 0, reason: 'dominance', frame: 32719 },
+  { seed: 7, winner: 0, reason: 'dominance', frame: 31302 },
+  { seed: 42, winner: 1, reason: 'dominance', frame: 32333 },
+  { seed: 99, winner: 1, reason: 'dominance', frame: 31531 },
 ] as const;
 
 // REPLAY_FAST=1 slaat deze 33 potjes (ongeveer 25 s met parallelle processen, 2 minuten na elkaar) over in de snelle

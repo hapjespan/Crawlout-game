@@ -9,6 +9,7 @@ import {
   generateRustbelt,
   loadMap,
   loadProps,
+  padClearings,
   parseProps,
   PROP_CLEARANCE_M,
   PROP_KINDS,
@@ -163,10 +164,21 @@ describe('rustbelt props', () => {
     for (const p of file.props) expect(spawnCells.has(cellOf(p.y) * N + cellOf(p.x))).toBe(false);
   });
 
+  it('geen props op de bouwvlakken rond de spawns (daar komen gebouwen op echte schaal)', () => {
+    const clearings = padClearings(RUSTBELT_SPEC);
+    expect(clearings).toHaveLength(2);
+    for (const p of file.props)
+      for (const c of clearings) {
+        const dx = cellOf(p.x) - c.x;
+        const dy = cellOf(p.y) - c.y;
+        expect(dx * dx + dy * dy > c.radius * c.radius, `${p.asset} op (${p.x},${p.y})`).toBe(true);
+      }
+  });
+
   it('is reproduceerbaar: dezelfde seed geeft dezelfde lijst, een andere seed een andere', () => {
     const g = generateRustbelt(nodeGenIo);
     const spec = RUSTBELT_SPEC.props!;
-    const layers = { forest: g.forest!, water: g.water! };
+    const layers = { forest: g.forest!, water: g.water!, clearings: padClearings(RUSTBELT_SPEC) };
     const again = scatterProps(g.def, g.passable, spec, layers);
     expect(JSON.stringify(again.props)).toBe(JSON.stringify(file.props));
     const other = scatterProps(g.def, g.passable, { ...spec, seed: spec.seed + 1 }, layers);

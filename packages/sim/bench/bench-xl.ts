@@ -108,7 +108,12 @@ export function runBenchXl(clock: () => number): BenchXlResult {
     { x: 58, y: 52 },
     { x: W - 59, y: map.h - 53 },
   ];
-  const housing = config.buildingTypes.find((b) => b.footprintW === 2 && b.beds > 0)!;
+  // het huisvestingsgebouw (bedden, geen hoofdgebouw): de woning, sinds data 0.14.0 op echte schaal (13 x 19)
+  const housing = config.buildingTypes
+    .filter((b) => b.beds > 0 && b.scrapCost > 0)
+    .sort(
+      (a, b) => a.footprintW * a.footprintH - b.footprintW * b.footprintH || a.typeId - b.typeId,
+    )[0]!;
   for (let side = 0; side < 2; side++) {
     const spots = freeCells(sim, homeCell[side]!.x - 8, homeCell[side]!.y + 10, PER_SIDE);
     for (const c of spots) sim.spawnUnit({ typeId: scavType, owner: side, x: c.x, y: c.y });

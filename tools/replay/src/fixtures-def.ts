@@ -165,17 +165,18 @@ const FIXTURES_UP_TO_S3: FixtureDef[] = [
       const a = [...st.scav[0]!, ...st.builder[0]!, ...st.militia[0]!];
       const b = [...st.scav[1]!, ...st.builder[1]!, ...st.militia[1]!];
       const s = new Script()
-        .move(4, 0, a, 24, 10)
-        .move(5, 1, b, 8, 22)
+        // testmap van 64 x 64 (echte-schaalronde): hoofdgebouwen van 21 x 21 op cellen 4..24 en 39..59
+        .move(4, 0, a, 48, 20)
+        .move(5, 1, b, 16, 44)
         .add(6, 1, 'Move', { ids: a, ...cell(3, 3) }) // ongeldig: niet van speler 1
         .add(60, 0, 'Stop', { ids: a.slice(0, 2) })
-        .move(90, 0, a.slice(0, 2), 16, 16)
+        .move(90, 0, a.slice(0, 2), 32, 30)
         .add(150, 0, 'Move', { ids: a, x: -10, y: 500 }) // ongeldig: buiten de map
-        .move(200, 1, b, 24, 10) // zelfde doel als speler 0: veld hergebruiken
+        .move(200, 1, b, 48, 20) // zelfde doel als speler 0: veld hergebruiken
         // zelfde frame, seq bepaalt de volgorde: het tweede Move-commando wint
-        .add(302, 0, 'Move', { ids: a.slice(2, 4), ...cell(12, 26) }, 101)
-        .add(302, 0, 'Move', { ids: a.slice(2, 4), ...cell(20, 26) }, 100)
-        .move(400, 1, b, 16, 16)
+        .add(302, 0, 'Move', { ids: a.slice(2, 4), ...cell(24, 52) }, 101)
+        .add(302, 0, 'Move', { ids: a.slice(2, 4), ...cell(36, 52) }, 100)
+        .move(400, 1, b, 32, 30)
         .add(450, 1, 'Research', { techId: 0 }); // ongeldig: geen lab en prereqTech ontbreekt
       r.bundles = s.bundles();
       r.hashes = [{ frame: 599, hash: 0 }]; // lengte; record vult de echte hashes in
@@ -381,22 +382,23 @@ const FIXTURES_S4: FixtureDef[] = [
   },
   {
     // Brief-eindcriterium sim-core (fase-0 sectie 9): 50 bewoners per kant verzamelen, bouwen, wisselen van rol en
-    // vechten op de slice-map. Twee bots, gespiegeld: werkplaats en elf woningen (6 + 44 bedden = pop-cap 50), drie
-    // bouwers, alle scavengers verzamelen; de bewoners groeien uit huisvesting tot 50 per kant. Dan worden 20 van hen
-    // militie en vallen ze elkaars basis aan, tot er 40 doden zijn. Geen spawns buiten de regels om.
+    // vechten op de slice-map. Twee bots, gespiegeld: werkplaats en negen woningen (6 + 45 bedden, pop-cap 50; data
+    // 0.14.0, woningen op echte schaal met 5 bedden), drie bouwers, alle scavengers verzamelen; de bewoners groeien uit
+    // huisvesting tot 50 per kant. Dan worden 24 van hen militie en vallen ze elkaars basis aan, tot er 40 doden zijn
+    // (met 20 bleef het bij 39: de grotere gebouwen houden een aanval langer op). Geen spawns buiten de regels om.
     name: 's4-rustbelt-fifty',
     build() {
       const r = base('rustbelt', 50, [false, false]);
       const plan: BotPlan = {
-        builds: [{ key: 'werkplaats', at: 'hq' }, ...houses(11)],
+        builds: [{ key: 'werkplaats', at: 'hq' }, ...houses(9)],
         research: [],
         builders: 3,
         militiaAtSettlers: 50,
-        militiaCount: 20,
-        attackWithMilitia: 20,
+        militiaCount: 24,
+        attackWithMilitia: 24,
       };
       let deaths = 0;
-      recordControlled(r, 30000, [settlementBot(0, plan), settlementBot(1, plan)], (sim) => {
+      recordControlled(r, 36000, [settlementBot(0, plan), settlementBot(1, plan)], (sim) => {
         for (let k = 0; k < sim.events.count; k++)
           if (sim.events.type[k] === EVENT_TYPE.death) deaths++;
         return deaths >= 40;
@@ -475,18 +477,19 @@ const FIXTURES_S6: FixtureDef[] = [
         builds: [
           { key: 'werkplaats', at: 'hq' },
           { key: 'claimpaal', at: 'settlement' },
-          HOUSE,
           { key: 'claimpaal', at: 'settlement2' },
           { key: 'claimpaal', at: 'centre' },
-          { key: 'turret', at: 'centre', homewardM: 3 },
-          { key: 'turret', at: 'centre', homewardM: 3 },
           HOUSE,
+          HOUSE,
+          // turrets van 3 x 3 (echte schaal): een aan de kant van de vijand, zodat een raid op de paal binnen bereik is
+          { key: 'turret', at: 'centre', homewardM: -4 },
+          { key: 'turret', at: 'centre', homewardM: 3 },
           HOUSE,
         ],
         research: ['geweerrek'],
         builders: 2,
         militiaAtSettlers: 10,
-        militiaCount: 4,
+        militiaCount: 6,
         attackWithMilitia: 999,
         spend: { aboveScrap: 100, army: ['militie'], keepScavengers: 6 },
         guard: 'centre',

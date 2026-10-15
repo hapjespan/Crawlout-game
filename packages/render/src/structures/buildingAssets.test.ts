@@ -56,9 +56,9 @@ describe('building assets from assets/dist', () => {
     expect(byId.get('dweller_building_hq')).toMatchObject({ state: 'ready', buildingIds: [0] });
 
     const hq = set.visuals.get('dweller_building_hq')!;
-    expect(hq.footprint).toEqual({ w: 5, h: 5 });
-    expect(hq.height).toBeCloseTo(5.9, 2);
-    expect(hq.triangles).toEqual([2369, 944, 286]);
+    expect(hq.footprint).toEqual({ w: 21, h: 21 });
+    expect(hq.height).toBeCloseTo(13.1, 1);
+    expect(hq.triangles).toEqual([2341, 939, 288]);
     const g = hq.lods[0];
     for (const name of ['position', 'normal', 'color', 'uvl'])
       expect(g.getAttribute(name)).toBeDefined();
@@ -82,8 +82,8 @@ describe('building assets from assets/dist', () => {
     expect(outside).toBe(true); // tiling uv's survive
     g.computeBoundingBox();
     expect(g.boundingBox!.min.y).toBeCloseTo(0, 2);
-    expect(g.boundingBox!.max.x).toBeCloseTo(2.5, 1);
-    expect(g.boundingBox!.min.z).toBeCloseTo(-2.5, 1);
+    expect(g.boundingBox!.max.x).toBeCloseTo(10.5, 1);
+    expect(g.boundingBox!.min.z).toBeCloseTo(-10.5, 1);
 
     // One shared array: frame_wood, plank_grey, roof, wall_paint (LOD 1 and 2 reuse the LOD 0 layers).
     expect(set.layers).not.toBeNull();
@@ -91,10 +91,13 @@ describe('building assets from assets/dist', () => {
     expect(rasterized.length).toBe(4);
     expect(byId.get('dweller_building_hq')!.reason).toMatch(/not decoded/);
 
-    // The beacon and the turret have the same triangle count on LOD 0 and 1: one geometry, one draw.
+    // The beacon is built from shapes only (no house parts since the real-scale round): the same triangle count on
+    // every LOD, so one geometry and one draw. The housing has three different LODs.
     const beacon = set.visuals.get('dweller_building_beacon')!;
     expect(beacon.lods[0]).toBe(beacon.lods[1]);
-    expect(beacon.lods[1]).not.toBe(beacon.lods[2]);
+    expect(beacon.lods[1]).toBe(beacon.lods[2]);
+    const housing = set.visuals.get('dweller_building_housing')!;
+    expect(housing.lods[1]).not.toBe(housing.lods[2]);
   });
 
   it('maps building ids to visuals.mesh', () => {

@@ -133,12 +133,12 @@ describe('slice: Rustbelt met echte data', () => {
           scrapIn[p] = Math.max(scrapIn[p]!, st.scrap);
         }
       });
-      // 50 bewoners per kant, alleen uit huisvestingsgroei (pop-cap 50: hoofdgebouw plus elf woningen)
+      // 50 bewoners per kant, alleen uit huisvestingsgroei (pop-cap 50: hoofdgebouw plus negen woningen van 5 bedden)
       expect(peak).toEqual([50, 50]);
-      // verzameld (de scrap steeg ver boven de startScrap), gebouwd (werkplaats en elf woningen per kant)
+      // verzameld (de scrap steeg ver boven de startScrap), gebouwd (werkplaats en negen woningen per kant)
       for (let p = 0; p < 2; p++) expect(scrapIn[p]).toBeGreaterThan(1000);
-      expect(counts.get(EVENT_TYPE.buildingDone) ?? 0).toBeGreaterThanOrEqual(24);
-      // van rol gewisseld (bouwers en 20 militie per kant) en gevochten
+      expect(counts.get(EVENT_TYPE.buildingDone) ?? 0).toBeGreaterThanOrEqual(20);
+      // van rol gewisseld (bouwers en 24 militie per kant, minstens 20 tegelijk) en gevochten
       for (let p = 0; p < 2; p++) expect(peakMilitia[p]).toBeGreaterThanOrEqual(20);
       expect(counts.get(EVENT_TYPE.shotFired) ?? 0).toBeGreaterThan(200);
       expect(counts.get(EVENT_TYPE.death) ?? 0).toBeGreaterThanOrEqual(40);
