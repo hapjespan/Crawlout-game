@@ -107,7 +107,7 @@ export const HUD_CSS = `
 .co-card-main[aria-disabled=true] .co-card-name,.co-card-main[aria-disabled=true] .co-card-icon{color:#9aa0a6}
 .co-card-running .co-card-main,.co-card-done .co-card-main{cursor:default}
 .co-card-icon{grid-row:1 / span 2;color:#c4c7ca}
-.co-card-name{font-weight:600;font-size:13px}
+.co-card-name{font-weight:600;font-size:13px;min-width:0;overflow-wrap:anywhere}
 .co-card-meta{grid-column:2 / span 2;display:flex;gap:8px;color:#c4c7ca}
 .co-card-cost.co-full{color:#ff8a65;font-weight:600}
 .co-card-effects,.co-card-unlocks,.co-card-status{grid-column:1 / span 3;color:#c4c7ca;min-width:0;overflow-wrap:anywhere}
