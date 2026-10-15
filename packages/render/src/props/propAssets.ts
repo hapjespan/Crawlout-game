@@ -3,7 +3,7 @@
 //   2. the source GLB (assets/src/props), when the client gives a sourceUrl for the id, e.g. before the asset-cli
 //      has run;
 //   3. a placeholder per kind (propGeometry.ts), unless placeholders are off.
-// Every mesh is then fitted to its target height (propFit.ts). Loads are cached per manifest, source URL and id.
+// A manifest mesh keeps its real size (fit 1); a source GLB or placeholder is fitted to a target height (propFit.ts). Loads are cached per manifest, source URL and id.
 // The manifest may add `category` (propCategory.ts) and `alpha: 'mask'` (leaf cards and grass: alpha-tested, two-sided);
 // both are optional and read loosely, so an older manifest without them, or an asset-cli that does not write them yet,
 // works: alpha-tested materials are also recognised from the GLB itself (alphaMode MASK), the category from the id.
@@ -30,7 +30,7 @@ export interface PropSourceOptions {
   sourceUrl?: (assetId: string) => string | undefined;
   /** Placeholder per kind when neither has the asset. Default true. */
   placeholders?: boolean;
-  /** Target height in meters per asset id, over PROP_TARGET_HEIGHT. */
+  /** Target height in meters per asset id, over PROP_TARGET_HEIGHT; the one way to rescale a manifest prop. */
   heights?: Readonly<Record<string, number>>;
   /** Category per asset id for assets without one in the manifest (source GLBs, placeholders); else read from the id. */
   categories?: Readonly<Record<string, PropCategory>>;
@@ -212,7 +212,7 @@ export class PropAssetRegistry {
     const given = set.category ?? src.categories?.[assetId] ?? null;
     const category = given ?? propCategoryOf(assetId);
     const mask = set.lods.some((m) => m.mask);
-    const fit = propFitScale(assetId, l0.height, src.heights, given);
+    const fit = propFitScale(assetId, l0.height, src.heights, given, origin === 'manifest');
     return {
       visual: {
         lods: [l0.geometry, l1.geometry, l2.geometry],

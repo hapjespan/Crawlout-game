@@ -477,10 +477,23 @@ describe('category', () => {
     expect(windOf('grass')!.amplitude).toBeGreaterThan(windOf('tree-leafy')!.amplitude);
   });
 
-  it('fits by the manifest category when the id says nothing', () => {
+  it('fits by the category when the id says nothing (an asset without a manifest entry)', () => {
     expect(propFitScale('foo', 2.5, undefined, 'tree-leafy')).toBeCloseTo(2, 5); // 5 m
     expect(propFitScale('foo', 2.5, undefined, 'crate')).toBe(1); // keeps its own size
     expect(propFitScale('foo', 2.5, { foo: 1.25 }, 'tree-leafy')).toBeCloseTo(0.5, 5);
+  });
+
+  it('never fits a manifest prop: real size at scale 1, whatever the category or id', () => {
+    // The DJMaesen props come at real scale (a 13 m oak, a 20 m cliff, a 0.6 m grass patch).
+    expect(propFitScale('tree_oak_03', 13, undefined, 'tree-leafy', true)).toBe(1);
+    expect(propFitScale('rock_set2_10', 7.75, undefined, 'rock', true)).toBe(1);
+    expect(propFitScale('grass_patch_01', 0.6, undefined, 'grass', true)).toBe(1);
+    expect(propFitScale('treehigh001', 8.49, undefined, null, true)).toBe(1); // old id table: not for the manifest
+    // An explicit client override still wins.
+    expect(propFitScale('tree_oak_03', 13, { tree_oak_03: 6.5 }, 'tree-leafy', true)).toBeCloseTo(
+      0.5,
+      5,
+    );
   });
 });
 
@@ -564,7 +577,8 @@ describe('PropAssetRegistry: manifest category and alpha', () => {
     expect(out.visual!.category).toBe('tree-leafy');
     // A GLB leaf material has no texture here, so nothing can be alpha-tested: the visual stays opaque.
     expect(out.visual!.mask).toBe(false);
-    expect(out.visual!.height * out.visual!.fit).toBeCloseTo(5, 5);
+    // The category does not shrink a manifest prop: real size, fit 1.
+    expect(out.visual!.fit).toBe(1);
   });
 
   it('ignores a category it does not know and reads one from the id', async () => {
@@ -585,5 +599,6 @@ describe('PropAssetRegistry: manifest category and alpha', () => {
     );
     expect(out.origin).toBe('source');
     expect(out.visual!.category).toBe('plant');
+    expect(out.visual!.height * out.visual!.fit).toBeCloseTo(0.7, 5); // the fallback fit still serves sources
   });
 });

@@ -389,7 +389,7 @@ describe('PropAssetRegistry', () => {
     ...over,
   });
 
-  it('takes a manifest prop, fetches identical LODs once and fits it', async () => {
+  it('takes a manifest prop, fetches identical LODs once and keeps its real size', async () => {
     const glb = await propGlb(true);
     const { registry, requested } = await setup([{ id: 'rock001', kind: 'prop' }], {
       'https://a.test/rock001/lod0.glb': glb,
@@ -399,7 +399,8 @@ describe('PropAssetRegistry', () => {
     expect(requested).toEqual(['https://a.test/rock001/lod0.glb']);
     expect(r.visual!.lods[0]).toBe(r.visual!.lods[2]);
     expect(r.visual!.height).toBeCloseTo(4, 2); // quantized GLB back in meters
-    expect(r.visual!.height * r.visual!.fit).toBeCloseTo(PROP_TARGET_HEIGHT.rock001!, 5);
+    expect(r.visual!.fit).toBe(1); // a manifest prop is never fitted (shrunk) to a category height
+    expect(r.visual!.height * r.visual!.fit).toBeCloseTo(4, 2);
     r.visual!.lods[0].computeBoundingBox();
     expect(r.visual!.lods[0].boundingBox!.min.y).toBeCloseTo(0, 2);
     expect(r.visual!.lods[0].boundingBox!.getCenter(new Vector3()).x).toBeCloseTo(-12, 2); // node transform applied

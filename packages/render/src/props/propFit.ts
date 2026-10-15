@@ -1,15 +1,21 @@
-// How big a decorative prop is drawn. Visual only: props are not in the sim. The kit art comes in at its own size
-// (the Gobkit Nature Kit in meters has 8.5 m trees and 3.8 m grass), so render fits every prop to a believable
-// height next to a 1.8 m character, then multiplies by the instance's scalePct from the map's props file.
+// How big a decorative prop is drawn. Visual only: props are not in the sim.
 //
-// The fit is a target height per asset id, with a fallback per kind (read from the id); an asset with neither keeps
-// its own size. Replacing an asset keeps the target, so a new tree mesh lands at the same height without code.
+// An asset from the manifest is drawn at its real size: the asset-cli scales every prop to a believable height next
+// to a 1.8 m character (a 13 m oak, a 0.6 m grass patch, a 20 m cliff), so the fit is 1 and only the instance's
+// scalePct from the map's props file changes it. Never shrink: a manifest prop is not fitted to a category height.
+//
+// The fit below is the fallback for an asset WITHOUT a manifest entry (a source GLB in its own units, or a
+// placeholder): a target height per asset id, then per manifest category, then per kind (read from the id); an asset
+// with none of them keeps its own size. A client can still force a height per id with `source.heights`.
 
 import type { PropCategory } from './propCategory.js';
 
 export type PropKind = 'tree' | 'rock' | 'bush' | 'grass' | 'reed' | 'other';
 
-/** Target height in meters at scalePct 100, per asset id (manifest id, the source file name in lower case). */
+/**
+ * Target height in meters at scalePct 100, per asset id (the source file name in lower case), for assets without a
+ * manifest entry only: the old Gobkit art comes in at 8.5 m trees and 3.8 m grass in its own units.
+ */
 export const PROP_TARGET_HEIGHT: Readonly<Record<string, number>> = {
   treehigh001: 6,
   treemed001: 4.6,
@@ -33,7 +39,10 @@ export const PROP_KIND_HEIGHT: Readonly<Record<PropKind, number | null>> = {
   other: null,
 };
 
-/** Fallback target height per manifest category (more precise than the kind), null: the asset keeps its own size. */
+/**
+ * Fallback target height per category (more precise than the kind), null: the asset keeps its own size. Only for
+ * assets without a manifest entry; a manifest prop is drawn at its real size.
+ */
 export const PROP_CATEGORY_HEIGHT: Readonly<Record<PropCategory, number | null>> = {
   'tree-leafy': 5,
   'tree-bare': 5,
@@ -59,8 +68,8 @@ export function propKindOf(assetId: string): PropKind {
 }
 
 /**
- * Target height (m) of an asset: `overrides`, then PROP_TARGET_HEIGHT, then the manifest `category` (when it has a
- * height), then the kind read from the id; null keeps the asset's size.
+ * Target height (m) of an asset without a manifest entry: `overrides`, then PROP_TARGET_HEIGHT, then the `category`
+ * (when it has a height), then the kind read from the id; null keeps the asset's size.
  */
 export function propTargetHeight(
   assetId: string,
@@ -74,14 +83,22 @@ export function propTargetHeight(
   return PROP_KIND_HEIGHT[propKindOf(assetId)];
 }
 
-/** Uniform scale that brings a mesh of `meshHeight` meters to its target height (1 without a target or height). */
+/**
+ * Uniform scale that brings a mesh of `meshHeight` meters to its target height (1 without a target or height).
+ * `fromManifest`: the mesh is a manifest asset, so it keeps its real size (1); only an explicit `overrides` entry
+ * for the id still applies.
+ */
 export function propFitScale(
   assetId: string,
   meshHeight: number,
   overrides?: Readonly<Record<string, number>>,
   category?: PropCategory | null,
+  fromManifest = false,
 ): number {
-  const target = propTargetHeight(assetId, overrides, category);
+  const override = overrides?.[assetId];
+  // A manifest prop keeps its real size unless the client names a height for this very id.
+  if (fromManifest && override === undefined) return 1;
+  const target = override ?? propTargetHeight(assetId, overrides, category);
   if (target === null || !(meshHeight > 1e-4)) return 1;
   return target / meshHeight;
 }
