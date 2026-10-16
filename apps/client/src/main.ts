@@ -389,7 +389,7 @@ async function main(): Promise<void> {
       buildable().map((b) => ({
         buildingId: b.id,
         typeId: buildingTypeId(b.id),
-        naam: b.key,
+        naam: buildingName(b.key),
         scrapCost: b.scrapCost,
         footprint: b.footprint,
         affordable: (status?.scrap ?? 0) >= b.scrapCost,
