@@ -3,7 +3,15 @@ import type { ComponentChild } from 'preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import type { PlayerStatus } from '@crawlout/protocol';
 import { kindOfTypeId } from '@crawlout/data';
-import { ABILITY_KEYS, PERK_KEYS, ROLE_LABEL, keyLabel, threatOf } from './controller.js';
+import {
+  ABILITY_KEYS,
+  PERK_KEYS,
+  PERK_PANEL_KEY,
+  ROLE_LABEL,
+  keyLabel,
+  threatOf,
+  unitStateOf,
+} from './controller.js';
 import type { HudController, HudState } from './controller.js';
 import { CardPanel } from './cards.js';
 import { drawMinimap } from './minimap.js';
@@ -14,6 +22,7 @@ import type {
   SelectedEntity,
   TargetingKind,
   UnitActivity,
+  UnitState,
 } from './types.js';
 
 const TARGETING_TEXT: Record<TargetingKind, string> = {
@@ -135,11 +144,29 @@ function HpBar(props: { pct: number }): ComponentChild {
   );
 }
 
-function SelectionPanel(props: { selection: readonly SelectedEntity[] }): ComponentChild {
+function SelectionPanel(props: {
+  ctl: HudController;
+  selection: readonly SelectedEntity[];
+}): ComponentChild {
+  const { ctl } = props;
   const sel = props.selection;
   let body: ComponentChild;
+  const foe = sel.find((s) => s.enemy);
   if (sel.length === 0) {
     body = h('p', { class: 'co-empty' }, 'Niets geselecteerd');
+  } else if (foe) {
+    // An enemy to inspect: what it is, whose it is and how hurt; no commands for it.
+    const isBuilding = kindOfTypeId(foe.typeId).kind === 'building';
+    body = [
+      h('p', { class: 'co-unit-name' }, foe.loadoutName ?? `Type ${foe.typeId}`),
+      h(
+        'p',
+        { class: 'co-unit-meta' },
+        `${foe.ownerLabel ?? 'Vijand'} · ${isBuilding ? 'Gebouw' : 'Eenheid'} · ${foe.hpPct}%`,
+      ),
+      foe.detail ? h('p', { class: 'co-unit-detail' }, foe.detail) : null,
+      h(HpBar, { pct: foe.hpPct }),
+    ];
   } else if (sel.length === 1 && sel[0]) {
     const u = sel[0];
     body = [
@@ -158,35 +185,62 @@ function SelectionPanel(props: { selection: readonly SelectedEntity[] }): Compon
     body = h(
       'ul',
       { class: 'co-grid' },
-      sel.map((u) =>
-        h(
+      sel.map((u) => {
+        const label = `${u.loadoutName ?? `Type ${u.typeId}`}, ${u.hpPct}% gezondheid`;
+        // A click on a unit card selects only that unit and puts the camera on it.
+        return h(
           'li',
-          {
-            class: 'co-cell',
-            key: u.id,
-            title: `Type ${u.typeId}, ${u.loadoutName ?? 'geen loadout'}, ${u.hpPct}%`,
-          },
-          h('b', null, u.role ? ROLE_LABEL[u.role].slice(0, 1) : '?'),
-          h(HpBar, { pct: u.hpPct }),
-        ),
-      ),
+          { key: u.id },
+          h(
+            'button',
+            {
+              type: 'button',
+              class: 'co-cell',
+              'data-unit': u.id,
+              title: `${label}. Klik om alleen deze te selecteren en de camera erheen te zetten.`,
+              'aria-label': `${label}. Selecteer alleen deze.`,
+              onClick: () => ctl.selectSelected(u.id),
+            },
+            h('b', null, u.role ? ROLE_LABEL[u.role].slice(0, 1) : '?'),
+            // Decorative: the health is in the card's label, so no meter semantics for 50 cards.
+            h(
+              'span',
+              { class: u.hpPct < 30 ? 'co-hp co-low' : 'co-hp', 'aria-hidden': 'true' },
+              h('span', { style: { width: `${Math.max(0, Math.min(100, u.hpPct))}%` } }),
+            ),
+          ),
+        );
+      }),
     );
   }
   return h(
     'section',
-    { class: 'co-panel co-selection', 'aria-label': 'Selectie' },
-    h('h2', null, sel.length > 1 ? `Selectie (${sel.length})` : 'Selectie'),
+    {
+      class: foe ? 'co-panel co-selection co-selection-enemy' : 'co-panel co-selection',
+      'aria-label': 'Selectie',
+    },
+    h(
+      'h2',
+      null,
+      foe ? 'Selectie · vijand' : sel.length > 1 ? `Selectie (${sel.length})` : 'Selectie',
+    ),
     body,
   );
 }
 
+/** What a unit bar says to a screen reader and in its tooltip; the bar itself shows colour only, no text. */
 const ACTIVITY_TEXT: Record<UnitActivity, string> = {
-  idle: 'Niets te doen',
-  moving: 'Onderweg',
-  gathering: 'Verzamelt',
-  carrying: 'Brengt scrap terug',
-  building: 'Bouwt',
-  fighting: 'Vecht',
+  idle: 'niets te doen',
+  moving: 'onderweg',
+  gathering: 'verzamelt',
+  carrying: 'brengt scrap terug',
+  building: 'bouwt of craft',
+  fighting: 'vecht',
+};
+const UNIT_STATE_TEXT: Record<UnitState, string> = {
+  available: 'beschikbaar',
+  working: 'aan het werk',
+  busy: 'bezig',
 };
 
 /** Gebouwenpaneel: een knop per gebouwtype met aantal, een badge bij beschikbare acties en voortgang bij lopend werk. */
@@ -213,8 +267,8 @@ function BuildingButtons(props: { ctl: HudController; state: HudState }): Compon
         .join(', ');
       const hint =
         count > 1
-          ? 'Klik om te selecteren, nogmaals voor het volgende gebouw, dubbelklik voor de camera.'
-          : 'Klik om te selecteren, dubbelklik om de camera erheen te zetten.';
+          ? 'Klik om te selecteren en de camera erheen te zetten, nogmaals voor het volgende gebouw.'
+          : 'Klik om te selecteren en de camera erheen te zetten.';
       return h(
         'button',
         {
@@ -280,8 +334,16 @@ function RosterBar(props: { ctl: HudController; state: HudState }): ComponentChi
       ? h(
           'ul',
           { class: 'co-roster-list', 'aria-label': `${open.naam}: ${open.units.length} eenheden` },
-          open.units.map((u, i) =>
-            h(
+          open.units.map((u, i) => {
+            const barState = unitStateOf(u.activity);
+            const gather =
+              u.activity === 'gathering' && u.progressPct !== undefined
+                ? Math.max(0, Math.min(100, Math.round(u.progressPct)))
+                : null;
+            const hp = Math.max(0, Math.min(100, u.hpPct));
+            const label = `${open.naam} ${i + 1}: ${UNIT_STATE_TEXT[barState]}, ${ACTIVITY_TEXT[u.activity]}${gather !== null ? ` (${gather}%)` : ''}, ${hp}% gezondheid`;
+            // Colour only: green available, orange working, red busy; gathering fills the bar as a loading bar.
+            return h(
               'li',
               { key: u.id },
               h(
@@ -289,17 +351,28 @@ function RosterBar(props: { ctl: HudController; state: HudState }): ComponentChi
                 {
                   type: 'button',
                   class: selected.has(u.id) ? 'co-roster-unit co-selected' : 'co-roster-unit',
+                  'data-state': barState,
                   'data-activity': u.activity,
-                  'aria-label': `${open.naam} ${i + 1}: ${ACTIVITY_TEXT[u.activity]}, ${u.hpPct}% gezondheid`,
+                  'aria-label': label,
+                  title: label,
                   'aria-pressed': selected.has(u.id),
                   onClick: (e: MouseEvent) => ctl.selectRosterUnit(u.id, e.shiftKey),
                 },
-                h('span', { class: 'co-activity-dot', 'aria-hidden': 'true' }),
-                h('span', { class: 'co-roster-unit-text' }, ACTIVITY_TEXT[u.activity]),
-                h(HpBar, { pct: u.hpPct }),
+                gather !== null
+                  ? h('span', {
+                      class: 'co-roster-fill',
+                      'aria-hidden': 'true',
+                      style: { width: `${gather}%` },
+                    })
+                  : null,
+                h(
+                  'span',
+                  { class: 'co-roster-hp', 'aria-hidden': 'true' },
+                  h('span', { style: { width: `${hp}%` } }),
+                ),
               ),
-            ),
-          ),
+            );
+          }),
         )
       : null,
     h(
@@ -342,6 +415,7 @@ function RosterBar(props: { ctl: HudController; state: HudState }): ComponentChi
 /** Wat de commandokaart zegt als er geen knoppen zijn: niets geselecteerd, of een gebouw. */
 function commandHint(ctl: HudController, state: HudState): string {
   const sel = ctl.selectionSummary();
+  if (ctl.enemySelected()) return 'Je bekijkt een vijand: die kun je niet bevelen.';
   if (sel.units === 0 && sel.buildings === 0) return 'Selecteer een eenheid of gebouw.';
   if (sel.units === 0) {
     if (state.cards.length > 0) return 'Kies hierboven wat dit gebouw moet doen.';
@@ -558,29 +632,108 @@ function HeroPanel(props: { ctl: HudController; state: HudState }): ComponentChi
     ctl.heroSelected() ? null : h(HeroAbilities, { ctl, state }),
     pending > 0
       ? h(
-          'div',
-          { class: 'co-perks', role: 'group', 'aria-label': 'Kies een perk' },
-          h('p', { class: 'co-perk-title' }, `Level-up: kies een perk (${pending})`),
-          state.perkOptions.map((p, i) =>
-            h(
-              'button',
-              {
-                key: p.perkId,
-                type: 'button',
-                class: 'co-btn co-perk',
-                'data-perk': p.perkId,
-                title: p.beschrijving,
-                'aria-label': `Perk ${p.naam}${p.beschrijving ? `: ${p.beschrijving}` : ''}${PERK_KEYS[i] ? ` (sneltoets ${PERK_KEYS[i]?.toUpperCase()})` : ''}`,
-                onClick: () => ctl.pickPerk(p.perkId),
-              },
-              h('span', null, p.naam),
-              PERK_KEYS[i]
-                ? h('span', { class: 'co-key', 'aria-hidden': 'true' }, PERK_KEYS[i]?.toUpperCase())
-                : null,
-            ),
-          ),
+          'button',
+          {
+            type: 'button',
+            class: 'co-btn co-perk-badge',
+            'data-action': 'perks',
+            'aria-expanded': state.perkPanelOpen,
+            'aria-controls': 'co-perk-panel',
+            'aria-keyshortcuts': PERK_PANEL_KEY.toUpperCase(),
+            'aria-label': `Kies perk (${pending}), sneltoets ${PERK_PANEL_KEY.toUpperCase()}`,
+            onClick: () => ctl.togglePerkPanel(),
+          },
+          h('span', null, `Kies perk (${pending})`),
+          h('span', { class: 'co-key', 'aria-hidden': 'true' }, PERK_PANEL_KEY.toUpperCase()),
         )
       : null,
+    pending > 0 && state.perkPanelOpen ? h(PerkPanel, { ctl, state, pending }) : null,
+  );
+}
+
+/** Small panel next to the hero panel with the perks the hero can pick: name, effect, requirement; one click chooses. */
+function PerkPanel(props: {
+  ctl: HudController;
+  state: HudState;
+  pending: number;
+}): ComponentChild {
+  const { ctl, state, pending } = props;
+  return h(
+    'div',
+    { id: 'co-perk-panel', class: 'co-perk-panel', role: 'group', 'aria-label': 'Kies een perk' },
+    h(
+      'div',
+      { class: 'co-perk-head' },
+      h('p', { class: 'co-perk-title' }, `Kies een perk (${pending})`),
+      h(
+        'button',
+        {
+          type: 'button',
+          class: 'co-perk-close',
+          'aria-label': 'Sluit het perk-paneel',
+          onClick: () => ctl.closePerkPanel(),
+        },
+        '×',
+      ),
+    ),
+    state.perkOptions.length === 0
+      ? h('p', { class: 'co-empty' }, 'Er zijn geen perks meer om te kiezen.')
+      : h(
+          'ul',
+          { class: 'co-perk-list' },
+          state.perkOptions.map((p, i) => {
+            const locked = p.available === false;
+            const lines =
+              p.effects && p.effects.length > 0
+                ? p.effects
+                : p.beschrijving
+                  ? [p.beschrijving]
+                  : [];
+            const key = PERK_KEYS[i]?.toUpperCase();
+            const label = [
+              `Perk ${p.naam}`,
+              ...lines,
+              p.requirement
+                ? `vereist ${p.requirement}${locked ? ', nog niet gehaald' : ''}`
+                : null,
+              key ? `(sneltoets ${key})` : null,
+            ]
+              .filter((x) => x !== null && x !== '')
+              .join(': ')
+              .replace(': (sneltoets', ' (sneltoets');
+            return h(
+              'li',
+              { key: p.perkId },
+              h(
+                'button',
+                {
+                  type: 'button',
+                  class: locked ? 'co-btn co-perk co-perk-locked' : 'co-btn co-perk',
+                  'data-perk': p.perkId,
+                  'aria-disabled': locked,
+                  title: p.flavour ?? p.beschrijving,
+                  'aria-label': label,
+                  onClick: () => ctl.pickPerk(p.perkId),
+                },
+                h(
+                  'span',
+                  { class: 'co-perk-top' },
+                  h('span', { class: 'co-perk-name' }, p.naam),
+                  key ? h('span', { class: 'co-key', 'aria-hidden': 'true' }, key) : null,
+                ),
+                lines.map((line) => h('span', { class: 'co-perk-effect', key: line }, line)),
+                p.requirement
+                  ? h(
+                      'span',
+                      { class: locked ? 'co-perk-req co-perk-unmet' : 'co-perk-req' },
+                      h('span', { 'aria-hidden': 'true' }, locked ? '✗ ' : '✓ '),
+                      `Vereist ${p.requirement}${locked ? ' (nog niet gehaald)' : ''}`,
+                    )
+                  : null,
+              ),
+            );
+          }),
+        ),
   );
 }
 
@@ -826,7 +979,7 @@ export function Hud(props: { ctl: HudController }): ComponentChild {
     h(HeroPanel, { ctl, state }),
     h(Toasts, { ctl, state }),
     h(LobbyPanel, { ctl, state }),
-    h(SelectionPanel, { selection: state.selection }),
+    h(SelectionPanel, { ctl, selection: state.selection }),
     h(RosterBar, { ctl, state }),
     // Bottom right column: the card window sits directly above the commands, so it never covers the minimap or roster.
     h(

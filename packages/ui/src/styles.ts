@@ -14,11 +14,18 @@ export const HUD_CSS = `
 .co-unit-name{font-weight:600;margin:0 0 4px}
 .co-unit-meta{margin:0 0 6px;color:#c4c7ca}
 .co-unit-note{margin:0 0 6px;color:#ffd54f}
+.co-unit-detail{margin:0 0 6px;color:#c4c7ca;font-size:12px}
+.co-selection-enemy{border-color:#c0392b}
+.co-selection-enemy h2{color:#ff8a80}
+.co-selection-enemy .co-hp>span{background:#e57373}
 .co-hp{height:6px;background:#2b2f33;border-radius:3px;overflow:hidden}
 .co-hp>span{display:block;height:100%;background:#7cb342}
 .co-hp.co-low>span{background:#e53935}
 .co-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(44px,1fr));gap:4px;margin:0;padding:0;list-style:none}
-.co-cell{background:#2b2f33;border-radius:4px;padding:4px;font-size:11px;text-align:center}
+.co-grid>li{display:flex}
+.co-cell{width:100%;background:#2b2f33;border:1px solid transparent;border-radius:4px;padding:4px;color:inherit;font:11px/1.3 system-ui,sans-serif;text-align:center;cursor:pointer}
+.co-cell:hover{background:#3b434b;border-color:#4a5159}
+.co-cell:focus-visible{outline:3px solid #ffd54f;outline-offset:1px}
 .co-cell b{display:block;font-size:13px}
 .co-roster{position:absolute;left:calc(8px + 260px + 12px);right:calc(8px + var(--co-right-w) + 12px);bottom:8px;display:flex;flex-direction:column;gap:6px;padding:6px}
 .co-roster-row{display:flex;flex-wrap:wrap;align-items:flex-start;gap:6px 14px}
@@ -39,18 +46,19 @@ export const HUD_CSS = `
 .co-building-progress>span{display:block;height:100%;background:#42a5f5}
 .co-roster-group{display:flex;align-items:baseline;gap:6px;padding:6px 10px;background:#24282c;border:1px solid #3a4046;border-radius:4px;color:inherit;font:inherit;cursor:pointer}
 .co-roster-group:disabled{opacity:.45;cursor:default}
-.co-roster-group.co-selected,.co-roster-unit.co-selected{border-color:#7dff7d}
 .co-roster-count{font-weight:700}
 .co-roster-idle{font-size:12px;color:#ffd54f}
-.co-roster-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:4px;max-height:132px;overflow:auto;margin:0;padding:0;list-style:none}
-.co-roster-unit{display:grid;grid-template-columns:10px 1fr;grid-template-rows:auto auto;column-gap:6px;align-items:center;width:100%;padding:4px 6px;background:#1d2023;border:1px solid #33383d;border-radius:4px;color:inherit;font:12px/1.2 system-ui,sans-serif;text-align:left;cursor:pointer}
-.co-roster-unit .co-hp{grid-column:1 / span 2}
-.co-activity-dot{width:8px;height:8px;border-radius:50%;background:#8a9097}
-.co-roster-unit[data-activity=idle] .co-activity-dot{background:#ffd54f}
-.co-roster-unit[data-activity=moving] .co-activity-dot{background:#64b5f6}
-.co-roster-unit[data-activity=gathering] .co-activity-dot,.co-roster-unit[data-activity=carrying] .co-activity-dot{background:#a1887f}
-.co-roster-unit[data-activity=building] .co-activity-dot{background:#81c784}
-.co-roster-unit[data-activity=fighting] .co-activity-dot{background:#e57373}
+.co-roster-group.co-selected{border-color:#7dff7d}
+.co-roster-list{display:flex;flex-wrap:wrap;gap:3px;max-height:70px;overflow:auto;margin:0;padding:2px;list-style:none}
+.co-roster-list>li{flex:1 1 0;min-width:8px;max-width:72px}
+.co-roster-unit{position:relative;display:block;width:100%;height:24px;padding:0;overflow:hidden;border:0;border-radius:3px;color:inherit;cursor:pointer}
+.co-roster-unit[data-state=available]{background:#2e9a45}
+.co-roster-unit[data-state=working]{background:#e08a12}
+.co-roster-unit[data-state=busy]{background:#d33a35}
+.co-roster-unit.co-selected{box-shadow:0 0 0 2px #fff}
+.co-roster-fill{position:absolute;left:0;top:0;bottom:0;background:#ffd699;opacity:.9}
+.co-roster-hp{position:absolute;left:0;right:0;bottom:0;height:3px;background:rgba(0,0,0,.5)}
+.co-roster-hp>span{display:block;height:100%;background:rgba(255,255,255,.9)}
 .co-roster-group:focus-visible,.co-roster-unit:focus-visible{outline:2px solid #ffd54f;outline-offset:1px}
 .co-right-col{position:absolute;right:8px;bottom:8px;width:var(--co-right-w);max-height:calc(100% - 236px);display:flex;flex-direction:column;gap:8px;pointer-events:none}
 .co-commands{flex:none}
@@ -88,9 +96,24 @@ export const HUD_CSS = `
 .co-xp>span{display:block;height:100%;background:#42a5f5}
 .co-special{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin:0 0 6px;padding:0;list-style:none;text-align:center}
 .co-special b{display:block;font-size:11px;color:#9aa0a6}
-.co-perks{display:flex;flex-direction:column;gap:4px}
+.co-perk-badge{flex-direction:row;justify-content:space-between;width:100%;margin-bottom:6px;background:#8a6d12;border-color:#ffd54f;color:#fff;font-weight:700;animation:co-perk-pulse 1.6s ease-in-out infinite}
+.co-perk-badge:hover:not(:disabled){background:#a07f16}
+@keyframes co-perk-pulse{0%,100%{box-shadow:0 0 0 0 rgba(255,213,79,.55)}50%{box-shadow:0 0 0 4px rgba(255,213,79,0)}}
+@media (prefers-reduced-motion:reduce){.co-perk-badge{animation:none}}
+.co-perk-panel{position:absolute;left:calc(100% + 8px);top:0;width:260px;max-height:60vh;overflow:auto;padding:8px;background:rgba(20,22,24,.96);border:1px solid #ffd54f;border-radius:6px}
+.co-perk-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
 .co-perk-title{margin:0;color:#ffd54f;font-weight:600}
-.co-perk{flex-direction:row;justify-content:space-between;padding:6px 8px}
+.co-perk-close{font:inherit;color:inherit;background:#2f353b;border:1px solid #4a5159;border-radius:4px;cursor:pointer;padding:0 8px}
+.co-perk-close:focus-visible{outline:3px solid #ffd54f;outline-offset:1px}
+.co-perk-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.co-perk{width:100%;align-items:stretch;gap:3px;padding:6px 8px;text-align:left;border-color:#5d8a3a}
+.co-perk-top{display:flex;justify-content:space-between;align-items:center;gap:6px}
+.co-perk-name{font-weight:700;font-size:13px}
+.co-perk-effect{font-size:12px;color:#e6e6e6}
+.co-perk-req{font-size:11px;color:#aed581}
+.co-perk-unmet{color:#ff8a65}
+.co-btn.co-perk-locked{opacity:.6;cursor:not-allowed;border-style:dashed;border-color:#8a4a3a}
+.co-btn.co-perk-locked:hover{background:#2f353b}
 .co-revives{margin:0 0 6px;color:#c4c7ca;font-size:12px}
 .co-revive{flex-direction:row;justify-content:space-between;width:100%;margin-bottom:6px;background:#2e5a2e;border-color:#7cb342}
 .co-abilities{display:flex;flex-direction:column;gap:4px;margin-bottom:6px}

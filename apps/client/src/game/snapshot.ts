@@ -12,6 +12,8 @@ export interface EntityRow {
   /** ANIM id and ENTITY_FLAG bits from the snapshot: what the entity is doing right now. */
   anim: number;
   flags: number;
+  /** animT, 0..65535: for a gathering unit the share of the current gather job (work / gatherTicks). */
+  animT: number;
 }
 
 export interface SnapshotEvent {
@@ -43,6 +45,7 @@ export function readSnapshot(buf: ArrayBuffer, selection: ReadonlySet<number>): 
   const hp = new Uint8Array(buf, layout.entity.hpPct, entityCount);
   const anims = new Uint8Array(buf, layout.entity.anim, entityCount);
   const flags = new Uint8Array(buf, layout.entity.flags, entityCount);
+  const animTs = new Uint16Array(buf, layout.entity.animT, entityCount);
 
   const entities = new Map<number, EntityRow>();
   for (let i = 0; i < entityCount; i++) {
@@ -58,6 +61,7 @@ export function readSnapshot(buf: ArrayBuffer, selection: ReadonlySet<number>): 
       hpPct: hp[i]!,
       anim: anims[i]!,
       flags: flags[i]!,
+      animT: animTs[i]!,
     });
   }
 

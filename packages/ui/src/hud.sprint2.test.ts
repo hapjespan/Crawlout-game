@@ -288,7 +288,7 @@ describe('held-paneel en perks', () => {
     expect(panel?.textContent).toContain('level 3');
     expect(t.el.querySelectorAll('.co-special li')).toHaveLength(7);
     expect(panel?.querySelector('[role="meter"]')?.getAttribute('aria-valuenow')).toBe('50');
-    expect(t.el.querySelector('.co-perks')).toBeNull();
+    expect(t.el.querySelector('[data-action="perks"]')).toBeNull();
   });
 
   it('zonder held geen paneel', () => {
@@ -300,6 +300,8 @@ describe('held-paneel en perks', () => {
   it('level-up: kies een perk via klik; reeds gekozen perks ontbreken', () => {
     const t = setup({}, { status: heroStatus, pendingPerks: 1 });
     mounted = t.handle;
+    expect(t.el.querySelector('[data-perk]')).toBeNull(); // the panel opens from the badge
+    click(t.el.querySelector('[data-action="perks"]'));
     const btns = t.el.querySelectorAll('[data-perk]');
     expect([...btns].map((b) => b.getAttribute('data-perk'))).toEqual(['11', '12']);
     click(t.el.querySelector('[data-perk="12"]'));

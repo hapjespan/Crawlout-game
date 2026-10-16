@@ -23,6 +23,8 @@ import type {
   TargetResult,
   TargetingKind,
   ToastAlert,
+  UnitActivity,
+  UnitState,
 } from './types.js';
 
 export type ActionId =
@@ -47,6 +49,8 @@ export const PERK_KEYS = ['f1', 'f2', 'f3'] as const;
 export const ABILITY_KEYS = ['z', 'x', 'c'] as const;
 /** Sneltoetsen zonder knop: H zoekt de held op, K schakelt de cijfertoetsen van de craftkaarten. */
 export const HERO_KEY = 'h';
+/** P opent en sluit het perk-paneel zolang er een perk te kiezen is. */
+export const PERK_PANEL_KEY = 'p';
 export const CRAFT_KEY = 'k';
 /** Een kaartstart binnen dit venster na dezelfde kaart telt niet mee (pointerup en klik van dezelfde druk). */
 const CARD_DEDUPE_MS = 350;
@@ -104,6 +108,7 @@ export function summarize(selection: readonly SelectedEntity[]): SelectionSummar
     other: 0,
   };
   for (const s of selection) {
+    if (s.enemy) continue; // an enemy is inspected, never commanded
     if (kindOfTypeId(s.typeId).kind === 'building') sum.buildings++;
     else if (heroIdOfTypeId(s.typeId) >= 0) {
       sum.units++;
@@ -121,10 +126,10 @@ export function summarize(selection: readonly SelectedEntity[]): SelectionSummar
 
 /**
  * Past deze selectie-afhankelijke actie bij de selectie? Verplaats en Stop bij elke unit; Val aan bij wie vecht (niet bij
- * alleen plunderaars of bouwers); Verzamel bij plunderaars; Bouw bij bouwers; een rol alleen als minstens een bewoner
- * die rol nog niet heeft.
+ * alleen plunderaars of bouwers); Verzamel bij plunderaars; Bouw bij bouwers; een rol alleen met een voltooide
+ * werkplaats (canSwitchRole) en als minstens een bewoner die rol nog niet heeft.
  */
-function appliesTo(id: ActionId, s: SelectionSummary): boolean {
+function appliesTo(id: ActionId, s: SelectionSummary, canSwitchRole: boolean): boolean {
   switch (id) {
     case 'move':
     case 'stop':
@@ -136,13 +141,30 @@ function appliesTo(id: ActionId, s: SelectionSummary): boolean {
     case 'build':
       return s.builders > 0;
     case 'roleScavenger':
-      return s.builders + s.militia > 0;
+      return canSwitchRole && s.builders + s.militia > 0;
     case 'roleBuilder':
-      return s.scavengers + s.militia > 0;
+      return canSwitchRole && s.scavengers + s.militia > 0;
     case 'roleMilitia':
-      return s.scavengers + s.builders > 0;
+      return canSwitchRole && s.scavengers + s.builders > 0;
     default:
       return true;
+  }
+}
+
+/**
+ * Kleur van een eenheidsbalk: beschikbaar (niets te doen), werkt (verzamelen en terugbrengen, bouwen, craften of
+ * repareren) of bezig (onderweg onder een bevel, vechten).
+ */
+export function unitStateOf(activity: UnitActivity): UnitState {
+  switch (activity) {
+    case 'idle':
+      return 'available';
+    case 'gathering':
+    case 'carrying':
+    case 'building':
+      return 'working';
+    default:
+      return 'busy';
   }
 }
 
@@ -251,6 +273,10 @@ export interface HudState {
   buildingButtons: readonly BuildingButton[];
   /** Uitgeklapte groep in de eenhedenbalk (key), of null. */
   rosterOpen: string | null;
+  /** Staat er een voltooide werkplaats? Pas dan kunnen bewoners van rol wisselen (rolknoppen op de commandokaart). */
+  canSwitchRole: boolean;
+  /** Het perk-paneel is open (alleen zinvol zolang er een perk te kiezen is). */
+  perkPanelOpen: boolean;
 }
 
 /** De tegenstander die telt (genoeg punten, niet jijzelf), of null. */
@@ -296,6 +322,8 @@ export class HudController implements HudHandle {
       selection: [],
       roster: [],
       rosterOpen: null,
+      canSwitchRole: true,
+      perkPanelOpen: false,
       network: NO_NETWORK,
       targeting: null,
       buildMenuOpen: false,
@@ -382,7 +410,7 @@ export class HudController implements HudHandle {
 
   /** Is de held (ook) geselecteerd? */
   heroSelected(): boolean {
-    return this.state.selection.some((s) => heroIdOfTypeId(s.typeId) >= 0);
+    return this.state.selection.some((s) => !s.enemy && heroIdOfTypeId(s.typeId) >= 0);
   }
 
   /** De acties die nu op de commandokaart staan: alleen wat bij de selectie past, plus oplappen, alarm en lobby. */
@@ -400,7 +428,7 @@ export class HudController implements HudHandle {
       case 'lobby':
         return this.deps.getLobby !== undefined;
       default:
-        return appliesTo(action.id, this.selectionSummary());
+        return appliesTo(action.id, this.selectionSummary(), this.state.canSwitchRole);
     }
   }
 
@@ -430,10 +458,16 @@ export class HudController implements HudHandle {
     return hero?.heroId !== undefined && !this.state.heroDead && a.cooldownPct <= 0;
   }
 
+  /** Is een vijand geselecteerd om te bekijken? */
+  enemySelected(): boolean {
+    return this.state.selection.some((s) => s.enemy === true);
+  }
+
   /** Alleen gebouwen geselecteerd (en er is een selectie). */
   private buildingsOnly(): boolean {
     return (
       this.state.selection.length > 0 &&
+      !this.enemySelected() &&
       this.state.selection.every((s) => kindOfTypeId(s.typeId).kind === 'building')
     );
   }
@@ -450,7 +484,7 @@ export class HudController implements HudHandle {
   private hasCraftCards(): boolean {
     return (
       this.state.cards.some((c) => c.kind === 'craft') &&
-      this.state.selection.some((s) => kindOfTypeId(s.typeId).kind !== 'building')
+      this.state.selection.some((s) => !s.enemy && kindOfTypeId(s.typeId).kind !== 'building')
     );
   }
 
@@ -589,7 +623,7 @@ export class HudController implements HudHandle {
   /** Bouwers uit de selectie: alleen units met rol builder bouwen. */
   selectedBuilders(): number[] {
     return this.state.selection
-      .filter((s) => s.role === 'builder')
+      .filter((s) => !s.enemy && s.role === 'builder')
       .slice(0, MAX_ENTITIES_PER_COMMAND)
       .map((s) => s.id);
   }
@@ -612,7 +646,7 @@ export class HudController implements HudHandle {
     } else if (role) {
       // Only settlers switch role: the hero and robots would be ignored by the sim anyway.
       const settlers = this.state.selection
-        .filter((s) => s.role !== null && s.role !== role)
+        .filter((s) => !s.enemy && s.role !== null && s.role !== role)
         .slice(0, MAX_ENTITIES_PER_COMMAND)
         .map((s) => s.id);
       if (settlers.length === 0) return false;
@@ -661,9 +695,10 @@ export class HudController implements HudHandle {
   }
 
   /**
-   * Klik op een gebouwknop: selecteer een gebouw van dat type, zodat zijn kaarten verschijnen. Nog een klik gaat naar het
-   * volgende gebouw van hetzelfde type (doorklikken). Met `focus` (dubbelklik) blijft de keuze staan en gaat de camera
-   * naar het geselecteerde gebouw van het type, of het eerste als er geen geselecteerd is.
+   * Klik op een gebouwknop: selecteer een gebouw van dat type, zodat zijn kaarten verschijnen, en zet de camera erop.
+   * Nog een klik gaat naar het volgende gebouw van hetzelfde type (doorklikken). Met `focus` (dubbelklik) blijft de keuze
+   * staan: het geselecteerde gebouw van het type, of het eerste als er geen geselecteerd is. Met `add` (shift) komt het
+   * gebouw erbij en blijft de camera staan.
    */
   selectBuilding(key: string, focus = false, add = false): boolean {
     const group = this.state.buildingButtons.find((b) => b.key === key);
@@ -675,7 +710,7 @@ export class HudController implements HudHandle {
       ? (group.sites[at] ?? group.sites[0]!)
       : (group.sites[at >= 0 && only ? (at + 1) % group.sites.length : 0] ?? group.sites[0]!);
     this.deps.selectUnits([site.id], add);
-    if (focus) this.deps.focusCamera?.(site.x, site.y);
+    if (focus || !add) this.deps.focusCamera?.(site.x, site.y);
     this.refresh();
     return true;
   }
@@ -727,15 +762,26 @@ export class HudController implements HudHandle {
     this.set({ hint: text });
   }
 
+  /** Opent of sluit het perk-paneel; alleen zolang er een perk te kiezen is. */
+  togglePerkPanel(): boolean {
+    if (this.pendingPerks() <= 0 || this.state.confirmSurrender) return false;
+    this.set({ perkPanelOpen: !this.state.perkPanelOpen });
+    return true;
+  }
+
+  closePerkPanel(): void {
+    if (this.state.perkPanelOpen) this.set({ perkPanelOpen: false });
+  }
+
+  /** Kiest een perk (PickPerk). Een perk waarvan de held de vereiste niet haalt (available false) is niet te kiezen. */
   pickPerk(perkId: number): boolean {
     const heroId = this.state.status?.hero?.heroId;
-    if (
-      heroId === undefined ||
-      this.pendingPerks() <= 0 ||
-      !this.state.perkOptions.some((p) => p.perkId === perkId)
-    )
+    const option = this.state.perkOptions.find((p) => p.perkId === perkId);
+    if (heroId === undefined || this.pendingPerks() <= 0 || !option || option.available === false)
       return false;
     this.deps.sendCommand('PickPerk', { heroId, perkId });
+    // The last pending pick closes the panel; with more picks left it stays open (the sim answers on the next status).
+    if (this.pendingPerks() <= 1) this.set({ perkPanelOpen: false });
     return true;
   }
 
@@ -869,6 +915,7 @@ export class HudController implements HudHandle {
       if (this.state.confirmSurrender) this.cancelSurrender();
       else if (this.state.targeting) this.cancelTargeting();
       else if (this.state.placement) this.cancelPlacement();
+      else if (this.state.perkPanelOpen) this.closePerkPanel();
       else if (this.state.buildMenuOpen) this.closeBuildMenu();
       else if (this.state.craftMenuOpen) this.set({ craftMenuOpen: false });
       else return false;
@@ -906,13 +953,17 @@ export class HudController implements HudHandle {
       return true;
     }
     if (key === '.' && this.deps.getRoster) return this.selectNextIdle() || true;
+    if (key === PERK_PANEL_KEY) return this.togglePerkPanel();
     if (key === HERO_KEY) return this.focusHero() || this.hasHero();
     if (key === CRAFT_KEY) return this.toggleCraftMenu();
     const action = ACTIONS.find((a) => a.key === key);
     return action ? this.run(action.id) : false;
   }
 
-  /** Klik op een type in de eenhedenbalk: selecteer alle units van dat type en klap de lijst uit (nogmaals: inklappen). */
+  /**
+   * Klik op een type in de eenhedenbalk: selecteer alle units van dat type, zet de camera op hun zwaartepunt en klap de
+   * lijst uit (nogmaals: inklappen). Met `add` (shift) komen ze erbij en blijft de camera staan.
+   */
   selectGroup(key: string, add = false): boolean {
     const group = this.state.roster.find((g) => g.key === key);
     if (!group || !this.deps.selectUnits) return false;
@@ -920,6 +971,12 @@ export class HudController implements HudHandle {
       group.units.map((u) => u.id),
       add,
     );
+    if (!add && group.units.length > 0) {
+      const n = group.units.length;
+      const cx = group.units.reduce((sum, u) => sum + u.x, 0) / n;
+      const cy = group.units.reduce((sum, u) => sum + u.y, 0) / n;
+      this.deps.focusCamera?.(Math.round(cx), Math.round(cy));
+    }
     this.read();
     this.set({ rosterOpen: this.state.rosterOpen === key && !add ? null : key });
     return true;
@@ -931,6 +988,19 @@ export class HudController implements HudHandle {
     if (!unit || !this.deps.selectUnits) return false;
     this.deps.selectUnits([id], add);
     if (!add) this.deps.focusCamera?.(unit.x, unit.y);
+    this.refresh();
+    return true;
+  }
+
+  /**
+   * Klik op een kaart in het selectiepaneel: alleen die eenheid (of dat gebouw) selecteren en de camera erheen. De
+   * positie komt van de selectie zelf (SelectedEntity.x en y); zonder positie blijft de camera staan.
+   */
+  selectSelected(id: number): boolean {
+    const entry = this.state.selection.find((s) => s.id === id);
+    if (!entry || !this.deps.selectUnits) return false;
+    this.deps.selectUnits([id], false);
+    if (entry.x !== undefined && entry.y !== undefined) this.deps.focusCamera?.(entry.x, entry.y);
     this.refresh();
     return true;
   }
@@ -963,9 +1033,10 @@ export class HudController implements HudHandle {
   }
 
   private selectedIds(includeBuildings = true): number[] {
+    const own = this.state.selection.filter((s) => !s.enemy);
     const sel = includeBuildings
-      ? this.state.selection
-      : this.state.selection.filter((s) => kindOfTypeId(s.typeId).kind !== 'building');
+      ? own
+      : own.filter((s) => kindOfTypeId(s.typeId).kind !== 'building');
     return sel.slice(0, MAX_ENTITIES_PER_COMMAND).map((s) => s.id);
   }
 
@@ -994,13 +1065,13 @@ export class HudController implements HudHandle {
         ),
       ),
     ];
-    const units = selection.some((s) => kindOfTypeId(s.typeId).kind !== 'building');
+    const units = selection.some((s) => !s.enemy && kindOfTypeId(s.typeId).kind !== 'building');
     const cards = this.readCards(selection, buildingIds, units);
     const placement = selection.some((s) => s.role === 'builder') ? this.state.placement : null;
     if (this.state.placement && !placement) d.endPlacement?.();
     // Targeting without a selection makes no sense any more (a hero ability does not need one).
     const targeting =
-      selection.length === 0 && this.state.targeting !== 'heroAbility'
+      selection.every((s) => s.enemy) && this.state.targeting !== 'heroAbility'
         ? null
         : this.state.targeting;
     if (this.state.targeting && !targeting) d.endTargeting?.();
@@ -1025,6 +1096,8 @@ export class HudController implements HudHandle {
       lobby: this.state.showLobby ? (d.getLobby?.() ?? null) : null,
       roster: d.getRoster?.() ?? [],
       buildingButtons: d.getBuildingButtons?.() ?? [],
+      canSwitchRole: d.canSwitchRole?.() ?? true,
+      perkPanelOpen: pendingPerks && this.state.perkPanelOpen,
       network: this.deps.getNetwork?.() ?? NO_NETWORK,
       targeting,
     };

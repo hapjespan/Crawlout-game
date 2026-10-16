@@ -17,6 +17,26 @@ describe('nextSelection', () => {
   });
 });
 
+describe('nextSelection with an enemy to inspect', () => {
+  const enemy = (id: number): boolean => id >= 900;
+
+  it('a plain click on an enemy replaces the selection with just the enemy', () => {
+    expect([...nextSelection(new Set([1, 2]), [901], false, enemy)]).toEqual([901]);
+  });
+
+  it('a click on an own unit replaces an inspected enemy', () => {
+    expect([...nextSelection(new Set([901]), [3], false, enemy)]).toEqual([3]);
+  });
+
+  it('shift never adds an enemy to a group of own units', () => {
+    expect([...nextSelection(new Set([1, 2]), [901], true, enemy)].sort()).toEqual([1, 2]);
+  });
+
+  it('shift on an own unit while inspecting an enemy drops the enemy instead of mixing', () => {
+    expect([...nextSelection(new Set([901]), [3], true, enemy)]).toEqual([3]);
+  });
+});
+
 describe('leftClickIs', () => {
   it('is a selection click when no mode is active', () => {
     for (const hit of ['unit', 'building', 'scrapNode', 'claimPoint', 'none'] as const)

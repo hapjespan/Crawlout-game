@@ -8,6 +8,7 @@ import {
   buildingCards,
   effectText,
   effectTexts,
+  hasFinishedWorkshop,
   humanize,
 } from '../src/game/cards.js';
 import type { EntityRow } from '../src/game/snapshot.js';
@@ -24,6 +25,7 @@ const row = (id: number, typeId: number, anim: number = ANIM.idle): EntityRow =>
   hpPct: 100,
   anim,
   flags: 0,
+  animT: 0,
 });
 const status = (over: Partial<PlayerStatus> = {}): PlayerStatus => ({
   playerId: 0,
@@ -327,14 +329,43 @@ describe('buildingButtons', () => {
     heroDead: false,
   });
 
-  it('lists every finished building type with its sites, sites under construction left out', () => {
+  it('lists only finished buildings that have an action: no Basis, no Woning, sites under construction left out', () => {
     const buttons = buildingButtons(ctx(status()));
-    expect(buttons.map((b) => [b.naam, b.sites.length])).toEqual([
-      ['Basis', 1],
-      ['Werkplaats', 1],
-      ['Woning', 3],
+    expect(buttons.map((b) => [b.naam, b.sites.length])).toEqual([['Werkplaats', 1]]);
+    expect(buttons[0]!.sites.map((s) => s.id)).toEqual([2]);
+  });
+
+  it('never lists buildings without an action (woning, claimpaal, turret, radiobaken)', () => {
+    const quiet = ['woning', 'claimpaal', 'turret', 'radiobaken', 'hoofdgebouw'].map((k, i) =>
+      row(20 + i, buildingTypeId(building(k).id)),
+    );
+    const buttons = buildingButtons({ ...ctx(status()), own: quiet });
+    expect(buttons).toEqual([]);
+  });
+
+  it('lists lab, training and robot factory next to the workshop, in bar order', () => {
+    const acting = ['robotfabriek', 'trainingsfaciliteit', 'lab', 'werkplaats'].map((k, i) =>
+      row(30 + i, buildingTypeId(building(k).id)),
+    );
+    const buttons = buildingButtons({ ...ctx(status({ scrap: 1000 })), own: acting });
+    expect(buttons.map((b) => b.key)).toEqual([
+      'werkplaats',
+      'lab',
+      'trainingsfaciliteit',
+      'robotfabriek',
     ]);
-    expect(buttons.find((b) => b.key === 'woning')!.sites.map((s) => s.id)).toEqual([3, 4, 5]);
+  });
+
+  it('keeps a lab that is short of scrap listed, and drops a workshop with every tech researched', () => {
+    const lab = row(40, buildingTypeId(building('lab').id));
+    const poor = buildingButtons({ ...ctx(status({ scrap: 0 })), own: [lab] });
+    expect(poor.map((b) => b.key)).toEqual(['lab']);
+    const allTechs = data.tech.map((t) => t.id);
+    const finished = buildingButtons({
+      ...ctx(status({ scrap: 1000, techs: allTechs })),
+      own: [row(41, buildingTypeId(workshop.id))],
+    });
+    expect(finished).toEqual([]);
   });
 
   it('counts the research a workshop can start and shows progress while it runs', () => {
@@ -360,7 +391,8 @@ describe('buildingButtons', () => {
     expect(busy).toMatchObject({ running: 1, progressPct: 40, available: 0 });
   });
 
-  it('puts a revive on the Basis when the hero is dead', () => {
+  it('puts a revive on the Basis when the hero is dead, and lists the Basis only then', () => {
+    expect(buildingButtons(ctx(status())).some((b) => b.key === 'hoofdgebouw')).toBe(false);
     const dead = buildingButtons({ ...ctx(status({ scrap: 1000 })), heroDead: true }).find(
       (b) => b.key === 'hoofdgebouw',
     )!;
@@ -368,7 +400,31 @@ describe('buildingButtons', () => {
   });
 });
 
+describe('hasFinishedWorkshop', () => {
+  const workshop = building('werkplaats');
+  it('needs a finished workshop of the player: none, a site and a finished one', () => {
+    const hq = row(1, buildingTypeId(building('hoofdgebouw').id));
+    expect(hasFinishedWorkshop(data, [hq])).toBe(false);
+    expect(hasFinishedWorkshop(data, [hq, row(2, buildingTypeId(workshop.id), ANIM.build)])).toBe(
+      false,
+    );
+    expect(hasFinishedWorkshop(data, [hq, row(3, buildingTypeId(workshop.id))])).toBe(true);
+  });
+});
+
 describe('effectTexts', () => {
+  it('writes player-wide time stats without a target and names the hero and the scavengers', () => {
+    expect(effectTexts([{ stat: 'researchTimePct', target: 'alle', delta: -100 }])).toEqual([
+      '-10% onderzoekstijd',
+    ]);
+    expect(effectTexts([{ stat: 'hpPct', target: 'held', delta: 100 }])).toEqual([
+      '+10% leven voor de held',
+    ]);
+    expect(effectTexts([{ stat: 'gatherRatePct', target: 'scavenger', delta: 50 }])).toEqual([
+      '+5% verzameltempo voor plunderaars',
+    ]);
+  });
+
   it('merges equal effects on several targets into one line', () => {
     const lines = effectTexts([
       { stat: 'hpPct', target: 'militie', delta: 150 },

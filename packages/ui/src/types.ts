@@ -18,6 +18,19 @@ export interface SelectedEntity {
   role: Role | null;
   /** Korte toelichting in het selectiepaneel, bijvoorbeeld "In aanbouw" voor een gebouw dat nog niet af is. */
   note?: string;
+  /**
+   * True voor een vijandelijke eenheid of gebouw die de speler aanklikte om te bekijken. Een vijand is alleen te
+   * bekijken: de commandokaart blijft leeg (een hint), geen enkel commando gaat erheen, en hij komt nooit in een groep
+   * met eigen eenheden.
+   */
+  enemy?: boolean;
+  /** Bij een vijand: wie hij is, bijvoorbeeld "Vijand (Dwellers)". */
+  ownerLabel?: string;
+  /** Bij een vijand: korte extra regel, bijvoorbeeld "Wapen: Geweer (ballistisch) · Pantser: Licht". */
+  detail?: string;
+  /** Positie in sim-eenheden: een klik op de kaart in het selectiepaneel zet de camera erop. Zonder positie blijft de camera staan. */
+  x?: number;
+  y?: number;
 }
 
 /** Netwerktoestand die de HUD toont: desync en stall komen uit de relay (frames.ts). */
@@ -119,6 +132,14 @@ export interface PerkOption {
   perkId: number;
   naam: string;
   beschrijving?: string;
+  /** Effect in gewone taal, een regel per effect, bijvoorbeeld "+10% leven voor de held". */
+  effects?: readonly string[];
+  /** Vereiste in gewone taal, bijvoorbeeld "Uithoudingsvermogen 5". */
+  requirement?: string;
+  /** False als de held de vereiste (nog) niet haalt: de perk staat er wel, maar is niet te kiezen. Ontbreekt: kiesbaar. */
+  available?: boolean;
+  /** Kleurentekst uit de data. */
+  flavour?: string;
 }
 
 /**
@@ -187,11 +208,11 @@ export interface BuildingCard {
   hotkey: string;
 }
 
-/** Eén eigen, voltooid gebouw binnen een gebouwknop. */
+/** Eén eigen, voltooid gebouw met een actie, binnen een gebouwknop. */
 export interface BuildingSite {
   /** Entity-id van het gebouw. */
   id: number;
-  /** Positie in sim-eenheden (voor de camera bij dubbelklik). */
+  /** Positie in sim-eenheden (voor de camera bij een klik op de knop). */
   x: number;
   y: number;
   /** Aantal kaarten (onderzoek, robots, training, oplappen) dat nu te starten is. */
@@ -203,9 +224,10 @@ export interface BuildingSite {
 }
 
 /**
- * Eén knop in het gebouwenpaneel: alle eigen voltooide gebouwen van één type ("Werkplaats", "Lab", "Woning x3").
- * De client levert alle gebouwtypen die de speler heeft; de HUD toont ze naast de eenhedenbalk. Een klik selecteert het
- * eerste gebouw en opent zijn kaarten, nog een klik het volgende van hetzelfde type.
+ * Eén knop in het gebouwenpaneel: alle eigen voltooide gebouwen van één type met een actie ("Werkplaats", "Lab",
+ * "Robotfabriek x2"). Gebouwen zonder actie (woning, claimpaal, turret, radiobaken) levert de client niet; de HUD toont
+ * ze naast de eenhedenbalk. Een klik selecteert het eerste gebouw, opent zijn kaarten en zet de camera erop, nog een
+ * klik gaat naar het volgende van hetzelfde type.
  */
 export interface BuildingButton {
   /** Vaste sleutel van het type (bijvoorbeeld de data-key), stabiel tussen lezingen. */
@@ -266,6 +288,8 @@ export interface LobbyView {
 
 /** Wat een unit nu doet, afgeleid uit de snapshot (anim en flags). */
 export type UnitActivity = 'idle' | 'moving' | 'gathering' | 'carrying' | 'building' | 'fighting';
+/** Kleur van een eenheidsbalk: groen beschikbaar (idle), oranje aan het werk (verzamelen, bouwen, craften), rood bezig (onderweg, vechten). */
+export type UnitState = 'available' | 'working' | 'busy';
 
 /** Eén eigen unit in de eenhedenbalk; x en y in sim-eenheden (voor de camera). */
 export interface RosterUnit {
@@ -274,6 +298,8 @@ export interface RosterUnit {
   activity: UnitActivity;
   x: number;
   y: number;
+  /** 0..100: voortgang van de lopende verzameltaak (alleen bij `gathering`); de balk toont dit als laadbalkje. */
+  progressPct?: number;
 }
 
 /** Eigen units van één type (loadout of held), in vaste volgorde. */
@@ -357,8 +383,13 @@ export interface HudDeps {
   getRoster?(): readonly RosterGroup[];
   /** Zet de selectie van de client (add: bij de huidige selectie voegen). Nodig voor de eenhedenbalk en de gebouwknoppen. */
   selectUnits?(ids: readonly number[], add: boolean): void;
-  /** Gebouwknoppen naast de eenhedenbalk: alle eigen voltooide gebouwen per type. Ontbreekt of leeg: geen paneel. */
+  /** Gebouwknoppen naast de eenhedenbalk: alleen eigen voltooide gebouwen met een actie (onderzoek, productie, training, oplappen). Ontbreekt of leeg: geen paneel. */
   getBuildingButtons?(): readonly BuildingButton[];
+  /**
+   * Mag een bewoner nu van rol wisselen? Alleen met een voltooide werkplaats: zonder staan de rolknoppen (Plunderaar,
+   * Bouwer, Militie; 1 tot 3) niet op de commandokaart. Ontbreekt de dep: de knoppen staan er altijd.
+   */
+  canSwitchRole?(): boolean;
 }
 
 export interface HudHandle {

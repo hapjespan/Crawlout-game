@@ -22,6 +22,9 @@ export const LOADOUT_NAMES: Record<string, string> = {
   sentinel: 'Sentinel',
 };
 
+/** animT is 0..65535 over the clip; a gathering unit's clip is its gather job. */
+const ANIM_T_MAX = 65535;
+
 export function activityOf(e: Pick<EntityRow, 'anim' | 'flags'>): UnitActivity {
   if (e.anim === ANIM.attack1 || e.anim === ANIM.attack2 || (e.flags & ENTITY_FLAG.inCombat) !== 0)
     return 'fighting';
@@ -46,7 +49,18 @@ export function buildRoster(
   let hero: { naam: string; unit: RosterUnit } | null = null;
   for (const e of entities) {
     if (e.owner !== playerId) continue;
-    const unit: RosterUnit = { id: e.id, hpPct: e.hpPct, activity: activityOf(e), x: e.x, y: e.y };
+    const activity = activityOf(e);
+    const unit: RosterUnit = {
+      id: e.id,
+      hpPct: e.hpPct,
+      activity,
+      x: e.x,
+      y: e.y,
+      // The gather time as a loading bar: the sim puts work / gatherTicks in animT while a unit gathers.
+      ...(activity === 'gathering'
+        ? { progressPct: Math.round((e.animT * 100) / ANIM_T_MAX) }
+        : {}),
+    };
     const heroId = heroIdOfTypeId(e.typeId);
     if (heroId >= 0) {
       hero = { naam: data.heroes[heroId]?.naam ?? 'Held', unit };
