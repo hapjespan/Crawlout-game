@@ -178,7 +178,7 @@ export class World {
   /** Claimpunt: bitset van spelers die het ooit namen (ontdekking, xpPerDiscovery voor de held). */
   readonly seenBy = new Uint8Array(MAX_ENTITIES);
   /**
-   * Claimpunt (data 0.19.0, de claimronde): 1 = de eigenaar houdt het zonder claimgebouw (zijn held claimde het, of het
+   * Claimpunt (data 0.20.0, de claimronde): 1 = de eigenaar houdt het zonder claimgebouw (zijn held claimde het, of het
    * ging over na een aanval). Zo'n claim is over te nemen: zie systems/claims.ts.
    */
   readonly beacon = new Uint8Array(MAX_ENTITIES);

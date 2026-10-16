@@ -1,6 +1,6 @@
 // A claim building chosen from the build menu (the Claimpaal) near a claim point is a claim, not a plain Build: the sim
 // places it with the Claim command, next to the point, with the claim exception and the relaxed fallbacks
-// (@crawlout/sim/placement claimSiteIn, data 0.19.0). This module decides, for the placement preview, whether the
+// (@crawlout/sim/placement claimSiteIn, data 0.20.0). This module decides, for the placement preview, whether the
 // cursor is at a claim point, where the sim will put the post (so the preview snaps to exactly that spot) and why not;
 // and which command a click sends. Pure functions, no DOM.
 import type { CommandPayload } from '@crawlout/protocol';

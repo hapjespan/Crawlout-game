@@ -69,7 +69,7 @@ export interface MapSpec {
   claimPoints: Array<Feature & { kind: 'scrap' | 'settlement' | 'powerArmor' }>;
   /**
    * Minimum distance in metres between every scrap node and every claim point, both halves and the middle (claim round,
-   * data 0.19.0): at least claimRadiusM (data/sim.json) plus a few metres, so the claim post always fits next to the
+   * data 0.20.0): at least claimRadiusM (data/sim.json) plus a few metres, so the claim post always fits next to the
    * point and no scrap heap lies in the claim circle. The generator refuses a spec that breaks it; maps.test.ts checks
    * it against sim.json.
    */
@@ -326,7 +326,7 @@ export function generateMap(spec: MapSpec, io?: GenIo): GeneratedMap {
         throw new Error(`gen ${spec.id}: ${what} (${f.x},${f.y}) ligt op een onbegaanbare cel`);
     }
   }
-  // Scrap keeps its distance from every claim point (claim round, data 0.19.0): the claim post always fits next to the
+  // Scrap keeps its distance from every claim point (claim round, data 0.20.0): the claim post always fits next to the
   // point and no heap lies in the claim circle. Whole metres, compared squared (no square root).
   const gap = spec.claimNodeMinM;
   for (const n of def.scrapNodes) {

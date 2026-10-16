@@ -287,8 +287,16 @@ export function movementSystem(ctx: SimContext, s: MovementScratch): void {
     }
     // A unit of a group order that wants to walk but does not move at all stands against a building between it and
     // its slot (the two claim posts next to the middle point of Rustbelt, built after the slots were chosen, with the
-    // slot straight behind one of them): its slot is out of reach, so it has arrived, like the contact rule above,
-    // instead of walking on the spot for minutes. A unit that slides along the building still moves and walks on.
-    if ((vx !== 0 || vy !== 0) && w.groupR[i]! > 0 && w.x[i] === x && w.y[i] === y) arrive(ctx, i);
+    // slot straight behind one of them). Walking straight to the slot: it re-paths, with a flow field to the slot's own
+    // cell, round the building (data 0.20.0). Already on a field and still stuck, or the slot's cell is no longer
+    // walkable: the slot is out of reach, so it has arrived, like the contact rule above, instead of walking on the spot
+    // for minutes. A unit that slides along the building still moves and walks on.
+    if ((vx !== 0 || vy !== 0) && w.groupR[i]! > 0 && w.x[i] === x && w.y[i] === y) {
+      const gx = w.goalX[i]!;
+      const gy = w.goalY[i]!;
+      if (w.flowField[i] === NO_FIELD && walkableAt(ctx, gx, gy)) {
+        setFlowField(ctx, i, ctx.flow.acquire(gx >> 8, gy >> 8, 1, 1));
+      } else arrive(ctx, i);
+    }
   }
 }

@@ -318,7 +318,7 @@ export interface SimAiScript {
   /** Een claimpunt verder dan claimSafeRadius van het hoofdgebouw neemt hij pas vanaf claimFarFromTicks, met escorte. */
   readonly claimSafeRadius: number;
   readonly claimFarFromTicks: number;
-  /** An idle hero claims a neutral claim point within this distance by standing there (0 = off; data 0.19.0). */
+  /** An idle hero claims a neutral claim point within this distance by standing there (0 = off; data 0.20.0). */
   readonly heroClaimRadius: number;
   readonly defendRadius: number;
   /** AI_SITE_*: verzamelpunt tussen de golven. */
@@ -401,7 +401,7 @@ export interface SimConfig {
   readonly interactRange: number;
   /**
    * Straal rond een claimpunt (besluit sprint 2, sectie 13): een voltooid gebouw met provides claim waarvan de footprint
-   * hierbinnen ligt houdt het punt. Exclusieve scrap-nodes rond een bezet punt: exclusiveRadius (data 0.19.0).
+   * hierbinnen ligt houdt het punt. Exclusieve scrap-nodes rond een bezet punt: exclusiveRadius (data 0.20.0).
    */
   readonly claimRadius: number;
   /** Bovengrens van de pop-cap, los van het aantal bedden. */
@@ -420,10 +420,10 @@ export interface SimConfig {
   readonly autoGatherRadius: number;
   /**
    * A scrap node within this distance of a held claim point is exclusive to its owner (sim.json exclusiveRadiusM, data
-   * 0.19.0; was claimRadius). At least claimRadius.
+   * 0.20.0; was claimRadius). At least claimRadius.
    */
   readonly exclusiveRadius: number;
-  /** Ticks a hero stands in the circle of a free claim point to claim it without a post (0 = off; data 0.19.0). */
+  /** Ticks a hero stands in the circle of a free claim point to claim it without a post (0 = off; data 0.20.0). */
   readonly heroClaimTicks: number;
   /** Ticks after which a tower-less claim goes over to an enemy with units in the circle and none of the holder. */
   readonly contestFlipTicks: number;
@@ -436,7 +436,7 @@ export interface SimPlacementTuning {
   /** No other building this close to a drop-off building (provides hq or workshop); at least `clearance`. */
   readonly depotClearance: number;
   /**
-   * Territory (data 0.19.0, voorstel; systems/placement.ts territoryMask): a new footprint touches a cell within this
+   * Territory (data 0.20.0, voorstel; systems/placement.ts territoryMask): a new footprint touches a cell within this
    * many steps over walkable terrain of an own building; 0 = no territory rule.
    */
   readonly buildRange: number;

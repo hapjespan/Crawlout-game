@@ -100,22 +100,37 @@ describe('formation', () => {
     expect(spread).toBeGreaterThan(SPACING - 2 * CONFIG.arriveRadius);
   });
 
-  it('a building between a unit and its slot, placed after the order: the unit arrives, it does not walk on the spot', () => {
-    // On the new Rustbelt (data 0.19.0) a unit of the AI's army at the middle point stood 2600 frames against a claim
-    // post that both players had built next to the point after the slots were chosen.
-    const sim = emptySim(5, createOpenMap(64, 64));
-    const ids = spawnBlock(sim, 0, 20, 31, 2, 1);
-    const t = cellCenter(30, 32);
-    sim.applyBundle(bundle(0, [cmd(0, 0, 'Move', { ids, x: t.x, y: t.y })]));
-    sim.tick();
-    sim.tick();
+  it('a building between a unit and its slot, placed after the order: it re-paths round it, or arrives if the slot is gone', () => {
+    // On the new Rustbelt (data 0.20.0) a unit of the AI's army at the middle point stood 2600 frames against a claim
+    // post that both players had built next to the point after the slots were chosen (and in the balance round a
+    // patrol 110 s against the post at cell 192,191): moving, but no progress.
     const post = CONFIG.buildingTypes.find((b) => b.footprintW === 1 && b.footprintH === 1)!;
-    for (let y = 16; y <= 48; y++) sim.spawnBuilding(post.typeId, 0, 25, y);
-    for (let f = 0; f < 400; f++) sim.tick();
-    for (const u of units(sim, ids)) {
+    const run = (cover: boolean) => {
+      const sim = emptySim(5, createOpenMap(64, 64));
+      const ids = spawnBlock(sim, 0, 20, 31, 2, 1);
+      const t = cellCenter(30, 32);
+      sim.applyBundle(bundle(0, [cmd(0, 0, 'Move', { ids, x: t.x, y: t.y })]));
+      sim.tick();
+      sim.tick();
+      // a wall of posts across the straight line, with a way round it (rows 16 to 40, the map is 64 high)
+      for (let y = 16; y <= 40; y++) sim.spawnBuilding(post.typeId, 0, 25, y);
+      // and, in the second run, posts over the cells of the slots themselves
+      if (cover)
+        for (let y = 28; y <= 36; y++)
+          for (let x = 27; x <= 33; x++) sim.spawnBuilding(post.typeId, 0, x, y);
+      for (let f = 0; f < 1200; f++) sim.tick();
+      return units(sim, ids);
+    };
+    // re-path: round the wall to the slot
+    for (const u of run(false)) {
       expect(u.moving).toBe(false);
       expect(u.order).toBe(0);
-      expect(u.x).toBeLessThan(25 * 256);
+      expect(u.x).toBeGreaterThan(26 * 256);
+    }
+    // the slot is gone: arrived, standing still, no walking on the spot
+    for (const u of run(true)) {
+      expect(u.moving).toBe(false);
+      expect(u.order).toBe(0);
     }
   });
 });

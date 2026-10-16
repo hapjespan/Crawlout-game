@@ -392,7 +392,7 @@ describe('sprint 3: held, claims, cancel, militie', () => {
     expect(data.sim.claimRadiusU).toBe(1536);
   });
 
-  it('exclusiveRadiusM (data 0.19.0): 12 m, at least claimRadiusM', () => {
+  it('exclusiveRadiusM (data 0.20.0): 12 m, at least claimRadiusM', () => {
     const r = raw();
     expect(loadGameData(r).sim.exclusiveRadiusU).toBe(12 * 256);
     const sim = { ...(clone(r.sim) as object), exclusiveRadiusM: 5 };

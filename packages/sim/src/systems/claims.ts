@@ -20,7 +20,7 @@ import { NO_WINNER, WIN_DESTRUCTION, WIN_DOMINANCE, WIN_SURRENDER, distToRect2 }
 // terugvalt).
 // Presentatie: claimBy/claimProgress volgen het verst gevorderde claimgebouw in aanbouw van een andere speler dan de
 // eigenaar binnen de straal (animT van het claimpunt).
-// Claimen zonder paal (data 0.19.0, de claimronde; Martien: "de held mag ook palen claimen door 3 minuten in de zone
+// Claimen zonder paal (data 0.20.0, de claimronde; Martien: "de held mag ook palen claimen door 3 minuten in de zone
 // te blijven staan"; voorstel, ter bevestiging door de architect):
 //  - de held van p claimt een punt dat neutraal is en waar geen voltooid claimgebouw staat, door heroClaimTicks in de
 //    cirkel (claimRadius) te staan zonder dat er een unit van een andere speler in staat (dan staat de teller stil);
@@ -38,7 +38,7 @@ import { NO_WINNER, WIN_DESTRUCTION, WIN_DOMINANCE, WIN_SURRENDER, distToRect2 }
 
 const ANIM_FULL = 0xffff;
 
-/** World.claimKind: what claimBy/claimProgress of a claim point show (data 0.19.0). */
+/** World.claimKind: what claimBy/claimProgress of a claim point show (data 0.20.0). */
 export const CLAIM_KIND_NONE = 0;
 /** A claim building of claimBy going up within the radius. */
 export const CLAIM_KIND_POST = 1;

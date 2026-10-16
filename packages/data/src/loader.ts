@@ -303,7 +303,7 @@ export interface AiScriptData {
   claimFromTicks: number;
   claimSafeRadiusU: number;
   claimFarFromTicks: number;
-  /** An idle hero claims a neutral point within this distance by standing there (0 = off; data 0.19.0). */
+  /** An idle hero claims a neutral point within this distance by standing there (0 = off; data 0.20.0). */
   heroClaimRadiusU: number;
   defendRadiusU: number;
   /** index in AI_SITES. */
@@ -369,9 +369,9 @@ export interface SimTuningData {
   placement: PlacementTuningData;
   /** New scavenger settlers of a human player gather at the nearest reachable node within this radius (0 = off). */
   autoGatherRadiusU: number;
-  /** A scrap node within this distance of a held claim point is exclusive to its owner (data 0.19.0; voorstel). */
+  /** A scrap node within this distance of a held claim point is exclusive to its owner (data 0.20.0; voorstel). */
   exclusiveRadiusU: number;
-  /** The hero claims a free point by standing in its circle this long (0 = off; data 0.19.0, voorstel). */
+  /** The hero claims a free point by standing in its circle this long (0 = off; data 0.20.0, voorstel). */
   heroClaimTicks: number;
   /** A tower-less (hero) claim goes over after this long with enemies and none of the holder in the circle. */
   contestFlipTicks: number;
@@ -381,7 +381,7 @@ export interface SimTuningData {
 export interface PlacementTuningData {
   clearanceU: number;
   depotClearanceU: number;
-  /** Territory (data 0.19.0, voorstel): range around own buildings and around a claim post; 0 = off. */
+  /** Territory (data 0.20.0, voorstel): range around own buildings and around a claim post; 0 = off. */
   buildRangeU: number;
   claimBuildRangeU: number;
 }

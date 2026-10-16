@@ -504,7 +504,7 @@ function findSite(
         }
       }
       if (ld < 0 || ld > r2 + 2) continue;
-      // het eigen gebied (data 0.19.0): de footprint raakt een cel binnen bouwbereik van een eigen gebouw
+      // het eigen gebied (data 0.20.0): de footprint raakt een cel binnen bouwbereik van een eigen gebouw
       if (terr !== null && !touchesTerritory(terr, map.w, fx, fy, fw, fh)) continue;
       // nodes, claimpunten en de gang rond een depot (de rand zelf is hierboven al vrij en begaanbaar)
       if (neighbourReason(input, fx, fy, fw, fh, as) !== PLACE_OK) continue;
@@ -1177,7 +1177,7 @@ function think(
 }
 
 /**
- * De held zonder taak claimt een punt zonder paal (data 0.19.0, ai/*.json heroClaimRadiusM, sim.json heroClaimS): ligt
+ * De held zonder taak claimt een punt zonder paal (data 0.20.0, ai/*.json heroClaimRadiusM, sim.json heroClaimS): ligt
  * er een neutraal claimpunt binnen heroClaimRadius van hem (hemelsbreed; het dichtstbijzijnde, dan de laagste index),
  * dan loopt hij erheen en blijft hij in de cirkel staan tot het van zijn speler is. True als de held daarmee bezig is
  * (dan gaat hij niet mee naar het verzamelpunt). Alleen zonder dreiging (de aanroeper).

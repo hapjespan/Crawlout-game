@@ -693,7 +693,7 @@ describe('claims en winroutes', () => {
     expect(play(sim, 5).some((e) => e.type === EVENT_TYPE.claimTaken)).toBe(false);
   });
 
-  it('exclusieve nodes: een node binnen exclusiveRadius van een bezet punt is alleen voor de eigenaar, ook buiten claimRadius (data 0.19.0)', () => {
+  it('exclusieve nodes: een node binnen exclusiveRadius van een bezet punt is alleen voor de eigenaar, ook buiten claimRadius (data 0.20.0)', () => {
     const open = createOpenMap(64, 64);
     expect(CONFIG.exclusiveRadius).toBeGreaterThan(10 * 256);
     expect(CONFIG.claimRadius).toBeLessThan(10 * 256);

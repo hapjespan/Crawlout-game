@@ -346,7 +346,7 @@ async function main(): Promise<void> {
   const CLAIM_PROVIDES = PROVIDES.indexOf('claim');
   /** The sim placement rule's input from the snapshot: every building, scrap node and claim point. */
   /**
-   * This player's territory (data 0.19.0, the sim's territoryMask): buildRange around every own building (sites too),
+   * This player's territory (data 0.20.0, the sim's territoryMask): buildRange around every own building (sites too),
    * claimBuildRange around a finished own claim post. Rebuilt only when the own buildings change. null: no rule.
    */
   const HQ_PROVIDES = PROVIDES.indexOf('hq');
@@ -419,7 +419,7 @@ async function main(): Promise<void> {
     );
   }
   /**
-   * A claim building (the Claimpaal) from the build menu near a claim point is a Claim (data 0.19.0): the preview snaps
+   * A claim building (the Claimpaal) from the build menu near a claim point is a Claim (data 0.20.0): the preview snaps
    * to the spot the sim will use and a click sends Claim (game/claimPlacement.ts). null: not a claim building, or not
    * near a claim point (then it is placed as a plain Build).
    */

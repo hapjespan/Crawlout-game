@@ -81,6 +81,8 @@ interface Rig {
   /** Model height (m) of LOD 0 in its rest pose: the size for the screen-size LOD. */
   height: number;
   anims: BakedAnimations;
+  /** Duration (s) of each clip by clip id: the pace of the looping work clips (animVariation.ts). */
+  clipSeconds: number[];
   material: MeshBasicNodeMaterial;
   textures: Texture[];
   geometries: BufferGeometry[];
@@ -230,6 +232,7 @@ export class UnitLayer {
       name: src.name,
       height: Math.min(4, Math.max(1, height)),
       anims: src.anims,
+      clipSeconds: src.anims.clips.map((c) => c.duration),
       material: bundle.material,
       textures,
       geometries,
@@ -312,6 +315,7 @@ export class UnitLayer {
         frame.yaw[i]!,
         rig.anims.clips[ANIM.idle]?.duration ?? 1,
         nowMs,
+        rig.clipSeconds,
       );
       pose[k * 4] = x;
       pose[k * 4 + 1] = y;

@@ -424,9 +424,9 @@ describe('new settlers gather on their own (data 0.18.0, sim.json autoGatherRadi
 
 // Martien, 16 October: "ik kan palen niet claimen als ze te dicht bij scrap zitten". Claim looked for a spot next to
 // the point with the full placement rule, so scrap nodes near the point (in the margin of every free cell) could leave
-// no spot and the claim silently failed. Since data 0.19.0 claimSiteIn falls back to a rule where nodes may lie next to
+// no spot and the claim silently failed. Since data 0.20.0 claimSiteIn falls back to a rule where nodes may lie next to
 // the footprint, then to no margin at all: a claim never fails on a point with a free walkable cell next to it.
-describe('a claim always succeeds on a free point (data 0.19.0, placement.ts claimSiteIn)', () => {
+describe('a claim always succeeds on a free point (data 0.20.0, placement.ts claimSiteIn)', () => {
   const PT = { cx: 64, cy: 64 };
   const paal = BT('claimpaal');
 
@@ -518,7 +518,7 @@ describe('a claim always succeeds on a free point (data 0.19.0, placement.ts cla
 // Martien, 16 October: "je kan maar in een straal van 10 aansluitende tegels bouwen in je gebied, tenzij je tegen een
 // blokkade in het terrein aan loopt. dit geldt ook voor een beacon die je claimt met een toren, niet de held. die toren
 // is dan een startpunt vanuit waar je door kan bouwen in een straal van 5 blokken." A tile is the sim's 1 m cell.
-describe('territory (data 0.19.0, placement buildRangeM 10, claimBuildRangeM 5)', () => {
+describe('territory (data 0.20.0, placement buildRangeM 10, claimBuildRangeM 5)', () => {
   const W = 128;
   const at = (mask: Uint8Array, x: number, y: number) => mask[y * W + x];
 

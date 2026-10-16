@@ -44,7 +44,7 @@ function args(patch: Partial<ClaimPlacementArgs> = {}): ClaimPlacementArgs {
   };
 }
 
-describe('build menu: a claim post at a claim point is a Claim (data 0.19.0)', () => {
+describe('build menu: a claim post at a claim point is a Claim (data 0.20.0)', () => {
   it('hovering the point with a node one cell away: green, snapped next to the point, a click sends Claim', () => {
     const c = claimPlacement(args())!;
     expect(c).toMatchObject({ pointId: 77, valid: true, reason: null });

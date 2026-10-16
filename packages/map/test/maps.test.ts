@@ -184,7 +184,7 @@ describe('rustbelt', () => {
     expect(half(1)).toBe(half(-1));
   });
 
-  it('elk settlement-claimpunt heeft een scrap-node binnen exclusiveRadiusM (besluit 9, sinds data 0.19.0 los van claimRadiusM)', () => {
+  it('elk settlement-claimpunt heeft een scrap-node binnen exclusiveRadiusM (besluit 9, sinds data 0.20.0 los van claimRadiusM)', () => {
     const radius = exclusiveRadiusM();
     expect(radius).toBeGreaterThan(RUSTBELT_SPEC.claimNodeMinM);
     const settlements = map.claimPoints.filter((c) => c.kind === 'settlement');

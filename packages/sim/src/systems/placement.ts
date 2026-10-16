@@ -37,7 +37,7 @@ export const PLACE_CROWDED = 3;
 export const PLACE_DEPOT = 4;
 /** A scrap node or claim point lies under the footprint or within the margin. */
 export const PLACE_FEATURE = 5;
-/** No cell of the footprint lies in the player's territory (data 0.19.0, territoryMask). */
+/** No cell of the footprint lies in the player's territory (data 0.20.0, territoryMask). */
 export const PLACE_TERRITORY = 6;
 /** Name of each reason code, by code: for the client and its preview text. */
 export const PLACEMENT_REASONS = [
@@ -93,7 +93,7 @@ export interface PlacementInput {
   readonly depotClearance: number;
   /**
    * The placing player's territory (territoryMask, 1 per cell inside), or null/absent for no territory rule (data
-   * 0.19.0; sim.json placement buildRangeM 0, or a check that is not about one player). A claim building placed by
+   * 0.20.0; sim.json placement buildRangeM 0, or a check that is not about one player). A claim building placed by
    * Claim (AS_CLAIM) does not need it: a claim post is how a player reaches a point outside his territory.
    */
   readonly territory?: ArrayLike<number> | null;
@@ -217,7 +217,7 @@ export function touchesTerritory(
 }
 
 /**
- * Territory (data 0.19.0; Martien: "je kan maar in een straal van 10 aansluitende tegels bouwen in je gebied, tenzij
+ * Territory (data 0.20.0; Martien: "je kan maar in een straal van 10 aansluitende tegels bouwen in je gebied, tenzij
  * je tegen een blokkade in het terrein aan loopt"): 1 for every cell within `range` steps of a source footprint, the
  * steps going over walkable terrain only (8 neighbours, a diagonal step only past two walkable cells, so a cliff, rock
  * or water stops it and a thin diagonal wall is not crossed). Sources are five ints each: fx, fy, fw, fh and the range

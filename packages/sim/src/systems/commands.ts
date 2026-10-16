@@ -437,7 +437,7 @@ function applyCraft(ctx: SimContext, p: number, pl: CommandPayload<'Craft'>): bo
  * punt zelf blijft vrij; tiebreak scanvolgorde) en waarvan de footprint binnen de straal valt en aan de plaatsingsregel
  * voldoet (systems/placement.ts: vrije rand, geen node of claimpunt erin). Is er zo geen plek (nodes, rotsen of
  * gebouwen dicht bij het punt), dan zoekt hij opnieuw met een node naast de footprint en ten slotte zonder rand
- * (placement.ts CLAIM_TIERS, data 0.19.0): een vrij punt is altijd te claimen. Een punt dat al van de speler is, of
+ * (placement.ts CLAIM_TIERS, data 0.20.0): een vrij punt is altijd te claimen. Een punt dat al van de speler is, of
  * zonder enige vrije begaanbare plek binnen de straal, is ongeldig.
  */
 function applyClaim(ctx: SimContext, p: number, pl: CommandPayload<'Claim'>): boolean {

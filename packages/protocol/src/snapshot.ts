@@ -221,7 +221,7 @@ export interface PlayerStatus {
    */
   trained: [number, number, number, number, number, number, number];
   /**
-   * Alle claimpunten met hun claimstand (protocol 0.10.0, data 0.19.0; voorstel, ter bevestiging door de architect),
+   * Alle claimpunten met hun claimstand (protocol 0.10.0, data 0.20.0; voorstel, ter bevestiging door de architect),
    * zodat de HUD een ring met voortgang rond het claimpunt kan tonen: een paal in aanbouw, de held die het punt claimt
    * door erin te staan, of de overname van een punt zonder paal. Oplopend op pointId. Optioneel tot de HUD hem leest;
    * de sim levert hem altijd.

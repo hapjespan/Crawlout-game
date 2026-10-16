@@ -28,10 +28,14 @@ import { playMatchesParallel, summarize } from './fairness.js';
 // trainingsfaciliteit, robots tellen mee voor zijn leger, gatherRingM 1): speler 0 wint 19 en speler 1 wint 14, 9 keer
 // vernietiging en 24 keer dominantie, lengte 25,9 tot 32,6 minuten (33 van de 33 tussen 25 en 35); de winnaar bouwde in
 // 28 van de 33 potjes een sentinel, in 32 drie laserturrets en trainde in alle 33 zijn held; EXPECTED is opnieuw gemeten.
-// Claimronde (data 0.19.0, sim 0.16.0: de settlement-nodes 9,2 m van hun claimpunt in plaats van 4 m, exclusiveRadiusM
-// 12, een claim vindt altijd een plek, een unit die tegen een gebouw op zijn formatieplek af loopt is aangekomen):
-// speler 0 wint 17 en speler 1 wint 16, 16 keer vernietiging en 17 keer dominantie, lengte 26,2 tot 33,3 minuten (33 van
-// de 33 tussen 25 en 35); EXPECTED is opnieuw gemeten.
+// Gevechtsronde (data 0.19.0: beveiligingsrobot 520 hp en 3,5 s cooldown, sentinel 270 hp; de doelen van Martien in
+// packages/sim/test/combat-balance.test.ts): speler 0 wint 16 en speler 1 wint 17, 17 keer vernietiging en 16 keer
+// dominantie, lengte 25,9 tot 31,3 minuten (33 van de 33 tussen 25 en 35); EXPECTED is opnieuw gemeten.
+// Claimronde (data 0.20.0, sim 0.16.0, op de gevechtsbalans van 0.19.0: de settlement-nodes 9,2 m van hun claimpunt in
+// plaats van 4 m, exclusiveRadiusM 12, een claim vindt altijd een plek, de held claimt zonder paal, het eigen gebied van
+// 10 m rond de gebouwen en 5 m rond een claimpaal, een unit die tegen een gebouw staat zoekt een weg om of is
+// aangekomen): speler 0 wint 20 en speler 1 wint 13, 14 keer vernietiging en 19 keer dominantie, lengte 26,4 tot 38,9
+// minuten (31 van de 33 tussen 25 en 35); EXPECTED is opnieuw gemeten.
 // Een even footprint (hoofdgebouw 20 x 20) brak de spiegel al bij de start (speler
 // 0 won 30 van de 33), een claimpaal van 3 x 3 liet het midden altijd naar speler 0 gaan; zie packages/data/CHANGELOG.md
 // 0.14.0. Het verschil tussen de spelers is toeval (één standaardafwijking bij 33 muntworpen is 2,9 potjes), geen
@@ -39,11 +43,11 @@ import { playMatchesParallel, summarize } from './fairness.js';
 // hoogstens 21 van de 33 (36 tot 64 procent). Een sim die een speler voortrekt (zoals 28 tegen 5) valt er ruim buiten.
 
 const EXPECTED = [
-  { seed: 1, winner: 1, reason: 'destruction', frame: 32276 },
-  { seed: 5, winner: 1, reason: 'dominance', frame: 39422 },
-  { seed: 7, winner: 1, reason: 'dominance', frame: 36800 },
+  { seed: 1, winner: 1, reason: 'destruction', frame: 32569 },
+  { seed: 5, winner: 1, reason: 'dominance', frame: 37427 },
+  { seed: 7, winner: 0, reason: 'dominance', frame: 37422 },
   { seed: 42, winner: 1, reason: 'dominance', frame: 33837 },
-  { seed: 99, winner: 1, reason: 'destruction', frame: 32622 },
+  { seed: 99, winner: 1, reason: 'destruction', frame: 32494 },
 ] as const;
 
 // REPLAY_FAST=1 slaat deze 33 potjes (ongeveer 25 s met parallelle processen, 2 minuten na elkaar) over in de snelle

@@ -138,7 +138,7 @@ export const RUSTBELT_SPEC: MapSpec = {
     { x: 160, y: 74, amount: 2000 }, // vooruitgeschoven, aan de eigen oever bij de noordelijke voorde
     { x: 252, y: 146, amount: 1500 }, // dal ten oosten van de tafelberg, op weg naar het midden
   ],
-  // Besluit 9 (fase-0 sectie 14), claimronde (data 0.19.0): de 2500-node van elk settlement ligt 9,2 m van het claimpunt,
+  // Besluit 9 (fase-0 sectie 14), claimronde (data 0.20.0): de 2500-node van elk settlement ligt 9,2 m van het claimpunt,
   // buiten de claimcirkel (claimRadiusM 6 m) zodat de claimpaal er altijd naast past (Martien: "leg de scrap er niet te
   // dicht bij"), en binnen exclusiveRadiusM (12 m): de node wordt exclusief zodra de claimpaal staat. Schuin naar de
   // basis toe; gemeten over 33 seeds: 17 tegen 16, 16 keer vernietiging en 17 keer dominantie, 26,2 tot 33,3 minuten.
@@ -148,7 +148,7 @@ export const RUSTBELT_SPEC: MapSpec = {
     { x: 220, y: 60, kind: 'settlement' },
     { x: 318, y: 190, kind: 'settlement' },
   ],
-  // Geen scrap binnen claimRadiusM (6 m) + 3 m van een claimpunt (claimronde, data 0.19.0).
+  // Geen scrap binnen claimRadiusM (6 m) + 3 m van een claimpunt (claimronde, data 0.20.0).
   claimNodeMinM: 9,
   centerClaims: [{ x: 191, y: 191, kind: 'powerArmor' }],
   creepCamps: [
