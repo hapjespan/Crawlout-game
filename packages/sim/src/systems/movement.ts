@@ -270,9 +270,9 @@ export function movementSystem(ctx: SimContext, s: MovementScratch): void {
     if (vx !== 0 || vy !== 0) w.yaw[i] = atan2A(vy, vx);
     const mx = clampI(vx + s.sx[i]!, -MAX_STEP, MAX_STEP);
     const my = clampI(vy + s.sy[i]!, -MAX_STEP, MAX_STEP);
+    const x = w.x[i]!;
+    const y = w.y[i]!;
     if (mx !== 0 || my !== 0) {
-      const x = w.x[i]!;
-      const y = w.y[i]!;
       const sp = map.spawns[w.owner[i]!];
       const nx = offGrid(clampI(x + mx, 0, maxX), map.w << 7, sp === undefined ? 0 : sp.x);
       const ny = offGrid(clampI(y + my, 0, maxY), map.h << 7, sp === undefined ? 0 : sp.y);
@@ -285,5 +285,10 @@ export function movementSystem(ctx: SimContext, s: MovementScratch): void {
         w.y[i] = ny;
       }
     }
+    // A unit of a group order that wants to walk but does not move at all stands against a building between it and
+    // its slot (the two claim posts next to the middle point of Rustbelt, built after the slots were chosen, with the
+    // slot straight behind one of them): its slot is out of reach, so it has arrived, like the contact rule above,
+    // instead of walking on the spot for minutes. A unit that slides along the building still moves and walks on.
+    if ((vx !== 0 || vy !== 0) && w.groupR[i]! > 0 && w.x[i] === x && w.y[i] === y) arrive(ctx, i);
   }
 }

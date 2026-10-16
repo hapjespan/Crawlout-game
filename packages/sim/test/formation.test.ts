@@ -99,4 +99,23 @@ describe('formation', () => {
     }
     expect(spread).toBeGreaterThan(SPACING - 2 * CONFIG.arriveRadius);
   });
+
+  it('a building between a unit and its slot, placed after the order: the unit arrives, it does not walk on the spot', () => {
+    // On the new Rustbelt (data 0.19.0) a unit of the AI's army at the middle point stood 2600 frames against a claim
+    // post that both players had built next to the point after the slots were chosen.
+    const sim = emptySim(5, createOpenMap(64, 64));
+    const ids = spawnBlock(sim, 0, 20, 31, 2, 1);
+    const t = cellCenter(30, 32);
+    sim.applyBundle(bundle(0, [cmd(0, 0, 'Move', { ids, x: t.x, y: t.y })]));
+    sim.tick();
+    sim.tick();
+    const post = CONFIG.buildingTypes.find((b) => b.footprintW === 1 && b.footprintH === 1)!;
+    for (let y = 16; y <= 48; y++) sim.spawnBuilding(post.typeId, 0, 25, y);
+    for (let f = 0; f < 400; f++) sim.tick();
+    for (const u of units(sim, ids)) {
+      expect(u.moving).toBe(false);
+      expect(u.order).toBe(0);
+      expect(u.x).toBeLessThan(25 * 256);
+    }
+  });
 });
