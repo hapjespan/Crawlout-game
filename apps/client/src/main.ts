@@ -727,7 +727,13 @@ async function main(): Promise<void> {
       return () => listeners.delete(l);
     },
   };
-  const hud = mountHud(hudEl, deps);
+  // The bitmap HUD skin (local art, assets/local/hud) is dev only; a production build drops this import. `?noskin`
+  // shows the CSS-only look that production gets.
+  const hudSkin =
+    import.meta.env.DEV && !params.has('noskin')
+      ? (await import('./ui/hudSkin.js')).loadHudSkin()
+      : undefined;
+  const hud = mountHud(hudEl, deps, hudSkin ? { skin: hudSkin } : {});
 
   // Over ws the start message arrives later than the loopback's; playerId is valid once `started` resolves.
   void session.started.then(() => {

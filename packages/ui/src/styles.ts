@@ -1,5 +1,7 @@
-/** Neutrale HUD-stijl tot de stijlbijbel er is. Alles onder .co-hud zodat er niets lekt. */
-export const HUD_CSS = `
+import { HUD_LOOK_CSS, HUD_TOKENS_CSS } from './look.js';
+
+/** Indeling en basisstijl van de HUD. Alles onder .co-hud zodat er niets lekt; het uiterlijk (kleur, vorm) staat in look.ts. */
+const HUD_LAYOUT_CSS = `
 .co-hud{--co-right-w:320px;position:absolute;inset:0;pointer-events:none;font:14px/1.3 system-ui,sans-serif;color:#e6e6e6}
 .co-hud *{box-sizing:border-box}
 .co-panel{pointer-events:auto;background:rgba(20,22,24,.88);border:1px solid #3a3f44;border-radius:6px;padding:8px}
@@ -175,7 +177,10 @@ export const HUD_CSS = `
 .co-lobby-list{list-style:none;margin:0 0 8px;padding:0}
 .co-lobby-list li{display:flex;gap:8px;align-items:center;padding:2px 0}
 .co-lobby-list li>span:first-child{flex:1}
-.co-tag{font-size:10px;border:1px solid #4a5159;border-radius:3px;padding:0 4px;color:#9aa0a6}
+.co-tag{font-size:11px;border:1px solid #4a5159;border-radius:3px;padding:0 4px;color:#9aa0a6}
 .co-ready{color:#7cb342}.co-notready{color:#9aa0a6}
 .co-lobby .co-actions{display:flex;gap:8px}
 `;
+
+/** Indeling plus het bitmap-vrije "Roest en Fosfor"-uiterlijk (tokens en fallback). */
+export const HUD_CSS = HUD_LAYOUT_CSS + HUD_TOKENS_CSS + HUD_LOOK_CSS;
