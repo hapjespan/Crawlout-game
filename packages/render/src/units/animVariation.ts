@@ -5,6 +5,9 @@
 //   - a stable hash of the id gives a phase offset and a small playback-rate variation for idle and walk/run;
 //   - walk/run advance with the interpolated ground speed (cycles per meter), so a slowed or blocked unit slows its
 //     cycle and a fast one does not slide its feet. The sim's own animT for these clips is ignored;
+//   - gather and build (a unit at work) loop on the render-owned phase too, at the rig clip's own pace. The sim's
+//     animT for them is a progress over the whole job (a 13 s gather, a 1.6 s step counter): fed to a 1-5 s loop clip
+//     it plays the clip once in 13 s (looks frozen) or three times too fast. Attacks and death follow the sim's animT;
 //   - a clip change between idle/walk/run is held back 0..CLIP_DELAY_MAX_MS (per entity, per change): a group that gets
 //     an order in the same tick does not snap from idle to walk in one frame. (The skinning shader samples a single
 //     clip per instance and the vertex buffers are full, so there is no real cross-fade.);
@@ -34,6 +37,10 @@ const REST_SPEED_FROM = 0.2;
 const REST_SPEED_TO = 0.9;
 /** A slot not seen for this long (s) is treated like a new entity (it was culled or off screen). */
 const STALE_S = 0.25;
+/** Longest frame gap (s) the phase still advances over: a hitch must not freeze the cycles, a long absence must not spin them. */
+export const MAX_PHASE_STEP_S = 0.25;
+/** Loop length (s) of a work clip when the rig does not say (rigid robots strike three times per loop). */
+export const WORK_LOOP_S = 3;
 const MAX_SPEED = 12;
 const SEED_BITS = 12;
 
@@ -98,9 +105,19 @@ export function turnToward(
   return current + (want > cap ? cap : want < -cap ? -cap : want);
 }
 
-/** Idle, walk and run: the clips that loop on a render-owned phase. */
+/** Idle, walk and run: the clips whose changes wait a per-entity moment and whose rate follows the ground speed. */
 export function isLocomotion(clip: number): boolean {
   return clip === ANIM.idle || clip === ANIM.walk || clip === ANIM.run;
+}
+
+/** Gather and build: a unit at work, looping at the clip's own pace. */
+export function isWork(clip: number): boolean {
+  return clip === ANIM.gather || clip === ANIM.build;
+}
+
+/** Clips that loop on the render-owned phase; every other clip follows the sim's animT. */
+export function isRenderTimed(clip: number): boolean {
+  return isLocomotion(clip) || isWork(clip);
 }
 
 /** Result of InstanceVariation.apply; one object, overwritten by every call. */
@@ -150,7 +167,8 @@ export class InstanceVariation {
   /**
    * Computes the presented clip, progress, heading and seed of one entity into `out`.
    * `id` is the snapshot entity id; `x`, `z` meters; `simYaw` radians (render convention); `idleDurationS` the
-   * duration of the rig's idle clip; `nowMs` a monotonic clock (performance.now()).
+   * duration of the rig's idle clip; `nowMs` a monotonic clock (performance.now()); `clipSeconds` the duration of each
+   * of the rig's clips by clip id (the pace of gather and build; WORK_LOOP_S for a clip it does not list).
    */
   apply(
     id: number,
@@ -161,6 +179,7 @@ export class InstanceVariation {
     simYaw: number,
     idleDurationS: number,
     nowMs: number,
+    clipSeconds?: ArrayLike<number>,
   ): VariationOut {
     const out = this.out;
     const slot = id >>> ENTITY_GEN_BITS;
@@ -175,6 +194,9 @@ export class InstanceVariation {
     let dt = (nowMs - this.lastMs[slot]!) / 1000;
     const newEntity = this.owner[slot] !== id + 1;
     const fresh = newEntity || dt > STALE_S || dt < 0;
+    // The phase keeps running over a hitch (a frame over STALE_S resets speed and heading, not the cycle): with every
+    // frame slower than STALE_S the cycles used to stand still for as long as the slow frames lasted.
+    const phaseDt = newEntity || dt < 0 ? 0 : Math.min(dt, MAX_PHASE_STEP_S);
     this.lastMs[slot] = nowMs;
     if (fresh) {
       if (newEntity) this.phase[slot] = phaseOffset(id);
@@ -225,17 +247,20 @@ export class InstanceVariation {
       this.phase[slot] = phaseOffset(id, isLocomotion(shown) ? SALT.phase : SALT.idlePhase);
     }
 
-    // Progress: idle, walk and run run on the render-owned phase; the other clips follow the sim.
+    // Progress: idle, walk, run, gather and build run on the render-owned phase; the other clips follow the sim.
     let t = simAnimT;
-    if (isLocomotion(shown)) {
+    if (isRenderTimed(shown)) {
       let cps: number;
       if (shown === ANIM.idle) {
         cps = rateVariation(id, IDLE_RATE_SPREAD) / Math.max(0.1, idleDurationS);
+      } else if (isWork(shown)) {
+        const loopS = clipSeconds?.[shown] ?? WORK_LOOP_S;
+        cps = rateVariation(id, MOVE_RATE_SPREAD, SALT.moveRate) / Math.max(0.1, loopS);
       } else {
         const stride = shown === ANIM.run ? RUN_STRIDE_M : WALK_STRIDE_M;
         cps = speedToCycleRate(speed, stride) * rateVariation(id, MOVE_RATE_SPREAD, SALT.moveRate);
       }
-      let p = this.phase[slot]! + dt * cps;
+      let p = this.phase[slot]! + phaseDt * cps;
       p -= Math.floor(p);
       this.phase[slot] = p;
       t = p;

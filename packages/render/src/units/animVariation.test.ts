@@ -4,9 +4,11 @@ import {
   CLIP_DELAY_MAX_MS,
   InstanceVariation,
   MAX_CYCLE_RATE,
+  MAX_PHASE_STEP_S,
   MIN_CYCLE_RATE,
   TURN_MAX_RATE,
   WALK_STRIDE_M,
+  WORK_LOOP_S,
   angleDiff,
   hash01,
   phaseOffset,
@@ -128,5 +130,121 @@ describe('InstanceVariation', () => {
     const o = v.apply(ID_A, 0, 0, ANIM.attack1, 0.37, 2, 2.4, 0);
     expect(o.t).toBe(0.37);
     expect(Math.abs(o.yaw - 2)).toBeLessThan(0.1);
+  });
+});
+
+/**
+ * Regression: "the animations freeze after a few seconds, every time". The sim's animT of a gather is the progress of the
+ * whole job (13 s) and of a build a step counter, so a looping 2 s clip stood almost still; and a run of slow frames
+ * (each over the stale limit) never advanced the phase. These drive the variation for minutes of real time.
+ */
+describe('InstanceVariation over long runs', () => {
+  const ID = 9 << 20;
+  const FRAME_MS = 1000 / 60;
+  const CLIP_SECONDS = [2.4, 1.3, 0.9, 0.6, 1, 2, 5.2, 2.4]; // by ANIM id (idle, walk, run, attack1, attack2, gather, build, death)
+
+  /** Longest stretch (s) in which the progress did not change, over a run of `frames` frames. */
+  function longestStandStill(
+    run: (frame: number) => number,
+    frames: number,
+    stepMs: number,
+  ): number {
+    let prev = run(0);
+    let still = 0;
+    let worst = 0;
+    for (let f = 1; f < frames; f++) {
+      const t = run(f);
+      still = t === prev ? still + stepMs / 1000 : 0;
+      worst = Math.max(worst, still);
+      prev = t;
+    }
+    return worst;
+  }
+
+  /** Cycles completed by the progress t over a run of frames. */
+  function cycles(run: (frame: number) => number, frames: number): number {
+    let sum = 0;
+    let prev = run(0);
+    for (let f = 1; f < frames; f++) {
+      const t = run(f);
+      sum += (t - prev + 1) % 1;
+      prev = t;
+    }
+    return sum;
+  }
+
+  it('plays a gather at the pace of its clip, not stretched over the whole job', () => {
+    const v = new InstanceVariation();
+    const jobS = 13;
+    const frames = 60 * 65; // five jobs back to back
+    const run = (f: number): number => {
+      const sec = (f * FRAME_MS) / 1000;
+      const simT = (sec % jobS) / jobS; // what the sim writes: progress of the job
+      return v.apply(ID, 0, 0, ANIM.gather, simT, 0, 2.4, f * FRAME_MS, CLIP_SECONDS).t;
+    };
+    expect(cycles(run, frames)).toBeGreaterThan((65 / CLIP_SECONDS[ANIM.gather]!) * 0.85);
+    expect(cycles(run, frames)).toBeLessThan((65 / CLIP_SECONDS[ANIM.gather]!) * 1.15);
+    expect(longestStandStill(run, frames, FRAME_MS)).toBeLessThan(0.1);
+  });
+
+  it('plays a build at the pace of its clip, and a clip it does not know at WORK_LOOP_S', () => {
+    const build = new InstanceVariation();
+    const frames = 60 * 30;
+    const byClip = (f: number): number =>
+      build.apply(ID, 0, 0, ANIM.build, (f * 2048 * 0.05) % 1, 0, 2.4, f * FRAME_MS, CLIP_SECONDS)
+        .t;
+    expect(cycles(byClip, frames)).toBeCloseTo(30 / CLIP_SECONDS[ANIM.build]!, 0);
+    const fallback = new InstanceVariation();
+    const byDefault = (f: number): number =>
+      fallback.apply(ID, 0, 0, ANIM.build, 0.5, 0, 2.4, f * FRAME_MS).t;
+    expect(cycles(byDefault, frames)).toBeCloseTo(30 / WORK_LOOP_S, 0);
+  });
+
+  it('still hands attacks and death to the sim', () => {
+    const v = new InstanceVariation();
+    expect(v.apply(ID, 0, 0, ANIM.attack1, 0.4, 0, 2.4, 0, CLIP_SECONDS).t).toBe(0.4);
+    expect(v.apply(ID, 0, 0, ANIM.death, 0.9, 0, 2.4, 16, CLIP_SECONDS).t).toBe(0.9);
+  });
+
+  it('keeps idle moving for two hours of clock time', () => {
+    const v = new InstanceVariation();
+    const base = 2 * 3600 * 1000;
+    const run = (f: number): number =>
+      v.apply(ID, 3, 4, ANIM.idle, 0, 0, 2.5, base + f * FRAME_MS).t;
+    expect(longestStandStill(run, 60 * 30, FRAME_MS)).toBeLessThan(0.1);
+    expect(cycles(run, 60 * 30)).toBeGreaterThan((30 / 2.5) * 0.85);
+  });
+
+  it('walks on at the ground speed when positions only change every snapshot (20 Hz, held between)', () => {
+    const v = new InstanceVariation();
+    const frames = 60 * 40;
+    const run = (f: number): number => {
+      const ms = f * FRAME_MS;
+      const snapshotX = Math.floor(ms / 50) * 50 * 0.0034; // 3.4 m/s, a step every 50 ms
+      return v.apply(ID, snapshotX, 0, ANIM.walk, 0, 0, 2.4, ms, CLIP_SECONDS).t;
+    };
+    run(0);
+    const expected = (40 * 3.4) / WALK_STRIDE_M;
+    expect(cycles(run, frames)).toBeGreaterThan(expected * 0.8);
+    expect(cycles(run, frames)).toBeLessThan(expected * 1.25);
+    expect(longestStandStill(run, frames, FRAME_MS)).toBeLessThan(0.1);
+  });
+
+  it('keeps cycling when every frame is slower than the stale limit', () => {
+    const v = new InstanceVariation();
+    const slowMs = 400; // 2.5 fps: a hitching machine
+    const frames = 40;
+    const idle = (f: number): number => v.apply(ID, 0, 0, ANIM.idle, 0, 0, 2.5, f * slowMs).t;
+    expect(longestStandStill(idle, frames, slowMs)).toBeLessThan(slowMs / 1000 + 1e-9);
+    const gather = new InstanceVariation();
+    const work = (f: number): number =>
+      gather.apply(ID, 0, 0, ANIM.gather, 0.3, 0, 2.5, f * slowMs, CLIP_SECONDS).t;
+    expect(cycles(work, frames)).toBeGreaterThan(2);
+    // A long absence (culled for a minute) advances the cycle by one capped step, not by the whole gap.
+    const gone = new InstanceVariation();
+    const before = gone.apply(ID, 0, 0, ANIM.idle, 0, 0, 2.5, 0).t;
+    gone.apply(ID, 0, 0, ANIM.idle, 0, 0, 2.5, 16);
+    const after = gone.apply(ID, 0, 0, ANIM.idle, 0, 0, 2.5, 16 + 60000).t;
+    expect((after - before + 1) % 1).toBeLessThan((MAX_PHASE_STEP_S / 2.5) * 1.2 + 0.01);
   });
 });
