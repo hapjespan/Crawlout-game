@@ -52,6 +52,7 @@ export const CRAFT_KEY = 'k';
 const CARD_DEDUPE_MS = 350;
 /** Zo lang blijft de reden staan nadat de speler op een kaart klikt die niet start. */
 export const CARD_NOTICE_MS = 3500;
+export const HINT_MS = 1800;
 
 export interface ActionDef {
   id: ActionId;
@@ -238,6 +239,10 @@ export interface HudState {
   craftMenuOpen: boolean;
   /** Reden dat de laatst aangeklikte kaart niet startte (te duur, vergrendeld, gebouw bezig), tijdelijk; anders null. */
   cardNotice: string | null;
+  /** Waarom het plaatsingsvoorbeeld rood is (door de client gezet), of null. */
+  placementHint: string | null;
+  /** Korte melding midden op het scherm (tijdelijk), of null. */
+  hint: string | null;
   toasts: readonly ToastAlert[];
   lobby: LobbyView | null;
   showLobby: boolean;
@@ -279,6 +284,7 @@ export class HudController implements HudHandle {
   /** Telde de tegenstander bij de vorige lezing al? Alleen de overgang geeft een toast. */
   private opponentCounting = false;
   private noticeTimer: ReturnType<typeof setTimeout> | null = null;
+  private hintTimer: ReturnType<typeof setTimeout> | null = null;
   /** Laatst gestarte kaart, om één druk (pointerup plus klik) niet twee keer te starten. */
   private lastCardStart: { key: string; at: number } | null = null;
   /** Kaart waarop de knop is ingedrukt en nog niet losgelaten (pointerdown), zie cardPress. */
@@ -305,6 +311,8 @@ export class HudController implements HudHandle {
       cards: [],
       craftMenuOpen: false,
       cardNotice: null,
+      placementHint: null,
+      hint: null,
       buildingButtons: [],
       toasts: [],
       lobby: null,
@@ -341,6 +349,8 @@ export class HudController implements HudHandle {
     this.toastTimers.clear();
     if (this.noticeTimer) clearTimeout(this.noticeTimer);
     this.noticeTimer = null;
+    if (this.hintTimer) clearTimeout(this.hintTimer);
+    this.hintTimer = null;
     this.listeners.clear();
   }
 
@@ -694,13 +704,27 @@ export class HudController implements HudHandle {
       x: Math.round(pos.x),
       y: Math.round(pos.y),
     });
-    this.set({ placement: null });
+    this.set({ placement: null, placementHint: null });
     this.deps.endPlacement?.();
     return true;
   }
 
   cancelPlacement(): void {
     this.stopPlacement();
+  }
+
+  setPlacementHint(reason: string | null): void {
+    if (this.state.placementHint === reason) return;
+    this.set({ placementHint: this.state.placement ? reason : null });
+  }
+
+  showHint(text: string): void {
+    if (this.hintTimer) clearTimeout(this.hintTimer);
+    this.hintTimer = setTimeout(() => {
+      this.hintTimer = null;
+      this.set({ hint: null });
+    }, HINT_MS);
+    this.set({ hint: text });
   }
 
   pickPerk(perkId: number): boolean {
@@ -767,7 +791,7 @@ export class HudController implements HudHandle {
     if (kind === 'heroAbility') {
       const a = this.state.pendingAbility;
       const heroId = this.state.status?.hero?.heroId;
-      if (!('x' in target)) return false;
+      if (!('x' in target)) return false; // a clicked enemy also carries its position
       if (!a || heroId === undefined) {
         this.cancelTargeting();
         return false;
@@ -790,6 +814,10 @@ export class HudController implements HudHandle {
     if (kind === 'gather') {
       if (!('nodeId' in target)) return false;
       this.deps.sendCommand('Gather', { ids, nodeId: target.nodeId });
+    } else if ('enemyId' in target) {
+      // Attack-move onto an enemy unit or building: attack that entity.
+      if (kind !== 'attackMove') return false;
+      this.deps.sendCommand('Attack', { ids, target: target.enemyId });
     } else {
       if (!('x' in target)) return false;
       const pos = { x: Math.round(target.x), y: Math.round(target.y) };
@@ -949,7 +977,7 @@ export class HudController implements HudHandle {
 
   private stopPlacement(): void {
     if (!this.state.placement) return;
-    this.set({ placement: null });
+    this.set({ placement: null, placementHint: null });
     this.deps.endPlacement?.();
   }
 

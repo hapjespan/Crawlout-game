@@ -38,6 +38,8 @@ const status = (hero: HeroStatus | null): PlayerStatus => ({
   hero,
   queue: [],
   dominance: { pointsHeld: 0, pointsRequired: 2, ticksHeld: 0, ticksRequired: 9600, leader: null },
+  robotPop: 0,
+  trained: [0, 0, 0, 0, 0, 0, 0],
 });
 const unit = (id: number): SelectedEntity => ({
   id,
@@ -233,6 +235,20 @@ describe('held-abilities', () => {
     ]);
     expectValid(t.sent[0]!);
     expect(t.el.querySelector('.co-targeting')).toBeNull();
+  });
+
+  it('een vijand als doel van een ability: cast op zijn positie', () => {
+    const t = setup({ abilities });
+    mounted = t.handle;
+    press('x');
+    let ok = false;
+    act(() => {
+      ok = t.handle.completeTargeting({ enemyId: 9, x: 700, y: 800 });
+    });
+    expect(ok).toBe(true);
+    expect(t.sent).toEqual([
+      { type: 'HeroAbility', payload: { heroId: 5, abilityId: 2, x: 700, y: 800 } },
+    ]);
   });
 
   it('targeting werkt zonder selectie en Esc annuleert; een node als doel wordt geweigerd', () => {

@@ -35,7 +35,13 @@ export interface TargetPoint {
 export interface TargetNode {
   nodeId: number;
 }
-export type TargetResult = TargetPoint | TargetNode;
+/** An enemy unit or building that was clicked in attack-move or ability targeting: attack it, or cast at its spot. */
+export interface TargetEnemy {
+  enemyId: number;
+  x: number;
+  y: number;
+}
+export type TargetResult = TargetPoint | TargetNode | TargetEnemy;
 
 /** Eén punt op de minimap, in sim-eenheden. */
 export interface MinimapBlip {
@@ -356,6 +362,10 @@ export interface HudHandle {
   /** De klik van de plaatsing: positie in sim-eenheden. Stuurt Build met de geselecteerde bouwers. False als er geen plaatsing actief is of er geen bouwer geselecteerd is. */
   completePlacement(pos: TargetPoint): boolean;
   cancelPlacement(): void;
+  /** Reden (Nederlands) dat het voorbeeld van de plaatsing rood is; null als de plek geldig is. Alleen zichtbaar tijdens de plaatsing. */
+  setPlacementHint(reason: string | null): void;
+  /** Korte, tijdelijke melding bij de ability-balk of het veld (bijvoorbeeld "Buiten bereik"). */
+  showHint(text: string): void;
   /** Een wereldklik die het doel van de actieve targeting is. Geeft false als er geen passende targeting actief is. */
   completeTargeting(target: TargetResult): boolean;
   cancelTargeting(): void;

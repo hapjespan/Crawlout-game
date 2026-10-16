@@ -64,6 +64,8 @@ export const HUD_CSS = `
 .co-btn:focus-visible{outline:3px solid #ffd54f;outline-offset:2px}
 .co-menu{margin-top:8px;border-top:1px solid #3a3f44;padding-top:8px;color:#c4c7ca}
 .co-targeting{position:absolute;left:50%;bottom:260px;transform:translateX(-50%);color:#ffd54f}
+.co-placement-reason{color:#ff8a80;font-weight:600}
+.co-hint{position:absolute;left:50%;bottom:300px;transform:translateX(-50%);color:#ff8a80;font-weight:600;pointer-events:none}
 .co-top-right{position:absolute;top:8px;right:8px;display:flex;gap:8px;align-items:center}
 .co-banner{position:absolute;left:50%;top:56px;transform:translateX(-50%);max-width:80%;text-align:center;font-weight:600}
 .co-banner.co-desync{background:rgba(120,20,20,.95);border-color:#ff5252}
@@ -107,7 +109,7 @@ export const HUD_CSS = `
 .co-card-main[aria-disabled=true] .co-card-name,.co-card-main[aria-disabled=true] .co-card-icon{color:#9aa0a6}
 .co-card-running .co-card-main,.co-card-done .co-card-main{cursor:default}
 .co-card-icon{grid-row:1 / span 2;color:#c4c7ca}
-.co-card-name{font-weight:600;font-size:13px;min-width:0;overflow-wrap:anywhere}
+.co-card-name{font-weight:600;font-size:13px;min-width:0;overflow-wrap:break-word;hyphens:auto}
 .co-card-meta{grid-column:2 / span 2;display:flex;gap:8px;color:#c4c7ca}
 .co-card-cost.co-full{color:#ff8a65;font-weight:600}
 .co-card-effects,.co-card-unlocks,.co-card-status{grid-column:1 / span 3;color:#c4c7ca;min-width:0;overflow-wrap:anywhere}

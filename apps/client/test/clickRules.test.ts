@@ -23,7 +23,7 @@ describe('leftClickIs', () => {
       expect(leftClickIs({ mode: 'idle' }, hit)).toBe('select');
   });
 
-  it('a unit or building click always leaves placement and targeting and selects', () => {
+  it('an own unit or building click always leaves placement and targeting and selects', () => {
     for (const state of [
       { mode: 'placement' },
       { mode: 'targeting', kind: 'move' },
@@ -32,7 +32,24 @@ describe('leftClickIs', () => {
       { mode: 'targeting', kind: 'heroAbility' },
     ] as const) {
       expect(leftClickIs(state, 'unit')).toBe('select');
-      expect(leftClickIs(state, 'building')).toBe('select');
+      expect(leftClickIs(state, 'building', false)).toBe('select');
+    }
+  });
+
+  it('an enemy unit or building is the target in attack-move and ability targeting', () => {
+    for (const kind of ['attackMove', 'heroAbility'] as const)
+      for (const hit of ['unit', 'building'] as const)
+        expect(leftClickIs({ mode: 'targeting', kind }, hit, true)).toBe('complete');
+  });
+
+  it('an enemy click still selects in move, gather and placement', () => {
+    for (const state of [
+      { mode: 'placement' },
+      { mode: 'targeting', kind: 'move' },
+      { mode: 'targeting', kind: 'gather' },
+    ] as const) {
+      expect(leftClickIs(state, 'unit', true)).toBe('select');
+      expect(leftClickIs(state, 'building', true)).toBe('select');
     }
   });
 

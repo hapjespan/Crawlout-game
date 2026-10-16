@@ -446,6 +446,9 @@ function PlacementBar(props: { ctl: HudController; state: HudState }): Component
     'div',
     { class: 'co-panel co-targeting', role: 'status' },
     `Plaats ${o.naam} (${o.footprint.w}x${o.footprint.h}) op de kaart (Esc om te annuleren)`,
+    props.state.placementHint
+      ? h('span', { class: 'co-placement-reason' }, ` \u2013 ${props.state.placementHint}`)
+      : null,
   );
 }
 
@@ -767,6 +770,8 @@ export function Hud(props: { ctl: HudController }): ComponentChild {
     'div',
     {
       class: 'co-hud',
+      // Dutch hyphenation lets long card names (Geweerschutter) wrap at syllables instead of mid-word.
+      lang: 'nl',
       // Presses on the HUD never reach anything behind or around it (the canvas, document listeners), and the native
       // context menu does not open on a ctrl+click (macOS right click) over a panel.
       onPointerDown: stopEvent,
@@ -815,6 +820,7 @@ export function Hud(props: { ctl: HudController }): ComponentChild {
         )
       : null,
     h(PlacementBar, { ctl, state }),
+    state.hint ? h('div', { class: 'co-panel co-hint', role: 'status' }, state.hint) : null,
     h(Dominance, { state }),
     h(Minimap, { ctl, state }),
     h(HeroPanel, { ctl, state }),

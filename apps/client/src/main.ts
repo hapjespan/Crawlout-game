@@ -42,6 +42,13 @@ import { startSession } from './game/session.js';
 import { createStatusOverlay } from './net/statusOverlay.js';
 import { buildingButtons, buildingCards, buildingName, type CardContext } from './game/cards.js';
 import { leftClickIs, nextSelection, type ClickMode } from './game/clickRules.js';
+import {
+  ABILITY_HINT_DELAY_MS,
+  OUT_OF_RANGE_TEXT,
+  abilityOutOfRange,
+  type AbilityProbe,
+} from './game/abilityHint.js';
+import { placementIssue, type CellRect } from './game/placementRules.js';
 import { createPerfBadge } from './net/perfBadge.js';
 import { dominanceView } from './game/dominance.js';
 import { minimapLayers } from './game/minimapLayers.js';
@@ -282,47 +289,74 @@ async function main(): Promise<void> {
   };
   let placing: BuildOption | null = null;
 
-  /** Footprint cells must be passable and free of other buildings; the sim validates again on Build. */
-  function placementValid(option: BuildOption, cx: number, cy: number): boolean {
+  /** Why the footprint cannot go here (Dutch), or null when it can; the sim validates again on Build. */
+  function placementReason(option: BuildOption, cx: number, cy: number): string | null {
     const { w, h } = option.footprint;
-    const x0 = (cx >> 8) - (w >> 1);
-    const y0 = (cy >> 8) - (h >> 1);
-    for (let y = y0; y < y0 + h; y++) {
-      for (let x = x0; x < x0 + w; x++) {
-        if (
-          x < 0 ||
-          y < 0 ||
-          x >= map.grid.w ||
-          y >= map.grid.h ||
-          map.grid.passable[y * map.grid.w + x] !== 1
-        )
-          return false;
-      }
-    }
+    const buildings: CellRect[] = [];
     for (const e of entities.values()) {
       const b = buildingOf(e.typeId);
-      if (!b) continue;
-      const bx0 = (e.x >> 8) - (b.footprint.w >> 1);
-      const by0 = (e.y >> 8) - (b.footprint.h >> 1);
-      if (x0 < bx0 + b.footprint.w && bx0 < x0 + w && y0 < by0 + b.footprint.h && by0 < y0 + h)
-        return false;
+      if (b)
+        buildings.push({
+          x0: (e.x >> 8) - (b.footprint.w >> 1),
+          y0: (e.y >> 8) - (b.footprint.h >> 1),
+          w: b.footprint.w,
+          h: b.footprint.h,
+        });
     }
-    return true;
+    return placementIssue(
+      {
+        gridW: map.grid.w,
+        gridH: map.grid.h,
+        passable: map.grid.passable,
+        water,
+        buildings,
+        scrap: status?.scrap ?? 0,
+        scrapCost: option.scrapCost,
+      },
+      { x0: (cx >> 8) - (w >> 1), y0: (cy >> 8) - (h >> 1), w, h },
+    );
   }
 
-  function placementAt(px: number, py: number): { x: number; y: number; valid: boolean } | null {
+  function placementAt(
+    px: number,
+    py: number,
+  ): { x: number; y: number; valid: boolean; reason: string | null } | null {
     if (!placing) return null;
     const ground = renderer.pickAt(px, py).ground;
     if (!ground) return null;
     const at = snapFootprintCenter(ground.x, ground.y, placing.footprint);
-    return { x: Math.round(at.x), y: Math.round(at.y), valid: placementValid(placing, at.x, at.y) };
+    const reason = placementReason(placing, at.x, at.y);
+    return { x: Math.round(at.x), y: Math.round(at.y), valid: reason === null, reason };
   }
 
   let targeting: TargetingKind | null = null;
 
+  /** Position and cooldown of the hero's ability, for the out-of-range check (see game/abilityHint.ts). */
+  const probeAbility = (abilityId: number): AbilityProbe | null => {
+    const hero = status?.hero;
+    const e = hero ? entities.get(hero.entityId) : undefined;
+    return hero && e
+      ? { x: e.x, y: e.y, cooldownTicks: hero.abilityCooldownTicks?.[abilityId] ?? 0 }
+      : null;
+  };
+  /** After a cast: if the sim rejected it for range (nothing started, the hero stood still), say so. */
+  function watchAbilityCast(cast: CommandPayload<'HeroAbility'>): void {
+    const before = probeAbility(cast.abilityId);
+    const ability = myHero()?.abilities[cast.abilityId];
+    if (!before || !ability || cast.x === undefined || cast.y === undefined) return;
+    const target = { x: cast.x, y: cast.y };
+    window.setTimeout(() => {
+      const after = probeAbility(cast.abilityId);
+      if (after && abilityOutOfRange({ rangeU: ability.rangeU, target, before, after }))
+        hud.showHint(OUT_OF_RANGE_TEXT);
+    }, ABILITY_HINT_DELAY_MS);
+  }
+
   const deps: HudDeps = {
-    sendCommand: <T extends CommandType>(type: T, payload: CommandPayload<T>) =>
-      session.sendCommand(type, payload),
+    sendCommand: <T extends CommandType>(type: T, payload: CommandPayload<T>) => {
+      if (type === 'HeroAbility') watchAbilityCast(payload as CommandPayload<'HeroAbility'>);
+      return session.sendCommand(type, payload);
+    },
     getStatus: () => status,
     getSelection: () =>
       mine(selection).map((id): SelectedEntity => {
@@ -506,7 +540,9 @@ async function main(): Promise<void> {
       const state: ClickMode = placing
         ? { mode: 'placement' }
         : { mode: 'targeting', kind: targeting! };
-      if (leftClickIs(state, hitKind) === 'complete') {
+      const hostile =
+        picked !== undefined && picked.owner !== session.playerId && picked.owner !== OWNER_NEUTRAL;
+      if (leftClickIs(state, hitKind, hostile) === 'complete') {
         if (placing) {
           const at = placementAt(p.x, p.y);
           if (at?.valid && hud.completePlacement({ x: at.x, y: at.y })) {
@@ -514,6 +550,8 @@ async function main(): Promise<void> {
             renderer.setPlacementPreview(null);
             canvas.style.cursor = 'default';
           }
+        } else if (picked && hostile && (hitKind === 'unit' || hitKind === 'building')) {
+          hud.completeTargeting({ enemyId: picked.id, x: picked.x, y: picked.y });
         } else if (targeting === 'gather' && picked && hitKind === 'scrapNode') {
           hud.completeTargeting({ nodeId: picked.id });
         } else if (hit.ground) {
@@ -533,7 +571,10 @@ async function main(): Promise<void> {
     const p = local(e);
     if (placing) {
       const at = placementAt(p.x, p.y);
-      renderer.setPlacementPreview(at ? { typeId: placing.typeId, ...at } : null);
+      renderer.setPlacementPreview(
+        at ? { typeId: placing.typeId, x: at.x, y: at.y, valid: at.valid } : null,
+      );
+      hud.setPlacementHint(at?.reason ?? null);
       return;
     }
     if (!drag) return;

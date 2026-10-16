@@ -209,17 +209,17 @@ export interface PlayerStatus {
    * Robots (protocol 0.8.0, data 0.16.0; besluit fase-0 sectie 20): de pop van de levende eigen robots. Robots
    * tellen voor pop maar niet voor bedden: `pop` is de pop van de bewoners (binnen de bedden), `robotPop` die van de
    * robots, en pop + robotPop (plus de robots in productie) blijft binnen popCapMax. `settlers` telt alleen bewoners.
-   * popCap = min(beds, popCapMax - robotPop - pop van robots in productie): de ruimte voor bewoners. Optioneel tot de
-   * HUD hem leest (dan verplicht, protocol 0.9.0); de sim levert hem altijd.
+   * popCap = min(beds, popCapMax - robotPop - pop van robots in productie): de ruimte voor bewoners. Verplicht sinds
+   * protocol 0.9.0 (voorstel, ter bevestiging door de architect: de HUD leest hem); de sim levert hem altijd.
    */
-  robotPop?: number;
+  robotPop: number;
   /**
    * Getrainde SPECIAL-punten van de speler (protocol 0.8.0, data 0.16.0; besluit fase-0 sectie 20), per letter in de
    * volgorde S P E C I A L. Ze horen bij de speler, niet bij de held (ze blijven na zijn dood) en zitten al in
    * HeroStatus.special; de HUD heeft ze apart nodig voor de kosten en duur van de volgende run (training.json
-   * scrapCost + scrapCostStep maal getraind). Optioneel tot de HUD hem leest (dan verplicht, protocol 0.9.0).
+   * scrapCost + scrapCostStep maal getraind). Verplicht sinds protocol 0.9.0 (voorstel, ter bevestiging door de architect: de HUD leest hem).
    */
-  trained?: [number, number, number, number, number, number, number];
+  trained: [number, number, number, number, number, number, number];
 }
 
 /**

@@ -33,6 +33,7 @@ export type {
   SelectedEntity,
   TargetingKind,
   TargetPoint,
+  TargetEnemy,
   TargetNode,
   TargetResult,
   UnitActivity,
@@ -61,6 +62,8 @@ export function mountHud(el: HTMLElement, deps: HudDeps): HudHandle {
   return {
     completePlacement: (p) => ctl.completePlacement(p),
     cancelPlacement: () => ctl.cancelPlacement(),
+    setPlacementHint: (r) => ctl.setPlacementHint(r),
+    showHint: (t) => ctl.showHint(t),
     completeTargeting: (t) => ctl.completeTargeting(t),
     cancelTargeting: () => ctl.cancelTargeting(),
     targetingActive: () => ctl.targetingActive(),

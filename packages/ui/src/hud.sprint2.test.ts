@@ -38,6 +38,8 @@ const baseStatus: PlayerStatus = {
   hero: null,
   queue: [],
   dominance: { pointsHeld: 0, pointsRequired: 2, ticksHeld: 0, ticksRequired: 9600, leader: null },
+  robotPop: 0,
+  trained: [0, 0, 0, 0, 0, 0, 0],
 };
 const unit = (id: number, role: SelectedEntity['role'] = 'builder'): SelectedEntity => ({
   id,
@@ -217,6 +219,38 @@ describe('bouwmenu en plaatsing', () => {
     t.state.selection = [];
     act(() => t.handle.refresh());
     expect(t.el.querySelector('[aria-label="Bouwmenu"]')).toBeNull();
+  });
+
+  it('toont de reden van een rood voorbeeld in de plaatsbalk en wist hem bij annuleren', () => {
+    const t = setup();
+    mounted = t.handle;
+    press('b');
+    press('1');
+    expect(t.el.querySelector('.co-placement-reason')).toBeNull();
+    act(() => t.handle.setPlacementHint('Overlapt een gebouw'));
+    expect(t.el.querySelector('.co-placement-reason')?.textContent).toContain(
+      'Overlapt een gebouw',
+    );
+    act(() => t.handle.setPlacementHint(null));
+    expect(t.el.querySelector('.co-placement-reason')).toBeNull();
+    act(() => t.handle.setPlacementHint('Te weinig scrap'));
+    press('Escape');
+    act(() => t.handle.setPlacementHint('Te weinig scrap')); // no placement any more: ignored
+    expect(t.el.querySelector('.co-placement-reason')).toBeNull();
+  });
+
+  it('showHint toont een korte melding die vanzelf verdwijnt', () => {
+    vi.useFakeTimers();
+    try {
+      const t = setup();
+      mounted = t.handle;
+      act(() => t.handle.showHint('Buiten bereik'));
+      expect(t.el.querySelector('.co-hint')?.textContent).toBe('Buiten bereik');
+      act(() => void vi.advanceTimersByTime(3000));
+      expect(t.el.querySelector('.co-hint')).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('Escape annuleert de plaatsing en meldt endPlacement', () => {

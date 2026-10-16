@@ -11,3 +11,4 @@
 - 0.1.0 (sprint 1): mountHud met tellers, selectiepaneel, commandokaart met sneltoetsen, targeting-callback, desync- en stall-melding, opgeven met bevestiging; demo in apps/client/hud-demo.html.
 - 0.0.1: lege package.
 - Eenhedenbalk: eigen units per type met hun activiteit; klik selecteert een type, de lijst een unit; punt-toets springt naar de volgende unit zonder taak.
+- HUD-ronde plaatsing en doelen: `HudHandle.setPlacementHint` (reden van een rood voorbeeld in de plaatsbalk) en `HudHandle.showHint` (korte melding, bijvoorbeeld "Buiten bereik"); `TargetEnemy` als `TargetResult`: een vijand als doel bij aanvalsbeweging (stuurt Attack) en bij een ability (cast op zijn positie); `lang="nl"` op de HUD-root en `hyphens:auto` op kaartnamen, zodat "Geweerschutter" bij 1280x720 op lettergrepen afbreekt in plaats van midden in het woord.

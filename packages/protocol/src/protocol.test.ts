@@ -150,6 +150,8 @@ describe('besluiten sprint 3', () => {
         ticksRequired: 9600,
         leader: null,
       },
+      robotPop: 0,
+      trained: [0, 0, 0, 0, 0, 0, 0],
     };
     expect(status.hero?.state).toBe('reviving');
   });
@@ -170,6 +172,8 @@ describe('besluiten sprint 3', () => {
         ticksRequired: 9600,
         leader: { playerId: 1, pointsHeld: 2, ticksHeld: 4800 },
       },
+      robotPop: 0,
+      trained: [0, 0, 0, 0, 0, 0, 0],
     };
     const d = status.dominance!;
     expect(d.leader!.ticksHeld * TICK_MS).toBe(240_000);
@@ -209,7 +213,7 @@ describe('voorstel content-x (protocol 0.8.0, ter bevestiging door de architect)
     expect(env('Produce', { buildingId: 1, loadoutId: 2, ids: [1] })).toBe(false);
   });
 
-  it('QueueItem kent produce en train; robotPop en trained zijn optioneel tot de HUD ze leest', () => {
+  it('QueueItem kent produce en train; robotPop en trained zijn verplicht (0.9.0)', () => {
     const status: PlayerStatus = {
       playerId: 0,
       scrap: 0,
