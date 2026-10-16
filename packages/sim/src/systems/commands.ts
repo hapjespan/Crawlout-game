@@ -27,23 +27,15 @@ import { inClaimRadius } from './claims.js';
 import { applyHeroAbility, applyPickPerk, applyRecruit, cancelRevive } from './hero.js';
 import { idiv, isInt } from '../math/int.js';
 import type { SimContext } from './common.js';
-import {
-  WIN_SURRENDER,
-  cellCenterOf,
-  distToRect2,
-  inMap,
-  isEnemy,
-  scanRing,
-  stopMoving,
-} from './common.js';
+import { WIN_SURRENDER, inMap, isEnemy, stopMoving } from './common.js';
 import { SLOT_PENDING, SPOT_PENDING } from './formation.js';
 import {
-  AS_CLAIM,
   PLACE_OK,
+  claimSiteIn,
   placeAs,
   placementInput,
-  placementReason,
   placementReasonAt,
+  type ClaimSite,
 } from './placement.js';
 
 // Systeem 1: commando's van deze tick toepassen. Volgorde: playerId, dan seq, dan positie in de bundel.
@@ -280,14 +272,11 @@ export function canPlaceType(ctx: SimContext, p: number, typeId: number): boolea
  * Build: (x, y) is het midden van de footprint (cel van (x, y) min de halve footprint is de oorsprong). Alleen units
  * met de rol bouwer. Staat er op die plek al een eigen bouwplaats van dit type, dan helpen ze daar (zonder kosten);
  * zo wordt een rechtsklik op een bouwplaats in de client (Build met het typeId en het midden van die plaats) "help
- * bouwen". Elke bouwer onthoudt de plaats (`resumeSite`) tot een nieuw bouwbevel of Stop.
+ * bouwen". Elke bouwer onthoudt de plaats (`resumeSite`) tot een nieuw bouwbevel of Stop. `claim` zijn de extra
+ * plaatsingsbits van een claimgebouw dat Claim plaatst (de laag van CLAIM_TIERS waarmee claimSite de plek vond), 0 voor
+ * een gewone Build.
  */
-function applyBuild(
-  ctx: SimContext,
-  p: number,
-  pl: CommandPayload<'Build'>,
-  claim = false,
-): boolean {
+function applyBuild(ctx: SimContext, p: number, pl: CommandPayload<'Build'>, claim = 0): boolean {
   const w = ctx.world;
   if (!isInt(pl.typeId) || !isInt(pl.x) || !isInt(pl.y) || !inMap(ctx.map, pl.x, pl.y))
     return false;
@@ -446,8 +435,10 @@ function applyCraft(ctx: SimContext, p: number, pl: CommandPayload<'Craft'>): bo
  * claimRadius van het punt, als Build. Staat daar al een eigen bouwplaats met provides claim, dan helpen ze daar.
  * Anders kiest de sim de vrije plek die het dichtst bij het punt ligt (ring voor ring rond de cel van het punt, het
  * punt zelf blijft vrij; tiebreak scanvolgorde) en waarvan de footprint binnen de straal valt en aan de plaatsingsregel
- * voldoet (systems/placement.ts: vrije rand, geen node of claimpunt erin). Een punt dat al van de speler is, of zonder
- * plek, is ongeldig.
+ * voldoet (systems/placement.ts: vrije rand, geen node of claimpunt erin). Is er zo geen plek (nodes, rotsen of
+ * gebouwen dicht bij het punt), dan zoekt hij opnieuw met een node naast de footprint en ten slotte zonder rand
+ * (placement.ts CLAIM_TIERS, data 0.19.0): een vrij punt is altijd te claimen. Een punt dat al van de speler is, of
+ * zonder enige vrije begaanbare plek binnen de straal, is ongeldig.
  */
 function applyClaim(ctx: SimContext, p: number, pl: CommandPayload<'Claim'>): boolean {
   const w = ctx.world;
@@ -465,51 +456,23 @@ function applyClaim(ctx: SimContext, p: number, pl: CommandPayload<'Claim'>): bo
     return applyBuild(ctx, p, { ids: pl.ids, typeId: st.typeId, x: w.x[b]!, y: w.y[b]! });
   }
   if (w.owner[point] === p) return false;
-  const at = claimSite(ctx, point, bt.footprintW, bt.footprintH, placeAs(bt) | AS_CLAIM);
+  const at = claimSite(ctx, point, bt.footprintW, bt.footprintH, placeAs(bt));
   if (at === null) return false;
-  return applyBuild(ctx, p, { ids: pl.ids, typeId: bt.typeId, x: at.x, y: at.y }, true);
+  return applyBuild(ctx, p, { ids: pl.ids, typeId: bt.typeId, x: at.x, y: at.y }, at.as);
 }
 
-/** Midden (in eenheden) van de vrije footprint w x h het dichtst bij claimpunt pt binnen claimRadius, of null. */
+/**
+ * Where Claim puts a claim building of fw x fh cells at claim point pt (placement.ts claimSiteIn: the nearest spot within
+ * claimRadius that passes the placement rule for a claim building, with two relaxed fallbacks so that a free point can
+ * always be claimed), or null. `as` is placeAs of the building.
+ */
 export function claimSite(
   ctx: SimContext,
   pt: number,
   fw: number,
   fh: number,
-  as = AS_CLAIM,
-): { x: number; y: number } | null {
+  as = 0,
+): ClaimSite | null {
   const w = ctx.world;
-  const map = ctx.map;
-  const px = w.x[pt]!;
-  const py = w.y[pt]!;
-  const r = ctx.config.claimRadius;
-  const maxRing = (r >> 8) + (fw > fh ? fw : fh);
-  const input = placementInput(ctx);
-  for (let d = 1; d <= maxRing; d++) {
-    let best = -1;
-    let bestD = 0;
-    let bestM = 0;
-    scanRing(map, px >> 8, py >> 8, 1, 1, d, (cx, cy) => {
-      const fx = cx - (fw >> 1);
-      const fy = cy - (fh >> 1);
-      if (distToRect2(px, py, fx, fy, fw, fh) > r * r) return false;
-      if (placementReason(input, fx, fy, fw, fh, as) !== PLACE_OK) return false;
-      const dx = (cx << 8) + 128 - px;
-      const dy = (cy << 8) + 128 - py;
-      const dd = dx * dx + dy * dy;
-      // gelijke afstand: de plek het dichtst bij het midden van de map (in halve cellen), zodat beide spelers op een
-      // puntsymmetrische map gespiegeld bouwen; dan de scanvolgorde
-      const mx = 2 * cx + 1 - map.w;
-      const my = 2 * cy + 1 - map.h;
-      const dm = mx * mx + my * my;
-      if (best < 0 || dd < bestD || (dd === bestD && dm < bestM)) {
-        best = cy * map.w + cx;
-        bestD = dd;
-        bestM = dm;
-      }
-      return false;
-    });
-    if (best >= 0) return cellCenterOf(map, best);
-  }
-  return null;
+  return claimSiteIn(placementInput(ctx), w.x[pt]!, w.y[pt]!, fw, fh, as, ctx.config.claimRadius);
 }

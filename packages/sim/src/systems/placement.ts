@@ -51,6 +51,18 @@ export type PlacementReason = (typeof PLACEMENT_REASONS)[number];
 /** What the new building is (bits of the `as` argument): a drop-off building, a claim building placed by Claim. */
 export const AS_DEPOT = 1;
 export const AS_CLAIM = 2;
+/**
+ * Relaxed rule, only for the fallbacks of a claim building (claimSiteIn): scrap nodes and claim points may lie in the
+ * margin (never under the footprint). The terrain margin and the gap to other buildings still hold, so the ring
+ * argument above still holds: a node is a point, not a blocked cell.
+ */
+export const AS_POINTS_NEAR = 4;
+/**
+ * Last resort of a claim building (claimSiteIn): no margin at all. The footprint lies in the map on walkable cells,
+ * overlaps no building and covers no node or claim point; nothing more. A claim must never be impossible on a free
+ * point, even when nodes, rocks or buildings crowd it.
+ */
+export const AS_NO_MARGIN = 8;
 /** Flags of a building in PlacementInput.rects: a drop-off building, a claim building (provides claim). */
 export const RECT_DEPOT = 1;
 export const RECT_CLAIM = 2;
@@ -98,9 +110,10 @@ export function placementReason(
   for (let y = fy; y < fy + fh; y++) {
     for (let x = fx; x < fx + fw; x++) if (pass[y * W + x] !== 1) return PLACE_BLOCKED;
   }
-  const c = marginCells(inp.clearance);
+  const c = (as & AS_NO_MARGIN) !== 0 ? 0 : marginCells(inp.clearance);
   const near = neighbourReason(inp, fx, fy, fw, fh, as);
   if (near === PLACE_BLOCKED) return PLACE_BLOCKED;
+  if (c === 0) return near;
   const x0 = fx - c;
   const y0 = fy - c;
   const x1 = fx + fw + c;
@@ -127,9 +140,10 @@ export function neighbourReason(
   fh: number,
   as: number,
 ): number {
+  const loose = (as & AS_NO_MARGIN) !== 0;
   const depot = (as & AS_DEPOT) !== 0;
-  const c = marginCells(inp.clearance);
-  const dc = marginCells(inp.depotClearance);
+  const c = loose ? 0 : marginCells(inp.clearance);
+  const dc = loose ? 0 : marginCells(inp.depotClearance);
   const r = inp.rects;
   let reason = PLACE_OK;
   for (let k = 0; k < inp.rectCount; k++) {
@@ -154,8 +168,12 @@ export function neighbourReason(
   for (let k = 0; k < inp.pointCount; k++) {
     const x = pt[3 * k]!;
     const y = pt[3 * k + 1]!;
-    // a claim building may stand next to a claim point, not on it; everything else keeps the margin
-    const m = (as & AS_CLAIM) !== 0 && pt[3 * k + 2] === POINT_CLAIM ? 0 : c;
+    // a claim building may stand next to a claim point, not on it; everything else keeps the margin (in the relaxed
+    // claim fallbacks nodes too may lie next to it)
+    const m =
+      ((as & AS_CLAIM) !== 0 && pt[3 * k + 2] === POINT_CLAIM) || (as & AS_POINTS_NEAR) !== 0
+        ? 0
+        : c;
     if (
       x >= (fx - m) << 8 &&
       x <= (fx + fw + m) << 8 &&
@@ -217,8 +235,132 @@ export function placementReasonAt(
   bt: SimBuildingType,
   fx: number,
   fy: number,
-  claim = false,
+  claim = 0,
 ): number {
-  const as = placeAs(bt) | (claim ? AS_CLAIM : 0);
-  return placementReason(placementInput(ctx), fx, fy, bt.footprintW, bt.footprintH, as);
+  return placementReason(
+    placementInput(ctx),
+    fx,
+    fy,
+    bt.footprintW,
+    bt.footprintH,
+    placeAs(bt) | claim,
+  );
+}
+
+/**
+ * The three tiers of claimSiteIn, strictest first: the full rule with the claim exception, then nodes and claim points
+ * next to the footprint, then no margin at all. A later tier is only tried when no spot within the radius passes the one
+ * before, so a claim that found a spot before this fallback existed still lands on the same cell.
+ */
+export const CLAIM_TIERS: readonly number[] = [
+  AS_CLAIM,
+  AS_CLAIM | AS_POINTS_NEAR,
+  AS_CLAIM | AS_NO_MARGIN,
+];
+
+/** Where a claim building lands (claimSiteIn). */
+export interface ClaimSite {
+  /** The Build point: the centre of the chosen cell, in sim units (the footprint origin is cell(x, y) - (w >> 1, h >> 1)). */
+  readonly x: number;
+  readonly y: number;
+  /** Footprint origin in cells. */
+  readonly fx: number;
+  readonly fy: number;
+  /** The `as` bits the spot passed with (one of CLAIM_TIERS, plus AS_DEPOT for a drop-off building): Build checks again with them. */
+  readonly as: number;
+}
+
+/**
+ * The spot for a claim building of fw x fh cells at claim point (px, py) in sim units, as the Claim command uses it; one
+ * pure function, so the client's preview snaps to exactly this spot. Ring by ring around the cell of the point (the
+ * point itself stays free), the first ring with a footprint within `radius` of the point (distance from the point to
+ * the footprint) that passes the placement rule for a claim building; within a ring the spot nearest the point, then
+ * nearest the middle of the map in half cells (both players build mirrored on a point symmetric map), then scan order.
+ * When no spot within the radius passes, the same search runs with the relaxed rules of CLAIM_TIERS. null only when no
+ * free walkable footprint is left within the radius at all. `as` is placeAs of the building (AS_DEPOT or 0).
+ */
+export function claimSiteIn(
+  inp: PlacementInput,
+  px: number,
+  py: number,
+  fw: number,
+  fh: number,
+  as: number,
+  radius: number,
+): ClaimSite | null {
+  for (const tier of CLAIM_TIERS) {
+    const at = claimSiteTier(inp, px, py, fw, fh, as | tier, radius);
+    if (at !== null) return at;
+  }
+  return null;
+}
+
+function claimSiteTier(
+  inp: PlacementInput,
+  px: number,
+  py: number,
+  fw: number,
+  fh: number,
+  as: number,
+  r: number,
+): ClaimSite | null {
+  const W = inp.mapW;
+  const H = inp.mapH;
+  const pcx = px >> 8;
+  const pcy = py >> 8;
+  const maxRing = (r >> 8) + (fw > fh ? fw : fh);
+  for (let d = 1; d <= maxRing; d++) {
+    let bestX = -1;
+    let bestY = -1;
+    let bestD = 0;
+    let bestM = 0;
+    // the ring of cells at Chebyshev distance d around the point's cell, row by row (the order of common.ts scanRing)
+    const x0 = pcx - d;
+    const y0 = pcy - d;
+    const x1 = pcx + d;
+    const y1 = pcy + d;
+    for (let cy = y0; cy <= y1; cy++) {
+      if (cy < 0 || cy >= H) continue;
+      const edgeRow = cy === y0 || cy === y1;
+      for (let cx = x0; cx <= x1; cx += edgeRow || cx === x1 ? 1 : x1 - x0) {
+        if (cx < 0 || cx >= W) continue;
+        const fx = cx - (fw >> 1);
+        const fy = cy - (fh >> 1);
+        if (rectDist2(px, py, fx, fy, fw, fh) > r * r) continue;
+        if (placementReason(inp, fx, fy, fw, fh, as) !== PLACE_OK) continue;
+        const dx = (cx << 8) + 128 - px;
+        const dy = (cy << 8) + 128 - py;
+        const dd = dx * dx + dy * dy;
+        const mx = 2 * cx + 1 - W;
+        const my = 2 * cy + 1 - H;
+        const dm = mx * mx + my * my;
+        if (bestX < 0 || dd < bestD || (dd === bestD && dm < bestM)) {
+          bestX = cx;
+          bestY = cy;
+          bestD = dd;
+          bestM = dm;
+        }
+      }
+    }
+    if (bestX >= 0)
+      return {
+        x: (bestX << 8) + 128,
+        y: (bestY << 8) + 128,
+        fx: bestX - (fw >> 1),
+        fy: bestY - (fh >> 1),
+        as,
+      };
+  }
+  return null;
+}
+
+/** Squared distance from (x, y) to the footprint fw x fh at origin (fx, fy), in sim units (as common.ts distToRect2). */
+function rectDist2(x: number, y: number, fx: number, fy: number, fw: number, fh: number): number {
+  const x0 = fx << 8;
+  const y0 = fy << 8;
+  const x1 = (fx + fw) << 8;
+  const y1 = (fy + fh) << 8;
+  const dx = x < x0 ? x0 - x : x > x1 ? x - x1 : 0;
+  const dy = y < y0 ? y0 - y : y > y1 ? y - y1 : 0;
+  return dx * dx + dy * dy;
 }

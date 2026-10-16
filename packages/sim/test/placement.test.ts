@@ -7,6 +7,9 @@ import { ORDER_GATHER } from '../src/ecs/world.js';
 import {
   AS_CLAIM,
   AS_DEPOT,
+  AS_NO_MARGIN,
+  AS_POINTS_NEAR,
+  claimSiteIn,
   PLACE_BLOCKED,
   PLACE_CROWDED,
   PLACE_DEPOT,
@@ -408,5 +411,98 @@ describe('new settlers gather on their own (data 0.18.0, sim.json autoGatherRadi
     expect(nextSettler(withConfig(0), 0).order).toBe(0);
     expect(nextSettler(withConfig(2 * 256), 0).order).toBe(0);
     expect(nextSettler(withConfig(40 * 256), 0).order).toBe(ORDER_GATHER);
+  });
+});
+
+// Martien, 16 October: "ik kan palen niet claimen als ze te dicht bij scrap zitten". Claim looked for a spot next to
+// the point with the full placement rule, so scrap nodes near the point (in the margin of every free cell) could leave
+// no spot and the claim silently failed. Since data 0.19.0 claimSiteIn falls back to a rule where nodes may lie next to
+// the footprint, then to no margin at all: a claim never fails on a point with a free walkable cell next to it.
+describe('a claim always succeeds on a free point (data 0.19.0, placement.ts claimSiteIn)', () => {
+  const PT = { cx: 64, cy: 64 };
+  const paal = BT('claimpaal');
+
+  /** Open 128 x 128 map, a claim point at (64, 64) and a scrap node on every cell with odd x + y within 9 cells of it. */
+  function crowdedSim(): Sim {
+    const open = createOpenMap();
+    const scrapNodes: SimMap['scrapNodes'][number][] = [];
+    for (let y = PT.cy - 9; y <= PT.cy + 9; y++)
+      for (let x = PT.cx - 9; x <= PT.cx + 9; x++)
+        if (((x + y) & 1) === 1) scrapNodes.push({ ...cellCenter(x, y), amount: 1000 });
+    const map: SimMap = {
+      ...open,
+      spawns: [cellCenter(20, 20), cellCenter(107, 107)],
+      scrapNodes,
+      claimPoints: [{ ...cellCenter(PT.cx, PT.cy), kind: 1 }],
+    };
+    return createSim({ seed: 3, players: testPlayers(2), map, config: REAL_CONFIG });
+  }
+  const claimPointId = (sim: Sim): number =>
+    sim
+      .entityIds()
+      .map((id) => sim.getUnit(id)!)
+      .find((u) => u.kind === 'claimPoint')!.id;
+
+  it('a node one cell from the point and one in the margin of every free cell: the post is still placed and claims', () => {
+    const sim = crowdedSim();
+    const inp = placementInput(sim);
+    const r = REAL_CONFIG.claimRadius;
+    const p = cellCenter(PT.cx, PT.cy);
+    // the full rule finds nothing within the radius (the bug)
+    for (let fy = PT.cy - 7; fy <= PT.cy + 7; fy++)
+      for (let fx = PT.cx - 7; fx <= PT.cx + 7; fx++)
+        expect(placementReason(inp, fx, fy, 1, 1, AS_CLAIM)).not.toBe(PLACE_OK);
+    const site = claimSiteIn(inp, p.x, p.y, 1, 1, 0, r)!;
+    expect(site.as).toBe(AS_CLAIM | AS_POINTS_NEAR);
+    expect(Math.max(Math.abs(site.fx - PT.cx), Math.abs(site.fy - PT.cy))).toBe(1);
+
+    sim.setScrap(0, 1000);
+    const builder = sim.spawnUnit({ typeId: BUILDER, owner: 0, x: p.x - 14 * 256, y: p.y });
+    const pt = claimPointId(sim);
+    const f0 = sim.frame;
+    run(sim, 1, new Map([[f0, [cmd(f0, 0, 'Claim', { ids: [builder], pointId: pt })]]]));
+    const postId = sim
+      .entityIds()
+      .find((id) => sim.getUnit(id)!.typeId === paal.typeId && sim.getUnit(id)!.owner === 0);
+    expect(postId).toBeDefined();
+    const post = sim.getUnit(postId!)!;
+    expect({ x: post.x, y: post.y }).toEqual({ x: site.x, y: site.y });
+    expect(sim.playerStatus(0).scrap).toBe(1000 - paal.scrapCost);
+    run(sim, paal.buildTicks + 600);
+    expect(sim.getUnit(postId!)!.buildState).toBe(2);
+    expect(sim.getUnit(pt)!.owner).toBe(0);
+  });
+
+  it('the strict spot first; with rock around, the last resort: a free walkable cell next to the point, never on a node', () => {
+    const W = 32;
+    const inp = (pass: Uint8Array, points: number[] = []) => ({
+      mapW: W,
+      mapH: W,
+      passable: pass,
+      rects: [],
+      rectCount: 0,
+      points,
+      pointCount: points.length / 3,
+      clearance: REAL_CONFIG.placement.clearance,
+      depotClearance: REAL_CONFIG.placement.depotClearance,
+    });
+    const p = cellCenter(16, 16);
+    const r = REAL_CONFIG.claimRadius;
+    // open ground: the full rule, a cell next to the point
+    const open = claimSiteIn(inp(new Uint8Array(W * W).fill(1)), p.x, p.y, 1, 1, 0, r)!;
+    expect(open.as).toBe(AS_CLAIM);
+    expect(Math.max(Math.abs(open.fx - 16), Math.abs(open.fy - 16))).toBe(1);
+    // rock everywhere within 8 cells except the point and the two cells east of it, with a node on the farther one
+    const rock = new Uint8Array(W * W).fill(1);
+    for (let y = 8; y <= 24; y++) for (let x = 8; x <= 24; x++) rock[y * W + x] = 0;
+    for (const x of [16, 17, 18]) rock[16 * W + x] = 1;
+    const node = cellCenter(18, 16);
+    const points = [node.x, node.y, POINT_NODE, p.x, p.y, POINT_CLAIM];
+    const last = claimSiteIn(inp(rock, points), p.x, p.y, 1, 1, 0, r)!;
+    expect(last).toMatchObject({ fx: 17, fy: 16, as: AS_CLAIM | AS_NO_MARGIN });
+    // nothing walkable next to the point: no spot (the only way Claim fails on a point that is not yours)
+    rock[16 * W + 17] = 0;
+    rock[16 * W + 18] = 0;
+    expect(claimSiteIn(inp(rock, points), p.x, p.y, 1, 1, 0, r)).toBeNull();
   });
 });
