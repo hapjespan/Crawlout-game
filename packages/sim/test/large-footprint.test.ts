@@ -117,7 +117,8 @@ describe('gebouwen op echte schaal (grote footprints)', () => {
   it('een eenheid loopt om een woning van 13 x 19 heen naar de overkant en staat nooit in het gebouw', () => {
     const sim = bigSim(3);
     const builder = ownUnit(sim, BUILDER);
-    const site = cellCenter(64, 64);
+    // beside the claim point in the middle of the map (data 0.18.0: a footprint may not cover a claim point)
+    const site = cellCenter(80, 64);
     const wt = REAL_CONFIG.buildingTypes.find((b) => b.typeId === WONING)!;
     let events = run(
       sim,

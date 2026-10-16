@@ -481,6 +481,19 @@ export const FormationTuning = z
   })
   .strict();
 
+// Building placement margins (data/sim.json `placement`, data 0.18.0; voorstel, ter bevestiging door de architect).
+export const PlacementTuning = z
+  .object({
+    clearanceM: z.number().min(1), // free walkable ground around every footprint, also from nodes and claim points; at least 1 m (one cell), then placing a building never cuts a walkable connection
+    depotClearanceM: nonneg, // aisle around a drop-off building (provides hq or werkplaats): no other building this close
+    _comment: comment,
+  })
+  .strict()
+  .refine((t) => t.depotClearanceM >= t.clearanceM, {
+    message: 'depotClearanceM is minstens clearanceM',
+    path: ['depotClearanceM'],
+  });
+
 // Sim-tuning (data/sim.json): globale getallen die de sim nodig heeft maar die bij geen loadout horen.
 export const SimTuning = z
   .object({
@@ -518,6 +531,11 @@ export const SimTuning = z
     _comment: comment,
     // Data 0.16.0 (sim-core, visual review item 5): group-order spreading (see _comment in data/sim.json)
     formation: FormationTuning,
+    // Data 0.18.0 (sim-core, playtest 16 October; voorstel, ter bevestiging door de architect): building placement
+    // margins, and new scavenger settlers of a human player start gathering at the nearest reachable node within this
+    // radius of where they arrive (0 = off; the scripted AI assigns its own settlers)
+    placement: PlacementTuning,
+    autoGatherRadiusM: nonneg,
   })
   .strict()
   .refine((t) => t.pathEntranceMaxCells <= t.pathSectorCells, {
@@ -539,3 +557,4 @@ export type AiScript = z.infer<typeof AiScript>;
 export type DamageMatrix = z.infer<typeof DamageMatrix>;
 export type SimTuning = z.infer<typeof SimTuning>;
 export type FormationTuning = z.infer<typeof FormationTuning>;
+export type PlacementTuning = z.infer<typeof PlacementTuning>;

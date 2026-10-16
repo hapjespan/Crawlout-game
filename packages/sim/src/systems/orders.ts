@@ -7,6 +7,7 @@ import {
   ORDER_ATTACK,
   ORDER_ATTACK_MOVE,
   ORDER_BUILD,
+  ORDER_CAST,
   ORDER_CRAFT,
   ORDER_GATHER,
   ORDER_MOVE,
@@ -19,20 +20,29 @@ import { gatherAmountOf } from '../effects.js';
 import { PROVIDES_HQ, PROVIDES_WORKSHOP } from '../fromData.js';
 import type { SimContext } from './common.js';
 import { repairIdle } from './robots.js';
+import { castOrder } from './hero.js';
+import { MAX_ABILITIES } from '../config.js';
 import {
   distToRect2,
   face,
   isEnemy,
   nearestNode,
-  nearestOwnBuilding,
+  nearestReachableBuilding,
   nodeAllowed,
+  nodeReachable,
   steerChase,
   steerToEntity,
   steerVia,
   stopMoving,
   withinReach,
 } from './common.js';
-import { gatherSlot, resolvePendingSlots, steerToSlot, walkPoint } from './formation.js';
+import {
+  SPOT_PENDING,
+  gatherSlot,
+  resolvePendingSlots,
+  steerToSlot,
+  walkPoint,
+} from './formation.js';
 
 // Systeem 2 (unit-deel): per unit de huidige order uitvoeren in oplopende id-volgorde. Bepaalt waar een unit naartoe
 // loopt (steerTo, uitgevoerd door systeem 4) en welk doel hij heeft (gevecht in systeem 5). Het werk zelf
@@ -266,6 +276,8 @@ function gather(ctx: SimContext, i: number, o: number): void {
     w.phase[i] = PHASE_GO;
   if (w.phase[i] === PHASE_GO && w.carry[i]! >= gatherAmountOf(ctx, i)) w.phase[i] = PHASE_RETURN;
   if (w.phase[i] === PHASE_GO) {
+    // a node it cannot walk to (under a building, another piece of terrain) counts as gone: never walk on the spot
+    if (node >= 0 && !nodeReachable(ctx, w.x[i]!, w.y[i]!, node)) node = -1;
     if (node < 0) {
       node = nearestNode(ctx, w.owner[i]!, w.x[i]!, w.y[i]!);
       if (node < 0) {
@@ -289,9 +301,9 @@ function gather(ctx: SimContext, i: number, o: number): void {
     }
   }
   if (w.phase[i] === PHASE_RETURN) {
-    const dep = nearestOwnBuilding(ctx, w.owner[i]!, w.x[i]!, w.y[i]!, DEPOT_MASK);
+    const dep = nearestReachableBuilding(ctx, w.owner[i]!, w.x[i]!, w.y[i]!, DEPOT_MASK);
     if (dep < 0) {
-      if (w.mvOn[i] === 1) stopMoving(ctx, i); // geen depot: wachten
+      if (w.mvOn[i] === 1) stopMoving(ctx, i); // geen bereikbaar depot: wachten
     } else if (withinReach(w, i, dep, reach)) {
       if (w.mvOn[i] === 1) stopMoving(ctx, i); // afleveren in systeem 6
     } else {
@@ -301,6 +313,27 @@ function gather(ctx: SimContext, i: number, o: number): void {
 }
 
 const NO_SKIP: ReadonlySet<number> = new Set<number>();
+
+/**
+ * A new settler (housing growth, safety net; data 0.18.0) of a human player that can gather starts gathering at the
+ * nearest node it can reach (nearestNode) within autoGatherRadius of where it arrives, instead of standing idle. Its
+ * ring spot follows at the start of the unit part of system 2 (formation.ts), as for a Gather command. The scripted AI
+ * spreads its own settlers over the nodes (ai/*.json scavengersPerNode), so its settlers are left to it.
+ */
+export function autoGather(ctx: SimContext, i: number): void {
+  const r = ctx.config.autoGatherRadius;
+  const w = ctx.world;
+  const p = w.owner[i]!;
+  if (r <= 0 || ctx.players[p] === undefined || ctx.players[p].ai) return;
+  const type = ctx.unitType(w.typeId[i]!);
+  if (type === undefined || type.gatherAmount <= 0) return;
+  const node = nearestNode(ctx, p, w.x[i]!, w.y[i]!);
+  if (node < 0) return;
+  const dx = w.x[node]! - w.x[i]!;
+  const dy = w.y[node]! - w.y[i]!;
+  if (dx * dx + dy * dy > r * r) return;
+  w.pushOrder(i, ORDER_GATHER, SPOT_PENDING, SPOT_PENDING, w.idOf(node));
+}
 
 /**
  * Worker on its way to a node. With a ring spot (ordX/ordY, systems/formation.ts) it walks to that spot and starts
@@ -356,9 +389,9 @@ function build(ctx: SimContext, i: number, o: number): void {
 function craft(ctx: SimContext, i: number): void {
   const w = ctx.world;
   if (w.phase[i] !== PHASE_GO) return; // betalen en omscholen in systeem 6
-  const ws = nearestOwnBuilding(ctx, w.owner[i]!, w.x[i]!, w.y[i]!, PROVIDES_WORKSHOP);
+  const ws = nearestReachableBuilding(ctx, w.owner[i]!, w.x[i]!, w.y[i]!, PROVIDES_WORKSHOP);
   if (ws < 0) {
-    if (w.mvOn[i] === 1) stopMoving(ctx, i); // geen werkplaats: wachten
+    if (w.mvOn[i] === 1) stopMoving(ctx, i); // geen bereikbare werkplaats: wachten
     return;
   }
   if (withinReach(w, i, ws, ctx.config.interactRange)) {
@@ -406,7 +439,8 @@ export function ordersSystem(ctx: SimContext, s: OrdersScratch): void {
         craft(ctx, i);
         break;
       default:
-        w.popOrder(i);
+        if (type >= ORDER_CAST && type < ORDER_CAST + MAX_ABILITIES) castOrder(ctx, i, o);
+        else w.popOrder(i);
     }
   }
 }

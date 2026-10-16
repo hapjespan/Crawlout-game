@@ -363,6 +363,16 @@ export interface SimTuningData {
   builderAutoHelpRadiusU: number;
   /** Group-order spreading (data 0.15.0): formation slots, arrival slack, straight-walk range, worker ring. */
   formation: FormationTuningData;
+  /** Building placement margins (data 0.18.0; voorstel, ter bevestiging door de architect). */
+  placement: PlacementTuningData;
+  /** New scavenger settlers of a human player gather at the nearest reachable node within this radius (0 = off). */
+  autoGatherRadiusU: number;
+}
+
+/** sim.json `placement` in sim units. */
+export interface PlacementTuningData {
+  clearanceU: number;
+  depotClearanceU: number;
 }
 
 /** sim.json `formation` in sim units. */
@@ -837,6 +847,11 @@ export function loadGameData(raw: RawGameData): GameData {
         directRangeU: metersToUnits(simRaw.formation.directRangeM),
         gatherRingU: metersToUnits(simRaw.formation.gatherRingM),
       },
+      placement: {
+        clearanceU: metersToUnits(simRaw.placement.clearanceM),
+        depotClearanceU: metersToUnits(simRaw.placement.depotClearanceM),
+      },
+      autoGatherRadiusU: metersToUnits(simRaw.autoGatherRadiusM),
     },
   };
 }

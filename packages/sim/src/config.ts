@@ -412,6 +412,18 @@ export interface SimConfig {
   readonly builderAutoHelpRadius: number;
   /** Group-order spreading: formation slots, arrival slack, straight-walk range and the worker ring at a node. */
   readonly formation: SimFormationTuning;
+  /** Building placement margins (sim.json `placement`, data 0.18.0; systems/placement.ts). */
+  readonly placement: SimPlacementTuning;
+  /** A new scavenger settler of a human player gathers at the nearest reachable node within this radius; 0 = off. */
+  readonly autoGatherRadius: number;
+}
+
+/** Building placement margins (sim.json `placement`), in sim units; the rule works in whole cells, rounded up. */
+export interface SimPlacementTuning {
+  /** Free walkable ground around every footprint (no building, node or claim point); at least one cell. */
+  readonly clearance: number;
+  /** No other building this close to a drop-off building (provides hq or workshop); at least `clearance`. */
+  readonly depotClearance: number;
 }
 
 /** Formation and arrival spreading for group orders (sim.json `formation`), in sim units. */
@@ -545,6 +557,11 @@ export function validateEnv(env: SimEnv): void {
   req(intIn(f.slack, 0, MAX_RADIUS * 16), 'formation.slack');
   req(intIn(f.directRange, 0, MAX_MAP_CELLS_SIDE << 8), 'formation.directRange');
   req(intIn(f.gatherRing, 0, MAX_RADIUS * 16), 'formation.gatherRing');
+  const pl = config.placement;
+  // at least one cell: then the ring around a new building is a closed walkable path and no route is ever cut
+  req(intIn(pl.clearance, 256, MAX_FOOTPRINT << 8), 'placement.clearance');
+  req(intIn(pl.depotClearance, pl.clearance, MAX_FOOTPRINT << 8), 'placement.depotClearance');
+  req(intIn(config.autoGatherRadius, 0, MAX_MAP_CELLS_SIDE << 8), 'autoGatherRadius');
 
   const armorCount = config.damageMatrix[0]?.length ?? 0;
   req(config.damageMatrix.length > 0 && armorCount > 0, 'damageMatrix leeg');
@@ -949,6 +966,9 @@ export function envHash(env: SimEnv): number {
     c.formation.slack,
     c.formation.directRange,
     c.formation.gatherRing,
+    c.placement.clearance,
+    c.placement.depotClearance,
+    c.autoGatherRadius,
   ]);
   h = fnv1aInt(h, c.unitTypes.length);
   for (const u of c.unitTypes) {

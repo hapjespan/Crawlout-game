@@ -3,7 +3,8 @@ import { idiv } from '../math/int.js';
 import { isqrt } from '../math/sqrt.js';
 import { TRIG_ONE, cosA, sinA } from '../math/trig.js';
 import type { SimContext } from './common.js';
-import { MAX_FREE_RING, inMap, scanRing, steerTo, steerToPoint } from './common.js';
+import { MAX_FREE_RING, componentAt, inMap, scanRing, steerTo, steerToPoint } from './common.js';
+import { NO_COMPONENT } from '../pathdist.js';
 
 // Group-order spreading (visual review 15 October, item 5): a group Move or AttackMove gives every unit its own slot in
 // a compact formation around the clicked point, and workers ordered to a scrap node each get their own spot on a ring
@@ -510,6 +511,8 @@ export function gatherSlot(
   if (count < 1) return null;
   const nx = w.x[node]!;
   const ny = w.y[node]!;
+  // only spots in the worker's own piece of terrain (a spot across water next to the node is walkable but not reachable)
+  const home = componentAt(ctx, w.x[i]!, w.y[i]!);
   const bx = (map.w << 8) - 2 * nx;
   let by = (map.h << 8) - 2 * ny;
   if (bx === 0 && by === 0) by = 1;
@@ -536,6 +539,7 @@ export function gatherSlot(
     const ox = offBorder(nx + idiv(rx * rho, DIR_ONE), nx, map.w << 7, 0) - nx;
     const oy = offBorder(ny + idiv(ry * rho, DIR_ONE), ny, map.h << 7, 0) - ny;
     if ((ox === 0 && oy === 0) || !walkPoint(ctx, nx + ox, ny + oy)) continue;
+    if (home !== NO_COMPONENT && componentAt(ctx, nx + ox, ny + oy) !== home) continue;
     let taken = false;
     for (let h = 0; h < held.length && !taken; h += 2) taken = held[h] === ox && held[h + 1] === oy;
     if (taken) continue;

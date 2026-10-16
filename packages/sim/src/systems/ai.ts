@@ -33,6 +33,7 @@ import { pointsOf } from './claims.js';
 import { heroIndex } from './hero.js';
 import { letterRunning, trainCost, trainedOn } from './training.js';
 import { DEPOT_MASK, ROLE_MILITIA } from './orders.js';
+import { PLACE_OK, marginCells, placeAs, neighbourReason, placementInput } from './placement.js';
 
 // Systeem 2 (AI-deel): de scripted tegenstander, voor elke speler met ai = true, voor de unit-orders; de volgorde van
 // de spelers draait per tick door (fair-ronde, zie aiSystem). Geen cheats: de AI geeft gewone commando's via
@@ -353,7 +354,8 @@ function walkSums(ctx: SimContext, x0: number, y0: number, w: number, h: number)
 }
 
 /**
- * Vrije plek voor een gebouw: footprint plus een rand van één cel vrij, niet op nodes of claimpunten. Het anker is
+ * Vrije plek voor een gebouw volgens de plaatsingsregel (systems/placement.ts, sim.json placement): footprint plus een
+ * vrije rand van clearance cellen, niet op of naast nodes of claimpunten, en de gang rond een depot vrij. Het anker is
  * het hoofdgebouw (AI_SITE_HQ), het eigen claimpunt het dichtst bij huis (AI_SITE_CLAIM) of het dichtst bij de vijand
  * (AI_SITE_FRONT), beide op padafstand; zonder eigen claimpunt het hoofdgebouw. Een gebouw met een wapen (turret) zoekt
  * vanaf een punt voor het anker, langs de weg naar de spawn van de vijand, zodat een aanval binnen zijn bereik komt.
@@ -425,10 +427,14 @@ function findSite(
   const R2 = 2 * AI_SITE_RING;
   // Begaanbaarheid als somtabel over het zoekvenster (plus de rand van één cel): een footprint is vrij als zijn som
   // gelijk is aan zijn oppervlak. Buiten de map telt als onbegaanbaar, zoals in footprintFree.
-  const sx0 = cx - AI_SITE_RING - fw - 1;
-  const sy0 = cy - AI_SITE_RING - fh - 1;
-  const sw = 2 * AI_SITE_RING + 2 * fw + 4;
-  const sh = 2 * AI_SITE_RING + 2 * fh + 4;
+  // de rand van de plaatsingsregel in hele cellen (de rest van de regel: neighbourReason hieronder)
+  const mc = marginCells(ctx.config.placement.clearance);
+  const sx0 = cx - AI_SITE_RING - fw - mc;
+  const sy0 = cy - AI_SITE_RING - fh - mc;
+  const sw = 2 * AI_SITE_RING + 2 * fw + 2 * mc + 2;
+  const sh = 2 * AI_SITE_RING + 2 * fh + 2 * mc + 2;
+  const input = placementInput(ctx);
+  const as = placeAs(bt);
   const sat = walkSums(ctx, sx0, sy0, sw, sh);
   const freeRect = (x: number, y: number, ww: number, hh: number): boolean => {
     const ax = x - sx0;
@@ -468,7 +474,7 @@ function findSite(
             (m > bestM || (m === bestM && (a > bestA || (a === bestA && xr <= bestX))))))
       )
         continue;
-      if (!freeRect(fx - 1, fy - 1, fw + 2, fh + 2)) continue;
+      if (!freeRect(fx - mc, fy - mc, fw + 2 * mc, fh + 2 * mc)) continue;
       if (
         rally !== null &&
         rally.cx >= fx &&
@@ -489,15 +495,8 @@ function findSite(
         }
       }
       if (ld < 0 || ld > r2 + 2) continue;
-      let onFeature = false;
-      for (let k = 0; k < idx.nodeCount && !onFeature; k++) {
-        const j = idx.nodes[k]!;
-        if (distToRect2(w.x[j]!, w.y[j]!, fx - 1, fy - 1, fw + 2, fh + 2) === 0) onFeature = true;
-      }
-      for (const j of ctx.claimPoints) {
-        if (distToRect2(w.x[j]!, w.y[j]!, fx - 1, fy - 1, fw + 2, fh + 2) === 0) onFeature = true;
-      }
-      if (onFeature) continue;
+      // nodes, claimpunten en de gang rond een depot (de rand zelf is hierboven al vrij en begaanbaar)
+      if (neighbourReason(input, fx, fy, fw, fh, as) !== PLACE_OK) continue;
       found = (fy + (fh >> 1)) * map.w + fx + (fw >> 1);
       bestR = r2;
       bestM = m;

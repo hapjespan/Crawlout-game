@@ -12,8 +12,10 @@ import {
   type StallNotice,
 } from '@crawlout/protocol';
 import {
+  CLAIM_POINT_TYPE_ID,
   PROVIDES,
   ROLES,
+  SCRAP_NODE_TYPE_ID,
   buildingTypeId,
   heroIdOfTypeId,
   kindOfTypeId,
@@ -31,6 +33,15 @@ import {
   type TargetingKind,
 } from '@crawlout/ui';
 import type { SimWinner } from '@crawlout/sim';
+import {
+  AS_DEPOT,
+  PLACE_OK,
+  POINT_CLAIM,
+  POINT_NODE,
+  RECT_CLAIM,
+  RECT_DEPOT,
+  placementReason,
+} from '@crawlout/sim/placement';
 import { assetConfig } from './game/assets.js';
 import { propSource } from './render/props.js';
 import { terrainTextures } from './render/terrain.js';
@@ -282,32 +293,50 @@ async function main(): Promise<void> {
   };
   let placing: BuildOption | null = null;
 
-  /** Footprint cells must be passable and free of other buildings; the sim validates again on Build. */
-  function placementValid(option: BuildOption, cx: number, cy: number): boolean {
+  /**
+   * The sim's own placement rule (data 0.18.0, @crawlout/sim/placement): free footprint, a free walkable margin, the
+   * aisle around a drop-off building, no scrap node or claim point; the sim validates again on Build. The reason code
+   * (PLACEMENT_REASONS) is there for the preview to show why a spot is refused.
+   */
+  const DEPOT_PROVIDES = [PROVIDES.indexOf('hq'), PROVIDES.indexOf('werkplaats')];
+  const isDepot = (b: BuildingData): boolean => b.provides.some((p) => DEPOT_PROVIDES.includes(p));
+  const CLAIM_PROVIDES = PROVIDES.indexOf('claim');
+  function placementReasonFor(option: BuildOption, cx: number, cy: number): number {
     const { w, h } = option.footprint;
-    const x0 = (cx >> 8) - (w >> 1);
-    const y0 = (cy >> 8) - (h >> 1);
-    for (let y = y0; y < y0 + h; y++) {
-      for (let x = x0; x < x0 + w; x++) {
-        if (
-          x < 0 ||
-          y < 0 ||
-          x >= map.grid.w ||
-          y >= map.grid.h ||
-          map.grid.passable[y * map.grid.w + x] !== 1
-        )
-          return false;
-      }
-    }
+    const rects: number[] = [];
+    const points: number[] = [];
     for (const e of entities.values()) {
       const b = buildingOf(e.typeId);
-      if (!b) continue;
-      const bx0 = (e.x >> 8) - (b.footprint.w >> 1);
-      const by0 = (e.y >> 8) - (b.footprint.h >> 1);
-      if (x0 < bx0 + b.footprint.w && bx0 < x0 + w && y0 < by0 + b.footprint.h && by0 < y0 + h)
-        return false;
+      if (b) {
+        const { w: bw, h: bh } = b.footprint;
+        const flags =
+          (isDepot(b) ? RECT_DEPOT : 0) | (b.provides.includes(CLAIM_PROVIDES) ? RECT_CLAIM : 0);
+        rects.push((e.x >> 8) - (bw >> 1), (e.y >> 8) - (bh >> 1), bw, bh, flags);
+      } else if (e.typeId === SCRAP_NODE_TYPE_ID) points.push(e.x, e.y, POINT_NODE);
+      else if (e.typeId === CLAIM_POINT_TYPE_ID) points.push(e.x, e.y, POINT_CLAIM);
     }
-    return true;
+    const own = buildingOf(option.typeId);
+    return placementReason(
+      {
+        mapW: map.grid.w,
+        mapH: map.grid.h,
+        passable: map.grid.passable,
+        rects,
+        rectCount: rects.length / 5,
+        points,
+        pointCount: points.length / 3,
+        clearance: data.sim.placement.clearanceU,
+        depotClearance: data.sim.placement.depotClearanceU,
+      },
+      (cx >> 8) - (w >> 1),
+      (cy >> 8) - (h >> 1),
+      w,
+      h,
+      own !== undefined && isDepot(own) ? AS_DEPOT : 0,
+    );
+  }
+  function placementValid(option: BuildOption, cx: number, cy: number): boolean {
+    return placementReasonFor(option, cx, cy) === PLACE_OK;
   }
 
   function placementAt(px: number, py: number): { x: number; y: number; valid: boolean } | null {

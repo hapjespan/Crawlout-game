@@ -19,13 +19,69 @@ export const TERRAIN_UNREACHABLE = 0xffff;
 /** Geometrie: zoveel velden houdt de cache (elk w * h * 2 bytes; 295 kB op 384 bij 384). */
 const CACHE_FIELDS = 16;
 
+/** No component: an unwalkable cell. */
+export const NO_COMPONENT = -1;
+
 export class TerrainDistances {
   private readonly keys: number[] = [];
   private readonly fields: Uint16Array[] = [];
   private readonly queue: Int32Array;
+  private labels: Int32Array | null = null;
 
   constructor(private readonly map: SimMap) {
     this.queue = new Int32Array(map.w * map.h);
+  }
+
+  /**
+   * The connected walkable piece of terrain (4-neighbours over map.passable, as the flow fields walk) that cell c
+   * belongs to, NO_COMPONENT for an unwalkable cell; labels number the pieces in scan order. Computed once (the terrain
+   * never changes). Buildings do not count: the placement rule (systems/placement.ts) keeps a free walkable ring around
+   * every building placed in a match, so a building never splits a piece, and two cells in one piece stay connected
+   * whatever stands on the map.
+   */
+  component(c: number): number {
+    if (this.labels === null) this.labels = this.computeLabels();
+    return this.labels[c]!;
+  }
+
+  private computeLabels(): Int32Array {
+    const map = this.map;
+    const W = map.w;
+    const H = map.h;
+    const pass = map.passable;
+    const label = new Int32Array(W * H).fill(NO_COMPONENT);
+    const q = this.queue;
+    let next = 0;
+    for (let s = 0; s < W * H; s++) {
+      if (pass[s] !== 1 || label[s] !== NO_COMPONENT) continue;
+      const id = next++;
+      label[s] = id;
+      let qt = 0;
+      let qh = 0;
+      q[qt++] = s;
+      while (qh < qt) {
+        const c = q[qh++]!;
+        const cy = idiv(c, W);
+        const cx = c - cy * W;
+        if (cx + 1 < W && pass[c + 1] === 1 && label[c + 1] === NO_COMPONENT) {
+          label[c + 1] = id;
+          q[qt++] = c + 1;
+        }
+        if (cx > 0 && pass[c - 1] === 1 && label[c - 1] === NO_COMPONENT) {
+          label[c - 1] = id;
+          q[qt++] = c - 1;
+        }
+        if (cy + 1 < H && pass[c + W] === 1 && label[c + W] === NO_COMPONENT) {
+          label[c + W] = id;
+          q[qt++] = c + W;
+        }
+        if (cy > 0 && pass[c - W] === 1 && label[c - W] === NO_COMPONENT) {
+          label[c - W] = id;
+          q[qt++] = c - W;
+        }
+      }
+    }
+    return label;
   }
 
   /** Afstandsveld (cellen) vanaf de rechthoek [x0, x0+w) x [y0, y0+h), geknipt op de map. */

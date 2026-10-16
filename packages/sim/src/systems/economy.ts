@@ -43,14 +43,14 @@ import { takeCensus } from './census.js';
 import type { SimContext } from './common.js';
 import {
   cellCenterOf,
-  nearestOwnBuilding,
+  nearestReachableBuilding,
   nodeAllowed,
   nthFreeCellAround,
   SPAWN_SPREAD,
   playerInTurn,
   withinReach,
 } from './common.js';
-import { DEPOT_MASK } from './orders.js';
+import { DEPOT_MASK, autoGather } from './orders.js';
 import { PROVIDES_WORKSHOP } from '../fromData.js';
 
 // Systeem 6: economie. Verzamelen (een rit duurt gatherTicks en levert gatherAmount), afleveren bij een depot,
@@ -125,7 +125,7 @@ function gatherWork(ctx: SimContext, i: number, reach: number): void {
     w.work[i] = 0;
     w.phase[i] = PHASE_RETURN;
   } else if (w.phase[i] === PHASE_RETURN) {
-    const dep = nearestOwnBuilding(ctx, w.owner[i]!, w.x[i]!, w.y[i]!, DEPOT_MASK);
+    const dep = nearestReachableBuilding(ctx, w.owner[i]!, w.x[i]!, w.y[i]!, DEPOT_MASK);
     if (dep < 0 || !withinReach(w, i, dep, reach)) return;
     const p = w.owner[i]!;
     ctx.ps.scrap[p] = ctx.ps.scrap[p]! + w.carry[i]!;
@@ -239,7 +239,8 @@ function growth(ctx: SimContext, census: Census, p: number): void {
   const builderType = faction.roleTypeIds[ROLE_BUILDER] ?? 0;
   const t =
     builderType !== 0 && needsBuilder(ctx, p) ? (ctx.unitType(builderType) ?? settler) : settler;
-  createUnit(ctx, t, p, at.x, at.y, 0);
+  const u = createUnit(ctx, t, p, at.x, at.y, 0);
+  if (u >= 0) autoGather(ctx, u);
   census.settlers[p] = census.settlers[p]! + 1;
   census.pop[p] = census.pop[p]! + settler.popCost;
 }
