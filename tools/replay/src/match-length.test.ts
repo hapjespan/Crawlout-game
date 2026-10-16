@@ -28,6 +28,9 @@ import { playMatchesParallel, summarize } from './fairness.js';
 // trainingsfaciliteit, robots tellen mee voor zijn leger, gatherRingM 1): speler 0 wint 19 en speler 1 wint 14, 9 keer
 // vernietiging en 24 keer dominantie, lengte 25,9 tot 32,6 minuten (33 van de 33 tussen 25 en 35); de winnaar bouwde in
 // 28 van de 33 potjes een sentinel, in 32 drie laserturrets en trainde in alle 33 zijn held; EXPECTED is opnieuw gemeten.
+// Gevechtsronde (data 0.19.0: beveiligingsrobot 520 hp en 3,5 s cooldown, sentinel 270 hp; de doelen van Martien in
+// packages/sim/test/combat-balance.test.ts): speler 0 wint 16 en speler 1 wint 17, 17 keer vernietiging en 16 keer
+// dominantie, lengte 25,9 tot 31,3 minuten (33 van de 33 tussen 25 en 35); EXPECTED is opnieuw gemeten.
 // Een even footprint (hoofdgebouw 20 x 20) brak de spiegel al bij de start (speler
 // 0 won 30 van de 33), een claimpaal van 3 x 3 liet het midden altijd naar speler 0 gaan; zie packages/data/CHANGELOG.md
 // 0.14.0. Het verschil tussen de spelers is toeval (één standaardafwijking bij 33 muntworpen is 2,9 potjes), geen
@@ -35,10 +38,10 @@ import { playMatchesParallel, summarize } from './fairness.js';
 // hoogstens 21 van de 33 (36 tot 64 procent). Een sim die een speler voortrekt (zoals 28 tegen 5) valt er ruim buiten.
 
 const EXPECTED = [
-  { seed: 1, winner: 1, reason: 'dominance', frame: 36132 },
-  { seed: 5, winner: 1, reason: 'destruction', frame: 32550 },
-  { seed: 7, winner: 0, reason: 'dominance', frame: 35324 },
-  { seed: 42, winner: 0, reason: 'dominance', frame: 34461 },
+  { seed: 1, winner: 1, reason: 'destruction', frame: 32364 },
+  { seed: 5, winner: 0, reason: 'destruction', frame: 32083 },
+  { seed: 7, winner: 1, reason: 'destruction', frame: 34965 },
+  { seed: 42, winner: 1, reason: 'destruction', frame: 31803 },
   { seed: 99, winner: 0, reason: 'dominance', frame: 32014 },
 ] as const;
 
