@@ -693,12 +693,15 @@ describe('claims en winroutes', () => {
     expect(play(sim, 5).some((e) => e.type === EVENT_TYPE.claimTaken)).toBe(false);
   });
 
-  it('exclusieve nodes: een node binnen claimRadius van een bezet punt is alleen voor de eigenaar', () => {
+  it('exclusieve nodes: een node binnen exclusiveRadius van een bezet punt is alleen voor de eigenaar, ook buiten claimRadius (data 0.19.0)', () => {
     const open = createOpenMap(64, 64);
+    expect(CONFIG.exclusiveRadius).toBeGreaterThan(10 * 256);
+    expect(CONFIG.claimRadius).toBeLessThan(10 * 256);
     const map = {
       ...open,
       scrapNodes: [
-        { ...cellCenter(34, 32), amount: 500 },
+        { ...cellCenter(42, 32), amount: 500 }, // 10 m van het punt
+
         { ...cellCenter(40, 50), amount: 500 },
       ],
       claimPoints: [{ ...cellCenter(32, 32), kind: 0 }],
@@ -725,6 +728,7 @@ describe('claims en winroutes', () => {
     expect(sim.getUnit(excl!)!.amount).toBeLessThan(500);
     expect(sim.getUnit(free!)!.amount).toBeLessThan(500);
     expect(sim.getUnit(s1)!.order).toBe(ORDER_GATHER);
+    expect(sim.getUnit(s1)!.orderTarget).toBe(free);
   });
 
   it('winroute B: pointsRequired punten gedurende dominance.ticks geeft de winst', () => {

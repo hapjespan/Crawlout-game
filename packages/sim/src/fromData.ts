@@ -384,6 +384,7 @@ export function simConfigFromGameData(data: GameData): SimConfig {
       depotClearance: t.placement.depotClearanceU,
     },
     autoGatherRadius: t.autoGatherRadiusU,
+    exclusiveRadius: t.exclusiveRadiusU,
   };
 }
 

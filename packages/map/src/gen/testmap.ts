@@ -20,6 +20,7 @@ export const TESTMAP_SPEC: MapSpec = {
   spawns: [{ x: 14, y: 14 }],
   scrapNodes: [{ x: 28, y: 6, amount: 1000 }],
   claimPoints: [],
+  claimNodeMinM: 9,
   centerClaims: [{ x: 32, y: 32, kind: 'scrap' }],
   creepCamps: [{ x: 20, y: 48, tier: 1 }],
 };

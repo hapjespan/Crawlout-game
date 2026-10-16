@@ -367,6 +367,8 @@ export interface SimTuningData {
   placement: PlacementTuningData;
   /** New scavenger settlers of a human player gather at the nearest reachable node within this radius (0 = off). */
   autoGatherRadiusU: number;
+  /** A scrap node within this distance of a held claim point is exclusive to its owner (data 0.19.0; voorstel). */
+  exclusiveRadiusU: number;
 }
 
 /** sim.json `placement` in sim units. */
@@ -852,6 +854,7 @@ export function loadGameData(raw: RawGameData): GameData {
         depotClearanceU: metersToUnits(simRaw.placement.depotClearanceM),
       },
       autoGatherRadiusU: metersToUnits(simRaw.autoGatherRadiusM),
+      exclusiveRadiusU: metersToUnits(simRaw.exclusiveRadiusM),
     },
   };
 }

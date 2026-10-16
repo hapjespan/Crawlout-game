@@ -131,18 +131,25 @@ export const RUSTBELT_SPEC: MapSpec = {
     { x: 286, y: 92, amount: 1500 }, // basis
     { x: 318, y: 94, amount: 1500 }, // basis
     { x: 262, y: 42, amount: 1500 }, // natuurlijke expansie
-    { x: 220, y: 64, amount: 2500 }, // settlement 1 (boven), 4 m van het claimpunt
+    { x: 226, y: 67, amount: 2500 }, // settlement 1 (boven), 9,2 m van het claimpunt (was 4 m)
     { x: 232, y: 54, amount: 1500 }, // settlement 1, tweede node
-    { x: 318, y: 186, amount: 2500 }, // settlement 2 (rechts), 4 m van het claimpunt
+    { x: 320, y: 181, amount: 2500 }, // settlement 2 (rechts), 9,2 m van het claimpunt (was 4 m)
     { x: 334, y: 200, amount: 1500 }, // settlement 2, tweede node
     { x: 160, y: 74, amount: 2000 }, // vooruitgeschoven, aan de eigen oever bij de noordelijke voorde
     { x: 252, y: 146, amount: 1500 }, // dal ten oosten van de tafelberg, op weg naar het midden
   ],
-  // Besluit 9: 4 m van de 2500-node, binnen claimRadiusM (6 m): de node wordt exclusief zodra de claimpaal staat.
+  // Besluit 9 (fase-0 sectie 14), claimronde (data 0.19.0): de 2500-node van elk settlement ligt 9,2 m van het claimpunt,
+  // buiten de claimcirkel (claimRadiusM 6 m) zodat de claimpaal er altijd naast past (Martien: "leg de scrap er niet te
+  // dicht bij"), en binnen exclusiveRadiusM (12 m): de node wordt exclusief zodra de claimpaal staat. Schuin naar de
+  // basis toe; gemeten over 33 seeds: 17 tegen 16, 16 keer vernietiging en 17 keer dominantie, 26,2 tot 33,3 minuten.
+  // Andere plekken (sim 0.16.0): recht naar het zuiden en noorden op 9 m 12 tegen 21 (de grens), 9,5 m oostelijk 15 tegen
+  // 18 met een potje van 40,6 minuten, 9 m met de tweede node een cel opzij een gelijkspel na 45 minuten.
   claimPoints: [
     { x: 220, y: 60, kind: 'settlement' },
     { x: 318, y: 190, kind: 'settlement' },
   ],
+  // Geen scrap binnen claimRadiusM (6 m) + 3 m van een claimpunt (claimronde, data 0.19.0).
+  claimNodeMinM: 9,
   centerClaims: [{ x: 191, y: 191, kind: 'powerArmor' }],
   creepCamps: [
     { x: 176, y: 56, tier: 1 }, // bij de noordelijke voorde

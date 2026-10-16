@@ -397,12 +397,12 @@ export function nearestOwnBuilding(
 }
 
 /**
- * Of speler p van scrap-node `node` mag verzamelen: niet als de node binnen claimRadius ligt van een claimpunt van
- * een andere speler, tenzij hij ook binnen de straal van een eigen punt ligt.
+ * Of speler p van scrap-node `node` mag verzamelen: niet als de node binnen exclusiveRadius (data 0.19.0; was
+ * claimRadius) ligt van een claimpunt van een andere speler, tenzij hij ook binnen de straal van een eigen punt ligt.
  */
 export function nodeAllowed(ctx: SimContext, node: number, p: number): boolean {
   const w = ctx.world;
-  const r = ctx.config.claimRadius;
+  const r = ctx.config.exclusiveRadius;
   const r2 = r * r;
   let blocked = false;
   for (const pt of ctx.claimPoints) {

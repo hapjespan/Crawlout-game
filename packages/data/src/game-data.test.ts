@@ -225,6 +225,7 @@ describe('sim-tuning', () => {
       },
       placement: { clearanceU: 256, depotClearanceU: 256 },
       autoGatherRadiusU: 10240,
+      exclusiveRadiusU: 3072,
     });
   });
 
@@ -382,6 +383,13 @@ describe('sprint 3: held, claims, cancel, militie', () => {
     expect(paal.provides).toEqual([PROVIDES.indexOf('claim')]);
     expect(paal.scrapCost).toBeGreaterThan(0);
     expect(data.sim.claimRadiusU).toBe(1536);
+  });
+
+  it('exclusiveRadiusM (data 0.19.0): 12 m, at least claimRadiusM', () => {
+    const r = raw();
+    expect(loadGameData(r).sim.exclusiveRadiusU).toBe(12 * 256);
+    const sim = { ...(clone(r.sim) as object), exclusiveRadiusM: 5 };
+    expect(() => loadGameData({ ...r, sim } as never)).toThrow(/exclusiveRadiusM/);
   });
 
   it('kan elke tech onderzoeken in een bouwbaar gebouw met toepasbare effecten', () => {

@@ -33,6 +33,8 @@ const readDominance = (name: string): unknown => readDef(name).dominance;
 
 const claimRadiusM = (): number =>
   (readDataDir(dataDir).sim as { claimRadiusM: number }).claimRadiusM;
+const exclusiveRadiusM = (): number =>
+  (readDataDir(dataDir).sim as { exclusiveRadiusM: number }).exclusiveRadiusM;
 const claimFootprint = (): { w: number; h: number } => {
   const b = (
     readDataDir(dataDir).buildings as Array<{ id: string; footprint: { w: number; h: number } }>
@@ -157,8 +159,34 @@ describe('rustbelt', () => {
     }
   });
 
-  it('elk settlement-claimpunt heeft een scrap-node binnen claimRadiusM (besluit 9)', () => {
-    const radius = claimRadiusM();
+  it('scrap ligt niet te dicht bij een claimpunt: minstens claimNodeMinM, en dat is claimRadiusM plus minstens 2 m (claimronde)', () => {
+    const min = RUSTBELT_SPEC.claimNodeMinM;
+    expect(min).toBeGreaterThanOrEqual(claimRadiusM() + 2);
+    for (const n of map.scrapNodes)
+      for (const c of map.claimPoints)
+        expect(Math.hypot(n.x - c.x, n.y - c.y), `node (${n.x},${n.y})`).toBeGreaterThanOrEqual(
+          min,
+        );
+    // de generator weigert een spec die het breekt
+    const close: MapSpec = {
+      ...RUSTBELT_SPEC,
+      scrapNodes: [...RUSTBELT_SPEC.scrapNodes, { x: 224, y: 60, amount: 100 }],
+    };
+    expect(() => generateMap(close, nodeGenIo)).toThrow(/binnen 9 m van claimpunt \(220,60\)/);
+  });
+
+  it('evenveel scrap aan beide kanten van de spiegel (elke node en zijn spiegelbeeld dezelfde voorraad)', () => {
+    const half = (side: number) =>
+      map.scrapNodes
+        .filter((n) => Math.sign(n.x + n.y - MID) === side)
+        .reduce((s, n) => s + n.amount, 0);
+    expect(map.scrapNodes.every((n) => n.x + n.y !== MID)).toBe(true);
+    expect(half(1)).toBe(half(-1));
+  });
+
+  it('elk settlement-claimpunt heeft een scrap-node binnen exclusiveRadiusM (besluit 9, sinds data 0.19.0 los van claimRadiusM)', () => {
+    const radius = exclusiveRadiusM();
+    expect(radius).toBeGreaterThan(RUSTBELT_SPEC.claimNodeMinM);
     const settlements = map.claimPoints.filter((c) => c.kind === 'settlement');
     expect(settlements).toHaveLength(4);
     for (const c of settlements) {
@@ -621,7 +649,7 @@ describe('rustbelt: terrein, rivier, bos en routes', () => {
     ).toHaveLength(1);
     expect(map.creepCamps).toHaveLength(6);
     expect(map.scrapNodes).toHaveLength(18);
-    const radius = claimRadiusM();
+    const radius = exclusiveRadiusM();
     const nearSettlement = map.scrapNodes.filter((n) =>
       map.claimPoints.some(
         (c) => c.kind === 'settlement' && Math.hypot(n.x - c.x, n.y - c.y) <= radius,

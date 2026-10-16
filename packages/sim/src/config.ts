@@ -399,7 +399,7 @@ export interface SimConfig {
   readonly interactRange: number;
   /**
    * Straal rond een claimpunt (besluit sprint 2, sectie 13): een voltooid gebouw met provides claim waarvan de footprint
-   * hierbinnen ligt houdt het punt; een scrap-node hierbinnen van een bezet punt is exclusief voor de eigenaar.
+   * hierbinnen ligt houdt het punt. Exclusieve scrap-nodes rond een bezet punt: exclusiveRadius (data 0.19.0).
    */
   readonly claimRadius: number;
   /** Bovengrens van de pop-cap, los van het aantal bedden. */
@@ -416,6 +416,11 @@ export interface SimConfig {
   readonly placement: SimPlacementTuning;
   /** A new scavenger settler of a human player gathers at the nearest reachable node within this radius; 0 = off. */
   readonly autoGatherRadius: number;
+  /**
+   * A scrap node within this distance of a held claim point is exclusive to its owner (sim.json exclusiveRadiusM, data
+   * 0.19.0; was claimRadius). At least claimRadius.
+   */
+  readonly exclusiveRadius: number;
 }
 
 /** Building placement margins (sim.json `placement`), in sim units; the rule works in whole cells, rounded up. */
@@ -562,6 +567,10 @@ export function validateEnv(env: SimEnv): void {
   req(intIn(pl.clearance, 256, MAX_FOOTPRINT << 8), 'placement.clearance');
   req(intIn(pl.depotClearance, pl.clearance, MAX_FOOTPRINT << 8), 'placement.depotClearance');
   req(intIn(config.autoGatherRadius, 0, MAX_MAP_CELLS_SIDE << 8), 'autoGatherRadius');
+  req(
+    intIn(config.exclusiveRadius, config.claimRadius, MAX_MAP_CELLS_SIDE << 8),
+    'exclusiveRadius',
+  );
 
   const armorCount = config.damageMatrix[0]?.length ?? 0;
   req(config.damageMatrix.length > 0 && armorCount > 0, 'damageMatrix leeg');
@@ -969,6 +978,7 @@ export function envHash(env: SimEnv): number {
     c.placement.clearance,
     c.placement.depotClearance,
     c.autoGatherRadius,
+    c.exclusiveRadius,
   ]);
   h = fnv1aInt(h, c.unitTypes.length);
   for (const u of c.unitTypes) {

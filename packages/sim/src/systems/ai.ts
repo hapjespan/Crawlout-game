@@ -591,10 +591,10 @@ function enemyOf(ctx: SimContext, p: number): number {
   return -1;
 }
 
-/** Of node j binnen claimRadius ligt van een claimpunt van p (dan is hij exclusief van p). */
+/** Of node j binnen exclusiveRadius ligt van een claimpunt van p (dan is hij exclusief van p). */
 function exclusiveFor(ctx: SimContext, j: number, p: number): boolean {
   const w = ctx.world;
-  const r = ctx.config.claimRadius;
+  const r = ctx.config.exclusiveRadius;
   for (const pt of ctx.claimPoints) {
     if (w.owner[pt] !== p) continue;
     const dx = w.x[j]! - w.x[pt]!;

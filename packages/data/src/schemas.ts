@@ -513,7 +513,7 @@ export const SimTuning = z
     // Sprint 2 (sim-core, ter review door de architect en content):
     aggroRangeM: nonneg, // militie en units op AttackMove kiezen zelf een doel binnen deze afstand
     interactRangeM: nonneg, // reikwijdte voor verzamelen, afleveren, bouwen en omscholen (tot node of footprint)
-    claimRadiusM: nonneg, // straal rond een claimpunt: een voltooid claimgebouw (provides claim) hierbinnen houdt het punt, scrap-nodes hierbinnen zijn exclusief
+    claimRadiusM: nonneg, // straal rond een claimpunt: een voltooid claimgebouw (provides claim) hierbinnen houdt het punt (exclusieve nodes: exclusiveRadiusM, data 0.19.0)
     popCapMax: z.number().int().nonnegative(), // bovengrens pop-cap per speler, los van de bedden (Spelfundament 2.5)
     corpseS: nonneg, // seconden dat een gedode unit als lijk blijft staan (death-animatie)
     cancelRefundPct: z.number().min(0).max(100), // teruggave bij Cancel van een bouwplaats of betaalde omscholing (besluit sprint 2)
@@ -536,11 +536,19 @@ export const SimTuning = z
     // radius of where they arrive (0 = off; the scripted AI assigns its own settlers)
     placement: PlacementTuning,
     autoGatherRadiusM: nonneg,
+    // Data 0.19.0 (claim round, Martien 16 October; voorstel, ter bevestiging door de architect): a scrap node within
+    // this distance of a held claim point is exclusive to its owner. Was claimRadiusM; separate so a map can keep its
+    // scrap outside the claim circle (room for the claim post) and the node still belongs to the claimed point.
+    exclusiveRadiusM: nonneg,
   })
   .strict()
   .refine((t) => t.pathEntranceMaxCells <= t.pathSectorCells, {
     message: 'pathEntranceMaxCells is hoogstens pathSectorCells',
     path: ['pathEntranceMaxCells'],
+  })
+  .refine((t) => t.exclusiveRadiusM >= t.claimRadiusM, {
+    message: 'exclusiveRadiusM is minstens claimRadiusM',
+    path: ['exclusiveRadiusM'],
   });
 
 export type Faction = z.infer<typeof Faction>;

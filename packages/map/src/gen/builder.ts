@@ -67,6 +67,13 @@ export interface MapSpec {
   /** Alle lijsten hieronder bevatten alleen de A-helft; de B-helft wordt gespiegeld. Zelfspiegelend: selfMirrored. */
   scrapNodes: Array<Feature & { amount: number }>;
   claimPoints: Array<Feature & { kind: 'scrap' | 'settlement' | 'powerArmor' }>;
+  /**
+   * Minimum distance in metres between every scrap node and every claim point, both halves and the middle (claim round,
+   * data 0.19.0): at least claimRadiusM (data/sim.json) plus a few metres, so the claim post always fits next to the
+   * point and no scrap heap lies in the claim circle. The generator refuses a spec that breaks it; maps.test.ts checks
+   * it against sim.json.
+   */
+  claimNodeMinM: number;
   creepCamps: Array<Feature & { tier: number }>;
   spawns: Feature[];
   /** Claimpunten in het midden (zonder spiegelpartner). */
@@ -317,6 +324,19 @@ export function generateMap(spec: MapSpec, io?: GenIo): GeneratedMap {
     for (const f of list) {
       if (passable[f.y * w + f.x] !== OPEN)
         throw new Error(`gen ${spec.id}: ${what} (${f.x},${f.y}) ligt op een onbegaanbare cel`);
+    }
+  }
+  // Scrap keeps its distance from every claim point (claim round, data 0.19.0): the claim post always fits next to the
+  // point and no heap lies in the claim circle. Whole metres, compared squared (no square root).
+  const gap = spec.claimNodeMinM;
+  for (const n of def.scrapNodes) {
+    for (const c of def.claimPoints) {
+      const dx = n.x - c.x;
+      const dy = n.y - c.y;
+      if (dx * dx + dy * dy < gap * gap)
+        throw new Error(
+          `gen ${spec.id}: scrap-node (${n.x},${n.y}) ligt binnen ${gap} m van claimpunt (${c.x},${c.y})`,
+        );
     }
   }
 
