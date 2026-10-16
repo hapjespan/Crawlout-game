@@ -27,6 +27,7 @@ import {
   type DecalLayer,
   type DecalStyle,
 } from '../decals/decalLayer.js';
+import { INSPECTED_FLAG } from '../entities/inspected.js';
 import { buildingContact } from '../decals/contact.js';
 import { bakeContactField } from '../decals/contactMask.js';
 import {
@@ -86,6 +87,7 @@ const BUILDING_SELECTED: DecalStyle = {
   grid: 0,
   color: DECAL_COLOR.selection,
 };
+const BUILDING_INSPECTED: DecalStyle = { ...BUILDING_SELECTED, color: DECAL_COLOR.invalid };
 const CLAIM_RADIUS = 3.5; // meters, visual only
 /** Claim ring per palette slot (owner color, neutral grey when unclaimed). */
 const CLAIM_DECALS: readonly DecalStyle[] = Array.from({ length: NEUTRAL_TEAM + 1 }, (_, team) => ({
@@ -440,7 +442,13 @@ export class StructureLayer {
         if (asset) {
           this.pushAsset(asset, frame, i, x, y, z, f.w, f.h, wall, team);
           if ((flags & ENTITY_FLAG.selected) !== 0)
-            decals.push(x, z, hx + 0.35, hz + 0.35, BUILDING_SELECTED);
+            decals.push(
+              x,
+              z,
+              hx + 0.35,
+              hz + 0.35,
+              (flags & INSPECTED_FLAG) !== 0 ? BUILDING_INSPECTED : BUILDING_SELECTED,
+            );
           continue;
         }
         center.set(x, y + wall * 0.5, z);
@@ -475,7 +483,13 @@ export class StructureLayer {
           batch.push(x, y, z, 0, f.w, wall, f.h, team, tint);
         }
         if ((flags & ENTITY_FLAG.selected) !== 0)
-          decals.push(x, z, hx + 0.35, hz + 0.35, BUILDING_SELECTED);
+          decals.push(
+            x,
+            z,
+            hx + 0.35,
+            hz + 0.35,
+            (flags & INSPECTED_FLAG) !== 0 ? BUILDING_INSPECTED : BUILDING_SELECTED,
+          );
         continue;
       }
 

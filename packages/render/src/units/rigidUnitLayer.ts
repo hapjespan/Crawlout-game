@@ -26,6 +26,7 @@ import {
 } from '../decals/decalLayer.js';
 import { TYPE_ID_BUILDING_FIRST } from '../entities/typeIds.js';
 import { ScreenLod, UNIT_LOD_PX, type ScreenLodThresholds } from '../lod/screenLod.js';
+import { INSPECTED_FLAG } from '../entities/inspected.js';
 import { teamIndex } from '../palette.js';
 import type { SunShadowTerm } from '../shadows/sunShadow.js';
 import type { InterpolatedFrame } from '../snapshot/interpolate.js';
@@ -123,6 +124,8 @@ const BLOB_SELECTED: DecalStyle = { ...BLOB, ring: 1 };
 /** With the real shadow: a faint contact darkening (unitLayer.ts BLOB_WITH_SHADOW). */
 const CONTACT: DecalStyle = { ...BLOB, shadow: BLOB_WITH_SHADOW };
 const CONTACT_SELECTED: DecalStyle = { ...CONTACT, ring: 1 };
+const BLOB_INSPECTED: DecalStyle = { ...BLOB_SELECTED, color: DECAL_COLOR.invalid };
+const CONTACT_INSPECTED: DecalStyle = { ...CONTACT_SELECTED, color: DECAL_COLOR.invalid };
 /** Extra culling radius with shadows (m): a robot just outside the view still casts into it. */
 const SHADOW_CULL_MARGIN = 2.5;
 
@@ -328,12 +331,17 @@ export class RigidUnitLayer {
         counts[lod] = counts[lod]! + 1;
 
         const selected = (flags & SELECTED) !== 0 && (flags & DEAD) === 0;
+        const inspected = (flags & INSPECTED_FLAG) !== 0;
         const blob = this.shadow
           ? selected
-            ? CONTACT_SELECTED
+            ? inspected
+              ? CONTACT_INSPECTED
+              : CONTACT_SELECTED
             : CONTACT
           : selected
-            ? BLOB_SELECTED
+            ? inspected
+              ? BLOB_INSPECTED
+              : BLOB_SELECTED
             : BLOB;
         decals.push(x, z, asset.blobHalf, asset.blobHalf, blob);
       }

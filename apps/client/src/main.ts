@@ -191,6 +191,7 @@ async function main(): Promise<void> {
       ownCache = null;
       for (const id of selection) if (!entities.has(id)) selection.delete(id);
       renderer.pushSnapshot(buf);
+      renderer.setInspectedIds([...selection].filter(isEnemyId));
       for (const ev of snap.events) {
         if (ev.type === EVENT_TYPE.death) {
           const was = previous.get(ev.a);

@@ -2,6 +2,7 @@
 import type { GameData } from '@crawlout/data';
 import { MAX_ENTITIES, TICK_MS, UNITS_PER_METER, type ClaimPointStatus } from '@crawlout/protocol';
 import { claimRingArcs } from './claims/claimRing.js';
+import { stampInspected } from './entities/inspected.js';
 import {
   Matrix4,
   PCFShadowMap,
@@ -297,6 +298,8 @@ export interface CrawloutRenderer {
    * the circle. Pass the latest list on every status; an empty list or undefined clears the arcs.
    */
   setClaimStates(states: readonly ClaimPointStatus[] | undefined): void;
+  /** Entities the player inspects but does not own (enemy units and buildings): they get a red ring instead of the green selection ring. */
+  setInspectedIds(ids: Iterable<number>): void;
   /** What lies under canvas-local CSS pixel (x, y). Units, buildings, scrap nodes and claim points can be hit. */
   pickAt(x: number, y: number): PickResult;
   /** Entity ids inside a canvas-local CSS pixel rectangle; units only unless opts.includeStructures. */
@@ -397,6 +400,7 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
   scene.backgroundNode = atmosphere.backgroundNode;
   scene.fogNode = atmosphere.fogNode;
   const camera = new PerspectiveCamera(45, 1, 0.5, 800);
+  let inspectedIds: ReadonlySet<number> = new Set();
   const time = uniform(0);
   const clockStart = performance.now();
   const clock = (now: number): number => (now - clockStart) / 1000;
@@ -788,6 +792,7 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
     screen.update(camera);
     terrain.update(camera);
     interp.sample(now, frame);
+    stampInspected(frame.id, frame.flags, frame.count, inspectedIds);
     // Foundations first: buildings level the ground under them, and everything below reads the levelled ground.
     if (terrain.setPlatforms(structures.platforms(frame, platformList), PLATFORM_BUDGET_MS))
       props.relayout();
@@ -931,6 +936,9 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
     propAssets: () => [...propStatuses.values()].map((st) => ({ ...st })),
     setPropWind(enabled) {
       windStrength.value = enabled ? 1 : 0;
+    },
+    setInspectedIds(ids) {
+      inspectedIds = new Set(ids);
     },
     setClaimStates(states) {
       structures.setClaimArcs(claimRingArcs(states ?? []));

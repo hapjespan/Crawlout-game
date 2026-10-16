@@ -29,6 +29,7 @@ import {
 import { drawsAsUnit, TYPE_ID_BUILDING_FIRST } from '../entities/typeIds.js';
 import type { DataTexturePrecision } from '../gpu/dataTextures.js';
 import { ScreenLod, UNIT_LOD_PX, type ScreenLodThresholds } from '../lod/screenLod.js';
+import { INSPECTED_FLAG } from '../entities/inspected.js';
 import { teamIndex } from '../palette.js';
 import type { InterpolatedFrame } from '../snapshot/interpolate.js';
 import { SUN_DIR } from '../lighting/lightRig.js';
@@ -118,6 +119,8 @@ const BLOB: DecalStyle = {
 const BLOB_SELECTED: DecalStyle = { ...BLOB, ring: 1 };
 const CONTACT: DecalStyle = { ...BLOB, shadow: BLOB_WITH_SHADOW };
 const CONTACT_SELECTED: DecalStyle = { ...CONTACT, ring: 1 };
+const BLOB_INSPECTED: DecalStyle = { ...BLOB_SELECTED, color: DECAL_COLOR.invalid };
+const CONTACT_INSPECTED: DecalStyle = { ...CONTACT_SELECTED, color: DECAL_COLOR.invalid };
 
 function dynamic(capacity: number, size: number): InstancedBufferAttribute {
   const a = new InstancedBufferAttribute(new Float32Array(capacity * size), size);
@@ -142,6 +145,7 @@ export class UnitLayer {
   private readonly shadow: SunShadowTerm | null;
   private readonly blob: DecalStyle;
   private readonly blobSelected: DecalStyle;
+  private readonly blobInspected: DecalStyle;
   private readonly frustum = new Frustum();
   private readonly projView = new Matrix4();
   private readonly sphere = new Sphere();
@@ -165,6 +169,7 @@ export class UnitLayer {
     this.shadow = opts.shadow ?? null;
     this.blob = this.shadow ? CONTACT : BLOB;
     this.blobSelected = this.shadow ? CONTACT_SELECTED : BLOB_SELECTED;
+    this.blobInspected = this.shadow ? CONTACT_INSPECTED : BLOB_INSPECTED;
     const anims = opts.anims ?? bakeAnimations();
     this.addRig({
       name: 'placeholder',
@@ -329,7 +334,8 @@ export class UnitLayer {
 
       const selected = (flags & SELECTED) !== 0 && (flags & DEAD) === 0;
       const half = isHero ? DECAL_HALF * HERO_SCALE : DECAL_HALF;
-      decals.push(x, z, half, half, selected ? this.blobSelected : this.blob);
+      const ring = (flags & INSPECTED_FLAG) !== 0 ? this.blobInspected : this.blobSelected;
+      decals.push(x, z, half, half, selected ? ring : this.blob);
     }
 
     for (const rig of this.rigs) {
