@@ -5,6 +5,7 @@ import { imod } from '../math/int.js';
 import type { Census } from './census.js';
 import type { SimContext } from './common.js';
 import { SPAWN_SPREAD, cellCenterOf, nthFreeCellAround, playerInTurn } from './common.js';
+import { autoGather } from './orders.js';
 
 // Vangnet van de factie (data 0.16.0, factions safetyNet radiobaken_instroom; Spelfundament 4 en 11), systeem 6 na de
 // huisvestingsgroei, in de doordraaiende beurtvolgorde. Zolang een speler minder dan threshold bewoners heeft (levende
@@ -62,7 +63,9 @@ function netFor(ctx: SimContext, census: Census, p: number): void {
   );
   if (c < 0) return; // geen plek: de timer blijft vol staan tot er plek is
   const at = cellCenterOf(ctx.map, c);
-  if (createUnit(ctx, t, p, at.x, at.y, 0) < 0) return;
+  const u = createUnit(ctx, t, p, at.x, at.y, 0);
+  if (u < 0) return;
+  autoGather(ctx, u);
   ps.netTimer[p] = 0;
   ps.netArrivals[p] = ps.netArrivals[p]! + 1;
   census.settlers[p] = census.settlers[p]! + 1;

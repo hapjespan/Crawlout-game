@@ -87,6 +87,23 @@ export type {
   WinReason,
 } from './sim.js';
 export { Sim, TICK_STAGES, createSim, deserialize } from './sim.js';
+export {
+  AS_CLAIM,
+  AS_DEPOT,
+  PLACEMENT_REASONS,
+  PLACE_BLOCKED,
+  PLACE_CROWDED,
+  PLACE_DEPOT,
+  PLACE_FEATURE,
+  PLACE_OK,
+  PLACE_TERRAIN,
+  POINT_CLAIM,
+  POINT_NODE,
+  RECT_CLAIM,
+  RECT_DEPOT,
+  placementReason,
+} from './systems/placement.js';
+export type { PlacementInput, PlacementReason } from './systems/placement.js';
 export type { TickProbe } from './sim.js';
 export type {
   SimWorkerCore,

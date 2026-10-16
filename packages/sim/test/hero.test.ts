@@ -4,7 +4,18 @@ import type { CommandEnvelope } from '@crawlout/protocol';
 import { createSim, deserialize } from '../src/index.js';
 import type { Sim } from '../src/index.js';
 import { cellCenter, createOpenMap } from '../src/testing.js';
-import { CONFIG, DATA, MILITIA, SCAV, bundle, cmd, envOf, testInit, typeByKey } from './helpers.js';
+import {
+  CONFIG,
+  DATA,
+  MILITIA,
+  REAL_CONFIG,
+  SCAV,
+  bundle,
+  cmd,
+  envOf,
+  testInit,
+  typeByKey,
+} from './helpers.js';
 
 // De held (Opziener): spawn, stats uit SPECIAL, xp en levels, perks, Lockdown, dood en oplappen.
 
@@ -209,7 +220,7 @@ describe('held', () => {
     expect(plain.ok && locked.ok).toBe(true);
     expect(locked.moved).toBeLessThan(plain.moved);
     expect(locked.dealt).toBeGreaterThan(plain.dealt);
-    // buiten rangeU kan het niet
+    // out of rangeU (data 0.18.0): not cast on the spot; the hero walks into range first (placement.test.ts)
     const sim = open(44);
     play(
       sim,
@@ -217,6 +228,7 @@ describe('held', () => {
       at(0, cmd(0, 0, 'HeroAbility', { heroId: HERO.heroId, abilityId: 0, ...cellCenter(60, 60) })),
     );
     expect(sim.ps.abCooldown[0]).toBe(0);
+    expect(sim.getUnit(heroOf(sim, 0))!.moving).toBe(true);
   });
 
   it('dood: perks vallen weg; Recruit op het hoofdgebouw lapt hem op met revivePenalty op health en perks', () => {
@@ -355,5 +367,95 @@ describe('held', () => {
     expect(
       copy.getUnit(sim.entityIds().find((id) => sim.getUnit(id)!.kind === 'claimPoint')!)!.owner,
     ).toBe(OWNER_NEUTRAL);
+  });
+});
+
+describe('HeroAbility out of range (data 0.18.0): walk into range, then cast', () => {
+  const AB = HERO.abilities[0]!;
+  const ORDER_CAST = 8;
+  const zoneEvents = (ev: { type: number; a: number; b: number }[]) =>
+    ev.filter((e) => e.type === EVENT_TYPE.abilityZone);
+
+  it('a point: the hero walks, casts as soon as it is within rangeU, and the cooldown starts then', () => {
+    const sim = open(44);
+    const hero = heroOf(sim, 0);
+    const goal = cellCenter(40, 40);
+    const ev0 = play(
+      sim,
+      1,
+      at(0, cmd(0, 0, 'HeroAbility', { heroId: HERO.heroId, abilityId: 0, ...goal })),
+    );
+    expect(zoneEvents(ev0)).toEqual([]);
+    expect(sim.getUnit(hero)).toMatchObject({ order: ORDER_CAST, moving: true });
+    let castAt = -1;
+    for (let n = 0; n < 1200 && castAt < 0; n++) {
+      if (zoneEvents(play(sim, 1)).length > 0) castAt = sim.frame;
+    }
+    expect(castAt).toBeGreaterThan(20);
+    const h = sim.getUnit(hero)!;
+    expect(Math.hypot(h.x - goal.x, h.y - goal.y)).toBeLessThanOrEqual(AB.rangeU);
+    expect(Math.hypot(h.x - goal.x, h.y - goal.y)).toBeGreaterThan(AB.rangeU - 512);
+    expect(h.order).toBe(0);
+    expect(sim.ps.zoneX[0]).toBe(goal.x);
+    expect(sim.ps.zoneY[0]).toBe(goal.y);
+    expect(sim.ps.abCooldown[0]).toBe(AB.cooldownTicks - 1);
+  });
+
+  it('a target unit: the hero follows it and the zone lands where the unit is at the cast', () => {
+    const sim = open(46);
+    const enemy = sim.spawnUnit({ typeId: SCAV, owner: 1, ...cellCenter(45, 30) });
+    const ev = play(
+      sim,
+      600,
+      at(
+        0,
+        cmd(0, 1, 'Move', { ids: [enemy], ...cellCenter(45, 50) }),
+        cmd(0, 0, 'HeroAbility', { heroId: HERO.heroId, abilityId: 0, target: enemy }),
+      ),
+    );
+    expect(zoneEvents(ev)).toHaveLength(1);
+    expect(sim.ps.abCooldown[0]).toBeGreaterThan(0);
+  });
+
+  it('refused when the point lies on terrain the hero cannot walk to; a new order cancels the walk', () => {
+    const map = createOpenMap(64, 64);
+    const passable = new Uint8Array(map.passable);
+    for (let y = 0; y < 64; y++) passable[y * 64 + 40] = 0; // a wall from edge to edge
+    const sim = createSim(testInit(47, { ...map, passable }));
+    const hero = heroOf(sim, 0);
+    play(
+      sim,
+      1,
+      at(0, cmd(0, 0, 'HeroAbility', { heroId: HERO.heroId, abilityId: 0, ...cellCenter(50, 20) })),
+    );
+    expect(sim.getUnit(hero)).toMatchObject({ order: 0, moving: false });
+    // reachable: walking; then a Move replaces the cast
+    const f = sim.frame;
+    play(
+      sim,
+      1,
+      at(f, cmd(f, 0, 'HeroAbility', { heroId: HERO.heroId, abilityId: 0, ...cellCenter(35, 35) })),
+    );
+    expect(sim.getUnit(hero)!.order).toBe(ORDER_CAST);
+    const g = sim.frame;
+    const ev = play(sim, 600, at(g, cmd(g, 0, 'Move', { ids: [hero], ...cellCenter(10, 30) })));
+    expect(zoneEvents(ev)).toEqual([]);
+    expect(sim.ps.abCooldown[0]).toBe(0);
+  });
+
+  it('the middle of a building further than rangeU from its edge: the hero gives up instead of walking on the spot', () => {
+    // real footprints: the HQ is 21 x 21, so its centre lies more than 10 m from every cell next to it
+    const map = { ...createOpenMap(), spawns: [cellCenter(24, 24), cellCenter(103, 103)] };
+    const sim = createSim({ ...testInit(48, map), config: REAL_CONFIG });
+    const hero = heroOf(sim, 0);
+    const hq = sim.getUnit(hqOf(sim, 0))!;
+    const ev = play(
+      sim,
+      60,
+      at(0, cmd(0, 0, 'HeroAbility', { heroId: HERO.heroId, abilityId: 0, x: hq.x, y: hq.y })),
+    );
+    expect(zoneEvents(ev)).toEqual([]);
+    expect(sim.getUnit(hero)).toMatchObject({ order: 0, moving: false });
+    expect(sim.ps.abCooldown[0]).toBe(0);
   });
 });

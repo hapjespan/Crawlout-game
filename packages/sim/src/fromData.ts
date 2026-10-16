@@ -379,6 +379,11 @@ export function simConfigFromGameData(data: GameData): SimConfig {
       directRange: t.formation.directRangeU,
       gatherRing: t.formation.gatherRingU,
     },
+    placement: {
+      clearance: t.placement.clearanceU,
+      depotClearance: t.placement.depotClearanceU,
+    },
+    autoGatherRadius: t.autoGatherRadiusU,
   };
 }
 

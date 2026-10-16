@@ -8,6 +8,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./testing": "./src/testing.ts",
+    "./placement": "./src/systems/placement.ts",
     "./worker": "./host/worker-entry.ts"
   },
   "scripts": {

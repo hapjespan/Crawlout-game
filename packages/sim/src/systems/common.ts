@@ -6,6 +6,7 @@ import { BSTATE_DONE, C, NO_FIELD, NO_GOAL } from '../ecs/world.js';
 import type { EventBuffer } from '../events.js';
 import type { FlowFields } from '../flowfield.js';
 import type { TerrainDistances } from '../pathdist.js';
+import { NO_COMPONENT } from '../pathdist.js';
 import { idiv, imod } from '../math/int.js';
 import { atan2A } from '../math/trig.js';
 import type { Rng } from '../rng.js';
@@ -416,7 +417,97 @@ export function nodeAllowed(ctx: SimContext, node: number, p: number): boolean {
   return !blocked;
 }
 
-/** Dichtstbijzijnde scrap-node met voorraad waar speler p mag verzamelen (nodeAllowed), of -1. Tiebreak laagste index. */
+/** The walkable piece of terrain under (x, y) (TerrainDistances.component), NO_COMPONENT off the terrain. */
+export function componentAt(ctx: SimContext, x: number, y: number): number {
+  return inMap(ctx.map, x, y) ? ctx.terrainDist.component(cellAt(ctx.map, x, y)) : NO_COMPONENT;
+}
+
+/** Whether a building stands on the cell of scrap node `node` (then no gatherer reaches it). */
+export function nodeCovered(ctx: SimContext, node: number): boolean {
+  const w = ctx.world;
+  return ctx.terrain.occ[cellAt(ctx.map, w.x[node]!, w.y[node]!)] !== 0;
+}
+
+/**
+ * Whether a unit at (x, y) can walk to within reach of scrap node `node`: the node is not under a building and a
+ * walkable cell of its own 3 x 3 block (each well within interactRange of it) lies in the same piece of terrain as the
+ * unit. A unit that is itself off the terrain (never, but defensively) counts as reaching everything.
+ */
+export function nodeReachable(ctx: SimContext, x: number, y: number, node: number): boolean {
+  if (nodeCovered(ctx, node)) return false;
+  const a = componentAt(ctx, x, y);
+  if (a === NO_COMPONENT) return true;
+  const w = ctx.world;
+  const map = ctx.map;
+  const nx = w.x[node]! >> 8;
+  const ny = w.y[node]! >> 8;
+  for (let cy = ny - 1; cy <= ny + 1; cy++) {
+    if (cy < 0 || cy >= map.h) continue;
+    for (let cx = nx - 1; cx <= nx + 1; cx++) {
+      if (cx >= 0 && cx < map.w && ctx.terrainDist.component(cy * map.w + cx) === a) return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Whether a unit at (x, y) can walk to building b: a free walkable cell on the ring around its footprint lies in the
+ * unit's piece of terrain (a walkable cell next to the footprint is within interactRange of it).
+ */
+export function buildingReachable(ctx: SimContext, x: number, y: number, b: number): boolean {
+  const a = componentAt(ctx, x, y);
+  if (a === NO_COMPONENT) return true;
+  const w = ctx.world;
+  const map = ctx.map;
+  return (
+    scanRing(
+      map,
+      w.fx[b]!,
+      w.fy[b]!,
+      w.fw[b]!,
+      w.fh[b]!,
+      1,
+      (cx, cy) =>
+        ctx.terrain.walk[cy * map.w + cx] === 1 && ctx.terrainDist.component(cy * map.w + cx) === a,
+    ) >= 0
+  );
+}
+
+/**
+ * Drop-off point for a gatherer at (x, y) of player `owner`: the nearest completed own depot (hq or workshop, `mask`)
+ * it can walk to (buildingReachable), or -1. Tiebreak lowest index. Orders (walking there) and economy (delivering)
+ * use the same choice, so a gatherer delivers at the depot it walks to.
+ */
+export function nearestReachableBuilding(
+  ctx: SimContext,
+  owner: number,
+  x: number,
+  y: number,
+  providesMask: number,
+): number {
+  const w = ctx.world;
+  const idx = ctx.index;
+  idx.refresh(w);
+  let best = -1;
+  let bestD = 0;
+  for (let k = 0; k < idx.buildingCount; k++) {
+    const j = idx.buildings[k]!;
+    if (w.owner[j] !== owner || w.bstate[j] !== BSTATE_DONE) continue;
+    const bt = ctx.buildingType(w.typeId[j]!);
+    if (bt === undefined || (bt.provides & providesMask) === 0) continue;
+    const d = distToRect2(x, y, w.fx[j]!, w.fy[j]!, w.fw[j]!, w.fh[j]!);
+    if ((best < 0 || d < bestD) && buildingReachable(ctx, x, y, j)) {
+      best = j;
+      bestD = d;
+    }
+  }
+  return best;
+}
+
+/**
+ * Dichtstbijzijnde scrap-node met voorraad waar speler p mag verzamelen (nodeAllowed) en waar een unit op (x, y) kan
+ * komen (nodeReachable: niet onder een gebouw, in hetzelfde stuk terrein), of -1. Tiebreak laagste index.
+ */
 export function nearestNode(ctx: SimContext, p: number, x: number, y: number): number {
   const w = ctx.world;
   const idx = ctx.index;
@@ -429,7 +520,7 @@ export function nearestNode(ctx: SimContext, p: number, x: number, y: number): n
     const dx = w.x[j]! - x;
     const dy = w.y[j]! - y;
     const d = dx * dx + dy * dy;
-    if (best < 0 || d < bestD) {
+    if ((best < 0 || d < bestD) && nodeReachable(ctx, x, y, j)) {
       best = j;
       bestD = d;
     }

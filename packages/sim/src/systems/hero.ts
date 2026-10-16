@@ -7,7 +7,8 @@ import {
   MAX_ABILITIES,
   SPECIAL_COUNT,
 } from '../config.js';
-import { BSTATE_DONE, C } from '../ecs/world.js';
+import type { World } from '../ecs/world.js';
+import { BSTATE_DONE, C, NO_ENTITY, NO_FIELD, ORDER_CAST, PHASE_WORK } from '../ecs/world.js';
 import {
   HERO_ALIVE,
   HERO_DEAD,
@@ -25,7 +26,18 @@ import { PROVIDES_HQ } from '../fromData.js';
 import { isInt } from '../math/int.js';
 import type { Census } from './census.js';
 import type { SimContext } from './common.js';
-import { cellCenterOf, face, inMap, nthFreeCellAround } from './common.js';
+import { NO_COMPONENT } from '../pathdist.js';
+import {
+  cellAt,
+  cellCenterOf,
+  componentAt,
+  face,
+  inMap,
+  nthFreeCellAround,
+  steerChase,
+  steerToPoint,
+  stopMoving,
+} from './common.js';
 
 // De held (Spelfundament 5, contract 1 HeroStatus). Eén per speler: de eerste held van zijn factie (SimFaction.heroId).
 //  - Hij spawnt in de startopstelling naast het hoofdgebouw, als unit met C.hero en typeId heroTypeId(heroId). Lichaam,
@@ -231,27 +243,126 @@ export function applyHeroAbility(
   if (ab === undefined || ps.abCooldown[k]! > 0) return false;
   let x = w.x[i]!;
   let y = w.y[i]!;
+  let target = 0;
   if (ab.rangeU > 0) {
     if (pl.target !== undefined) {
       const t = w.resolve(pl.target);
       if (t < 0) return false;
       x = w.x[t]!;
       y = w.y[t]!;
+      target = pl.target;
     } else if (pl.x !== undefined && pl.y !== undefined) {
       if (!inMap(ctx.map, pl.x, pl.y)) return false;
       x = pl.x;
       y = pl.y;
     }
-    const dx = x - w.x[i]!;
-    const dy = y - w.y[i]!;
-    if (dx * dx + dy * dy > ab.rangeU * ab.rangeU) return false;
+    if (!inRange(w, i, x, y, ab.rangeU)) {
+      // Out of range (data 0.18.0, standard RTS): the hero walks into range and casts there (castOrder). A point he
+      // cannot walk to (another piece of terrain) is refused, so he never walks on the spot.
+      if (!pointReachable(ctx, w.x[i]!, w.y[i]!, x, y)) return false;
+      stopMoving(ctx, i);
+      w.clearOrders(i);
+      w.target[i] = NO_ENTITY;
+      w.pushOrder(i, ORDER_CAST + pl.abilityId, x, y, target);
+      return true;
+    }
   }
+  castAt(ctx, p, i, pl.abilityId, x, y);
+  return true;
+}
+
+const inRange = (w: World, i: number, x: number, y: number, r: number): boolean => {
+  const dx = x - w.x[i]!;
+  const dy = y - w.y[i]!;
+  return dx * dx + dy * dy <= r * r;
+};
+
+/** Whether a unit at (x0, y0) can walk to the cell of (x1, y1) or one next to it (same piece of terrain). */
+function pointReachable(ctx: SimContext, x0: number, y0: number, x1: number, y1: number): boolean {
+  const a = componentAt(ctx, x0, y0);
+  if (a === NO_COMPONENT) return true;
+  const map = ctx.map;
+  const cx = x1 >> 8;
+  const cy = y1 >> 8;
+  for (let yy = cy - 1; yy <= cy + 1; yy++) {
+    for (let xx = cx - 1; xx <= cx + 1; xx++) {
+      if (xx >= 0 && yy >= 0 && xx < map.w && yy < map.h)
+        if (ctx.terrainDist.component(yy * map.w + xx) === a) return true;
+    }
+  }
+  return false;
+}
+
+/** The ability zone starts: cooldown, zone and event abilityZone (besluit sprint 3: de renderer toont de zone). */
+function castAt(ctx: SimContext, p: number, i: number, a: number, x: number, y: number): void {
+  const ps = ctx.ps;
+  const ab = heroOf(ctx, p)!.abilities[a]!;
+  const k = p * MAX_ABILITIES + a;
   ps.zoneX[k] = x;
   ps.zoneY[k] = y;
   ps.zoneTicks[k] = ab.durationTicks;
   ps.abCooldown[k] = ab.cooldownTicks;
-  ctx.events.push(EVENT_TYPE.abilityZone, w.idOf(i), pl.abilityId, x, y); // besluit sprint 3 (architect): de renderer toont de zone
-  return true;
+  ctx.events.push(EVENT_TYPE.abilityZone, ctx.world.idOf(i), a, x, y);
+}
+
+/**
+ * Order ORDER_CAST + a (system 2): the hero walks toward the cast point, or after the target entity, and casts as soon
+ * as it is within rangeU. Dropped when the hero is no longer the living hero of his player, the ability is on cooldown
+ * again (cast meanwhile), or the target is gone.
+ */
+export function castOrder(ctx: SimContext, i: number, o: number): void {
+  const w = ctx.world;
+  const p = w.owner[i]!;
+  const a = w.ordType[o]! - ORDER_CAST;
+  const ab = heroOf(ctx, p)?.abilities[a];
+  if (
+    ab === undefined ||
+    heroIndex(ctx, p) !== i ||
+    ctx.ps.abCooldown[p * MAX_ABILITIES + a]! > 0
+  ) {
+    w.popOrder(i);
+    stopMoving(ctx, i);
+    return;
+  }
+  const tid = w.ordT[o]!;
+  if (tid !== 0) {
+    const t = w.resolve(tid);
+    if (t < 0) {
+      w.popOrder(i);
+      stopMoving(ctx, i);
+      return;
+    }
+    w.ordX[o] = w.x[t]!;
+    w.ordY[o] = w.y[t]!;
+  }
+  const x = w.ordX[o]!;
+  const y = w.ordY[o]!;
+  w.target[i] = NO_ENTITY;
+  if (inRange(w, i, x, y, ab.rangeU)) {
+    stopMoving(ctx, i);
+    face(w, i, x, y);
+    castAt(ctx, p, i, a, x, y);
+    w.popOrder(i);
+    return;
+  }
+  // Walked as far as he can and still out of range: give up rather than walk on the spot. That is: stopped, or the
+  // flow field has nothing better than his own cell (he stands at the edge of a building the point lies in, further
+  // than rangeU from it) or does not lead there at all.
+  const f = w.flowField[i]!;
+  let stuck = w.phase[i] === PHASE_WORK && w.mvOn[i] === 0;
+  if (!stuck && w.mvOn[i] === 1 && f !== NO_FIELD) {
+    const c = cellAt(ctx.map, w.x[i]!, w.y[i]!);
+    const nb = ctx.flow.nextCell(f, c);
+    stuck = nb === c || nb < 0;
+  }
+  if (stuck) {
+    w.popOrder(i);
+    stopMoving(ctx, i);
+    return;
+  }
+  if (tid !== 0) steerChase(ctx, i, x, y);
+  else if (w.phase[i] !== PHASE_WORK) steerToPoint(ctx, i, x, y, 0, 0);
+  w.phase[i] = PHASE_WORK;
 }
 
 /**

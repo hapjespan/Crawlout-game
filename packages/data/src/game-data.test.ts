@@ -223,6 +223,8 @@ describe('sim-tuning', () => {
         directRangeU: 5120,
         gatherRingU: 256,
       },
+      placement: { clearanceU: 256, depotClearanceU: 256 },
+      autoGatherRadiusU: 10240,
     });
   });
 
@@ -240,6 +242,24 @@ describe('sim-tuning', () => {
     expect(
       loadGameData(sim({ pathSectorCells: 8, pathEntranceMaxCells: 8 }) as never).sim,
     ).toMatchObject({ pathSectorCells: 8, pathEntranceMaxCells: 8 });
+  });
+
+  it('placement (data 0.18.0): clearanceM at least one cell, depotClearanceM at least clearanceM', () => {
+    const r = raw();
+    const placement = (patch: object): unknown => ({
+      ...r,
+      sim: {
+        ...(clone(r.sim) as object),
+        placement: { ...(clone((r.sim as { placement: object }).placement) as object), ...patch },
+      },
+    });
+    expect(() => loadGameData(placement({ clearanceM: 0.5 }) as never)).toThrow(/clearanceM/);
+    expect(() => loadGameData(placement({ clearanceM: 3, depotClearanceM: 2 }) as never)).toThrow(
+      /depotClearanceM/,
+    );
+    expect(
+      loadGameData(placement({ clearanceM: 2, depotClearanceM: 4 }) as never).sim.placement,
+    ).toEqual({ clearanceU: 512, depotClearanceU: 1024 });
   });
 
   it('weigert een onbekend veld in sim.json', () => {

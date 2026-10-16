@@ -25,6 +25,11 @@ export const ORDER_GATHER = 4;
 export const ORDER_BUILD = 5;
 // 6 was ORDER_CLAIM (sprint-2-interim); claimen is sinds sprint 3 een Build van het claimgebouw.
 export const ORDER_CRAFT = 7;
+/**
+ * HeroAbility cast out of range (data 0.18.0): the hero walks into range and then casts. One type per ability slot,
+ * ORDER_CAST + abilityId (MAX_ABILITIES slots, config.ts); ordX/ordY the point, ordT the target entity (0 = a point).
+ */
+export const ORDER_CAST = 8;
 
 /** Fasen binnen een order (veld `phase`). */
 export const PHASE_GO = 0; // onderweg naar het doel

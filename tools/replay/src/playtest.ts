@@ -1252,9 +1252,11 @@ async function run(width: number, height: number): Promise<Bot> {
       }
       await bot.click(spot);
       await wait(600);
-      await bot.advance(2);
-      await wait(900);
-      const cd = (await bot.status()).hero?.abilityCooldownTicks?.[0] ?? 0;
+      // sim 0.15.0: a spot beyond rangeU is no longer refused; the hero walks into range first and casts there
+      const cooldown = async (): Promise<number> =>
+        (await bot.status()).hero?.abilityCooldownTicks?.[0] ?? 0;
+      await bot.until('Lockdown geworpen', async () => (await cooldown()) > 0, 30, 2);
+      const cd = await cooldown();
       bot.expect(cd > 0, 'Lockdown staat in cooldown na gebruik', 'midden', `${cd}`);
     },
   );

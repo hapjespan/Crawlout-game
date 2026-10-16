@@ -12,8 +12,10 @@ import {
   type StallNotice,
 } from '@crawlout/protocol';
 import {
+  CLAIM_POINT_TYPE_ID,
   PROVIDES,
   ROLES,
+  SCRAP_NODE_TYPE_ID,
   buildingTypeId,
   heroIdOfTypeId,
   kindOfTypeId,
@@ -31,6 +33,15 @@ import {
   type TargetingKind,
 } from '@crawlout/ui';
 import type { SimWinner } from '@crawlout/sim';
+import {
+  AS_DEPOT,
+  PLACE_OK,
+  POINT_CLAIM,
+  POINT_NODE,
+  RECT_CLAIM,
+  RECT_DEPOT,
+  placementReason as simPlacementReason,
+} from '@crawlout/sim/placement';
 import { assetConfig } from './game/assets.js';
 import { propSource } from './render/props.js';
 import { terrainTextures } from './render/terrain.js';
@@ -290,7 +301,7 @@ async function main(): Promise<void> {
   let placing: BuildOption | null = null;
 
   /** Why the footprint cannot go here (Dutch), or null when it can; the sim validates again on Build. */
-  function placementReason(option: BuildOption, cx: number, cy: number): string | null {
+  function hudPlacementReason(option: BuildOption, cx: number, cy: number): string | null {
     const { w, h } = option.footprint;
     const buildings: CellRect[] = [];
     for (const e of entities.values()) {
@@ -315,6 +326,64 @@ async function main(): Promise<void> {
       },
       { x0: (cx >> 8) - (w >> 1), y0: (cy >> 8) - (h >> 1), w, h },
     );
+  }
+  /**
+   * The sim's own placement rule (data 0.18.0, @crawlout/sim/placement): free footprint, a free walkable margin, the
+   * aisle around a drop-off building, no scrap node or claim point; the sim validates again on Build. The reason code
+   * (PLACEMENT_REASONS) is there for the preview to show why a spot is refused.
+   */
+  const DEPOT_PROVIDES = [PROVIDES.indexOf('hq'), PROVIDES.indexOf('werkplaats')];
+  const isDepot = (b: BuildingData): boolean => b.provides.some((p) => DEPOT_PROVIDES.includes(p));
+  const CLAIM_PROVIDES = PROVIDES.indexOf('claim');
+  function placementReasonFor(option: BuildOption, cx: number, cy: number): number {
+    const { w, h } = option.footprint;
+    const rects: number[] = [];
+    const points: number[] = [];
+    for (const e of entities.values()) {
+      const b = buildingOf(e.typeId);
+      if (b) {
+        const { w: bw, h: bh } = b.footprint;
+        const flags =
+          (isDepot(b) ? RECT_DEPOT : 0) | (b.provides.includes(CLAIM_PROVIDES) ? RECT_CLAIM : 0);
+        rects.push((e.x >> 8) - (bw >> 1), (e.y >> 8) - (bh >> 1), bw, bh, flags);
+      } else if (e.typeId === SCRAP_NODE_TYPE_ID) points.push(e.x, e.y, POINT_NODE);
+      else if (e.typeId === CLAIM_POINT_TYPE_ID) points.push(e.x, e.y, POINT_CLAIM);
+    }
+    const own = buildingOf(option.typeId);
+    return simPlacementReason(
+      {
+        mapW: map.grid.w,
+        mapH: map.grid.h,
+        passable: map.grid.passable,
+        rects,
+        rectCount: rects.length / 5,
+        points,
+        pointCount: points.length / 3,
+        clearance: data.sim.placement.clearanceU,
+        depotClearance: data.sim.placement.depotClearanceU,
+      },
+      (cx >> 8) - (w >> 1),
+      (cy >> 8) - (h >> 1),
+      w,
+      h,
+      own !== undefined && isDepot(own) ? AS_DEPOT : 0,
+    );
+  }
+  /** Dutch text per sim reason code (index = code); PLACE_OK has none. */
+  const SIM_REASON_TEXT: readonly (string | null)[] = [
+    null,
+    'Overlapt een gebouw of onbegaanbaar terrein',
+    'Te weinig vrije, begaanbare ruimte rondom',
+    'Te dicht bij een ander gebouw',
+    'Te dicht bij een afleverpunt (houd een looppad vrij)',
+    'Staat op een scrapbron of claimpunt',
+  ];
+  /** Why the footprint cannot go here (Dutch), or null when it can: the clear HUD reasons first, then the sim rule. */
+  function placementReason(option: BuildOption, cx: number, cy: number): string | null {
+    const hud = hudPlacementReason(option, cx, cy);
+    if (hud) return hud;
+    const code = placementReasonFor(option, cx, cy);
+    return code === PLACE_OK ? null : (SIM_REASON_TEXT[code] ?? 'Hier kun je niet bouwen');
   }
 
   function placementAt(
