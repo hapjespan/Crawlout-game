@@ -5,6 +5,8 @@
 //     default and the far zoom, click a research card, see the queue run, click a locked card and read its reason;
 //   - a left click on empty ground clears the selection and closes the card panel; Escape clears it too; a click on a
 //     building after a Move target or while a target is pending still selects it;
+//   - the buildings bar lists only buildings with an action (no Basis, no Woning); a click on a bar button, a roster
+//     group or a unit card moves the camera, a world click does not; role buttons only after a finished workshop;
 //   - layout at 1600x900 and 1280x720: the card window sits directly above the commands, clear of the minimap and the
 //     bottom bar; the frame stats are top right next to "Opgeven".
 //
@@ -67,6 +69,8 @@ const project = (x: number, y: number, z: number): string => `(() => {
   const c = document.getElementById('view');
   return cw <= 0 ? null : { x: (cx / cw + 1) / 2 * c.clientWidth, y: (1 - cy / cw) / 2 * c.clientHeight };
 })()`;
+/** Camera target on the ground in meters (x, z). */
+const CAMERA = `(() => { const t = window.crawlout.renderer.cameraControls.target; return { x: t.x, z: t.z }; })()`;
 const rectOf = (sel: string): string =>
   `(() => { const e = document.querySelector(${JSON.stringify(sel)}); if (!e) return null; const r = e.getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height }; })()`;
 const textOf = (sel: string): string =>
@@ -195,7 +199,11 @@ async function runIn(browser: Browser, width: number, height: number): Promise<v
     'commands panel only hints when nothing is selected',
   );
   const bar0 = await ev<string>(textOf('.co-building-buttons'));
-  check(bar0.includes('Basis'), 'the buildings bar lists the Basis from the start', bar0);
+  check(
+    !bar0.includes('Basis') && !bar0.includes('Woning'),
+    'the buildings bar does not list buildings without an action at the start',
+    bar0,
+  );
 
   // Builder selected: Verplaats, Stop, Bouw (no Val aan).
   await click(await center('.co-roster-groups button:has-text("Bouwer")'));
@@ -207,6 +215,11 @@ async function runIn(browser: Browser, width: number, height: number): Promise<v
       builderActions.includes('move') &&
       !builderActions.includes('attackMove'),
     'builder gets Verplaats, Stop and Bouw but no Val aan',
+    builderActions.join(','),
+  );
+  check(
+    !builderActions.some((a) => a.startsWith('role')),
+    'no role buttons before a workshop stands',
     builderActions.join(','),
   );
   await shot('01-builder-selected');
@@ -301,15 +314,75 @@ async function runIn(browser: Browser, width: number, height: number): Promise<v
   // --- The buildings bar: all built buildings, with a badge for what can be started.
   const bar = await ev<string>(textOf('.co-building-buttons'));
   check(
-    /Basis/.test(bar) && /Werkplaats/.test(bar) && /Lab/.test(bar),
-    'the bar lists Basis, Werkplaats and Lab',
+    /Werkplaats/.test(bar) && /Lab/.test(bar) && !/Basis/.test(bar),
+    'the bar lists Werkplaats and Lab, not the Basis',
     bar,
   );
+
+  // --- With a finished workshop the role buttons are back for settlers.
+  await click(await center('.co-roster-groups button:has-text("Plunderaar")'));
+  const roles = await ev<string[]>(
+    `[...document.querySelectorAll('.co-buttons [data-action]')].map((b) => b.getAttribute('data-action'))`,
+  );
+  check(
+    roles.includes('roleBuilder') && roles.includes('roleMilitia'),
+    'role buttons appear once the workshop is finished',
+    roles.join(','),
+  );
+  await shot('03b-roles-after-workshop');
+  // The roster group click puts the camera on the centroid of the group; clicking it again leaves the camera alone.
+  const unitIds = await ev<number[]>(
+    `[...document.querySelectorAll('.co-selection [data-unit]')].map((b) => Number(b.getAttribute('data-unit')))`,
+  );
+  if (unitIds.length > 0) {
+    const centroid = await ev<{ x: number; z: number }>(`(() => {
+      const es = window.crawlout.entities(); const ids = ${JSON.stringify(unitIds)};
+      const ps = ids.map((i) => es.get(i)).filter(Boolean);
+      return { x: ps.reduce((a, e) => a + e.x, 0) / ps.length / 256, z: ps.reduce((a, e) => a + e.y, 0) / ps.length / 256 };
+    })()`);
+    await wait(500);
+    const cam = await ev<{ x: number; z: number }>(CAMERA);
+    check(
+      Math.hypot(cam.x - centroid.x, cam.z - centroid.z) < 10,
+      'a roster group click puts the camera on the group',
+      JSON.stringify({ cam, centroid }),
+    );
+    // A unit card in the selection panel selects that unit and puts the camera on it.
+    await ev(`window.crawlout.renderer.focus(${hqRow.x}, ${hqRow.y})`);
+    await wait(400);
+    const cardId = unitIds[unitIds.length - 1]!;
+    await click(await center(`.co-selection [data-unit="${cardId}"]`));
+    await wait(400);
+    const unitAt = await ev<{ x: number; z: number }>(
+      `(() => { const e = window.crawlout.entities().get(${cardId}); return { x: e.x / 256, z: e.y / 256 }; })()`,
+    );
+    const cam2 = await ev<{ x: number; z: number }>(CAMERA);
+    check(
+      Math.hypot(cam2.x - unitAt.x, cam2.z - unitAt.z) < 10 &&
+        !(await ev<string>(textOf('.co-selection'))).includes('Selectie ('),
+      'a unit card in the selection panel selects that unit and moves the camera to it',
+      JSON.stringify({ cam2, unitAt }),
+    );
+  }
+  await page.keyboard.press('Escape');
+  await wait(300);
   const badge = await ev<string>(textOf('[data-building="werkplaats"] .co-building-badge'));
   check(Number(badge) > 0, 'the workshop shows a badge for the research it can start', badge);
 
-  // --- Click the workshop in the bar: it is selected and its cards open above the commands.
+  // --- Click the workshop in the bar: it is selected, its cards open above the commands, the camera goes to it.
+  await ev(`window.crawlout.renderer.focus(${hqRow.x}, ${hqRow.y})`);
+  await wait(500);
+  const camHome = await ev<{ x: number; z: number }>(CAMERA);
   await click(await center('[data-building="werkplaats"]'));
+  await wait(500);
+  const camShop = await ev<{ x: number; z: number }>(CAMERA);
+  const shopSite = sites.find((x) => x.name === 'Werkplaats')!;
+  check(
+    Math.hypot(camShop.x - shopSite.x / 256, camShop.z - shopSite.y / 256) < 3 &&
+      Math.hypot(camShop.x - camHome.x, camShop.z - camHome.z) > 3,
+    'a single bar click moves the camera to the workshop',
+    JSON.stringify({ camHome, camShop }),
+  );
   check(
     (await selection()).includes('Werkplaats'),
     'bar click selects the workshop',
@@ -487,7 +560,14 @@ async function runIn(browser: Browser, width: number, height: number): Promise<v
   check((await selection()).includes('Selectie ('), 'units are selected from the roster');
   const labPt = await ev<Pt | null>(project(lab.x / 256, 2.5, lab.y / 256 + 6));
   if (labPt && (await ev<boolean>(onCanvas(labPt.x, labPt.y)))) {
+    const camBefore = await ev<{ x: number; z: number }>(CAMERA);
     await click(labPt);
+    const camAfter = await ev<{ x: number; z: number }>(CAMERA);
+    check(
+      Math.hypot(camAfter.x - camBefore.x, camAfter.z - camBefore.z) < 0.5,
+      'a world click on a building does not move the camera',
+      JSON.stringify({ camBefore, camAfter }),
+    );
     check(
       (await selection()).includes('Lab'),
       'clicking a building while units are selected selects the building',
@@ -531,6 +611,77 @@ async function runIn(browser: Browser, width: number, height: number): Promise<v
   }
   await click(await groundSpot());
   check((await selection()).includes('Niets geselecteerd'), 'then empty ground clears again');
+
+  // --- An enemy building or unit can be clicked to inspect it: type, owner and hp in the selection panel, no commands,
+  // no camera move, and a right click afterwards sends nothing. A click on an own unit replaces it again.
+  await page.keyboard.press('Escape');
+  const foeHq = await ev<{ id: number; x: number; y: number } | null>(
+    `(() => { const c = window.crawlout; const e = [...c.entities().values()].find((e) => e.typeId === ${hqTypeId} && e.owner !== c.session.playerId && e.owner !== 255); return e ? { id: e.id, x: e.x, y: e.y } : null; })()`,
+  );
+  check(foeHq !== null, 'an enemy Basis exists to inspect');
+  if (foeHq) {
+    await ev(`window.crawlout.renderer.focus(${foeHq.x}, ${foeHq.y})`);
+    await wait(1500);
+    await ev(
+      `(() => { window.__cmds = 0; const s = window.crawlout.session; const o = s.sendCommand.bind(s); s.sendCommand = (...a) => { window.__cmds++; return o(...a); }; })()`,
+    );
+    const roof = await ev<Pt | null>(project(foeHq.x / 256, HQ_TOP * 0.9, foeHq.y / 256));
+    const clickable = roof !== null && (await ev<boolean>(onCanvas(roof.x, roof.y)));
+    check(clickable, 'the enemy Basis roof is on the canvas');
+    if (roof && clickable) {
+      const camBefore = await ev<{ x: number; z: number }>(CAMERA);
+      await click(roof);
+      const panel = await selection();
+      check(
+        panel.includes('Vijand') && panel.includes('Basis') && panel.includes('Gebouw'),
+        'clicking an enemy building shows what it is and that it is an enemy',
+        panel.replace(/\s+/g, ' ').slice(0, 80),
+      );
+      const camAfter = await ev<{ x: number; z: number }>(CAMERA);
+      check(
+        Math.hypot(camAfter.x - camBefore.x, camAfter.z - camBefore.z) < 0.5,
+        'an enemy click does not move the camera',
+      );
+      const foeActions = await ev<string[]>(
+        `[...document.querySelectorAll('.co-buttons [data-action]')].map((b) => b.getAttribute('data-action'))`,
+      );
+      check(
+        foeActions.length === 0,
+        'an enemy selection has no command buttons',
+        foeActions.join(','),
+      );
+      await shot('08-enemy-inspect');
+      for (const key of ['m', 's', 'a', 'g', 'b']) await page.keyboard.press(key);
+      const ground = await groundSpot();
+      await click(ground, { button: 'right' });
+      await wait(400);
+      check(
+        (await ev<number>(`window.__cmds`)) === 0,
+        'hotkeys and a right click with an enemy selected send no command',
+        String(await ev<number>(`window.__cmds`)),
+      );
+      // A left click on an own unit replaces the enemy selection and gives commands again.
+      await ev(`window.crawlout.renderer.focus(${hqRow.x}, ${hqRow.y})`);
+      await wait(800);
+      await click(await center('.co-roster-groups button:has-text("Militie")'));
+      const after = await selection();
+      check(
+        !after.includes('Vijand') && after.includes('Selectie'),
+        'selecting own units replaces the inspected enemy',
+        after.replace(/\s+/g, ' ').slice(0, 60),
+      );
+      check(
+        (
+          await ev<string[]>(
+            `[...document.querySelectorAll('.co-buttons [data-action]')].map((b) => b.getAttribute('data-action'))`,
+          )
+        ).includes('move'),
+        '... and the commands are back',
+      );
+    }
+    // (Enemy units stand behind the pick volume of the enemy buildings at the default camera, so the browser run clicks
+    // the building; the unit case is covered by the unit tests of the selection panel and game/inspect.ts.)
+  }
 
   // --- Ctrl+click (macOS right click) on the HUD must not open the browser menu or start anything.
   await click(await center('[data-building="werkplaats"]'), { modifiers: ['Control'] });

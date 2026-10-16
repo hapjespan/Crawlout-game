@@ -60,7 +60,15 @@ import { loadClientMapWater } from './render/water.js';
 import { loadClientGameData, loadClientMap } from './game/content.js';
 import { startSession } from './game/session.js';
 import { createStatusOverlay } from './net/statusOverlay.js';
-import { buildingButtons, buildingCards, buildingName, type CardContext } from './game/cards.js';
+import {
+  buildingButtons,
+  buildingCards,
+  buildingName,
+  hasFinishedWorkshop,
+  type CardContext,
+} from './game/cards.js';
+import { perkOptions } from './game/perks.js';
+import { inspect } from './game/inspect.js';
 import { leftClickIs, nextSelection, type ClickMode } from './game/clickRules.js';
 import {
   ABILITY_HINT_DELAY_MS,
@@ -236,6 +244,11 @@ async function main(): Promise<void> {
 
   const mine = (ids: Iterable<number>): number[] =>
     [...ids].filter((id) => entities.get(id)?.owner === session.playerId);
+  /** An enemy unit or building (not own, not a neutral node or claim point): clicking one inspects it, nothing more. */
+  const isEnemyId = (id: number): boolean => {
+    const e = entities.get(id);
+    return e !== undefined && e.owner !== session.playerId && e.owner !== OWNER_NEUTRAL;
+  };
   /** Own entities of the latest snapshot, shared by the card and building-button deps (read at 20 Hz). */
   const own = (): EntityRow[] =>
     (ownCache ??= [...entities.values()].filter((e) => e.owner === session.playerId));
@@ -540,8 +553,27 @@ async function main(): Promise<void> {
       return session.sendCommand(type, payload);
     },
     getStatus: () => status,
-    getSelection: () =>
-      mine(selection).map((id): SelectedEntity => {
+    getSelection: () => {
+      const ownIds = mine(selection);
+      if (ownIds.length === 0) {
+        // No own unit selected: a clicked enemy is shown for inspection (type, owner, hp, weapon and armour), no commands.
+        const foe = [...selection].map((id) => entities.get(id)).find((e) => e && isEnemyId(e.id));
+        if (!foe) return [];
+        const info = inspect(data, foe.typeId);
+        return [
+          {
+            id: foe.id,
+            typeId: foe.typeId,
+            loadoutName: info.name,
+            hpPct: foe.hpPct,
+            role: null,
+            enemy: true,
+            ownerLabel: info.ownerLabel,
+            ...(info.detail ? { detail: info.detail } : {}),
+          },
+        ];
+      }
+      return ownIds.map((id): SelectedEntity => {
         const e = entities.get(id)!;
         const l = loadoutOf(e.typeId);
         const b = buildingOf(e.typeId);
@@ -561,10 +593,14 @@ async function main(): Promise<void> {
           loadoutName: name,
           hpPct: e.hpPct,
           role,
+          // For the camera when the player clicks a unit card in the selection panel (HUD selections only).
+          x: e.x,
+          y: e.y,
           // A building site has nothing to offer yet: say so instead of showing an empty panel.
           ...(b && e.anim === ANIM.build ? { note: 'In aanbouw' } : {}),
         };
-      }),
+      });
+    },
     getNetwork: () => network,
     playerName: (id) => session.playerName(id),
     beginTargeting: (kind) => {
@@ -621,6 +657,9 @@ async function main(): Promise<void> {
     },
     // Hero panel from PlayerStatus.hero (HeroStatus) plus names, abilities and perks from packages/data.
     heroName: (heroId) => data.heroes[heroId]?.naam,
+    getPerkOptions: () => perkOptions(data, status?.hero ?? null),
+    // Settlers switch role in a workshop (the sim walks them there): without a finished one the role buttons stay hidden.
+    canSwitchRole: () => hasFinishedWorkshop(data, own()),
     getHeroAbilities: () =>
       (myHero()?.abilities ?? []).map((a, i) => {
         const left = status?.hero?.abilityCooldownTicks?.[i] ?? 0;
@@ -792,7 +831,7 @@ async function main(): Promise<void> {
       const hit = renderer.pickAt(drag.x, drag.y).entityId;
       ids = hit === null ? [] : [hit];
     }
-    selection = nextSelection(selection, ids, e.shiftKey);
+    selection = nextSelection(selection, ids, e.shiftKey, isEnemyId);
     endDrag();
     notify();
   });

@@ -294,20 +294,36 @@ describe('gebouwenpaneel', () => {
     expect(t.model.scrap).toBe(200);
   });
 
-  it('klikken met meerdere gebouwen van een type loopt ze om; dubbelklik zet de camera erop', () => {
+  it('klikken met meerdere gebouwen van een type loopt ze om en zet de camera op elk gebouw; dubbelklik loopt niet verder', () => {
     const t = setup();
     mounted = t.handle;
     const btn = (): HTMLElement => q(t.el, '[data-building="woning"]');
     click(btn());
     expect(t.model.selection).toEqual([13]);
+    expect(t.focus).toEqual([[300, 0]]); // a single click already moves the camera
     click(btn());
     expect(t.model.selection).toEqual([14]);
+    expect(t.focus.at(-1)).toEqual([400, 0]);
     click(btn());
     click(btn());
     expect(t.model.selection).toEqual([13]); // rond
+    const before = t.focus.length;
     act(() => void btn().dispatchEvent(new MouseEvent('dblclick', { bubbles: true })));
-    expect(t.focus).toEqual([[300, 0]]);
+    expect(t.focus.length).toBe(before + 1);
+    expect(t.focus.at(-1)).toEqual([300, 0]);
     expect(t.model.selection).toEqual([13]); // dubbelklik loopt niet verder om
+  });
+
+  it('shift-klik op een gebouwknop voegt toe en laat de camera staan', () => {
+    const t = setup();
+    mounted = t.handle;
+    act(
+      () =>
+        void q(t.el, '[data-building="werkplaats"]').dispatchEvent(
+          new MouseEvent('click', { bubbles: true, shiftKey: true }),
+        ),
+    );
+    expect(t.focus).toEqual([]);
   });
 
   it('een geselecteerd gebouwtype is gemarkeerd', () => {

@@ -17,6 +17,7 @@ const row = (id: number, typeId: number, over: Partial<EntityRow> = {}): EntityR
   hpPct: 100,
   anim: ANIM.idle,
   flags: 0,
+  animT: 0,
   ...over,
 });
 
@@ -50,10 +51,26 @@ describe('buildRoster', () => {
       [2, 'idle'],
       [3, 'gathering'],
     ]);
+    // the gather job shows as a loading bar: animT 0..65535 becomes 0..100
+    expect(scavs.units.find((u) => u.id === 3)?.progressPct).toBe(0);
+    expect(scavs.units.find((u) => u.id === 2)?.progressPct).toBeUndefined();
     expect(roster.filter((g) => g.key !== 'hero').map((g) => g.key)).toEqual(
       data.loadouts
         .filter((l) => l.factionId === faction && l.prereqTech.length === 0 && l.producedAt < 0)
         .map((l) => l.key),
     );
+  });
+});
+
+describe('gather progress', () => {
+  const scav = loadout('scavenger');
+  it('turns animT into a percentage for gathering units only', () => {
+    const roster = buildRoster(data, scav.factionId, 0, [
+      row(1, unitTypeId(scav.id), { anim: ANIM.gather, animT: 32768 }),
+      row(2, unitTypeId(scav.id), { anim: ANIM.gather, animT: 65535 }),
+      row(3, unitTypeId(scav.id), { anim: ANIM.walk, animT: 20000 }),
+    ]);
+    const units = roster.find((g) => g.key === 'scavenger')!.units;
+    expect(units.map((u) => u.progressPct)).toEqual([50, 100, undefined]);
   });
 });

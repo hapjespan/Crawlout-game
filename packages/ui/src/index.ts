@@ -37,9 +37,10 @@ export type {
   TargetNode,
   TargetResult,
   UnitActivity,
+  UnitState,
 } from './types.js';
 export { CARD_ICON_IDS } from './types.js';
-export { ACTIONS, HudController } from './controller.js';
+export { ACTIONS, HudController, unitStateOf } from './controller.js';
 
 const STYLE_ID = 'co-hud-style';
 

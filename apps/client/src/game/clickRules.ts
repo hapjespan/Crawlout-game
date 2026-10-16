@@ -28,11 +28,18 @@ export function leftClickIs(
   return 'complete';
 }
 
-/** The selection after a click or box: replaced by the picked ids (none on empty ground), or added to with shift. */
+/**
+ * The selection after a click or box: replaced by the picked ids (none on empty ground), or added to with shift.
+ * An enemy (`isEnemy`) is only inspected: a plain click on one selects just it, shift never adds it to a group, and a
+ * shift click on an own unit while an enemy is inspected drops the enemy instead of mixing the two.
+ */
 export function nextSelection(
   current: ReadonlySet<number>,
   picked: readonly number[],
   shift: boolean,
+  isEnemy: (id: number) => boolean = () => false,
 ): Set<number> {
-  return shift ? new Set([...current, ...picked]) : new Set(picked);
+  if (!shift) return new Set(picked);
+  if (picked.some(isEnemy)) return new Set(current);
+  return new Set([...[...current].filter((id) => !isEnemy(id)), ...picked]);
 }
