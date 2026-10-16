@@ -31,6 +31,9 @@ export const COMPACT_FOOTPRINTS: Readonly<Record<string, readonly [number, numbe
 export const REAL_CONFIG = simConfigFromGameData(DATA);
 export const CONFIG: typeof REAL_CONFIG = {
   ...REAL_CONFIG,
+  // compact footprints are not the real scale: no territory rule here (data 0.19.0; placement.test.ts tests it on
+  // REAL_CONFIG)
+  placement: { ...REAL_CONFIG.placement, buildRange: 0 },
   buildingTypes: REAL_CONFIG.buildingTypes.map((t) => {
     const key = DATA.buildings.find((b) => b.id === t.buildingId)!.key;
     const fp = COMPACT_FOOTPRINTS[key];

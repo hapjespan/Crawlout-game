@@ -220,6 +220,34 @@ export interface PlayerStatus {
    * scrapCost + scrapCostStep maal getraind). Verplicht sinds protocol 0.9.0 (voorstel, ter bevestiging door de architect: de HUD leest hem).
    */
   trained: [number, number, number, number, number, number, number];
+  /**
+   * Alle claimpunten met hun claimstand (protocol 0.10.0, data 0.19.0; voorstel, ter bevestiging door de architect),
+   * zodat de HUD een ring met voortgang rond het claimpunt kan tonen: een paal in aanbouw, de held die het punt claimt
+   * door erin te staan, of de overname van een punt zonder paal. Oplopend op pointId. Optioneel tot de HUD hem leest;
+   * de sim levert hem altijd.
+   */
+  claimPoints?: ClaimPointStatus[];
+}
+
+/** Wat een claimpunt nu verandert (ClaimPointStatus.activity). */
+export type ClaimActivity = 'none' | 'post' | 'hero' | 'contest';
+
+/**
+ * Claimstand van één claimpunt (protocol 0.10.0, voorstel). owner: playerId of OWNER_NEUTRAL. beacon: het punt is van
+ * owner zonder claimgebouw (zijn held claimde het, of het ging over na een aanval) en dus over te nemen: staan er units
+ * van een ander in de cirkel en geen van owner, dan gaat het na sim.json contestFlipS over. activity en by: een paal van
+ * by in aanbouw (post), de held van by die het vrije punt claimt (hero, heroClaimS), of units van by die een beacon
+ * overnemen (contest); by is OWNER_NEUTRAL bij none. progressPermille: 0..1000 van die activiteit. frozen: units van
+ * meer dan één speler in de cirkel (een heldclaim of overname staat dan stil).
+ */
+export interface ClaimPointStatus {
+  pointId: number;
+  owner: number;
+  beacon: boolean;
+  activity: ClaimActivity;
+  by: number;
+  progressPermille: number;
+  frozen: boolean;
 }
 
 /**

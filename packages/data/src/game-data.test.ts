@@ -223,9 +223,16 @@ describe('sim-tuning', () => {
         directRangeU: 5120,
         gatherRingU: 256,
       },
-      placement: { clearanceU: 256, depotClearanceU: 256 },
+      placement: {
+        clearanceU: 256,
+        depotClearanceU: 256,
+        buildRangeU: 2560,
+        claimBuildRangeU: 1280,
+      },
       autoGatherRadiusU: 10240,
       exclusiveRadiusU: 3072,
+      heroClaimTicks: 3600,
+      contestFlipTicks: 240,
     });
   });
 
@@ -260,7 +267,7 @@ describe('sim-tuning', () => {
     );
     expect(
       loadGameData(placement({ clearanceM: 2, depotClearanceM: 4 }) as never).sim.placement,
-    ).toEqual({ clearanceU: 512, depotClearanceU: 1024 });
+    ).toMatchObject({ clearanceU: 512, depotClearanceU: 1024 });
   });
 
   it('weigert een onbekend veld in sim.json', () => {

@@ -1,8 +1,9 @@
 import { DELAY_FRAMES_DEFAULT, MAX_ENTITIES_PER_COMMAND } from '@crawlout/protocol';
 import type { CommandEnvelope, FrameBundle, Replay } from '@crawlout/protocol';
-import { ROLES, buildingTypeId } from '@crawlout/data';
+import { PROVIDES, ROLES, buildingTypeId } from '@crawlout/data';
 import { ORDER_CRAFT, ORDER_NONE } from '@crawlout/sim';
 import type { Sim, UnitView } from '@crawlout/sim';
+import { PLACE_OK, placementReasonAt } from '@crawlout/sim/placement';
 import { gameData } from './env.js';
 import { createReplaySim } from './run.js';
 
@@ -206,6 +207,8 @@ export class SitePlanner {
         const d = (x - a.x) ** 2 + (y - a.y) ** 2;
         if (wd === bestW && d >= bestD) continue;
         if (!this.free(blocked, fx - 1, fy - 1, fw + 2, fh + 2)) continue;
+        // the sim's own rule for player p, territory included (data 0.19.0): what the preview of a player shows
+        if (placementReasonAt(sim as never, bt, fx, fy, 0, p) !== PLACE_OK) continue;
         best = { x, y };
         bestW = wd;
         bestD = d;
@@ -395,9 +398,20 @@ export function settlementBot(p: number, plan: BotPlan, every = 10): Controller 
       else if (next < plan.builds.length) {
         const b = plan.builds[next]!;
         const def = data.buildings.find((x) => x.key === b.key)!;
+        const claimPost = def.provides.includes(PROVIDES.indexOf('claim')) && b.at !== 'hq';
         if (def.prereqTech.every((t) => techs.includes(t)) && st.scrap >= def.scrapCost) {
-          const at = new SitePlanner(sim).find(p, b.key, b.at, b.homewardM);
-          if (at !== null) send('Build', builders, { typeId: buildingType(b.key), ...at });
+          if (claimPost) {
+            // a claim post at a claim point goes out as Claim, as the client sends it from the build menu (data
+            // 0.19.0): the sim puts it next to the point, outside the territory rule
+            const pt =
+              b.at === 'centre'
+                ? centrePoint(sim)
+                : settlementPoint(sim, p, b.at === 'settlement2' ? 1 : 0);
+            send('Claim', builders, { pointId: pt.id });
+          } else {
+            const at = new SitePlanner(sim).find(p, b.key, b.at, b.homewardM);
+            if (at !== null) send('Build', builders, { typeId: buildingType(b.key), ...at });
+          }
         }
       }
     }

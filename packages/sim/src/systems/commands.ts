@@ -289,7 +289,7 @@ function applyBuild(ctx: SimContext, p: number, pl: CommandPayload<'Build'>, cla
   if (site < 0) {
     if (!canPlaceType(ctx, p, bt.typeId) || ctx.ps.scrap[p]! < bt.scrapCost) return false;
     // the placement rule (systems/placement.ts): free margin, depot aisle, no node or claim point
-    if (placementReasonAt(ctx, bt, fx, fy, claim) !== PLACE_OK) return false;
+    if (placementReasonAt(ctx, bt, fx, fy, claim, p) !== PLACE_OK) return false;
     site = createBuilding(ctx, bt, p, fx, fy, false);
     if (site < 0) return false;
     ctx.ps.scrap[p] = ctx.ps.scrap[p]! - bt.scrapCost;

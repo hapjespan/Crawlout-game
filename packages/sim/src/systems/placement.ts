@@ -1,4 +1,4 @@
-import { C } from '../ecs/world.js';
+import { BSTATE_DONE, C } from '../ecs/world.js';
 import { PROVIDES_CLAIM, PROVIDES_HQ, PROVIDES_WORKSHOP } from '../fromData.js';
 import { idiv } from '../math/int.js';
 import type { SimBuildingType } from '../config.js';
@@ -37,6 +37,8 @@ export const PLACE_CROWDED = 3;
 export const PLACE_DEPOT = 4;
 /** A scrap node or claim point lies under the footprint or within the margin. */
 export const PLACE_FEATURE = 5;
+/** No cell of the footprint lies in the player's territory (data 0.19.0, territoryMask). */
+export const PLACE_TERRITORY = 6;
 /** Name of each reason code, by code: for the client and its preview text. */
 export const PLACEMENT_REASONS = [
   'ok',
@@ -45,6 +47,7 @@ export const PLACEMENT_REASONS = [
   'crowded',
   'depot',
   'feature',
+  'territory',
 ] as const;
 export type PlacementReason = (typeof PLACEMENT_REASONS)[number];
 
@@ -88,12 +91,18 @@ export interface PlacementInput {
   /** sim.json placement, in sim units (SimPlacementTuning; GameData.sim.placement clearanceU and depotClearanceU). */
   readonly clearance: number;
   readonly depotClearance: number;
+  /**
+   * The placing player's territory (territoryMask, 1 per cell inside), or null/absent for no territory rule (data
+   * 0.19.0; sim.json placement buildRangeM 0, or a check that is not about one player). A claim building placed by
+   * Claim (AS_CLAIM) does not need it: a claim post is how a player reaches a point outside his territory.
+   */
+  readonly territory?: ArrayLike<number> | null;
 }
 
 /**
  * Reason code (PLACE_*) for a footprint of fw x fh cells with origin (fx, fy); `as` says what the new building is
- * (AS_DEPOT, AS_CLAIM, or 0). PLACE_OK when it may be placed. Reasons in order of severity: blocked, terrain, crowded,
- * depot, feature.
+ * (AS_DEPOT, AS_CLAIM, or 0). PLACE_OK when it may be placed. Reasons in order of severity: blocked, territory,
+ * terrain, crowded, depot, feature.
  */
 export function placementReason(
   inp: PlacementInput,
@@ -113,6 +122,9 @@ export function placementReason(
   const c = (as & AS_NO_MARGIN) !== 0 ? 0 : marginCells(inp.clearance);
   const near = neighbourReason(inp, fx, fy, fw, fh, as);
   if (near === PLACE_BLOCKED) return PLACE_BLOCKED;
+  const t = inp.territory;
+  if (t != null && (as & AS_CLAIM) === 0 && !touchesTerritory(t, W, fx, fy, fw, fh))
+    return PLACE_TERRITORY;
   if (c === 0) return near;
   const x0 = fx - c;
   const y0 = fy - c;
@@ -189,8 +201,131 @@ export function neighbourReason(
 export const placeAs = (bt: SimBuildingType): number =>
   (bt.provides & (PROVIDES_HQ | PROVIDES_WORKSHOP)) !== 0 ? AS_DEPOT : 0;
 
-/** The placement input from the sim's world: every building (sites too), every scrap node and every claim point. */
-export function placementInput(ctx: SimContext): PlacementInput {
+/** Whether any cell of the footprint fw x fh at (fx, fy) is inside the territory mask (map width W). */
+export function touchesTerritory(
+  t: ArrayLike<number>,
+  W: number,
+  fx: number,
+  fy: number,
+  fw: number,
+  fh: number,
+): boolean {
+  for (let y = fy; y < fy + fh; y++) {
+    for (let x = fx; x < fx + fw; x++) if (t[y * W + x] === 1) return true;
+  }
+  return false;
+}
+
+/**
+ * Territory (data 0.19.0; Martien: "je kan maar in een straal van 10 aansluitende tegels bouwen in je gebied, tenzij
+ * je tegen een blokkade in het terrein aan loopt"): 1 for every cell within `range` steps of a source footprint, the
+ * steps going over walkable terrain only (8 neighbours, a diagonal step only past two walkable cells, so a cliff, rock
+ * or water stops it and a thin diagonal wall is not crossed). Sources are five ints each: fx, fy, fw, fh and the range
+ * in cells. A footprint cell is always inside. Pure: the sim and the client build the same mask.
+ */
+export function territoryMask(
+  W: number,
+  H: number,
+  passable: ArrayLike<number>,
+  sources: ArrayLike<number>,
+  count: number,
+): Uint8Array {
+  const rem = new Int8Array(W * H).fill(-1);
+  const buckets: number[][] = [];
+  let maxR = 0;
+  for (let k = 0; k < count; k++) {
+    const r = sources[5 * k + 4]!;
+    if (r > maxR) maxR = r;
+    for (let b = buckets.length; b <= r; b++) buckets.push([]);
+    const x0 = sources[5 * k]!;
+    const y0 = sources[5 * k + 1]!;
+    const x1 = x0 + sources[5 * k + 2]!;
+    const y1 = y0 + sources[5 * k + 3]!;
+    for (let y = y0 < 0 ? 0 : y0; y < y1 && y < H; y++) {
+      for (let x = x0 < 0 ? 0 : x0; x < x1 && x < W; x++) {
+        const c = y * W + x;
+        if (rem[c]! < r) {
+          rem[c] = r;
+          buckets[r]!.push(c);
+        }
+      }
+    }
+  }
+  const walk = (x: number, y: number): boolean =>
+    x >= 0 && y >= 0 && x < W && y < H && passable[y * W + x] === 1;
+  for (let r = maxR; r > 0; r--) {
+    const list = buckets[r]!;
+    for (let k = 0; k < list.length; k++) {
+      const c = list[k]!;
+      if (rem[c] !== r) continue;
+      const cy = idiv(c, W);
+      const cx = c - cy * W;
+      for (let dy = -1; dy <= 1; dy++) {
+        for (let dx = -1; dx <= 1; dx++) {
+          if (dx === 0 && dy === 0) continue;
+          const nx = cx + dx;
+          const ny = cy + dy;
+          if (!walk(nx, ny)) continue;
+          if (dx !== 0 && dy !== 0 && (!walk(cx + dx, cy) || !walk(cx, cy + dy))) continue;
+          const n = ny * W + nx;
+          if (rem[n]! >= r - 1) continue;
+          rem[n] = r - 1;
+          buckets[r - 1]!.push(n);
+        }
+      }
+    }
+  }
+  const out = new Uint8Array(W * H);
+  for (let c = 0; c < W * H; c++) out[c] = rem[c]! >= 0 ? 1 : 0;
+  return out;
+}
+
+/** Derived per world: the last territory mask per player and the world version it was built for (speed only). */
+const territoryCache = new WeakMap<object, { version: number[]; mask: (Uint8Array | null)[] }>();
+
+/**
+ * Player p's territory in the sim's world now (territoryMask): every own building is a source with
+ * placement.buildRange, a finished own claim post (provides claim, not hq) one with claimBuildRange; a building site
+ * counts too (what is placed is part of the base), a claim post only once it stands. null when buildRange is 0 (no
+ * territory rule). Cached per world version (alloc and free of entities), so the AI's site search and a Build share it.
+ */
+export function territoryOf(ctx: SimContext, p: number): Uint8Array | null {
+  const pl = ctx.config.placement;
+  if (pl.buildRange <= 0) return null;
+  const w = ctx.world;
+  let c = territoryCache.get(w);
+  if (c === undefined) {
+    c = { version: [], mask: [] };
+    territoryCache.set(w, c);
+  }
+  const idx = ctx.index;
+  idx.refresh(w);
+  const src: number[] = [];
+  const range = marginCells(pl.buildRange);
+  const claimRange = marginCells(pl.claimBuildRange);
+  for (let k = 0; k < idx.buildingCount; k++) {
+    const j = idx.buildings[k]!;
+    if (w.owner[j] !== p) continue;
+    const bt = ctx.buildingType(w.typeId[j]!);
+    const post =
+      bt !== undefined && (bt.provides & PROVIDES_CLAIM) !== 0 && (bt.provides & PROVIDES_HQ) === 0;
+    if (post && w.bstate[j] !== BSTATE_DONE) continue;
+    src.push(w.fx[j]!, w.fy[j]!, w.fw[j]!, w.fh[j]!, post ? claimRange : range);
+  }
+  // the world version (alloc, free) plus the number of sources (a claim post that is finished)
+  const key = w.structVersion * 65536 + src.length;
+  if (c.version[p] === key && c.mask[p] !== undefined) return c.mask[p]!;
+  const mask = territoryMask(ctx.map.w, ctx.map.h, ctx.map.passable, src, idiv(src.length, 5));
+  c.version[p] = key;
+  c.mask[p] = mask;
+  return mask;
+}
+
+/**
+ * The placement input from the sim's world: every building (sites too), every scrap node and every claim point; with
+ * `p`, player p's territory (territoryOf) for a building that player places.
+ */
+export function placementInput(ctx: SimContext, p = -1): PlacementInput {
   const w = ctx.world;
   const idx = ctx.index;
   idx.refresh(w);
@@ -223,12 +358,14 @@ export function placementInput(ctx: SimContext): PlacementInput {
     pointCount: idiv(points.length, 3),
     clearance: ctx.config.placement.clearance,
     depotClearance: ctx.config.placement.depotClearance,
+    territory: p >= 0 ? territoryOf(ctx, p) : null,
   };
 }
 
 /**
  * Reason code for building type bt with its footprint origin at (fx, fy), in the sim's world now; `claim` for a claim
- * building placed by the Claim command (AS_CLAIM).
+ * building placed by the Claim command (AS_CLAIM and its CLAIM_TIERS bits); `p` the player who places it (his
+ * territory), -1 for no territory rule.
  */
 export function placementReasonAt(
   ctx: SimContext,
@@ -236,9 +373,10 @@ export function placementReasonAt(
   fx: number,
   fy: number,
   claim = 0,
+  p = -1,
 ): number {
   return placementReason(
-    placementInput(ctx),
+    placementInput(ctx, p),
     fx,
     fy,
     bt.footprintW,

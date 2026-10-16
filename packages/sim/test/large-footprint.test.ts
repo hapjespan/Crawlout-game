@@ -25,7 +25,9 @@ const fpOf = (typeId: number): { w: number; h: number } => {
 /** Een open map van 128 x 128 met de spawns ver genoeg van de rand voor een hoofdgebouw van 21 x 21. */
 function bigSim(seed = 1): Sim {
   const map = { ...createOpenMap(), spawns: [cellCenter(24, 24), cellCenter(103, 103)] };
-  return createSim({ seed, players: testPlayers(2), map, config: REAL_CONFIG });
+  // the buildings stand where the test needs them, not grown from the HQ: no territory rule (data 0.19.0)
+  const config = { ...REAL_CONFIG, placement: { ...REAL_CONFIG.placement, buildRange: 0 } };
+  return createSim({ seed, players: testPlayers(2), map, config });
 }
 
 /** De footprint (cellen) van gebouw `id` uit zijn midden en zijn type. */

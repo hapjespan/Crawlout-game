@@ -16,6 +16,7 @@ import {
   PLACE_FEATURE,
   PLACE_OK,
   PLACE_TERRAIN,
+  PLACE_TERRITORY,
   POINT_CLAIM,
   POINT_NODE,
   RECT_CLAIM,
@@ -23,6 +24,8 @@ import {
   placementInput,
   placementReason,
   placementReasonAt,
+  territoryMask,
+  territoryOf,
 } from '../src/systems/placement.js';
 import { cellCenter, createOpenMap, testPlayers } from '../src/testing.js';
 import { BUILDER, REAL_CONFIG, SCAV, bundle, cmd, typeByKey } from './helpers.js';
@@ -165,7 +168,12 @@ function sameConnectivity(before: Int32Array, after: Int32Array): boolean {
 
 describe('placement rule (data 0.18.0, systems/placement.ts)', () => {
   it('the data: a free ring of 1 m around every building, no wider aisle around a drop-off building (yet)', () => {
-    expect(REAL_CONFIG.placement).toEqual({ clearance: 256, depotClearance: 256 });
+    expect(REAL_CONFIG.placement).toEqual({
+      clearance: 256,
+      depotClearance: 256,
+      buildRange: 10 * 256,
+      claimBuildRange: 5 * 256,
+    });
   });
 
   it('reason codes: overlap, terrain in the margin, a building in the margin, the depot aisle, a node or claim point', () => {
@@ -218,7 +226,7 @@ describe('placement rule (data 0.18.0, systems/placement.ts)', () => {
     // with an aisle of 2 m around drop-off buildings (sim.json depotClearanceM), to see that reason too
     const sim = baseSim(1, false, {
       ...REAL_CONFIG,
-      placement: { clearance: 256, depotClearance: 512 },
+      placement: { ...REAL_CONFIG.placement, clearance: 256, depotClearance: 512 },
     });
     const builder = own(sim, 0).find((u) => u.typeId === BUILDER)!.id;
     sim.setScrap(0, 5000);
@@ -504,5 +512,87 @@ describe('a claim always succeeds on a free point (data 0.19.0, placement.ts cla
     rock[16 * W + 17] = 0;
     rock[16 * W + 18] = 0;
     expect(claimSiteIn(inp(rock, points), p.x, p.y, 1, 1, 0, r)).toBeNull();
+  });
+});
+
+// Martien, 16 October: "je kan maar in een straal van 10 aansluitende tegels bouwen in je gebied, tenzij je tegen een
+// blokkade in het terrein aan loopt. dit geldt ook voor een beacon die je claimt met een toren, niet de held. die toren
+// is dan een startpunt vanuit waar je door kan bouwen in een straal van 5 blokken." A tile is the sim's 1 m cell.
+describe('territory (data 0.19.0, placement buildRangeM 10, claimBuildRangeM 5)', () => {
+  const W = 128;
+  const at = (mask: Uint8Array, x: number, y: number) => mask[y * W + x];
+
+  it('ten steps over walkable ground from a building, five from a claim post; a cliff stops it', () => {
+    const open = new Uint8Array(W * W).fill(1);
+    // a building 21 x 21 at (30, 30) and a claim post 1 x 1 at (100, 64)
+    const src = [30, 30, 21, 21, 10, 100, 64, 1, 1, 5];
+    const m = territoryMask(W, W, open, src, 2);
+    expect([at(m, 60, 40), at(m, 61, 40), at(m, 60, 60), at(m, 61, 61)]).toEqual([1, 0, 1, 0]);
+    expect([at(m, 105, 64), at(m, 106, 64), at(m, 95, 69), at(m, 94, 69)]).toEqual([1, 0, 1, 0]);
+    // a wall of rock at x = 55 (all rows): nothing behind it, even within ten steps
+    const cliff = new Uint8Array(open);
+    for (let y = 0; y < W; y++) cliff[y * W + 55] = 0;
+    const c = territoryMask(W, W, cliff, src, 2);
+    expect([at(c, 54, 40), at(c, 55, 40), at(c, 56, 40)]).toEqual([1, 0, 0]);
+    // a diagonal wall one cell thick is not crossed corner to corner
+    const diag = new Uint8Array(open);
+    for (let k = 0; k < W; k++) diag[k * W + (W - 1 - k)] = 0; // x + y = 127
+    const d = territoryMask(W, W, diag, [60, 60, 1, 1, 10], 1);
+    expect([at(d, 63, 63), at(d, 64, 64)]).toEqual([1, 0]);
+  });
+
+  it('the rule: a footprint must touch the territory; a cliff in between refuses it; a normal base can grow', () => {
+    const open = createOpenMap();
+    const passable = new Uint8Array(open.passable);
+    for (let y = 0; y < 128; y++) passable[y * 128 + 55] = 0; // rock east of the HQ (footprint 30..50)
+    const sim = createSim({
+      seed: 1,
+      players: testPlayers(2),
+      map: { ...open, passable, spawns: [cellCenter(HQ_CELL, HQ_CELL), cellCenter(103, 103)] },
+      config: REAL_CONFIG,
+    });
+    const woning = BT('woning');
+    const werkplaats = BT('werkplaats');
+    // behind the rock: within ten cells of the HQ as the crow flies, but out of the territory
+    expect(placementReasonAt(sim, woning, 57, 34, 0, 0)).toBe(PLACE_TERRITORY);
+    expect(placementReasonAt(sim, woning, 57, 34)).toBe(PLACE_OK); // without a player: no territory rule
+    // far away on open ground: out of the territory
+    expect(placementReasonAt(sim, woning, 30, 80, 0, 0)).toBe(PLACE_TERRITORY);
+    // next to the HQ: a house (13 x 19) and a workshop (21 x 19) fit, on the west and the south side
+    const fits = (bt: typeof woning, fx: number, fy: number) =>
+      placementReasonAt(sim, bt, fx, fy, 0, 0);
+    expect(fits(woning, 30 - 2 - 13, 32)).toBe(PLACE_OK);
+    expect(fits(werkplaats, 30, 51 + 2)).toBe(PLACE_OK);
+    // a workshop placed there makes the territory grow: a house beyond it, out of reach of the HQ, now fits
+    expect(fits(woning, 30, 53 + 19 + 2)).toBe(PLACE_TERRITORY);
+    sim.spawnBuilding(werkplaats.typeId, 0, 30, 53, false);
+    expect(fits(woning, 30, 53 + 19 + 2)).toBe(PLACE_OK);
+  });
+
+  it('a finished claim post adds five cells around it; a hero claim (no post) adds nothing', () => {
+    const sim = baseSim(1, false);
+    const paal = BT('claimpaal');
+    const before = territoryOf(sim, 0)!;
+    expect(at(before, 100, 64)).toBe(0);
+    sim.spawnBuilding(paal.typeId, 0, 100, 64, false);
+    expect(territoryOf(sim, 0)).toEqual(before); // a post under construction is no start point yet
+    sim.spawnBuilding(paal.typeId, 0, 100, 90, true);
+    const t = territoryOf(sim, 0)!;
+    expect([at(t, 105, 90), at(t, 106, 90), at(t, 100, 85), at(t, 100, 84)]).toEqual([1, 0, 1, 0]);
+    // a house (13 x 19) may touch the cells around the post, not stand beyond them
+    const woning = BT('woning');
+    expect(placementReasonAt(sim, woning, 95, 70, 0, 0)).toBe(PLACE_OK);
+    expect(placementReasonAt(sim, woning, 107, 70, 0, 0)).toBe(PLACE_TERRITORY);
+    // a claim point held by the hero (a beacon, no building) is no source
+    const w = (
+      sim as unknown as {
+        world: { owner: Uint8Array; beacon: Uint8Array; resolve(id: number): number };
+      }
+    ).world;
+    for (const id of sim.entityIds().filter((e) => sim.getUnit(e)!.kind === 'claimPoint')) {
+      w.owner[w.resolve(id)] = 0;
+      w.beacon[w.resolve(id)] = 1;
+    }
+    expect(territoryOf(sim, 0)).toEqual(t);
   });
 });

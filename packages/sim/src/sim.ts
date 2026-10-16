@@ -36,6 +36,7 @@ import { TerrainDistances } from './pathdist.js';
 import { Census, takeCensus } from './systems/census.js';
 import {
   ClaimScratch,
+  claimPointStatus,
   claimsSystem,
   dominanceStatus,
   updateClaimPoints,
@@ -361,6 +362,7 @@ export class Sim implements SimContext {
       dominance: this.dominance(playerId), // protocol 0.6.0: winroute B voor de HUD
       robotPop: this.census.robotPop[playerId]!, // protocol 0.8.0: robots tellen niet voor bedden
       trained: trainedOf(this, playerId) as NonNullable<PlayerStatus['trained']>, // protocol 0.8.0
+      claimPoints: claimPointStatus(this), // protocol 0.10.0 (voorstel): claimstand voor de ring in de HUD
     };
   }
 

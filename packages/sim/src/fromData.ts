@@ -291,6 +291,7 @@ export function simConfigFromGameData(data: GameData): SimConfig {
       claimFromTicks: a.claimFromTicks,
       claimSafeRadius: a.claimSafeRadiusU,
       claimFarFromTicks: a.claimFarFromTicks,
+      heroClaimRadius: a.heroClaimRadiusU,
       defendRadius: a.defendRadiusU,
       rallySite: a.rallySite,
       rallyRadius: a.rallyRadiusU,
@@ -382,9 +383,13 @@ export function simConfigFromGameData(data: GameData): SimConfig {
     placement: {
       clearance: t.placement.clearanceU,
       depotClearance: t.placement.depotClearanceU,
+      buildRange: t.placement.buildRangeU,
+      claimBuildRange: t.placement.claimBuildRangeU,
     },
     autoGatherRadius: t.autoGatherRadiusU,
     exclusiveRadius: t.exclusiveRadiusU,
+    heroClaimTicks: t.heroClaimTicks,
+    contestFlipTicks: t.contestFlipTicks,
   };
 }
 

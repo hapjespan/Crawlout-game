@@ -892,6 +892,19 @@ describe('state', () => {
           ticksRequired: createTestMap().dominance.ticks,
           leader: { playerId: 0, pointsHeld: 0, ticksHeld: 0 },
         },
+        // protocol 0.10.0 (voorstel): the claim state of every claim point, for the ring in the HUD
+        claimPoints: core
+          .sim!.entityIds()
+          .filter((id) => core.sim!.getUnit(id)!.kind === 'claimPoint')
+          .map((pointId) => ({
+            pointId,
+            owner: OWNER_NEUTRAL,
+            beacon: false,
+            activity: 'none',
+            by: OWNER_NEUTRAL,
+            progressPermille: 0,
+            frozen: false,
+          })),
       },
       winner: null,
     });

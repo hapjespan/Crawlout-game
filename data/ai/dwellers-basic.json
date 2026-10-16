@@ -94,6 +94,7 @@
   "claimFromS": 60,
   "claimSafeRadiusM": 30,
   "claimFarFromS": 990,
+  "heroClaimRadiusM": 20,
   "defendRadiusM": 38,
   "rallySite": "front",
   "rallyRadiusM": 6,

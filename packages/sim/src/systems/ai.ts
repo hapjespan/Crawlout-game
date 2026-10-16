@@ -33,7 +33,15 @@ import { pointsOf } from './claims.js';
 import { heroIndex } from './hero.js';
 import { letterRunning, trainCost, trainedOn } from './training.js';
 import { DEPOT_MASK, ROLE_MILITIA } from './orders.js';
-import { PLACE_OK, marginCells, placeAs, neighbourReason, placementInput } from './placement.js';
+import {
+  PLACE_OK,
+  marginCells,
+  placeAs,
+  neighbourReason,
+  placementInput,
+  territoryOf,
+  touchesTerritory,
+} from './placement.js';
 
 // Systeem 2 (AI-deel): de scripted tegenstander, voor elke speler met ai = true, voor de unit-orders; de volgorde van
 // de spelers draait per tick door (fair-ronde, zie aiSystem). Geen cheats: de AI geeft gewone commando's via
@@ -434,6 +442,7 @@ function findSite(
   const sw = 2 * AI_SITE_RING + 2 * fw + 2 * mc + 2;
   const sh = 2 * AI_SITE_RING + 2 * fh + 2 * mc + 2;
   const input = placementInput(ctx);
+  const terr = territoryOf(ctx, p);
   const as = placeAs(bt);
   const sat = walkSums(ctx, sx0, sy0, sw, sh);
   const freeRect = (x: number, y: number, ww: number, hh: number): boolean => {
@@ -495,6 +504,8 @@ function findSite(
         }
       }
       if (ld < 0 || ld > r2 + 2) continue;
+      // het eigen gebied (data 0.19.0): de footprint raakt een cel binnen bouwbereik van een eigen gebouw
+      if (terr !== null && !touchesTerritory(terr, map.w, fx, fy, fw, fh)) continue;
       // nodes, claimpunten en de gang rond een depot (de rand zelf is hierboven al vrij en begaanbaar)
       if (neighbourReason(input, fx, fy, fw, fh, as) !== PLACE_OK) continue;
       found = (fy + (fh >> 1)) * map.w + fx + (fw >> 1);
@@ -1125,7 +1136,12 @@ function think(
 
   // 10b verdedigen of verzamelen: militie (en de held) zonder taak
   const idle = [...idleMilitia, ...idleRobots];
-  if (heroId >= 0 && w.orderType(hero) === ORDER_NONE) idle.push(heroId);
+  if (
+    heroId >= 0 &&
+    w.orderType(hero) === ORDER_NONE &&
+    !(threat < 0 && heroClaimNear(ctx, p, hero, script))
+  )
+    idle.push(heroId);
   if (idle.length === 0 || fields === null) return;
   let to: { x: number; y: number };
   let r = script.rallyRadius;
@@ -1158,6 +1174,40 @@ function think(
       type: 'AttackMove',
       payload: { ids, x: to.x, y: to.y },
     });
+}
+
+/**
+ * De held zonder taak claimt een punt zonder paal (data 0.19.0, ai/*.json heroClaimRadiusM, sim.json heroClaimS): ligt
+ * er een neutraal claimpunt binnen heroClaimRadius van hem (hemelsbreed; het dichtstbijzijnde, dan de laagste index),
+ * dan loopt hij erheen en blijft hij in de cirkel staan tot het van zijn speler is. True als de held daarmee bezig is
+ * (dan gaat hij niet mee naar het verzamelpunt). Alleen zonder dreiging (de aanroeper).
+ */
+function heroClaimNear(ctx: SimContext, p: number, hero: number, script: SimAiScript): boolean {
+  const w = ctx.world;
+  const rr = script.heroClaimRadius;
+  if (rr <= 0 || ctx.config.heroClaimTicks <= 0) return false;
+  let best = -1;
+  let bestD = 0;
+  for (const pt of ctx.claimPoints) {
+    if (w.owner[pt] !== OWNER_NEUTRAL) continue;
+    const dx = w.x[pt]! - w.x[hero]!;
+    const dy = w.y[pt]! - w.y[hero]!;
+    const d = dx * dx + dy * dy;
+    if (d > rr * rr || (best >= 0 && d >= bestD)) continue;
+    best = pt;
+    bestD = d;
+  }
+  if (best < 0) return false;
+  // already standing in the circle (well inside, so the separation does not push him out): stay
+  const inner = ctx.config.claimRadius - 256;
+  if (bestD <= inner * inner) return true;
+  applyCommand(ctx, {
+    playerId: p,
+    seq: 0,
+    type: 'Move',
+    payload: { ids: [w.idOf(hero)], x: w.x[best]!, y: w.y[best]! },
+  });
+  return true;
 }
 
 /**

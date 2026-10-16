@@ -303,6 +303,8 @@ export interface AiScriptData {
   claimFromTicks: number;
   claimSafeRadiusU: number;
   claimFarFromTicks: number;
+  /** An idle hero claims a neutral point within this distance by standing there (0 = off; data 0.19.0). */
+  heroClaimRadiusU: number;
   defendRadiusU: number;
   /** index in AI_SITES. */
   rallySite: number;
@@ -369,12 +371,19 @@ export interface SimTuningData {
   autoGatherRadiusU: number;
   /** A scrap node within this distance of a held claim point is exclusive to its owner (data 0.19.0; voorstel). */
   exclusiveRadiusU: number;
+  /** The hero claims a free point by standing in its circle this long (0 = off; data 0.19.0, voorstel). */
+  heroClaimTicks: number;
+  /** A tower-less (hero) claim goes over after this long with enemies and none of the holder in the circle. */
+  contestFlipTicks: number;
 }
 
 /** sim.json `placement` in sim units. */
 export interface PlacementTuningData {
   clearanceU: number;
   depotClearanceU: number;
+  /** Territory (data 0.19.0, voorstel): range around own buildings and around a claim post; 0 = off. */
+  buildRangeU: number;
+  claimBuildRangeU: number;
 }
 
 /** sim.json `formation` in sim units. */
@@ -759,6 +768,7 @@ export function loadGameData(raw: RawGameData): GameData {
       claimFromTicks: secondsToTicks(a.claimFromS),
       claimSafeRadiusU: metersToUnits(a.claimSafeRadiusM),
       claimFarFromTicks: secondsToTicks(a.claimFarFromS),
+      heroClaimRadiusU: metersToUnits(a.heroClaimRadiusM ?? 0),
       defendRadiusU: metersToUnits(a.defendRadiusM),
       rallySite: AI_SITES.indexOf(a.rallySite),
       rallyRadiusU: metersToUnits(a.rallyRadiusM),
@@ -852,9 +862,13 @@ export function loadGameData(raw: RawGameData): GameData {
       placement: {
         clearanceU: metersToUnits(simRaw.placement.clearanceM),
         depotClearanceU: metersToUnits(simRaw.placement.depotClearanceM),
+        buildRangeU: metersToUnits(simRaw.placement.buildRangeM),
+        claimBuildRangeU: metersToUnits(simRaw.placement.claimBuildRangeM),
       },
       autoGatherRadiusU: metersToUnits(simRaw.autoGatherRadiusM),
       exclusiveRadiusU: metersToUnits(simRaw.exclusiveRadiusM),
+      heroClaimTicks: secondsToTicks(simRaw.heroClaimS),
+      contestFlipTicks: secondsToTicks(simRaw.contestFlipS),
     },
   };
 }

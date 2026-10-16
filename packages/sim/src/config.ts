@@ -318,6 +318,8 @@ export interface SimAiScript {
   /** Een claimpunt verder dan claimSafeRadius van het hoofdgebouw neemt hij pas vanaf claimFarFromTicks, met escorte. */
   readonly claimSafeRadius: number;
   readonly claimFarFromTicks: number;
+  /** An idle hero claims a neutral claim point within this distance by standing there (0 = off; data 0.19.0). */
+  readonly heroClaimRadius: number;
   readonly defendRadius: number;
   /** AI_SITE_*: verzamelpunt tussen de golven. */
   readonly rallySite: number;
@@ -421,6 +423,10 @@ export interface SimConfig {
    * 0.19.0; was claimRadius). At least claimRadius.
    */
   readonly exclusiveRadius: number;
+  /** Ticks a hero stands in the circle of a free claim point to claim it without a post (0 = off; data 0.19.0). */
+  readonly heroClaimTicks: number;
+  /** Ticks after which a tower-less claim goes over to an enemy with units in the circle and none of the holder. */
+  readonly contestFlipTicks: number;
 }
 
 /** Building placement margins (sim.json `placement`), in sim units; the rule works in whole cells, rounded up. */
@@ -429,6 +435,13 @@ export interface SimPlacementTuning {
   readonly clearance: number;
   /** No other building this close to a drop-off building (provides hq or workshop); at least `clearance`. */
   readonly depotClearance: number;
+  /**
+   * Territory (data 0.19.0, voorstel; systems/placement.ts territoryMask): a new footprint touches a cell within this
+   * many steps over walkable terrain of an own building; 0 = no territory rule.
+   */
+  readonly buildRange: number;
+  /** The same around an own claim post (provides claim, not hq): the start of building out from a claimed point. */
+  readonly claimBuildRange: number;
 }
 
 /** Formation and arrival spreading for group orders (sim.json `formation`), in sim units. */
@@ -566,11 +579,15 @@ export function validateEnv(env: SimEnv): void {
   // at least one cell: then the ring around a new building is a closed walkable path and no route is ever cut
   req(intIn(pl.clearance, 256, MAX_FOOTPRINT << 8), 'placement.clearance');
   req(intIn(pl.depotClearance, pl.clearance, MAX_FOOTPRINT << 8), 'placement.depotClearance');
+  req(intIn(pl.buildRange, 0, 100 << 8), 'placement.buildRange');
+  req(intIn(pl.claimBuildRange, 0, 100 << 8), 'placement.claimBuildRange');
   req(intIn(config.autoGatherRadius, 0, MAX_MAP_CELLS_SIDE << 8), 'autoGatherRadius');
   req(
     intIn(config.exclusiveRadius, config.claimRadius, MAX_MAP_CELLS_SIDE << 8),
     'exclusiveRadius',
   );
+  req(intIn(config.heroClaimTicks, 0, I31), 'heroClaimTicks');
+  req(intIn(config.contestFlipTicks, 0, I31), 'contestFlipTicks');
 
   const armorCount = config.damageMatrix[0]?.length ?? 0;
   req(config.damageMatrix.length > 0 && armorCount > 0, 'damageMatrix leeg');
@@ -900,7 +917,9 @@ export function validateEnv(env: SimEnv): void {
       'aiScript pushMinArmy of allInWithoutNodes',
     );
     req(
-      intIn(s.claimSafeRadius, 0, MAX_MAP_CELLS_SIDE << 8) && intIn(s.claimFarFromTicks, 0, I31),
+      intIn(s.claimSafeRadius, 0, MAX_MAP_CELLS_SIDE << 8) &&
+        intIn(s.claimFarFromTicks, 0, I31) &&
+        intIn(s.heroClaimRadius, 0, MAX_MAP_CELLS_SIDE << 8),
       'aiScript claim-escorte',
     );
     if (s.robots !== null)
@@ -977,8 +996,12 @@ export function envHash(env: SimEnv): number {
     c.formation.gatherRing,
     c.placement.clearance,
     c.placement.depotClearance,
+    c.placement.buildRange,
+    c.placement.claimBuildRange,
     c.autoGatherRadius,
     c.exclusiveRadius,
+    c.heroClaimTicks,
+    c.contestFlipTicks,
   ]);
   h = fnv1aInt(h, c.unitTypes.length);
   for (const u of c.unitTypes) {
@@ -1100,6 +1123,7 @@ export function envHash(env: SimEnv): number {
     h = hashInts(h, [
       s.claimSafeRadius,
       s.claimFarFromTicks,
+      s.heroClaimRadius,
       s.pushMinArmy,
       s.pushFromTicks,
       s.allInWithoutNodes ? 1 : 0,

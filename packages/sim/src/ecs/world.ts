@@ -177,6 +177,21 @@ export class World {
   readonly claimProgress = new Int32Array(MAX_ENTITIES);
   /** Claimpunt: bitset van spelers die het ooit namen (ontdekking, xpPerDiscovery voor de held). */
   readonly seenBy = new Uint8Array(MAX_ENTITIES);
+  /**
+   * Claimpunt (data 0.19.0, de claimronde): 1 = de eigenaar houdt het zonder claimgebouw (zijn held claimde het, of het
+   * ging over na een aanval). Zo'n claim is over te nemen: zie systems/claims.ts.
+   */
+  readonly beacon = new Uint8Array(MAX_ENTITIES);
+  /** Claimpunt: speler + 1 wiens held het nu claimt (0 = niemand), en de ticks die hij er al staat. */
+  readonly heroClaimBy = new Uint8Array(MAX_ENTITIES);
+  readonly heroClaimTicks = new Int32Array(MAX_ENTITIES);
+  /** Claimpunt met beacon: ticks dat vijanden in de cirkel staan zonder een unit van de eigenaar. */
+  readonly contestTicks = new Int32Array(MAX_ENTITIES);
+  /**
+   * Claimpunt, presentatie (systeem 7 zet het elke tick): wat claimBy/claimProgress nu tonen (CLAIM_KIND_* in
+   * systems/claims.ts), plus CLAIM_FROZEN als units van meer dan één speler in de cirkel staan.
+   */
+  readonly claimKind = new Uint8Array(MAX_ENTITIES);
   // Presentatie (gaat de snapshot in, is ook state zodat de hash de hele snapshot dekt)
   readonly anim = new Uint8Array(MAX_ENTITIES);
   readonly animT = new Uint16Array(MAX_ENTITIES);
@@ -359,6 +374,11 @@ export function entityStateArrays(w: World): readonly StateArray[] {
     one('claimBy', w.claimBy),
     one('claimProgress', w.claimProgress),
     one('seenBy', w.seenBy),
+    one('beacon', w.beacon),
+    one('heroClaimBy', w.heroClaimBy),
+    one('heroClaimTicks', w.heroClaimTicks),
+    one('contestTicks', w.contestTicks),
+    one('claimKind', w.claimKind),
     one('job', w.job),
     one('jobKind', w.jobKind),
     one('jobWork', w.jobWork),

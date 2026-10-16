@@ -417,6 +417,9 @@ export const AiScript = z
     claimFromS: nonneg, // vanaf dan neemt een vrije bouwer neutrale claimpunten (dichtstbij eerst)
     claimSafeRadiusM: nonneg, // een claimpunt verder dan dit van het hoofdgebouw neemt hij pas vanaf claimFarFromS, met zijn vrije militie als escorte
     claimFarFromS: nonneg,
+    // Data 0.19.0 (voorstel): an idle hero walks to a neutral claim point within this distance and claims it by
+    // standing there (sim.json heroClaimS); absent or 0 = off
+    heroClaimRadiusM: nonneg.optional(),
     defendRadiusM: nonneg, // vijandelijke units binnen deze afstand van een eigen gebouw zijn een dreiging
     rallySite: AiSite, // verzamelpunt tussen de golven: hoofdgebouw, eigen claimpunt het dichtst bij huis, of het dichtst bij de vijand
     rallyRadiusM: nonneg, // militie zonder taak verder dan dit van het verzamelpunt loopt erheen
@@ -486,6 +489,11 @@ export const PlacementTuning = z
   .object({
     clearanceM: z.number().min(1), // free walkable ground around every footprint, also from nodes and claim points; at least 1 m (one cell), then placing a building never cuts a walkable connection
     depotClearanceM: nonneg, // aisle around a drop-off building (provides hq or werkplaats): no other building this close
+    // Data 0.19.0 (Martien 16 October; voorstel, ter bevestiging door de architect): territory. A new footprint must
+    // touch a cell within buildRangeM of an own building (claimBuildRangeM of a claim post), counted in steps over
+    // walkable terrain (a cliff, rock or water stops it); 0 = no territory rule
+    buildRangeM: z.number().min(0).max(100),
+    claimBuildRangeM: z.number().min(0).max(100),
     _comment: comment,
   })
   .strict()
@@ -540,6 +548,11 @@ export const SimTuning = z
     // this distance of a held claim point is exclusive to its owner. Was claimRadiusM; separate so a map can keep its
     // scrap outside the claim circle (room for the claim post) and the node still belongs to the claimed point.
     exclusiveRadiusM: nonneg,
+    // Data 0.19.0 (claim round, Martien 16 October; voorstel, ter bevestiging door de architect): the hero claims a
+    // free claim point by standing in its circle for heroClaimS (0 = off), without a post; such a tower-less claim
+    // goes over to an enemy after contestFlipS with enemy units and none of the holder in the circle
+    heroClaimS: nonneg,
+    contestFlipS: nonneg,
   })
   .strict()
   .refine((t) => t.pathEntranceMaxCells <= t.pathSectorCells, {

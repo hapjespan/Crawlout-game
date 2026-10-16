@@ -41,6 +41,7 @@ import {
   RECT_CLAIM,
   RECT_DEPOT,
   placementReason as simPlacementReason,
+  territoryMask,
   type PlacementInput,
 } from '@crawlout/sim/placement';
 import {
@@ -344,6 +345,34 @@ async function main(): Promise<void> {
   const isDepot = (b: BuildingData): boolean => b.provides.some((p) => DEPOT_PROVIDES.includes(p));
   const CLAIM_PROVIDES = PROVIDES.indexOf('claim');
   /** The sim placement rule's input from the snapshot: every building, scrap node and claim point. */
+  /**
+   * This player's territory (data 0.19.0, the sim's territoryMask): buildRange around every own building (sites too),
+   * claimBuildRange around a finished own claim post. Rebuilt only when the own buildings change. null: no rule.
+   */
+  const HQ_PROVIDES = PROVIDES.indexOf('hq');
+  let territoryKey = '';
+  let territory: Uint8Array | null = null;
+  function territoryNow(): Uint8Array | null {
+    const pl = data.sim.placement;
+    if (pl.buildRangeU <= 0) return null;
+    const range = (pl.buildRangeU + 255) >> 8;
+    const claimRange = (pl.claimBuildRangeU + 255) >> 8;
+    const src: number[] = [];
+    for (const e of entities.values()) {
+      const b = buildingOf(e.typeId);
+      if (!b || e.owner !== session.playerId) continue;
+      const post = b.provides.includes(CLAIM_PROVIDES) && !b.provides.includes(HQ_PROVIDES);
+      if (post && e.anim === ANIM.build) continue;
+      const { w: bw, h: bh } = b.footprint;
+      src.push((e.x >> 8) - (bw >> 1), (e.y >> 8) - (bh >> 1), bw, bh, post ? claimRange : range);
+    }
+    const key = src.join(',');
+    if (key !== territoryKey || territory === null) {
+      territoryKey = key;
+      territory = territoryMask(map.grid.w, map.grid.h, map.grid.passable, src, src.length / 5);
+    }
+    return territory;
+  }
   function placementInputNow(): PlacementInput {
     const rects: number[] = [];
     const points: number[] = [];
@@ -358,6 +387,7 @@ async function main(): Promise<void> {
       else if (e.typeId === CLAIM_POINT_TYPE_ID) points.push(e.x, e.y, POINT_CLAIM);
     }
     return {
+      territory: territoryNow(),
       mapW: map.grid.w,
       mapH: map.grid.h,
       passable: map.grid.passable,
@@ -444,6 +474,7 @@ async function main(): Promise<void> {
     'Te dicht bij een ander gebouw',
     'Te dicht bij een afleverpunt (houd een looppad vrij)',
     'Staat op een scrapbron of claimpunt',
+    `Buiten je gebied (bouw binnen ${data.sim.placement.buildRangeU >> 8} m van je gebouwen, ${data.sim.placement.claimBuildRangeU >> 8} m van een claimpaal)`,
   ];
   /** Why the footprint cannot go here (Dutch), or null when it can: the clear HUD reasons first, then the sim rule. */
   function placementReason(option: BuildOption, cx: number, cy: number): string | null {
@@ -810,6 +841,8 @@ async function main(): Promise<void> {
     session,
     entities: () => entities,
     status: () => status,
+    /** This player's territory mask (1 per cell, map width), for a later territory overlay in render or the HUD. */
+    territory: () => territoryNow(),
     /** For the real-browser HUD test (tools/replay hud-clicks): building type ids by data key, and the sim's rule. */
     placement: {
       typeId: (key: string): number => {
