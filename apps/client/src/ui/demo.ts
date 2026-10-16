@@ -2,14 +2,18 @@
 import { mountHud } from '@crawlout/ui';
 import type {
   BuildOption,
+  BuildingButton,
   BuildingCard,
   DominanceView,
   HudAlert,
   HudDeps,
   MinimapData,
   NetworkState,
+  RosterGroup,
+  RosterUnit,
   SelectedEntity,
   TargetingKind,
+  UnitActivity,
 } from '@crawlout/ui';
 import type { PlayerStatus } from '@crawlout/protocol';
 
@@ -24,6 +28,37 @@ const ALL: SelectedEntity[] = [
   { id: 2, typeId: 2, loadoutName: 'Knuppel', hpPct: 40, role: 'militia' },
   { id: 3, typeId: 2, loadoutName: null, hpPct: 15, role: 'builder' },
 ];
+// Demo knobs (URL): ?units=14 per-type unit count, ?workshop=0 hides the role buttons, ?pending=2 level-up perks.
+const query = new URLSearchParams(location.search);
+const unitCount = Number(query.get('units') ?? 6);
+let hasWorkshop = query.get('workshop') !== '0';
+const pendingPerks = Number(query.get('pending') ?? 1);
+const ACTIVITIES: UnitActivity[] = [
+  'idle',
+  'gathering',
+  'carrying',
+  'moving',
+  'fighting',
+  'building',
+];
+const rosterUnits: RosterUnit[] = Array.from({ length: unitCount }, (_, i) => ({
+  id: 100 + i,
+  hpPct: 30 + ((i * 37) % 71),
+  activity: ACTIVITIES[i % ACTIVITIES.length]!,
+  x: (8 + (i % 6) * 3) * 256,
+  y: (30 + Math.floor(i / 6) * 3) * 256,
+  progressPct: (i * 23) % 100,
+}));
+const unitCards = (units: readonly RosterUnit[]): SelectedEntity[] =>
+  units.map((u) => ({
+    id: u.id,
+    typeId: 2,
+    loadoutName: 'Plunderaar',
+    hpPct: u.hpPct,
+    role: 'scavenger',
+    x: u.x,
+    y: u.y,
+  }));
 let status: PlayerStatus = {
   playerId: 0,
   scrap: 150,
@@ -38,7 +73,7 @@ let status: PlayerStatus = {
     xpNext: 300,
     special: [6, 5, 6, 3, 4, 6, 3],
     perks: [],
-    pendingPerks: 1,
+    pendingPerks,
     revivesLeft: 4,
     state: 'alive',
     reviveTicksLeft: 0,
@@ -329,7 +364,24 @@ function cancelCard(c: BuildingCard): void {
 }
 const alertCbs = new Set<(a: HudAlert) => void>();
 const emitAlert = (a: HudAlert): void => alertCbs.forEach((cb) => cb(a));
-let selection: SelectedEntity[] = ALL;
+let selection: SelectedEntity[] = query.get('sel') === 'none' ? [] : ALL;
+const buildingButtons: BuildingButton[] = [
+  {
+    key: 'werkplaats',
+    naam: 'Werkplaats',
+    sites: [{ id: 9, x: 12 * 256, y: 34 * 256, available: 2, running: 0 }],
+    available: 2,
+    running: 0,
+  },
+  {
+    key: 'lab',
+    naam: 'Lab',
+    sites: [{ id: 10, x: 16 * 256, y: 36 * 256, available: 0, running: 1, progressPct: 45 }],
+    available: 0,
+    running: 1,
+    progressPct: 45,
+  },
+];
 let network: NetworkState = { desync: null, stall: null };
 const listeners = new Set<() => void>();
 const notify = (): void => listeners.forEach((l) => l());
@@ -376,10 +428,40 @@ const deps: HudDeps = {
   startCard,
   cancelCard,
   getPerkOptions: () => [
-    { perkId: 1, naam: 'Taai', beschrijving: '+10% hp' },
-    { perkId: 2, naam: 'Snel', beschrijving: '+10% tempo' },
-    { perkId: 3, naam: 'Scherp', beschrijving: '+10% schade' },
+    {
+      perkId: 1,
+      naam: 'Zware Laarzen',
+      effects: ['+10% leven voor de held'],
+      requirement: 'Uithoudingsvermogen 5',
+      available: true,
+      flavour: 'Ze zijn drie maten te groot, maar de kluisdeur sluit er wel mee.',
+    },
+    {
+      perkId: 2,
+      naam: 'Papierwerk',
+      effects: ['-10% onderzoekstijd'],
+      requirement: 'Intelligentie 4',
+      available: true,
+    },
+    {
+      perkId: 3,
+      naam: 'Geluksschot',
+      effects: ['+8% schade voor de held'],
+      requirement: 'Geluk 8',
+      available: false,
+    },
   ],
+  canSwitchRole: () => hasWorkshop,
+  getRoster: (): RosterGroup[] => [
+    { key: 'scavenger', naam: 'Plunderaar', units: rosterUnits },
+    { key: 'builder', naam: 'Bouwer', units: [] },
+  ],
+  selectUnits: (ids) => {
+    const picked = rosterUnits.filter((u) => ids.includes(u.id));
+    selection = picked.length > 0 ? unitCards(picked) : ALL.filter((s) => ids.includes(s.id));
+    notify();
+  },
+  getBuildingButtons: () => (hasWorkshop ? buildingButtons : buildingButtons.slice(1)),
   subscribeAlerts: (cb) => {
     alertCbs.add(cb);
     return () => alertCbs.delete(cb);
@@ -405,6 +487,7 @@ worldEl.addEventListener('click', (e) => {
 setInterval(() => {
   status = { ...status, scrap: status.scrap + 3 };
   domSeconds = Math.min(DOM_REQUIRED, domSeconds + 1);
+  for (const u of rosterUnits) u.progressPct = ((u.progressPct ?? 0) + 7) % 100;
   for (const m of [...researchMocks, ...craftMocks]) {
     if (m.elapsed === null) continue;
     m.elapsed += 1;
@@ -438,6 +521,7 @@ window.addEventListener('keydown', (e) => {
       hero: status.hero ? { ...status.hero, pendingPerks: status.hero.pendingPerks ? 0 : 1 } : null,
     };
   else if (e.key === 'o') heroDead = !heroDead;
+  else if (e.key === 'e') hasWorkshop = !hasWorkshop;
   else if (e.key === 'y')
     selection =
       selection === ALL
@@ -451,5 +535,5 @@ window.addEventListener('keydown', (e) => {
   notify();
 });
 log(
-  'Demo: D = desync, W = stall, Y = selectie (alles, gebouw, bewoners, niets; gebouw toont de onderzoekskaarten, bewoners de craftkaarten met K + cijfer), J = alert, T = dominantie (niets, eigen punten, eigen telling, tegenstander telt), U = level-up, O = held dood/levend; B = bouwen, cijfer kiest gebouw, klik plaatst',
+  'Demo: D = desync, W = stall, Y = selectie (alles, gebouw, bewoners, niets; gebouw toont de onderzoekskaarten, bewoners de craftkaarten met K + cijfer), J = alert, T = dominantie (niets, eigen punten, eigen telling, tegenstander telt), U = level-up, O = held dood/levend, E = werkplaats wel/niet (rolknoppen), ?units=14&workshop=0&pending=2&sel=none; B = bouwen, cijfer kiest gebouw, klik plaatst',
 );

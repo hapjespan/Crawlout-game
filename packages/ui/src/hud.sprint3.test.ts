@@ -152,6 +152,7 @@ describe('held-paneel uit HeroStatus', () => {
     expect(t.sent).toEqual([]);
     press('F2');
     press('F3');
+    click(t.el.querySelector('[data-action="perks"]'));
     click(t.el.querySelector('[data-perk="11"]'));
     expect(t.sent.map((s) => s.payload)).toEqual([
       { heroId: 5, perkId: 12 },

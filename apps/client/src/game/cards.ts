@@ -51,7 +51,7 @@ const BUTTON_ORDER = [
 ];
 
 /** The SPECIAL letters in data order (S P E C I A L), for the training cards. */
-const SPECIAL_LABELS = [
+export const SPECIAL_LABELS = [
   'Kracht',
   'Perceptie',
   'Uithoudingsvermogen',
@@ -90,11 +90,18 @@ export const humanize = (key: string): string => {
 /** Dutch name of a building key. */
 export const buildingName = (key: string): string => BUILDING_NAMES[key] ?? humanize(key);
 
-const targetName = (target: string): string => {
-  if (target === 'turret') return 'turrets';
-  if (target === 'alle') return 'alle eenheden';
-  return (LOADOUT_NAMES[target] ?? humanize(target)).toLowerCase();
+const TARGET_NAMES: Record<string, string> = {
+  held: 'de held',
+  scavenger: 'plunderaars',
+  turret: 'turrets',
+  turret_laser: 'lasertorens',
+  alle: 'alle eenheden',
 };
+const targetName = (target: string): string =>
+  TARGET_NAMES[target] ?? (LOADOUT_NAMES[target] ?? humanize(target)).toLowerCase();
+
+/** Stats that apply to the whole player, not to units: "-10% onderzoekstijd", without a "voor alle eenheden". */
+const PLAYER_WIDE_STATS = new Set(['researchTimePct', 'buildTimePct']);
 
 /** One effect in plain language, e.g. "+20% schade voor turrets" or "+1 m bereik voor turrets". */
 export function effectText(e: EffectData): string {
@@ -109,6 +116,7 @@ export function effectText(e: EffectData): string {
       : t.unit === 'm'
         ? `${sign}${value} m`
         : `${sign}${value}`;
+  if (e.target === 'alle' && PLAYER_WIDE_STATS.has(e.stat)) return `${amount} ${t.label}`;
   return `${amount} ${t.label} voor ${targetName(e.target)}`;
 }
 
@@ -124,7 +132,7 @@ export function effectTexts(effects: readonly EffectData[]): string[] {
   return [...groups.values()].map((g) => {
     const line = effectText(g.first);
     const at = line.lastIndexOf(' voor ');
-    return `${line.slice(0, at)} voor ${g.targets.join(', ')}`;
+    return at < 0 ? line : `${line.slice(0, at)} voor ${g.targets.join(', ')}`;
   });
 }
 
@@ -330,16 +338,7 @@ export function buildingCards(ctx: CardContext): BuildingCard[] {
     }
   } else if (selectedUnits.length > 0) {
     // Crafting needs a finished workshop of your own; the sim walks the settlers there.
-    const workshopIdx = PROVIDES.indexOf('werkplaats');
-    const hasWorkshop = ctx.own.some((e) => {
-      const k = kindOfTypeId(e.typeId);
-      return (
-        k.kind === 'building' &&
-        data.buildings[k.index]?.provides.includes(workshopIdx) &&
-        e.anim !== ANIM.build
-      );
-    });
-    if (hasWorkshop) {
+    if (hasFinishedWorkshop(data, ctx.own)) {
       for (const l of data.loadouts) {
         // robots (producedAt >= 0) are built new in their factory, never retrained from a settler
         if (l.factionId !== factionId || l.producedAt >= 0) continue;
@@ -370,6 +369,19 @@ export function buildingCards(ctx: CardContext): BuildingCard[] {
   return cards.map((c, i) => ({ ...c, hotkey: String(i + 1) }));
 }
 
+/** Does the player own a finished workshop? Crafting and role switching (SetRole) both walk to one. */
+export function hasFinishedWorkshop(data: GameData, own: readonly EntityRow[]): boolean {
+  const workshopIdx = PROVIDES.indexOf('werkplaats');
+  return own.some((e) => {
+    const k = kindOfTypeId(e.typeId);
+    return (
+      k.kind === 'building' &&
+      data.buildings[k.index]?.provides.includes(workshopIdx) === true &&
+      e.anim !== ANIM.build
+    );
+  });
+}
+
 /** Pop that robots in production already claim (their popCost), for the pop-limit check of a new robot. */
 function producingPop(data: GameData, status: PlayerStatus | null): number {
   let pop = 0;
@@ -386,9 +398,12 @@ function reviveProgress(data: GameData, status: PlayerStatus | null): number {
 }
 
 /**
- * One button per building type among the own finished buildings (Basis, Werkplaats, Lab, Woning ...), each with its
- * buildings in id order. A site counts its cards ready to start and its running jobs; a revive of the hero counts
- * on the HQ. Buildings without anything to do are listed too: the player wants to click through to them.
+ * One button per building type among the own finished buildings that HAVE an action (Werkplaats, Lab, Training,
+ * Robotfabriek, and the Basis while the hero can be revived), each with its buildings in id order. A site counts its
+ * cards ready to start and its running jobs; a revive of the hero counts on the HQ. A building has an action when it
+ * offers a card that is not finished for good (available, too expensive, locked, busy or running): a lab that is short
+ * of scrap stays listed, a workshop with every tech researched drops off. Buildings that never act (woning, claimpaal,
+ * turret, radiobaken) are not listed; click them in the world.
  */
 export function buildingButtons(ctx: CardContext): BuildingButton[] {
   const { data, status } = ctx;
@@ -399,6 +414,7 @@ export function buildingButtons(ctx: CardContext): BuildingButton[] {
   for (const e of done) {
     const cards = buildingCards({ ...ctx, selected: [e] });
     const jobs = status?.queue?.filter((q) => q.buildingId === e.id && occupiesBuilding(q)) ?? [];
+    if (!cards.some((c) => c.state !== 'done')) continue;
     const reviving = cards.some((c) => c.kind === 'revive' && c.state === 'running');
     const progress = [
       ...jobs.map((q) => q.progressPermille / 10),

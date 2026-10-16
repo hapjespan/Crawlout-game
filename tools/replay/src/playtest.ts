@@ -764,17 +764,14 @@ async function run(width: number, height: number): Promise<Bot> {
       );
     },
   );
-  // Back to the base: the Basis button (double click = camera).
+  // Back to the base: the Basis is no longer in the buildings bar (it has no action), so H (hero, who starts at the base) does it.
   await bot.step(
     'camera-home',
-    'dubbelklik op Basis in de gebouwenbalk zet de camera terug bij de basis',
+    'H selecteert de held en zet de camera terug bij de basis',
     async () => {
-      const p = await bot.center('[data-building="hoofdgebouw"]');
-      if (!p) throw new Error('geen Basis-knop');
-      await bot.move(p);
-      await page.mouse.dblclick(p.x, p.y, { delay: 90 });
-      await wait(1500);
       const hq = await bot.hq();
+      await page.keyboard.press('h');
+      await wait(1500);
       const c = await bot.cam();
       bot.expect(
         Math.hypot(c.x - hq.x / 256, c.z - hq.y / 256) < 25,
@@ -782,6 +779,7 @@ async function run(width: number, height: number): Promise<Bot> {
         'midden',
         `${c.x.toFixed(0)},${c.z.toFixed(0)} vs ${(hq.x / 256).toFixed(0)},${(hq.y / 256).toFixed(0)}`,
       );
+      await page.keyboard.press('Escape');
       await bot.wheel(240, 6);
     },
   );
@@ -869,7 +867,7 @@ async function run(width: number, height: number): Promise<Bot> {
   // ---- research ----
   await bot.step(
     'gebouwenbalk',
-    'de balk toont Basis, Werkplaats, Lab met een badge voor wat te starten is',
+    'de balk toont Werkplaats en Lab (geen Basis) met een badge voor wat te starten is',
     async () => {
       const bar = (await bot.text('.co-building-buttons')).replace(/\s+/g, ' ');
       bot.expect(
