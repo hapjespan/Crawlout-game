@@ -13,7 +13,7 @@
 // Exit 1 when a check fails. Screenshots of every state go to HUD_SHOTS when set.
 import { mkdirSync } from 'node:fs';
 import { chromium } from '@playwright/test';
-import type { Page } from '@playwright/test';
+import type { Browser, Page } from '@playwright/test';
 
 const URL = process.env.HUD_URL ?? 'http://localhost:5173/';
 const SHOTS = process.env.HUD_SHOTS;
@@ -22,13 +22,30 @@ const SIZES: readonly [number, number][] = [
   [1280, 720],
 ];
 
-/** Sites on the slice map (rustbelt, seed of the loopback skirmish) and their building typeIds in data 0.16.0. */
-const SITES = [
-  { name: 'Lab', typeId: 1026, x: 65152, y: 35200, w: 17, h: 19, top: 8 },
-  { name: 'Werkplaats', typeId: 1032, x: 54656, y: 16512, w: 21, h: 19, top: 8 },
+/**
+ * The buildings the test puts up, by data key (type ids shift when buildings are added, so they are looked up in the
+ * page through the data, never hard-coded). The sites are chosen at run time with the sim's own placement rule
+ * (window.crawlout.placement.reason), searching outward from the HQ, so a change of the rule or the map cannot
+ * invalidate them. `top` is the roof height in meters for the click probes.
+ */
+const SITE_KEYS = [
+  { key: 'lab', name: 'Lab', top: 8 },
+  { key: 'werkplaats', name: 'Werkplaats', top: 8 },
 ] as const;
-const HQ_TYPE = 1025;
-const HQ = { name: 'Basis', w: 21, h: 21, top: 10 };
+const HQ_KEY = 'hoofdgebouw';
+const HQ_NAME = 'Basis';
+const HQ_TOP = 10;
+/** Hard limit for one browser run; the script always exits (a hung page counts as a failure, never a hang). */
+const RUN_LIMIT_MS = 6 * 60 * 1000;
+interface Site {
+  name: string;
+  typeId: number;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  top: number;
+}
 
 const failures: string[] = [];
 const check = (ok: boolean, what: string, detail = ''): void => {
@@ -58,6 +75,25 @@ const textOf = (sel: string): string =>
 const onCanvas = (x: number, y: number): string =>
   `(() => document.elementFromPoint(${x}, ${y})?.id === 'view')()`;
 
+/**
+ * Page code: the spot (centre in sim units, on a cell middle) closest to (hx, hy) where the sim's placement rule accepts
+ * the building with this data key, searching rings of whole cells outward; null when nothing within 70 cells fits.
+ */
+const findSite = (key: string, hx: number, hy: number): string => `(() => {
+  const pl = window.crawlout.placement; const f = pl.footprint(${JSON.stringify(key)});
+  const typeId = pl.typeId(${JSON.stringify(key)});
+  const hcx = Math.floor(${hx} / 256), hcy = Math.floor(${hy} / 256);
+  const cands = [];
+  for (let dy = -70; dy <= 70; dy++) for (let dx = -70; dx <= 70; dx++) cands.push([dx, dy]);
+  cands.sort((a, b) => Math.hypot(a[0], a[1]) - Math.hypot(b[0], b[1]) || a[1] - b[1] || a[0] - b[0]);
+  for (const [dx, dy] of cands) {
+    if (Math.hypot(dx, dy) < 20) continue;
+    const x = (hcx + dx) * 256 + 128, y = (hcy + dy) * 256 + 128;
+    if (pl.reason(${JSON.stringify(key)}, x, y) === 0) return { typeId, x, y, w: f.w, h: f.h };
+  }
+  return null;
+})()`;
+
 interface Pt {
   x: number;
   y: number;
@@ -78,7 +114,16 @@ async function run(width: number, height: number): Promise<void> {
     headless: true,
     args: ['--enable-unsafe-webgpu', '--ignore-gpu-blocklist'],
   });
+  try {
+    await runIn(browser, width, height);
+  } finally {
+    await Promise.race([browser.close().catch(() => undefined), wait(10000)]);
+  }
+}
+
+async function runIn(browser: Browser, width: number, height: number): Promise<void> {
   const page: Page = await (await browser.newContext({ viewport: { width, height } })).newPage();
+  page.setDefaultTimeout(30000);
   page.on('pageerror', (e) => failures.push(`pageerror ${e.message}`));
   // The fake clock lets the sim run minutes in seconds (runFor) while the page also runs in real time (resume).
   await page.clock.install();
@@ -134,6 +179,7 @@ async function run(width: number, height: number): Promise<void> {
     throw new Error('no empty ground spot');
   };
 
+  const hqTypeId = await ev<number>(`window.crawlout.placement.typeId(${JSON.stringify(HQ_KEY)})`);
   // --- Zoom out and build a lab and a workshop with the one builder (sim time runs on the fake clock).
   for (let i = 0; i < 6; i++) {
     await page.mouse.move(width / 2, height / 2);
@@ -187,11 +233,28 @@ async function run(width: number, height: number): Promise<void> {
   );
   check(await ev<boolean>(`!!document.querySelector('.co-hero')`), 'hero panel is always shown');
 
-  await ev(`(() => {
-    const c = window.crawlout; const es = [...c.entities().values()].filter((e) => e.owner === c.session.playerId);
-    const builder = es.find((e) => e.typeId === 2)?.id;
-    ${JSON.stringify(SITES)}.forEach((s) => c.session.sendCommand('Build', { ids: [builder], typeId: s.typeId, x: s.x, y: s.y }));
-  })()`);
+  // Sites: the nearest spots to the HQ where the sim's placement rule accepts the building (a site already ordered
+  // counts as a building for the next search, so the two never crowd each other).
+  const hqRow = (await ev<{ t: number; x: number; y: number }[]>(OWN)).find(
+    (e) => e.t === hqTypeId,
+  );
+  if (!hqRow) throw new Error('no own HQ found');
+  const sites: Site[] = [];
+  for (const s of SITE_KEYS) {
+    const spot = await ev<{ typeId: number; x: number; y: number; w: number; h: number } | null>(
+      findSite(s.key, hqRow.x, hqRow.y),
+    );
+    check(spot !== null, `a valid site for the ${s.name} exists near the HQ`);
+    if (!spot) throw new Error(`no valid site for ${s.key}`);
+    sites.push({ ...s, ...spot });
+    console.log(`     ${s.name} site at ${spot.x},${spot.y} (typeId ${spot.typeId})`);
+    await ev(`(() => {
+      const c = window.crawlout; const es = [...c.entities().values()].filter((e) => e.owner === c.session.playerId);
+      const builder = es.find((e) => e.typeId === 2)?.id;
+      c.session.sendCommand('Build', { ids: [builder], typeId: ${spot.typeId}, x: ${spot.x}, y: ${spot.y} });
+    })()`);
+    await page.clock.runFor(1000);
+  }
   // The scavengers collect scrap meanwhile, so a card is affordable once the buildings stand.
   await ev(`(() => {
     const c = window.crawlout; const es = [...c.entities().values()];
@@ -343,14 +406,12 @@ async function run(width: number, height: number): Promise<void> {
 
   // --- World clicks on every building: roof and walls, default and far zoom.
   const own = await ev<{ id: number; t: number; x: number; y: number }[]>(OWN);
-  const all = [
-    {
-      ...HQ,
-      typeId: HQ_TYPE,
-      x: own.find((e) => e.t === HQ_TYPE)!.x,
-      y: own.find((e) => e.t === HQ_TYPE)!.y,
-    },
-    ...SITES,
+  const hqFoot = await ev<{ w: number; h: number }>(
+    `window.crawlout.placement.footprint(${JSON.stringify(HQ_KEY)})`,
+  );
+  const all: Site[] = [
+    { name: HQ_NAME, typeId: hqTypeId, x: hqRow.x, y: hqRow.y, ...hqFoot, top: HQ_TOP },
+    ...sites,
   ];
   for (const zoom of ['default', 'far'] as const) {
     if (zoom === 'default') {
@@ -418,7 +479,8 @@ async function run(width: number, height: number): Promise<void> {
   await wait(800);
 
   // --- A building click replaces a unit selection; a unit click replaces a building selection.
-  const lab = own.find((e) => e.t === SITES[0].typeId)!;
+  const lab = own.find((e) => e.t === sites[0]!.typeId);
+  if (!lab) throw new Error('lab missing');
   await ev(`window.crawlout.renderer.focus(${lab.x}, ${lab.y})`);
   await wait(1200);
   await click(await center('.co-roster-groups button:has-text("Plunderaar")'));
@@ -477,12 +539,32 @@ async function run(width: number, height: number): Promise<void> {
   await browser.close();
 }
 
-for (const [w, h] of SIZES) {
+async function main(): Promise<void> {
   if (SHOTS) mkdirSync(SHOTS, { recursive: true });
-  await run(w, h);
+  for (const [w, h] of SIZES) {
+    const watchdog = new Promise<never>((_, reject) =>
+      setTimeout(
+        () => reject(new Error(`run ${w}x${h} took longer than ${RUN_LIMIT_MS / 1000} s`)),
+        RUN_LIMIT_MS,
+      ).unref(),
+    );
+    try {
+      await Promise.race([run(w, h), watchdog]);
+    } catch (e) {
+      check(
+        false,
+        `run ${w}x${h} finished`,
+        e instanceof Error ? e.message.split('\n')[0] : String(e),
+      );
+    }
+  }
 }
+
+await main();
 if (failures.length > 0) {
   console.log(`\n${failures.length} check(s) failed:\n- ${failures.join('\n- ')}`);
   process.exit(1);
 }
 console.log('\nall HUD click checks passed');
+// Exit explicitly: nothing may keep the process alive after the last line.
+process.exit(0);

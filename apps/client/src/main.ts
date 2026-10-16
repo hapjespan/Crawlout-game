@@ -335,7 +335,11 @@ async function main(): Promise<void> {
   const DEPOT_PROVIDES = [PROVIDES.indexOf('hq'), PROVIDES.indexOf('werkplaats')];
   const isDepot = (b: BuildingData): boolean => b.provides.some((p) => DEPOT_PROVIDES.includes(p));
   const CLAIM_PROVIDES = PROVIDES.indexOf('claim');
-  function placementReasonFor(option: BuildOption, cx: number, cy: number): number {
+  function placementReasonFor(
+    option: Pick<BuildOption, 'typeId' | 'footprint'>,
+    cx: number,
+    cy: number,
+  ): number {
     const { w, h } = option.footprint;
     const rects: number[] = [];
     const points: number[] = [];
@@ -718,6 +722,21 @@ async function main(): Promise<void> {
     session,
     entities: () => entities,
     status: () => status,
+    /** For the real-browser HUD test (tools/replay hud-clicks): building type ids by data key, and the sim's rule. */
+    placement: {
+      typeId: (key: string): number => {
+        const b = data.buildings.find((x) => x.key === key);
+        return b ? buildingTypeId(b.id) : -1;
+      },
+      footprint: (key: string) => data.buildings.find((x) => x.key === key)?.footprint,
+      /** Sim reason code (PLACE_OK = 0) for the building with this data key centred on (cx, cy) in sim units. */
+      reason: (key: string, cx: number, cy: number): number => {
+        const b = data.buildings.find((x) => x.key === key);
+        return b
+          ? placementReasonFor({ typeId: buildingTypeId(b.id), footprint: b.footprint }, cx, cy)
+          : -1;
+      },
+    },
   };
 }
 
