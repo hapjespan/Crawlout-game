@@ -610,7 +610,7 @@ async function placeBuilding(bot: Bot, naam: string, builderGroup = 'Bouwer'): P
       d: hq ? Math.hypot(g.gx - hq.x, g.gy - hq.y) / 256 : 0,
       near: Math.min(...before.map((b) => Math.hypot(g.gx - b.x, g.gy - b.y) / 256)),
     }))
-    .filter((g) => g.near > 17)
+    .filter((g) => g.near > 24)
     .sort((a, b) => a.d - b.d);
   const tried: string[] = [];
   const candidates = grid.filter((_, i) => i % 3 === 0).slice(0, 18);
@@ -632,10 +632,10 @@ async function placeBuilding(bot: Bot, naam: string, builderGroup = 'Bouwer'): P
         `${tried.length} geweigerde plekken`,
       );
       bot.refused[naam] = tried.length;
-      if (tried.length >= 4)
+      if (tried.length >= 12)
         bot.finding(
           'midden',
-          `plaatsing van ${naam}: ${tried.length} zichtbaar vrije plekken geweigerd voor er een werd geaccepteerd (geen rood/uitleg zichtbaar voor de speler)`,
+          `plaatsing van ${naam}: ${tried.length} zichtbaar vrije plekken geweigerd voor er een werd geaccepteerd (de preview is rood, maar de speler zoekt zo lang)`,
         );
       return added[0] ?? null;
     }
@@ -1082,7 +1082,12 @@ async function run(width: number, height: number): Promise<Bot> {
       );
       // Only three of them: pick single units from the roster list (click, shift-click), so the income keeps running.
       const units = page.locator('.co-roster-unit');
-      const n = await units.count();
+      let n = await units.count();
+      if (n < 3) {
+        // the group was already selected: a second click toggles the list open
+        await bot.rosterGroup('Plunderaar');
+        n = await units.count();
+      }
       if (n >= 3) {
         for (let i = 0; i < 3; i++) {
           const b = await units.nth(i).boundingBox();
@@ -1211,6 +1216,7 @@ async function run(width: number, height: number): Promise<Bot> {
       bot.expect(await bot.rosterGroup('Opziener'), 'Opziener in de roster');
       const hasAbility = await bot.ev<boolean>(`!!document.querySelector('[data-ability]')`);
       bot.expect(hasAbility, 'abilityknop zichtbaar bij geselecteerde held', 'midden');
+      await bot.wheel(-240, 6); // close enough that a click is within the 10 m range
       await bot.key('z');
       const mode = await bot.text('.co-targeting');
       bot.expect(
@@ -1245,7 +1251,9 @@ async function run(width: number, height: number): Promise<Bot> {
         spot = near ? { x: near.g.px, y: near.g.py } : await bot.emptySpot();
       }
       await bot.click(spot);
-      await bot.advance(1);
+      await wait(600);
+      await bot.advance(2);
+      await wait(900);
       const cd = (await bot.status()).hero?.abilityCooldownTicks?.[0] ?? 0;
       bot.expect(cd > 0, 'Lockdown staat in cooldown na gebruik', 'midden', `${cd}`);
     },
