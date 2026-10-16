@@ -1,7 +1,6 @@
 import { h } from 'preact';
 import type { ComponentChild } from 'preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
-import type { PlayerStatus } from '@crawlout/protocol';
 import { kindOfTypeId } from '@crawlout/data';
 import {
   ABILITY_KEYS,
@@ -14,6 +13,15 @@ import {
 } from './controller.js';
 import type { HudController, HudState } from './controller.js';
 import { CardPanel } from './cards.js';
+import {
+  ACTIVITY_TEXT,
+  ResourceBar,
+  SideConsole,
+  Typed,
+  UNIT_STATE_TEXT,
+  UnitConsole,
+} from './consoles.js';
+import { portraitOfGroup } from './portraits.js';
 import { drawMinimap } from './minimap.js';
 import type {
   AlertKind,
@@ -21,7 +29,6 @@ import type {
   RosterGroup,
   SelectedEntity,
   TargetingKind,
-  UnitActivity,
   UnitState,
 } from './types.js';
 
@@ -32,37 +39,16 @@ const TARGETING_TEXT: Record<TargetingKind, string> = {
   heroAbility: 'Kies een doelpositie voor de ability (Esc om te annuleren)',
 };
 
-const fmt = (n: number | undefined): string => (n === undefined ? '–' : String(n));
-
-function Counter(props: { label: string; value: string; full?: boolean }): ComponentChild {
-  return h(
-    'li',
-    { class: 'co-counter' },
-    h('span', { class: 'co-counter-label' }, props.label),
-    h('span', { class: props.full ? 'co-counter-value co-full' : 'co-counter-value' }, props.value),
-  );
-}
-
-function Counters(props: { status: PlayerStatus | null }): ComponentChild {
-  const s = props.status;
-  const full = s !== null && s.pop >= s.popCap;
-  return h(
-    'ul',
-    { class: 'co-panel co-counters', 'aria-label': 'Voorraad en bewoners' },
-    h(Counter, { label: 'Scrap', value: fmt(s?.scrap) }),
-    h(Counter, { label: 'Bewoners', value: fmt(s?.settlers) }),
-    h(Counter, { label: 'Pop', value: s ? `${s.pop}/${s.popCap}` : '–', full }),
-    // Robots count for pop but not for beds: the sim reports them next to the settlers' pop.
-    s && ((s.robotPop ?? 0) > 0 || s.queue.some((q) => q.kind === 'produce'))
-      ? h(Counter, { label: 'Robots', value: String(s.robotPop ?? 0) })
-      : null,
-    h(Counter, { label: 'Bedden', value: fmt(s?.beds) }),
-  );
-}
-
 function mmss(totalSeconds: number): string {
   const t = Math.max(0, Math.ceil(totalSeconds));
   return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`;
+}
+
+/** The numbers of a dominance line (points, time) light up in phosphor; the text itself stays one run of words. */
+function highlightNumbers(text: string): ComponentChild[] {
+  return text
+    .split(/(\d+\/\d+|\d+:\d\d)/)
+    .map((part, i) => (i % 2 === 1 ? h('b', { key: i, class: 'co-dom-num' }, part) : part));
 }
 
 function DominanceBar(props: {
@@ -81,7 +67,7 @@ function DominanceBar(props: {
       'span',
       { class: 'co-dom-text' },
       props.warn ? h('span', { class: 'co-dom-icon', 'aria-hidden': 'true' }, '⚠ ') : null,
-      props.text,
+      highlightNumbers(props.text),
     ),
     h(
       'div',
@@ -144,12 +130,29 @@ function HpBar(props: { pct: number }): ComponentChild {
   );
 }
 
+/** The line the selection screen types out: what the one selected unit is doing, or that it waits for orders. */
+function terminalLine(
+  sel: readonly SelectedEntity[],
+  roster: readonly RosterGroup[],
+): string | null {
+  if (sel.length === 0) return 'Wacht op bevel';
+  const lead = sel[0];
+  if (sel.length > 1 || !lead) return null;
+  if (lead.enemy) return `${lead.ownerLabel ?? 'Vijand'} in beeld`;
+  if (lead.note) return lead.note;
+  const unit = roster.flatMap((g) => g.units).find((u) => u.id === lead.id);
+  const name = lead.loadoutName ?? `Type ${lead.typeId}`;
+  return unit ? `${name}: ${ACTIVITY_TEXT[unit.activity]}` : null;
+}
+
 function SelectionPanel(props: {
   ctl: HudController;
   selection: readonly SelectedEntity[];
+  roster: readonly RosterGroup[];
 }): ComponentChild {
   const { ctl } = props;
   const sel = props.selection;
+  const line = terminalLine(sel, props.roster);
   let body: ComponentChild;
   const foe = sel.find((s) => s.enemy);
   if (sel.length === 0) {
@@ -220,28 +223,18 @@ function SelectionPanel(props: {
       'aria-label': 'Selectie',
     },
     h(
-      'h2',
-      null,
-      foe ? 'Selectie · vijand' : sel.length > 1 ? `Selectie (${sel.length})` : 'Selectie',
+      'div',
+      { class: 'co-sel-glass' },
+      h(
+        'h2',
+        null,
+        foe ? 'Selectie · vijand' : sel.length > 1 ? `Selectie (${sel.length})` : 'Selectie',
+      ),
+      body,
+      line ? h(Typed, { text: line }) : null,
     ),
-    body,
   );
 }
-
-/** What a unit bar says to a screen reader and in its tooltip; the bar itself shows colour only, no text. */
-const ACTIVITY_TEXT: Record<UnitActivity, string> = {
-  idle: 'niets te doen',
-  moving: 'onderweg',
-  gathering: 'verzamelt',
-  carrying: 'brengt scrap terug',
-  building: 'bouwt of craft',
-  fighting: 'vecht',
-};
-const UNIT_STATE_TEXT: Record<UnitState, string> = {
-  available: 'beschikbaar',
-  working: 'aan het werk',
-  busy: 'bezig',
-};
 
 /** Gebouwenpaneel: een knop per gebouwtype met aantal, een badge bij beschikbare acties en voortgang bij lopend werk. */
 function BuildingButtons(props: { ctl: HudController; state: HudState }): ComponentChild {
@@ -329,7 +322,13 @@ function RosterBar(props: { ctl: HudController; state: HudState }): ComponentChi
   const open: RosterGroup | undefined = state.roster.find((g) => g.key === state.rosterOpen);
   return h(
     'section',
-    { class: 'co-panel co-roster', 'aria-label': 'Eenheden per type' },
+    {
+      class:
+        state.buildingButtons.length > 0
+          ? 'co-panel co-roster co-roster-has-buildings'
+          : 'co-panel co-roster',
+      'aria-label': 'Eenheden per type',
+    },
     open
       ? h(
           'ul',
@@ -375,6 +374,7 @@ function RosterBar(props: { ctl: HudController; state: HudState }): ComponentChi
           }),
         )
       : null,
+    h('h2', { class: 'co-roster-title', 'aria-hidden': 'true' }, 'Eenheden'),
     h(
       'div',
       { class: 'co-roster-row' },
@@ -384,26 +384,56 @@ function RosterBar(props: { ctl: HudController; state: HudState }): ComponentChi
         state.roster.map((g) => {
           const idle = g.units.filter((u) => u.activity === 'idle').length;
           const allSelected = g.units.length > 0 && g.units.every((u) => selected.has(u.id));
+          // Share of the group per state, as a thin colour bar under the portrait (decorative: the numbers are in the label).
+          const per: Record<UnitState, number> = { available: 0, working: 0, busy: 0 };
+          for (const u of g.units) per[unitStateOf(u.activity)]++;
           return h(
             'button',
             {
               key: g.key,
               type: 'button',
               class: allSelected ? 'co-roster-group co-selected' : 'co-roster-group',
+              'data-group': g.key,
+              title: g.naam,
               'aria-label': `${g.naam}: ${g.units.length}, waarvan ${idle} zonder taak. Klik om ze te selecteren.`,
               'aria-expanded': state.rosterOpen === g.key,
               disabled: g.units.length === 0,
               onClick: (e: MouseEvent) => ctl.selectGroup(g.key, e.shiftKey),
             },
-            h('span', { class: 'co-roster-name' }, g.naam),
-            h('span', { class: 'co-roster-count' }, String(g.units.length)),
-            idle > 0
-              ? h(
-                  'span',
-                  { class: 'co-roster-idle', title: `${idle} zonder taak (punt-toets: volgende)` },
-                  `${idle} vrij`,
-                )
-              : null,
+            h('span', {
+              class: 'co-tile-portrait',
+              'aria-hidden': 'true',
+              'data-portrait': portraitOfGroup(g.key),
+            }),
+            h(
+              'span',
+              { class: 'co-tile-bar', 'aria-hidden': 'true' },
+              (['available', 'working', 'busy'] as const).map((st) =>
+                per[st] > 0
+                  ? h('i', { key: st, 'data-state': st, style: { flexGrow: per[st] } })
+                  : null,
+              ),
+            ),
+            h(
+              'span',
+              { class: 'co-tile-label' },
+              h('span', { class: 'co-roster-name' }, g.naam),
+              h(
+                'span',
+                { class: 'co-tile-line' },
+                h('span', { class: 'co-roster-count' }, String(g.units.length)),
+                idle > 0
+                  ? h(
+                      'span',
+                      {
+                        class: 'co-roster-idle',
+                        title: `${idle} zonder taak (punt-toets: volgende)`,
+                      },
+                      `${idle} vrij`,
+                    )
+                  : null,
+              ),
+            ),
           );
         }),
       ),
@@ -435,7 +465,14 @@ function CommandCard(props: { ctl: HudController; state: HudState }): ComponentC
   return h(
     'section',
     { class: 'co-panel co-commands', 'aria-label': "Commando's" },
-    actions.length > 0 || heroSelected ? h('h2', null, "Commando's") : null,
+    actions.length > 0 || heroSelected
+      ? h(
+          'h2',
+          { class: 'co-cmd-title' },
+          h('span', { class: 'co-emblem', 'aria-hidden': 'true' }),
+          "Commando's",
+        )
+      : null,
     hint ? h('p', { class: 'co-empty co-commands-hint' }, hint) : null,
     actions.length > 0
       ? h(
@@ -461,7 +498,8 @@ function CommandCard(props: { ctl: HudController; state: HudState }): ComponentC
                 'data-action': a.id,
                 onClick: () => ctl.run(a.id),
               },
-              h('span', null, a.label),
+              h('span', { class: 'co-btn-icon', 'aria-hidden': 'true' }),
+              h('span', { class: 'co-btn-label' }, a.label),
               h('span', { class: 'co-key', 'aria-hidden': 'true' }, keyLabel(a.key)),
             );
           }),
@@ -470,6 +508,15 @@ function CommandCard(props: { ctl: HudController; state: HudState }): ComponentC
     heroSelected ? h(HeroAbilities, { ctl, state }) : null,
     state.buildMenuOpen ? h(BuildMenu, { ctl, state }) : null,
   );
+}
+
+/** Which drawing a build option gets in the bitmap skin (a name match: the options carry no icon of their own). */
+function buildingIcon(naam: string): string {
+  const n = naam.toLowerCase();
+  if (/woning|huis|bed/.test(n)) return 'home';
+  if (/turret|toren|laser/.test(n)) return 'turret';
+  if (/robot|fabriek/.test(n)) return 'factory';
+  return 'build';
 }
 
 function BuildMenu(props: { ctl: HudController; state: HudState }): ComponentChild {
@@ -499,7 +546,12 @@ function BuildMenu(props: { ctl: HudController; state: HudState }): ComponentChi
               'aria-label': `${o.naam}, ${o.scrapCost} scrap, ${o.footprint.w} bij ${o.footprint.h}${o.affordable ? '' : ', te duur'} (sneltoets ${i + 1})`,
               onClick: () => ctl.chooseBuild(o.buildingId),
             },
-            h('span', null, o.naam),
+            h('span', {
+              class: 'co-build-icon',
+              'aria-hidden': 'true',
+              'data-building-icon': buildingIcon(o.naam),
+            }),
+            h('span', { class: 'co-build-name' }, o.naam),
             h(
               'span',
               { class: o.affordable ? 'co-cost' : 'co-cost co-full' },
@@ -923,7 +975,7 @@ export function Hud(props: { ctl: HudController }): ComponentChild {
     'div',
     {
       class: 'co-hud',
-      // Dutch hyphenation lets long card names (Geweerschutter) wrap at syllables instead of mid-word.
+      // Dutch text: screen readers and the browser pick the right language rules.
       lang: 'nl',
       // Presses on the HUD never reach anything behind or around it (the canvas, document listeners), and the native
       // context menu does not open on a ctrl+click (macOS right click) over a panel.
@@ -937,7 +989,7 @@ export function Hud(props: { ctl: HudController }): ComponentChild {
         e.preventDefault();
       },
     },
-    h(Counters, { status: state.status }),
+    h(ResourceBar, { status: state.status }),
     h(
       'div',
       { class: 'co-top-right' },
@@ -979,9 +1031,11 @@ export function Hud(props: { ctl: HudController }): ComponentChild {
     h(HeroPanel, { ctl, state }),
     h(Toasts, { ctl, state }),
     h(LobbyPanel, { ctl, state }),
-    h(SelectionPanel, { ctl, selection: state.selection }),
+    h(SelectionPanel, { ctl, selection: state.selection, roster: state.roster }),
     h(RosterBar, { ctl, state }),
-    // Bottom right column: the card window sits directly above the commands, so it never covers the minimap or roster.
+    h(SideConsole, { ctl, state }),
+    h(UnitConsole, { ctl, state }),
+    // Above the right console: the card window sits directly above the commands, so it never covers the minimap or roster.
     h(
       'div',
       { class: 'co-right-col' },

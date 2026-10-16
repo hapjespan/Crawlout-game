@@ -40,6 +40,39 @@ export type ActionId =
   | 'lastAlert'
   | 'lobby';
 
+/**
+ * Snelknoppen van de consoles (zijconsole links, sleutelplaten rechts, ronde knopjes): elk is een echte HUD-actie die al
+ * een sneltoets of knop had, of zegt waarom hij nu niets kan doen.
+ */
+export type QuickId =
+  | 'hero'
+  | 'building'
+  | 'idle'
+  | 'build'
+  | 'lobby'
+  | 'perks'
+  | 'craft'
+  | 'training'
+  | 'alert'
+  | 'menu';
+
+/** Wat een snelknop meldt als hij nu niets kan doen. */
+export const QUICK_HINT: Record<QuickId, string> = {
+  hero: 'Er is nu geen held om te selecteren.',
+  building: 'Je hebt nog geen gebouw met een taak.',
+  idle: 'Alle eenheden hebben een taak.',
+  build: 'Selecteer eerst een bouwer om te bouwen.',
+  lobby: 'Er is geen lobby in dit potje.',
+  perks: 'Je hebt geen perk om te kiezen.',
+  craft: 'Selecteer een bewoner om uit te rusten.',
+  training: 'Je hebt nog geen trainingsfaciliteit.',
+  alert: 'Er is geen alarm om naartoe te gaan.',
+  menu: 'Menu',
+};
+
+/** De gebouwknop van de trainingsfaciliteit (data-key), voor de CHR-knop. */
+export const TRAINING_BUILDING_KEY = 'trainingsfaciliteit';
+
 /** Zo lang blijft een toast staan en zoveel staan er maximaal tegelijk. */
 export const TOAST_MS = 6000;
 export const MAX_TOASTS = 4;
@@ -1013,6 +1046,90 @@ export class HudController implements HudHandle {
     const at = idle.findIndex((u) => u.id === current);
     const next = idle[(at + 1) % idle.length]!;
     return this.selectRosterUnit(next.id);
+  }
+
+  /** Eerstvolgende eigen gebouw met een taak (in volgorde van de gebouwenbalk): selecteren en de camera erheen. */
+  selectNextBuilding(): boolean {
+    const sites = this.state.buildingButtons.flatMap((b) => b.sites);
+    if (sites.length === 0 || !this.deps.selectUnits) return false;
+    const current = this.state.selection.length === 1 ? this.state.selection[0]?.id : undefined;
+    const at = sites.findIndex((s) => s.id === current);
+    const next = sites[(at + 1) % sites.length]!;
+    this.deps.selectUnits([next.id], false);
+    this.deps.focusCamera?.(next.x, next.y);
+    this.refresh();
+    return true;
+  }
+
+  /**
+   * Kan deze snelknop nu iets doen? De knoppen van de zijconsole en de rechterconsole zijn nooit dood: zonder
+   * mogelijkheid zegt een klik waarom (QUICK_HINT) in plaats van niets te doen.
+   */
+  quickAvailable(id: QuickId): boolean {
+    const s = this.state;
+    switch (id) {
+      case 'hero':
+        return (
+          s.roster.some((g) => g.key === 'hero' && g.units.length > 0) ||
+          (!!s.status?.hero?.entityId && !s.heroDead && this.deps.selectUnits !== undefined)
+        );
+      case 'building':
+        return s.buildingButtons.some((b) => b.sites.length > 0) && !!this.deps.selectUnits;
+      case 'idle':
+        return (
+          s.roster.some((g) => g.units.some((u) => u.activity === 'idle')) &&
+          !!this.deps.selectUnits
+        );
+      case 'build':
+        return this.isEnabled(ACTIONS.find((a) => a.id === 'build')!);
+      case 'lobby':
+        return this.deps.getLobby !== undefined;
+      case 'perks':
+        return this.pendingPerks() > 0;
+      case 'craft':
+        return this.hasCraftCards();
+      case 'training':
+        return (
+          s.buildingButtons.some((b) => b.key === TRAINING_BUILDING_KEY && b.sites.length > 0) &&
+          !!this.deps.selectUnits
+        );
+      case 'alert':
+        return s.toasts.some((t) => t.kind !== 'dominance');
+      case 'menu':
+        return true;
+    }
+  }
+
+  /** Voert een snelknop uit; geeft false (met een korte melding) als ze nu niets kan doen. */
+  quick(id: QuickId): boolean {
+    if (this.state.confirmSurrender) return false;
+    if (!this.quickAvailable(id)) {
+      this.showHint(QUICK_HINT[id]);
+      return false;
+    }
+    switch (id) {
+      case 'hero':
+        return this.focusHero();
+      case 'building':
+        return this.selectNextBuilding();
+      case 'idle':
+        return this.selectNextIdle();
+      case 'build':
+        return this.run('build');
+      case 'lobby':
+        return this.run('lobby');
+      case 'perks':
+        return this.togglePerkPanel();
+      case 'craft':
+        return this.toggleCraftMenu();
+      case 'training':
+        return this.selectBuilding(TRAINING_BUILDING_KEY, true);
+      case 'alert':
+        return this.run('lastAlert');
+      case 'menu':
+        this.requestSurrender();
+        return true;
+    }
   }
 
   canToggleReady(): boolean {

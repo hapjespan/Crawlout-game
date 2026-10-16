@@ -1,24 +1,22 @@
 #!/usr/bin/env node
-// Crops the HUD artwork delivered by the designer into named PNGs plus a hud-skin.json (9-slice insets per frame).
+// Crops the HUD artwork delivered by the designer into named PNGs plus a hud-skin.json (9-slice insets per frame, plus
+// the console regions, portraits and icons).
 //
-// LICENCE / IP: the source sheets are AI-generated imitations of a commercial game's interface. They never enter git:
-// the output goes to assets/local/hud/ in the main checkout (gitignored) and is only loaded in dev (see
-// apps/client/src/ui/hudSkin.ts). This script holds coordinates only, no art, so it is safe to commit.
-// We crop generic material ONLY: plate textures, panel frames and bezels, buttons, badge chips, hazard stripes. Never logos or emblems, faction lettering, portraits, character names, power armour or the SKL/INV/CHR/PIP/MNU
-// buttons. Frames with text inside are hollowed (the interior is made transparent) or built by mirroring one text-free
-// corner, so no lettering survives in a crop.
+// LICENCE / IP: the source sheets and the mockup are AI-generated imitations of a commercial game's interface, drawn for
+// the designer's own non-commercial fan project. They never enter the repository: the output goes to assets/local/hud/ in
+// the main checkout (ignored by version control) and is only loaded in dev (see apps/client/src/ui/hudSkin.ts); a
+// production build contains none of it (checked by checksum). This script holds coordinates and paint operations only,
+// no art, so it is safe to commit. The designer asked for the whole mockup, so the crops include the console frames, the
+// portraits and the emblem; every baked-in label and number is painted out first (regions.mjs), so the HUD draws its own
+// text (Dutch) and its live values on top.
 //
 // Usage: node tools/hud-art/crop.mjs [--src ~/Downloads] [--out ~/Crawlout/assets/local/hud]
-import { createRequire } from 'node:module';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import process from 'node:process';
-import { dirname, join, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
-
-const here = dirname(fileURLToPath(import.meta.url));
-// sharp lives with the asset CLI; resolve it from there so this tool needs no dependency of its own.
-const sharp = createRequire(join(here, '../asset-cli/package.json'))('sharp');
+import { join, resolve } from 'node:path';
+import { Img, sharp } from './paint.mjs';
+import { REGIONS, paintMock } from './regions.mjs';
 
 const args = process.argv.slice(2);
 const opt = (name, dflt) => {
@@ -33,7 +31,7 @@ const SHEET = {
   e7: 'Gemini_Generated_Image_ecvj05ecvj05ecvj.jpeg', // Selectiepaneel
   e8: 'Gemini_Generated_Image_b6o7nib6o7nib6o7.jpeg', // Commandopaneel
   e9: 'Gemini_Generated_Image_ipywluipywluipyw.jpeg', // Bouwmenu en plaatsing
-  tok: 'Gemini_Generated_Image_bqayrxbqayrxbqay.jpeg', // tokens and generic hardware
+  tok: 'Gemini_Generated_Image_bqayrxbqayrxbqay.jpeg', // recruits portraits, tokens and generic hardware
   mock: 'mockup-blanked.png', // in-game mockup with blanked glass
 };
 
@@ -120,7 +118,7 @@ async function stripePeriod(buf, w, h) {
 }
 
 const files = {};
-const skin = { version: 1, frames: {}, tiles: {}, images: {} };
+const skin = { version: 2, frames: {}, tiles: {}, images: {} };
 
 async function emit(name, buf, meta) {
   const info = await sharp(buf).metadata();
@@ -144,6 +142,38 @@ async function frameMirror(name, sheet, rect, corner, slice) {
   });
 }
 
+/** A plain image (no slicing), stored in the manifest under `images`. */
+async function image(name, img, scale = 2, sharpen = 0.6) {
+  skin.images[name] = await emit(name, await img.png(scale, sharpen), {});
+}
+
+const sheetCache = new Map();
+async function sheetImg(sheet) {
+  if (!sheetCache.has(sheet)) sheetCache.set(sheet, await Img.load(join(SRC, SHEET[sheet])));
+  return sheetCache.get(sheet);
+}
+
+/** Keep the bright green of an icon and drop the plate behind it: alpha follows how green a pixel is. */
+function greenKey(img) {
+  for (let i = 0; i < img.data.length; i += 4) {
+    const [r, g, b] = [img.data[i], img.data[i + 1], img.data[i + 2]];
+    const a = (g - Math.max(r, b) - 22) * 5;
+    img.data[i + 3] = Math.max(0, Math.min(255, a));
+  }
+  return img;
+}
+
+/** Keep the dark parts of a picture on a lighter plate (the rifle): alpha follows how much darker than the plate. */
+function darkKey(img, plateLum) {
+  for (let i = 0; i < img.data.length; i += 4) {
+    const lum = (img.data[i] + img.data[i + 1] + img.data[i + 2]) / 3;
+    img.data[i + 3] = Math.max(0, Math.min(255, (plateLum - lum) * 8));
+    // Bright pixels are lettering of the mockup, not the gun.
+    if (lum > plateLum + 25) img.data[i + 3] = 0;
+  }
+  return img;
+}
+
 async function main() {
   mkdirSync(OUT, { recursive: true });
 
@@ -155,6 +185,8 @@ async function main() {
 
   // Riveted rusty plate: big panels (hero, dominance, top bar, card panel, dialog).
   await frameMirror('frame-plate', 'e6', [715, 616, 48, 48], 'tl', 40);
+  // Olive riveted header plate (the Recruits header of the mockup, the title strip of the sheets).
+  await frameMirror('frame-header', 'e7', [641, 22, 46, 38], 'tl', 30);
   // Riveted rusty bezel around a CRT glass (selection panel, enemy variant, perk panel).
   await frameMirror('frame-bezel', 'e7', [455, 152, 44, 44], 'tl', 40);
   // Slim dark inset well with a thin rim (grids, roster bar well).
@@ -167,8 +199,6 @@ async function main() {
   await frameMirror('frame-chip', 'e6', [52, 162, 34, 34], 'tl', 32);
   // Rusty build-option card with rivets.
   await frameMirror('frame-card', 'e9', [47, 200, 16, 16], 'tl', 15);
-  // Minimap bezel from the in-game mockup.
-  await frameMirror('frame-minimap', 'mock', [896, 27, 12, 12], 'tl', 11);
 
   // Generic buttons (normal, amber = active, rust = disabled), interior removed.
   await frameMirror('btn-normal', 'e8', [57, 195, 30, 30], 'tl', 28);
@@ -191,6 +221,69 @@ async function main() {
       .png()
       .toBuffer();
     skin.tiles['hazard'] = await emit('hazard', buf, { period: p * tiles });
+  }
+
+  // --- The mockup: clean console regions (lettering and numbers painted out) and the minimap frame.
+  const mock = await paintMock(join(SRC, SHEET.mock));
+  for (const [name, [x, y, w, h]] of Object.entries(REGIONS))
+    await image(name, mock.extract(x, y, w, h), 2, 0.5);
+  {
+    // The minimap frame: the whole riveted frame of the mockup with the map window hollowed (9 px rim at 1x, 18 at 2x).
+    const raw = await Img.load(join(SRC, SHEET.mock));
+    const f = raw.extract(896, 27, 125, 125);
+    f.hollow(9, 9, 107, 107);
+    skin.frames['frame-minimap'] = await emit('frame-minimap', await f.png(2, 0.5), {
+      slice: [18, 18, 18, 18],
+    });
+  }
+
+  // --- Portraits of the Recruits sheet: eleven faces, cut above the little rank mark, green CRT as drawn.
+  {
+    const tok = await sheetImg('tok');
+    const xs = [53, 138, 223, 308];
+    const ys = [118, 230, 342];
+    let n = 0;
+    for (const y of ys)
+      for (const x of xs) {
+        if (n >= 11) break;
+        n += 1;
+        await image(`portrait-${n}`, tok.extract(x, y, 82, 84), 1.5, 0.4);
+      }
+  }
+  // A generic CRT icon for units without a face (robots): the tracked unit of the Commandopaneel sheet.
+  await image('portrait-robot', (await sheetImg('e8')).extract(74, 722, 76, 62), 1.8, 0.4);
+
+  // --- Command icons: the green drawings of the Commandopaneel and Bouwmenu sheets, plate keyed out.
+  {
+    const e8 = await sheetImg('e8');
+    const e9 = await sheetImg('e9');
+    await image('icon-move', greenKey(e8.extract(96, 220, 42, 24)), 2.5, 0.4);
+    await image('icon-stop', greenKey(e8.extract(238, 209, 32, 44)), 2.5, 0.4);
+    await image('icon-attack', greenKey(e8.extract(366, 209, 46, 44)), 2.5, 0.4);
+    await image('icon-gather', greenKey(e8.extract(98, 313, 40, 38)), 2.5, 0.4);
+    await image('icon-home', greenKey(e9.extract(62, 214, 56, 48)), 2, 0.4);
+    await image('icon-build', greenKey(e9.extract(60, 312, 58, 58)), 2, 0.4);
+    await image('icon-turret', greenKey(e9.extract(62, 430, 56, 48)), 2, 0.4);
+    await image('icon-factory', greenKey(e9.extract(62, 538, 60, 60)), 2, 0.4);
+  }
+
+  // --- The rifle of the weapon slot, keyed out of the mockup's plate (the lettering around it is bright and drops out).
+  {
+    const raw = await Img.load(join(SRC, SHEET.mock));
+    const gun = darkKey(raw.extract(792, 503, 66, 46), 70);
+    gun.hollow(26, 0, 40, 10); // the word BURST sits right above the barrel
+    await image('weapon-gun', gun, 2.5, 0.4);
+  }
+
+  // --- The emblem of the Selectiepaneel header (embossed gear and wing) as a plate texture for headers.
+  await image('emblem', (await sheetImg('e7')).extract(728, 22, 80, 80), 2, 0.4);
+
+  // --- Paper strip with the lettering of the sheet painted out (hints and the "enemy" note).
+  {
+    const e8 = await sheetImg('e8');
+    const p = e8.extract(554, 764, 374, 66);
+    p.inpaintV(22, 21, 332, 30, 5);
+    await image('paper-strip', p, 1.5, 0.3);
   }
 
   writeFileSync(join(OUT, 'hud-skin.json'), `${JSON.stringify(skin, null, 2)}\n`);

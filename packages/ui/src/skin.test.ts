@@ -74,11 +74,33 @@ describe('HUD bitmap skin (dev only)', () => {
 
   it('builds 9-slice border-image CSS scoped to the skin attribute', () => {
     const css = hudSkinCss(skin());
-    expect(css).toContain('[data-co-skin="bitmap"] .co-hud .co-panel');
+    expect(css).toContain('[data-co-skin="bitmap"] .co-hud .co-commands');
     expect(css).toContain(
       'border-image:url("/@fs/local/frame-plate.png") 28 28 28 28/10px/0 stretch',
     );
     expect(css).toContain('url("/@fs/local/plate-rust.png")');
+  });
+
+  it('lays the console regions, portraits and icons over the layout boxes', () => {
+    const full = skin();
+    const images = {
+      'region-console': { file: 'region-console.png', w: 668, h: 248 },
+      'portrait-4': { file: 'portrait-4.png', w: 123, h: 126 },
+      'icon-move': { file: 'icon-move.png', w: 105, h: 60 },
+      'icon-build': { file: 'icon-build.png', w: 116, h: 116 },
+    };
+    const urls = { ...full.urls };
+    for (const i of Object.values(images)) urls[i.file] = `/@fs/local/${i.file}`;
+    const css = hudSkinCss({ manifest: { ...full.manifest, images }, urls });
+    expect(css).toContain('.co-console{background-image:url("/@fs/local/region-console.png")');
+    expect(css).toContain('[data-portrait="4"]{background-image:url("/@fs/local/portrait-4.png")');
+    expect(css).toContain(
+      '[data-action="move"] .co-btn-icon{background-image:url("/@fs/local/icon-move.png")',
+    );
+    // A picture the manifest names but the page cannot load makes the skin incomplete: the CSS look stays.
+    const missing = { ...urls };
+    delete missing['portrait-4.png'];
+    expect(hudSkinCss({ manifest: { ...full.manifest, images }, urls: missing })).toBe('');
   });
 
   it('gives an empty skin when a crop is missing, so the CSS look stays', () => {

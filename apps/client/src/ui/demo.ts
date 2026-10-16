@@ -364,7 +364,20 @@ function cancelCard(c: BuildingCard): void {
 }
 const alertCbs = new Set<(a: HudAlert) => void>();
 const emitAlert = (a: HudAlert): void => alertCbs.forEach((cb) => cb(a));
-let selection: SelectedEntity[] = query.get('sel') === 'none' ? [] : ALL;
+const ENEMY: SelectedEntity[] = [
+  {
+    id: 900,
+    typeId: 2,
+    loadoutName: 'Geweerschutter',
+    hpPct: 62,
+    role: null,
+    enemy: true,
+    ownerLabel: 'Vijand (Roestlegioen)',
+    detail: 'Wapen: Geweer (ballistisch) · Pantser: Licht',
+  },
+];
+let selection: SelectedEntity[] =
+  query.get('sel') === 'none' ? [] : query.get('sel') === 'enemy' ? ENEMY : ALL;
 const buildingButtons: BuildingButton[] = [
   {
     key: 'werkplaats',
@@ -472,7 +485,12 @@ const deps: HudDeps = {
   },
 };
 
-const hud = mountHud(hudEl, deps);
+// The local bitmap skin (dev only, like the client); `?noskin` shows the CSS-only look that production gets.
+const hudSkin =
+  import.meta.env.DEV && !query.has('noskin')
+    ? (await import('./hudSkin.js')).loadHudSkin()
+    : undefined;
+const hud = mountHud(hudEl, deps, hudSkin ? { skin: hudSkin } : {});
 
 // Wereldklik: in de echte client doet de renderer-picking dit.
 worldEl.addEventListener('click', (e) => {
@@ -535,5 +553,5 @@ window.addEventListener('keydown', (e) => {
   notify();
 });
 log(
-  'Demo: D = desync, W = stall, Y = selectie (alles, gebouw, bewoners, niets; gebouw toont de onderzoekskaarten, bewoners de craftkaarten met K + cijfer), J = alert, T = dominantie (niets, eigen punten, eigen telling, tegenstander telt), U = level-up, O = held dood/levend, E = werkplaats wel/niet (rolknoppen), ?units=14&workshop=0&pending=2&sel=none; B = bouwen, cijfer kiest gebouw, klik plaatst',
+  'Demo: D = desync, W = stall, Y = selectie (alles, gebouw, bewoners, niets; gebouw toont de onderzoekskaarten, bewoners de craftkaarten met K + cijfer), J = alert, T = dominantie (niets, eigen punten, eigen telling, tegenstander telt), U = level-up, O = held dood/levend, E = werkplaats wel/niet (rolknoppen), ?units=14&workshop=0&pending=2&sel=none of sel=enemy; B = bouwen, cijfer kiest gebouw, klik plaatst',
 );
