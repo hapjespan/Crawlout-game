@@ -20,6 +20,7 @@ import {
 } from 'three/webgpu';
 import {
   abs,
+  atan,
   attribute,
   float,
   fract,
@@ -32,6 +33,7 @@ import {
   sin,
   smoothstep,
   texture,
+  time,
   uniformArray,
   vec2,
   vec3,
@@ -71,6 +73,21 @@ export interface DecalStyle {
   fillEdge?: number;
 }
 
+/** Progress arc along the ring of a circle decal (claim points): clockwise from the top, in a second palette colour. */
+export const ARC_MODE = { solid: 0, pulse: 1, frozen: 2 } as const;
+export interface DecalArc {
+  /** 0..1 of the circle; 0 draws nothing (unless the mode is frozen). */
+  fraction: number;
+  /** Palette slot of the arc: teamIndex(player) or a DECAL_COLOR. */
+  color: number;
+  /** solid; pulse (alpha breathes, a contest running); frozen (striped, both sides are in the circle). */
+  mode: number;
+}
+/** Width of the arc band in meters, a bit wider than the claim ring so it reads on top of it. */
+const ARC_WIDTH = 0.6;
+const ARC_STRIPES = 28;
+const ARC_PULSE_RATE = 6; // rad/s
+
 const LIFT = 0.05; // meters above the terrain
 /** Contact distance fields (contactMask.ts): texels per side and how many fit (one layer per building type). */
 export const CONTACT_MASK_SIZE = 128;
@@ -104,6 +121,7 @@ function createDecalMaterial(
   const iA = attribute('iDecalA', 'vec4'); // center x, center z, half x, half z (meters)
   const iB = attribute('iDecalB', 'vec4'); // shadow, ring, ring width (m), fill
   const iC = attribute('iDecalC', 'vec4'); // grid, color slot, shape, fill edge
+  const iD = attribute('iDecalD', 'vec4'); // arc fraction, arc color slot, arc mode
   const local = attribute('position', 'vec3').xz; // -1..1 over the quad (not positionLocal: positionNode overwrites it)
   const world = vec2(iA.x, iA.y).add(local.mul(iA.zw));
   const ground = heights ? terrainHeightNode(heights, world) : float(0);
@@ -112,9 +130,14 @@ function createDecalMaterial(
   m.positionNode = vec3(world.x, ground.add(LIFT), world.y);
 
   // Fragment, in meters from the decal center.
-  const p = vertexStage(local.mul(iA.zw));
-  const half = vertexStage(iA.zw);
-  const shapeId = vertexStage(iC.z);
+  // One varying per vec4 (WebGPU allows 16 vertex outputs): iB, iC, iD and (p, half) are interpolated whole.
+  const vB = vertexStage(iB);
+  const vC = vertexStage(iC);
+  const vD = vertexStage(iD);
+  const pHalf = vertexStage(vec4(local.mul(iA.zw), iA.zw));
+  const p = pHalf.xy;
+  const half = pHalf.zw;
+  const shapeId = vC.z;
   const rect = shapeId.greaterThan(0.5).and(shapeId.lessThan(1.5));
   const contact = shapeId.greaterThan(1.5);
   const radial = length(p).div(half.x); // 0 at the center, 1 at the edge (circles)
@@ -122,28 +145,53 @@ function createDecalMaterial(
   const edgeRect = min(half.x.sub(abs(p.x)), half.y.sub(abs(p.y)));
   const edge = select(rect, edgeRect, edgeCircle); // meters inside the edge, negative outside
   const inside = smoothstep(-0.02, 0.02, edge);
-  const width = vertexStage(iB.z);
+  const width = vB.z;
   const ring = smoothstep(-0.02, 0.03, edge)
     .mul(float(1).sub(smoothstep(width.sub(0.03), width.add(0.02), edge)))
-    .mul(vertexStage(iB.y));
+    .mul(vB.y);
   const shadow = float(1)
     .sub(smoothstep(0.2, 0.65, radial))
-    .mul(vertexStage(iB.x))
+    .mul(vB.x)
     .mul(0.42);
   // Soft fill: with fill edge 1 it is 30 % at the center and full at the rim of a circle.
-  const edgeWeight = mix(float(1), radial.mul(radial).mul(0.7).add(0.3), vertexStage(iC.w));
-  const fill = inside.mul(vertexStage(iB.w)).mul(min(edgeWeight, 1));
+  const edgeWeight = mix(float(1), radial.mul(radial).mul(0.7).add(0.3), vC.w);
+  const fill = inside.mul(vB.w).mul(min(edgeWeight, 1));
   const cell = abs(fract(p.add(half)).sub(0.5)); // 0.5 on a cell line
-  const gridLine = smoothstep(0.44, 0.48, max(cell.x, cell.y)).mul(inside).mul(vertexStage(iC.x));
-  const colored = max(max(ring, fill), gridLine);
+  const gridLine = smoothstep(0.44, 0.48, max(cell.x, cell.y)).mul(inside).mul(vC.x);
+  // Progress arc: a wider band over the ring, clockwise from the top (angle 0 = -z), only on circles.
+  const arcFraction = vD.x;
+  const arcMode = vD.z;
+  const frozen = arcMode.greaterThan(1.5);
+  const pulsing = arcMode.greaterThan(0.5).and(arcMode.lessThan(1.5));
+  const angle = fract(
+    atan(p.x, p.y.negate())
+      .div(Math.PI * 2)
+      .add(1),
+  );
+  const sector = select(angle.lessThan(arcFraction), float(1), float(0));
+  const stripe = select(fract(angle.mul(ARC_STRIPES)).lessThan(0.5), float(1), float(0));
+  const arcStrength = select(frozen, stripe.mul(mix(float(0.5), float(1), sector)), sector);
+  const arcPulse = select(pulsing, sin(time.mul(ARC_PULSE_RATE)).mul(0.3).add(0.7), float(1));
+  const arcBand = smoothstep(-0.02, 0.03, edgeCircle).mul(
+    float(1).sub(smoothstep(ARC_WIDTH - 0.03, ARC_WIDTH + 0.02, edgeCircle)),
+  );
+  const hasArc = select(arcFraction.greaterThan(0.001).or(frozen), float(1), float(0));
+  const arc = arcBand
+    .mul(arcStrength)
+    .mul(arcPulse)
+    .mul(hasArc)
+    .mul(select(rect.or(contact), float(0), float(1)));
+  const colored = max(max(max(ring, fill), gridLine), arc);
   const palette = uniformArray<'vec3'>(decalPalette(), 'vec3');
-  const tint = palette.element(int(vertexStage(iC.y)));
+  const baseTint = palette.element(int(vC.y));
+  const arcTint = palette.element(int(vD.y));
+  const tint = mix(baseTint, arcTint, arc.div(max(colored, 0.001)));
   // Contact: distance from the footprint (rounded box) or, with a mask layer (iC.w - 1), from the mesh's own ground
   // contact (contactMask.ts: a distance field over the decal quad, bytes over 0..margin), wobbled by a cheap noise.
-  const margin = max(vertexStage(iB.z), 0.01);
+  const margin = max(vB.z, 0.01);
   const inner = max(half.sub(margin), vec2(0, 0));
   const boxDistance = length(max(abs(p).sub(inner), vec2(0, 0)));
-  const maskSlot = vertexStage(iC.w);
+  const maskSlot = vC.w;
   const maskDistance = texture(contactMasks, p.div(half.mul(2)).add(0.5))
     .depth(int(max(maskSlot.sub(1), 0).add(0.5)))
     .x.mul(margin);
@@ -156,9 +204,9 @@ function createDecalMaterial(
   const reach = outside.mul(wobble.mul(CONTACT_WOBBLE).add(1));
   const dust = float(1)
     .sub(smoothstep(margin.mul(0.12), margin, reach))
-    .mul(vertexStage(iB.w));
+    .mul(vB.w);
   const edgeAo = float(1).sub(smoothstep(0, margin.mul(CONTACT_AO_SHARE), reach));
-  const occlusion = edgeAo.mul(edgeAo).mul(vertexStage(iB.x));
+  const occlusion = edgeAo.mul(edgeAo).mul(vB.x);
   const contactAlpha = float(1).sub(float(1).sub(dust).mul(float(1).sub(occlusion)));
   const contactColored = dust.mul(float(1).sub(occlusion)); // dust shows where the dark edge does not cover it
   const alpha = select(contact, contactAlpha, max(shadow, colored));
@@ -175,6 +223,7 @@ export class DecalLayer {
   private readonly a: InstancedBufferAttribute;
   private readonly b: InstancedBufferAttribute;
   private readonly c: InstancedBufferAttribute;
+  private readonly d: InstancedBufferAttribute;
   private material: MeshBasicNodeMaterial;
   private n = 0;
   private readonly contactMasks: DataArrayTexture;
@@ -189,9 +238,11 @@ export class DecalLayer {
     this.a = dynamic(capacity);
     this.b = dynamic(capacity);
     this.c = dynamic(capacity);
+    this.d = dynamic(capacity);
     geo.setAttribute('iDecalA', this.a);
     geo.setAttribute('iDecalB', this.b);
     geo.setAttribute('iDecalC', this.c);
+    geo.setAttribute('iDecalD', this.d);
     const masks = new DataArrayTexture(
       new Uint8Array(CONTACT_MASK_SIZE * CONTACT_MASK_SIZE * CONTACT_MASK_LAYERS).fill(255),
       CONTACT_MASK_SIZE,
@@ -229,8 +280,8 @@ export class DecalLayer {
     this.n = 0;
   }
 
-  /** Adds one decal. x, z, halfX, halfZ in meters. Silently drops decals beyond capacity. */
-  push(x: number, z: number, halfX: number, halfZ: number, s: DecalStyle): void {
+  /** Adds one decal (a circle may carry a progress `arc`). x, z, halfX, halfZ in meters. Silently drops decals beyond capacity. */
+  push(x: number, z: number, halfX: number, halfZ: number, s: DecalStyle, arc?: DecalArc): void {
     const k = this.n;
     if (k >= this.capacity) return;
     this.n = k + 1;
@@ -238,6 +289,7 @@ export class DecalLayer {
     const a = this.a.array as Float32Array;
     const b = this.b.array as Float32Array;
     const c = this.c.array as Float32Array;
+    const d = this.d.array as Float32Array;
     a[o] = x;
     a[o + 1] = z;
     a[o + 2] = halfX;
@@ -250,6 +302,10 @@ export class DecalLayer {
     c[o + 1] = s.color;
     c[o + 2] = s.shape;
     c[o + 3] = s.fillEdge ?? 0;
+    d[o] = arc?.fraction ?? 0;
+    d[o + 1] = arc?.color ?? 0;
+    d[o + 2] = arc?.mode ?? 0;
+    d[o + 3] = 0;
   }
 
   /**
@@ -296,7 +352,7 @@ export class DecalLayer {
     this.mesh.count = n;
     this.mesh.visible = n > 0;
     if (n === 0) return;
-    for (const attr of [this.a, this.b, this.c]) {
+    for (const attr of [this.a, this.b, this.c, this.d]) {
       attr.clearUpdateRanges();
       attr.addUpdateRange(0, n * 4);
       attr.needsUpdate = true;

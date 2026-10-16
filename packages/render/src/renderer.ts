@@ -1,6 +1,7 @@
 // Public entry point: createRenderer({ canvas }). The renderer reads snapshots only, never sim state (contract 1).
 import type { GameData } from '@crawlout/data';
-import { MAX_ENTITIES, TICK_MS, UNITS_PER_METER } from '@crawlout/protocol';
+import { MAX_ENTITIES, TICK_MS, UNITS_PER_METER, type ClaimPointStatus } from '@crawlout/protocol';
+import { claimRingArcs } from './claims/claimRing.js';
 import {
   Matrix4,
   PCFShadowMap,
@@ -290,6 +291,12 @@ export interface CrawloutRenderer {
   setPropWind(enabled: boolean): void;
   /** Shows a ghost footprint at a sim position, or hides it with null. */
   setPlacementPreview(preview: PlacementPreview | null): void;
+  /**
+   * Claim states (PlayerStatus.claimPoints): draws a progress arc on the claim ring while a hero claims a point, a
+   * pulsing arc in the attacker's colour while a beacon is being taken over, and a striped one while both sides are in
+   * the circle. Pass the latest list on every status; an empty list or undefined clears the arcs.
+   */
+  setClaimStates(states: readonly ClaimPointStatus[] | undefined): void;
   /** What lies under canvas-local CSS pixel (x, y). Units, buildings, scrap nodes and claim points can be hit. */
   pickAt(x: number, y: number): PickResult;
   /** Entity ids inside a canvas-local CSS pixel rectangle; units only unless opts.includeStructures. */
@@ -924,6 +931,9 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
     propAssets: () => [...propStatuses.values()].map((st) => ({ ...st })),
     setPropWind(enabled) {
       windStrength.value = enabled ? 1 : 0;
+    },
+    setClaimStates(states) {
+      structures.setClaimArcs(claimRingArcs(states ?? []));
     },
     setPlacementPreview(p) {
       preview = p ? { ...p } : null;

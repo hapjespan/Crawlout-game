@@ -23,6 +23,7 @@ import {
   CONTACT_MASK_SIZE,
   DECAL_COLOR,
   DECAL_SHAPE,
+  type DecalArc,
   type DecalLayer,
   type DecalStyle,
 } from '../decals/decalLayer.js';
@@ -149,6 +150,7 @@ export class StructureLayer {
   private readonly scaffolds: InstanceBatch;
   private readonly scrap: InstanceBatch;
   private readonly claims: InstanceBatch;
+  private claimArcs: ReadonlyMap<number, DecalArc> = new Map();
   private readonly footprints: FootprintTable;
   private readonly heightAt: (x: number, z: number) => number;
   private readonly screen: ScreenLod;
@@ -402,6 +404,11 @@ export class StructureLayer {
     }
   }
 
+  /** Progress arcs on the claim rings by claim point id (claims/claimRing.ts). */
+  setClaimArcs(arcs: ReadonlyMap<number, DecalArc>): void {
+    this.claimArcs = arcs;
+  }
+
   update(frame: InterpolatedFrame, camera: Camera, decals: DecalLayer): void {
     this.projView.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
     this.frustum.setFromProjectionMatrix(this.projView);
@@ -483,7 +490,14 @@ export class StructureLayer {
         decals.push(x, z, 1.7 * w, 1.7 * w, this.scrapDecal);
       } else {
         this.claims.push(x, y, z, yaw, 1, 1, 1, team, WHITE);
-        decals.push(x, z, CLAIM_RADIUS, CLAIM_RADIUS, CLAIM_DECALS[team]!);
+        decals.push(
+          x,
+          z,
+          CLAIM_RADIUS,
+          CLAIM_RADIUS,
+          CLAIM_DECALS[team]!,
+          this.claimArcs.get(frame.id[i]!),
+        );
       }
     }
     lod0.commit();

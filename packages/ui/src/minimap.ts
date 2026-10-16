@@ -126,6 +126,13 @@ export function drawMinimap(canvas: HTMLCanvasElement, m: MinimapData, me: numbe
     ctx.strokeStyle = c.owner === null ? '#ffd54f' : c.owner === me ? rgb(OWN) : rgb(ENEMY);
     ctx.lineWidth = 2;
     ctx.strokeRect(c.x * sx - 3, c.y * sy - 3, 6, 6);
+    if (c.progress !== undefined && c.progress > 0) {
+      ctx.strokeStyle = c.claimer === me ? rgb(OWN) : rgb(ENEMY);
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(c.x * sx, c.y * sy, 6, -Math.PI / 2, -Math.PI / 2 + c.progress * Math.PI * 2);
+      ctx.stroke();
+    }
   }
   for (const b of m.blips) {
     if (b.owner !== me && b.kind !== 'node' && !seen(b.x, b.y)) continue;

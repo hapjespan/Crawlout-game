@@ -206,6 +206,7 @@ async function main(): Promise<void> {
     },
     onStatus(next, winner) {
       status = next;
+      renderer.setClaimStates(next.claimPoints);
       if (winner) showEnd(winner);
       notify();
     },
@@ -578,11 +579,21 @@ async function main(): Promise<void> {
     getMinimap: (): MinimapData => {
       const blips: MinimapData['blips'][number][] = [];
       const claims: MinimapData['claims'][number][] = [];
+      const claimStates = new Map(status?.claimPoints?.map((c) => [c.pointId, c]));
       for (const e of entities.values()) {
         const kind = kindOfTypeId(e.typeId).kind;
-        if (kind === 'claimPoint')
-          claims.push({ x: e.x, y: e.y, owner: e.owner === OWNER_NEUTRAL ? null : e.owner });
-        else if (kind === 'scrapNode') blips.push({ x: e.x, y: e.y, owner: e.owner, kind: 'node' });
+        if (kind === 'claimPoint') {
+          const cs = claimStates.get(e.id);
+          claims.push({
+            x: e.x,
+            y: e.y,
+            owner: e.owner === OWNER_NEUTRAL ? null : e.owner,
+            ...(cs && cs.activity !== 'none'
+              ? { progress: cs.progressPermille / 1000, claimer: cs.by }
+              : {}),
+          });
+        } else if (kind === 'scrapNode')
+          blips.push({ x: e.x, y: e.y, owner: e.owner, kind: 'node' });
         else
           blips.push({
             x: e.x,

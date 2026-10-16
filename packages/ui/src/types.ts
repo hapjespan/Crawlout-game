@@ -55,6 +55,9 @@ export interface MinimapClaim {
   x: number;
   y: number;
   owner: number | null;
+  /** Claim in progress (hero claim, post, takeover): 0..1 and who is claiming; drawn as an arc around the marker. */
+  progress?: number;
+  claimer?: number;
 }
 /**
  * Minimap-invoer. Houd het object stabiel tussen lezingen als er niets verandert (de HUD leest elke refresh).
