@@ -41,7 +41,15 @@ import {
   RECT_CLAIM,
   RECT_DEPOT,
   placementReason as simPlacementReason,
+  type PlacementInput,
 } from '@crawlout/sim/placement';
+import {
+  claimPlacement,
+  placementCommand,
+  type ClaimPlacement,
+  type ClaimPointView,
+  type OwnClaimSite,
+} from './game/claimPlacement.js';
 import { assetConfig } from './game/assets.js';
 import { propSource } from './render/props.js';
 import { terrainTextures } from './render/terrain.js';
@@ -335,12 +343,8 @@ async function main(): Promise<void> {
   const DEPOT_PROVIDES = [PROVIDES.indexOf('hq'), PROVIDES.indexOf('werkplaats')];
   const isDepot = (b: BuildingData): boolean => b.provides.some((p) => DEPOT_PROVIDES.includes(p));
   const CLAIM_PROVIDES = PROVIDES.indexOf('claim');
-  function placementReasonFor(
-    option: Pick<BuildOption, 'typeId' | 'footprint'>,
-    cx: number,
-    cy: number,
-  ): number {
-    const { w, h } = option.footprint;
+  /** The sim placement rule's input from the snapshot: every building, scrap node and claim point. */
+  function placementInputNow(): PlacementInput {
     const rects: number[] = [];
     const points: number[] = [];
     for (const e of entities.values()) {
@@ -353,25 +357,84 @@ async function main(): Promise<void> {
       } else if (e.typeId === SCRAP_NODE_TYPE_ID) points.push(e.x, e.y, POINT_NODE);
       else if (e.typeId === CLAIM_POINT_TYPE_ID) points.push(e.x, e.y, POINT_CLAIM);
     }
-    const own = buildingOf(option.typeId);
+    return {
+      mapW: map.grid.w,
+      mapH: map.grid.h,
+      passable: map.grid.passable,
+      rects,
+      rectCount: rects.length / 5,
+      points,
+      pointCount: points.length / 3,
+      clearance: data.sim.placement.clearanceU,
+      depotClearance: data.sim.placement.depotClearanceU,
+    };
+  }
+  const placeAsOf = (typeId: number): number => {
+    const own = buildingOf(typeId);
+    return own !== undefined && isDepot(own) ? AS_DEPOT : 0;
+  };
+  function placementReasonFor(
+    option: Pick<BuildOption, 'typeId' | 'footprint'>,
+    cx: number,
+    cy: number,
+  ): number {
+    const { w, h } = option.footprint;
     return simPlacementReason(
-      {
-        mapW: map.grid.w,
-        mapH: map.grid.h,
-        passable: map.grid.passable,
-        rects,
-        rectCount: rects.length / 5,
-        points,
-        pointCount: points.length / 3,
-        clearance: data.sim.placement.clearanceU,
-        depotClearance: data.sim.placement.depotClearanceU,
-      },
+      placementInputNow(),
       (cx >> 8) - (w >> 1),
       (cy >> 8) - (h >> 1),
       w,
       h,
-      own !== undefined && isDepot(own) ? AS_DEPOT : 0,
+      placeAsOf(option.typeId),
     );
+  }
+  /**
+   * A claim building (the Claimpaal) from the build menu near a claim point is a Claim (data 0.19.0): the preview snaps
+   * to the spot the sim will use and a click sends Claim (game/claimPlacement.ts). null: not a claim building, or not
+   * near a claim point (then it is placed as a plain Build).
+   */
+  function claimPlacementFor(option: BuildOption, cx: number, cy: number): ClaimPlacement | null {
+    if (!buildingOf(option.typeId)?.provides.includes(CLAIM_PROVIDES)) return null;
+    const points: ClaimPointView[] = [];
+    const ownSites: OwnClaimSite[] = [];
+    for (const e of entities.values()) {
+      if (e.typeId === CLAIM_POINT_TYPE_ID)
+        points.push({
+          id: e.id,
+          x: e.x,
+          y: e.y,
+          owner: e.owner === OWNER_NEUTRAL ? null : e.owner,
+        });
+      const b = buildingOf(e.typeId);
+      if (
+        b &&
+        e.owner === session.playerId &&
+        e.anim === ANIM.build &&
+        b.provides.includes(CLAIM_PROVIDES)
+      ) {
+        const { w: fw, h: fh } = b.footprint;
+        ownSites.push({
+          x: e.x,
+          y: e.y,
+          fx: (e.x >> 8) - (fw >> 1),
+          fy: (e.y >> 8) - (fh >> 1),
+          fw,
+          fh,
+        });
+      }
+    }
+    return claimPlacement({
+      input: placementInputNow(),
+      cursor: { x: cx, y: cy },
+      footprint: option.footprint,
+      as: placeAsOf(option.typeId),
+      claimRadius: data.sim.claimRadiusU,
+      points,
+      ownSites,
+      me: session.playerId,
+      scrap: status?.scrap ?? 0,
+      scrapCost: option.scrapCost,
+    });
   }
   /** Dutch text per sim reason code (index = code); PLACE_OK has none. */
   const SIM_REASON_TEXT: readonly (string | null)[] = [
@@ -393,11 +456,26 @@ async function main(): Promise<void> {
   function placementAt(
     px: number,
     py: number,
-  ): { x: number; y: number; valid: boolean; reason: string | null } | null {
+  ): {
+    x: number;
+    y: number;
+    valid: boolean;
+    reason: string | null;
+    claimPointId?: number;
+  } | null {
     if (!placing) return null;
     const ground = renderer.pickAt(px, py).ground;
     if (!ground) return null;
     const at = snapFootprintCenter(ground.x, ground.y, placing.footprint);
+    const claim = claimPlacementFor(placing, Math.round(at.x), Math.round(at.y));
+    if (claim)
+      return {
+        x: claim.x,
+        y: claim.y,
+        valid: claim.valid,
+        reason: claim.reason,
+        claimPointId: claim.pointId,
+      };
     const reason = placementReason(placing, at.x, at.y);
     return { x: Math.round(at.x), y: Math.round(at.y), valid: reason === null, reason };
   }
@@ -618,7 +696,17 @@ async function main(): Promise<void> {
       if (leftClickIs(state, hitKind, hostile) === 'complete') {
         if (placing) {
           const at = placementAt(p.x, p.y);
-          if (at?.valid && hud.completePlacement({ x: at.x, y: at.y })) {
+          if (at?.valid && at.claimPointId !== undefined) {
+            // a claim post at a claim point: Claim, so the sim places it next to the point (claimPlacement.ts)
+            const builders = mine(selection).filter(
+              (id) => loadoutOf(entities.get(id)!.typeId)?.role === roleIdx('builder'),
+            );
+            const order = placementCommand(at, placing.typeId, builders);
+            if (builders.length > 0 && order.type === 'Claim')
+              sendChunked('Claim', builders, { pointId: order.payload.pointId });
+            hud.cancelPlacement();
+            syncModes();
+          } else if (at?.valid && hud.completePlacement({ x: at.x, y: at.y })) {
             placing = null;
             renderer.setPlacementPreview(null);
             canvas.style.cursor = 'default';
