@@ -12,6 +12,7 @@ import { atan2A } from '../math/trig.js';
 import type { Rng } from '../rng.js';
 import type { Auras } from './hero.js';
 import type { RobotRates } from './robots.js';
+import type { Vision } from '../vision.js';
 
 /** Per-speler state (SoA op MAX_PLAYERS). Gaat de hash en de serialisatie in. */
 export class PlayerState {
@@ -181,6 +182,8 @@ export interface SimContext {
   readonly index: EntityIndex;
   /** Padafstanden over het terrein voor de keuzes van de AI (afgeleid, gecachet; zie pathdist.ts). */
   readonly terrainDist: TerrainDistances;
+  /** Fog of war (vision.ts): explored per player (state), visible counts and World.visTo (derived). */
+  readonly vision: Vision;
   unitType(typeId: number): SimUnitType | undefined;
   buildingType(typeId: number): SimBuildingType | undefined;
 }
@@ -359,7 +362,17 @@ export function face(w: World, i: number, x: number, y: number): void {
 export function isEnemy(w: World, i: number, t: number): boolean {
   if (!w.has(t, C.health) || w.hp[t]! <= 0) return false;
   const o = w.owner[t]!;
-  return o !== OWNER_NEUTRAL && o !== w.owner[i]!;
+  const p = w.owner[i]!;
+  // fog of war (sim 0.17.0): only an enemy that the owner of i sees now is a target (shooting, chasing, acquiring)
+  return o !== OWNER_NEUTRAL && o !== p && visibleTo(w, t, p);
+}
+
+/**
+ * Whether player p sees entity t now (fog of war, sim 0.17.0): his own entities always, others while one of his discs
+ * covers their cell (a building: any cell of its footprint). From the end of the previous tick (World.visTo).
+ */
+export function visibleTo(w: World, t: number, p: number): boolean {
+  return p < MAX_PLAYERS && ((w.visTo[t]! >>> p) & 1) !== 0;
 }
 
 /** Kwadraat van de afstand tussen de middelpunten van twee entities. */

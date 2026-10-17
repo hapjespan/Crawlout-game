@@ -4,6 +4,8 @@ import { z } from 'zod';
 // Alle schema's zijn strict: onbekende velden laten de build falen. Eenheden hier zijn menselijk (m, s, %).
 const id = z.string().min(1);
 const nonneg = z.number().nonnegative();
+// Fog of war (data 0.21.0): a sight radius in metres; 64 m bounds the stamp of the vision grid
+const sight = z.number().min(0).max(64);
 const comment = z.string().optional(); // _comment: bedoeling van de waarde; verplicht gebruiken bij balanswaarden
 
 export const ArmorType = z.enum(['none', 'light', 'medium', 'heavy', 'robot']);
@@ -127,6 +129,9 @@ export const Loadout = z
     producedAt: id.optional(),
     repair: Repair.optional(), // alleen role robot
     siege: Siege.optional(), // alleen role robot
+    // Data 0.21.0 (fog of war; voorstel, ter bevestiging door de architect): sight radius from the unit's centre;
+    // absent = sim.json vision.unitSightM
+    sightM: sight.optional(),
     _comment: comment,
   })
   .strict()
@@ -187,6 +192,10 @@ export const Building = z
     rangeM: nonneg.optional(),
     cooldownS: nonneg.optional(),
     network: TurretNetwork.optional(), // data 0.16.0, alleen bij provides turret
+    // Data 0.21.0 (fog of war; voorstel, ter bevestiging door de architect): sight radius beyond the footprint edge
+    // (the sim adds half the larger footprint side); absent = rangeM + vision.turretSightExtraM for a turret, else
+    // vision.buildingSightM
+    sightM: sight.optional(),
     _comment: comment,
   })
   .strict()
@@ -309,6 +318,9 @@ export const Hero = z
     reviveS: nonneg,
     revivePenaltyPct: nonneg, // 20 volgens het Spelfundament
     maxRevives: z.number().int().nonnegative(), // aantal keer oplappen voordat de held leeg is
+    // Data 0.21.0 (fog of war; voorstel, ter bevestiging door de architect): sight radius of the hero; absent =
+    // sim.json vision.heroSightM
+    sightM: sight.optional(),
     _comment: comment,
   })
   .strict();
@@ -502,6 +514,19 @@ export const PlacementTuning = z
     path: ['depotClearanceM'],
   });
 
+// Fog of war (data/sim.json `vision`, data 0.21.0; voorstel, ter bevestiging door de architect). Every own unit and
+// building reveals a disc on the vision grid of cellM x cellM metres; the defaults hold for records without sightM.
+export const VisionTuning = z
+  .object({
+    cellM: z.union([z.literal(1), z.literal(2), z.literal(4)]), // side of a vision cell; 1, 2 or 4 m (a power of two)
+    unitSightM: sight, // default sight of a loadout, from the unit's centre
+    heroSightM: sight, // default sight of a hero
+    buildingSightM: sight, // default sight of a building beyond its footprint edge
+    turretSightExtraM: sight, // default sight of a turret beyond its rangeM (from the footprint edge)
+    _comment: comment,
+  })
+  .strict();
+
 // Sim-tuning (data/sim.json): globale getallen die de sim nodig heeft maar die bij geen loadout horen.
 export const SimTuning = z
   .object({
@@ -553,6 +578,8 @@ export const SimTuning = z
     // goes over to an enemy after contestFlipS with enemy units and none of the holder in the circle
     heroClaimS: nonneg,
     contestFlipS: nonneg,
+    // Data 0.21.0 (fog of war; voorstel, ter bevestiging door de architect): the vision grid and default sight radii
+    vision: VisionTuning,
   })
   .strict()
   .refine((t) => t.pathEntranceMaxCells <= t.pathSectorCells, {
@@ -579,3 +606,4 @@ export type DamageMatrix = z.infer<typeof DamageMatrix>;
 export type SimTuning = z.infer<typeof SimTuning>;
 export type FormationTuning = z.infer<typeof FormationTuning>;
 export type PlacementTuning = z.infer<typeof PlacementTuning>;
+export type VisionTuning = z.infer<typeof VisionTuning>;

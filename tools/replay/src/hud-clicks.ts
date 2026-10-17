@@ -615,6 +615,14 @@ async function runIn(browser: Browser, width: number, height: number): Promise<v
   // --- An enemy building or unit can be clicked to inspect it: type, owner and hp in the selection panel, no commands,
   // no camera move, and a right click afterwards sends nothing. A click on an own unit replaces it again.
   await page.keyboard.press('Escape');
+  // fog of war: the enemy base lies in the fog at the start (the client gets only what the player sees), so reveal
+  // everything for this part (dev hook)
+  const foeHidden = await ev<boolean>(
+    `(() => { const c = window.crawlout; return ![...c.entities().values()].some((e) => e.typeId === ${hqTypeId} && e.owner !== c.session.playerId && e.owner !== 255); })()`,
+  );
+  check(foeHidden, 'fog of war: the enemy Basis is not in the snapshot before it is seen');
+  await ev(`window.crawlout.revealAll(true)`);
+  await wait(500);
   const foeHq = await ev<{ id: number; x: number; y: number } | null>(
     `(() => { const c = window.crawlout; const e = [...c.entities().values()].find((e) => e.typeId === ${hqTypeId} && e.owner !== c.session.playerId && e.owner !== 255); return e ? { id: e.id, x: e.x, y: e.y } : null; })()`,
   );
@@ -682,6 +690,8 @@ async function runIn(browser: Browser, width: number, height: number): Promise<v
     // (Enemy units stand behind the pick volume of the enemy buildings at the default camera, so the browser run clicks
     // the building; the unit case is covered by the unit tests of the selection panel and game/inspect.ts.)
   }
+
+  await ev(`window.crawlout.revealAll(false)`);
 
   // --- Ctrl+click (macOS right click) on the HUD must not open the browser menu or start anything.
   await click(await center('[data-building="werkplaats"]'), { modifiers: ['Control'] });

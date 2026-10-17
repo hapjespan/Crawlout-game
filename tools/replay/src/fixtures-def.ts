@@ -679,6 +679,44 @@ const FIXTURES_S8: FixtureDef[] = [
   },
 ];
 
+const FIXTURES_S9: FixtureDef[] = [
+  {
+    // Fog of war (phase 2, sim 0.17.0, data 0.21.0): two humans on Rustbelt XL. A command on an enemy entity that the
+    // player does not see is refused (Attack on the hidden HQ, a HeroAbility on a hidden unit, at the start); player 0
+    // scouts with his hero and militia toward the enemy spawn (AttackMove into the fog: explored grows, the fight starts
+    // when they see the enemy), player 1 walks his militia to the centre and back, and later, once player 0 has seen it,
+    // the same Attack on the HQ is accepted. The hashes cover the explored bitsets and World.spotted.
+    name: 's9-rustbelt-fog',
+    build() {
+      const r = base('rustbelt', 909, [false, false]);
+      const st = startOf(r);
+      const sim = st.sim;
+      const s = new Script();
+      const spawns = sim.map.spawns;
+      const centre = centrePoint(sim);
+      const hero = data.heroes[0]!.id;
+      for (let p = 0; p < 2; p++) {
+        const node = nearest(sim, st.nodes, spawns[p]!.x, spawns[p]!.y);
+        s.add(6, p, 'Gather', { ids: st.scav[p]!, nodeId: node });
+      }
+      // refused: the HQ of player 1 and the units of player 0 lie in the fog
+      s.add(4, 0, 'Attack', { ids: st.militia[0]!, target: st.hq[1]! });
+      s.add(4, 1, 'Attack', { ids: st.militia[1]!, target: st.hero[0]![0]! });
+      s.add(5, 1, 'HeroAbility', { heroId: hero, abilityId: 0, target: st.militia[0]![0]! });
+      // player 0 scouts toward the enemy spawn; player 1 to the centre and home again
+      s.add(10, 0, 'AttackMove', { ids: [...st.hero[0]!, ...st.militia[0]!], ...spawns[1]! });
+      s.add(1500, 1, 'Move', { ids: st.militia[1]!, x: centre.x, y: centre.y });
+      s.add(2600, 1, 'Move', { ids: st.militia[1]!, ...toward(spawns[1]!, centre, 15) });
+      // the same Attack later: refused while the HQ is unseen, accepted once his scouts see it
+      for (let k = 0; k < 8; k++)
+        s.add(1200 + 400 * k, 0, 'Attack', { ids: st.hero[0]!, target: st.hq[1]! });
+      r.bundles = s.bundles();
+      r.hashes = [{ frame: 5999, hash: 0 }];
+      return r;
+    },
+  },
+];
+
 export const FIXTURES: readonly FixtureDef[] = [
   ...FIXTURES_UP_TO_S3,
   ...FIXTURES_S4,
@@ -686,6 +724,7 @@ export const FIXTURES: readonly FixtureDef[] = [
   ...FIXTURES_S6,
   ...FIXTURES_S7,
   ...FIXTURES_S8,
+  ...FIXTURES_S9,
 ];
 
 /** De sim na het uitvoeren van de frames 0 tot `frame` (exclusief) met de bundels die de replay tot dan heeft. */

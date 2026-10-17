@@ -4,10 +4,14 @@ import {
   ANIM,
   ANIM_NAMES,
   CommandEnvelope,
+  ENTITY_FLAG,
   ENTITY_GEN_BITS,
   ENTITY_INDEX_BITS,
   ENTITY_NONE,
   EVENT_TYPE,
+  FOG,
+  type FogMask,
+  fogAt,
   LobbyPlayer,
   MAX_ENTITIES,
   MAX_PLAYERS,
@@ -298,5 +302,31 @@ describe('snapshotLayout', () => {
       entityCount: 7,
       eventCount: 2,
     });
+  });
+});
+
+describe('fog of war (protocol 0.11.0, voorstel)', () => {
+  it('ENTITY_FLAG.ghost is its own bit', () => {
+    const bits = Object.values(ENTITY_FLAG);
+    expect(ENTITY_FLAG.ghost).toBe(1 << 4);
+    expect(new Set(bits).size).toBe(bits.length);
+  });
+
+  it('fogAt reads explored and visible from the two bitsets', () => {
+    const mask: FogMask = {
+      frame: 0,
+      playerId: 0,
+      cellsW: 3,
+      cellsH: 3,
+      cellUnits: 512,
+      explored: new Uint8Array([0b0001_0011, 0]),
+      visible: new Uint8Array([0b0001_0000, 0]),
+    };
+    expect(fogAt(mask, 0, 0)).toBe(FOG.explored);
+    expect(fogAt(mask, 1, 0)).toBe(FOG.explored);
+    expect(fogAt(mask, 2, 0)).toBe(FOG.unexplored);
+    expect(fogAt(mask, 1, 1)).toBe(FOG.visible);
+    expect(fogAt(mask, -1, 0)).toBe(FOG.unexplored);
+    expect(fogAt(mask, 3, 0)).toBe(FOG.unexplored);
   });
 });

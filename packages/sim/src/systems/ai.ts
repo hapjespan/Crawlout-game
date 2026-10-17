@@ -28,6 +28,7 @@ import {
   isEnemy,
   nodeAllowed,
   playerInTurn,
+  visibleTo,
 } from './common.js';
 import { pointsOf } from './claims.js';
 import { heroIndex } from './hero.js';
@@ -46,7 +47,9 @@ import {
 // Systeem 2 (AI-deel): de scripted tegenstander, voor elke speler met ai = true, voor de unit-orders; de volgorde van
 // de spelers draait per tick door (fair-ronde, zie aiSystem). Geen cheats: de AI geeft gewone commando's via
 // applyCommand (dezelfde validatie als spelers) en ziet alleen wat elke speler kan zien: eigen units en gebouwen, de
-// map, de spawns, wie een claimpunt bezit, en vijandelijke units die bij zijn eigen gebouwen staan. Alle getallen
+// map, de spawns, wie een claimpunt bezit, en vijandelijke units die bij zijn eigen gebouwen staan. Fog of war (sim
+// 0.17.0): of those enemy units only the ones his own units and buildings see now (World.visTo); map knowledge (terrain,
+// spawns, nodes, claim points and who holds them, as on the HUD) stays, so a push still walks to the enemy spawn. Alle getallen
 // komen uit het script (ai/*.json, balans speltest 14 oktober). Afstanden naar verre doelen (nodes, claimpunten,
 // raids, het front) meet hij over land, als padafstand over het terrein (pathdist.ts, xl-int): op een map met een
 // rivier is hemelsbreed misleidend.
@@ -1413,6 +1416,8 @@ function findThreat(ctx: SimContext, scratch: AiScratch, p: number, hq: number, 
     if (!w.has(j, C.unit | C.health) || w.hp[j]! <= 0) continue;
     const o = w.owner[j]!;
     if (o === p || o >= ctx.playerCount) continue;
+    // fog of war (sim 0.17.0): the AI only reacts to what its own units and buildings see
+    if (!visibleTo(w, j, p)) continue;
     const x = w.x[j]!;
     const y = w.y[j]!;
     if (x < bx0 || x > bx1 || y < by0 || y > by1) continue;

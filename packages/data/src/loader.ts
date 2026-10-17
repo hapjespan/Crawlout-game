@@ -138,6 +138,8 @@ export interface LoadoutData {
   repair: RepairData | null;
   /** Belegering (data 0.16.0); null voor de rest. */
   siege: SiegeData | null;
+  /** Sight radius from the unit's centre (data 0.21.0, fog of war): sightM, else sim.json vision.unitSightM. */
+  sightU: number;
 }
 
 export interface RepairData {
@@ -185,6 +187,11 @@ export interface BuildingData {
   cooldownTicks: number;
   /** Turret-netwerk (data 0.16.0); null voor een gebouw zonder. */
   network: TurretNetworkData | null;
+  /**
+   * Sight beyond the footprint edge (data 0.21.0, fog of war): sightM, else rangeM + vision.turretSightExtraM for a
+   * turret, else vision.buildingSightM. The sim adds half the larger footprint side to get a radius from the centre.
+   */
+  sightU: number;
 }
 
 export interface TechData {
@@ -241,6 +248,8 @@ export interface HeroData {
   revivePenaltyPermille: number;
   /** Aantal keer oplappen voordat de held leeg is. */
   maxRevives: number;
+  /** Sight radius (data 0.21.0, fog of war): sightM, else sim.json vision.heroSightM. */
+  sightU: number;
 }
 
 export interface PerkData {
@@ -375,6 +384,14 @@ export interface SimTuningData {
   heroClaimTicks: number;
   /** A tower-less (hero) claim goes over after this long with enemies and none of the holder in the circle. */
   contestFlipTicks: number;
+  /** Fog of war (data 0.21.0; voorstel): the vision grid. Default sight radii are resolved onto each record (sightU). */
+  vision: VisionTuningData;
+}
+
+/** sim.json `vision` in sim units (data 0.21.0). */
+export interface VisionTuningData {
+  /** Side of a vision cell in sim units (cellM * 256: 256, 512 or 1024). */
+  cellU: number;
 }
 
 /** sim.json `placement` in sim units. */
@@ -617,6 +634,7 @@ export function loadGameData(raw: RawGameData): GameData {
               vsBuildingsPermille: pctToPermille(l.siege.vsBuildingsDamagePct),
               buildingsFirst: l.siege.buildingsFirst,
             },
+      sightU: metersToUnits(l.sightM ?? simRaw.vision.unitSightM),
     };
   });
 
@@ -648,6 +666,12 @@ export function loadGameData(raw: RawGameData): GameData {
               damagePermillePerTurret: pctToPermille(b.network.damagePctPerTurret),
               maxDamagePermille: pctToPermille(b.network.maxDamagePct),
             },
+      sightU: metersToUnits(
+        b.sightM ??
+          (b.provides.includes('turret')
+            ? (b.rangeM ?? 0) + simRaw.vision.turretSightExtraM
+            : simRaw.vision.buildingSightM),
+      ),
     };
   });
 
@@ -707,6 +731,7 @@ export function loadGameData(raw: RawGameData): GameData {
       reviveTicks: secondsToTicks(h.reviveS),
       revivePenaltyPermille: pctToPermille(h.revivePenaltyPct),
       maxRevives: h.maxRevives,
+      sightU: metersToUnits(h.sightM ?? simRaw.vision.heroSightM),
     };
   });
 
@@ -869,6 +894,7 @@ export function loadGameData(raw: RawGameData): GameData {
       exclusiveRadiusU: metersToUnits(simRaw.exclusiveRadiusM),
       heroClaimTicks: secondsToTicks(simRaw.heroClaimS),
       contestFlipTicks: secondsToTicks(simRaw.contestFlipS),
+      vision: { cellU: metersToUnits(simRaw.vision.cellM) },
     },
   };
 }

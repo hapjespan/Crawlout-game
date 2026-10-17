@@ -42,12 +42,17 @@ import { playMatchesParallel, summarize } from './fairness.js';
 // voorkeur; de marge hieronder is daarom ruimer dan het doel van 40 tot 60 procent: elke speler wint minstens 12 en
 // hoogstens 21 van de 33 (36 tot 64 procent). Een sim die een speler voortrekt (zoals 28 tegen 5) valt er ruim buiten.
 
+// Fog of war (data 0.21.0, sim 0.17.0: every player sees only what his units and buildings see; the AI defends only
+// against enemies it sees, a target must be visible): speler 0 wint 17 en speler 1 wint 16, 17 keer vernietiging en
+// 16 keer dominantie, lengte 25,8 tot 34,5 minuten (33 van de 33 tussen 25 en 35, was 31); EXPECTED is opnieuw gemeten.
+// The AI still finds the enemy without a scout: a push walks to the enemy spawn and a raid to his claim point, both map
+// knowledge; on the way it fights what its own units see.
 const EXPECTED = [
-  { seed: 1, winner: 1, reason: 'destruction', frame: 32569 },
-  { seed: 5, winner: 1, reason: 'dominance', frame: 37427 },
-  { seed: 7, winner: 0, reason: 'dominance', frame: 37422 },
-  { seed: 42, winner: 1, reason: 'dominance', frame: 33837 },
-  { seed: 99, winner: 1, reason: 'destruction', frame: 32494 },
+  { seed: 1, winner: 1, reason: 'destruction', frame: 32515 },
+  { seed: 5, winner: 0, reason: 'dominance', frame: 38253 },
+  { seed: 7, winner: 0, reason: 'dominance', frame: 36257 },
+  { seed: 42, winner: 1, reason: 'dominance', frame: 35926 },
+  { seed: 99, winner: 0, reason: 'destruction', frame: 38238 },
 ] as const;
 
 // REPLAY_FAST=1 slaat deze 33 potjes (ongeveer 25 s met parallelle processen, 2 minuten na elkaar) over in de snelle

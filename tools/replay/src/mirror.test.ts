@@ -26,7 +26,7 @@ describe('spiegel: AI tegen AI op Rustbelt XL zonder toeval', () => {
 
   // Twee volledige potjes (ongeveer 15 s): in de snelle lus overgeslagen.
   it.skipIf(process.env.REPLAY_FAST === '1')(
-    'verwisselproef: wie het midden krijgt, verandert alleen de rollen, niet de uitkomst',
+    'verwisselproef: exact verwisseld tot de herbouw van de palen bij het midden, de winnaar verwisselt',
     { timeout: 120_000 },
     () => {
       // seed 7: speler 0 krijgt het midden bij de gelijke stand, seed 2: speler 1. Het claimpunt in het midden ligt een
@@ -41,9 +41,18 @@ describe('spiegel: AI tegen AI op Rustbelt XL zonder toeval', () => {
       // kostte dat een eenheid die er recht achter moest minuten (36.778 tegen 47.767).
       // Met het omlopen van een unit die tegen een gebouw staat (sim 0.16.0, movement.ts) houdt de verwisseling weer:
       // winnaars 0 en 1 in frame 36.466 en 36.521.
+      // Fog of war (sim 0.17.0, data 0.21.0): the two games are each other's exact swap from the centre tie (20:43) until
+      // the claim posts at the eccentric centre point are rebuilt on non-mirrored cells (frame 31.118, the known
+      // asymmetry above); the winner still swaps (1 and 0), but the outcome no longer: player 1 destroys player 0 in
+      // frame 42.843 when the ties go to player 0, player 0 wins on dominance in frame 50.876 when they go to player 1.
+      // Without chance there are only these two games (seeds 1 to 24 all end in one of them). The AI now answers only
+      // threats it sees, so the one-cell difference of the rebuilt posts (and their sight) grows into a different game.
+      // Fairness over the 33 seeds with chance is 17 against 16 (match-length.test.ts).
       const r = mirrorSwap(7, 9);
-      expect(r.winners).toEqual([0, 1]);
-      expect(Math.abs(r.frames[0] - r.frames[1])).toBeLessThan(1200);
+      expect(r.winners).toEqual([1, 0]);
+      expect(r.breakFrame).not.toBeNull();
+      expect(r.breakFrame!).toBeGreaterThan(25 * 1200);
+      expect(r.diffs[0]).toMatch(/gebouw t1024 @192,191/);
     },
   );
 });

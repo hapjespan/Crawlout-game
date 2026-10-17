@@ -66,6 +66,8 @@ export interface SimUnitType {
   readonly repair: SimRepair | null;
   /** Belegering, of null. */
   readonly siege: SimSiege | null;
+  /** Sight radius from the unit's centre (units; fog of war, data 0.21.0). The hero uses SimHero.sight instead. */
+  readonly sight: number;
 }
 
 /** Reparatie (data 0.16.0, loadouts repair): een vrije unit zoekt zelf een beschadigd eigen doel en herstelt het. */
@@ -138,6 +140,8 @@ export interface SimBuildingType {
   readonly cooldown: number;
   /** Turret-netwerk (data 0.16.0), of null. */
   readonly network: SimTurretNetwork | null;
+  /** Sight beyond the footprint edge (units; fog of war, data 0.21.0); the radius from the centre adds half the larger side. */
+  readonly sight: number;
 }
 
 /** Doel van een effect: alles van de speler, de held, of één unit- of gebouwtype (typeId). */
@@ -230,6 +234,8 @@ export interface SimHero {
   /** Per keer oplappen gaat dit deel van perks en health weg, in promille. */
   readonly revivePenaltyPermille: number;
   readonly maxRevives: number;
+  /** Sight radius of the living hero (units; fog of war, data 0.21.0). */
+  readonly sight: number;
 }
 
 /** SPECIAL van de held, per punt van de letter (sim.json, ter review). */
@@ -427,6 +433,8 @@ export interface SimConfig {
   readonly heroClaimTicks: number;
   /** Ticks after which a tower-less claim goes over to an enemy with units in the circle and none of the holder. */
   readonly contestFlipTicks: number;
+  /** Fog of war (data 0.21.0): side of a vision cell in units, 256, 512 or 1024 (1, 2 or 4 m; vision.ts). */
+  readonly visionCell: number;
 }
 
 /** Building placement margins (sim.json `placement`), in sim units; the rule works in whole cells, rounded up. */
@@ -488,6 +496,8 @@ export const MAX_SPEED = UNITS_PER_METER >> 1;
 export const MAX_RADIUS = UNITS_PER_METER;
 /** Geometrie: grootste footprint-zijde in cellen (past in Uint8 en in de ringzoeker rond gebouwen). */
 export const MAX_FOOTPRINT = 32;
+/** Largest sight radius (fog of war): 64 m, so a stamp stays small and a radius in vision cells fits a byte. */
+export const MAX_SIGHT = 64 << 8;
 /** Geometrie van de state: onderzochte techs staan per speler in een uint32-bitset. */
 export const MAX_TECHS = 32;
 /** Geometrie van de state: gekozen perks staan per held in een uint32-bitset. */
@@ -588,6 +598,10 @@ export function validateEnv(env: SimEnv): void {
   );
   req(intIn(config.heroClaimTicks, 0, I31), 'heroClaimTicks');
   req(intIn(config.contestFlipTicks, 0, I31), 'contestFlipTicks');
+  req(
+    config.visionCell === 256 || config.visionCell === 512 || config.visionCell === 1024,
+    'visionCell (256, 512 of 1024)',
+  );
 
   const armorCount = config.damageMatrix[0]?.length ?? 0;
   req(config.damageMatrix.length > 0 && armorCount > 0, 'damageMatrix leeg');
@@ -635,6 +649,7 @@ export function validateEnv(env: SimEnv): void {
         `${at}: repair`,
       );
     if (u.siege !== null) req(intIn(u.siege.vsBuildingsPermille, 0, 100000), `${at}: siege`);
+    req(intIn(u.sight, 0, MAX_SIGHT), `${at}: sight`);
   }
   const buildingIds = new Set<number>();
   for (const b of config.buildingTypes) {
@@ -676,6 +691,7 @@ export function validateEnv(env: SimEnv): void {
           intIn(b.network.maxDamagePermille, 0, 100000),
         `${at}: network`,
       );
+    req(intIn(b.sight, 0, MAX_SIGHT), `${at}: sight`);
   }
   for (const u of config.unitTypes)
     req(
@@ -802,6 +818,7 @@ export function validateEnv(env: SimEnv): void {
   );
   config.heroes.forEach((hr, k) => {
     const at = `held ${k}`;
+    req(intIn(hr.sight, 0, MAX_SIGHT), `${at}: sight`);
     req(
       hr.heroId === k &&
         intIn(hr.typeId, 1, U16) &&
@@ -1002,6 +1019,7 @@ export function envHash(env: SimEnv): number {
     c.exclusiveRadius,
     c.heroClaimTicks,
     c.contestFlipTicks,
+    c.visionCell,
   ]);
   h = fnv1aInt(h, c.unitTypes.length);
   for (const u of c.unitTypes) {
@@ -1046,6 +1064,7 @@ export function envHash(env: SimEnv): number {
       h,
       u.siege === null ? [0] : [1, u.siege.vsBuildingsPermille, u.siege.buildingsFirst ? 1 : 0],
     );
+    h = hashInts(h, [u.sight]);
   }
   h = fnv1aInt(h, c.buildingTypes.length);
   for (const b of c.buildingTypes) {
@@ -1071,6 +1090,7 @@ export function envHash(env: SimEnv): number {
         ? [0]
         : [1, n.requiresTech, n.radius, n.damagePermillePerTurret, n.maxDamagePermille],
     );
+    h = hashInts(h, [b.sight]);
   }
   h = fnv1aInt(h, c.factions.length);
   for (const f of c.factions) {
@@ -1194,6 +1214,7 @@ export function envHash(env: SimEnv): number {
       hr.xpAssistRadius,
     ]);
     h = hashInts(h, [hr.reviveScrap, hr.reviveTicks, hr.revivePenaltyPermille, hr.maxRevives]);
+    h = hashInts(h, [hr.sight]);
     h = hashInts(h, hr.special);
     h = hashInts(h, hr.xpThresholds);
     h = hashInts(h, hr.perkPool);

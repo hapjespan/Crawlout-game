@@ -197,6 +197,7 @@ export function simConfigFromGameData(data: GameData): SimConfig {
       reviveTicks: h.reviveTicks,
       revivePenaltyPermille: h.revivePenaltyPermille,
       maxRevives: h.maxRevives,
+      sight: h.sightU,
     };
   });
   return {
@@ -239,6 +240,7 @@ export function simConfigFromGameData(data: GameData): SimConfig {
               vsBuildingsPermille: l.siege.vsBuildingsPermille,
               buildingsFirst: l.siege.buildingsFirst,
             },
+      sight: l.sightU,
     })),
     buildingTypes: data.buildings.map((b) => ({
       typeId: buildingTypeId(b.id),
@@ -266,6 +268,7 @@ export function simConfigFromGameData(data: GameData): SimConfig {
               damagePermillePerTurret: b.network.damagePermillePerTurret,
               maxDamagePermille: b.network.maxDamagePermille,
             },
+      sight: b.sightU,
     })),
     factions,
     aiScripts: data.aiScripts.map((a) => ({
@@ -390,6 +393,7 @@ export function simConfigFromGameData(data: GameData): SimConfig {
     exclusiveRadius: t.exclusiveRadiusU,
     heroClaimTicks: t.heroClaimTicks,
     contestFlipTicks: t.contestFlipTicks,
+    visionCell: t.vision.cellU,
   };
 }
 

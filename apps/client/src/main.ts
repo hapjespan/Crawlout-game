@@ -2,6 +2,7 @@
 // Local skirmish against the scripted AI on the slice map; the same session code drives the ws relay later.
 import {
   ANIM,
+  ENTITY_FLAG,
   ENTITY_NONE,
   MAX_ENTITIES_PER_COMMAND,
   OWNER_NEUTRAL,
@@ -281,6 +282,9 @@ async function main(): Promise<void> {
     if (target) {
       const kind = kindOfTypeId(target.typeId).kind;
       const hostile = target.owner !== session.playerId && target.owner !== OWNER_NEUTRAL;
+      // fog of war: a ghost (an enemy building as last seen) is no valid Attack target; attack-move to its spot
+      if (hostile && (target.flags & ENTITY_FLAG.ghost) !== 0)
+        return sendChunked('AttackMove', ids, { x: target.x, y: target.y });
       if (hostile && (kind === 'unit' || kind === 'building'))
         return sendChunked('Attack', ids, { target: target.id });
       if (kind === 'scrapNode') {
@@ -898,6 +902,8 @@ async function main(): Promise<void> {
     session,
     entities: () => entities,
     status: () => status,
+    /** Fog of war, dev and tests (tools/replay hud-clicks): true shows every entity, false only what this player sees. */
+    revealAll: (on: boolean) => session.revealAll(on),
     /** This player's territory mask (1 per cell, map width), for a later territory overlay in render or the HUD. */
     territory: () => territoryNow(),
     /** For the real-browser HUD test (tools/replay hud-clicks): building type ids by data key, and the sim's rule. */

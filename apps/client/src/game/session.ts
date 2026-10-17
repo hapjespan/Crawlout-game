@@ -14,6 +14,7 @@ import {
   type CommandPayload,
   type CommandType,
   type DesyncEvent,
+  type FogMask,
   type FrameBundle,
   type LobbyPlayer,
   type PlayerStatus,
@@ -49,6 +50,8 @@ export interface SessionEvents {
   onError(message: string): void;
   /** Answer to requestStatus(): player status for the HUD plus the winner (null while the match runs). */
   onStatus?(status: PlayerStatus, winner: SimWinner | null): void;
+  /** Answer to requestFog(): this player's fog of war on the vision grid (for a later fog overlay and minimap). */
+  onFog?(mask: FogMask): void;
   /** Connection or lobby text for an overlay (Dutch, user-facing); null clears it. */
   onConnection?(text: string | null): void;
 }
@@ -67,6 +70,10 @@ export interface Session {
   sendCommand<T extends CommandType>(type: T, payload: CommandPayload<T>): void;
   /** Asks the sim worker for this player's status (queryMessage, contract 1); the answer arrives in onStatus. */
   requestStatus(): void;
+  /** Asks the sim worker for this player's fog mask (protocol 0.11.0); the answer arrives in onFog. */
+  requestFog(): void;
+  /** Fog of war, dev and tests: true shows everything (no snapshot filter), false this player's view again. */
+  revealAll(on: boolean): void;
   dispose(): void;
 }
 
@@ -144,6 +151,8 @@ export function startSession(
       dumpWaiters.shift()?.(msg);
     } else if (msg.kind === 'status') {
       events.onStatus?.(msg.status, msg.winner);
+    } else if (msg.kind === 'fog') {
+      events.onFog?.(msg.mask);
     } else if (msg.kind === 'error') {
       events.onError(msg.message);
     }
@@ -236,7 +245,8 @@ export function startSession(
           events.onConnection?.('Opnieuw verbonden, synchroniseren met de andere speler…');
         } else {
           // The sim builds the start setup itself (map features, HQs, start units, start scrap) and runs the AI.
-          post({ kind: 'init', init });
+          // Fog of war: the worker writes the snapshots of this player only (what he sees, plus ghosts).
+          post({ kind: 'init', init, viewer: you });
           started = true;
           lastProgress = performance.now();
           events.onConnection?.(null);
@@ -251,7 +261,7 @@ export function startSession(
         // Also the path of a reloaded tab: it got a fresh `start`, built a new sim at frame 0, and now loads the real state.
         if (env === null) return;
         const { frame, stateBase64, bundles } = msg.response;
-        post({ kind: 'load', state: base64ToBuffer(stateBase64), env });
+        post({ kind: 'load', state: base64ToBuffer(stateBase64), env, viewer: you });
         lastFrame = frame - 1;
         awaitingResync = false;
         lastProgress = performance.now();
@@ -361,6 +371,12 @@ export function startSession(
     },
     requestStatus() {
       if (started && !disposed && !awaitingResync) post({ kind: 'query', playerId: you });
+    },
+    requestFog() {
+      if (started && !disposed && !awaitingResync) post({ kind: 'fog', playerId: you });
+    },
+    revealAll(on) {
+      if (started && !disposed) post({ kind: 'viewer', viewer: on ? null : you });
     },
     dispose() {
       disposed = true;

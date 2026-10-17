@@ -233,7 +233,26 @@ describe('sim-tuning', () => {
       exclusiveRadiusU: 3072,
       heroClaimTicks: 3600,
       contestFlipTicks: 240,
+      vision: { cellU: 512 },
     });
+  });
+
+  it('fog of war (data 0.21.0): sight radii resolve from sightM or the sim.json vision defaults', () => {
+    const data = loadGameData(raw());
+    const l = (key: string) => data.loadouts.find((x) => x.key === key)!;
+    const b = (key: string) => data.buildings.find((x) => x.key === key)!;
+    expect(l('scavenger').sightU).toBe(14 * 256); // vision.unitSightM
+    expect(l('sentinel').sightU).toBe(32 * 256); // own sightM
+    expect(data.heroes[0]!.sightU).toBe(16 * 256); // vision.heroSightM
+    expect(b('woning').sightU).toBe(10 * 256); // vision.buildingSightM
+    expect(b('hoofdgebouw').sightU).toBe(12 * 256);
+    expect(b('claimpaal').sightU).toBe(8 * 256);
+    expect(b('turret').sightU).toBe(b('turret').rangeU + 2 * 256); // rangeM + vision.turretSightExtraM
+    const r = raw();
+    const sim = r.sim as Record<string, unknown>;
+    expect(() =>
+      loadGameData({ ...r, sim: { ...sim, vision: { ...(sim['vision'] as object), cellM: 3 } } }),
+    ).toThrow();
   });
 
   it('padvinding: sectorzijde een macht van 2 (4..64), ingang hoogstens de sectorzijde', () => {

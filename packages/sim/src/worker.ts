@@ -1,9 +1,10 @@
 import { HASH_INTERVAL_FRAMES } from '@crawlout/protocol';
-import type { FrameBundle, PlayerStatus } from '@crawlout/protocol';
+import type { FogMask, FrameBundle, PlayerStatus } from '@crawlout/protocol';
 import type { SimEnv, SimInit } from './config.js';
 import type { Sim, SimWinner } from './sim.js';
 import { imod } from './math/int.js';
 import { createSim, deserialize } from './sim.js';
+import { PlayerView } from './view.js';
 
 // Worker-schil zonder klok: berichten in, tick() als de bundel er is, snapshot uit als transferable.
 // De timer die step() aanroept staat buiten de sim (packages/sim/host/worker-entry.ts) en valt buiten de
@@ -15,16 +16,33 @@ import { createSim, deserialize } from './sim.js';
 // de snapshot van de laatste tick; de state-hashes van de tussenliggende meldframes (frame % HASH_INTERVAL_FRAMES == 0)
 // gaan als één `hashes`-bericht mee, zodat de client ze aan de relay kan melden. Events van overgeslagen snapshots
 // vervallen (alleen VFX, audio en meldingen). Anders tikt hij hoogstens maxTicks keer met een snapshot per tick.
+//
+// Fog of war (protocol 0.11.0; voorstel): with `viewer` in init or load (the local player) every snapshot is the one of
+// that player (view.ts: own entities, map features, what he sees now, ghosts of enemy buildings); the hash in the header
+// stays the hash of the whole shared state. Without `viewer` (replay tools, a spectator) the snapshot holds everything.
+// `fog` asks the fog mask of a player (the HUD and render overlay), like `query` asks his status.
 
 export type SimWorkerInbound =
   /** Nieuwe sim met startopstelling (map-features, hoofdgebouwen, startunits) uit init. */
-  | { readonly kind: 'init'; readonly init: SimInit }
+  | { readonly kind: 'init'; readonly init: SimInit; readonly viewer?: number }
   /** Geserialiseerde state laden (resync, desync-dump terugzetten). */
-  | { readonly kind: 'load'; readonly state: ArrayBuffer; readonly env: SimEnv }
+  | {
+      readonly kind: 'load';
+      readonly state: ArrayBuffer;
+      readonly env: SimEnv;
+      readonly viewer?: number;
+    }
   | { readonly kind: 'bundle'; readonly bundle: FrameBundle }
   | { readonly kind: 'dump' }
   /** queryMessage (contract 1): spelerstatus voor de HUD, op verzoek. */
-  | { readonly kind: 'query'; readonly playerId: number };
+  | { readonly kind: 'query'; readonly playerId: number }
+  /** Fog of war (protocol 0.11.0): the fog mask of a player, on request. */
+  | { readonly kind: 'fog'; readonly playerId: number }
+  /**
+   * Fog of war: switch the snapshot filter (null = everything, a spectator or a dev reveal; a playerId = his view,
+   * ghosts seeded from World.spotted). Presentation only; the sim and the hash do not change.
+   */
+  | { readonly kind: 'viewer'; readonly viewer: number | null };
 
 export type SimWorkerOutbound =
   | { readonly kind: 'ready'; readonly frame: number; readonly hash: number }
@@ -50,6 +68,8 @@ export type SimWorkerOutbound =
       readonly status: PlayerStatus;
       readonly winner: SimWinner | null;
     }
+  /** Answer to fog: the fog mask after the last executed frame (its buffers are transferred). */
+  | { readonly kind: 'fog'; readonly mask: FogMask }
   | { readonly kind: 'error'; readonly message: string };
 
 export interface SimWorkerPort {
@@ -75,8 +95,11 @@ export const CATCH_UP_BACKLOG = 16;
 
 export function createSimWorkerCore(port: SimWorkerPort): SimWorkerCore {
   let sim: Sim | null = null;
+  /** The snapshot filter of the local player (fog of war), or null: snapshots with everything. */
+  let view: PlayerView | null = null;
   /** Net een state geladen: de eerstvolgende slagen halen in tot er geen bundels meer klaarliggen. */
   let loaded = false;
+  const snapshot = (s: Sim): ArrayBuffer => (view === null ? s.writeSnapshot() : view.write(s));
 
   const fail = (e: unknown): void => {
     port.post({ kind: 'error', message: e instanceof Error ? e.message : String(e) }, []);
@@ -98,11 +121,15 @@ export function createSimWorkerCore(port: SimWorkerPort): SimWorkerCore {
         switch (msg.kind) {
           case 'init':
             sim = createSim(msg.init);
+            view = msg.viewer === undefined ? null : new PlayerView(msg.viewer);
+            view?.observe(sim);
             loaded = false;
             ready(sim);
             return;
           case 'load':
             sim = deserialize(msg.state, msg.env);
+            view = msg.viewer === undefined ? null : new PlayerView(msg.viewer);
+            view?.seed(sim);
             loaded = true;
             ready(sim);
             return;
@@ -128,6 +155,20 @@ export function createSimWorkerCore(port: SimWorkerPort): SimWorkerCore {
               [],
             );
             return;
+          case 'viewer':
+            if (sim === null) throw new Error('viewer voor init');
+            view = msg.viewer === null ? null : new PlayerView(msg.viewer);
+            view?.seed(sim);
+            return;
+          case 'fog': {
+            if (sim === null) throw new Error('fog voor init');
+            const mask = sim.fogMask(msg.playerId);
+            port.post({ kind: 'fog', mask }, [
+              mask.explored.buffer as ArrayBuffer,
+              mask.visible.buffer as ArrayBuffer,
+            ]);
+            return;
+          }
         }
       } catch (e) {
         fail(e);
@@ -140,7 +181,7 @@ export function createSimWorkerCore(port: SimWorkerPort): SimWorkerCore {
         while (n < maxTicks && sim.hasBundle()) {
           sim.tick();
           n++;
-          const buffer = sim.writeSnapshot();
+          const buffer = snapshot(sim);
           port.post({ kind: 'snapshot', buffer }, [buffer]);
         }
       } catch (e) {
@@ -158,6 +199,7 @@ export function createSimWorkerCore(port: SimWorkerPort): SimWorkerCore {
         while (sim.hasBundle()) {
           const hash = sim.tick();
           n++;
+          view?.observe(sim);
           const frame = sim.frame - 1;
           if (imod(frame, HASH_INTERVAL_FRAMES) === 0) reports.push({ frame, hash });
           if (!keepGoing()) break;
@@ -168,7 +210,7 @@ export function createSimWorkerCore(port: SimWorkerPort): SimWorkerCore {
         if (reports.length > 0 && reports[reports.length - 1]!.frame === sim.frame - 1)
           reports.pop();
         if (reports.length > 0) port.post({ kind: 'hashes', reports }, []);
-        const buffer = sim.writeSnapshot();
+        const buffer = snapshot(sim);
         port.post({ kind: 'snapshot', buffer }, [buffer]);
       } catch (e) {
         fail(e);

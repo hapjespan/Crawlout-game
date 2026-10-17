@@ -1,4 +1,10 @@
-import type { DominanceStatus, FrameBundle, PlayerStatus, QueueItem } from '@crawlout/protocol';
+import type {
+  DominanceStatus,
+  FogMask,
+  FrameBundle,
+  PlayerStatus,
+  QueueItem,
+} from '@crawlout/protocol';
 import { ENTITY_NONE, MAX_PLAYERS } from '@crawlout/protocol';
 import type {
   SimBuildingType,
@@ -65,6 +71,7 @@ import { RobotRates, robotRulesSystem } from './systems/robots.js';
 import { trainTicks, trainedOf } from './systems/training.js';
 import { MovementScratch, movementSystem } from './systems/movement.js';
 import { OrdersScratch, ordersSystem } from './systems/orders.js';
+import { Vision } from './vision.js';
 
 export interface SpawnUnitSpec {
   readonly typeId: number;
@@ -149,6 +156,7 @@ export const TICK_STAGES = [
   'economy',
   'claims',
   'cleanup',
+  'vision',
   'hash',
 ] as const;
 
@@ -170,6 +178,8 @@ export class Sim implements SimContext {
   readonly robotRates = new RobotRates();
   readonly index = new EntityIndex();
   readonly terrainDist: TerrainDistances;
+  /** Fog of war (sim 0.17.0): explored per player (state), visible counts (derived). */
+  readonly vision: Vision;
 
   private tickNo = 0;
   private readonly envHashValue: number;
@@ -206,7 +216,14 @@ export class Sim implements SimContext {
     for (const b of env.config.buildingTypes) this.buildingTypes[b.typeId] = b;
     this.rng = new Rng(seed);
     this.globals.winner = NO_WINNER;
-    this.parts = { world: this.world, flow: this.flow, ps: this.ps, globals: this.globals };
+    this.vision = new Vision(env.map, env.config, this.playerCount);
+    this.parts = {
+      world: this.world,
+      flow: this.flow,
+      ps: this.ps,
+      globals: this.globals,
+      vision: this.vision,
+    };
   }
 
   unitType(typeId: number): SimUnitType | undefined {
@@ -235,6 +252,8 @@ export class Sim implements SimContext {
     updateClaimPoints(this, this.claimScratch, true);
     // de padgraaf na de hoofdgebouwen meteen bijwerken (afgeleid), zodat tick 0 dat niet hoeft te doen
     this.flow.step();
+    // fog of war: the start setup already sees (and explores) its surroundings before frame 0
+    this.vision.update(this.world);
     this.hashDirty = true;
   }
 
@@ -304,11 +323,14 @@ export class Sim implements SimContext {
     // 8 dood en opruimen, presentatie voor de snapshot
     cleanupSystem(this);
     probe?.(8);
+    // 8b fog of war (sim 0.17.0): stamps, explored and visTo of the end-of-tick world; the next tick reads them
+    this.vision.update(this.world);
+    probe?.(9);
     this.tickNo = f + 1;
     // 9 hash
     this.lastHash = this.computeHash();
     this.hashDirty = false;
-    probe?.(9);
+    probe?.(10);
     return this.lastHash;
   }
 
@@ -342,6 +364,30 @@ export class Sim implements SimContext {
       this.tickNo > 0 ? this.tickNo - 1 : 0,
       this.hash(),
     );
+  }
+
+  /**
+   * The fog of a player on the vision grid (protocol FogMask, 0.11.0; voorstel): explored and visible as bitsets, copies.
+   * For the HUD and the render (minimap, fog overlay), on request like the player status.
+   */
+  fogMask(playerId: number): FogMask {
+    if (!isInt(playerId) || playerId < 0 || playerId >= this.playerCount)
+      throw new Error(`onbekende speler ${playerId}`);
+    const v = this.vision;
+    const explored = v.explored.slice(playerId * v.bytes, (playerId + 1) * v.bytes);
+    const visible = new Uint8Array(v.bytes);
+    const base = playerId * v.cells;
+    for (let c = 0; c < v.cells; c++)
+      if (v.count[base + c]! > 0) visible[c >> 3] = visible[c >> 3]! | (1 << (c & 7));
+    return {
+      frame: this.tickNo > 0 ? this.tickNo - 1 : 0,
+      playerId,
+      cellsW: v.gw,
+      cellsH: v.gh,
+      cellUnits: 1 << v.shift,
+      explored,
+      visible,
+    };
   }
 
   /** Spelerstatus voor de HUD (queryMessage, contract 1). hero is null als de factie geen held heeft. */
@@ -508,6 +554,7 @@ export class Sim implements SimContext {
       return NO_ENTITY;
     const i = createUnit(this, t, spec.owner, spec.x, spec.y, spec.yaw ?? 0);
     if (i < 0) return NO_ENTITY;
+    this.vision.update(this.world);
     this.hashDirty = true;
     return this.world.idOf(i);
   }
@@ -520,6 +567,7 @@ export class Sim implements SimContext {
     if (!footprintFree(this, fx, fy, bt.footprintW, bt.footprintH)) return NO_ENTITY;
     const i = createBuilding(this, bt, owner, fx, fy, done);
     if (i < 0) return NO_ENTITY;
+    this.vision.update(this.world);
     this.hashDirty = true;
     return this.world.idOf(i);
   }
@@ -536,6 +584,7 @@ export class Sim implements SimContext {
     if (i < 0 || this.world.has(i, C.building)) return false;
     setFlowField(this, i, NO_FIELD);
     this.world.free(i);
+    this.vision.update(this.world);
     this.hashDirty = true;
     return true;
   }
@@ -624,6 +673,7 @@ export class Sim implements SimContext {
     }
     this.flow.rebuild();
     this.indexClaimPoints();
+    this.vision.rebuild(w);
     this.hashDirty = true;
   }
 }

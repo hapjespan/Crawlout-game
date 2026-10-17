@@ -8,7 +8,7 @@ import { clampI, idiv } from './math/int.js';
  * hpPct (contract 1): units en gebouwen hp in procenten van maxHp; scrap-node resterende voorraad in procenten van de
  * startvoorraad (die staat in maxHp); al het andere (claimpunten) 100.
  */
-function hpPctOf(w: World, i: number): number {
+export function hpPctOf(w: World, i: number): number {
   const m = w.mask[i]!;
   const max = w.maxHp[i]!;
   if (max <= 0) return 100;

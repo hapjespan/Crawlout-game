@@ -404,6 +404,8 @@ describe('HeroAbility out of range (data 0.18.0): walk into range, then cast', (
   it('a target unit: the hero follows it and the zone lands where the unit is at the cast', () => {
     const sim = open(46);
     const enemy = sim.spawnUnit({ typeId: SCAV, owner: 1, ...cellCenter(45, 30) });
+    // fog of war (sim 0.17.0): a target entity must be visible; a scavenger of player 0 next to it spots it
+    sim.spawnUnit({ typeId: SCAV, owner: 0, ...cellCenter(44, 30) });
     const ev = play(
       sim,
       600,
@@ -415,6 +417,21 @@ describe('HeroAbility out of range (data 0.18.0): walk into range, then cast', (
     );
     expect(zoneEvents(ev)).toHaveLength(1);
     expect(sim.ps.abCooldown[0]).toBeGreaterThan(0);
+  });
+
+  it('fog of war (sim 0.17.0): refused when the target unit is hidden in the fog', () => {
+    const sim = open(46);
+    const hero = heroOf(sim, 0);
+    const enemy = sim.spawnUnit({ typeId: SCAV, owner: 1, ...cellCenter(45, 30) });
+    expect(sim.vision.visibleAt(0, sim.getUnit(enemy)!.x, sim.getUnit(enemy)!.y)).toBe(false);
+    const ev = play(
+      sim,
+      1,
+      at(0, cmd(0, 0, 'HeroAbility', { heroId: HERO.heroId, abilityId: 0, target: enemy })),
+    );
+    expect(zoneEvents(ev)).toEqual([]);
+    expect(sim.getUnit(hero)!.order).toBe(0);
+    expect(sim.ps.abCooldown[0]).toBe(0);
   });
 
   it('refused when the point lies on terrain the hero cannot walk to; a new order cancels the walk', () => {

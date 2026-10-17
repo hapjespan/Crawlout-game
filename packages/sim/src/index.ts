@@ -87,6 +87,8 @@ export type {
   WinReason,
 } from './sim.js';
 export { Sim, TICK_STAGES, createSim, deserialize } from './sim.js';
+export { FOG_EXPLORED, FOG_UNEXPLORED, FOG_VISIBLE, Vision } from './vision.js';
+export { PlayerView } from './view.js';
 export {
   AS_CLAIM,
   AS_DEPOT,

@@ -192,6 +192,16 @@ export class World {
    * systems/claims.ts), plus CLAIM_FROZEN als units van meer dan één speler in de cirkel staan.
    */
   readonly claimKind = new Uint8Array(MAX_ENTITIES);
+  /**
+   * Fog of war (sim 0.17.0, state): bit p = player p has ever seen this entity (World.visTo accumulated). For the ghosts
+   * of a reloaded client (view.ts) and AI memory later.
+   */
+  readonly spotted = new Uint8Array(MAX_ENTITIES);
+  /**
+   * Fog of war (derived, not state): bit p = player p sees this entity now (its owner always). Set for every live entity
+   * by vision.ts at the end of each tick, rebuilt after deserialize, 0 for an entity allocated during this tick.
+   */
+  readonly visTo = new Uint8Array(MAX_ENTITIES);
   // Presentatie (gaat de snapshot in, is ook state zodat de hash de hele snapshot dekt)
   readonly anim = new Uint8Array(MAX_ENTITIES);
   readonly animT = new Uint16Array(MAX_ENTITIES);
@@ -214,6 +224,7 @@ export class World {
     this.goalX[i] = NO_GOAL;
     this.goalY[i] = NO_GOAL;
     this.claimBy[i] = OWNER_NEUTRAL;
+    this.visTo[i] = 0;
     return i;
   }
 
@@ -383,6 +394,7 @@ export function entityStateArrays(w: World): readonly StateArray[] {
     one('jobKind', w.jobKind),
     one('jobWork', w.jobWork),
     one('repairMilli', w.repairMilli),
+    one('spotted', w.spotted),
     one('anim', w.anim),
     one('animT', w.animT),
     one('flags', w.flags),

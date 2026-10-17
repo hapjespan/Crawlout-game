@@ -37,6 +37,7 @@ import {
   steerChase,
   steerToPoint,
   stopMoving,
+  visibleTo,
 } from './common.js';
 
 // De held (Spelfundament 5, contract 1 HeroStatus). Eén per speler: de eerste held van zijn factie (SimFaction.heroId).
@@ -247,7 +248,8 @@ export function applyHeroAbility(
   if (ab.rangeU > 0) {
     if (pl.target !== undefined) {
       const t = w.resolve(pl.target);
-      if (t < 0) return false;
+      // fog of war (sim 0.17.0): a target entity must be visible to the player (his own always are)
+      if (t < 0 || !visibleTo(w, t, p)) return false;
       x = w.x[t]!;
       y = w.y[t]!;
       target = pl.target;
@@ -332,8 +334,11 @@ export function castOrder(ctx: SimContext, i: number, o: number): void {
       stopMoving(ctx, i);
       return;
     }
-    w.ordX[o] = w.x[t]!;
-    w.ordY[o] = w.y[t]!;
+    // fog of war (sim 0.17.0): follow the target only while it is visible; else cast at the last point it was seen
+    if (visibleTo(w, t, p)) {
+      w.ordX[o] = w.x[t]!;
+      w.ordY[o] = w.y[t]!;
+    }
   }
   const x = w.ordX[o]!;
   const y = w.ordY[o]!;

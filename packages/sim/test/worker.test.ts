@@ -11,6 +11,30 @@ function harness() {
 }
 
 describe('worker-schil', () => {
+  it('fog of war: with a viewer the snapshots are his (hidden enemies out, same hash); fog answers with his mask', () => {
+    const all = harness();
+    const mine = harness();
+    all.core.receive({ kind: 'init', init: testInit(3) });
+    mine.core.receive({ kind: 'init', init: testInit(3), viewer: 0 });
+    for (const h of [all, mine]) {
+      h.core.receive({ kind: 'bundle', bundle: bundle(0) });
+      h.core.step();
+    }
+    const snap = (h: ReturnType<typeof harness>) => {
+      const m = h.out.find((o) => o.msg.kind === 'snapshot')!.msg;
+      if (m.kind !== 'snapshot') throw new Error();
+      return readSnapshotHeader(m.buffer);
+    };
+    // the start setup of player 1 lies on the other side of the testmap, out of sight of player 0
+    expect(snap(mine).entityCount).toBeLessThan(snap(all).entityCount);
+    expect(snap(mine).hash).toBe(snap(all).hash);
+    mine.core.receive({ kind: 'fog', playerId: 0 });
+    const fog = mine.out.find((o) => o.msg.kind === 'fog')!;
+    if (fog.msg.kind !== 'fog') throw new Error();
+    expect(fog.msg.mask).toMatchObject({ playerId: 0, frame: 0, cellsW: 32, cellsH: 32 });
+    expect(fog.transfer).toEqual([fog.msg.mask.explored.buffer, fog.msg.mask.visible.buffer]);
+  });
+
   it('tickt alleen als de bundel er is en post elke snapshot als transferable', () => {
     const { core, out } = harness();
     core.receive({ kind: 'init', init: testInit(3) });
