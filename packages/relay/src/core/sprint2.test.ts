@@ -99,8 +99,9 @@ describe('lobby: namen en facties', () => {
       expect(last.players.map((p) => p.name)).toEqual(['Speler', 'Speler 2', 'Speler 3', 'AI 4']);
     }
     // the same lobby content for everyone; only `you` differs
-    const { you: _a, ...fromA } = h.of('a', 'lobby').at(-1)!;
-    const { you: _b, ...fromB } = h.of('b', 'lobby').at(-1)!;
+    const withoutYou = (conn: string) => ({ ...h.of(conn, 'lobby').at(-1)!, you: undefined });
+    const fromA = withoutYou('a');
+    const fromB = withoutYou('b');
     expect(fromA).toEqual(fromB);
   });
 

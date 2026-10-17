@@ -885,6 +885,7 @@ describe('state', () => {
         queue: [],
         robotPop: 0,
         trained: [0, 0, 0, 0, 0, 0, 0],
+        chems: [],
         dominance: {
           pointsHeld: 0,
           pointsRequired: createTestMap().dominance.pointsRequired,

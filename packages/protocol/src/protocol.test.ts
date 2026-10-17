@@ -90,7 +90,7 @@ describe('besluiten sprint 1', () => {
   });
 });
 
-describe('lobby you (protocol 0.12.0, fase-0 sectie 23 besluit 7)', () => {
+describe('lobby you (protocol 0.12.0, verplicht in 0.13.0, fase-0 sectie 23 besluit 7)', () => {
   const lobby = {
     kind: 'lobby',
     roomId: 'r',
@@ -100,8 +100,8 @@ describe('lobby you (protocol 0.12.0, fase-0 sectie 23 besluit 7)', () => {
       { playerId: 1, name: 'Speler', faction: 'raiders', ready: true, online: false, ai: true },
     ],
   };
-  it('het lobby-bericht draagt optioneel de eigen playerId, zoals start', () => {
-    expect(ServerMessage.safeParse(lobby).success).toBe(true);
+  it('het lobby-bericht draagt de eigen playerId, zoals start, en zonder you is het ongeldig', () => {
+    expect(ServerMessage.safeParse(lobby).success).toBe(false);
     expect(ServerMessage.safeParse({ ...lobby, you: 0 }).success).toBe(true);
     const parsed = ServerMessage.parse({ ...lobby, you: 1 });
     expect(parsed.kind === 'lobby' && parsed.you).toBe(1);
@@ -179,6 +179,7 @@ describe('besluiten sprint 3', () => {
       },
       robotPop: 0,
       trained: [0, 0, 0, 0, 0, 0, 0],
+      claimPoints: [],
     };
     expect(status.hero?.state).toBe('reviving');
   });
@@ -201,6 +202,7 @@ describe('besluiten sprint 3', () => {
       },
       robotPop: 0,
       trained: [0, 0, 0, 0, 0, 0, 0],
+      claimPoints: [],
     };
     const d = status.dominance!;
     expect(d.leader!.ticksHeld * TICK_MS).toBe(240_000);
@@ -268,6 +270,7 @@ describe('voorstel content-x (protocol 0.8.0, ter bevestiging door de architect)
       },
       robotPop: 2,
       trained: [1, 0, 0, 0, 0, 0, 0],
+      claimPoints: [],
     };
     expect(status.queue.map((q) => q.kind)).toEqual(['produce', 'train']);
   });

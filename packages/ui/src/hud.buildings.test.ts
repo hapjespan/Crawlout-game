@@ -91,6 +91,7 @@ function setup(opts: { scrap?: number; selection?: number[]; units?: SelectedEnt
       leader: null,
     },
     trained: [0, 0, 0, 0, 0, 0, 0],
+    claimPoints: [],
   });
   const runningHere = (id: number) => model.queue.find((q) => q.buildingId === id);
   /** Cards of one building, like the client's: the workshop and the lab research, busy while they work. */

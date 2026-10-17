@@ -70,11 +70,11 @@ export const ClientMessage = z.discriminatedUnion('kind', [
 export type ClientMessage = z.infer<typeof ClientMessage>;
 
 export const ServerMessage = z.discriminatedUnion('kind', [
-  // Besluit fase-0 sectie 23 (protocol 0.12.0): `you` is de playerId van de verbinding die dit lobby-bericht ontvangt,
-  // zoals in `start`. De relay stuurt het lobby-bericht daarom per verbinding (dezelfde inhoud, een ander `you`); een
-  // AI-speler ontvangt niets. Optioneel in 0.12.0 zodat een relay zonder het veld nog valideert; de client leest het
-  // zodra het er is en valt alleen zonder terug op de naam (ui identifyYou). Verplicht in de volgende versie zodra
-  // relay en client het dragen, op dezelfde weg als queue, dominance, robotPop en trained.
+  // Besluit fase-0 sectie 23 (protocol 0.12.0, verplicht in 0.13.0; voorstel, ter bevestiging door de architect): `you` is
+  // de playerId van de verbinding die dit lobby-bericht ontvangt, zoals in `start`. De relay stuurt het lobby-bericht
+  // daarom per verbinding (dezelfde inhoud, een ander `you`; Room.broadcastLobby, relay 0.3.0); een AI-speler ontvangt
+  // niets. De client leest het (session.ts, de menu-flow); de naam is geen identiteit meer, de unieke namen van de
+  // relay zijn alleen nog een weergaveregel.
   z
     .object({
       kind: z.literal('lobby'),
@@ -82,7 +82,7 @@ export const ServerMessage = z.discriminatedUnion('kind', [
       map: z.string(),
       players: z.array(LobbyPlayer),
       settings: MatchSettings.optional(),
-      you: uint.max(MAX_PLAYERS - 1).optional(),
+      you: uint.max(MAX_PLAYERS - 1),
     })
     .strict(),
   z
