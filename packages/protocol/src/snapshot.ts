@@ -247,21 +247,24 @@ export interface PlayerStatus {
    * tellen voor pop maar niet voor bedden: `pop` is de pop van de bewoners (binnen de bedden), `robotPop` die van de
    * robots, en pop + robotPop (plus de robots in productie) blijft binnen popCapMax. `settlers` telt alleen bewoners.
    * popCap = min(beds, popCapMax - robotPop - pop van robots in productie): de ruimte voor bewoners. Verplicht sinds
-   * protocol 0.9.0 (voorstel, ter bevestiging door de architect: de HUD leest hem); de sim levert hem altijd.
+   * protocol 0.9.0 (de HUD leest hem; bevestigd door de architect in fase-0 sectie 22); de sim levert hem altijd.
    */
   robotPop: number;
   /**
    * Getrainde SPECIAL-punten van de speler (protocol 0.8.0, data 0.16.0; besluit fase-0 sectie 20), per letter in de
    * volgorde S P E C I A L. Ze horen bij de speler, niet bij de held (ze blijven na zijn dood) en zitten al in
    * HeroStatus.special; de HUD heeft ze apart nodig voor de kosten en duur van de volgende run (training.json
-   * scrapCost + scrapCostStep maal getraind). Verplicht sinds protocol 0.9.0 (voorstel, ter bevestiging door de architect: de HUD leest hem).
+   * scrapCost + scrapCostStep maal getraind). Verplicht sinds protocol 0.9.0 (de HUD leest hem; bevestigd in fase-0
+   * sectie 22).
    */
   trained: [number, number, number, number, number, number, number];
   /**
-   * Alle claimpunten met hun claimstand (protocol 0.10.0, data 0.20.0; voorstel, ter bevestiging door de architect),
-   * zodat de HUD een ring met voortgang rond het claimpunt kan tonen: een paal in aanbouw, de held die het punt claimt
-   * door erin te staan, of de overname van een punt zonder paal. Oplopend op pointId. Optioneel tot de HUD hem leest;
-   * de sim levert hem altijd.
+   * Alle claimpunten met hun claimstand (protocol 0.10.0, data 0.20.0; voorstel van sim-core, bevestigd door de
+   * architect in fase-0 sectie 22), zodat de HUD een ring met voortgang rond het claimpunt kan tonen: een paal in
+   * aanbouw, de held die het punt claimt door erin te staan, of de overname van een punt zonder paal. pointId is het
+   * entity-id van het claimpunt in de snapshot. Oplopend op pointId. De sim levert hem altijd (Sim.status,
+   * claims.ts claimPointStatus) en de client leest hem (render: de ring; minimap); optioneel tot de PlayerStatus-literals
+   * van hud en client hem dragen, dan verplicht in de volgende protocolversie (sectie 22 besluit 3).
    */
   claimPoints?: ClaimPointStatus[];
 }
@@ -270,7 +273,7 @@ export interface PlayerStatus {
 export type ClaimActivity = 'none' | 'post' | 'hero' | 'contest';
 
 /**
- * Claimstand van één claimpunt (protocol 0.10.0, voorstel). owner: playerId of OWNER_NEUTRAL. beacon: het punt is van
+ * Claimstand van één claimpunt (protocol 0.10.0, bevestigd in fase-0 sectie 22). owner: playerId of OWNER_NEUTRAL. beacon: het punt is van
  * owner zonder claimgebouw (zijn held claimde het, of het ging over na een aanval) en dus over te nemen: staan er units
  * van een ander in de cirkel en geen van owner, dan gaat het na sim.json contestFlipS over. activity en by: een paal van
  * by in aanbouw (post), de held van by die het vrije punt claimt (hero, heroClaimS), of units van by die een beacon

@@ -83,5 +83,61 @@
     "revivePenaltyPct": 20,
     "maxRevives": 4,
     "_comment": "Balans speltest 14 oktober (held levelde nauwelijks; doel: level 3 tot 5 in een potje van 25 tot 35 minuten). Opziener (Krijger-variant van de Dwellers): SPECIAL totaal 34, zwaar op S, E en A voor een vechter (startwaarde). Oplappen bij het hoofdgebouw kost 100 scrap en 40 s, en 20 procent van perks en health (Spelfundament sectie 5); na 4 keer is de held leeg (maxRevives). xpPerLevel is PER STAP: 80, 120, 160, 200, 250, 300 (was 100 tot 600); de loader levert cumulatieve drempels 80, 200, 360, 560, 810, 1110, dus level 3 bij 200 xp en level 5 bij 560 xp; 6 stappen = maxlevel 7, een perk-keuze per level voor de 6 perks. xp-bronnen: xpPerKill 25 per vijandelijke unit die hij zelf doodt (was 10); xpPerAssist 15 per vijandelijke unit die een eigen unit of turret doodt binnen xpAssistRadiusM 15 m van de levende held (nieuw: de held leert van het gevecht om hem heen, ook als hij het laatste schot niet lost); xpPerDiscovery 50 per ontdekking, de eerste keer dat zijn speler een claimpunt neemt (was 25). Gemeten bij AI tegen AI (vijf seeds): de held van de winnaar haalt level 4 tot 6, die van de verliezer 2 tot 4. PASSIEVEN (passives, data 0.16.0, startwaarde, geen balans): de factiebonussen van de Opziener uit het Spelfundament (sectie 4: upgrades goedkoper, turrets sterker) als passief voor zijn speler, geen aura met straal. Ze gelden zolang de held LEEFT (dood, oplappend of leeg: weg), met dezelfde semantiek als de effecten van perks: optelbaar bij het basisgetal van het doel en geschaald met (1000 - aantal keer opgelapt maal revivePenaltyPermille) promille, dus na één keer oplappen werken ze op 80 procent. researchCostPct -15 met doel alle: elk onderzoek kost 15 procent minder scrap (de kosten worden bij het starten van het onderzoek naar beneden afgerond op een geheel getal; Cancel betaalt het betaalde bedrag terug). damagePct +10 en rangeM +1 (m) op turret en turret_laser: turrets zijn 10 procent sterker en schieten een meter verder (stapelt met lasergeleiding, turret_schade, turret_bereik, het turretnetwerk en de perks)."
+  },
+  {
+    "id": "warlord",
+    "faction": "raiders",
+    "archetype": "krijger",
+    "special": { "S": 7, "P": 4, "E": 5, "C": 6, "I": 3, "A": 5, "L": 4 },
+    "naam": "Warlord",
+    "xpPerLevel": [60, 90, 120, 150, 190, 230],
+    "xpPerKill": 30,
+    "xpPerDiscovery": 60,
+    "xpPerAssist": 20,
+    "xpAssistRadiusM": 15,
+    "abilities": [
+      {
+        "id": "raid",
+        "naam": "Raid",
+        "cooldownS": 40,
+        "rangeM": 14,
+        "radiusM": 10,
+        "durationS": 7,
+        "effects": [
+          { "stat": "speedPct", "side": "ally", "target": "units", "delta": 35 },
+          { "stat": "damagePct", "side": "ally", "target": "units", "delta": 20 }
+        ],
+        "_comment": "startwaarde, geen balans. Raid (Spelfundament 4 en 5, Warlord): richt op een punt tot 14 m (rangeM) van de held; binnen 10 m straal (radiusM) lopen eigen units 7 s (durationS) 35 procent sneller (speedPct +35) en doen 20 procent meer schade (damagePct +20, target units: ook slaven in de straal, die geen schade doen). Cooldown 40 s (Lockdown van de Opziener 45). Een aanvalsknop: de zwerm stort zich op een punt. Geen buit-bonus in deze versie: de sim kent alleen speedPct en damagePct voor abilities (fromData AURA_STATS)."
+      }
+    ],
+    "passives": [],
+    "aura": {
+      "radiusM": 10,
+      "effects": [
+        {
+          "stat": "damagePct",
+          "side": "enemy",
+          "target": "units",
+          "delta": -10
+        },
+        { "stat": "speedPct", "side": "enemy", "target": "units", "delta": -8 }
+      ]
+    },
+    "xpPerCapture": 25,
+    "baseLoadoutId": "warlord_basis",
+    "perkPool": [
+      "gebroken_flessen",
+      "dubbele_dosis",
+      "schuldeiser",
+      "rammelende_ketting",
+      "grote_bek",
+      "goot_scherpschutter",
+      "vakbond_verboden"
+    ],
+    "reviveScrap": 90,
+    "reviveS": 35,
+    "revivePenaltyPct": 20,
+    "maxRevives": 4,
+    "_comment": "startwaarde, geen balans. Warlord (Krijger-variant van de Raiders, Spelfundament 4 en 5): SPECIAL totaal 34 (gelijk aan de Opziener), zwaar op S 7 en C 6 voor een brulboer die zijn horde voorgaat, P 4 en I 3 laag. Aangewezen basis: baseLoadoutId warlord_basis. LEVELT HET SNELST (Spelfundament 4): xpPerLevel per stap 60, 90, 120, 150, 190, 230 (cumulatief 60, 150, 270, 420, 610, 840 tegen 80, 200, 360, 560, 810, 1110 voor de Opziener), xpPerKill 30 (25), xpPerDiscovery 60 (50), xpPerAssist 20 (15) binnen 15 m en xpPerCapture 25 per geroofde gevangene (nieuw veld): de held leert van elke overval. Zes stappen = maxlevel 7, perk-keuze per level uit 7 perks. INTIMIDATIE-AURA (aura, data 0.21.0, alleen data): altijd aan zolang de held leeft; vijandelijke units binnen 10 m van de held doen 10 procent minder schade (damagePct -10) en lopen 8 procent trager (speedPct -8); zelfde effect-vorm als een ability (side enemy). Geen passieve bonussen voor de speler (passives []): de aura is de factiebonus. Oplappen bij het hoofdgebouw kost 90 scrap en 35 s (de Opziener 100 en 40), 20 procent verlies van perks en hp per keer, na 4 keer leeg (Spelfundament 5). SPECIAL-kanaal: de chems psycho en jet verhogen S en A van de held tijdelijk zolang hij in de aura van een Chem-dealer staat (factions.json chems, target held)."
   }
 ]

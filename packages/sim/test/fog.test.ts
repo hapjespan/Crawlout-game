@@ -23,7 +23,7 @@ import {
   typeByKey,
 } from './helpers.js';
 
-// Fog of war (sim 0.17.0, data 0.21.0, protocol 0.11.0): vision grid, explored and visible, snapshot per player,
+// Fog of war (sim 0.17.0, data 0.22.0, protocol 0.11.0): vision grid, explored and visible, snapshot per player,
 // ghosts of enemy buildings, the gameplay rules (a target must be visible) and determinism.
 
 const M = 256;

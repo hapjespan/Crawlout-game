@@ -4,13 +4,16 @@ import { z } from 'zod';
 // Alle schema's zijn strict: onbekende velden laten de build falen. Eenheden hier zijn menselijk (m, s, %).
 const id = z.string().min(1);
 const nonneg = z.number().nonnegative();
-// Fog of war (data 0.21.0): a sight radius in metres; 64 m bounds the stamp of the vision grid
+// Fog of war (data 0.22.0): a sight radius in metres; 64 m bounds the stamp of the vision grid
 const sight = z.number().min(0).max(64);
 const comment = z.string().optional(); // _comment: bedoeling van de waarde; verplicht gebruiken bij balanswaarden
+const pct = z.number().min(0).max(100);
 
 export const ArmorType = z.enum(['none', 'light', 'medium', 'heavy', 'robot']);
 export const DamageType = z.enum(['ballistic', 'energy', 'melee', 'fire']);
-export const BodyType = z.enum(['human', 'robot']);
+// Nieuwe lichaamstypen staan achteraan zodat bestaande indices gelijk blijven. beast en vehicle (data 0.21.0; voorstel, ter
+// bevestiging door de architect): honden en de Buggy van de Raiders; geen rol- of rig-regel in de sim, alleen een ander lichaam.
+export const BodyType = z.enum(['human', 'robot', 'beast', 'vehicle']);
 // Volgorde = index in ROLES (GameData). Nieuwe rollen staan achteraan zodat bestaande indices gelijk blijven.
 // technician en robot (data 0.16.0): de technicus-regel en de Robotfabriek van de Dwellers.
 export const Role = z.enum(['scavenger', 'builder', 'militia', 'technician', 'robot']);
@@ -24,12 +27,44 @@ export const Provides = z.enum([
   'lab',
   'hq',
   'training',
+  // Data 0.21.0 (Raiders; voorstel, ter bevestiging door de architect), achteraan: tent (vechters-instroom, vangnet),
+  // kooi (slaven: transitie en werkgebied), depot (afleverpunt naast hq en werkplaats), chemlab (chems, SPECIAL-kanaal)
+  'tent',
+  'kooi',
+  'depot',
+  'chemlab',
 ]);
 export const Stat = z.enum(['S', 'P', 'E', 'C', 'I', 'A', 'L']);
 
-// Vangnet (Spelfundament 4, data 0.16.0). Per factie een eigen actie; nu bekend: radiobaken_instroom (Dwellers).
-// De arrival-velden (intervalS, maxArrivals, loadoutId) zijn verplicht bij die actie en verboden bij een andere.
-export const SafetyNetAction = z.enum(['radiobaken_instroom']);
+// Effect-stats met de suffix-conventie: Pct = procenten (promille in GameData), M = meters (eenheden), S = seconden (ticks).
+// De losse SPECIAL-letters (S P E C I A L) zijn ruwe gehele getallen; die zijn bewust geen S-suffix.
+export const EffectStat = z.enum([
+  'hpPct',
+  'damagePct',
+  'speedPct',
+  'rangeM',
+  'gatherRatePct',
+  'buildTimePct',
+  'researchTimePct',
+  'S',
+  'P',
+  'E',
+  'C',
+  'I',
+  'A',
+  'L',
+  // Data 0.16.0: kosten van onderzoek in procenten (negatief = goedkoper); target 'alle'. Achteraan, zodat de indices gelijk blijven.
+  'researchCostPct',
+]);
+export const Effect = z
+  .object({ stat: EffectStat, target: z.string(), delta: z.number() })
+  .strict();
+
+// Vangnet (Spelfundament 4, data 0.16.0). Per factie een eigen actie; nu bekend: radiobaken_instroom (Dwellers) en
+// tenten_instroom (Raiders, data 0.21.0; voorstel, ter bevestiging door de architect: threshold telt vechters, de
+// instroom komt uit een voltooide tent). De arrival-velden (intervalS, maxArrivals, loadoutId) zijn verplicht bij
+// elke actie van deze enum en verboden bij een toekomstige actie zonder aankomst.
+export const SafetyNetAction = z.enum(['radiobaken_instroom', 'tenten_instroom']);
 export const SafetyNet = z
   .object({
     threshold: z.number().int().nonnegative(),
@@ -40,7 +75,7 @@ export const SafetyNet = z
   })
   .strict()
   .superRefine((n, ctx) => {
-    const needed = n.action === 'radiobaken_instroom';
+    const needed = n.action === 'radiobaken_instroom' || n.action === 'tenten_instroom';
     for (const field of ['intervalS', 'maxArrivals', 'loadoutId'] as const) {
       if (needed && n[field] === undefined)
         ctx.addIssue({ code: 'custom', path: [field], message: `verplicht bij ${n.action}` });
@@ -60,6 +95,125 @@ export const RobotRules = z
   })
   .strict();
 
+// ---------------------------------------------------------------------------------------------------------------------
+// Raiders (data 0.21.0; voorstel, ter bevestiging door de architect). Alleen data: de sim leest deze velden nog niet
+// (zie packages/data/CHANGELOG.md 0.21.0 voor wat de sim moet bouwen). Alle blokken zijn optioneel, een Dweller-record
+// blijft ongewijzigd geldig. Eenheden menselijk (m, s, %), de loader rekent om.
+// ---------------------------------------------------------------------------------------------------------------------
+
+// Bevrijding van een slaaf: een vijandelijke unit raakt hem touchS seconden aan zonder Raider (niet-slaaf) binnen guardRadiusM.
+export const SlaveLiberation = z
+  .object({
+    touchS: nonneg, // seconden onafgebroken aanraken
+    touchRangeM: nonneg, // afstand waarbinnen een unit de slaaf "aanraakt"
+    guardRadiusM: nonneg, // een eigen vechter (geen slaaf) binnen deze straal om de slaaf stopt de bevrijding
+    freedSpeedPct: z.number(), // bonus op de loopsnelheid van de bevrijde slaaf op weg naar huis (tempo voor de bevrijder)
+  })
+  .strict();
+// Opstand bij te weinig garnizoen: zie het _comment in data/factions.json voor de precieze regel.
+export const SlaveRevolt = z
+  .object({
+    garrisonRadiusM: nonneg, // een eigen vechter binnen deze straal van de Kooi telt als garnizoen
+    slavesPerGuard: z.number().int().positive(), // benodigd garnizoen = max(minGuards, ceil(slaven / slavesPerGuard))
+    minGuards: z.number().int().nonnegative(),
+    graceS: nonneg, // zoveel seconden tekort voordat de opstand begint
+    emptyGraceS: nonneg, // idem bij nul vechters (korter)
+    escapePct: pct, // deel van de slaven bij die Kooi dat per opstand ontsnapt
+    repeatS: nonneg, // zolang het tekort blijft: elke zoveel seconden opnieuw
+  })
+  .strict();
+export const SlaveRules = z
+  .object({
+    capturedLoadoutId: id, // loadout waar een gevangene na de Kooi-transitie een slaaf van wordt
+    minDistanceFromOwnerBaseM: nonneg, // roven alleen verder dan dit van het hoofdgebouw van de eigenaar van het doel
+    liberation: SlaveLiberation,
+    revolt: SlaveRevolt,
+  })
+  .strict();
+// Plunderen: scrap uit gesloopte vijandelijke gebouwen en gedode verzamelaars.
+export const PlunderRules = z
+  .object({
+    buildingLootPct: pct, // procent van de scrapCost van een door deze factie gesloopt vijandelijk gebouw
+    depotLootMultiplierPct: nonneg, // 200 = dubbele buit voor een depot (provides hq, werkplaats of depot)
+    carryLootPct: pct, // procent van de vracht van een gedode vijandelijke verzamelaar
+    bonusTech: id.optional(), // tech die de buit vergroot
+    bonusPct: nonneg.optional(), // extra buit in procent bij bonusTech (25 = een kwart meer)
+  })
+  .strict()
+  .refine((p) => (p.bonusTech === undefined) === (p.bonusPct === undefined), {
+    message: 'bonusTech en bonusPct horen bij elkaar',
+    path: ['bonusPct'],
+  });
+// Tribute van een bezet neutraal claimpunt (MapDef.claimPoints[].kind).
+export const Tribute = z
+  .object({
+    claimKind: z.enum(['scrap', 'settlement', 'powerArmor']),
+    scrapPerMin: nonneg, // ruw, per bezet punt
+    bonusTech: id.optional(),
+    bonusPct: nonneg.optional(),
+  })
+  .strict()
+  .refine((t) => (t.bonusTech === undefined) === (t.bonusPct === undefined), {
+    message: 'bonusTech en bonusPct horen bij elkaar',
+    path: ['bonusPct'],
+  });
+// Een chem (SPECIAL-kanaal 'chems'): een dosis geeft effects gedurende activeS en daarna crash gedurende crashS. Geen verslaving.
+// Doel 'alle' = elke unit in de aura van de Chem-dealer, 'held' = de held van de speler als hij in die aura staat.
+export const Chem = z
+  .object({
+    id,
+    naam: z.string(),
+    flavourText: z.string(),
+    requiresTech: id, // tech die de chem ontgrendelt (onderzocht in de chemlab)
+    doseScrap: nonneg, // scrap per dosis, betaald op het moment dat de dealer doseert
+    activeS: z.number().positive(),
+    crashS: z.number().positive(),
+    cooldownS: nonneg, // minimale tijd tussen twee doses op dezelfde unit (gerekend vanaf het einde van de crash)
+    effects: z.array(Effect).min(1), // tijdens de werking
+    crash: z.array(Effect).min(1), // tijdens de crash
+    refined: z
+      .object({ requiresTech: id, activePct: z.number(), crashPct: z.number() })
+      .strict()
+      .optional(), // verfijnde stoffen: werkingsduur en crashduur in procenten (negatief = korter)
+    _comment: comment,
+  })
+  .strict();
+// Een unit die chems uitdeelt (Chem-dealer): in gevecht doseert hij eigen units binnen radiusM met een chem uit de lijst.
+export const UnitAura = z
+  .object({
+    radiusM: nonneg,
+    chems: z.array(id).min(1), // chem-ids van de factie, in voorkeursvolgorde
+    trigger: z.enum(['gevecht']), // gevecht: zodra een vijand binnen aggroRangeM van de dealer of een eigen unit in de aura staat
+  })
+  .strict();
+// Slaver: roft een neutrale zwerver of een verslagen vijandelijke bewoner (hp onder maxHpPct); de gevangene loopt naar de
+// dichtstbijzijnde eigen Kooi (SlaveRules).
+export const CaptureTarget = z.enum(['wanderer', 'resident']);
+export const Capture = z
+  .object({
+    rangeM: nonneg,
+    captureS: nonneg, // seconden onafgebroken binnen rangeM
+    targets: z.array(CaptureTarget).min(1),
+    maxHpPct: pct, // een vijandelijke bewoner (bodyType human, geen held) is alleen te roven onder dit hp-percentage
+  })
+  .strict();
+// Kooi (provides kooi): slaven in transitie en het werkgebied van de slaven die eraan gebonden zijn.
+export const Cage = z
+  .object({
+    capacity: z.number().int().positive(), // aantal slaven dat aan deze Kooi gebonden kan zijn (transitie en werk)
+    transitionS: z.number().positive(), // tijd in de Kooi voordat een gevangene werker is
+    workRadiusM: nonneg, // een gebonden slaaf werkt (verzamelt, bouwt) alleen binnen deze straal van de Kooi
+  })
+  .strict();
+// Plaatsingsregel op afstand van het eigen hoofdgebouw (midden tot midden): de Kooi staat aan de rand van de basis.
+export const BuildingPlacement = z
+  .object({ minFromHqM: nonneg, maxFromHqM: nonneg })
+  .strict()
+  .refine((p) => p.maxFromHqM >= p.minFromHqM, {
+    message: 'maxFromHqM is minstens minFromHqM',
+    path: ['maxFromHqM'],
+  });
+
 export const Faction = z
   .object({
     id,
@@ -73,10 +227,21 @@ export const Faction = z
     uniqueUnits: z.array(id),
     uniqueBuildings: z.array(id),
     specialChannel: z.enum(['training', 'chems', 'tech']),
+    // Data 0.21.0 (Raiders; voorstel, ter bevestiging door de architect), alle optioneel en alleen de sim-regels van de Raiders
+    slaves: SlaveRules.optional(),
+    plunder: PlunderRules.optional(),
+    tribute: Tribute.optional(),
+    chems: z.array(Chem).optional(), // verplicht bij specialChannel chems en anders niet toegestaan
     _comment: comment,
   })
   .strict()
   .superRefine((f, ctx) => {
+    if ((f.specialChannel === 'chems') !== (f.chems !== undefined && f.chems.length > 0))
+      ctx.addIssue({
+        code: 'custom',
+        path: ['chems'],
+        message: 'verplicht (niet leeg) bij specialChannel chems en anders niet toegestaan',
+      });
     if (f.bodyTypes.includes('robot') !== (f.robotRules !== undefined))
       ctx.addIssue({
         code: 'custom',
@@ -125,17 +290,34 @@ export const Loadout = z
     prereqTech: z.array(id),
     visuals: z.object({ meshSlots: z.record(z.string(), z.string()) }).strict(), // slot -> manifest-id
     // Data 0.16.0: waar een unit gemaakt wordt. Afwezig = omscholen van een bewoner in de werkplaats (alle bewoners).
-    // Aanwezig = gebouw-id waar de unit nieuw gebouwd wordt (robots); verplicht bij bodyType robot, verboden bij human.
+    // Aanwezig = gebouw-id waar de unit nieuw gebouwd wordt (robots); verplicht bij bodyType robot.
+    // Data 0.21.0 (voorstel, ter bevestiging door de architect): ook toegestaan voor een ander lichaam (de vechters,
+    // honden en de Buggy van de Raiders worden nieuw gebouwd in een tent of de autosloperij); een slaaf heeft het nooit.
     producedAt: id.optional(),
     repair: Repair.optional(), // alleen role robot
     siege: Siege.optional(), // alleen role robot
-    // Data 0.21.0 (fog of war; voorstel, ter bevestiging door de architect): sight radius from the unit's centre;
+    // Data 0.21.0 (Raiders; voorstel, ter bevestiging door de architect), alle optioneel
+    slave: z.boolean().optional(), // true = slaaf: arbeider (role scavenger of builder), vecht nooit, werkt binnen de Kooi-straal, bevrijdbaar
+    capture: Capture.optional(), // Slaver
+    aura: UnitAura.optional(), // Chem-dealer
+    // Data 0.22.0 (fog of war; voorstel, ter bevestiging door de architect): sight radius from the unit's centre;
     // absent = sim.json vision.unitSightM
     sightM: sight.optional(),
     _comment: comment,
   })
   .strict()
   .superRefine((l, ctx) => {
+    if (l.slave === true) {
+      const bad = (path: string, message: string): void =>
+        ctx.addIssue({ code: 'custom', path: [path], message });
+      if (l.role !== 'scavenger' && l.role !== 'builder')
+        bad('role', 'een slaaf is een arbeider: role scavenger of builder');
+      if (l.bodyType !== 'human') bad('bodyType', 'een slaaf is human');
+      if (l.damage > 0) bad('damage', 'een slaaf vecht nooit: damage 0');
+      if (l.producedAt !== undefined) bad('producedAt', 'een slaaf wordt geroofd, niet gebouwd');
+      if (l.capture !== undefined || l.aura !== undefined)
+        bad('slave', 'een slaaf heeft geen capture of aura');
+    }
     const robot = l.bodyType === 'robot';
     if (robot !== (l.role === 'robot'))
       ctx.addIssue({
@@ -148,12 +330,6 @@ export const Loadout = z
         code: 'custom',
         path: ['producedAt'],
         message: 'verplicht bij bodyType robot',
-      });
-    if (!robot && l.producedAt !== undefined)
-      ctx.addIssue({
-        code: 'custom',
-        path: ['producedAt'],
-        message: 'niet toegestaan bij bodyType human',
       });
     for (const field of ['repair', 'siege'] as const)
       if (l[field] !== undefined && !robot)
@@ -192,7 +368,10 @@ export const Building = z
     rangeM: nonneg.optional(),
     cooldownS: nonneg.optional(),
     network: TurretNetwork.optional(), // data 0.16.0, alleen bij provides turret
-    // Data 0.21.0 (fog of war; voorstel, ter bevestiging door de architect): sight radius beyond the footprint edge
+    // Data 0.21.0 (Raiders; voorstel, ter bevestiging door de architect), optioneel
+    cage: Cage.optional(), // verplicht bij provides kooi en anders niet toegestaan
+    placement: BuildingPlacement.optional(), // de Kooi staat aan de rand van de basis
+    // Data 0.22.0 (fog of war; voorstel, ter bevestiging door de architect): sight radius beyond the footprint edge
     // (the sim adds half the larger footprint side); absent = rangeM + vision.turretSightExtraM for a turret, else
     // vision.buildingSightM
     sightM: sight.optional(),
@@ -200,6 +379,12 @@ export const Building = z
   })
   .strict()
   .superRefine((b, ctx) => {
+    if (b.provides.includes('kooi') !== (b.cage !== undefined))
+      ctx.addIssue({
+        code: 'custom',
+        path: ['cage'],
+        message: 'verplicht bij provides kooi en anders niet toegestaan',
+      });
     if (!b.provides.includes('turret')) {
       if (b.network !== undefined)
         ctx.addIssue({
@@ -218,30 +403,6 @@ export const Building = z
         });
     }
   });
-
-// Effect-stats met de suffix-conventie: Pct = procenten (promille in GameData), M = meters (eenheden), S = seconden (ticks).
-// De losse SPECIAL-letters (S P E C I A L) zijn ruwe gehele getallen; die zijn bewust geen S-suffix.
-export const EffectStat = z.enum([
-  'hpPct',
-  'damagePct',
-  'speedPct',
-  'rangeM',
-  'gatherRatePct',
-  'buildTimePct',
-  'researchTimePct',
-  'S',
-  'P',
-  'E',
-  'C',
-  'I',
-  'A',
-  'L',
-  // Data 0.16.0: kosten van onderzoek in procenten (negatief = goedkoper); target 'alle'. Achteraan, zodat de indices gelijk blijven.
-  'researchCostPct',
-]);
-export const Effect = z
-  .object({ stat: EffectStat, target: z.string(), delta: z.number() })
-  .strict();
 
 export const Tech = z
   .object({
@@ -292,6 +453,11 @@ export const Ability = z
   })
   .strict();
 
+// Passieve aura rond de held (data 0.21.0): effecten op alles binnen radiusM, zolang de held leeft. Zelfde stats als een ability.
+export const HeroAura = z
+  .object({ radiusM: nonneg, effects: z.array(AbilityEffect).min(1) })
+  .strict();
+
 export const Hero = z
   .object({
     id,
@@ -313,12 +479,18 @@ export const Hero = z
     // Data 0.16.0: passieve effecten van de held voor zijn speler, zolang hij leeft; zelfde semantiek als perk-effecten
     // (optelbaar, geschaald met revivePenaltyPct per oplap, weg als de held dood of leeg is).
     passives: z.array(Effect),
+    // Data 0.21.0 (Raiders; voorstel, ter bevestiging door de architect), alle optioneel: de intimidatie-aura van de Warlord
+    // (altijd aan, zolang de held leeft; zelfde effect-vorm als een ability), xp per geroofde gevangene, en het basis-loadout
+    // van de held (afwezig = het goedkoopste loadout met role militia zonder prereqTech en zonder producedAt van de factie).
+    aura: HeroAura.optional(),
+    xpPerCapture: z.number().int().nonnegative().optional(),
+    baseLoadoutId: id.optional(),
     perkPool: z.array(id),
     reviveScrap: nonneg,
     reviveS: nonneg,
     revivePenaltyPct: nonneg, // 20 volgens het Spelfundament
     maxRevives: z.number().int().nonnegative(), // aantal keer oplappen voordat de held leeg is
-    // Data 0.21.0 (fog of war; voorstel, ter bevestiging door de architect): sight radius of the hero; absent =
+    // Data 0.22.0 (fog of war; voorstel, ter bevestiging door de architect): sight radius of the hero; absent =
     // sim.json vision.heroSightM
     sightM: sight.optional(),
     _comment: comment,
@@ -399,9 +571,43 @@ export const MapDef = z
   })
   .strict();
 
-const pct = z.number().min(0).max(100);
 /** Waar de AI een gebouw uit de bouwvolgorde neerzet: bij het hoofdgebouw, bij zijn eigen claimpunt het dichtst bij huis, of bij zijn claimpunt het dichtst bij de vijand. */
 export const AiSite = z.enum(['hq', 'claim', 'front']);
+
+// Het roofplan van de Raider-AI (data 0.21.0). Alle loadout-ids moeten bestaan; de tijden zijn speeltijd in seconden.
+export const RaidPlan = z
+  .object({
+    // Samenstelling van de vechters uit de tenten, cyclisch naar gewicht (een loadout waarvoor de techs er niet zijn slaat hij over)
+    fighterMix: z
+      .array(z.object({ loadoutId: id, weight: z.number().int().positive() }).strict())
+      .min(1),
+    // Harass: snelle units (Buggy) die verzamelaars en losse units van de vijand aanvallen en bij te weinig hp terugtrekken
+    harass: z
+      .object({
+        loadoutId: id,
+        fromS: nonneg,
+        max: z.number().int().positive(),
+        retreatHpPct: pct,
+        targets: z.enum(['gatherers']),
+      })
+      .strict(),
+    // Slavenroof: slavers met escorte op zwervers en op vijandelijke bewoners buiten de basisradius; terug naar de Kooi
+    slaveRaids: z
+      .object({
+        slaverLoadoutId: id,
+        fromS: nonneg,
+        slavers: z.number().int().positive(),
+        escort: z.number().int().nonnegative(),
+        maxRaidS: nonneg, // een tocht duurt hoogstens zoveel seconden, daarna terug
+        retryS: nonneg, // wachttijd tussen twee tochten
+      })
+      .strict(),
+    // Garnizoen: zoveel vechters blijven thuis (anders opstand), ook tijdens golven en tochten
+    garrison: z.object({ minFighters: z.number().int().nonnegative() }).strict(),
+    // Dominantie-push: vanaf fromS en met minArmy vechters neemt hij claimpunten en houdt ze (verder dan claimSafeRadiusM met escorte)
+    dominancePush: z.object({ fromS: nonneg, minArmy: z.number().int().nonnegative() }).strict(),
+  })
+  .strict();
 
 export const AiScript = z
   .object({
@@ -479,6 +685,9 @@ export const AiScript = z
       })
       .strict()
       .optional(),
+    // Data 0.21.0 (Raiders; voorstel, ter bevestiging door de architect): het roof- en harassplan van het Raider-script
+    // (optioneel; Dwellers hebben het niet). De rest van het script (bouwvolgorde, golven, claims) gebruikt de gewone velden.
+    raidPlan: RaidPlan.optional(),
     allInWithoutNodes: z.boolean(), // zonder bruikbare scrap-node (geen inkomen meer) gaan elke golf naar het hoofdgebouw, met de plunderaars mee
     _comment: comment,
   })
@@ -514,7 +723,7 @@ export const PlacementTuning = z
     path: ['depotClearanceM'],
   });
 
-// Fog of war (data/sim.json `vision`, data 0.21.0; voorstel, ter bevestiging door de architect). Every own unit and
+// Fog of war (data/sim.json `vision`, data 0.22.0; voorstel, ter bevestiging door de architect). Every own unit and
 // building reveals a disc on the vision grid of cellM x cellM metres; the defaults hold for records without sightM.
 export const VisionTuning = z
   .object({
@@ -578,7 +787,7 @@ export const SimTuning = z
     // goes over to an enemy after contestFlipS with enemy units and none of the holder in the circle
     heroClaimS: nonneg,
     contestFlipS: nonneg,
-    // Data 0.21.0 (fog of war; voorstel, ter bevestiging door de architect): the vision grid and default sight radii
+    // Data 0.22.0 (fog of war; voorstel, ter bevestiging door de architect): the vision grid and default sight radii
     vision: VisionTuning,
   })
   .strict()
@@ -592,6 +801,9 @@ export const SimTuning = z
   });
 
 export type Faction = z.infer<typeof Faction>;
+export type Chem = z.infer<typeof Chem>;
+export type SlaveRules = z.infer<typeof SlaveRules>;
+export type RaidPlan = z.infer<typeof RaidPlan>;
 export type Loadout = z.infer<typeof Loadout>;
 export type Building = z.infer<typeof Building>;
 export type Tech = z.infer<typeof Tech>;

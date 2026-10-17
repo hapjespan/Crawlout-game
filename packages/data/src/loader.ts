@@ -18,6 +18,7 @@ import {
   Tech,
   Training,
   BodyType,
+  CaptureTarget,
   Provides,
   Archetype,
 } from './schemas.js';
@@ -62,6 +63,8 @@ export const PROVIDES = Provides.options;
 export const STATS = Stat.options;
 /** Doelen die een support-robot kan repareren; de index staat in LoadoutData.repair.targets. */
 export const REPAIR_TARGETS = RepairTarget.options;
+/** Doelen van een Slaver; de index staat in CaptureData.targets. */
+export const CAPTURE_TARGETS = CaptureTarget.options;
 
 export interface EffectData {
   stat: EffectStat;
@@ -78,6 +81,115 @@ export interface RobotRulesData {
   technicianRoles: number[];
   /** Een robot zonder technicus werkt op (1000 - robotPenaltyPermille) promille: 1000 = werkt niet. */
   robotPenaltyPermille: number;
+}
+
+// Raiders (data 0.21.0; voorstel, ter bevestiging door de architect). Alleen data, de sim leest ze nog niet.
+// Elk blok is null of een lege lijst voor een factie of record zonder het veld.
+
+export interface SlaveRulesData {
+  /** Loadout-id waar een gevangene na de Kooi-transitie een slaaf van wordt. */
+  capturedLoadoutId: number;
+  /** Roven alleen verder dan dit van het hoofdgebouw van de eigenaar van het doel. */
+  minDistanceFromOwnerBaseU: number;
+  liberation: {
+    touchTicks: number;
+    touchRangeU: number;
+    guardRadiusU: number;
+    /** Bonus op de loopsnelheid van de bevrijde slaaf in promille. */
+    freedSpeedPermille: number;
+  };
+  revolt: {
+    garrisonRadiusU: number;
+    slavesPerGuard: number;
+    minGuards: number;
+    graceTicks: number;
+    emptyGraceTicks: number;
+    escapePermille: number;
+    repeatTicks: number;
+  };
+}
+
+export interface PlunderRulesData {
+  buildingLootPermille: number;
+  depotLootMultiplierPermille: number;
+  carryLootPermille: number;
+  /** tech-id, of -1 zonder bonus. */
+  bonusTech: number;
+  bonusPermille: number;
+}
+
+export interface TributeData {
+  /** Waarde van MapDef.claimPoints[].kind. */
+  claimKind: string;
+  /** Scrap per minuut per bezet punt, ruw (de sim rekent zelf naar ticks). */
+  scrapPerMin: number;
+  /** tech-id, of -1 zonder bonus. */
+  bonusTech: number;
+  bonusPermille: number;
+}
+
+export interface ChemData {
+  /** Index in FactionData.chems (per factie, op volgorde van het bestand: de chem-ids zijn niet globaal). */
+  id: number;
+  key: string;
+  naam: string;
+  flavourText: string;
+  requiresTech: number;
+  doseScrap: number;
+  activeTicks: number;
+  crashTicks: number;
+  cooldownTicks: number;
+  effects: EffectData[];
+  crash: EffectData[];
+  /** Verfijnde stoffen: tech en procentuele aanpassing (promille) van werkings- en crashduur; null zonder. */
+  refined: { requiresTech: number; activePermille: number; crashPermille: number } | null;
+}
+
+export interface CaptureData {
+  rangeU: number;
+  captureTicks: number;
+  /** Indices in CAPTURE_TARGETS. */
+  targets: number[];
+  maxHpPermille: number;
+}
+
+export interface UnitAuraData {
+  radiusU: number;
+  /** Indices in FactionData.chems van de factie van de unit. */
+  chems: number[];
+  trigger: 'gevecht';
+}
+
+export interface CageData {
+  capacity: number;
+  transitionTicks: number;
+  workRadiusU: number;
+}
+
+export interface HeroAuraData {
+  radiusU: number;
+  effects: AbilityEffectData[];
+}
+
+export interface RaidPlanData {
+  fighterMix: { loadoutId: number; weight: number }[];
+  harass: {
+    loadoutId: number;
+    fromTicks: number;
+    max: number;
+    retreatHpPermille: number;
+    targets: 'gatherers';
+  };
+  slaveRaids: {
+    slaverLoadoutId: number;
+    fromTicks: number;
+    slavers: number;
+    escort: number;
+    maxRaidTicks: number;
+    retryTicks: number;
+  };
+  garrison: { minFighters: number };
+  dominancePush: { fromTicks: number; minArmy: number };
 }
 
 export interface FactionData {
@@ -107,6 +219,14 @@ export interface FactionData {
   uniqueUnits: number[]; // loadout-ids
   uniqueBuildings: number[]; // building-ids
   specialChannel: 'training' | 'chems' | 'tech';
+  /** Slavenregels (data 0.21.0, Raiders); null voor een factie zonder slaven. */
+  slaves: SlaveRulesData | null;
+  /** Buit uit gesloopte gebouwen en gedode verzamelaars (data 0.21.0); null zonder. */
+  plunder: PlunderRulesData | null;
+  /** Tribute van een bezet neutraal claimpunt (data 0.21.0); null zonder. */
+  tribute: TributeData | null;
+  /** Chems van het SPECIAL-kanaal chems (data 0.21.0); leeg bij een ander kanaal. */
+  chems: ChemData[];
 }
 
 export interface LoadoutData {
@@ -138,7 +258,13 @@ export interface LoadoutData {
   repair: RepairData | null;
   /** Belegering (data 0.16.0); null voor de rest. */
   siege: SiegeData | null;
-  /** Sight radius from the unit's centre (data 0.21.0, fog of war): sightM, else sim.json vision.unitSightM. */
+  /** Slaaf (data 0.21.0): arbeider die nooit vecht, werkt binnen de Kooi-straal en bevrijdbaar is. */
+  slave: boolean;
+  /** Slaver (data 0.21.0); null voor de rest. */
+  capture: CaptureData | null;
+  /** Chem-dealer (data 0.21.0); null voor de rest. */
+  aura: UnitAuraData | null;
+  /** Sight radius from the unit's centre (data 0.22.0, fog of war): sightM, else sim.json vision.unitSightM. */
   sightU: number;
 }
 
@@ -187,8 +313,12 @@ export interface BuildingData {
   cooldownTicks: number;
   /** Turret-netwerk (data 0.16.0); null voor een gebouw zonder. */
   network: TurretNetworkData | null;
+  /** Kooi (data 0.21.0, provides kooi); null voor de rest. */
+  cage: CageData | null;
+  /** Afstand tot het eigen hoofdgebouw (data 0.21.0); null zonder regel. */
+  placement: { minFromHqU: number; maxFromHqU: number } | null;
   /**
-   * Sight beyond the footprint edge (data 0.21.0, fog of war): sightM, else rangeM + vision.turretSightExtraM for a
+   * Sight beyond the footprint edge (data 0.22.0, fog of war): sightM, else rangeM + vision.turretSightExtraM for a
    * turret, else vision.buildingSightM. The sim adds half the larger footprint side to get a radius from the centre.
    */
   sightU: number;
@@ -242,13 +372,19 @@ export interface HeroData {
   abilities: AbilityData[];
   /** Passieve effecten voor de speler zolang de held leeft (data 0.16.0); zelfde omrekening en semantiek als perk-effecten. */
   passives: EffectData[];
+  /** Intimidatie-aura rond de held (data 0.21.0); null zonder. */
+  aura: HeroAuraData | null;
+  /** xp per geroofde gevangene (data 0.21.0); 0 zonder. */
+  xpPerCapture: number;
+  /** loadout-id van het basis-loadout van de held (data 0.21.0), of -1: de sim kiest het militie-loadout van de factie. */
+  baseLoadoutId: number;
   perkPool: number[]; // perk-ids
   reviveScrap: number;
   reviveTicks: number;
   revivePenaltyPermille: number;
   /** Aantal keer oplappen voordat de held leeg is. */
   maxRevives: number;
-  /** Sight radius (data 0.21.0, fog of war): sightM, else sim.json vision.heroSightM. */
+  /** Sight radius (data 0.22.0, fog of war): sightM, else sim.json vision.heroSightM. */
   sightU: number;
 }
 
@@ -341,6 +477,8 @@ export interface AiScriptData {
   reserve: { fromTicks: number; minArmy: number; robotsFirstFromTicks: number } | null;
   /** SPECIAL training of the AI (data 0.17.0): training-program ids in order; null without. */
   training: { sequence: number[]; fromTicks: number } | null;
+  /** Roofplan van het Raider-script (data 0.21.0); null zonder. */
+  raidPlan: RaidPlanData | null;
   allInWithoutNodes: boolean;
 }
 
@@ -384,11 +522,11 @@ export interface SimTuningData {
   heroClaimTicks: number;
   /** A tower-less (hero) claim goes over after this long with enemies and none of the holder in the circle. */
   contestFlipTicks: number;
-  /** Fog of war (data 0.21.0; voorstel): the vision grid. Default sight radii are resolved onto each record (sightU). */
+  /** Fog of war (data 0.22.0; voorstel): the vision grid. Default sight radii are resolved onto each record (sightU). */
   vision: VisionTuningData;
 }
 
-/** sim.json `vision` in sim units (data 0.21.0). */
+/** sim.json `vision` in sim units (data 0.22.0). */
 export interface VisionTuningData {
   /** Side of a vision cell in sim units (cellM * 256: 256, 512 or 1024). */
   cellU: number;
@@ -588,8 +726,87 @@ export function loadGameData(raw: RawGameData): GameData {
       uniqueUnits: f.uniqueUnits.map((u) => ref(loadoutIx, 'loadout', where, u)),
       uniqueBuildings: f.uniqueBuildings.map((b) => ref(buildingIx, 'gebouw', where, b)),
       specialChannel: f.specialChannel,
+      slaves:
+        f.slaves === undefined
+          ? null
+          : {
+              capturedLoadoutId: ref(
+                loadoutIx,
+                'loadout',
+                `${where} slaves`,
+                f.slaves.capturedLoadoutId,
+              ),
+              minDistanceFromOwnerBaseU: metersToUnits(f.slaves.minDistanceFromOwnerBaseM),
+              liberation: {
+                touchTicks: secondsToTicks(f.slaves.liberation.touchS),
+                touchRangeU: metersToUnits(f.slaves.liberation.touchRangeM),
+                guardRadiusU: metersToUnits(f.slaves.liberation.guardRadiusM),
+                freedSpeedPermille: pctToPermille(f.slaves.liberation.freedSpeedPct),
+              },
+              revolt: {
+                garrisonRadiusU: metersToUnits(f.slaves.revolt.garrisonRadiusM),
+                slavesPerGuard: f.slaves.revolt.slavesPerGuard,
+                minGuards: f.slaves.revolt.minGuards,
+                graceTicks: secondsToTicks(f.slaves.revolt.graceS),
+                emptyGraceTicks: secondsToTicks(f.slaves.revolt.emptyGraceS),
+                escapePermille: pctToPermille(f.slaves.revolt.escapePct),
+                repeatTicks: secondsToTicks(f.slaves.revolt.repeatS),
+              },
+            },
+      plunder:
+        f.plunder === undefined
+          ? null
+          : {
+              buildingLootPermille: pctToPermille(f.plunder.buildingLootPct),
+              depotLootMultiplierPermille: pctToPermille(f.plunder.depotLootMultiplierPct),
+              carryLootPermille: pctToPermille(f.plunder.carryLootPct),
+              bonusTech:
+                f.plunder.bonusTech === undefined
+                  ? -1
+                  : ref(techIx, 'tech', `${where} plunder`, f.plunder.bonusTech),
+              bonusPermille: pctToPermille(f.plunder.bonusPct ?? 0),
+            },
+      tribute:
+        f.tribute === undefined
+          ? null
+          : {
+              claimKind: f.tribute.claimKind,
+              scrapPerMin: Math.trunc(f.tribute.scrapPerMin),
+              bonusTech:
+                f.tribute.bonusTech === undefined
+                  ? -1
+                  : ref(techIx, 'tech', `${where} tribute`, f.tribute.bonusTech),
+              bonusPermille: pctToPermille(f.tribute.bonusPct ?? 0),
+            },
+      chems: (f.chems ?? []).map((c, id) => {
+        const chemWhere = `${where} chem '${c.id}'`;
+        return {
+          id,
+          key: c.id,
+          naam: c.naam,
+          flavourText: c.flavourText,
+          requiresTech: ref(techIx, 'tech', chemWhere, c.requiresTech),
+          doseScrap: Math.trunc(c.doseScrap),
+          activeTicks: secondsToTicks(c.activeS),
+          crashTicks: secondsToTicks(c.crashS),
+          cooldownTicks: secondsToTicks(c.cooldownS),
+          effects: convertEffects(c.effects),
+          crash: convertEffects(c.crash),
+          refined:
+            c.refined === undefined
+              ? null
+              : {
+                  requiresTech: ref(techIx, 'tech', `${chemWhere} refined`, c.refined.requiresTech),
+                  activePermille: pctToPermille(c.refined.activePct),
+                  crashPermille: pctToPermille(c.refined.crashPct),
+                },
+        };
+      }),
     };
   });
+
+  const chemKeysOfFaction = (factionKey: string): string[] =>
+    (factionsRaw.find((f) => f.id === factionKey)?.chems ?? []).map((c) => c.id);
 
   const loadouts: LoadoutData[] = loadoutsRaw.map((l, id) => {
     const where = `data/loadouts.json '${l.id}'`;
@@ -634,6 +851,28 @@ export function loadGameData(raw: RawGameData): GameData {
               vsBuildingsPermille: pctToPermille(l.siege.vsBuildingsDamagePct),
               buildingsFirst: l.siege.buildingsFirst,
             },
+      slave: l.slave === true,
+      capture:
+        l.capture === undefined
+          ? null
+          : {
+              rangeU: metersToUnits(l.capture.rangeM),
+              captureTicks: secondsToTicks(l.capture.captureS),
+              targets: l.capture.targets.map((t) => idx(CAPTURE_TARGETS, t)),
+              maxHpPermille: pctToPermille(l.capture.maxHpPct),
+            },
+      aura:
+        l.aura === undefined
+          ? null
+          : {
+              radiusU: metersToUnits(l.aura.radiusM),
+              chems: l.aura.chems.map((c) => {
+                const found = chemKeysOfFaction(l.faction).indexOf(c);
+                if (found < 0) throw new Error(`${where} aura: onbekende chem '${c}'`);
+                return found;
+              }),
+              trigger: l.aura.trigger,
+            },
       sightU: metersToUnits(l.sightM ?? simRaw.vision.unitSightM),
     };
   });
@@ -665,6 +904,21 @@ export function loadGameData(raw: RawGameData): GameData {
               radiusU: metersToUnits(b.network.radiusM),
               damagePermillePerTurret: pctToPermille(b.network.damagePctPerTurret),
               maxDamagePermille: pctToPermille(b.network.maxDamagePct),
+            },
+      cage:
+        b.cage === undefined
+          ? null
+          : {
+              capacity: b.cage.capacity,
+              transitionTicks: secondsToTicks(b.cage.transitionS),
+              workRadiusU: metersToUnits(b.cage.workRadiusM),
+            },
+      placement:
+        b.placement === undefined
+          ? null
+          : {
+              minFromHqU: metersToUnits(b.placement.minFromHqM),
+              maxFromHqU: metersToUnits(b.placement.maxFromHqM),
             },
       sightU: metersToUnits(
         b.sightM ??
@@ -726,6 +980,23 @@ export function loadGameData(raw: RawGameData): GameData {
         })),
       })),
       passives: convertEffects(h.passives),
+      aura:
+        h.aura === undefined
+          ? null
+          : {
+              radiusU: metersToUnits(h.aura.radiusM),
+              effects: h.aura.effects.map((e) => ({
+                stat: e.stat,
+                side: e.side,
+                target: e.target,
+                delta: convertDelta(e.stat, e.delta),
+              })),
+            },
+      xpPerCapture: h.xpPerCapture ?? 0,
+      baseLoadoutId:
+        h.baseLoadoutId === undefined
+          ? -1
+          : ref(loadoutIx, 'loadout', `${where} baseLoadoutId`, h.baseLoadoutId),
       perkPool: h.perkPool.map((p) => ref(perkIx, 'perk', where, p)),
       reviveScrap: Math.trunc(h.reviveScrap),
       reviveTicks: secondsToTicks(h.reviveS),
@@ -832,6 +1103,45 @@ export function loadGameData(raw: RawGameData): GameData {
                 ref(trainingIx, 'training', `${where} training`, t),
               ),
               fromTicks: secondsToTicks(a.training.fromS),
+            },
+      raidPlan:
+        a.raidPlan === undefined
+          ? null
+          : {
+              fighterMix: a.raidPlan.fighterMix.map((m) => ({
+                loadoutId: ref(loadoutIx, 'loadout', `${where} raidPlan fighterMix`, m.loadoutId),
+                weight: m.weight,
+              })),
+              harass: {
+                loadoutId: ref(
+                  loadoutIx,
+                  'loadout',
+                  `${where} raidPlan harass`,
+                  a.raidPlan.harass.loadoutId,
+                ),
+                fromTicks: secondsToTicks(a.raidPlan.harass.fromS),
+                max: a.raidPlan.harass.max,
+                retreatHpPermille: pctToPermille(a.raidPlan.harass.retreatHpPct),
+                targets: a.raidPlan.harass.targets,
+              },
+              slaveRaids: {
+                slaverLoadoutId: ref(
+                  loadoutIx,
+                  'loadout',
+                  `${where} raidPlan slaveRaids`,
+                  a.raidPlan.slaveRaids.slaverLoadoutId,
+                ),
+                fromTicks: secondsToTicks(a.raidPlan.slaveRaids.fromS),
+                slavers: a.raidPlan.slaveRaids.slavers,
+                escort: a.raidPlan.slaveRaids.escort,
+                maxRaidTicks: secondsToTicks(a.raidPlan.slaveRaids.maxRaidS),
+                retryTicks: secondsToTicks(a.raidPlan.slaveRaids.retryS),
+              },
+              garrison: { minFighters: a.raidPlan.garrison.minFighters },
+              dominancePush: {
+                fromTicks: secondsToTicks(a.raidPlan.dominancePush.fromS),
+                minArmy: a.raidPlan.dominancePush.minArmy,
+              },
             },
       allInWithoutNodes: a.allInWithoutNodes,
     };

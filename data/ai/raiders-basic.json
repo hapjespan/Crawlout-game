@@ -1,0 +1,90 @@
+{
+  "id": "raiders-basic",
+  "faction": "raiders",
+  "buildOrder": [
+    { "atS": 5, "buildingId": "tent" },
+    { "atS": 25, "buildingId": "kooi" },
+    { "atS": 55, "buildingId": "plundermarkt" },
+    { "atS": 90, "buildingId": "tent" },
+    { "atS": 150, "buildingId": "tent", "site": "claim" },
+    { "atS": 200, "buildingId": "autosloperij" },
+    { "atS": 300, "buildingId": "kooi" },
+    { "atS": 330, "buildingId": "chemlab" },
+    { "atS": 420, "buildingId": "mitrailleursnest", "site": "front" }
+  ],
+  "attackTimersS": [200, 330],
+  "militiaPct": 0,
+  "militiaPctMax": 0,
+  "militiaPctPerMin": 0,
+  "threatMilitiaPct": 0,
+  "builders": 2,
+  "housingBuildingId": "tent",
+  "housingFreeBeds": 4,
+  "research": [
+    "buggy_chassis",
+    "staalplaten",
+    "slavenboeien",
+    "honden_africhten",
+    "molotovs",
+    "wapenslijpen",
+    "chemie",
+    "psycho",
+    "jet",
+    "nitro",
+    "afpersing",
+    "hondenvoer",
+    "schootsvelden",
+    "zuivere_stoffen"
+  ],
+  "researchFromS": 70,
+  "armyLoadouts": ["plunderaar_staal", "plunderaar"],
+  "richScrap": 220,
+  "richBuilds": [
+    { "buildingId": "tent", "site": "hq" },
+    { "buildingId": "mitrailleursnest", "site": "front" },
+    { "buildingId": "plunderpost", "site": "front" }
+  ],
+  "scavengersPerNode": 4,
+  "claimFromS": 45,
+  "claimSafeRadiusM": 40,
+  "claimFarFromS": 300,
+  "heroClaimRadiusM": 25,
+  "defendRadiusM": 34,
+  "rallySite": "front",
+  "rallyRadiusM": 8,
+  "waveIntervalS": 130,
+  "waveJitterS": 30,
+  "waveMinArmy": 6,
+  "waveArmyGrowth": 2,
+  "waveMaxWaitS": 60,
+  "pushMinArmy": 14,
+  "pushFromS": 780,
+  "raidPlan": {
+    "fighterMix": [
+      { "loadoutId": "plunderaar_staal", "weight": 3 },
+      { "loadoutId": "plunderaar", "weight": 3 },
+      { "loadoutId": "knuppelaar", "weight": 2 },
+      { "loadoutId": "molotovgooier", "weight": 1 },
+      { "loadoutId": "hond", "weight": 1 }
+    ],
+    "harass": {
+      "loadoutId": "buggy",
+      "fromS": 260,
+      "max": 4,
+      "retreatHpPct": 40,
+      "targets": "gatherers"
+    },
+    "slaveRaids": {
+      "slaverLoadoutId": "slaver",
+      "fromS": 120,
+      "slavers": 2,
+      "escort": 4,
+      "maxRaidS": 120,
+      "retryS": 45
+    },
+    "garrison": { "minFighters": 3 },
+    "dominancePush": { "fromS": 420, "minArmy": 10 }
+  },
+  "allInWithoutNodes": false,
+  "_comment": "Startwaarde, geen balans (data 0.21.0, Raiders; voorstel, ter bevestiging door de architect). Vroege agressie, in drie sporen. (1) HARASS MET BUGGIES: onderzoek buggy_chassis eerst (researchFromS 70, de plundermarkt staat op 55 s), de autosloperij op 200 s, de eerste Buggy rond 260 s; hoogstens 4 tegelijk (raidPlan.harass), ze vallen verzamelaars aan en trekken zich terug onder 40 procent hp. (2) ROVEN VOOR SLAVEN: vanaf 120 s een tocht van 2 slavers met 4 vechters als escorte (raidPlan.slaveRaids) op zwervers en op vijandelijke bewoners buiten de basisradius (36 m) van de tegenstander, hoogstens 120 s per tocht en 45 s rust ertussen; een tweede Kooi op 300 s voor de extra slaven. (3) DOMINANTIE-PUSH: claimFromS 45 (de Dweller-AI 60), claimFarFromS 300 (de Dweller-AI 990): de Raiders pakken ook de verre claimpunten vroeg en houden ze met escorte; vanaf 420 s met 10 vechters (raidPlan.dominancePush) zoeken ze het midden; pushFromS 780 (de Dweller-AI 1440): de laatste push op het hoofdgebouw vroeg, want de Raiders zijn laat fragiel. Golven: attackTimersS 200 en 330 (de Dwellers 480 en 720), daarna elke 130 s met 6 vechters en 2 meer per golf (waveMinArmy 6, growth 2, maxWait 60 s); pushMinArmy 14. GARNIZOEN: raidPlan.garrison.minFighters 3: nooit minder dan 3 vechters thuis (zie de opstandsregel in factions.json). Samenstelling (raidPlan.fighterMix, cyclisch naar gewicht): 3 plunderaar_staal, 3 plunderaar, 2 knuppelaar, 1 molotovgooier, 1 hond; een loadout waarvoor de tech er niet is slaat hij over. Velden die uit de Dweller-vorm komen en hier een Raider-betekenis krijgen: militiaPct 0 (de Raiders scholen niemand om), builders 2 (slaaf_bouwers, uit slaven via SetRole bij een Kooi), housingBuildingId tent en housingFreeBeds 4 (een tent erbij als er 4 of minder vrije bedden zijn), armyLoadouts plunderaar_staal dan plunderaar (nieuw gebouwd in de tent, dus geen omscholing), scavengersPerNode 4 (slaven per node), allInWithoutNodes false (slaven vechten nooit; zonder node leeft de Raider van loot en tribute). Onderzoek: buggy_chassis, staalplaten, slavenboeien, honden_africhten, molotovs, wapenslijpen, chemie, psycho, jet, nitro, afpersing, hondenvoer, schootsvelden, zuivere_stoffen. richScrap 220: boven die voorraad een extra tent, een mitrailleursnest en een plunderpost. Geen robots, geen reserve en geen training (de Raiders hebben die niet). De sim hoeft dit script pas te volgen in de sim-ronde; zonder die ronde draait het niet."
+}

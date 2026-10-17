@@ -5,7 +5,7 @@ import { C } from './ecs/world.js';
 import { idiv } from './math/int.js';
 import { isqrt } from './math/sqrt.js';
 
-// Fog of war (phase 2, data 0.21.0): classic fog per player on a vision grid of cells of config.visionCell units
+// Fog of war (phase 2, data 0.22.0): classic fog per player on a vision grid of cells of config.visionCell units
 // (sim.json vision.cellM, 2 m by default). A cell is unexplored, explored (seen before) or visible (now).
 //
 // Every own unit (not a corpse) and every own building, sites included, reveals a disc of its sight radius around the

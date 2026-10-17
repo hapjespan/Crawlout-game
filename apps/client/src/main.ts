@@ -20,6 +20,7 @@ import {
   buildingTypeId,
   heroIdOfTypeId,
   kindOfTypeId,
+  unitTypeId,
   type BuildingData,
 } from '@crawlout/data';
 import { createRenderer, snapFootprintCenter } from '@crawlout/render';
@@ -902,6 +903,11 @@ async function main(): Promise<void> {
     session,
     entities: () => entities,
     status: () => status,
+    /** Unit type id of a loadout by data key (-1 if unknown), so a browser test never hard-codes ids that shift with new data. */
+    unitTypeId: (key: string): number => {
+      const l = data.loadouts.find((x) => x.key === key);
+      return l ? unitTypeId(l.id) : -1;
+    },
     /** Fog of war, dev and tests (tools/replay hud-clicks): true shows every entity, false only what this player sees. */
     revealAll: (on: boolean) => session.revealAll(on),
     /** This player's territory mask (1 per cell, map width), for a later territory overlay in render or the HUD. */

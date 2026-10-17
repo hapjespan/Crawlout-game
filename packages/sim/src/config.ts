@@ -66,7 +66,7 @@ export interface SimUnitType {
   readonly repair: SimRepair | null;
   /** Belegering, of null. */
   readonly siege: SimSiege | null;
-  /** Sight radius from the unit's centre (units; fog of war, data 0.21.0). The hero uses SimHero.sight instead. */
+  /** Sight radius from the unit's centre (units; fog of war, data 0.22.0). The hero uses SimHero.sight instead. */
   readonly sight: number;
 }
 
@@ -140,7 +140,7 @@ export interface SimBuildingType {
   readonly cooldown: number;
   /** Turret-netwerk (data 0.16.0), of null. */
   readonly network: SimTurretNetwork | null;
-  /** Sight beyond the footprint edge (units; fog of war, data 0.21.0); the radius from the centre adds half the larger side. */
+  /** Sight beyond the footprint edge (units; fog of war, data 0.22.0); the radius from the centre adds half the larger side. */
   readonly sight: number;
 }
 
@@ -234,7 +234,7 @@ export interface SimHero {
   /** Per keer oplappen gaat dit deel van perks en health weg, in promille. */
   readonly revivePenaltyPermille: number;
   readonly maxRevives: number;
-  /** Sight radius of the living hero (units; fog of war, data 0.21.0). */
+  /** Sight radius of the living hero (units; fog of war, data 0.22.0). */
   readonly sight: number;
 }
 
@@ -433,7 +433,7 @@ export interface SimConfig {
   readonly heroClaimTicks: number;
   /** Ticks after which a tower-less claim goes over to an enemy with units in the circle and none of the holder. */
   readonly contestFlipTicks: number;
-  /** Fog of war (data 0.21.0): side of a vision cell in units, 256, 512 or 1024 (1, 2 or 4 m; vision.ts). */
+  /** Fog of war (data 0.22.0): side of a vision cell in units, 256, 512 or 1024 (1, 2 or 4 m; vision.ts). */
   readonly visionCell: number;
 }
 

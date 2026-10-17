@@ -681,7 +681,7 @@ const FIXTURES_S8: FixtureDef[] = [
 
 const FIXTURES_S9: FixtureDef[] = [
   {
-    // Fog of war (phase 2, sim 0.17.0, data 0.21.0): two humans on Rustbelt XL. A command on an enemy entity that the
+    // Fog of war (phase 2, sim 0.17.0, data 0.22.0): two humans on Rustbelt XL. A command on an enemy entity that the
     // player does not see is refused (Attack on the hidden HQ, a HeroAbility on a hidden unit, at the start); player 0
     // scouts with his hero and militia toward the enemy spawn (AttackMove into the fog: explored grows, the fight starts
     // when they see the enemy), player 1 walks his militia to the centre and back, and later, once player 0 has seen it,

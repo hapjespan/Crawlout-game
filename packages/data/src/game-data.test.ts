@@ -26,9 +26,10 @@ const clone = <T>(v: T): T => JSON.parse(JSON.stringify(v)) as T;
 describe('data/ valideert', () => {
   const data = loadGameData(raw());
 
-  it('bevat de Dwellers-slice in de verwachte aantallen', () => {
-    expect(data.factions).toHaveLength(1);
-    expect(data.loadouts.map((l) => l.key)).toEqual([
+  it('bevat de Dwellers-slice in de verwachte aantallen (en de Raiders erbij, data 0.21.0)', () => {
+    expect(data.factions.map((f) => f.key)).toEqual(['dwellers', 'raiders']);
+    const dwellers = (r: { factionId: number }): boolean => r.factionId === 0;
+    expect(data.loadouts.filter(dwellers).map((l) => l.key)).toEqual([
       'beveiligingsrobot',
       'bouwer',
       'geweer_leer',
@@ -43,12 +44,18 @@ describe('data/ valideert', () => {
       'slagwapen_leer',
       'technicus',
     ]);
-    expect(data.buildings).toHaveLength(10);
-    expect(data.tech).toHaveLength(14);
+    expect(data.buildings.filter(dwellers)).toHaveLength(10);
+    expect(data.tech.filter(dwellers)).toHaveLength(14);
     expect(data.training).toHaveLength(7);
-    expect(data.heroes).toHaveLength(1);
-    expect(data.perks).toHaveLength(6);
-    expect(data.aiScripts).toHaveLength(1);
+    expect(data.heroes.filter(dwellers)).toHaveLength(1);
+    expect(data.aiScripts.filter(dwellers)).toHaveLength(1);
+    // totalen met de Raiders; de sim kent hoogstens 32 techs en 32 perks
+    expect(data.loadouts).toHaveLength(24);
+    expect(data.buildings).toHaveLength(18);
+    expect(data.tech).toHaveLength(28);
+    expect(data.heroes).toHaveLength(2);
+    expect(data.perks).toHaveLength(13);
+    expect(data.aiScripts).toHaveLength(2);
     expect(data.dataVersion).toMatch(/^\d+\.\d+\.\d+$/);
   });
 
@@ -136,7 +143,7 @@ describe('sprint 2: gather, maxRevives, dominance, effect-stats', () => {
     const scavenger = data.loadouts.find((l) => l.key === 'scavenger')!;
     expect(scavenger.gatherAmount).toBe(6);
     expect(scavenger.gatherTicks).toBe(260);
-    for (const l of data.loadouts.filter((x) => x.key !== 'scavenger')) {
+    for (const l of data.loadouts.filter((x) => x.factionId === 0 && x.key !== 'scavenger')) {
       expect(l.gatherAmount).toBe(0);
       expect(l.gatherTicks).toBe(0);
     }
@@ -237,7 +244,7 @@ describe('sim-tuning', () => {
     });
   });
 
-  it('fog of war (data 0.21.0): sight radii resolve from sightM or the sim.json vision defaults', () => {
+  it('fog of war (data 0.22.0): sight radii resolve from sightM or the sim.json vision defaults', () => {
     const data = loadGameData(raw());
     const l = (key: string) => data.loadouts.find((x) => x.key === key)!;
     const b = (key: string) => data.buildings.find((x) => x.key === key)!;
@@ -636,7 +643,7 @@ describe('content-x (data 0.16.0): robots, technicus, vangnet', () => {
       expect(l.prereqTech.length, l.key).toBeGreaterThan(0);
       expect(l.visuals.meshSlots.body, l.key).toMatch(/^dweller_robot_/);
     }
-    for (const l of data.loadouts.filter((x) => !robots.includes(x)))
+    for (const l of data.loadouts.filter((x) => x.factionId === 0 && !robots.includes(x)))
       expect(l.producedAt, l.key).toBe(-1);
     expect(dwellers.uniqueUnits.map((u) => data.loadouts[u]!.key).sort()).toEqual([
       'beveiligingsrobot',
@@ -687,8 +694,18 @@ describe('content-x (data 0.16.0): robots, technicus, vangnet', () => {
     expect(f.footprint.w % 2).toBe(1);
     expect(f.footprint.h % 2).toBe(1);
     expect(f.visuals.mesh).toBe('dweller_building_robotfactory');
-    // provides is een bitmasker van 8 bits (sim config): de lijst mag er geen negende waarde bij krijgen
-    expect(PROVIDES.length).toBeLessThanOrEqual(8);
+    // provides is een bitmasker van 16 bits (sim config, fase-0 sectie 20 besluit 3): hoogstens 16 waarden, nieuwe achteraan
+    expect(PROVIDES.length).toBeLessThanOrEqual(16);
+    expect(PROVIDES.slice(0, 8)).toEqual([
+      'werkplaats',
+      'huisvesting',
+      'claim',
+      'turret',
+      'beacon',
+      'lab',
+      'hq',
+      'training',
+    ]);
     expect(dwellers.uniqueBuildings.map((b) => data.buildings[b]!.key)).toContain('robotfabriek');
   });
 
@@ -730,11 +747,12 @@ describe('content-x (data 0.16.0): robots, technicus, vangnet', () => {
     delete (noProduced.loadouts as Record<string, unknown>[]).find((l) => l.id === 'sentinel')!
       .producedAt;
     expect(() => loadGameData(noProduced)).toThrow(/producedAt/);
+    // data 0.21.0: producedAt is toegestaan voor een ander lichaam dan een robot (Raider-vechters uit een tent)
     const humanProduced = clone(raw());
     (humanProduced.loadouts as Record<string, unknown>[]).find(
       (l) => l.id === 'militie',
     )!.producedAt = 'robotfabriek';
-    expect(() => loadGameData(humanProduced)).toThrow(/producedAt/);
+    expect(() => loadGameData(humanProduced)).not.toThrow();
     const humanRepair = clone(raw());
     (humanRepair.loadouts as Record<string, unknown>[]).find((l) => l.id === 'militie')!.repair = {
       repairRateHpPerS: 1,
@@ -839,7 +857,9 @@ describe('content-x (data 0.16.0): turret-netwerk, uitrusting in tiers, held-pas
   });
 
   it('uitrusting in tiers: vier wapens, twee pantsers, alles een eigen loadout met prereqTech', () => {
-    const mil = data.loadouts.filter((l) => l.role === ROLES.indexOf('militia'));
+    const mil = data.loadouts.filter(
+      (l) => l.factionId === 0 && l.role === ROLES.indexOf('militia'),
+    );
     expect(mil.map((l) => l.key).sort()).toEqual([
       'geweer_leer',
       'militie',
@@ -876,7 +896,9 @@ describe('content-x (data 0.16.0): turret-netwerk, uitrusting in tiers, held-pas
   });
 
   it('snelle_voeten en composiet_pantser raken elke militia-loadout van de factie', () => {
-    const mil = data.loadouts.filter((l) => l.role === ROLES.indexOf('militia')).map((l) => l.key);
+    const mil = data.loadouts
+      .filter((l) => l.factionId === 0 && l.role === ROLES.indexOf('militia'))
+      .map((l) => l.key);
     for (const key of ['snelle_voeten', 'composiet_pantser'])
       expect(
         tech(key)

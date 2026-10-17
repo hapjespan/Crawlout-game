@@ -263,7 +263,7 @@ async function runIn(browser: Browser, width: number, height: number): Promise<v
     console.log(`     ${s.name} site at ${spot.x},${spot.y} (typeId ${spot.typeId})`);
     await ev(`(() => {
       const c = window.crawlout; const es = [...c.entities().values()].filter((e) => e.owner === c.session.playerId);
-      const builder = es.find((e) => e.typeId === 2)?.id;
+      const builder = es.find((e) => e.typeId === c.unitTypeId('bouwer'))?.id;
       c.session.sendCommand('Build', { ids: [builder], typeId: ${spot.typeId}, x: ${spot.x}, y: ${spot.y} });
     })()`);
     await page.clock.runFor(1000);
@@ -272,14 +272,14 @@ async function runIn(browser: Browser, width: number, height: number): Promise<v
   await ev(`(() => {
     const c = window.crawlout; const es = [...c.entities().values()];
     const mine = es.filter((e) => e.owner === c.session.playerId);
-    const scav = mine.filter((e) => e.typeId === 8 || e.typeId === 1 || e.typeId === 7).map((e) => e.id);
+    const scav = mine.filter((e) => e.typeId === c.unitTypeId('scavenger')).map((e) => e.id);
     const node = es.filter((e) => e.typeId === 2048).sort((a, b) => Math.hypot(a.x - mine[0].x, a.y - mine[0].y) - Math.hypot(b.x - mine[0].x, b.y - mine[0].y))[0];
     if (node && scav.length) c.session.sendCommand('Gather', { ids: scav, nodeId: node.id });
   })()`);
   await page.clock.runFor(2000);
   const finishAll = `(() => {
     const c = window.crawlout; const es = [...c.entities().values()].filter((e) => e.owner === c.session.playerId);
-    const builder = es.find((e) => e.typeId === 2)?.id;
+    const builder = es.find((e) => e.typeId === c.unitTypeId('bouwer'))?.id;
     for (const e of es) if (e.typeId >= 1024 && e.typeId < 2048 && e.anim === 6 && builder) c.session.sendCommand('Build', { ids: [builder], typeId: e.typeId, x: e.x, y: e.y });
   })()`;
   for (let i = 0; i < 14; i++) {
