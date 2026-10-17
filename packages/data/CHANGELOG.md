@@ -113,3 +113,4 @@
     - `aiScript.raidPlan` en de gewone AI-velden voor de Raiders: vechters uit de tent met `fighterMix`, buggies met `harass`, slavenroof met `slaveRaids`, `garrison.minFighters` thuis houden, `dominancePush`; builders via SetRole bij een Kooi, `housingBuildingId` tent, `armyLoadouts` gebouwd via Produce (geen Craft).
     - `sightM` op loadouts en gebouwen: fog-ronde (de loader rekent het daar om).
   - Contract 3 (fase-0 sectie 6, regel 9) noemt de velden als voorstel. Tests: raiders.test.ts (data) en raiders-data.test.ts (sim: de data valideert en een Raider-speler start). data/VERSION 0.21.0.
+- 0.21.0 (vervolg, 17 oktober): `slaaf` en `slaaf_bouwer` gebruiken body `raider_body_slave` (bleek linnen met alleen een teamband, asset-cli 0.7.0) in plaats van `raider_body_human`; alleen `visuals.meshSlots.body`, geen regel of getal. data/VERSION blijft 0.21.0.

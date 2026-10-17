@@ -21,11 +21,15 @@
 // over the whole map. ?water=0 leaves the water out. ?xl&foliage swaps the trees for synthetic alpha-tested ones
 // (render/dev/foliageAssets.ts: leaf cards, grass, plants, crates, chests, barrels, watchtowers; ?grass=<n> sets the tufts);
 // ?wind=0 holds the foliage still and ?propmax=<n> sets the prop budget.
+// ?loadouts=raiders|dwellers|mix (or loadout keys, e.g. ?loadouts=plunderaar,slaaf) draws the units with those loadouts, in
+// turn: their meshSlots other than body (weapon, tool, gear_back, gear_head, armor) show on the animated skeleton, and
+// the Raider bodies wear their own clothing palette. ?hold=walk|attack1|attack2|idle|run keeps every unit in that clip
+// (screenshots); ?attachments=0 draws without the attachments (measuring).
 // ?robots swaps the regular units for synthetic robots (render/dev/syntheticRobots.ts): security robots (2.2 m), repair
 // drones (0.8 m, floating 1.35 m up) and sentinels (3.5 m), drawn by the rigid-unit layer with its procedural animation
 // from the anim fields; the heroes stay humanoid, ?nohero removes them. ?robots=<n> sets the share of drones (0..9 of 10);
 // ?robots=real draws the robots of assets/dist (dweller_robot_guard, _drone, _sentinel) instead of the synthetic ones.
-import { PROVIDES } from '@crawlout/data';
+import { PROVIDES, unitTypeId } from '@crawlout/data';
 import { MAX_ENTITIES, TICK_MS, UNITS_PER_METER } from '@crawlout/protocol';
 import {
   buildingTypeId,
@@ -73,6 +77,21 @@ function wastelandColor(x: number, z: number, y: number): readonly [number, numb
   const g = 0.4 + 0.12 * n + 0.06 * low;
   const b = 0.3 + 0.06 * n;
   return [r, g, b];
+}
+
+/** Unit typeIds for ?loadouts=: a faction ('raiders', 'dwellers'), 'mix' (both) or comma-separated loadout keys. */
+function loadoutTypes(
+  loadouts: readonly { id: number; key: string; visuals: { meshSlots: Record<string, string> } }[],
+  factionOf: (id: number) => string,
+  spec: string,
+): number[] {
+  const human = (l: (typeof loadouts)[number]): boolean =>
+    /_body_(human|slave)$/.test(l.visuals.meshSlots.body ?? '');
+  const keys = spec.split(',');
+  const pick = loadouts.filter(
+    (l) => human(l) && (spec === 'mix' || keys.includes(l.key) || keys.includes(factionOf(l.id))),
+  );
+  return pick.map((l) => unitTypeId(l.id));
 }
 
 /** Ten unit types in a row with `drones` repair drones, one sentinel and the rest security robots. */
@@ -132,7 +151,22 @@ async function main(): Promise<void> {
       ...(params.has('propmax') ? { maxVisible: intParam(params, 'propmax', 3000, 100_000) } : {}),
     },
   });
-  renderer.setGameData(data);
+  // ?attachments=0: the loadouts keep their body only (the baseline of a measurement).
+  renderer.setGameData(
+    params.get('attachments') === '0'
+      ? {
+          ...data,
+          loadouts: data.loadouts.map((l) => ({
+            ...l,
+            visuals: {
+              meshSlots: Object.fromEntries(
+                Object.entries(l.visuals.meshSlots).filter(([slot]) => slot === 'body'),
+              ),
+            },
+          })),
+        }
+      : data,
+  );
   const robots = params.has('robots');
   if (robots && params.get('robots') === 'real' && assets) {
     // The robots of assets/dist (manifest entries with rigid: true), on the typeIds the synthetic ones use.
@@ -248,6 +282,11 @@ async function main(): Promise<void> {
     });
   } else if (propsEl) propsEl.textContent = 'uit';
 
+  const loadoutSpec = params.get('loadouts');
+  const holdParam = params.get('hold');
+  const hold = (['walk', 'run', 'idle', 'attack1', 'attack2'] as const).find(
+    (h) => h === holdParam,
+  );
   const source = new FakeSnapshotSource({
     count,
     players: 4,
@@ -260,7 +299,16 @@ async function main(): Promise<void> {
     combat: params.get('combat') !== '0',
     ...(robots
       ? { unitTypes: robotMix(params.get('robots') ? intParam(params, 'robots', 4, 9) : 4) }
-      : {}),
+      : loadoutSpec
+        ? {
+            unitTypes: loadoutTypes(
+              data.loadouts,
+              (id) => data.factions[data.loadouts[id]!.factionId]?.key ?? '',
+              loadoutSpec,
+            ),
+          }
+        : {}),
+    ...(hold ? { hold } : {}),
     ...(data.heroes.length > 0 && !params.has('nohero') ? { heroId: 0 } : {}),
     turrets: data.buildings
       .filter((b) => b.provides.includes(PROVIDES.indexOf('turret')))

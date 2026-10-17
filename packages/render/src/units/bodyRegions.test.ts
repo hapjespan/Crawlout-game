@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { lumaOf } from '../look/surfaces.js';
-import { hasBodyRegions, regionOfBone, vertexRegion } from './bodyRegions.js';
+import {
+  DWELLER_PALETTE,
+  hasBodyRegions,
+  regionOfBone,
+  resolveBodyPalette,
+  teamBandMask,
+  TEAM_BONES,
+  vertexRegion,
+} from './bodyRegions.js';
 import { TEAM_FALLBACK_BASE } from './gltfUnitGeometry.js';
 
 const MIXAMO = [
@@ -71,5 +79,68 @@ describe('body regions of a mannequin', () => {
       const r = vertexRegion([bone, ...NONE], [1, 0, 0, 0], base);
       expect(lumaOf(...r.color)).toBeLessThan(lumaOf(base, base, base));
     }
+  });
+});
+
+describe('clothing palettes per body asset', () => {
+  const RAIDER = resolveBodyPalette({
+    jacket: '#5e3d28',
+    patchTop: '#8f3a2c',
+    boots: '#1b1715',
+  });
+  const SLAVE = resolveBodyPalette({ jacket: '#b6aa8f', teamZone: 'band', farTeam: 0 });
+
+  it('is the Dweller clothing without a manifest palette, and a patch follows the jacket and trousers', () => {
+    expect(resolveBodyPalette()).toEqual(DWELLER_PALETTE);
+    expect(resolveBodyPalette(null)).toEqual(DWELLER_PALETTE);
+    expect(DWELLER_PALETTE.teamZone).toBe('chest');
+    expect(DWELLER_PALETTE.farTeam).toBe(1);
+    expect(DWELLER_PALETTE.linear.patchTop).toEqual(DWELLER_PALETTE.linear.jacket);
+    expect(DWELLER_PALETTE.linear.patchLeg).toEqual(DWELLER_PALETTE.linear.trousers);
+    // the Dweller look is what the mannequin was painted with before palettes: arms are jacket, legs trousers
+    for (const bone of ['LeftArm', 'RightForeArm'])
+      expect(vertexRegion([bone, ...NONE], [1, 0, 0, 0], base).color).toEqual(
+        vertexRegion(['Spine1', ...NONE], [1, 0, 0, 0], base).color,
+      );
+    for (const bone of ['RightUpLeg', 'RightLeg', 'LeftUpLeg'])
+      expect(vertexRegion([bone, ...NONE], [1, 0, 0, 0], base).color).toEqual(
+        vertexRegion(['LeftLeg', ...NONE], [1, 0, 0, 0], base).color,
+      );
+  });
+
+  it('paints only the regions the palette names; the rest keeps the Dweller colors', () => {
+    const jacket = vertexRegion(['Spine1', ...NONE], [1, 0, 0, 0], base, undefined, RAIDER).color;
+    expect(jacket).not.toEqual(DWELLER_PALETTE.linear.jacket);
+    expect(jacket).toEqual([...RAIDER.linear.jacket]);
+    const belt = vertexRegion(['Hips', ...NONE], [1, 0, 0, 0], base, undefined, RAIDER).color;
+    expect(belt).toEqual([...DWELLER_PALETTE.linear.belt]);
+    // patchwork: the left arm takes the patch, the right arm the jacket
+    expect(vertexRegion(['LeftArm', ...NONE], [1, 0, 0, 0], base, undefined, RAIDER).color).toEqual(
+      [...RAIDER.linear.patchTop],
+    );
+    expect(
+      vertexRegion(['RightArm', ...NONE], [1, 0, 0, 0], base, undefined, RAIDER).color,
+    ).toEqual([...RAIDER.linear.jacket]);
+  });
+
+  it('keeps the team accent on the chest unless the palette moves it to a band', () => {
+    expect(vertexRegion(['Spine2', ...NONE], [1, 0, 0, 0], base, undefined, RAIDER).team).toBe(1);
+    expect(RAIDER.farTeam).toBe(1);
+    expect(SLAVE.teamZone).toBe('band');
+    expect(SLAVE.farTeam).toBe(0);
+    expect(TEAM_BONES.band).toEqual([]);
+    expect(vertexRegion(['Spine2', ...NONE], [1, 0, 0, 0], base, undefined, SLAVE).team).toBe(0);
+    expect(regionOfBone('Spine2', 'band')).toBe('jacket');
+    expect(regionOfBone('Spine2', 'chest')).toBe('team');
+  });
+
+  it('shapes the team band as a window along the upper arm', () => {
+    expect(teamBandMask(0)).toBe(0);
+    expect(teamBandMask(1)).toBe(0);
+    expect(teamBandMask(0.5)).toBe(1);
+    expect(teamBandMask(0.35)).toBeGreaterThan(0);
+    expect(teamBandMask(0.35)).toBeLessThan(1);
+    // symmetric enough to read as a band: both edges soft, the middle third solid
+    for (const t of [0.4, 0.5, 0.6]) expect(teamBandMask(t)).toBeGreaterThan(0.95);
   });
 });

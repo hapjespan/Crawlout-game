@@ -189,12 +189,14 @@ export class UnitAssetLoader {
       boneCount: entry.boneCount,
       teamMask,
       rasterize,
+      palette: entry.palette,
     });
     const rest = scenes.slice(1).map((scene) =>
       unitGeometryFromGltf(scene, {
         boneCount: entry.boneCount,
         teamMask: lod0.teamMask,
         rasterize,
+        palette: entry.palette,
       }),
     );
     return { id: assetId, entry, anims, lods: [lod0, rest[0]!, rest[1]!] };

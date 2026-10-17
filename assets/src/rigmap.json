@@ -53,7 +53,31 @@
       "derive": [
         {
           "id": "raider_body_human",
-          "colors": { "M_Main": "#8f3a2c", "M_Joints": "#2b2523" }
+          "colors": { "M_Main": "#8f3a2c", "M_Joints": "#2b2523" },
+          "palette": {
+            "jacket": "#5e3d28",
+            "patchTop": "#8f3a2c",
+            "patchLeg": "#3a312c",
+            "belt": "#1d1917",
+            "trousers": "#2e2621",
+            "boots": "#1b1715",
+            "skin": "#9a6a52"
+          }
+        },
+        {
+          "id": "raider_body_slave",
+          "colors": { "M_Main": "#b9ad92", "M_Joints": "#6b5e4d" },
+          "palette": {
+            "jacket": "#b6aa8f",
+            "patchTop": "#9c8f78",
+            "patchLeg": "#a09580",
+            "belt": "#7a6b52",
+            "trousers": "#a89d84",
+            "boots": "#85765f",
+            "skin": "#a07a62",
+            "teamZone": "band",
+            "farTeam": 0
+          }
         }
       ]
     },

@@ -333,7 +333,7 @@
     "popCost": 1,
     "prereqTech": [],
     "visuals": {
-      "meshSlots": { "body": "raider_body_human", "tool": "raider_tool_shovel" }
+      "meshSlots": { "body": "raider_body_slave", "tool": "raider_tool_shovel" }
     },
     "slave": true,
     "sightM": 9,
@@ -359,7 +359,7 @@
     "popCost": 1,
     "prereqTech": [],
     "visuals": {
-      "meshSlots": { "body": "raider_body_human", "tool": "raider_tool_hammer" }
+      "meshSlots": { "body": "raider_body_slave", "tool": "raider_tool_hammer" }
     },
     "slave": true,
     "sightM": 9,

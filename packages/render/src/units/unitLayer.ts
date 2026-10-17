@@ -4,6 +4,11 @@
 // unit typeIds (assignRig) or every unit without its own rig (setDefaultRig). A hero (typeId 1000 + heroId) uses the
 // default rig with a hero flag per instance: bigger, and on the placeholder with cap, collar and pauldrons.
 // Unit typeIds that the rigid layer owns (robots, rigidUnitLayer.ts) are skipped here: setSkip().
+// Attachments (weapon, tool, gear, armor; attachmentSockets.ts) are extra instanced meshes of a rig, skinned to one bone
+// of the body and drawn with the same bone texture and per-instance pose and anim as the body: one draw per attachment
+// asset (both LODs in one mesh, the instance says which: attachmentGeometry.ts mergeAttachmentLods), whatever the
+// number of units that carry it. addAttachment registers one, assignAttachments gives it to unit typeIds. The nearest
+// ATTACHMENT_LODS unit LODs show them; the far LOD does not.
 import { heroIdOfTypeId } from '@crawlout/data';
 import { ANIM, ENTITY_FLAG } from '@crawlout/protocol';
 import {
@@ -38,6 +43,7 @@ import { InstanceVariation } from './animVariation.js';
 import { bakeAnimations, type BakedAnimations } from './bake.js';
 import { createHumanoidGeometry, UNIT_LODS } from './humanoidGeometry.js';
 import {
+  ATTACHMENT_LOD_STEP,
   createUnitMaterial,
   HERO_INSTANCE_FLAG,
   HERO_SCALE,
@@ -71,10 +77,36 @@ export interface UnitRigSource {
   albedo?: UnitAlbedo;
 }
 
+/**
+ * A prop carried by a rig's units: its LOD 0 and 1 in one geometry in the unit vertex layout, skinned to one bone
+ * (attachmentGeometry.ts mergeAttachmentLods), drawn with the bone and clip textures of `rig`.
+ */
+export interface AttachmentSource {
+  name: string;
+  /** The rig whose animation it follows; only units drawn with this rig show it. */
+  rig: number;
+  geometry: BufferGeometry;
+  /** Diffuse atlas when the prop has one; the rest of the material is the rig's attachment material. */
+  albedo?: UnitAlbedo;
+}
+
+/** Unit LODs that show attachments: 0 and 1. The far LOD drops them (a weapon is a pixel there, the draw call is not). */
+export const ATTACHMENT_LODS = 2;
+
 interface LodBatch {
   mesh: Mesh;
   pose: InstancedBufferAttribute;
   anim: InstancedBufferAttribute;
+}
+
+interface Attachment {
+  name: string;
+  rig: number;
+  batch: LodBatch;
+  geometry: BufferGeometry;
+  /** Set for an attachment with its own atlas; otherwise the rig's shared attachment material is used. */
+  ownMaterial: MeshBasicNodeMaterial | null;
+  textures: Texture[];
 }
 
 interface Rig {
@@ -86,6 +118,10 @@ interface Rig {
   clipSeconds: number[];
   material: MeshBasicNodeMaterial;
   textures: Texture[];
+  /** The bone and clip textures of `material`, shared by this rig's attachment materials. */
+  dataTextures: { boneTex: Texture; clipTex: Texture };
+  /** Material of the attachments of this rig that have no atlas of their own (made on first use). */
+  attachmentMaterial: MeshBasicNodeMaterial | null;
   geometries: BufferGeometry[];
   lods: LodBatch[];
 }
@@ -136,6 +172,11 @@ function markUsed(a: InstancedBufferAttribute, count: number): void {
 
 export class UnitLayer {
   private readonly rigs: Rig[] = [];
+  private readonly attachments: Attachment[] = [];
+  /** Attachments per unit typeId (assignAttachments); undefined when the typeId carries none. */
+  private readonly attachmentsByType: (Attachment[] | undefined)[] = new Array<
+    Attachment[] | undefined
+  >(TYPE_ID_BUILDING_FIRST).fill(undefined);
   private readonly scene: Scene;
   private readonly capacity: number;
   private readonly lightDir: Vector3;
@@ -158,6 +199,8 @@ export class UnitLayer {
   private readonly variation = new InstanceVariation();
   /** Instances drawn per LOD (all rigs together) in the last update. */
   readonly lodCounts: [number, number, number] = [0, 0, 0];
+  /** Attachment instances drawn in the last update (all attachments, both LODs together). */
+  attachmentInstances = 0;
 
   constructor(scene: Scene, opts: UnitLayerOptions) {
     this.scene = scene;
@@ -240,10 +283,83 @@ export class UnitLayer {
       clipSeconds: src.anims.clips.map((c) => c.duration),
       material: bundle.material,
       textures,
+      dataTextures: { boneTex: bundle.boneTex, clipTex: bundle.clipTex },
+      attachmentMaterial: null,
       geometries,
       lods,
     });
     return index;
+  }
+
+  get attachmentCount(): number {
+    return this.attachments.length;
+  }
+
+  /** Adds an attachment and returns its handle. The geometries are owned (and disposed) by the layer from here on. */
+  addAttachment(src: AttachmentSource): number {
+    const rig = this.rigs[src.rig];
+    if (!rig) throw new Error(`no unit rig ${src.rig}`);
+    const map = src.albedo?.map ?? null;
+    let material: MeshBasicNodeMaterial;
+    let ownMaterial: MeshBasicNodeMaterial | null = null;
+    if (map) {
+      map.anisotropy = Math.max(map.anisotropy, UNIT_ATLAS_ANISOTROPY);
+      ownMaterial = createUnitMaterial(
+        rig.anims,
+        { lightDir: this.lightDir, shadow: this.shadow },
+        this.precision,
+        src.albedo ?? {},
+        { shared: rig.dataTextures, attachment: true },
+      ).material;
+      material = ownMaterial;
+    } else {
+      rig.attachmentMaterial ??= createUnitMaterial(
+        rig.anims,
+        { lightDir: this.lightDir, shadow: this.shadow },
+        this.precision,
+        {},
+        { shared: rig.dataTextures, attachment: true },
+      ).material;
+      material = rig.attachmentMaterial;
+    }
+    const geo = src.geometry;
+    const pose = dynamic(this.capacity, 4);
+    const anim = dynamic(this.capacity, 4);
+    geo.setAttribute('iPose', pose);
+    geo.setAttribute('iAnim', anim);
+    const mesh = new Mesh(geo, material);
+    mesh.name = `units-${rig.name}-${src.name}`;
+    mesh.frustumCulled = false; // culled per instance on the CPU, with the body
+    mesh.castShadow = this.shadow !== null; // the far LOD, the only one left out of the shadow pass, has no attachments
+    mesh.count = 0;
+    mesh.visible = false;
+    this.scene.add(mesh);
+    this.attachments.push({
+      name: src.name,
+      rig: src.rig,
+      batch: { mesh, pose, anim },
+      geometry: geo,
+      ownMaterial,
+      textures: map ? [map] : [],
+    });
+    return this.attachments.length - 1;
+  }
+
+  /** Gives these unit typeIds the attachments (handles from addAttachment); an empty list takes them all away. */
+  assignAttachments(typeIds: Iterable<number>, handles: readonly number[]): void {
+    const list = handles.map((h) => {
+      const a = this.attachments[h];
+      if (!a) throw new Error(`no attachment ${h}`);
+      return a;
+    });
+    for (const t of typeIds)
+      if (t > 0 && t < this.attachmentsByType.length)
+        this.attachmentsByType[t] = list.length > 0 ? list : undefined;
+  }
+
+  /** Attachment names a typeId carries (tests, the status line of the demo). */
+  attachmentNamesOf(typeId: number): string[] {
+    return (this.attachmentsByType[typeId] ?? []).map((a) => a.name);
   }
 
   /** Draws these unit typeIds with `rig`; null hands them back to the default rig. */
@@ -284,6 +400,7 @@ export class UnitLayer {
     const counts = this.lodCounts;
     counts[0] = counts[1] = counts[2] = 0;
     for (const rig of this.rigs) for (const b of rig.lods) b.mesh.count = 0;
+    for (const a of this.attachments) a.batch.mesh.count = 0;
     const center = this.sphere.center;
     this.sphere.radius = this.shadow ? UNIT_SHADOW_RADIUS : UNIT_RADIUS;
 
@@ -298,7 +415,8 @@ export class UnitLayer {
       const dx = x - cam.x;
       const dy = y - cam.y;
       const dz = z - cam.z;
-      const rig = this.rigs[this.rigFor(typeId)]!;
+      const rigIndex = this.rigFor(typeId);
+      const rig = this.rigs[rigIndex]!;
       const isHero = heroIdOfTypeId(typeId) >= 0;
       const size = isHero ? rig.height * HERO_SCALE : rig.height;
       const lod = this.screen.lod(size, Math.sqrt(dx * dx + dy * dy + dz * dz), this.lodPixels);
@@ -331,6 +449,26 @@ export class UnitLayer {
       // Team slot in the low bits, the static per-instance variation seed above them (see unitMaterial.ts).
       anim[k * 4 + 2] = teamIndex(frame.owner[i]!) + TEAM_SLOTS * v.seed;
       anim[k * 4 + 3] = isHero ? flags + HERO_INSTANCE_FLAG : flags;
+      if (lod < ATTACHMENT_LODS) {
+        // The attachments take the body's instance as it is: same pose, clip, phase, team slot and variation seed. The
+        // unit's LOD rides above the seed (the shader shows that LOD of the prop and collapses the other one).
+        const carried = this.attachmentsByType[typeId];
+        if (carried)
+          for (const a of carried) {
+            if (a.rig !== rigIndex) continue;
+            const ab = a.batch;
+            const j = ab.mesh.count;
+            if (j >= this.capacity) continue;
+            ab.mesh.count = j + 1;
+            const ap = ab.pose.array as Float32Array;
+            const aa = ab.anim.array as Float32Array;
+            for (let c = 0; c < 4; c++) {
+              ap[j * 4 + c] = pose[k * 4 + c]!;
+              aa[j * 4 + c] = anim[k * 4 + c]!;
+            }
+            aa[j * 4 + 2] = anim[k * 4 + 2]! + lod * ATTACHMENT_LOD_STEP;
+          }
+      }
 
       const selected = (flags & SELECTED) !== 0 && (flags & DEAD) === 0;
       const half = isHero ? DECAL_HALF * HERO_SCALE : DECAL_HALF;
@@ -338,20 +476,32 @@ export class UnitLayer {
       decals.push(x, z, half, half, selected ? ring : this.blob);
     }
 
-    for (const rig of this.rigs) {
-      for (const b of rig.lods) {
-        const n = b.mesh.count;
-        b.mesh.visible = n > 0;
-        if (n > 0) {
-          markUsed(b.pose, n);
-          markUsed(b.anim, n);
-        }
+    const publish = (b: LodBatch): number => {
+      const n = b.mesh.count;
+      b.mesh.visible = n > 0;
+      if (n > 0) {
+        markUsed(b.pose, n);
+        markUsed(b.anim, n);
       }
-    }
+      return n;
+    };
+    for (const rig of this.rigs) for (const b of rig.lods) publish(b);
+    let attached = 0;
+    for (const a of this.attachments) attached += publish(a.batch);
+    this.attachmentInstances = attached;
   }
 
   dispose(): void {
+    for (const a of this.attachments) {
+      a.batch.mesh.removeFromParent();
+      a.geometry.dispose();
+      for (const t of a.textures) t.dispose();
+      a.ownMaterial?.dispose();
+    }
+    this.attachments.length = 0;
+    this.attachmentsByType.fill(undefined);
     for (const rig of this.rigs) {
+      rig.attachmentMaterial?.dispose();
       for (const b of rig.lods) b.mesh.removeFromParent();
       for (const g of rig.geometries) g.dispose();
       for (const t of rig.textures) t.dispose();

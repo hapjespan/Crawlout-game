@@ -1616,6 +1616,176 @@
             "durationSeconds": 2.4
           }
         ]
+      },
+      "palette": {
+        "jacket": "#5e3d28",
+        "patchTop": "#8f3a2c",
+        "patchLeg": "#3a312c",
+        "belt": "#1d1917",
+        "trousers": "#2e2621",
+        "boots": "#1b1715",
+        "skin": "#9a6a52"
+      }
+    },
+    {
+      "id": "raider_body_slave",
+      "kind": "character",
+      "bounds": {
+        "min": [
+          -0.969676,
+          0.002415,
+          -0.162106
+        ],
+        "max": [
+          0.97012,
+          1.827399,
+          0.202271
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "raider_body_slave/lod0.glb",
+          "triangles": 3598
+        },
+        {
+          "level": 1,
+          "path": "raider_body_slave/lod1.glb",
+          "triangles": 1348
+        },
+        {
+          "level": 2,
+          "path": "raider_body_slave/lod2.glb",
+          "triangles": 492
+        }
+      ],
+      "sockets": {
+        "hand": [
+          -0.7389,
+          1.4408,
+          -0.0654
+        ],
+        "back": [
+          0,
+          1.3148,
+          -0.0049
+        ],
+        "head": [
+          0,
+          1.5687,
+          0.0051
+        ]
+      },
+      "animations": [
+        {
+          "name": "death",
+          "durationSeconds": 2.4
+        },
+        {
+          "name": "build",
+          "durationSeconds": 5.2
+        },
+        {
+          "name": "idle",
+          "durationSeconds": 2.5
+        },
+        {
+          "name": "gather",
+          "durationSeconds": 2
+        },
+        {
+          "name": "run",
+          "durationSeconds": 0.933333
+        },
+        {
+          "name": "attack1",
+          "durationSeconds": 0.633333
+        },
+        {
+          "name": "attack2",
+          "durationSeconds": 1
+        },
+        {
+          "name": "walk",
+          "durationSeconds": 1.333333
+        }
+      ],
+      "boneCount": 20,
+      "teamMask": "materialName",
+      "baked": {
+        "path": "dweller_body_human/dweller_body_human.anim.f32",
+        "width": 80,
+        "height": 480,
+        "fps": 30,
+        "clips": [
+          {
+            "name": "idle",
+            "startRow": 0,
+            "frames": 75,
+            "loop": true,
+            "durationSeconds": 2.5
+          },
+          {
+            "name": "walk",
+            "startRow": 75,
+            "frames": 40,
+            "loop": true,
+            "durationSeconds": 1.333333
+          },
+          {
+            "name": "run",
+            "startRow": 115,
+            "frames": 28,
+            "loop": true,
+            "durationSeconds": 0.933333
+          },
+          {
+            "name": "attack1",
+            "startRow": 143,
+            "frames": 19,
+            "loop": true,
+            "durationSeconds": 0.633333
+          },
+          {
+            "name": "attack2",
+            "startRow": 162,
+            "frames": 30,
+            "loop": true,
+            "durationSeconds": 1
+          },
+          {
+            "name": "gather",
+            "startRow": 192,
+            "frames": 60,
+            "loop": true,
+            "durationSeconds": 2
+          },
+          {
+            "name": "build",
+            "startRow": 252,
+            "frames": 156,
+            "loop": true,
+            "durationSeconds": 5.2
+          },
+          {
+            "name": "death",
+            "startRow": 408,
+            "frames": 72,
+            "loop": false,
+            "durationSeconds": 2.4
+          }
+        ]
+      },
+      "palette": {
+        "jacket": "#b6aa8f",
+        "patchTop": "#9c8f78",
+        "patchLeg": "#a09580",
+        "belt": "#7a6b52",
+        "trousers": "#a89d84",
+        "boots": "#85765f",
+        "skin": "#a07a62",
+        "teamZone": "band",
+        "farTeam": 0
       }
     },
     {
