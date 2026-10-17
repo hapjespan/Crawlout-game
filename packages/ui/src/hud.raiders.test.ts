@@ -1,0 +1,258 @@
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { act } from 'preact/test-utils';
+import type { CommandType, PlayerStatus } from '@crawlout/protocol';
+import { unitTypeId } from '@crawlout/data';
+import { mountHud } from './index.js';
+import { portraitOfEntity, portraitOfGroup } from './portraits.js';
+import type {
+  HudAlert,
+  HudDeps,
+  HudHandle,
+  RaiderStats,
+  RosterGroup,
+  SelectedEntity,
+} from './index.js';
+
+const status: PlayerStatus = {
+  playerId: 0,
+  scrap: 100,
+  settlers: 5,
+  pop: 5,
+  popCap: 8,
+  beds: 8,
+  hero: null,
+  queue: [],
+  dominance: { pointsHeld: 0, pointsRequired: 2, ticksHeld: 0, ticksRequired: 9600, leader: null },
+  robotPop: 0,
+  trained: [0, 0, 0, 0, 0, 0, 0],
+};
+
+const typeId = unitTypeId(1);
+const unit = (over: Partial<SelectedEntity>): SelectedEntity => ({
+  id: 1,
+  typeId,
+  loadoutName: 'Slaaf',
+  hpPct: 100,
+  role: 'scavenger',
+  ...over,
+});
+
+const stats = (over: Partial<RaiderStats> = {}): RaiderStats => ({
+  slaves: 6,
+  slavesWorking: 4,
+  prisoners: 1,
+  fighters: 3,
+  safetyThreshold: 5,
+  tentReady: true,
+  cages: [
+    { id: 9, x: 0, y: 0, naam: 'Raiderkamp', slaves: 6, capacity: 8, guards: 2, guardsNeeded: 2 },
+  ],
+  ...over,
+});
+
+function setup(over: Partial<HudDeps> = {}) {
+  const sent: { type: CommandType; payload: unknown }[] = [];
+  const targets: string[] = [];
+  const state: { selection: SelectedEntity[] } = { selection: [] };
+  const deps: HudDeps = {
+    sendCommand: (type, payload) => void sent.push({ type, payload }),
+    getStatus: () => status,
+    getSelection: () => state.selection,
+    beginTargeting: (kind) => void targets.push(kind),
+    ...over,
+  };
+  const el = document.createElement('div');
+  document.body.appendChild(el);
+  let handle!: HudHandle;
+  act(() => {
+    handle = mountHud(el, deps);
+  });
+  const select = (s: SelectedEntity[]): void => {
+    state.selection = s;
+    act(() => handle.refresh());
+  };
+  return { el, handle, sent, targets, select };
+}
+
+const actions = (el: HTMLElement): string[] =>
+  [...el.querySelectorAll('.co-buttons [data-action]')].map((b) => b.getAttribute('data-action')!);
+const press = (key: string): void =>
+  void act(() => void document.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true })));
+
+let mounted: HudHandle | null = null;
+beforeEach(() => {
+  document.body.innerHTML = '';
+});
+afterEach(() => {
+  mounted?.unmount();
+  mounted = null;
+});
+
+describe('Raider commands', () => {
+  it('a slave gets Verplaats, Stop, Verzamel and the slave role names, never Val aan or Vang', () => {
+    const t = setup({ canSwitchRole: () => true });
+    mounted = t.handle;
+    t.select([unit({ raiderKind: 'slave', lines: ['Kooi: Raiderkamp, werkstraal 45 m'] })]);
+    expect(actions(t.el)).toEqual(['move', 'stop', 'gather', 'roleBuilder']);
+    expect(t.el.querySelector('[data-action="roleBuilder"]')!.textContent).toContain(
+      'Slaaf-bouwer',
+    );
+    expect(t.el.querySelector('.co-selection')!.textContent).toContain(
+      'Kooi: Raiderkamp, werkstraal 45 m',
+    );
+    expect(t.el.querySelector('.co-selection')!.textContent).toContain('Slaaf');
+    t.select([unit({ raiderKind: 'slave', role: 'builder', loadoutName: 'Slaaf-bouwer' })]);
+    expect(actions(t.el)).toEqual(['move', 'stop', 'build', 'roleScavenger']);
+    expect(t.el.querySelector('[data-action="roleScavenger"]')!.textContent).toContain('Slaaf');
+  });
+
+  it("Vang is the Slaver's own command: it aims with a hint and sends Attack on an enemy", () => {
+    const t = setup();
+    mounted = t.handle;
+    t.select([unit({ raiderKind: 'slaver', role: 'militia', loadoutName: 'Slaver' })]);
+    expect(actions(t.el)).toEqual(['move', 'stop', 'capture']);
+    expect(t.el.querySelector('[data-action="capture"]')!.getAttribute('title')).toContain(
+      'Sla een vijandelijke bewoner neer buiten zijn basis',
+    );
+    act(() => void (t.el.querySelector('[data-action="capture"]') as HTMLElement).click());
+    expect(t.targets).toEqual(['capture']);
+    expect(t.el.querySelector('.co-targeting')!.textContent).toContain(
+      'Sla een vijandelijke bewoner neer buiten zijn basis',
+    );
+    act(() => void t.handle.completeTargeting({ enemyId: 77, x: 5, y: 6 }));
+    expect(t.sent).toEqual([{ type: 'Attack', payload: { ids: [1], target: 77 } }]);
+  });
+
+  it('F is the hotkey of Vang', () => {
+    const t = setup();
+    mounted = t.handle;
+    t.select([unit({ raiderKind: 'slaver', role: 'militia', loadoutName: 'Slaver' })]);
+    press('f');
+    expect(t.targets).toEqual(['capture']);
+  });
+
+  it('Bevrijd shows for a fighter only while an enemy slave is in sight, and attacks him', () => {
+    let enemySlaves = false;
+    const t = setup({ hasEnemySlaves: () => enemySlaves });
+    mounted = t.handle;
+    const militia = unit({ role: 'militia', loadoutName: 'Militie' });
+    t.select([militia]);
+    expect(actions(t.el)).not.toContain('liberate');
+    enemySlaves = true;
+    t.select([militia]);
+    expect(actions(t.el)).toContain('liberate');
+    act(() => void (t.el.querySelector('[data-action="liberate"]') as HTMLElement).click());
+    expect(t.targets).toEqual(['liberate']);
+    act(() => void t.handle.completeTargeting({ enemyId: 5, x: 1, y: 1 }));
+    expect(t.sent.at(-1)).toEqual({ type: 'Attack', payload: { ids: [1], target: 5 } });
+    // a slave cannot liberate
+    t.select([unit({ raiderKind: 'slave' })]);
+    expect(actions(t.el)).not.toContain('liberate');
+  });
+
+  it('Raider fighters get Val aan but no role switching', () => {
+    const t = setup({ canSwitchRole: () => true });
+    mounted = t.handle;
+    t.select([unit({ raiderKind: 'fighter', role: 'militia', loadoutName: 'Knuppelaar' })]);
+    expect(actions(t.el)).toEqual(['move', 'stop', 'attackMove']);
+  });
+});
+
+describe('Raider top bar', () => {
+  it('shows slaves, fighters against the safety net and the Kooi guards; nothing without Raider stats', () => {
+    const none = setup();
+    expect(none.el.querySelector('.co-raiders')).toBeNull();
+    none.handle.unmount();
+    const t = setup({ getRaiderStats: () => stats({ fighters: 3 }) });
+    mounted = t.handle;
+    const bar = t.el.querySelector('.co-raiders')!;
+    expect(bar.querySelector('[data-raider="slaves"]')!.textContent).toBe(
+      'Slaven6· 4 aan het werk, 1 gevangen',
+    );
+    const fighters = bar.querySelector('[data-raider="fighters"]')!;
+    expect(fighters.textContent).toContain('3/5');
+    expect(fighters.className).toContain('co-raider-warn');
+    expect(fighters.getAttribute('title')).toContain('komt er een Plunderaar bij de tent');
+    expect(bar.querySelector('[data-raider="cages"]')!.className).not.toContain('warn');
+  });
+
+  it('warns on a Kooi with too few guards and on fighters under the safety net', () => {
+    const short = stats({
+      fighters: 7,
+      cages: [
+        { id: 9, x: 0, y: 0, naam: 'Kooi', slaves: 6, capacity: 8, guards: 1, guardsNeeded: 2 },
+      ],
+    });
+    const t = setup({ getRaiderStats: () => short });
+    mounted = t.handle;
+    expect(t.el.querySelector('[data-raider="fighters"]')!.className).not.toContain('warn');
+    const cage = t.el.querySelector('[data-raider="cages"]')!;
+    expect(cage.className).toContain('co-raider-warn');
+    expect(cage.getAttribute('title')).toContain('1/2 bewakers');
+  });
+
+  it('shows the revolt alert as a toast', () => {
+    let alert: ((a: HudAlert) => void) | null = null;
+    const t = setup({
+      subscribeAlerts: (cb) => {
+        alert = cb;
+        return () => undefined;
+      },
+    });
+    mounted = t.handle;
+    act(() => alert!({ kind: 'revolt', x: 1, y: 2 }));
+    expect(t.el.querySelector('[data-alert="revolt"]')!.textContent).toBe(
+      'Kooi onbewaakt: slaven ontsnappen!',
+    );
+  });
+});
+
+describe('Raider roster tile and portraits', () => {
+  it('shows the short label on the tile and keeps the full name in the tooltip', () => {
+    const roster: RosterGroup[] = [
+      {
+        key: 'slaaf_bouwer',
+        naam: 'Slaaf-bouwer',
+        short: 'Bouwer',
+        units: [{ id: 1, hpPct: 100, activity: 'idle', x: 0, y: 0 }],
+      },
+    ];
+    const t = setup({ getRoster: () => roster });
+    mounted = t.handle;
+    const tile = t.el.querySelector('.co-roster-group')!;
+    expect(tile.querySelector('.co-roster-name')!.textContent).toBe('Bouwer');
+    expect(tile.getAttribute('title')).toBe('Slaaf-bouwer');
+    expect(tile.getAttribute('aria-label')).toContain('Slaaf-bouwer');
+  });
+
+  it('gives every Raider type its own face; the dog and the buggy the generic unit', () => {
+    const keys = [
+      'plunderaar',
+      'plunderaar_staal',
+      'knuppelaar',
+      'molotovgooier',
+      'slaver',
+      'chemdealer',
+      'slaaf',
+      'slaaf_bouwer',
+    ];
+    const faces = keys.map(portraitOfGroup);
+    expect(new Set(faces).size).toBe(keys.length);
+    expect(portraitOfGroup('hond')).toBe('robot');
+    expect(portraitOfGroup('buggy')).toBe('robot');
+    // the selected-unit portrait agrees with the tile, also for a Raider fighter whose role is militia
+    const sel = (loadoutName: string, role: SelectedEntity['role']): SelectedEntity =>
+      unit({ loadoutName, role });
+    expect(portraitOfEntity(sel('Plunderaar', 'militia'))).toBe(portraitOfGroup('plunderaar'));
+    expect(portraitOfEntity(sel('Slaver', 'militia'))).toBe(portraitOfGroup('slaver'));
+    expect(portraitOfEntity(sel('Chem-dealer', 'militia'))).toBe(portraitOfGroup('chemdealer'));
+    expect(portraitOfEntity(sel('Molotovgooier', 'militia'))).toBe(
+      portraitOfGroup('molotovgooier'),
+    );
+    expect(portraitOfEntity(sel('Slaaf-bouwer', 'builder'))).toBe(portraitOfGroup('slaaf_bouwer'));
+    expect(portraitOfEntity(sel('Slaaf', 'scavenger'))).toBe(portraitOfGroup('slaaf'));
+    expect(portraitOfEntity(sel('Hond', 'militia'))).toBe('robot');
+    // the Dwellers keep theirs: a scavenger named Plunderaar is still the scavenger face
+    expect(portraitOfEntity(sel('Plunderaar', 'scavenger'))).toBe(portraitOfGroup('scavenger'));
+  });
+});

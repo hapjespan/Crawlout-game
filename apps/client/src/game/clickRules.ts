@@ -11,7 +11,11 @@ export type ClickMode =
 
 /** Targeting kinds in which an enemy entity is a valid target. */
 export const takesEnemyTarget = (state: ClickMode): boolean =>
-  state.mode === 'targeting' && (state.kind === 'attackMove' || state.kind === 'heroAbility');
+  state.mode === 'targeting' &&
+  (state.kind === 'attackMove' ||
+    state.kind === 'capture' ||
+    state.kind === 'liberate' ||
+    state.kind === 'heroAbility');
 
 /**
  * 'select': the click is a selection click (leave any mode first); 'complete': the click answers the active mode

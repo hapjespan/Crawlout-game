@@ -1,8 +1,9 @@
 import { h } from 'preact';
 import type { ComponentChild } from 'preact';
+import { kindOfTypeId } from '@crawlout/data';
 import { CARD_STATE_LABEL } from './controller.js';
 import type { HudController, HudState } from './controller.js';
-import type { BuildingCard, CardKind, CardState } from './types.js';
+import type { BuildingCard, CardKind, CardState, SelectedEntity } from './types.js';
 
 /** Eenvoudige, neutrale symbolen (24x24, lijn, geen emoji). Onbekende icoonnamen vallen terug op `gear`. */
 const ICON_PATHS: Record<string, string> = {
@@ -204,7 +205,13 @@ function Card(props: {
   );
 }
 
-function panelTitle(cards: readonly BuildingCard[]): string {
+function panelTitle(cards: readonly BuildingCard[], selection: readonly SelectedEntity[]): string {
+  // One kind of building selected: its own name ("Tent", "Autosloperij"), not the kind of card it offers.
+  const names = new Set(
+    selection.filter((s) => kindOfTypeId(s.typeId).kind === 'building').map((s) => s.loadoutName),
+  );
+  const single = names.size === 1 ? [...names][0] : null;
+  if (single && !selection.some((s) => kindOfTypeId(s.typeId).kind !== 'building')) return single;
   const only = (kind: CardKind): boolean => cards.every((c) => c.kind === kind);
   if (only('craft')) return 'Craft';
   if (only('produce')) return 'Robotfabriek';
@@ -217,7 +224,7 @@ export function CardPanel(props: { ctl: HudController; state: HudState }): Compo
   const { ctl, state } = props;
   if (state.cards.length === 0) return null;
   const keyActive = ctl.cardKeysActive();
-  const title = panelTitle(state.cards);
+  const title = panelTitle(state.cards, state.selection);
   return h(
     'section',
     { class: 'co-panel co-cards', 'aria-label': title },

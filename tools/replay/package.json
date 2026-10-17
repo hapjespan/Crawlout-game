@@ -8,6 +8,7 @@
     "record": "node --import tsx src/record.ts fixtures",
     "replay:browsers": "node --import tsx src/browsers.ts fixtures",
     "hud-clicks": "node --import tsx src/hud-clicks.ts",
+    "hud-raiders": "node --import tsx src/hud-raiders.ts",
     "hud-shots": "node --import tsx src/hud-shots.ts",
     "playtest": "node --import tsx src/playtest.ts",
     "balance": "node --import tsx src/balance-report.ts",

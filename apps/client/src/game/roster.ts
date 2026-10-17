@@ -20,6 +20,30 @@ export const LOADOUT_NAMES: Record<string, string> = {
   beveiligingsrobot: 'Beveiligingsrobot',
   reparatiedrone: 'Reparatiedrone',
   sentinel: 'Sentinel',
+  // Raiders (data 0.21.0)
+  slaaf: 'Slaaf',
+  slaaf_bouwer: 'Slaaf-bouwer',
+  plunderaar: 'Plunderaar',
+  plunderaar_staal: 'Plunderaar (staal)',
+  knuppelaar: 'Knuppelaar',
+  molotovgooier: 'Molotovgooier',
+  hond: 'Hond',
+  slaver: 'Slaver',
+  chemdealer: 'Chem-dealer',
+  buggy: 'Buggy',
+};
+
+/**
+ * Short labels for the unit-bar tiles, which are about 50 px wide at 1280x720 (about 7 letters at the 11 px minimum; the tile fits what the 11 px bold text of 7 letters needs): only
+ * the names that do not fit have one; the tooltip and the screen reader get the full name.
+ */
+export const LOADOUT_SHORT_NAMES: Record<string, string> = {
+  plunderaar: 'Plunder',
+  plunderaar_staal: 'Staal',
+  knuppelaar: 'Knuppel',
+  molotovgooier: 'Molotov',
+  chemdealer: 'Chem',
+  slaaf_bouwer: 'Bouwer',
 };
 
 /** animT is 0..65535 over the clip; a gathering unit's clip is its gather job. */
@@ -74,12 +98,20 @@ export function buildRoster(
     list.push(unit);
     byKey.set(key, list);
   }
+  // A hero's body loadout (warlord_basis) is never a unit of its own: the hero is its unit, so no tile "Warlord 0".
+  const heroBodies = new Set(data.heroes.map((h) => h.baseLoadoutId));
   const groups: RosterGroup[] = hero ? [{ key: 'hero', naam: hero.naam, units: [hero.unit] }] : [];
   for (const l of data.loadouts) {
-    if (l.factionId !== factionId) continue;
+    if (l.factionId !== factionId || heroBodies.has(l.id)) continue;
     const units = (byKey.get(l.key) ?? []).sort((a, b) => a.id - b.id);
     if (units.length === 0 && (l.prereqTech.length > 0 || l.producedAt >= 0)) continue;
-    groups.push({ key: l.key, naam: LOADOUT_NAMES[l.key] ?? l.key, units });
+    const short = LOADOUT_SHORT_NAMES[l.key];
+    groups.push({
+      key: l.key,
+      naam: LOADOUT_NAMES[l.key] ?? l.key,
+      ...(short !== undefined ? { short } : {}),
+      units,
+    });
   }
   return groups;
 }

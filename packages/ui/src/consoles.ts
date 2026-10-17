@@ -3,7 +3,7 @@ import type { ComponentChild } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
 import type { PlayerStatus } from '@crawlout/protocol';
 import { kindOfTypeId } from '@crawlout/data';
-import { ROLE_LABEL } from './controller.js';
+import { roleLabelOf } from './controller.js';
 import type { HudController, HudState, QuickId } from './controller.js';
 import { portraitOfEntity } from './portraits.js';
 import type { UnitActivity, UnitState } from './types.js';
@@ -267,7 +267,7 @@ export function UnitConsole(props: { ctl: HudController; state: HudState }): Com
   const bigLabel = hero && abilities.length > 0 ? 'klaar' : foe ? 'vijand' : lead ? 'gekozen' : '';
   const weapon = lead && !isBuilding ? weaponName(lead) : '';
   const melee = /knuppel|slag|mes|blade/i.test(weapon);
-  const role = lead && !foe && lead.role ? ROLE_LABEL[lead.role] : undefined;
+  const role = lead && !foe ? roleLabelOf(lead) : undefined;
   return h(
     'section',
     {
