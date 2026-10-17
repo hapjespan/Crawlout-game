@@ -59,7 +59,7 @@ export interface BuildOptions {
   /** Path to the Dweller gear config (same format, attachments only); default `<srcDir>/dwellers-gear.json`. Optional. */
   dwellersGearPath?: string;
   /**
-   * Config of the delivered models (src/delivered.ts, `assets/delivered.json`), only used when given or when
+   * Config of the delivered models (src/delivered.ts, `assets/local/delivered.json`), only used when given or when
    * `<srcDir>/delivered.json` exists; its `file` paths are relative to `srcDir`.
    */
   deliveredPath?: string;
@@ -348,7 +348,7 @@ export async function buildAssets(options: BuildOptions): Promise<BuildResult> {
     reports.push(report);
   }
 
-  // Delivered models (src/delivered.ts): GLB's processed as delivered, config assets/delivered.json (local pipeline).
+  // Delivered models (src/delivered.ts): GLB's processed as delivered, config assets/local/delivered.json (local pipeline).
   const deliveredSource = options.deliveredPath ?? join(srcDir, 'delivered.json');
   const delivered: RobotsResult = { reports: [], entries: [], outputs: new Map() };
   if (existsSync(deliveredSource)) {

@@ -1,4 +1,4 @@
-// Delivered models (assets/delivered.json): GLB's from a designer that are processed as they are (textures and all) into
+// Delivered models (assets/local/delivered.json): GLB's from a designer that are processed as they are (textures and all) into
 // rigid units (robots), props (weapons, tools, gear with an anchor) or buildings, on the real scale. Used by the local
 // pipeline (`pnpm assets --local`, sources in assets/local/delivered, output in assets/dist-local): most of these are
 // fan models that must never be committed, so only this module and the config (node and material names, sizes, no art)

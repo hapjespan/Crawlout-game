@@ -1,4 +1,4 @@
-// Delivered models (src/delivered.ts, assets/delivered.json) with synthetic GLB's in a temporary dir: no art of any
+// Delivered models (src/delivered.ts, assets/local/delivered.json) with synthetic GLB's in a temporary dir: no art of any
 // kind in the repo. A "robot" of two boxes (one textured, one flat) in odd units and orientation, and a "bat" lying
 // along +X, go through the config: rotation, real size, origin, team band, hover, anchors, budgets and the footprint advice.
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';

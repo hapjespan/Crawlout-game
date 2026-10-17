@@ -31,8 +31,8 @@ if (local && !hasGlb(srcDir)) {
   process.exit(0);
 }
 
-// The delivered models (assets/delivered.json, art in assets/local/delivered) only go through the local pipeline.
-const deliveredPath = argValue('--delivered') ?? `${repoRoot}assets/delivered.json`;
+// The delivered models (assets/local/delivered.json, art in assets/local/delivered; both gitignored) only go through the local pipeline.
+const deliveredPath = argValue('--delivered') ?? `${repoRoot}assets/local/delivered.json`;
 const result = await buildAssets({
   srcDir,
   distDir,
