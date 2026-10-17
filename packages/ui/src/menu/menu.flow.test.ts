@@ -210,6 +210,22 @@ describe('Speler tegen speler', () => {
     expect(s.pvp.link).toBe('up');
   });
 
+  it('takes "you" from the lobby message over the name match', () => {
+    const s = pvp(
+      { type: 'pvp/form', patch: { room: 'ABC', name: 'Rik' } },
+      { type: 'pvp/connect', create: false },
+      // by name the own row would be 1; the relay says 0
+      {
+        type: 'pvp/lobby',
+        roomId: 'ABC',
+        map: 'rustbelt',
+        players: [p(0, 'Anna'), p(1, 'Rik')],
+        you: 0,
+      },
+    ).state;
+    expect(s.pvp.lobby?.youId).toBe(0);
+  });
+
   it('keeps the id it found for "you" when the lobby changes', () => {
     const s = pvp(
       { type: 'pvp/form', patch: { room: 'ABC' } },
