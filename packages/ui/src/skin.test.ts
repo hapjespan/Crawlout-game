@@ -50,11 +50,14 @@ describe('HUD look (committed, bitmap-free)', () => {
   });
 
   it('keeps text at 11px or larger', () => {
-    const sizes = [...HUD_CSS.matchAll(/font(?:-size)?:\s*(?:[a-z0-9 ]+ )?(\d+(?:\.\d+)?)px/g)].map(
-      (m) => Number(m[1]),
-    );
+    // Every font size is either a fixed size of 11px or more, or a unit size under a max(11px, ...) floor.
+    const sizes = [
+      ...HUD_CSS.matchAll(/font(?:-size)?:\s*(?:[a-z0-9 ]+ )?(max\(11px|\d+(?:\.\d+)?px)/g),
+    ].map((m) => (m[1] === 'max(11px' ? 11 : Number(m[1]?.replace('px', ''))));
     expect(sizes.length).toBeGreaterThan(10);
     expect(Math.min(...sizes)).toBeGreaterThanOrEqual(11);
+    // No bare font-size in px that could go under the floor.
+    expect(HUD_CSS).not.toMatch(/font-size:\s*(?:[1-9]|10)(?:\.\d+)?px/);
   });
 
   it('never blinks faster than 3 Hz', () => {
@@ -76,7 +79,7 @@ describe('HUD bitmap skin (dev only)', () => {
     const css = hudSkinCss(skin());
     expect(css).toContain('[data-co-skin="bitmap"] .co-hud .co-commands');
     expect(css).toContain(
-      'border-image:url("/@fs/local/frame-plate.png") 28 28 28 28/10px/0 stretch',
+      'border-image:url("/@fs/local/frame-plate.png") 28 28 28 28/calc(var(--u) * 8)/0 stretch',
     );
     expect(css).toContain('url("/@fs/local/plate-rust.png")');
   });

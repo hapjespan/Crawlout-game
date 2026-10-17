@@ -16,6 +16,7 @@ import type {
   UnitActivity,
 } from '@crawlout/ui';
 import type { PlayerStatus } from '@crawlout/protocol';
+import { createMidgamePreset } from './demoMidgame.js';
 
 const hudEl = document.getElementById('hud');
 const worldEl = document.getElementById('world');
@@ -28,7 +29,8 @@ const ALL: SelectedEntity[] = [
   { id: 2, typeId: 2, loadoutName: 'Knuppel', hpPct: 40, role: 'militia' },
   { id: 3, typeId: 2, loadoutName: null, hpPct: 15, role: 'builder' },
 ];
-// Demo knobs (URL): ?units=14 per-type unit count, ?workshop=0 hides the role buttons, ?pending=2 level-up perks.
+// Demo knobs (URL): ?units=14 per-type unit count, ?workshop=0 hides the role buttons, ?pending=2 level-up perks,
+// ?preset=midgame the review still life (every part open, see demoMidgame.ts), ?bg=transparent|grey|dark the backdrop.
 const query = new URLSearchParams(location.search);
 const unitCount = Number(query.get('units') ?? 6);
 let hasWorkshop = query.get('workshop') !== '0';
@@ -405,7 +407,8 @@ const log = (line: string): void => {
   logEl.textContent = lines.join('\n');
 };
 
-const deps: HudDeps = {
+const preset = query.get('preset') === 'midgame' ? createMidgamePreset(notify) : null;
+const baseDeps: HudDeps = {
   sendCommand: (type, payload) => {
     log(`${type} ${JSON.stringify(payload)}`);
     if (type === 'HeroAbility') {
@@ -485,12 +488,37 @@ const deps: HudDeps = {
   },
 };
 
+const deps: HudDeps = { ...baseDeps, ...preset?.deps };
+
 // The local bitmap skin (dev only, like the client); `?noskin` shows the CSS-only look that production gets.
 const hudSkin =
   import.meta.env.DEV && !query.has('noskin')
     ? (await import('./hudSkin.js')).loadHudSkin()
     : undefined;
-const hud = mountHud(hudEl, deps, hudSkin ? { skin: hudSkin } : {});
+const hud = mountHud(hudEl, deps, {
+  ...(hudSkin ? { skin: hudSkin } : {}),
+  ...(preset ? { keepBuildMenuWhilePlacing: true } : {}),
+});
+
+// Backdrop for screenshots: no gameplay, so a flat colour or nothing at all (a transparent PNG).
+const BACKDROPS: Record<string, string> = {
+  transparent: 'transparent',
+  grey: '#808080',
+  dark: '#1b1e20',
+};
+const backdrop = BACKDROPS[query.get('bg') ?? ''];
+if (backdrop !== undefined) {
+  document.documentElement.style.background = backdrop;
+  document.body.style.background = backdrop;
+}
+if (preset || query.has('nolog')) logEl.style.display = 'none';
+if (preset) {
+  // The HUD subscribes to its own changes in an effect after the first paint: stage only once that has happened.
+  await new Promise((resolve) => setTimeout(resolve, 250));
+  preset.stage(hudEl, hud);
+  for (const alert of preset.alerts) emitAlert(alert);
+  hudEl.dataset['staged'] = '1';
+}
 
 // Wereldklik: in de echte client doet de renderer-picking dit.
 worldEl.addEventListener('click', (e) => {
@@ -502,20 +530,21 @@ worldEl.addEventListener('click', (e) => {
 });
 
 // Mock-gedrag: scrap loopt op; D = desync, W = stall, Y = selectie wisselen.
-setInterval(() => {
-  status = { ...status, scrap: status.scrap + 3 };
-  domSeconds = Math.min(DOM_REQUIRED, domSeconds + 1);
-  for (const u of rosterUnits) u.progressPct = ((u.progressPct ?? 0) + 7) % 100;
-  for (const m of [...researchMocks, ...craftMocks]) {
-    if (m.elapsed === null) continue;
-    m.elapsed += 1;
-    if (m.elapsed >= m.seconds) {
-      m.elapsed = null;
-      m.done = m.kind === 'research';
+if (!preset)
+  setInterval(() => {
+    status = { ...status, scrap: status.scrap + 3 };
+    domSeconds = Math.min(DOM_REQUIRED, domSeconds + 1);
+    for (const u of rosterUnits) u.progressPct = ((u.progressPct ?? 0) + 7) % 100;
+    for (const m of [...researchMocks, ...craftMocks]) {
+      if (m.elapsed === null) continue;
+      m.elapsed += 1;
+      if (m.elapsed >= m.seconds) {
+        m.elapsed = null;
+        m.done = m.kind === 'research';
+      }
     }
-  }
-  notify();
-}, 1000);
+    notify();
+  }, 1000);
 window.addEventListener('keydown', (e) => {
   if (e.key === 'd')
     network = {

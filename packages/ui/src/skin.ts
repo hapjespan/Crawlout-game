@@ -1,4 +1,4 @@
-import { u } from './units.js';
+import { px, u } from './units.js';
 
 /**
  * Optional bitmap skin (dev only). The client hands over the manifest and the served URLs of the local HUD crops
@@ -94,11 +94,11 @@ export function hudSkinCss(skin: HudSkin): string {
   const { frames, tiles } = skin.manifest;
   const images = skin.manifest.images ?? {};
   const url = (file: string): string => `url("${skin.urls[file] ?? ''}")`;
-  /** border + border-image for a 9-slice frame drawn `w` thick (a number is px, a string a CSS length). */
+  /** border + border-image for a 9-slice frame drawn `w` thick (a number is an old px size, scaled like the rest of the HUD; a string a CSS length). */
   const frame = (name: string, w: number | string): string => {
     const f = frames[name];
     if (!f) return '';
-    const width = typeof w === 'number' ? `${w}px` : w;
+    const width = typeof w === 'number' ? px(w) : w;
     return `border:${width} solid transparent;border-radius:0;border-image:${url(f.file)} ${f.slice.join(' ')}/${width}/0 stretch;`;
   };
   const tile = (name: string): string => {
@@ -117,7 +117,9 @@ export function hudSkinCss(skin: HudSkin): string {
     return i ? url(i.file) : 'none';
   };
   const hazard = tiles['hazard'];
-  const hazardBg = hazard ? `background:${url(hazard.file)} 0 0/${hazard.w}px 100% repeat-x;` : '';
+  const hazardBg = hazard
+    ? `background:${url(hazard.file)} 0 0/${px(hazard.w)} 100% repeat-x;`
+    : '';
   const s = SCOPE;
 
   // Portraits (and the robot icon) as the background of the CRT boxes.
@@ -143,7 +145,7 @@ export function hudSkinCss(skin: HudSkin): string {
     .join('\n');
 
   return `
-${s} .co-commands,${s} .co-cards,${s} .co-dialog,${s} .co-lobby{${frame('frame-plate', 10)}background:linear-gradient(rgba(10,12,8,.5),rgba(10,12,8,.5)),${tile('plate-rust')} 0 0/385px auto;background-color:#14170f;padding:4px;box-shadow:0 3px 8px rgba(0,0,0,.55)}
+${s} .co-commands,${s} .co-cards,${s} .co-dialog,${s} .co-lobby{${frame('frame-plate', 10)}background:linear-gradient(rgba(10,12,8,.5),rgba(10,12,8,.5)),${tile('plate-rust')} 0 0/${px(385)} auto;background-color:#14170f;padding:4px;box-shadow:0 3px 8px rgba(0,0,0,.55)}
 ${s} .co-commands,${s} .co-cards{padding:${u(5)} ${u(7)}}
 ${s} .co-commands h2,${s} .co-cards h2{${frame('frame-header', u(7))}background:linear-gradient(180deg,#4b4a2b,#2f2e1b);margin:0 0 ${u(4)};padding:${u(1)} ${u(5)};color:#e6d48a}
 ${s} .co-emblem{${images['emblem'] ? `background:${img('emblem')} center/cover;` : ''}border-radius:2px}
@@ -195,17 +197,17 @@ ${s} .co-btn.co-danger{background:linear-gradient(180deg,#7a2a22,#4a1410)}
 ${s} .co-top-right .co-btn{border:1px solid rgba(255,255,255,.12);border-image:none;border-radius:4px;background:rgba(13,15,17,.82);box-shadow:none;padding:0}
 ${s} .co-perk-badge{background:linear-gradient(180deg,#d9951c,#8a6410);color:#1c1810}
 ${s} .co-buttons .co-btn{padding:${u(22)} 1px ${u(4)}}
-${s} .co-btn.co-build-option{${frame('frame-card', 6)}background:linear-gradient(180deg,#232a1d,#161b12);padding:${u(3)} ${u(24)} ${u(3)} ${u(5)}}
+${s} .co-btn.co-build-option{${frame('frame-card', 6)}background:linear-gradient(180deg,#232a1d,#161b12);padding:${u(3)} ${u(18)} ${u(3)} ${u(5)}}
 ${s} .co-btn.co-build-option[aria-disabled="true"],${s} .co-btn.co-build-option:disabled{opacity:.6}
 ${s} .co-targeting,${s} .co-banner,${s} .co-toast{${frame('frame-strip', 9)}box-shadow:none}
-${s} .co-toast{padding:3px 12px}
+${s} .co-toast{padding:3px ${px(12)}}
 ${images['paper-strip'] ? `${s} .co-hint,${s} .co-commands-hint{${region('paper-strip')}border:0;border-radius:0;box-shadow:none;color:#1c1810;text-shadow:none;padding:${u(5)} ${u(12)}}` : ''}
-${s} .co-key{${frame('badge-key', 4)}padding:0 2px;line-height:11px;background:#1c150a}
+${s} .co-key{${frame('badge-key', 4)}padding:0 2px;line-height:1.1;background:#1c150a}
 ${s} .co-building-btn{${frame('frame-chip', u(4))}padding:0 ${u(2)};box-shadow:none}
 ${s} .co-building-btn.co-ready,${s} .co-building-btn.co-busy{border-color:transparent}
-${s} .co-building-badge{${frame('badge-chip', 5)}min-width:0;height:auto;padding:0 2px;line-height:12px;background:#2a1d08}
+${s} .co-building-badge{${frame('badge-chip', 5)}min-width:0;height:auto;padding:0 2px;line-height:1.1;background:#2a1d08}
 ${s} .co-building-progress{left:0;right:0;bottom:0;height:${u(3)};border:0}
 ${s} .co-building-progress>span,${s} .co-card-progress>span,${s} .co-dom-warn .co-dom-bar>span{${hazardBg}}
-${s} .co-placement-reason{${frame('chip-paper', 5)}padding:0 5px;background:linear-gradient(180deg,#e6dcbc,#c9bd96);box-shadow:none}
+${s} .co-placement-reason{${frame('chip-paper', 5)}padding:0 ${px(5)};background:linear-gradient(180deg,#e6dcbc,#c9bd96);box-shadow:none}
 `;
 }

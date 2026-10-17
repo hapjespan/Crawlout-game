@@ -349,7 +349,11 @@ export class HudController implements HudHandle {
   /** Kaart waarop de knop is ingedrukt en nog niet losgelaten (pointerdown), zie cardPress. */
   private pressedCard: string | null = null;
 
-  constructor(private readonly deps: HudDeps) {
+  constructor(
+    private readonly deps: HudDeps,
+    /** Demo-only: keep the build menu open while a building is being placed (never set by the game). */
+    private readonly keepBuildMenuWhilePlacing = false,
+  ) {
     this.state = {
       status: null,
       selection: [],
@@ -753,7 +757,7 @@ export class HudController implements HudHandle {
     const option = this.state.buildOptions.find((o) => o.buildingId === buildingId);
     if (!option || !this.canChooseBuild(option)) return false;
     this.stopTargeting();
-    this.set({ placement: option, buildMenuOpen: false });
+    this.set({ placement: option, buildMenuOpen: this.keepBuildMenuWhilePlacing });
     this.deps.beginPlacement?.(option);
     return true;
   }

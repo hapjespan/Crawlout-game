@@ -52,6 +52,11 @@ const SKIN_STYLE_ID = 'co-hud-skin-style';
 export interface HudMountOptions {
   /** Dev-only bitmap skin laid over the CSS look; absent (production, CI) means the CSS-only look. */
   skin?: HudSkin;
+  /**
+   * Demo-only (the HUD demo page's mid-game preset, for the design review image): keep the build menu open while a
+   * building is being placed, so the menu, the placement strip and the card window show at once. The game never sets it.
+   */
+  keepBuildMenuWhilePlacing?: boolean;
 }
 
 /** Monteert de HUD als overlay in `el`. `el` moet zelf gepositioneerd zijn (relative of absolute). */
@@ -74,7 +79,7 @@ export function mountHud(el: HTMLElement, deps: HudDeps, options: HudMountOption
     }
     el.setAttribute(SKIN_ATTR, SKIN_VALUE);
   }
-  const ctl = new HudController(deps);
+  const ctl = new HudController(deps, options.keepBuildMenuWhilePlacing === true);
   const onKey = (e: KeyboardEvent): void => {
     if (ctl.handleKeyDown(e)) e.preventDefault();
   };

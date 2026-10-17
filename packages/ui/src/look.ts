@@ -1,4 +1,4 @@
-import { u, font } from './units.js';
+import { u, font, fpx, px } from './units.js';
 
 /**
  * "Roest en Fosfor": the committed, bitmap-free look of the HUD. Plates are dark and riveted, text on a screen is
@@ -30,7 +30,7 @@ export const HUD_TOKENS_CSS = `
 
 /** The fallback look: gradients and borders only. */
 export const HUD_LOOK_CSS = `
-.co-hud{font-family:var(--font-ui);font-size:15px;color:var(--ink)}
+.co-hud{font-family:var(--font-ui);font-size:${fpx(15)};color:var(--ink)}
 
 /* Plates: dark, bevelled, four rivets as corner dots. */
 .co-hud .co-panel{
@@ -41,9 +41,9 @@ radial-gradient(circle,#8a8c74 0 1.2px,#24261d 1.9px,transparent 2.6px) left 4px
 radial-gradient(circle,#8a8c74 0 1.2px,#24261d 1.9px,transparent 2.6px) right 4px bottom 4px/8px 8px no-repeat,
 radial-gradient(120% 80% at 20% 0%,rgba(150,80,30,.10),transparent 60%),
 linear-gradient(180deg,var(--plate-700),var(--plate-800));
-border:1px solid var(--edge-dark);border-radius:3px;padding:10px;color:var(--ink);
+border:1px solid var(--edge-dark);border-radius:3px;padding:${px(10)};color:var(--ink);
 box-shadow:inset 0 1px 0 rgba(255,255,255,.07),inset 0 -2px 0 rgba(0,0,0,.45),0 3px 8px rgba(0,0,0,.55)}
-.co-hud h2{font-family:var(--font-ui);font-weight:700;font-size:13px;letter-spacing:.08em;color:var(--act-dim)}
+.co-hud h2{font-family:var(--font-ui);font-weight:700;font-size:${fpx(13)};letter-spacing:.08em;color:var(--act-dim)}
 .co-hud .co-empty{color:var(--locked-text)}
 
 /* The consoles are cases of riveted metal; the lit parts (windows, screens, key plates) sit in them. */
@@ -81,7 +81,7 @@ content:"";position:absolute;inset:0;pointer-events:none;border-radius:inherit;b
 .co-hud .co-gauge{background:radial-gradient(circle,#181a19 0 62%,#0b0c0b 64%,#6c6038 66%,#2a2410 100%);box-shadow:0 1px 2px rgba(0,0,0,.6)}
 
 /* Hero: a dark glass note under the bar (as in the mockup). */
-.co-hud .co-hero{background:rgba(13,15,17,.84);border:1px solid rgba(255,255,255,.08);border-radius:5px;padding:${u(6)} ${u(8)};box-shadow:0 3px 8px rgba(0,0,0,.5)}
+.co-hud .co-hero{background:rgba(13,15,17,.84);border:1px solid rgba(255,255,255,.08);border-radius:${px(5)};padding:${u(6)} ${u(8)};box-shadow:0 3px 8px rgba(0,0,0,.5)}
 .co-hud .co-hero h2{font-weight:600}
 .co-hud .co-special{background:none;box-shadow:none;text-shadow:none;padding:0;border:0}
 .co-hud .co-special b{color:var(--locked-text);text-shadow:none}
@@ -113,8 +113,8 @@ content:"";position:absolute;inset:0;pointer-events:none;border-radius:inherit;b
 .co-hud .co-quick-off .co-side-lamp{box-shadow:0 0 0 2px #3a2a22}
 
 /* Selection: CRT with terminal text; an enemy turns the glass red. */
-.co-hud .co-sel-glass{border:1px solid #05070a;border-radius:6px;box-shadow:inset 0 0 18px rgba(0,0,0,.85),0 0 0 3px #2a2d21}
-.co-hud .co-selection h2{font-family:var(--font-term);letter-spacing:.2em;color:var(--phos-500);font-size:${font(13)}}
+.co-hud .co-sel-glass{border:1px solid #05070a;border-radius:${px(6)};box-shadow:inset 0 0 18px rgba(0,0,0,.85),0 0 0 3px #2a2d21}
+.co-hud .co-selection h2{font-family:var(--font-term);letter-spacing:.2em;color:var(--phos-500);font-size:${font(11)}}
 .co-hud .co-unit-name{font-family:var(--font-term);font-weight:700;letter-spacing:.02em}
 .co-hud .co-unit-meta,.co-hud .co-unit-detail{font-family:var(--font-term);color:var(--phos-500);opacity:.82}
 .co-hud .co-unit-note{font-family:var(--font-term);color:var(--amber-700);text-shadow:0 0 5px var(--amber-glow)}
@@ -123,7 +123,7 @@ content:"";position:absolute;inset:0;pointer-events:none;border-radius:inherit;b
 .co-hud .co-selection .co-hp,.co-hud .co-selection .co-xp{background:#04100a;border:1px solid #0b2a14;border-radius:1px}
 .co-hud .co-hp>span{background:repeating-linear-gradient(90deg,#7dff6a 0 5px,#04100a 5px 6px);box-shadow:0 0 6px var(--phos-glow)}
 .co-hud .co-hp.co-low>span{background:repeating-linear-gradient(90deg,#ff6a5a 0 5px,#2a0a08 5px 6px)}
-.co-hud .co-cell{background:linear-gradient(180deg,#0e1f12,#08140b);border:1px solid #0b2a14;border-radius:2px;color:var(--phos-500);font:11px/1.3 var(--font-term)}
+.co-hud .co-cell{background:linear-gradient(180deg,#0e1f12,#08140b);border:1px solid #0b2a14;border-radius:2px;color:var(--phos-500);font:${fpx(11)}/1.3 var(--font-term)}
 .co-hud .co-cell:hover{background:#12301a;border-color:var(--phos-700)}
 .co-hud .co-selection-enemy .co-sel-glass{color:#ff8f85;text-shadow:0 0 5px rgba(255,90,70,.55);background:var(--vignette),linear-gradient(180deg,#2a0d0a,#150504)}
 .co-hud .co-selection-enemy h2,.co-hud .co-selection-enemy .co-unit-meta,.co-hud .co-selection-enemy .co-unit-detail{color:#ff8f85}
@@ -146,7 +146,7 @@ content:"";position:absolute;inset:0;pointer-events:none;border-radius:inherit;b
 .co-hud .co-roster-list{background:linear-gradient(180deg,var(--olive),var(--olive-lo));border:1px solid #14150d;border-radius:3px;box-shadow:0 3px 8px rgba(0,0,0,.55)}
 .co-hud .co-building-buttons{background:linear-gradient(180deg,var(--olive),var(--olive-lo));border:1px solid #14150d;border-bottom:0;border-radius:4px 4px 0 0}
 .co-hud .co-building-btn{font-family:var(--font-ui);color:var(--phos-500);text-shadow:0 0 4px var(--phos-glow);
-background:var(--vignette),linear-gradient(180deg,#123a1a,#082410);border:2px solid #3b3f2f;border-radius:6px;box-shadow:inset 0 0 8px rgba(0,0,0,.7)}
+background:var(--vignette),linear-gradient(180deg,#123a1a,#082410);border:2px solid #3b3f2f;border-radius:${px(6)};box-shadow:inset 0 0 8px rgba(0,0,0,.7)}
 .co-hud .co-building-btn:hover{background:var(--vignette),linear-gradient(180deg,#184a22,#0b2e14)}
 .co-hud .co-building-btn.co-ready{border-color:var(--amber-500)}
 .co-hud .co-building-btn.co-busy{border-color:#6b6e58}
@@ -173,7 +173,7 @@ background:var(--vignette),linear-gradient(180deg,#123a1a,#082410);border:2px so
 .co-hud .co-key-plate[aria-pressed="true"]{color:var(--amber-700);text-shadow:0 0 5px var(--amber-glow);border-color:var(--amber-500)}
 
 /* Buttons: green phosphor label, amber when active, dim when disabled. */
-.co-hud .co-btn{position:relative;font-family:var(--font-ui);font-size:13px;font-weight:600;letter-spacing:.02em;color:var(--phos-500);
+.co-hud .co-btn{position:relative;font-family:var(--font-ui);font-size:${fpx(13)};font-weight:600;letter-spacing:.02em;color:var(--phos-500);
 background:linear-gradient(180deg,#3a4132,#252b1e);border:1px solid #0d100a;border-radius:4px;text-shadow:0 0 4px var(--phos-glow);
 box-shadow:inset 0 1px 0 rgba(255,255,255,.12),inset 0 -2px 0 rgba(0,0,0,.4),0 2px 3px rgba(0,0,0,.5)}
 .co-hud .co-btn:hover:not(:disabled){background:linear-gradient(180deg,#465039,#2e3625)}
@@ -181,7 +181,7 @@ box-shadow:inset 0 1px 0 rgba(255,255,255,.12),inset 0 -2px 0 rgba(0,0,0,.4),0 2
 .co-hud .co-btn[aria-pressed="true"]{color:var(--amber-700);border-color:var(--amber-500);text-shadow:0 0 5px var(--amber-glow);
 background:linear-gradient(180deg,#4a3a18,#2b2210);box-shadow:inset 0 0 8px rgba(244,166,42,.35),0 0 8px rgba(244,166,42,.35)}
 .co-hud .co-btn:disabled{color:var(--locked-text);text-shadow:none;opacity:.55;background:linear-gradient(180deg,#34332b,#25241e)}
-.co-hud .co-key{font:700 11px/15px var(--font-ui);color:var(--amber-700);background:#1c150a;border:1px solid #5a4318;border-radius:2px;padding:0 4px;min-width:17px;text-align:center;text-shadow:none}
+.co-hud .co-key{font:700 ${fpx(11)}/1.35 var(--font-ui);color:var(--amber-700);background:#1c150a;border:1px solid #5a4318;border-radius:2px;padding:0 4px;min-width:${px(17)};text-align:center;text-shadow:none}
 .co-hud .co-btn.co-danger{color:var(--ink);text-shadow:none;background:linear-gradient(180deg,#8a2a22,#561612);border-color:#ff7a6a}
 .co-hud .co-btn.co-danger:hover:not(:disabled){background:linear-gradient(180deg,#a3342b,#681a15)}
 .co-hud .co-top-right .co-btn{background:rgba(13,15,17,.82);border:1px solid rgba(255,255,255,.1);color:var(--ink);text-shadow:none;box-shadow:none;font-weight:500}
@@ -197,10 +197,10 @@ background:linear-gradient(180deg,#4a3a18,#2b2210);box-shadow:inset 0 0 8px rgba
 .co-hud .co-cost.co-full{color:var(--danger-text)}
 
 /* Targeting and placement strip, with the reason as a paper chip. */
-.co-hud .co-targeting,.co-hud .co-hint{border-radius:3px;font-weight:600;font-size:15px;
+.co-hud .co-targeting,.co-hud .co-hint{border-radius:3px;font-weight:600;font-size:${fpx(15)};
 background:linear-gradient(180deg,#16140a,#0b0a05);border:1px solid #5a4318;color:var(--amber-700);text-shadow:0 0 6px var(--amber-glow)}
 .co-hud .co-hint{color:var(--danger-text);border-color:#6a2a22;text-shadow:0 0 6px rgba(255,90,70,.5)}
-.co-hud .co-placement-reason{display:inline-block;margin-left:4px;padding:0 8px;border-radius:2px;background:linear-gradient(180deg,#e6dcbc,#c9bd96);
+.co-hud .co-placement-reason{display:inline-block;margin-left:4px;padding:0 ${px(8)};border-radius:2px;background:linear-gradient(180deg,#e6dcbc,#c9bd96);
 color:var(--paper-ink);font-weight:700;text-shadow:none;box-shadow:0 1px 2px rgba(0,0,0,.6)}
 
 /* Perk panel and the perk badge. */
@@ -208,7 +208,7 @@ color:var(--paper-ink);font-weight:700;text-shadow:none;box-shadow:0 1px 2px rgb
 .co-hud .co-perk-badge:hover:not(:disabled){background:linear-gradient(180deg,#ffe0a0,#e6a424)}
 .co-hud .co-revive{background:linear-gradient(180deg,#2e6a3a,#1a3d22)}
 .co-hud .co-perk-panel{background:linear-gradient(180deg,var(--plate-700),var(--plate-900));border:2px solid var(--amber-500);border-radius:4px;box-shadow:0 4px 12px rgba(0,0,0,.7)}
-.co-hud .co-perk-title{color:var(--amber-700);font-size:15px;text-shadow:0 0 5px var(--amber-glow)}
+.co-hud .co-perk-title{color:var(--amber-700);font-size:${fpx(15)};text-shadow:0 0 5px var(--amber-glow)}
 .co-hud .co-perk-name{color:var(--phos-500)}
 .co-hud .co-perk-effect{color:var(--ink)}
 .co-hud .co-perk-req{color:var(--phos-500)}
@@ -225,20 +225,20 @@ color:var(--paper-ink);font-weight:700;text-shadow:none;box-shadow:0 1px 2px rgb
 .co-hud .co-card-cost.co-full{color:var(--danger-text)}
 .co-hud .co-card-effects{color:var(--act-dim)}
 .co-hud .co-card-unlocks{color:var(--locked-text)}
-.co-hud .co-card-progress{height:8px;background:#04100a;border:1px solid #2a2010}
+.co-hud .co-card-progress{height:${px(8)};background:#04100a;border:1px solid #2a2010}
 .co-hud .co-card-progress>span{background:var(--hazard)}
 .co-hud .co-card-notice{background:#2a1a0a;color:var(--amber-700);border:1px solid #5a4318}
 
 /* Toasts, banners, dialog, lobby. */
-.co-hud .co-toast{font-family:var(--font-ui);font-size:14px;letter-spacing:.03em;border-radius:3px;text-shadow:none;color:var(--ink)}
+.co-hud .co-toast{font-family:var(--font-ui);font-size:${fpx(14)};letter-spacing:.03em;border-radius:3px;text-shadow:none;color:var(--ink)}
 .co-hud .co-toast-attack{background:linear-gradient(180deg,#8a2a22,#4a1410);border-color:#ff7a6a}
 .co-hud .co-toast-settlerLost{background:linear-gradient(180deg,#7a5412,#43300a);border-color:var(--amber-500)}
 .co-hud .co-toast-claimLost{background:linear-gradient(180deg,#5a3a7a,#32204a);border-color:#ba68c8}
 .co-hud .co-toast-dominance{background:linear-gradient(180deg,#7a4a12,#43280a);border-color:#ff8a65}
-.co-hud .co-banner{font-size:15px}
+.co-hud .co-banner{font-size:${fpx(15)}}
 .co-hud .co-banner.co-desync{background:linear-gradient(180deg,#6a1a14,#3a0d0a);border-color:#ff5252}
 .co-hud .co-banner.co-stall{background:linear-gradient(180deg,#5a4510,#33270a);border-color:var(--amber-500)}
-.co-hud .co-dialog{font-size:16px}
+.co-hud .co-dialog{font-size:${fpx(16)}}
 .co-hud .co-lobby h2{color:var(--act-dim)}
 .co-hud .co-tag{color:var(--locked-text);border-color:var(--edge-dark)}
 .co-hud .co-ready{color:var(--phos-500)}

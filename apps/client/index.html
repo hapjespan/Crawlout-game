@@ -32,9 +32,9 @@
         pointer-events: none;
       }
       /* Compact frame stats, top right next to the "Opgeven" button (net/perfBadge.ts). */
-      /* One layout unit of the HUD (a 1024x572 pixel of the design, packages/ui/src/units.ts); Opgeven is 48 wide at 4 from the edge. */
+      /* One layout unit of the HUD (a 1024x572 pixel of the design scaled by HUD_SCALE 0.64, packages/ui/src/units.ts); Opgeven is 48 wide at 4 from the edge. */
       #stage {
-        --u: min(calc(100vh / 572), calc(100vw / 1024));
+        --u: calc(min(calc(100vh / 572), calc(100vw / 1024)) * 0.64);
       }
       #perf {
         position: absolute;

@@ -3,6 +3,7 @@ import { act } from 'preact/test-utils';
 import type { PlayerStatus } from '@crawlout/protocol';
 import { mountHud } from './index.js';
 import { HUD_CSS } from './styles.js';
+import { HUD_SCALE } from './units.js';
 import { portraitOfEntity, portraitOfGroup } from './portraits.js';
 import type { BuildingButton, HudDeps, HudHandle, RosterGroup, SelectedEntity } from './index.js';
 
@@ -227,9 +228,13 @@ describe('portretten', () => {
 });
 
 describe('indeling in eenheden van het ontwerp', () => {
-  it('legt de HUD uit in units van 1024x572 en houdt tekst op minstens 11 px', () => {
-    expect(HUD_CSS).toContain('--u:min(calc(100vh / 572), calc(100vw / 1024))');
+  it('legt de HUD uit in units van 1024x572, geschaald naar 15% van het scherm, en houdt tekst op minstens 11 px', () => {
+    expect(HUD_CSS).toContain(
+      `--u:calc(min(calc(100vh / 572), calc(100vw / 1024)) * ${HUD_SCALE})`,
+    );
     expect(HUD_CSS).toContain('max(11px,');
+    // The tallest bottom panel (the unit bar, 134 units of 572) stays within 15% of a 16:9 window.
+    expect((134 * HUD_SCALE) / 572).toBeLessThanOrEqual(0.15);
   });
 
   it('geeft de kaarten genoeg breedte voor een hele naam en breekt niet middenin', () => {
