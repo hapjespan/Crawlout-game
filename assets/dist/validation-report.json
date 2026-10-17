@@ -1415,6 +1415,724 @@
       ]
     },
     {
+      "id": "raider_armor_steel",
+      "source": "raiders.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "lodTriangles": [
+        280,
+        108,
+        66
+      ],
+      "materials": [
+        "bone_stone",
+        "leather_dark",
+        "opening",
+        "rust_metal",
+        "scrap_metal",
+        "scrap_metal_dark",
+        "scrap_metal_red"
+      ],
+      "sizeM": [
+        0.76,
+        0.735,
+        0.355
+      ]
+    },
+    {
+      "id": "raider_body_hound",
+      "source": "raiders.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "rigid-unit",
+      "lodTriangles": [
+        438,
+        228,
+        172
+      ],
+      "materials": [
+        "bone_stone",
+        "leather_dark",
+        "leather_tan",
+        "lens_red",
+        "opening",
+        "scrap_metal_dark",
+        "scrap_metal_red",
+        "team_trim"
+      ],
+      "sizeM": [
+        0.32,
+        0.77,
+        1.358025
+      ]
+    },
+    {
+      "id": "raider_body_human",
+      "source": "characters/dweller_body_human.glb",
+      "errors": [],
+      "warnings": [],
+      "kind": "character",
+      "sourceTriangles": 13744,
+      "lodTriangles": [
+        3598,
+        1348,
+        492
+      ],
+      "sourceBones": 53,
+      "bones": 20,
+      "prunedBones": [
+        "root",
+        "DEF-f_index.01.L",
+        "DEF-f_index.02.L",
+        "DEF-f_index.03.L",
+        "DEF-f_middle.01.L",
+        "DEF-f_middle.02.L",
+        "DEF-f_middle.03.L",
+        "DEF-f_pinky.01.L",
+        "DEF-f_pinky.02.L",
+        "DEF-f_pinky.03.L",
+        "DEF-f_ring.01.L",
+        "DEF-f_ring.02.L",
+        "DEF-f_ring.03.L",
+        "DEF-thumb.01.L",
+        "DEF-thumb.02.L",
+        "DEF-thumb.03.L",
+        "DEF-f_index.01.R",
+        "DEF-f_index.02.R",
+        "DEF-f_index.03.R",
+        "DEF-f_middle.01.R",
+        "DEF-f_middle.02.R",
+        "DEF-f_middle.03.R",
+        "DEF-f_pinky.01.R",
+        "DEF-f_pinky.02.R",
+        "DEF-f_pinky.03.R",
+        "DEF-f_ring.01.R",
+        "DEF-f_ring.02.R",
+        "DEF-f_ring.03.R",
+        "DEF-thumb.01.R",
+        "DEF-thumb.02.R",
+        "DEF-thumb.03.R",
+        "DEF-toe.L",
+        "DEF-toe.R"
+      ],
+      "channelsDropped": 4554,
+      "clipsKept": {
+        "Death01": "death",
+        "Fixing_Kneeling": "build",
+        "Idle_Loop": "idle",
+        "Interact": "gather",
+        "Jog_Fwd_Loop": "run",
+        "Pistol_Shoot": "attack1",
+        "Punch_Cross": "attack2",
+        "Walk_Loop": "walk"
+      },
+      "clipsDropped": [
+        "A_TPose",
+        "Crouch_Fwd_Loop",
+        "Crouch_Idle_Loop",
+        "Dance_Loop",
+        "Driving_Loop",
+        "Hit_Chest",
+        "Hit_Head",
+        "Idle_Talking_Loop",
+        "Idle_Torch_Loop",
+        "Jump_Land",
+        "Jump_Loop",
+        "Jump_Start",
+        "PickUp_Table",
+        "Pistol_Aim_Down",
+        "Pistol_Aim_Neutral",
+        "Pistol_Aim_Up",
+        "Pistol_Idle_Loop",
+        "Pistol_Reload",
+        "Punch_Enter",
+        "Punch_Jab",
+        "Push_Loop",
+        "Roll",
+        "Roll_RM",
+        "Sitting_Enter",
+        "Sitting_Exit",
+        "Sitting_Idle_Loop",
+        "Sitting_Talking_Loop",
+        "Spell_Simple_Enter",
+        "Spell_Simple_Exit",
+        "Spell_Simple_Idle_Loop",
+        "Spell_Simple_Shoot",
+        "Sprint_Loop",
+        "Swim_Fwd_Loop",
+        "Swim_Idle_Loop",
+        "Sword_Attack",
+        "Sword_Attack_RM",
+        "Sword_Idle",
+        "Walk_Formal_Loop"
+      ],
+      "extraUvSetsRemoved": 2,
+      "scale": null
+    },
+    {
+      "id": "raider_building_cage",
+      "source": "raiders.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "building",
+      "lodTriangles": [
+        1710,
+        740,
+        232
+      ],
+      "materials": [
+        "bone_stone",
+        "canvas_tent",
+        "opening",
+        "rust_dark",
+        "rust_metal",
+        "rust_roof",
+        "scrap_metal_dark",
+        "team_trim",
+        "tyre_rubber",
+        "wood_dark"
+      ],
+      "sizeM": [
+        9.190451,
+        5.75,
+        8.918797
+      ]
+    },
+    {
+      "id": "raider_building_camp",
+      "source": "raiders.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "building",
+      "lodTriangles": [
+        2423,
+        990,
+        260
+      ],
+      "materials": [
+        "bone_stone",
+        "canvas_dark",
+        "canvas_red",
+        "canvas_tent",
+        "concrete",
+        "lens_amber",
+        "lens_red",
+        "opening",
+        "rust_dark",
+        "rust_metal",
+        "rust_roof",
+        "scrap_metal",
+        "scrap_metal_black",
+        "scrap_metal_dark",
+        "scrap_metal_red",
+        "tank_toxic",
+        "team_trim",
+        "tyre_rubber",
+        "wood_dark",
+        "wood_plank"
+      ],
+      "sizeM": [
+        17.3,
+        9.25,
+        16.743
+      ]
+    },
+    {
+      "id": "raider_building_chemlab",
+      "source": "raiders.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "building",
+      "lodTriangles": [
+        920,
+        426,
+        132
+      ],
+      "materials": [
+        "bone_stone",
+        "concrete",
+        "concrete_soot",
+        "lens_amber",
+        "opening",
+        "rust_dark",
+        "rust_metal",
+        "scrap_metal",
+        "scrap_metal_dark",
+        "scrap_metal_hazard",
+        "tank_toxic",
+        "tank_yellow",
+        "team_trim",
+        "wood_dark"
+      ],
+      "sizeM": [
+        10.75,
+        8.5,
+        8.3
+      ]
+    },
+    {
+      "id": "raider_building_claim_post",
+      "source": "raiders.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "building",
+      "lodTriangles": [
+        605,
+        218,
+        118
+      ],
+      "materials": [
+        "bone_stone",
+        "lens_amber",
+        "opening",
+        "rust_dark",
+        "rust_metal",
+        "scrap_metal",
+        "scrap_metal_black",
+        "scrap_metal_dark",
+        "scrap_metal_red",
+        "team_trim",
+        "wood_dark",
+        "wood_plank"
+      ],
+      "sizeM": [
+        3,
+        6.85,
+        3
+      ]
+    },
+    {
+      "id": "raider_building_garage",
+      "source": "raiders.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "building",
+      "lodTriangles": [
+        1618,
+        470,
+        152
+      ],
+      "materials": [
+        "bone_stone",
+        "lens_amber",
+        "lens_glass",
+        "opening",
+        "rust_dark",
+        "rust_metal",
+        "rust_roof",
+        "scrap_metal",
+        "scrap_metal_black",
+        "scrap_metal_dark",
+        "scrap_metal_hazard",
+        "scrap_metal_red",
+        "tank_toxic",
+        "tank_yellow",
+        "team_trim",
+        "tyre_rubber",
+        "wood_dark"
+      ],
+      "sizeM": [
+        17.15,
+        8.2,
+        13.05
+      ]
+    },
+    {
+      "id": "raider_building_market",
+      "source": "raiders.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "building",
+      "lodTriangles": [
+        1752,
+        580,
+        276
+      ],
+      "materials": [
+        "bone_stone",
+        "canvas_black",
+        "canvas_red",
+        "opening",
+        "rust_metal",
+        "rust_roof",
+        "scrap_metal_dark",
+        "tank_toxic",
+        "tank_yellow",
+        "team_trim",
+        "tyre_rubber",
+        "wood_dark",
+        "wood_plank"
+      ],
+      "sizeM": [
+        13.45,
+        6.45,
+        10.99
+      ]
+    },
+    {
+      "id": "raider_building_mg_nest",
+      "source": "raiders.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "building",
+      "lodTriangles": [
+        1411,
+        296,
+        208
+      ],
+      "materials": [
+        "bone_stone",
+        "opening",
+        "rust_dark",
+        "rust_roof",
+        "sandbag_canvas",
+        "scrap_metal",
+        "scrap_metal_dark",
+        "tank_yellow",
+        "team_trim",
+        "wood_dark",
+        "wood_plank"
+      ],
+      "sizeM": [
+        4.82,
+        3.55,
+        4.891783
+      ]
+    },
+    {
+      "id": "raider_building_tent",
+      "source": "raiders.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "building",
+      "lodTriangles": [
+        469,
+        312,
+        104
+      ],
+      "materials": [
+        "bone_stone",
+        "canvas_black",
+        "canvas_dark",
+        "canvas_red",
+        "canvas_tent",
+        "opening",
+        "rust_dark",
+        "rust_metal",
+        "scrap_metal_dark",
+        "scrap_metal_red",
+        "team_trim",
+        "wood_dark",
+        "wood_plank"
+      ],
+      "sizeM": [
+        7.238806,
+        4.45,
+        5.101846
+      ]
+    },
+    {
+      "id": "raider_gear_chem_tank",
+      "source": "raiders.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "lodTriangles": [
+        424,
+        288,
+        124
+      ],
+      "materials": [
+        "bone_stone",
+        "leather_dark",
+        "opening",
+        "scrap_metal",
+        "scrap_metal_dark",
+        "tank_toxic",
+        "tank_yellow"
+      ],
+      "sizeM": [
+        0.518033,
+        0.74,
+        0.265194
+      ]
+    },
+    {
+      "id": "raider_gear_shackles",
+      "source": "raiders.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "lodTriangles": [
+        220,
+        136,
+        76
+      ],
+      "materials": [
+        "leather_dark",
+        "rust_metal",
+        "scrap_metal_dark"
+      ],
+      "sizeM": [
+        0.41,
+        0.695,
+        0.185
+      ]
+    },
+    {
+      "id": "raider_gear_warlord_helm",
+      "source": "raiders.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "lodTriangles": [
+        282,
+        110,
+        60
+      ],
+      "materials": [
+        "bone_stone",
+        "canvas_red",
+        "opening",
+        "scrap_metal",
+        "scrap_metal_dark",
+        "scrap_metal_red"
+      ],
+      "sizeM": [
+        0.59706,
+        0.405,
+        0.342832
+      ]
+    },
+    {
+      "id": "raider_tool_hammer",
+      "source": "raiders.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "lodTriangles": [
+        122,
+        56,
+        28
+      ],
+      "materials": [
+        "canvas_tent",
+        "rust_metal",
+        "scrap_metal_dark",
+        "scrap_metal_red",
+        "wood_plank"
+      ],
+      "sizeM": [
+        0.37,
+        0.13,
+        0.885
+      ]
+    },
+    {
+      "id": "raider_tool_shovel",
+      "source": "raiders.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "lodTriangles": [
+        76,
+        48,
+        29
+      ],
+      "materials": [
+        "rust_dark",
+        "rust_metal",
+        "wood_dark",
+        "wood_plank"
+      ],
+      "sizeM": [
+        0.2,
+        0.051962,
+        1.4975
+      ]
+    },
+    {
+      "id": "raider_vehicle_buggy",
+      "source": "raiders.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "rigid-unit",
+      "lodTriangles": [
+        1584,
+        712,
+        264
+      ],
+      "materials": [
+        "bone_stone",
+        "canvas_tent",
+        "leather_dark",
+        "opening",
+        "rust_dark",
+        "rust_metal",
+        "scrap_metal",
+        "scrap_metal_black",
+        "scrap_metal_dark",
+        "scrap_metal_red",
+        "tank_yellow",
+        "team_trim",
+        "tyre_rubber",
+        "wood_dark"
+      ],
+      "sizeM": [
+        2.37,
+        2.5,
+        3.76
+      ]
+    },
+    {
+      "id": "raider_weapon_chem_sprayer",
+      "source": "raiders.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "lodTriangles": [
+        180,
+        116,
+        100
+      ],
+      "materials": [
+        "leather_dark",
+        "scrap_metal",
+        "scrap_metal_dark",
+        "tank_toxic",
+        "tank_yellow",
+        "wood_dark"
+      ],
+      "sizeM": [
+        0.165437,
+        0.724129,
+        1.013009
+      ]
+    },
+    {
+      "id": "raider_weapon_molotov",
+      "source": "raiders.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "lodTriangles": [
+        100,
+        66,
+        44
+      ],
+      "materials": [
+        "canvas_red",
+        "canvas_tent",
+        "lens_amber",
+        "lens_glass",
+        "lens_red"
+      ],
+      "sizeM": [
+        0.084,
+        0.48,
+        0.084
+      ]
+    },
+    {
+      "id": "raider_weapon_net_whip",
+      "source": "raiders.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "lodTriangles": [
+        392,
+        114,
+        46
+      ],
+      "materials": [
+        "canvas_dark",
+        "leather_dark",
+        "rust_dark",
+        "rust_metal",
+        "wood_dark"
+      ],
+      "sizeM": [
+        0.498,
+        0.3522,
+        1.422517
+      ]
+    },
+    {
+      "id": "raider_weapon_pipe_gun",
+      "source": "raiders.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "lodTriangles": [
+        188,
+        80,
+        52
+      ],
+      "materials": [
+        "rust_dark",
+        "rust_metal",
+        "scrap_metal",
+        "scrap_metal_dark",
+        "scrap_metal_red",
+        "wood_dark",
+        "wood_plank"
+      ],
+      "sizeM": [
+        0.076,
+        0.232321,
+        1.17
+      ]
+    },
+    {
+      "id": "raider_weapon_scrap_revolver",
+      "source": "raiders.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "lodTriangles": [
+        196,
+        84,
+        40
+      ],
+      "materials": [
+        "bone_stone",
+        "opening",
+        "rust_metal",
+        "scrap_metal",
+        "scrap_metal_dark",
+        "scrap_metal_red",
+        "wood_dark"
+      ],
+      "sizeM": [
+        0.08,
+        0.29,
+        0.5525
+      ]
+    },
+    {
+      "id": "raider_weapon_spiked_club",
+      "source": "raiders.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "lodTriangles": [
+        169,
+        109,
+        44
+      ],
+      "materials": [
+        "rust_metal",
+        "scrap_metal_dark",
+        "wood_dark"
+      ],
+      "sizeM": [
+        0.26,
+        0.26,
+        1.05
+      ]
+    },
+    {
       "id": "reed001",
       "source": "props/Reed001.glb",
       "errors": [],

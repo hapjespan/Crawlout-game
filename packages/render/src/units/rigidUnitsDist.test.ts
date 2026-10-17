@@ -31,7 +31,10 @@ describe('the robots in assets/dist', () => {
     vi.stubGlobal('self', globalThis);
     vi.stubGlobal('createImageBitmap', async () => ({ width: 64, height: 64, close() {} }));
     const loader = await distLoader();
-    const rigidIds = [...(await loader.rigidEntries(URL_BASE)).keys()].sort();
+    const allRigid = [...(await loader.rigidEntries(URL_BASE)).keys()].sort();
+    // The Raider buggy and hound are rigid units too (raiders.json); this test is about the Dweller robots.
+    const rigidIds = allRigid.filter((id) => id.startsWith('dweller_'));
+    expect(allRigid).toEqual(expect.arrayContaining(['raider_body_hound', 'raider_vehicle_buggy']));
     expect(rigidIds).toEqual([
       'dweller_robot_drone',
       'dweller_robot_guard',

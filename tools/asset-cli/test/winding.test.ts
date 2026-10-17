@@ -20,12 +20,16 @@ const variants = parseVariants(
   JSON.parse(readFileSync(join(repo, 'assets/src/buildings/variants.json'), 'utf8')),
 );
 const robots = loadRobotsConfig(join(repo, 'assets/src/robots.json'));
+const raiders = loadRobotsConfig(join(repo, 'assets/src/raiders.json'));
 
 type Shape = Exclude<VariantPart, HousePart>;
 const allVariants = [
   ...Object.entries(variants.variants),
   ...Object.entries(robots.units),
   ...Object.entries(robots.buildings),
+  ...Object.entries(raiders.units),
+  ...Object.entries(raiders.buildings),
+  ...Object.entries(raiders.attachments),
 ];
 
 /** Triangles whose geometric normal opposes the normals stored on their vertices. */
@@ -73,9 +77,10 @@ describe('outward winding of the shape parts', () => {
       for (const part of shapes) {
         const mesh = placeShape(part);
         expect(windingErrors(mesh), `${id} ${part.type} ${part.material}`).toBe(0);
-        // Closed solids only: open parts (no bottom) and thin sheets have no meaningful volume.
+        // Closed solids only: open parts (no bottom), domes (half a sphere) and thin sheets have no meaningful volume.
         const closed =
           !('open' in part && part.open) &&
+          !('half' in part && part.half === 'top') &&
           ['box', 'cylinder', 'cone', 'sphere'].includes(part.type);
         if (closed) expect(signedVolume(mesh), `${id} ${part.type}`).toBeGreaterThan(0);
       }
@@ -83,7 +88,7 @@ describe('outward winding of the shape parts', () => {
 });
 
 describe('outward winding in assets/dist', () => {
-  it('every triangle of every building and robot LOD faces the way its vertex normals point', async () => {
+  it('every triangle of every building, robot and Raider LOD faces the way its vertex normals point', async () => {
     await MeshoptDecoder.ready;
     const io = new NodeIO()
       .registerExtensions([EXTMeshoptCompression])

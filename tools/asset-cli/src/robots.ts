@@ -1,7 +1,11 @@
-// Dweller robots (assets/src/robots.json): rigid units and two extra buildings, procedural hard-surface models on the real
-// scale (character 1.8 m), built the same way as the building variants (src/buildings.ts) from boxes, chamfered boxes,
-// cylinders, cones and the shapes of src/shapes.ts (prism, track, corrugated sheet, tube, sphere). The cylinders and cones
-// come from shapes.ts (outward winding).
+// Procedural models on the real scale (character 1.8 m) from a config with the groups `units`, `buildings` and optional
+// `attachments`: the Dweller robots (assets/src/robots.json: rigid units and two extra buildings) and the Raiders
+// (assets/src/raiders.json: buildings, a buggy, a hound and the hand-held props and gear of the human loadouts). Built the
+// same way as the building variants (src/buildings.ts) from boxes, chamfered boxes, cylinders, cones and the shapes of
+// src/shapes.ts (prism, track, corrugated sheet, tube, sphere). The cylinders and cones come from shapes.ts (outward
+// winding).
+// An attachment (kind 'prop', teamMask 'none') is a small rigid piece that render hangs on a socket of a skinned body: a
+// weapon, a tool, a pack, a helm, a plate set. Its origin is the point it is held or worn at (`anchor`), see README.
 // A rigid unit (kind 'rigid-unit') has no skeleton and no animations: movement is a transform of the whole model.
 // The surface kind of a part is its material name (render: surfaceKindOfMaterial), the team band is `team_trim`.
 // All shape numbers live in robots.json; this module validates and writes the LOD GLBs and the manifest entries.
@@ -43,12 +47,28 @@ export const robotBuildingSchema = variantSchema.extend({
   heightM: range,
 });
 
+/** Where the origin of an attachment sits: the grip of a weapon or tool, the back or head socket, or the body origin. */
+export const ATTACHMENT_ANCHORS = ['grip', 'back', 'head', 'body'] as const;
+
+/**
+ * Wapen, gereedschap, rugzak, helm of pantser voor een geskind karakter: een star prop (geen team-materiaal nodig, het
+ * team zit in het lichaam). De maten zijn bereiken in meters (lengte en dikte volgen het echte voorwerp naast de 1,8 m
+ * van het poppetje); de oorsprong volgt `anchor`.
+ */
+export const robotAttachmentSchema = variantSchema.omit({ footprint: true }).extend({
+  anchor: z.enum(ATTACHMENT_ANCHORS),
+  heightM: range,
+  widthM: range,
+  depthM: range,
+});
+
 export const robotsSchema = z
   .object({
     version: z.literal(ROBOTS_VERSION),
     flatMaterials: z.record(flatMaterialSchema),
     units: z.record(robotUnitSchema),
     buildings: z.record(robotBuildingSchema),
+    attachments: z.record(robotAttachmentSchema).default({}),
   })
   .superRefine((config, ctx) => {
     const issue = (message: string, path: (string | number)[]): void =>
@@ -56,6 +76,7 @@ export const robotsSchema = z
     const groups: [string, Record<string, Pick<VariantDef, 'parts' | 'colors'>>][] = [
       ['units', config.units],
       ['buildings', config.buildings],
+      ['attachments', config.attachments],
     ];
     for (const [group, entries] of groups)
       for (const [id, variant] of Object.entries(entries)) {
@@ -68,11 +89,29 @@ export const robotsSchema = z
         for (const name of Object.keys(variant.colors ?? {}))
           if (!(name in config.flatMaterials))
             issue(`kleur voor onbekend effen materiaal "${name}"`, [group, id, 'colors', name]);
-        if (!variant.parts.some((p) => 'material' in p && /team/i.test(p.material)))
+        const needsTeam = group !== 'attachments';
+        if (needsTeam && !variant.parts.some((p) => 'material' in p && /team/i.test(p.material)))
           issue('geen team-materiaal in de onderdelen (naam bevat "team")', [group, id, 'parts']);
+        if (!needsTeam && variant.parts.some((p) => 'material' in p && /team/i.test(p.material)))
+          issue('een aanhangsel heeft geen team-materiaal (het team zit in het lichaam)', [
+            group,
+            id,
+            'parts',
+          ]);
       }
-    for (const id of Object.keys(config.units))
-      if (id in config.buildings) issue(`id "${id}" staat bij units en buildings`, ['units', id]);
+    const groupOf = (id: string): string[] =>
+      [
+        id in config.units && 'units',
+        id in config.buildings && 'buildings',
+        id in config.attachments && 'attachments',
+      ].filter((g): g is string => typeof g === 'string');
+    for (const id of new Set([
+      ...Object.keys(config.units),
+      ...Object.keys(config.buildings),
+      ...Object.keys(config.attachments),
+    ]))
+      if (groupOf(id).length > 1)
+        issue(`id "${id}" staat bij ${groupOf(id).join(' en ')}`, [groupOf(id)[0]!, id]);
   });
 
 export type RobotsConfig = z.infer<typeof robotsSchema>;
@@ -95,6 +134,8 @@ function asVariants(config: RobotsConfig): VariantsConfig {
   for (const [id, unit] of Object.entries(config.units))
     variants[id] = { ...unit, footprint: { w: 1, h: 1 } };
   for (const [id, building] of Object.entries(config.buildings)) variants[id] = building;
+  for (const [id, attachment] of Object.entries(config.attachments))
+    variants[id] = { ...attachment, footprint: { w: 1, h: 1 } };
   return {
     version: 1,
     sources: {},
@@ -149,8 +190,48 @@ export function checkRobotUnit(
   return errors;
 }
 
+/**
+ * Maatcontrole van een aanhangsel op een LOD: lengte, breedte en dikte binnen de bereiken, en de oorsprong op de plek
+ * waar het gedragen wordt (`anchor`): de greep ligt in het model, rug- en hoofdstuk staan achter of boven de socket.
+ * Geen skin en geen teamkleur.
+ */
+export function checkRobotAttachment(
+  lod: BuildingLod,
+  attachment: RobotsConfig['attachments'][string],
+  level: 0 | 1 | 2,
+): string[] {
+  const label = `LOD${level}`;
+  const errors: string[] = [];
+  const scene = lod.document.getRoot().listScenes()[0];
+  if (!scene) return [`${label}: geen scene`];
+  const { min, max } = getBounds(scene);
+  const [w, h, d] = sizeOf(min, max);
+  const slack = level === 0 ? 1 : 0.9;
+  const within = (name: string, value: number, [lo, hi]: [number, number]): void => {
+    if (value < lo * slack || value > hi)
+      errors.push(`${label}: ${name} is ${value.toFixed(2)} m, verwacht ${lo} tot ${hi} m`);
+  };
+  within('hoogte', h, attachment.heightM);
+  within('breedte (x)', w, attachment.widthM);
+  within('lengte (z)', d, attachment.depthM);
+  const pad = 0.03;
+  if (attachment.anchor === 'grip') {
+    const inside = [0, 1, 2].every((k) => min[k]! - pad <= 0 && max[k]! + pad >= 0);
+    if (!inside) errors.push(`${label}: de greep (oorsprong) ligt buiten het model`);
+  } else if (attachment.anchor === 'back') {
+    if (max[2]! > pad) errors.push(`${label}: een rugstuk hoort achter de socket (z <= 0)`);
+  } else if (attachment.anchor === 'head') {
+    if (min[1]! < -0.1) errors.push(`${label}: een hoofdstuk hoort op of boven de socket (y >= 0)`);
+  }
+  if (lod.triangles > BUDGETS.propMaxTris[level])
+    errors.push(
+      `${label} heeft ${lod.triangles} driehoeken, budget ${BUDGETS.propMaxTris[level]}.`,
+    );
+  return errors;
+}
+
 export interface RobotDetails {
-  kind: 'rigid-unit' | 'building';
+  kind: 'rigid-unit' | 'building' | 'prop';
   lodTriangles: number[];
   materials: string[];
   /** Maat van LOD0 in meters (b x h x d), voor het verslag. */
@@ -180,10 +261,15 @@ export async function buildRobots(
 ): Promise<RobotsResult> {
   const result: RobotsResult = { reports: [], entries: [], outputs: new Map() };
   const variants = asVariants(config);
-  const ids = [...Object.keys(config.units), ...Object.keys(config.buildings)].sort();
+  const ids = [
+    ...Object.keys(config.units),
+    ...Object.keys(config.buildings),
+    ...Object.keys(config.attachments),
+  ].sort();
   for (const id of ids) {
     const unit = config.units[id];
     const building = config.buildings[id];
+    const attachment = config.attachments[id];
     const report: RobotsResult['reports'][number] = {
       id,
       source: configSource,
@@ -200,6 +286,8 @@ export async function buildRobots(
         const lod = await finishBuildingLod(generated.document, level);
         if (unit) {
           report.errors.push(...checkRobotUnit(lod, unit, level));
+        } else if (attachment) {
+          report.errors.push(...checkRobotAttachment(lod, attachment, level));
         } else {
           report.errors.push(
             ...checkBuildingDocument(generated.document, building!.footprint, level),
@@ -209,7 +297,7 @@ export async function buildRobots(
               `LOD${level} heeft ${lod.triangles} driehoeken, budget ${BUDGETS.buildingMaxTris[level]}.`,
             );
         }
-        report.errors.push(...validateBuildingDocument(lod.document, level));
+        report.errors.push(...validateBuildingDocument(lod.document, level, !attachment));
         lods.push(lod);
       }
       if (building) {
@@ -231,7 +319,7 @@ export async function buildRobots(
         .filter((name) => /team/i.test(name))
         .sort();
       report.details = {
-        kind: unit ? 'rigid-unit' : 'building',
+        kind: unit ? 'rigid-unit' : attachment ? 'prop' : 'building',
         lodTriangles: lods.map((l) => l.triangles),
         materials,
         sizeM: round6(sizeOf(min, max)),
@@ -239,7 +327,7 @@ export async function buildRobots(
       };
       result.entries.push({
         id,
-        kind: unit ? 'rigid-unit' : 'building',
+        kind: unit ? 'rigid-unit' : attachment ? 'prop' : 'building',
         bounds: { min: round6(min), max: round6(max) },
         lods: lods.map((lod) => ({
           level: lod.level,
@@ -249,14 +337,16 @@ export async function buildRobots(
         sockets: {},
         animations: [],
         boneCount: 0,
-        teamMaterials,
+        ...(attachment ? { teamMask: 'none' as const } : { teamMaterials }),
         ...(unit
           ? {
               rigid: true as const,
               teamMask: 'materialName' as const,
               ...(unit.hover !== undefined ? { hover: unit.hover } : {}),
             }
-          : { footprint: building!.footprint }),
+          : attachment
+            ? {}
+            : { footprint: building!.footprint }),
       });
     } catch (error) {
       report.errors.push(

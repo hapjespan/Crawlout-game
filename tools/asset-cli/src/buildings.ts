@@ -548,8 +548,15 @@ export function checkBuildingDocument(
   return errors;
 }
 
-/** Algemene regels voor een gebouw-document: geen PBR, een team-materiaal, textuurmaat, UV, tris. */
-export function validateBuildingDocument(document: Document, level: 0 | 1 | 2): string[] {
+/**
+ * Algemene regels voor een gebouw-document: geen PBR, een team-materiaal, textuurmaat, UV, tris. Een handheld of
+ * ander aanhangsel (robots.ts, `attachments`) heeft geen team-materiaal nodig: `requireTeam: false`.
+ */
+export function validateBuildingDocument(
+  document: Document,
+  level: 0 | 1 | 2,
+  requireTeam = true,
+): string[] {
   const errors: string[] = [];
   const label = `LOD${level}`;
   const root = document.getRoot();
@@ -571,7 +578,7 @@ export function validateBuildingDocument(document: Document, level: 0 | 1 | 2): 
         `${label}: materiaal "${material.getName()}" heeft ${extra.join(', ')}-textuur; alleen diffuse is toegestaan.`,
       );
   }
-  if (!root.listMaterials().some((m) => /team/i.test(m.getName())))
+  if (requireTeam && !root.listMaterials().some((m) => /team/i.test(m.getName())))
     errors.push(`${label}: geen team-materiaal (naam bevat "team").`);
   for (const size of textureSizes(document))
     if (size.width > BUDGETS.buildingMaxTextureSize || size.height > BUDGETS.buildingMaxTextureSize)
