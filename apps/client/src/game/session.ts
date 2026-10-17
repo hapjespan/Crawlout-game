@@ -206,11 +206,11 @@ export function startSession(
     if (net.ai && !aiRequested && !msg.players.some((p) => p.ai)) {
       aiRequested = true;
       // Only the host (lowest human playerId) may add an AI; the relay answers any other with an error.
-      const mine = msg.players.find((p) => !p.ai)?.faction;
+      // The AI plays Dwellers until the Raider mechanics exist in the sim (phase 2); `?aifaction=` overrides.
+      const wanted = new URLSearchParams(window.location.search).get('aifaction');
       link.send({
         kind: 'addAi',
-        faction:
-          data.factions.find((f) => f.key !== mine)?.key ?? data.factions[0]?.key ?? 'dwellers',
+        faction: data.factions.find((f) => f.key === wanted)?.key ?? 'dwellers',
       });
       return;
     }
