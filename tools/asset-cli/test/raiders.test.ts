@@ -44,7 +44,7 @@ for (const l of loadouts)
 for (const b of dataBuildings) referenced.set(b.visuals.mesh, 'building');
 
 /** The derived body (same mesh and skin as the Dweller body, other colours) is not in raiders.json. */
-const DERIVED = ['raider_body_human'];
+const DERIVED = ['raider_body_human', 'raider_body_slave'];
 const configIds = [
   ...Object.keys(config.units),
   ...Object.keys(config.buildings),
@@ -126,7 +126,7 @@ const size = (e: AssetEntry): [number, number, number] => [
 describe('raiders.json against the Raider data', () => {
   it('has a placeholder for every manifest id the data refers to (the body is derived)', () => {
     expect([...configIds, ...DERIVED].sort()).toEqual([...referenced.keys()].sort());
-    expect(referenced.size).toBe(23);
+    expect(referenced.size).toBe(24);
   });
 
   it('puts each id in the group that matches its slot', () => {
@@ -366,6 +366,45 @@ describe('raider_body_human (derived from the Dweller body)', () => {
     expect(raider.M_Main![0]!).toBeGreaterThan(raider.M_Main![1]! * 2);
   });
 
+  it('carries clothing palettes in the manifest: Raider leather and rust, slave rags with a team band', () => {
+    const slave = entry('raider_body_slave');
+    expect(slave.baked).toEqual(dweller.baked); // the same animation texture, not another copy
+    expect(slave.lods.map((l) => l.path)).toEqual(
+      [0, 1, 2].map((l) => `raider_body_slave/lod${l}.glb`),
+    );
+    expect(dweller.palette).toBeUndefined(); // the Dwellers keep the render default
+    expect(body.palette).toBeDefined();
+    expect(body.palette!.teamZone).toBeUndefined(); // the chest, as for the Dwellers
+    expect(slave.palette).toMatchObject({ teamZone: 'band', farTeam: 0 });
+    const luma = (hex: string | undefined): number => {
+      const v = Number.parseInt(hex!.slice(1), 16);
+      return (0.2126 * (v >> 16) + 0.7152 * ((v >> 8) & 255) + 0.0722 * (v & 255)) / 255;
+    };
+    expect(luma(slave.palette!.jacket)).toBeGreaterThan(luma(body.palette!.jacket) + 0.3);
+    expect(luma(body.palette!.belt)).toBeLessThan(0.15); // black leather
+  });
+
+  it('the manifest schema accepts a palette on a character only, and only #rrggbb', () => {
+    const base = entry('raider_body_human');
+    expect(assetEntrySchema.safeParse({ ...base, palette: { jacket: '#aabbcc' } }).success).toBe(
+      true,
+    );
+    expect(assetEntrySchema.safeParse({ ...base, palette: { jacket: 'red' } }).success).toBe(false);
+    expect(assetEntrySchema.safeParse({ ...base, palette: { cloak: '#aabbcc' } }).success).toBe(
+      false,
+    );
+    expect(
+      assetEntrySchema.safeParse({ ...base, palette: { teamZone: 'band', farTeam: 0 } }).success,
+    ).toBe(true);
+    expect(assetEntrySchema.safeParse({ ...base, palette: { farTeam: 2 } }).success).toBe(false);
+    expect(
+      assetEntrySchema.safeParse({
+        ...entry('raider_weapon_pipe_gun'),
+        palette: { jacket: '#aabbcc' },
+      }).success,
+    ).toBe(false);
+  });
+
   it('the rigmap schema refuses a derive entry without colours or with a bad colour', () => {
     expect(() => parseRigmap({ assets: { x: { derive: [{ id: 'a', colors: {} }] } } })).toThrow();
     expect(() =>
@@ -374,5 +413,17 @@ describe('raider_body_human (derived from the Dweller body)', () => {
     expect(() =>
       parseRigmap({ assets: { x: { derive: [{ id: 'a', colors: { M: '#aabbcc' } }] } } }),
     ).not.toThrow();
+    expect(() =>
+      parseRigmap({
+        assets: {
+          x: { derive: [{ id: 'a', colors: { M: '#aabbcc' }, palette: { boots: '#112233' } }] },
+        },
+      }),
+    ).not.toThrow();
+    expect(() =>
+      parseRigmap({
+        assets: { x: { derive: [{ id: 'a', colors: { M: '#aabbcc' }, palette: { boots: 'x' } }] } },
+      }),
+    ).toThrow();
   });
 });

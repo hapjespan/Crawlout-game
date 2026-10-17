@@ -65,6 +65,12 @@ export const HERO_INSTANCE_FLAG = 256;
 export const HERO_SCALE = 1.15;
 /** iAnim.z = team slot + TEAM_SLOTS * variation seed (animVariation.ts, 12 bits); the team slot is below TEAM_SLOTS. */
 export const TEAM_SLOTS = 16;
+/**
+ * An attachment instance carries the unit's LOD in iAnim.z above the variation seed (12 bits above the team slot):
+ * z = team slot + TEAM_SLOTS * seed + ATTACHMENT_LOD_STEP * lod. The attachment geometry holds the prop's LODs
+ * together, each vertex's LOD in its color alpha; the vertices of the other LOD collapse (attachmentGeometry.ts).
+ */
+export const ATTACHMENT_LOD_STEP = TEAM_SLOTS * 4096;
 /** Static per-instance variation: lean (shear of the body over its height, +-) and height scale (+-). */
 export const VARIATION = { lean: 0.03, height: 0.03 } as const;
 
@@ -89,12 +95,32 @@ export interface UnitAlbedo {
   teamPivot?: number;
   /** Brightness factor on the albedo (renderer option albedoGain, per asset). Default 1. */
   gain?: number;
+  /** 0..1, default 1: how much of the upper body takes the team color from far away (a palette's `farTeam`). */
+  farTeam?: number;
+}
+
+/** What a material variant shares or changes relative to a body material (see createUnitMaterial). */
+export interface UnitMaterialOptions {
+  /**
+   * Bone and clip textures of another material of the same rig: an attachment follows the body's animation by
+   * sampling the very same textures, so nothing is uploaded twice. Without it the material makes its own.
+   */
+  shared?: { boneTex: Texture; clipTex: Texture };
+  /**
+   * A weapon, tool or gear piece skinned to one bone (attachmentGeometry.ts): never team colored, no far-distance team
+   * widening (its bind-pose height means nothing for it) and the weathering of worn metal instead of cloth.
+   */
+  attachment?: boolean;
 }
 
 export interface UnitMaterialBundle {
   material: MeshBasicNodeMaterial;
+  /** Textures this material owns (its bone and clip textures unless they were shared in). */
   textures: Texture[];
   lightDir: { value: Vector3 };
+  /** The bone-matrix and clip-table textures it samples, for an attachment material to share. */
+  boneTex: Texture;
+  clipTex: Texture;
 }
 
 /**
@@ -268,9 +294,12 @@ export function createUnitMaterial(
   lighting: ToonLighting,
   precision: DataTexturePrecision = 'float',
   albedoSource: UnitAlbedo = {},
+  variant: UnitMaterialOptions = {},
 ): UnitMaterialBundle {
-  const boneTex = createDataTexture(anims.data, anims.width, anims.height, precision);
-  const clipTex = createDataTexture(anims.clipTable, anims.clips.length, 1, precision);
+  const boneTex =
+    variant.shared?.boneTex ?? createDataTexture(anims.data, anims.width, anims.height, precision);
+  const clipTex =
+    variant.shared?.clipTex ?? createDataTexture(anims.clipTable, anims.clips.length, 1, precision);
   const lightDir = uniform(lighting.lightDir.clone().normalize());
 
   const iPose = attribute('iPose', 'vec4');
@@ -282,8 +311,15 @@ export function createUnitMaterial(
   const vertexColor = attribute('color', 'vec4');
   const isHero = iAnim.w.greaterThanEqual(HERO_INSTANCE_FLAG);
   const heroPart = vertexColor.w.greaterThan(HERO_PART_ALPHA - 0.5);
-  // Hero parts collapse to their bone's origin on regular units (zero-area triangles draw nothing).
-  const position = select(heroPart.and(isHero.not()), vec3(0, 0, 0), attribute('position', 'vec3'));
+  // Hero parts collapse to their bone's origin on regular units (zero-area triangles draw nothing); so do the
+  // vertices of an attachment's other LOD (the color alpha of an attachment is its LOD, never a team mask).
+  const position = variant.attachment
+    ? select(
+        floor(vertexColor.w.add(0.5)).equal(floor(iAnim.z.div(ATTACHMENT_LOD_STEP))),
+        attribute('position', 'vec3'),
+        vec3(0, 0, 0),
+      )
+    : select(heroPart.and(isHero.not()), vec3(0, 0, 0), attribute('position', 'vec3'));
 
   // Frame lookup in the clip table.
   const clip = textureLoad(clipTex, ivec2(int(iAnim.x), int(0)));
@@ -349,7 +385,9 @@ export function createUnitMaterial(
 
   // Fragment: albedo with team tint, toon ramp, rim.
   let base: Node<'vec3'> = vertexColor.xyz;
-  let mask: Node<'float'> = select(heroPart, vertexColor.w.sub(HERO_PART_ALPHA), vertexColor.w);
+  let mask: Node<'float'> = variant.attachment
+    ? float(0)
+    : select(heroPart, vertexColor.w.sub(HERO_PART_ALPHA), vertexColor.w);
   if (albedoSource.map) {
     const uv = attribute('uv', 'vec2');
     const plain = uv.x.lessThan(-0.5); // NO_UV: primitive without the atlas
@@ -366,7 +404,8 @@ export function createUnitMaterial(
   const far = smoothstep(FAR_TEAM[0], FAR_TEAM[1], length(cameraPosition.sub(vWorldPos)));
   const bindY = attribute('position', 'vec3').y;
   const upper = smoothstep(0.85, 0.98, bindY).mul(float(1).sub(smoothstep(1.52, 1.6, bindY)));
-  const wide = far.mul(vertexStage(upper));
+  const farStrength = variant.attachment ? 0 : (albedoSource.farTeam ?? 1);
+  const wide = far.mul(vertexStage(upper)).mul(farStrength);
   base = mix(
     base,
     vec3(TEAM_FALLBACK_BASE, TEAM_FALLBACK_BASE, TEAM_FALLBACK_BASE),
@@ -379,7 +418,7 @@ export function createUnitMaterial(
     pos: vertexStage(attribute('position', 'vec3')),
     normal: N,
     height: vertexStage(skinnedPos.y),
-    surface: createSurfaceTable().at(surfaceIndex('cloth')),
+    surface: createSurfaceTable().at(surfaceIndex(variant.attachment ? 'rustMetal' : 'cloth')),
     amount: float(UNIT_WEATHER),
     team: mask,
   });
@@ -402,5 +441,12 @@ export function createUnitMaterial(
     material.receivedShadowPositionNode = sun.receivePosition(vWorldPos, N);
   } else material.colorNode = out;
   material.name = 'crawlout-unit-toon';
-  return { material, textures: [boneTex, clipTex], lightDir };
+  return {
+    material,
+    // A shared texture belongs to the material that made it: only a material's own textures are its to dispose.
+    textures: variant.shared ? [] : [boneTex, clipTex],
+    lightDir,
+    boneTex,
+    clipTex,
+  };
 }

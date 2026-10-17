@@ -47,6 +47,11 @@ export interface FakeSnapshotOptions {
    * FAKE_UNIT_TYPE_ID: a mix of robots for the rigid-unit demo, say.
    */
   unitTypes?: readonly number[];
+  /**
+   * Keeps every unit in this clip, walking or running between random points, or standing still in an action clip
+   * (screenshots and measurements of one animation). Default: the usual mix of walking, working and fighting.
+   */
+  hold?: 'walk' | 'run' | 'idle' | 'attack1' | 'attack2';
   /** Building typeIds that shoot (turrets), with combat: shotFired a = building, b = target, then a hit. */
   turrets?: readonly number[];
 }
@@ -119,11 +124,13 @@ export class FakeSnapshotSource {
   private readonly demolished: { atTick: number; structure: FakeStructure }[] = [];
   private nextStructureId = 0;
   private rng: number;
+  private readonly hold: Mode | null;
 
   constructor(opts: FakeSnapshotOptions = {}) {
     const n = (this.count = opts.count ?? 200);
     const players = (this.players = opts.players ?? 4);
     this.combat = opts.combat ?? false;
+    this.hold = opts.hold ?? null;
     this.turrets = new Set(opts.turrets ?? []);
     const heroType = opts.heroId === undefined ? FAKE_UNIT_TYPE_ID : heroTypeId(opts.heroId);
     const unitTypes = opts.unitTypes?.length ? opts.unitTypes : [FAKE_UNIT_TYPE_ID];
@@ -269,6 +276,15 @@ export class FakeSnapshotSource {
       ty ?? Math.min(this.size - margin, Math.max(margin, this.y[i]! + this.randInt(-r, r)));
     this.mode[i] = this.rand() < 0.2 ? 'run' : 'walk';
     this.setAnim(i, this.mode[i] === 'run' ? ANIM.run : ANIM.walk);
+    if (this.hold) this.applyHold(i);
+  }
+
+  /** The `hold` option: the unit keeps the clip; an action clip stands still for good. */
+  private applyHold(i: number): void {
+    const hold = this.hold!;
+    this.mode[i] = hold;
+    this.setAnim(i, ANIM[hold as Exclude<Mode, 'dead'>]);
+    if (hold !== 'walk' && hold !== 'run') this.timer[i] = 0x3fffffff;
   }
 
   private setAnim(i: number, clip: number): void {

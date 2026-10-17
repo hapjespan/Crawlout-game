@@ -97,6 +97,7 @@ import {
   type UnitAssetStatus,
 } from './units/unitAssets.js';
 import { DEFAULT_LIGHT_DIR, UnitLayer } from './units/unitLayer.js';
+import { AttachmentRegistry, type AttachmentStatus } from './units/attachmentAssets.js';
 import { RigidUnitRegistry, type RigidUnitStatus } from './units/rigidUnitAssets.js';
 import { RigidUnitLayer, type RigidUnitSource } from './units/rigidUnitLayer.js';
 import { abilitiesFromGameData, AbilityZones, type AbilityLookup } from './vfx/abilityZones.js';
@@ -240,6 +241,8 @@ export interface LayerStats {
   propsVisible: number;
   propsTotal: number;
   waterTriangles: number;
+  /** Weapon, tool and gear instances drawn on units (one instanced draw per prop and LOD, however many units). */
+  attachmentInstances: number;
   /** Rigid units (robots) drawn and in the frame, and the draw calls they took. */
   rigidVisible: number;
   rigidTotal: number;
@@ -289,6 +292,12 @@ export interface CrawloutRenderer {
   ): Promise<UnitAssetStatus>;
   /** Status of every unit asset requested so far. */
   unitAssets(): UnitAssetStatus[];
+  /**
+   * Status of the attachments of the loadouts (meshSlots other than body: weapon, tool, gear_back, gear_head, armor):
+   * ready (drawn on the animated skeleton), skipped (the manifest has no such prop, the unit is drawn without it) or
+   * failed (with the reason). Empty until setGameData has loadouts and their body assets are loaded.
+   */
+  attachmentAssets(): AttachmentStatus[];
   /**
    * Status of the building assets of the last setGameData (one per visuals.mesh in buildings.json): loading, ready
    * (drawn with the asset) or failed (placeholder, with the reason). Empty without a manifest.
@@ -505,12 +514,26 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
       ? undefined
       : Math.min(ALBEDO_GAIN_RANGE[1], Math.max(ALBEDO_GAIN_RANGE[0], g));
   };
+  const attachments = new AttachmentRegistry(
+    units,
+    {
+      manifest: (url) => loader.manifest(url),
+      fetchBytes: (url) => gltfIO.fetchBytes(url),
+      parseGltf: (bytes, url) => gltfIO.parseGltf(bytes, url),
+    },
+    {
+      manifestUrl: assetConfig?.manifestUrl,
+      resolveUrl: resolveAssetPath,
+      warn: (message) => console.warn(`[render] ${message}`),
+    },
+  );
   const unitAssets = new UnitAssetRegistry(units, loader, {
     config: assetConfig,
     maxTextureSize: caps.maxTextureSize,
     warn: (message) => console.warn(`[render] ${message}`),
     albedoGain: gainOf,
     rigidIds: (url) => rigidUnits.rigidIds(url),
+    onRigLoaded: (info) => attachments.rigLoaded(info),
   });
   const rigidUnits = new RigidUnitRegistry(rigid, loader, {
     config: assetConfig,
@@ -914,16 +937,21 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
     setGameData(data) {
       footprints.setLookup(footprintsFromGameData(data));
       abilities = data.heroes ? abilitiesFromGameData({ heroes: data.heroes }) : null;
-      if (data.loadouts)
+      if (data.loadouts) {
+        attachments.setLoadouts(data.loadouts);
         void Promise.all([
           unitAssets.setLoadouts(data.loadouts),
           rigidUnits.setLoadouts(data.loadouts),
-        ]).then(scheduleWarmUp);
+        ])
+          .then(() => attachments.settled())
+          .then(scheduleWarmUp);
+      }
       void loadBuildings(data.buildings);
     },
     loadUnitAsset: (manifestUrl, assetId, assetOpts) =>
       unitAssets.load(manifestUrl, assetId, assetOpts).finally(scheduleWarmUp),
     unitAssets: () => unitAssets.statuses(),
+    attachmentAssets: () => attachments.statuses(),
     loadRigidUnit: (manifestUrl, assetId, typeIds) =>
       rigidUnits.load(manifestUrl, assetId, typeIds).finally(scheduleWarmUp),
     addRigidUnit(source, typeIds) {
@@ -1056,6 +1084,7 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
       propsVisible: props.visibleCount,
       propsTotal: props.totalCount,
       waterTriangles: water.triangles,
+      attachmentInstances: units.attachmentInstances,
       rigidVisible: rigid.visibleCount,
       rigidTotal: rigid.totalCount,
       rigidDraws: rigid.drawCount,
@@ -1066,6 +1095,7 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
       resizeObserver.disconnect();
       controls.dispose();
       unitAssets.dispose();
+      attachments.dispose();
       overlay?.dispose();
       units.dispose();
       rigidUnits.dispose();

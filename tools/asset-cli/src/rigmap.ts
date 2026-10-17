@@ -2,6 +2,7 @@
 // Een asset zonder entry gaat ongewijzigd naar de validatie.
 import { z } from 'zod';
 import { BUDGETS } from './budgets.js';
+import { bodyPaletteSchema } from './manifest.js';
 import { hexColor } from './variants.js';
 
 const boneTable = z.record(z.string().min(1));
@@ -61,6 +62,8 @@ export const rigmapSchema = z.object({
               colors: z
                 .record(hexColor)
                 .refine((c) => Object.keys(c).length > 0, 'minstens één kleur'),
+              /** Kledingpalet voor render (manifest `palette`); de basiskleuren hierboven blijven de GLB-kleuren. */
+              palette: bodyPaletteSchema.optional(),
             }),
           )
           .optional(),

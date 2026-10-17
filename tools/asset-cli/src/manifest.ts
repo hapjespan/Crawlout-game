@@ -28,6 +28,37 @@ export const ALBEDO_GAIN_RANGE = [0.5, 2] as const;
 
 export const albedoGainSchema = z.number().min(ALBEDO_GAIN_RANGE[0]).max(ALBEDO_GAIN_RANGE[1]);
 
+/**
+ * Kledingkleuren van een poppetje (alleen karakters, render: `units/bodyRegions.ts`). Elke regio is een `#rrggbb` (sRGB);
+ * een ontbrekende regio houdt de standaardkleur van render (de Dweller-kleding), `patchTop` en `patchLeg` volgen
+ * `jacket` en `trousers` als ze ontbreken. `patchTop` is de linkerarm (een lap op de mouw), `patchLeg` de rechterbovenbeen.
+ * `teamZone`: waar de spelerskleur zit: 'chest' (borst en schouders, standaard) of 'band' (alleen een band om de linkerbovenarm).
+ * `farTeam` (0 tot 1, standaard 1): hoeveel van het hele bovenlijf op grote afstand de spelerskleur krijgt (leesbaarheid van het team).
+ */
+export const BODY_PALETTE_REGIONS = [
+  'jacket',
+  'patchTop',
+  'patchLeg',
+  'belt',
+  'trousers',
+  'boots',
+  'skin',
+] as const;
+const paletteColor = z.string().regex(/^#[0-9a-fA-F]{6}$/, 'verwacht een kleur als #rrggbb');
+export const bodyPaletteSchema = z
+  .object({
+    jacket: paletteColor.optional(),
+    patchTop: paletteColor.optional(),
+    patchLeg: paletteColor.optional(),
+    belt: paletteColor.optional(),
+    trousers: paletteColor.optional(),
+    boots: paletteColor.optional(),
+    skin: paletteColor.optional(),
+    teamZone: z.enum(['chest', 'band']).optional(),
+    farTeam: z.number().min(0).max(1).optional(),
+  })
+  .strict();
+
 export const boundsSchema = z.object({ min: vec3, max: vec3 });
 
 export const lodSchema = z.object({
@@ -151,8 +182,12 @@ export const assetEntrySchema = z
      * (schaduwvlek, selectiering, healthbar-afstand). Ontbreekt het, dan staat het model op de grond (min y = 0).
      */
     hover: z.number().positive().optional(),
+    /** Alleen karakters: de kledingkleuren die render op het skelet schildert (zie `bodyPaletteSchema`). */
+    palette: bodyPaletteSchema.optional(),
   })
   .superRefine((entry, ctx) => {
+    if (entry.palette && entry.kind !== 'character')
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'palette is alleen voor karakters' });
     if (entry.kind === 'rigid-unit') {
       if (entry.rigid !== true)
         ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'een rigid-unit heeft rigid: true' });
@@ -216,6 +251,7 @@ export type AssetBounds = z.infer<typeof boundsSchema>;
 export type AssetLod = z.infer<typeof lodSchema>;
 export type AssetAnimation = z.infer<typeof animationSchema>;
 export type AssetSockets = z.infer<typeof socketsSchema>;
+export type BodyPalette = z.infer<typeof bodyPaletteSchema>;
 export type BakedClip = z.infer<typeof bakedClipSchema>;
 export type BakedAnimation = z.infer<typeof bakedAnimationSchema>;
 export type AssetEntry = z.infer<typeof assetEntrySchema>;

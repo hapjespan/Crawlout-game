@@ -8,6 +8,7 @@
 // LOD GLB, while the baked texture uses the source IBMs (skin = joint world * IBM_source). So the quantized vertices
 // must be brought back with T before the texture applies: IBM_lod = IBM_source * T, and with the rest pose as the
 // bind pose (IBM_source = inverse(rest world)), T = rest world * IBM_lod for every joint. All joints must agree.
+import type { BodyPalette } from '@crawlout/asset-cli/manifest';
 import {
   BufferAttribute,
   BufferGeometry,
@@ -22,7 +23,14 @@ import {
   type Texture,
 } from 'three/webgpu';
 import { texelLuminance, type Rasterize } from '../structures/textureArray.js';
-import { hasBodyRegions, vertexRegion, type VertexRegion } from './bodyRegions.js';
+import {
+  BAND_BONE,
+  hasBodyRegions,
+  resolveBodyPalette,
+  teamBandMask,
+  vertexRegion,
+  type VertexRegion,
+} from './bodyRegions.js';
 
 export class UnitGeometryError extends Error {
   override name = 'UnitGeometryError';
@@ -48,6 +56,8 @@ export interface UnitGeometryOptions {
   teamMask?: TeamMaskSource;
   /** Reads the atlas' pixels (structures/textureArray.ts canvasRasterize in the browser); null where it cannot. */
   rasterize?: Rasterize;
+  /** Clothing palette of the body (manifest `palette`); without it the Dweller clothing (bodyRegions.ts). */
+  palette?: BodyPalette | undefined;
 }
 
 export interface UnitGeometryResult {
@@ -64,6 +74,10 @@ export interface UnitGeometryResult {
    * light and dark stay (unitMaterial.ts teamAlbedo). TEAM_PIVOT_DEFAULT when nothing is masked or it cannot be read.
    */
   teamPivot: number;
+  /** Bone names in the joint order of the baked texture (attachments find their bone here). */
+  boneNames: string[];
+  /** 0..1: how much of the whole upper body takes the team color from far away (the palette's `farTeam`). */
+  farTeam: number;
 }
 
 /** An atlas alpha below this counts as "not team": an atlas with such texels carries a mask in its alpha. */
@@ -216,6 +230,9 @@ export function unitGeometryFromGltf(
   // A mannequin (the main material takes the team color) with a body skeleton: team accent plus clothing regions.
   const boneNames = reference.map((b) => b.name);
   const regions = teamPattern === TEAM_MATERIAL_FALLBACK && hasBodyRegions(boneNames);
+  const palette = resolveBodyPalette(opts.palette);
+  /** Band zone: per vertex, the skin weight on the band's bone (the team band is a window along that bone). */
+  const bandShare: number[] = [];
   const region: VertexRegion = { team: 0, color: [0, 0, 0] };
   const vertexNames: (string | undefined)[] = [];
   const vertexWeights: number[] = [];
@@ -311,11 +328,16 @@ export function unitGeometryFromGltf(
       let cg = base.g * gg;
       let cb = base.b * b;
       if (regions) {
-        vertexRegion(vertexNames, vertexWeights, TEAM_FALLBACK_BASE, region);
+        vertexRegion(vertexNames, vertexWeights, TEAM_FALLBACK_BASE, region, palette);
         mask = region.team;
         [cr, cg, cb] = region.color;
       }
       col.push(cr, cg, cb, mask);
+      if (regions && palette.teamZone === 'band') {
+        let share = 0;
+        for (let k = 0; k < 4; k++) if (vertexNames[k] === BAND_BONE) share += vertexWeights[k]!;
+        bandShare.push(share);
+      }
       if (atlas) {
         if (textured) uvs.push(uv.getX(i), uv.getY(i));
         else uvs.push(NO_UV, NO_UV);
@@ -333,6 +355,36 @@ export function unitGeometryFromGltf(
     const gi = g.getIndex();
     if (gi) for (let i = 0; i < gi.count; i++) idx.push(first + gi.getX(i));
     else for (let i = 0; i < p.count; i++) idx.push(first + i);
+  }
+
+  if (bandShare.length > 0) {
+    // Team band: a window along the band's bone (|x| in the T-pose, shoulder end to elbow end), over the weight on it.
+    let lo = Infinity;
+    let hi = -Infinity;
+    bandShare.forEach((share, i) => {
+      if (share <= 0.5) return;
+      const x = Math.abs(pos[i * 3]!);
+      lo = Math.min(lo, x);
+      hi = Math.max(hi, x);
+    });
+    const length = hi - lo;
+    if (length > 1e-4) {
+      pivotSum = 0;
+      pivotCount = 0;
+      bandShare.forEach((share, i) => {
+        if (share <= 0) return;
+        const m = share * teamBandMask((Math.abs(pos[i * 3]!) - lo) / length);
+        if (m <= 0) return;
+        for (let c = 0; c < 3; c++)
+          col[i * 4 + c] = col[i * 4 + c]! * (1 - m) + TEAM_FALLBACK_BASE * m;
+        col[i * 4 + 3] = m;
+      });
+      for (let i = 0; i < col.length; i += 4)
+        if (col[i + 3]! > 0.5) {
+          pivotSum += lumaOf(col[i]!, col[i + 1]!, col[i + 2]!);
+          pivotCount++;
+        }
+    }
   }
 
   const geometry = new BufferGeometry();
@@ -368,5 +420,7 @@ export function unitGeometryFromGltf(
     textureCount: maps.length,
     teamMask,
     teamPivot: Math.min(1, Math.max(0.02, teamPivot)),
+    boneNames,
+    farTeam: palette.farTeam,
   };
 }

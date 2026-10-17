@@ -21,6 +21,7 @@ import {
   manifestSchema,
   type AssetEntry,
   type AssetManifest,
+  type BodyPalette,
 } from './manifest.js';
 import {
   buildPacks,
@@ -206,6 +207,8 @@ export async function buildAssets(options: BuildOptions): Promise<BuildResult> {
     sourceBones: number;
     /** A derived (re-coloured) asset shares the baked animation texture of this asset id. */
     bakedFrom?: string;
+    /** Clothing palette of a derived body (manifest `palette`). */
+    palette?: BodyPalette;
   }[] = [];
 
   for (const file of files) {
@@ -272,6 +275,7 @@ export async function buildAssets(options: BuildOptions): Promise<BuildResult> {
               conform,
               sourceBones,
               bakedFrom: id,
+              ...(derived.palette ? { palette: derived.palette } : {}),
             });
         }
       }
@@ -482,6 +486,7 @@ export async function buildAssets(options: BuildOptions): Promise<BuildResult> {
       boneCount,
       teamMask: asset.conform.teamMask ? 'diffuseAlpha' : 'materialName',
       ...(baked ? { baked } : {}),
+      ...(asset.palette ? { palette: asset.palette } : {}),
     });
   }
 

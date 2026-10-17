@@ -2,6 +2,7 @@
 // manifest id (data/loadouts.json), and one config value (`defaultUnit`) can name the asset for every unit without
 // one of its own. Anything that fails to load leaves the procedural placeholder rig in place.
 import { unitTypeId } from '@crawlout/data';
+import type { RigAttachInfo } from './attachmentAssets.js';
 import type { TeamMaskSource } from './gltfUnitGeometry.js';
 import type { UnitAssetLoader } from './unitAssetLoader.js';
 import type { UnitLayer } from './unitLayer.js';
@@ -77,6 +78,8 @@ export class UnitAssetRegistry {
        * registry leaves alone (a rigid body is neither loaded as a skinned rig nor becomes the default rig).
        */
       rigidIds?: (manifestUrl: string) => Promise<ReadonlySet<string>>;
+      /** A body asset became a rig: where the attachments of its loadouts attach (attachmentAssets.ts). */
+      onRigLoaded?: (info: RigAttachInfo) => void;
     },
   ) {}
 
@@ -187,7 +190,14 @@ export class UnitAssetRegistry {
               maskFromMapAlpha: lod0.teamMask === 'diffuseAlpha',
               teamPivot: lod0.teamPivot,
               gain: this.opts.albedoGain?.(assetId) ?? asset.entry.albedoGain ?? 1,
+              farTeam: lod0.farTeam,
             },
+          });
+          this.opts.onRigLoaded?.({
+            assetId,
+            rig: rigIndex,
+            sockets: asset.entry.sockets,
+            boneNames: lod0.boneNames,
           });
           status.state = 'ready';
           status.teamMask = lod0.teamMask;

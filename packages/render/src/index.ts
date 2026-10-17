@@ -111,6 +111,7 @@ export {
   type UnitAssetOptions,
   type UnitAssetStatus,
 } from './units/unitAssets.js';
+export { type AttachmentStatus } from './units/attachmentAssets.js';
 export { type TeamMaskSource } from './units/gltfUnitGeometry.js';
 export { type RigidUnitStatus } from './units/rigidUnitAssets.js';
 export { type RigidUnitSource } from './units/rigidUnitLayer.js';
