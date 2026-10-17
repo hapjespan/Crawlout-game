@@ -14,7 +14,7 @@ import { EffectStat } from './schemas.js';
 import { readDataDir } from './node.js';
 import { metersToUnits, secondsToTicks } from './units.js';
 
-// Raiders (data 0.21.0; voorstel, ter bevestiging door de architect): de tweede factie als data, schema en loader.
+// Raiders (data 0.21.0; bevestigd in fase-0 sectie 23 besluit 2): de tweede factie als data, schema en loader.
 // De sim speelt de Raiders nog niet; deze tests leggen vast dat de data klopt en wat de sim straks mag aannemen.
 
 const dataDir = fileURLToPath(new URL('../../../data', import.meta.url));

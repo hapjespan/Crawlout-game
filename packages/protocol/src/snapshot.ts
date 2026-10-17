@@ -30,7 +30,7 @@ export type EntityField = keyof typeof ENTITY_FIELDS;
 // selected zet de client (selectie is geen sim-state; de client stempelt hem in de buffer voor de renderer die
 // leest); dead, carrying en inCombat zet de sim. inCombat staat ook op een turret met doel (een voltooid gebouw
 // met Combat, besluit 8 in fase-0 sectie 14); dead en carrying komen alleen op units voor.
-// Fog of war (protocol 0.11.0; voorstel, ter bevestiging door de architect): a snapshot is written for one player (the
+// Fog of war (protocol 0.11.0; bevestigd in fase-0 sectie 23 besluit 1): a snapshot is written for one player (the
 // viewer, the local player of the client). It holds his own entities, the map features (scrap nodes and claim points:
 // map knowledge, always), and the entities of others that he sees now. An enemy building he saw before but does not see
 // now stays in as a ghost: its row as he last saw it (hp, build progress), with the flag `ghost` and no other sim flag;
@@ -153,7 +153,7 @@ export function writeSnapshotHeader(buf: ArrayBuffer, h: SnapshotHeader): void {
 }
 
 /**
- * Fog of war (protocol 0.11.0; voorstel, ter bevestiging door de architect): the fog of one player on the vision grid,
+ * Fog of war (protocol 0.11.0; bevestigd in fase-0 sectie 23 besluit 1): the fog of one player on the vision grid,
  * on request of the HUD and the render (a `fog` query to the sim worker, like the player status; not in every snapshot).
  * The grid has cellsW x cellsH cells of cellUnits x cellUnits sim units (sim.json vision.cellM; 2 m = 512 units); cell
  * (cx, cy) covers x in [cx * cellUnits, (cx + 1) * cellUnits). Two bitsets of ceil(cellsW * cellsH / 8) bytes, cell

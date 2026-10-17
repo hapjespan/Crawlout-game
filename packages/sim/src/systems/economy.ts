@@ -186,8 +186,8 @@ const ROLE_BUILDER = ROLES.indexOf('builder');
 const ROLE_MILITIA = ROLES.indexOf('militia');
 
 /**
- * Of speler p geen voltooide werkplaats heeft en geen bouwer. Sim 0.19.0 (voorstel, ter bevestiging door de
- * architect): een unit in opleiding tot bouwer telt niet meer; zonder voltooide werkplaats wacht zijn omscholing voor
+ * Of speler p geen voltooide werkplaats heeft en geen bouwer. Sim 0.19.0 (bevestigd door de
+ * architect in fase-0 sectie 23 besluit 4): een unit in opleiding tot bouwer telt niet meer; zonder voltooide werkplaats wacht zijn omscholing voor
  * altijd (orders.ts craft), dus is hij geen bouwer (gemeten: twee plunderaars op weg naar een gesloopte werkplaats
  * hielden het vangnet het hele potje dicht).
  */

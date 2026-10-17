@@ -219,7 +219,7 @@ export class World {
    */
   readonly visTo = new Uint8Array(MAX_ENTITIES);
   // Raiders (sim 0.18.0, STATE_FORMAT_VERSION 12; systems/slaves.ts, systems/chems.ts, systems/plunder.ts; contract 1,
-  // voorstel, ter bevestiging door de architect)
+  // bevestigd in fase-0 sectie 23 besluit 3)
   /** SLAVE_* (systems/slaves.ts): none, captive (caught, on its way to a cage or in its transition), slave, freed. */
   readonly slaveState = new Uint8Array(MAX_ENTITIES);
   /** Slave or captive: id of its Kooi (0 = none yet: a captive waits for a free cage). */
@@ -240,7 +240,7 @@ export class World {
   readonly chemTicks = new Int32Array(MAX_ENTITIES);
   /** Owner + 1 of the last unit or turret that damaged this entity (0 = none): who plunders it (systems/plunder.ts). */
   readonly lastHit = new Uint8Array(MAX_ENTITIES);
-  // Creep camps (sim 0.20.0, STATE_FORMAT_VERSION 13; systems/creeps.ts; voorstel, ter bevestiging door de architect)
+  // Creep camps (sim 0.20.0, STATE_FORMAT_VERSION 13; systems/creeps.ts; bevestigd in fase-0 sectie 23 besluit 5)
   /** Bandit of a creep camp: camp index + 1 (0 = not a creep). Stays on its corpse. */
   readonly creepCamp = new Uint8Array(MAX_ENTITIES);
   /** Bandit: the cell (index y * w + x) it guards in its camp and walks back to. */

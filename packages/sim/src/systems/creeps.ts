@@ -17,7 +17,7 @@ import {
 import { applyCommand } from './commands.js';
 import { grantXp, heroIndex } from './hero.js';
 
-// Creep camps (sim 0.20.0, data 0.25.0, phase 2 round 2; voorstel, ter bevestiging door de architect). Bandit nests of
+// Creep camps (sim 0.20.0, data 0.25.0, phase 2 round 2; bevestigd in fase-0 sectie 23 besluit 5). Bandit nests of
 // the map (SimMap.creepCamps, Spelfundament 3.2: "bandietennesten als creeps met loot en held-XP", Warcraft 3). All
 // numbers come from data/creeps.json (SimConfig.creepTiers) and ai/*.json (SimAiScript.creeps).
 //

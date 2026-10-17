@@ -1018,7 +1018,7 @@ describe('content-x (data 0.16.0): turret-netwerk, uitrusting in tiers, held-pas
   });
 });
 
-// Creep camps (data 0.25.0; voorstel, ter bevestiging door de architect): data/creeps.json and ai/*.json creeps.
+// Creep camps (data 0.25.0; bevestigd in fase-0 sectie 23 besluit 5): data/creeps.json and ai/*.json creeps.
 describe('data/creeps.json', () => {
   const data = loadGameData(raw());
   const creepsOf = (r: RawGameData) =>

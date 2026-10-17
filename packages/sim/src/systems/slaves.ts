@@ -47,7 +47,7 @@ import { autoGather } from './orders.js';
 //  - Slaves (loadouts slave, damage 0) never pick a target; they gather and build only within cage.workRadius of their
 //    cage (centre of the cage to the node, or to the footprint of a site; a claim building is the exception: a slave
 //    builder may walk out to put up a plunderpost, the Raiders' way to a claim point, data 0.21.0 vs the work radius;
-//    voorstel, ter bevestiging door de architect). SetRole between the slave loadouts happens at a cage. A slave whose
+//    bevestigd in fase-0 sectie 23 besluit 3). SetRole between the slave loadouts happens at a cage. A slave whose
 //    cage is gone binds to the nearest own cage (with room if there is one).
 //  - Slaves and captives are no target for shots (common.ts isEnemy): an enemy frees them by touch. Liberation: an
 //    enemy unit of the owner (not neutral, not a slave) within liberation.touchRange for touchTicks uninterrupted, with

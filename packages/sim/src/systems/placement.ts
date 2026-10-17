@@ -41,7 +41,7 @@ export const PLACE_FEATURE = 5;
 export const PLACE_TERRITORY = 6;
 /**
  * The building must stand within a distance range of an own headquarters and does not (data 0.21.0 buildings
- * placement, the Kooi at the edge of the Raider base; voorstel, ter bevestiging door de architect).
+ * placement, the Kooi at the edge of the Raider base; bevestigd in fase-0 sectie 23 besluit 3).
  */
 export const PLACE_HQ_RANGE = 7;
 /** Name of each reason code, by code: for the client and its preview text. */

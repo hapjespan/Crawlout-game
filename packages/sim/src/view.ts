@@ -10,7 +10,7 @@ import { C, indexOf } from './ecs/world.js';
 import type { Sim } from './sim.js';
 import { hpPctOf } from './snapshot.js';
 
-// The snapshot of one player (fog of war, protocol 0.11.0; voorstel, ter bevestiging door de architect). Every client
+// The snapshot of one player (fog of war, protocol 0.11.0; bevestigd in fase-0 sectie 23 besluit 1). Every client
 // still simulates everything and reports the hash of the whole shared state; only what it SHOWS is filtered here, for
 // the local player (the viewer), outside the sim state and the hash.
 //

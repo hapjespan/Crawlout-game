@@ -373,7 +373,7 @@ export class Sim implements SimContext {
   }
 
   /**
-   * The fog of a player on the vision grid (protocol FogMask, 0.11.0; voorstel): explored and visible as bitsets, copies.
+   * The fog of a player on the vision grid (protocol FogMask, 0.11.0; bevestigd in fase-0 sectie 23 besluit 1): explored and visible as bitsets, copies.
    * For the HUD and the render (minimap, fog overlay), on request like the player status.
    */
   fogMask(playerId: number): FogMask {

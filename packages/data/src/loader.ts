@@ -86,7 +86,7 @@ export interface RobotRulesData {
   robotPenaltyPermille: number;
 }
 
-// Raiders (data 0.21.0; voorstel, ter bevestiging door de architect). Alleen data, de sim leest ze nog niet.
+// Raiders (data 0.21.0; bevestigd in fase-0 sectie 23 besluit 2). Alleen data, de sim leest ze nog niet.
 // Elk blok is null of een lege lijst voor een factie of record zonder het veld.
 
 export interface SlaveRulesData {
@@ -559,17 +559,17 @@ export interface SimTuningData {
   builderAutoHelpRadiusU: number;
   /** Group-order spreading (data 0.15.0): formation slots, arrival slack, straight-walk range, worker ring. */
   formation: FormationTuningData;
-  /** Building placement margins (data 0.18.0; voorstel, ter bevestiging door de architect). */
+  /** Building placement margins (data 0.18.0; bevestigd in fase-0 sectie 22 besluit 4 tot 6). */
   placement: PlacementTuningData;
   /** New scavenger settlers of a human player gather at the nearest reachable node within this radius (0 = off). */
   autoGatherRadiusU: number;
-  /** A scrap node within this distance of a held claim point is exclusive to its owner (data 0.20.0; voorstel). */
+  /** A scrap node within this distance of a held claim point is exclusive to its owner (data 0.20.0; bevestigd in fase-0 sectie 22 besluit 4 tot 6). */
   exclusiveRadiusU: number;
-  /** The hero claims a free point by standing in its circle this long (0 = off; data 0.20.0, voorstel). */
+  /** The hero claims a free point by standing in its circle this long (0 = off; data 0.20.0, bevestigd in fase-0 sectie 22 besluit 4 tot 6). */
   heroClaimTicks: number;
   /** A tower-less (hero) claim goes over after this long with enemies and none of the holder in the circle. */
   contestFlipTicks: number;
-  /** Fog of war (data 0.22.0; voorstel): the vision grid. Default sight radii are resolved onto each record (sightU). */
+  /** Fog of war (data 0.22.0; bevestigd in fase-0 sectie 23 besluit 1): the vision grid. Default sight radii are resolved onto each record (sightU). */
   vision: VisionTuningData;
 }
 
@@ -583,7 +583,7 @@ export interface VisionTuningData {
 export interface PlacementTuningData {
   clearanceU: number;
   depotClearanceU: number;
-  /** Territory (data 0.20.0, voorstel): range around own buildings and around a claim post; 0 = off. */
+  /** Territory (data 0.20.0, bevestigd in fase-0 sectie 22 besluit 4 tot 6): range around own buildings and around a claim post; 0 = off. */
   buildRangeU: number;
   claimBuildRangeU: number;
 }
