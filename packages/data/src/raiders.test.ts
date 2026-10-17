@@ -47,7 +47,7 @@ describe('Raiders: de factie laadt', () => {
     );
     expect(faction.robotRules).toBeNull();
     expect(faction.housingGrowthPerMin).toBe(0);
-    expect(data.dataVersion).toBe('0.22.0');
+    expect(data.dataVersion).toBe('0.23.0');
     // Dwellers ongewijzigd: nog altijd training en geen Raider-blokken
     expect(dwellers.specialChannel).toBe('training');
     expect(dwellers.slaves).toBeNull();
@@ -621,10 +621,12 @@ describe('Raiders: AI-script', () => {
     expect(loadoutIds.has(plan.slaveRaids.slaverLoadoutId)).toBe(true);
     expect(data.loadouts[plan.harass.loadoutId]!.key).toBe('buggy');
     expect(data.loadouts[plan.slaveRaids.slaverLoadoutId]!.key).toBe('slaver');
-    // geen robots, geen reserve en geen training: de Raiders hebben ze niet
+    // geen robots en geen training: de Raiders hebben ze niet. Data 0.23.0 (sim 0.18.0, gemeten): wel een reserve voor
+    // het onderzoek, pas na het venster van de vroege push (anders haalt de push zijn leger niet)
     expect(ai.robots).toBeNull();
-    expect(ai.reserve).toBeNull();
     expect(ai.training).toBeNull();
+    expect(ai.reserve).not.toBeNull();
+    expect(ai.reserve!.fromTicks).toBeGreaterThan(ai.pushFromTicks);
     // en de Dwellers hebben geen raidPlan
     expect(dwellerAi.raidPlan).toBeNull();
   });
@@ -635,16 +637,19 @@ describe('Raiders: AI-script', () => {
     expect(ai.claimFarFromTicks).toBeLessThan(dwellerAi.claimFarFromTicks);
     expect(ai.pushFromTicks).toBeLessThan(dwellerAi.pushFromTicks);
     expect(ai.waveIntervalTicks).toBeLessThan(dwellerAi.waveIntervalTicks);
-    // buggies als harass: het onderzoek staat vooraan en de autosloperij komt vóór de eerste harass
+    // data 0.23.0 (sim 0.18.0, gemeten): eerst staalplaten (betere vechters voor de vroege push), de buggies na de
+    // autosloperij (zijn onderzoek buggy_chassis volgt uit de bouwvolgorde, de AI onderzoekt de keten zelf)
     const firstResearch = data.tech[ai.research[0]!]!.key;
-    expect(firstResearch).toBe('buggy_chassis');
+    expect(firstResearch).toBe('staalplaten');
     const garage = data.buildings.find((b) => b.key === 'autosloperij')!.id;
     const garageAt = ai.buildOrder.find((o) => o.buildingId === garage)!.atTick;
-    expect(garageAt).toBeLessThan(ai.raidPlan!.harass.fromTicks);
+    expect(garageAt).toBeLessThanOrEqual(ai.raidPlan!.harass.fromTicks);
     // slavenroof vóór de eerste golf, dominantie-push na de eerste golf
     expect(ai.raidPlan!.slaveRaids.fromTicks).toBeLessThan(ai.attackTimersTicks[0]!);
     expect(ai.raidPlan!.dominancePush.fromTicks).toBeGreaterThan(ai.attackTimersTicks[0]!);
-    expect(ai.raidPlan!.dominancePush.fromTicks).toBeLessThan(ai.pushFromTicks);
+    // data 0.23.0 (sim 0.18.0, gemeten): het kamp bij de claimpunten pas na het begin van de vroege push (een leger dat
+    // al bij een punt kampeert, haalt de push niet)
+    expect(ai.raidPlan!.dominancePush.fromTicks).toBeGreaterThanOrEqual(ai.pushFromTicks);
   });
 
   it('houdt een garnizoen thuis (anders opstand): minstens het benodigde minimum van de slavenregels', () => {
@@ -652,9 +657,10 @@ describe('Raiders: AI-script', () => {
     expect(ai.raidPlan!.garrison.minFighters).toBeGreaterThanOrEqual(revolt.minGuards);
     // de eerste golf is groter dan het garnizoen: er is iets om heen te sturen
     expect(ai.waveMinArmy).toBeGreaterThan(ai.raidPlan!.garrison.minFighters);
-    // de bouwvolgorde begint met een tent en een Kooi (instroom en slavenopslag), in tijdsvolgorde
+    // de bouwvolgorde begint met twee tenten en een Kooi (bedden voor de vroege push, dan slavenopslag; data 0.23.0),
+    // in tijdsvolgorde
     const keys = ai.buildOrder.map((o) => data.buildings[o.buildingId]!.key);
-    expect(keys.slice(0, 2)).toEqual(['tent', 'kooi']);
+    expect(keys.slice(0, 3)).toEqual(['tent', 'tent', 'kooi']);
     const times = ai.buildOrder.map((o) => o.atTick);
     expect(times).toEqual([...times].sort((a, b) => a - b));
   });

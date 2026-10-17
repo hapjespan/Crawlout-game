@@ -16,6 +16,9 @@ import {
   ORDER_GATHER,
   ORDER_MOVE,
   PHASE_CRAFT,
+  SLAVE_CAPTIVE,
+  SLAVE_FREED,
+  SLAVE_SLAVE,
 } from '../ecs/world.js';
 import { hasTechs, researchCost } from '../effects.js';
 import { isRobot } from './census.js';
@@ -29,6 +32,14 @@ import { idiv, isInt } from '../math/int.js';
 import type { SimContext } from './common.js';
 import { WIN_SURRENDER, inMap, isEnemy, stopMoving } from './common.js';
 import { SLOT_PENDING, SPOT_PENDING } from './formation.js';
+import {
+  liberatable,
+  mayBuildAt,
+  reachesPoint,
+  slaveRulesOf,
+  wandererFor,
+  workReach,
+} from './slaves.js';
 import {
   PLACE_OK,
   claimSiteIn,
@@ -145,6 +156,8 @@ function ownedWith(
     if (!isInt(id)) continue;
     const i = w.resolve(id);
     if (i < 0 || w.owner[i] !== playerId || !w.has(i, needMask | C.owner)) continue;
+    // a captive or a freed unit (data 0.21.0) follows the slave rules; nobody commands it (systems/slaves.ts)
+    if (w.slaveState[i] === SLAVE_CAPTIVE || w.slaveState[i] === SLAVE_FREED) continue;
     if (out.includes(i)) continue;
     out.push(i);
   }
@@ -207,14 +220,25 @@ function applyMove(
   return true;
 }
 
+/**
+ * Attack: an enemy (visible) for every unit with a weapon. Data 0.21.0 (Raiders, sim 0.18.0; contract 2, voorstel, ter
+ * bevestiging door de architect): an enemy slave or captive is freed by touch, so every unit walks up to it (orders.ts
+ * attack); a Slaver may also go for a neutral wanderer it can catch.
+ */
 function applyAttack(ctx: SimContext, p: number, pl: CommandPayload<'Attack'>): boolean {
   const w = ctx.world;
   const t = isInt(pl.target) ? w.resolve(pl.target) : -1;
-  if (t < 0 || !w.has(t, C.health) || w.owner[t] === p || w.owner[t] === OWNER_NEUTRAL)
-    return false;
+  if (t < 0 || !w.has(t, C.health) || w.owner[t] === p) return false;
   let any = false;
   for (const i of ownedWith(ctx, pl.ids, p, UNIT | C.combat)) {
-    if (w.damage[i]! <= 0 || !isEnemy(w, i, t)) continue;
+    const free = liberatable(ctx, i, t);
+    const wanderer = !free && wandererFor(ctx, i, t);
+    if (
+      !free &&
+      !wanderer &&
+      (w.owner[t] === OWNER_NEUTRAL || w.damage[i]! <= 0 || !isEnemy(w, i, t))
+    )
+      continue;
     replaceOrder(ctx, i, ORDER_ATTACK, 0, 0, pl.target);
     w.target[i] = pl.target;
     any = true;
@@ -248,6 +272,8 @@ function applyGather(ctx: SimContext, p: number, pl: CommandPayload<'Gather'>): 
   for (const i of ownedWith(ctx, pl.ids, p, UNIT)) {
     const t = ctx.unitType(w.typeId[i]!);
     if (t === undefined || t.gatherAmount <= 0) continue;
+    // a slave only within the work radius of its cage (data 0.21.0)
+    if (!reachesPoint(workReach(ctx, i), w.x[node]!, w.y[node]!)) continue;
     const carry = w.carry[i]!;
     // its own spot on the ring around the node follows at the start of the unit part of system 2 (formation.ts)
     replaceOrder(ctx, i, ORDER_GATHER, SPOT_PENDING, SPOT_PENDING, pl.nodeId);
@@ -280,11 +306,16 @@ function applyBuild(ctx: SimContext, p: number, pl: CommandPayload<'Build'>, cla
   const w = ctx.world;
   if (!isInt(pl.typeId) || !isInt(pl.x) || !isInt(pl.y) || !inMap(ctx.map, pl.x, pl.y))
     return false;
-  const builders = ownedWith(ctx, pl.ids, p, UNIT).filter((i) => w.role[i] === ROLE_BUILDER);
-  if (builders.length === 0) return false;
   const bt = ctx.buildingType(pl.typeId);
   if (bt === undefined) return false;
   const { fx, fy } = footprintOrigin(pl.x, pl.y, bt.footprintW, bt.footprintH);
+  // a slave builder only within the work radius of its cage, a claim building excepted (data 0.21.0, slaves.ts)
+  const builders = ownedWith(ctx, pl.ids, p, UNIT).filter(
+    (i) =>
+      w.role[i] === ROLE_BUILDER &&
+      mayBuildAt(ctx, i, bt.provides, fx, fy, bt.footprintW, bt.footprintH),
+  );
+  if (builders.length === 0) return false;
   let site = ownSiteAt(ctx, p, bt.typeId, fx, fy);
   if (site < 0) {
     if (!canPlaceType(ctx, p, bt.typeId) || ctx.ps.scrap[p]! < bt.scrapCost) return false;
@@ -403,6 +434,7 @@ function applyCraftTo(
 ): boolean {
   const w = ctx.world;
   const roles = ctx.config.factions[ctx.players[p]!.factionId]!.roleTypeIds;
+  const slaves = slaveRulesOf(ctx, p) !== null;
   let any = false;
   for (const i of ownedWith(ctx, ids, p, UNIT)) {
     if (w.has(i, C.hero) || isRobot(ctx, i)) continue; // de held en robots scholen niet om
@@ -415,6 +447,10 @@ function applyCraftTo(
       !hasTechs(ctx, p, t.prereqTech)
     )
       continue;
+    // data 0.21.0 (Raiders): a slave retrains only to another slave loadout (at a cage), never to a soldier; the
+    // fighters of a faction with slaves never retrain (they come from the tents and never work)
+    const isSlave = w.slaveState[i] === SLAVE_SLAVE;
+    if (isSlave !== t.slave || (slaves && !isSlave)) continue;
     if (t.typeId === w.typeId[i]) continue;
     if (w.orderType(i) === ORDER_CRAFT && w.ordX[w.currentOrder(i)] === t.typeId) continue; // al onderweg
     replaceOrder(ctx, i, ORDER_CRAFT, t.typeId, 0, 0);

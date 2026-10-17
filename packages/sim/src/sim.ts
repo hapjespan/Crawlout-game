@@ -31,7 +31,6 @@ import { PROGRESS_ONE, createBuilding, createUnit, footprintFree } from './entit
 import { EventBuffer } from './events.js';
 import { FlowFields, MAX_FLOW_FIELDS } from './flowfield.js';
 import { clampI, idiv, isInt } from './math/int.js';
-import { PROVIDES_WORKSHOP } from './fromData.js';
 import { Rng } from './rng.js';
 import { writeSnapshot } from './snapshot.js';
 import { setupStart } from './start.js';
@@ -70,7 +69,7 @@ import { Auras, auraSystem, heroStatus } from './systems/hero.js';
 import { RobotRates, robotRulesSystem } from './systems/robots.js';
 import { trainTicks, trainedOf } from './systems/training.js';
 import { MovementScratch, movementSystem } from './systems/movement.js';
-import { OrdersScratch, ordersSystem } from './systems/orders.js';
+import { OrdersScratch, craftSiteMask, ordersSystem } from './systems/orders.js';
 import { Vision } from './vision.js';
 
 export interface SpawnUnitSpec {
@@ -408,7 +407,7 @@ export class Sim implements SimContext {
       dominance: this.dominance(playerId), // protocol 0.6.0: winroute B voor de HUD
       robotPop: this.census.robotPop[playerId]!, // protocol 0.8.0: robots tellen niet voor bedden
       trained: trainedOf(this, playerId) as NonNullable<PlayerStatus['trained']>, // protocol 0.8.0
-      claimPoints: claimPointStatus(this), // protocol 0.10.0 (voorstel): claimstand voor de ring in de HUD
+      claimPoints: claimPointStatus(this), // protocol 0.10.0 (bevestigd in fase-0 sectie 22 besluit 3): claimstand voor de ring in de HUD
     };
   }
 
@@ -464,7 +463,7 @@ export class Sim implements SimContext {
       // bij de werkplaats (systeem 2 zet PHASE_WORK pas binnen interactRange): de werkplaats waar hij staat
       const at =
         phase === PHASE_WORK || phase === PHASE_CRAFT
-          ? nearestOwnBuilding(this, playerId, w.x[i]!, w.y[i]!, PROVIDES_WORKSHOP)
+          ? nearestOwnBuilding(this, playerId, w.x[i]!, w.y[i]!, craftSiteMask(this, t.typeId))
           : -1;
       const progress = phase === PHASE_CRAFT ? permille(w.work[i]!, t.craftTicks) : 0;
       out.push({

@@ -69,6 +69,7 @@ import {
   buildingButtons,
   buildingCards,
   buildingName,
+  hasFinished,
   hasFinishedWorkshop,
   type CardContext,
 } from './game/cards.js';
@@ -366,7 +367,12 @@ async function main(): Promise<void> {
    * aisle around a drop-off building, no scrap node or claim point; the sim validates again on Build. The reason code
    * (PLACEMENT_REASONS) is there for the preview to show why a spot is refused.
    */
-  const DEPOT_PROVIDES = [PROVIDES.indexOf('hq'), PROVIDES.indexOf('werkplaats')];
+  // sim 0.18.0: the Raiders' plundermarkt (provides depot) is a drop-off building too
+  const DEPOT_PROVIDES = [
+    PROVIDES.indexOf('hq'),
+    PROVIDES.indexOf('werkplaats'),
+    PROVIDES.indexOf('depot'),
+  ];
   const isDepot = (b: BuildingData): boolean => b.provides.some((p) => DEPOT_PROVIDES.includes(p));
   const CLAIM_PROVIDES = PROVIDES.indexOf('claim');
   /** The sim placement rule's input from the snapshot: every building, scrap node and claim point. */
@@ -424,6 +430,15 @@ async function main(): Promise<void> {
       depotClearance: data.sim.placement.depotClearanceU,
     };
   }
+  /** Centres (x, y pairs, sim units) of this player's headquarters, for the distance rule of the Kooi. */
+  function ownHqCentres(): number[] {
+    const out: number[] = [];
+    for (const e of entities.values()) {
+      const b = buildingOf(e.typeId);
+      if (b && e.owner === session.playerId && b.provides.includes(HQ_PROVIDES)) out.push(e.x, e.y);
+    }
+    return out;
+  }
   const placeAsOf = (typeId: number): number => {
     const own = buildingOf(typeId);
     return own !== undefined && isDepot(own) ? AS_DEPOT : 0;
@@ -434,8 +449,16 @@ async function main(): Promise<void> {
     cy: number,
   ): number {
     const { w, h } = option.footprint;
+    // a building with a distance rule to the own headquarters (the Raiders' Kooi, data 0.21.0, sim 0.18.0)
+    const rule = buildingOf(option.typeId)?.placement ?? null;
+    const input = placementInputNow();
     return simPlacementReason(
-      placementInputNow(),
+      rule === null
+        ? input
+        : {
+            ...input,
+            hqRange: { hqs: ownHqCentres(), min: rule.minFromHqU, max: rule.maxFromHqU },
+          },
       (cx >> 8) - (w >> 1),
       (cy >> 8) - (h >> 1),
       w,
@@ -500,6 +523,7 @@ async function main(): Promise<void> {
     'Te dicht bij een afleverpunt (houd een looppad vrij)',
     'Staat op een scrapbron of claimpunt',
     `Buiten je gebied (bouw binnen ${data.sim.placement.buildRangeU >> 8} m van je gebouwen, ${data.sim.placement.claimBuildRangeU >> 8} m van een claimpaal)`,
+    'Te ver van of te dicht bij je hoofdgebouw (een Kooi staat aan de rand van je basis)',
   ];
   /** Why the footprint cannot go here (Dutch), or null when it can: the clear HUD reasons first, then the sim rule. */
   function placementReason(option: BuildOption, cx: number, cy: number): string | null {
@@ -681,7 +705,8 @@ async function main(): Promise<void> {
     heroName: (heroId) => data.heroes[heroId]?.naam,
     getPerkOptions: () => perkOptions(data, status?.hero ?? null),
     // Settlers switch role in a workshop (the sim walks them there): without a finished one the role buttons stay hidden.
-    canSwitchRole: () => hasFinishedWorkshop(data, own()),
+    // a workshop, or (Raiders, sim 0.18.0) a cage where slaves switch between gathering and building
+    canSwitchRole: () => hasFinishedWorkshop(data, own()) || hasFinished(data, own(), 'kooi'),
     getHeroAbilities: () =>
       (myHero()?.abilities ?? []).map((a, i) => {
         const left = status?.hero?.abilityCooldownTicks?.[i] ?? 0;

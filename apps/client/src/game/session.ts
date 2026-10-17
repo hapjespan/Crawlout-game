@@ -4,6 +4,8 @@
 //
 // Lobby over ws (no HUD lobby yet): the session joins with a clientId from sessionStorage, sets the map to the one the
 // client loaded, lets the host (`?ai=1`) add one AI, and readies up automatically; the relay starts once everyone is ready.
+// Factions (sim 0.18.0, the Raiders are simulated): `?faction=raiders` plays the Raiders, `?aifaction=raiders` gives the
+// AI the Raiders; both default to the Dwellers. Over ws and in the loopback alike.
 // Reconnect: a dropped socket is re-joined with the same clientId; the relay sends `start` again and a resync, which
 // loads the peer's state into the worker (`load`), replays the bundles and continues live (net/resync.ts).
 import { convertDominance, type GameData } from '@crawlout/data';
@@ -38,6 +40,12 @@ import { dataVersionError } from '../net/dataVersion.js';
 import { getClientId, netOptionsFromSearch, type WsNetOptions } from '../net/params.js';
 import { ReconnectingTransport } from '../net/reconnectingTransport.js';
 import { BundleFeed, base64ToBuffer, bufferToBase64 } from '../net/resync.js';
+
+/** A faction key from a URL parameter if the data knows it, else the default (dwellers). */
+function factionParam(data: GameData, name: 'faction' | 'aifaction'): string {
+  const wanted = new URLSearchParams(window.location.search).get(name);
+  return data.factions.find((f) => f.key === wanted)?.key ?? 'dwellers';
+}
 
 /** No bundle for this long while a match runs = the lockstep is waiting; shown through onStall. */
 const LOCAL_STALL_MS = 2000;
@@ -206,12 +214,14 @@ export function startSession(
     if (net.ai && !aiRequested && !msg.players.some((p) => p.ai)) {
       aiRequested = true;
       // Only the host (lowest human playerId) may add an AI; the relay answers any other with an error.
-      // The AI plays Dwellers until the Raider mechanics exist in the sim (phase 2); `?aifaction=` overrides.
-      const wanted = new URLSearchParams(window.location.search).get('aifaction');
-      link.send({
-        kind: 'addAi',
-        faction: data.factions.find((f) => f.key === wanted)?.key ?? 'dwellers',
-      });
+      link.send({ kind: 'addAi', faction: factionParam(data, 'aifaction') });
+      return;
+    }
+    // this player's faction (`?faction=`): set it once the lobby shows another
+    const mine = msg.players.find((p) => !p.ai && p.name === net.name);
+    const faction = factionParam(data, 'faction');
+    if (mine !== undefined && mine.faction !== faction) {
+      link.send({ kind: 'setFaction', faction });
       return;
     }
     lobbyKeyReadied = key;
@@ -317,7 +327,8 @@ export function startSession(
     link.onMessage(onServerMessage);
     // The AI is a lobby player without a connection; it runs in the sim on every client and reports no hashes.
     link.send({ kind: 'join', roomId: 'skirmish', name: 'Jij' });
-    loopback.addAi();
+    link.send({ kind: 'setFaction', faction: factionParam(data, 'faction') });
+    loopback.addAi(factionParam(data, 'aifaction'));
     link.send({ kind: 'ready', ready: true });
     const relay = loopback;
     pump = window.setInterval(() => {

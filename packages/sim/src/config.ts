@@ -68,6 +68,36 @@ export interface SimUnitType {
   readonly siege: SimSiege | null;
   /** Sight radius from the unit's centre (units; fog of war, data 0.22.0). The hero uses SimHero.sight instead. */
   readonly sight: number;
+  /**
+   * Raiders (sim 0.18.0, data 0.21.0 loadouts slave): a worker that never fights, is bound to a Kooi, works only within
+   * its work radius and can be liberated (systems/slaves.ts).
+   */
+  readonly slave: boolean;
+  /** Slaver (data 0.21.0 loadouts capture), or null. */
+  readonly capture: SimCapture | null;
+  /** Chem-dealer (data 0.21.0 loadouts aura), or null. */
+  readonly aura: SimUnitAura | null;
+}
+
+/** Capture (Slaver, data 0.21.0): catches a beaten-down human of another player (or a neutral wanderer). */
+export interface SimCapture {
+  /** Reach to the target (to its edge, as a weapon range). */
+  readonly range: number;
+  /** Ticks the Slaver holds the target within range, uninterrupted. */
+  readonly captureTicks: number;
+  /** Neutral wanderers (escaped slaves) may be caught. */
+  readonly wanderers: boolean;
+  /** Units of another player may be caught (outside their owner's base radius). */
+  readonly residents: boolean;
+  /** Only a target at or below this share of its max hp, in permille. */
+  readonly maxHpPermille: number;
+}
+
+/** Chem-dealer aura (data 0.21.0): doses own units around it in a fight. */
+export interface SimUnitAura {
+  readonly radius: number;
+  /** Indices in SimFaction.chems of the dealer's faction, in order of preference. */
+  readonly chems: readonly number[];
 }
 
 /** Reparatie (data 0.16.0, loadouts repair): een vrije unit zoekt zelf een beschadigd eigen doel en herstelt het. */
@@ -142,6 +172,20 @@ export interface SimBuildingType {
   readonly network: SimTurretNetwork | null;
   /** Sight beyond the footprint edge (units; fog of war, data 0.22.0); the radius from the centre adds half the larger side. */
   readonly sight: number;
+  /** Kooi (data 0.21.0, provides kooi): slaves bound here, the transition of a captive, the work radius; or null. */
+  readonly cage: SimCage | null;
+  /** Placement rule (data 0.21.0): centre-to-centre distance to an own headquarters within [min, max]; or null. */
+  readonly hqRange: { readonly min: number; readonly max: number } | null;
+}
+
+/** Kooi (data 0.21.0, buildings cage). */
+export interface SimCage {
+  /** Slaves (and captives on their way) bound to this cage at most. */
+  readonly capacity: number;
+  /** Ticks a captive stands at the cage before it is a slave. */
+  readonly transitionTicks: number;
+  /** A slave of this cage gathers and builds only within this distance of it (centre to node, centre to footprint). */
+  readonly workRadius: number;
 }
 
 /** Doel van een effect: alles van de speler, de held, of één unit- of gebouwtype (typeId). */
@@ -236,6 +280,10 @@ export interface SimHero {
   readonly maxRevives: number;
   /** Sight radius of the living hero (units; fog of war, data 0.22.0). */
   readonly sight: number;
+  /** Aura around the living hero (data 0.21.0, the Warlord's intimidation): speed and damage, like an ability zone. */
+  readonly aura: { readonly radius: number; readonly effects: readonly SimAuraEffect[] } | null;
+  /** xp for every capture by an own Slaver (data 0.21.0). */
+  readonly xpPerCapture: number;
 }
 
 /** SPECIAL van de held, per punt van de letter (sim.json, ter review). */
@@ -274,6 +322,8 @@ export interface SimFaction {
    * intervalTicks een bewoner van typeId bij het baken, hoogstens maxArrivals keer per potje. null = geen vangnet.
    */
   readonly safetyNet: {
+    /** SAFETY_NET_BEACON (radiobaken_instroom) or SAFETY_NET_TENTS (tenten_instroom, data 0.21.0). */
+    readonly action: number;
     readonly threshold: number;
     readonly intervalTicks: number;
     readonly maxArrivals: number;
@@ -285,6 +335,75 @@ export interface SimFaction {
     /** Indices in ROLES. */
     readonly technicianRoles: readonly number[];
     readonly penaltyPermille: number;
+  } | null;
+  /** Slave rules (data 0.21.0, Raiders); null for a faction without slaves. */
+  readonly slaves: SimSlaveRules | null;
+  /** Loot from razed buildings and killed gatherers (data 0.21.0); null without. */
+  readonly plunder: SimPlunder | null;
+  /** Tribute from held claim points of one kind (data 0.21.0); null without. */
+  readonly tribute: SimTribute | null;
+  /** Chems of the SPECIAL channel chems (data 0.21.0), by faction-local index; empty for another channel. */
+  readonly chems: readonly SimChem[];
+}
+
+/** Safety net actions (SimFaction.safetyNet.action). */
+export const SAFETY_NET_BEACON = 0;
+export const SAFETY_NET_TENTS = 1;
+
+/** Slave rules of a faction (data 0.21.0 factions slaves), in sim units. */
+export interface SimSlaveRules {
+  /** Unit type a captive becomes after the cage transition. */
+  readonly capturedTypeId: number;
+  /** A unit of another player is caught only farther than this from its owner's nearest headquarters (centre). */
+  readonly minDistanceFromOwnerBase: number;
+  readonly touchTicks: number;
+  readonly touchRange: number;
+  readonly guardRadius: number;
+  readonly freedSpeedPermille: number;
+  readonly garrisonRadius: number;
+  readonly slavesPerGuard: number;
+  readonly minGuards: number;
+  readonly graceTicks: number;
+  readonly emptyGraceTicks: number;
+  readonly escapePermille: number;
+  readonly repeatTicks: number;
+}
+
+/** Plunder (data 0.21.0 factions plunder), permille. */
+export interface SimPlunder {
+  readonly buildingLootPermille: number;
+  /** For a razed drop-off building (provides hq, workshop or depot), on top of buildingLootPermille. */
+  readonly depotLootMultiplierPermille: number;
+  readonly carryLootPermille: number;
+  /** Tech id of the bonus, -1 = none. */
+  readonly bonusTech: number;
+  readonly bonusPermille: number;
+}
+
+/** Tribute (data 0.21.0 factions tribute). */
+export interface SimTribute {
+  /** Index in CLAIM_KINDS (fromData.ts) of the claim points that pay. */
+  readonly claimKind: number;
+  readonly scrapPerMin: number;
+  readonly bonusTech: number;
+  readonly bonusPermille: number;
+}
+
+/** One chem (data 0.21.0 factions chems), by faction-local index. */
+export interface SimChem {
+  readonly requiresTech: number;
+  readonly doseScrap: number;
+  readonly activeTicks: number;
+  readonly crashTicks: number;
+  readonly cooldownTicks: number;
+  /** damagePct and speedPct for every dosed unit (EFFECT_TARGET_ALL), S and A for the hero (EFFECT_TARGET_HERO). */
+  readonly effects: readonly SimEffect[];
+  readonly crash: readonly SimEffect[];
+  /** Refined: with requiresTech the active and crash durations change by these permille; null without. */
+  readonly refined: {
+    readonly requiresTech: number;
+    readonly activePermille: number;
+    readonly crashPermille: number;
   } | null;
 }
 
@@ -363,6 +482,30 @@ export interface SimAiScript {
   } | null;
   /** SPECIAL training (data 0.17.0): programIds in order (a program n times = up to n points); null = none. */
   readonly training: { readonly programIds: readonly number[]; readonly fromTicks: number } | null;
+  /** Raider plan (data 0.21.0 ai raidPlan): the script then runs the Raider AI (systems/aiRaiders.ts); null = Dwellers. */
+  readonly raidPlan: SimRaidPlan | null;
+}
+
+/** Raid plan of the Raider AI (ai/*.json raidPlan), in sim units. */
+export interface SimRaidPlan {
+  /** Fighters from the tents, cyclic by weight (a type without its techs is skipped). */
+  readonly fighterMix: readonly { readonly typeId: number; readonly weight: number }[];
+  readonly harass: {
+    readonly typeId: number;
+    readonly fromTicks: number;
+    readonly max: number;
+    readonly retreatHpPermille: number;
+  };
+  readonly slaveRaids: {
+    readonly slaverTypeId: number;
+    readonly fromTicks: number;
+    readonly slavers: number;
+    readonly escort: number;
+    readonly maxRaidTicks: number;
+    readonly retryTicks: number;
+  };
+  readonly garrisonMinFighters: number;
+  readonly dominancePush: { readonly fromTicks: number; readonly minArmy: number };
 }
 
 export interface SimConfig {
@@ -444,7 +587,7 @@ export interface SimPlacementTuning {
   /** No other building this close to a drop-off building (provides hq or workshop); at least `clearance`. */
   readonly depotClearance: number;
   /**
-   * Territory (data 0.20.0, voorstel; systems/placement.ts territoryMask): a new footprint touches a cell within this
+   * Territory (data 0.20.0, bevestigd in fase-0 sectie 22 besluit 6; systems/placement.ts territoryMask): a new footprint touches a cell within this
    * many steps over walkable terrain of an own building; 0 = no territory rule.
    */
   readonly buildRange: number;
@@ -650,6 +793,23 @@ export function validateEnv(env: SimEnv): void {
       );
     if (u.siege !== null) req(intIn(u.siege.vsBuildingsPermille, 0, 100000), `${at}: siege`);
     req(intIn(u.sight, 0, MAX_SIGHT), `${at}: sight`);
+    req(typeof u.slave === 'boolean', `${at}: slave`);
+    if (u.capture !== null)
+      req(
+        intIn(u.capture.range, 0, MAX_MAP_CELLS_SIDE << 8) &&
+          intIn(u.capture.captureTicks, 1, I31) &&
+          intIn(u.capture.maxHpPermille, 0, 1000) &&
+          typeof u.capture.wanderers === 'boolean' &&
+          typeof u.capture.residents === 'boolean',
+        `${at}: capture`,
+      );
+    if (u.aura !== null)
+      req(
+        intIn(u.aura.radius, 0, MAX_MAP_CELLS_SIDE << 8) &&
+          u.aura.chems.length > 0 &&
+          u.aura.chems.every((c) => intIn(c, 0, 0xfe)),
+        `${at}: aura`,
+      );
   }
   const buildingIds = new Set<number>();
   for (const b of config.buildingTypes) {
@@ -692,6 +852,19 @@ export function validateEnv(env: SimEnv): void {
         `${at}: network`,
       );
     req(intIn(b.sight, 0, MAX_SIGHT), `${at}: sight`);
+    if (b.cage !== null)
+      req(
+        intIn(b.cage.capacity, 0, 4096) &&
+          intIn(b.cage.transitionTicks, 0, I31) &&
+          intIn(b.cage.workRadius, 0, MAX_MAP_CELLS_SIDE << 8),
+        `${at}: cage`,
+      );
+    if (b.hqRange !== null)
+      req(
+        intIn(b.hqRange.min, 0, MAX_MAP_CELLS_SIDE << 8) &&
+          intIn(b.hqRange.max, b.hqRange.min, MAX_MAP_CELLS_SIDE << 8),
+        `${at}: hqRange`,
+      );
   }
   for (const u of config.unitTypes)
     req(
@@ -714,7 +887,8 @@ export function validateEnv(env: SimEnv): void {
     req(f.claimTypeId === 0 || buildingIds.has(f.claimTypeId), `${at}: claimTypeId`);
     if (f.safetyNet !== null)
       req(
-        intIn(f.safetyNet.threshold, 0, 4096) &&
+        intIn(f.safetyNet.action, SAFETY_NET_BEACON, SAFETY_NET_TENTS) &&
+          intIn(f.safetyNet.threshold, 0, 4096) &&
           intIn(f.safetyNet.intervalTicks, 1, I31) &&
           intIn(f.safetyNet.maxArrivals, 0, I31) &&
           unitIds.has(f.safetyNet.typeId),
@@ -727,7 +901,79 @@ export function validateEnv(env: SimEnv): void {
           f.robotRules.technicianRoles.every((r) => intIn(r, 0, 0xff)),
         `${at}: robotRules`,
       );
+    const sl = f.slaves;
+    if (sl !== null) {
+      req(unitIds.has(sl.capturedTypeId), `${at}: slaves.capturedTypeId`);
+      for (const v of [
+        sl.minDistanceFromOwnerBase,
+        sl.touchRange,
+        sl.guardRadius,
+        sl.garrisonRadius,
+      ])
+        req(intIn(v, 0, MAX_MAP_CELLS_SIDE << 8), `${at}: slaves afstand`);
+      for (const v of [sl.touchTicks, sl.graceTicks, sl.emptyGraceTicks, sl.repeatTicks])
+        req(intIn(v, 0, I31), `${at}: slaves tijd`);
+      req(
+        intIn(sl.freedSpeedPermille, 0, 10000) &&
+          intIn(sl.slavesPerGuard, 1, 4096) &&
+          intIn(sl.minGuards, 0, 4096) &&
+          intIn(sl.escapePermille, 0, 1000),
+        `${at}: slaves`,
+      );
+    }
+    const pl = f.plunder;
+    if (pl !== null)
+      req(
+        intIn(pl.buildingLootPermille, 0, 100000) &&
+          intIn(pl.depotLootMultiplierPermille, 0, 100000) &&
+          intIn(pl.carryLootPermille, 0, 100000) &&
+          intIn(pl.bonusTech, -1, config.techs.length - 1) &&
+          intIn(pl.bonusPermille, 0, 100000),
+        `${at}: plunder`,
+      );
+    const tr = f.tribute;
+    if (tr !== null)
+      req(
+        intIn(tr.claimKind, 0, 0xff) &&
+          intIn(tr.scrapPerMin, 0, 1_000_000) &&
+          intIn(tr.bonusTech, -1, config.techs.length - 1) &&
+          intIn(tr.bonusPermille, 0, 100000),
+        `${at}: tribute`,
+      );
+    req(f.chems.length <= 0xfe, `${at}: te veel chems`);
+    for (const c of f.chems) {
+      req(
+        intIn(c.requiresTech, -1, config.techs.length - 1) &&
+          intIn(c.doseScrap, 0, I31) &&
+          intIn(c.activeTicks, 0, I31) &&
+          intIn(c.crashTicks, 0, I31) &&
+          intIn(c.cooldownTicks, 0, I31),
+        `${at}: chem`,
+      );
+      for (const e of [...c.effects, ...c.crash])
+        req(
+          intIn(e.stat, 0, EFFECT_STAT_COUNT - 1) &&
+            intIn(e.delta, -100000, 100000) &&
+            (e.target === EFFECT_TARGET_ALL || e.target === EFFECT_TARGET_HERO),
+          `${at}: chem-effect`,
+        );
+      if (c.refined !== null)
+        req(
+          intIn(c.refined.requiresTech, 0, config.techs.length - 1) &&
+            intIn(c.refined.activePermille, -1000, 100000) &&
+            intIn(c.refined.crashPermille, -1000, 100000),
+          `${at}: chem refined`,
+        );
+    }
   });
+  for (const u of config.unitTypes)
+    if (u.aura !== null) {
+      const f = config.factions[u.factionId]!;
+      req(
+        u.aura.chems.every((c) => c < f.chems.length),
+        `unittype ${u.typeId}: aura.chems buiten de chems van de factie`,
+      );
+    }
   const checkEffects = (effects: readonly SimEffect[], at: string): void => {
     for (const e of effects) {
       req(
@@ -869,6 +1115,18 @@ export function validateEnv(env: SimEnv): void {
     }
     for (const q of hr.perkPool) req(intIn(q, 0, config.perks.length - 1), `${at}: perkPool`);
     checkEffects(hr.passives, `${at}: passives`);
+    req(intIn(hr.xpPerCapture, 0, I31), `${at}: xpPerCapture`);
+    if (hr.aura !== null) {
+      req(intIn(hr.aura.radius, 0, MAX_MAP_CELLS_SIDE << 8), `${at}: aura`);
+      for (const e of hr.aura.effects)
+        req(
+          intIn(e.stat, 0, EFFECT_STAT_COUNT - 1) &&
+            intIn(e.delta, -100000, 100000) &&
+            intIn(e.side, AURA_SIDE_ENEMY, AURA_SIDE_ALLY) &&
+            intIn(e.target, AURA_TARGET_UNITS, AURA_TARGET_ALL),
+          `${at}: aura-effect`,
+        );
+    }
     req(
       intIn(hr.reviveScrap, 0, I31) &&
         intIn(hr.reviveTicks, 0, I31) &&
@@ -963,6 +1221,37 @@ export function validateEnv(env: SimEnv): void {
           intIn(s.training.fromTicks, 0, I31),
         'aiScript training',
       );
+    const rp = s.raidPlan;
+    if (rp !== null) {
+      req(
+        rp.fighterMix.length > 0 &&
+          rp.fighterMix.every((m) => unitIds.has(m.typeId) && intIn(m.weight, 1, 1000)),
+        'aiScript raidPlan.fighterMix',
+      );
+      req(
+        unitIds.has(rp.harass.typeId) &&
+          intIn(rp.harass.fromTicks, 0, I31) &&
+          intIn(rp.harass.max, 0, 4096) &&
+          intIn(rp.harass.retreatHpPermille, 0, 1000),
+        'aiScript raidPlan.harass',
+      );
+      const sr = rp.slaveRaids;
+      req(
+        unitIds.has(sr.slaverTypeId) &&
+          intIn(sr.fromTicks, 0, I31) &&
+          intIn(sr.slavers, 0, 4096) &&
+          intIn(sr.escort, 0, 4096) &&
+          intIn(sr.maxRaidTicks, 1, I31) &&
+          intIn(sr.retryTicks, 0, I31),
+        'aiScript raidPlan.slaveRaids',
+      );
+      req(
+        intIn(rp.garrisonMinFighters, 0, 4096) &&
+          intIn(rp.dominancePush.fromTicks, 0, I31) &&
+          intIn(rp.dominancePush.minArmy, 0, 4096),
+        'aiScript raidPlan',
+      );
+    }
   }
   for (const p of players) {
     req(
@@ -1064,7 +1353,23 @@ export function envHash(env: SimEnv): number {
       h,
       u.siege === null ? [0] : [1, u.siege.vsBuildingsPermille, u.siege.buildingsFirst ? 1 : 0],
     );
-    h = hashInts(h, [u.sight]);
+    h = hashInts(h, [u.sight, u.slave ? 1 : 0]);
+    const cp = u.capture;
+    h = hashInts(
+      h,
+      cp === null
+        ? [0]
+        : [
+            1,
+            cp.range,
+            cp.captureTicks,
+            cp.wanderers ? 1 : 0,
+            cp.residents ? 1 : 0,
+            cp.maxHpPermille,
+          ],
+    );
+    h = hashInts(h, u.aura === null ? [0] : [1, u.aura.radius]);
+    if (u.aura !== null) h = hashInts(h, u.aura.chems);
   }
   h = fnv1aInt(h, c.buildingTypes.length);
   for (const b of c.buildingTypes) {
@@ -1091,6 +1396,9 @@ export function envHash(env: SimEnv): number {
         : [1, n.requiresTech, n.radius, n.damagePermillePerTurret, n.maxDamagePermille],
     );
     h = hashInts(h, [b.sight]);
+    const cg = b.cage;
+    h = hashInts(h, cg === null ? [0] : [1, cg.capacity, cg.transitionTicks, cg.workRadius]);
+    h = hashInts(h, b.hqRange === null ? [0] : [1, b.hqRange.min, b.hqRange.max]);
   }
   h = fnv1aInt(h, c.factions.length);
   for (const f of c.factions) {
@@ -1110,11 +1418,63 @@ export function envHash(env: SimEnv): number {
     const sn = f.safetyNet;
     h = hashInts(
       h,
-      sn === null ? [0] : [1, sn.threshold, sn.intervalTicks, sn.maxArrivals, sn.typeId],
+      sn === null ? [0] : [1, sn.action, sn.threshold, sn.intervalTicks, sn.maxArrivals, sn.typeId],
     );
     const rr = f.robotRules;
     h = hashInts(h, rr === null ? [0] : [1, rr.robotsPerTechnician, rr.penaltyPermille]);
     if (rr !== null) h = hashInts(h, rr.technicianRoles);
+    const sl = f.slaves;
+    h = hashInts(
+      h,
+      sl === null
+        ? [0]
+        : [
+            1,
+            sl.capturedTypeId,
+            sl.minDistanceFromOwnerBase,
+            sl.touchTicks,
+            sl.touchRange,
+            sl.guardRadius,
+            sl.freedSpeedPermille,
+            sl.garrisonRadius,
+            sl.slavesPerGuard,
+            sl.minGuards,
+            sl.graceTicks,
+            sl.emptyGraceTicks,
+            sl.escapePermille,
+            sl.repeatTicks,
+          ],
+    );
+    const pl = f.plunder;
+    h = hashInts(
+      h,
+      pl === null
+        ? [0]
+        : [
+            1,
+            pl.buildingLootPermille,
+            pl.depotLootMultiplierPermille,
+            pl.carryLootPermille,
+            pl.bonusTech,
+            pl.bonusPermille,
+          ],
+    );
+    const tr = f.tribute;
+    h = hashInts(
+      h,
+      tr === null ? [0] : [1, tr.claimKind, tr.scrapPerMin, tr.bonusTech, tr.bonusPermille],
+    );
+    h = fnv1aInt(h, f.chems.length);
+    for (const c of f.chems) {
+      h = hashInts(h, [c.requiresTech, c.doseScrap, c.activeTicks, c.crashTicks, c.cooldownTicks]);
+      h = hashEffects(h, c.effects);
+      h = hashEffects(h, c.crash);
+      const rf = c.refined;
+      h = hashInts(
+        h,
+        rf === null ? [0] : [1, rf.requiresTech, rf.activePermille, rf.crashPermille],
+      );
+    }
   }
   h = fnv1aInt(h, c.aiScripts.length);
   for (const s of c.aiScripts) {
@@ -1173,6 +1533,32 @@ export function envHash(env: SimEnv): number {
     );
     h = hashInts(h, s.training === null ? [0] : [1, s.training.fromTicks]);
     if (s.training !== null) h = hashInts(h, s.training.programIds);
+    const rp = s.raidPlan;
+    h = fnv1aInt(h, rp === null ? 0 : 1);
+    if (rp !== null) {
+      h = fnv1aInt(h, rp.fighterMix.length);
+      for (const m of rp.fighterMix) h = hashInts(h, [m.typeId, m.weight]);
+      h = hashInts(h, [
+        rp.harass.typeId,
+        rp.harass.fromTicks,
+        rp.harass.max,
+        rp.harass.retreatHpPermille,
+      ]);
+      const sr = rp.slaveRaids;
+      h = hashInts(h, [
+        sr.slaverTypeId,
+        sr.fromTicks,
+        sr.slavers,
+        sr.escort,
+        sr.maxRaidTicks,
+        sr.retryTicks,
+      ]);
+      h = hashInts(h, [
+        rp.garrisonMinFighters,
+        rp.dominancePush.fromTicks,
+        rp.dominancePush.minArmy,
+      ]);
+    }
   }
   h = fnv1aInt(h, c.techs.length);
   for (const t of c.techs) {
@@ -1214,7 +1600,12 @@ export function envHash(env: SimEnv): number {
       hr.xpAssistRadius,
     ]);
     h = hashInts(h, [hr.reviveScrap, hr.reviveTicks, hr.revivePenaltyPermille, hr.maxRevives]);
-    h = hashInts(h, [hr.sight]);
+    h = hashInts(h, [hr.sight, hr.xpPerCapture]);
+    h = hashInts(h, hr.aura === null ? [0] : [1, hr.aura.radius]);
+    if (hr.aura !== null) {
+      h = fnv1aInt(h, hr.aura.effects.length);
+      for (const e of hr.aura.effects) h = hashInts(h, [e.stat, e.side, e.target, e.delta]);
+    }
     h = hashInts(h, hr.special);
     h = hashInts(h, hr.xpThresholds);
     h = hashInts(h, hr.perkPool);

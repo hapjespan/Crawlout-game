@@ -26,7 +26,7 @@ export const COMPACT_FOOTPRINTS: Readonly<Record<string, readonly [number, numbe
   robotfabriek: [5, 5],
   lab: [3, 3],
   trainingsfaciliteit: [3, 3],
-  // Raiders (data 0.21.0): the sim does not play them yet, the compact sizes only keep the table complete
+  // Raiders (data 0.21.0, played by the sim since 0.18.0): compact sizes for the test map (raiders.test.ts)
   raiderkamp: [5, 5],
   tent: [3, 3],
   kooi: [3, 3],

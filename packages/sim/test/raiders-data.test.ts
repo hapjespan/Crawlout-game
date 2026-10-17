@@ -4,9 +4,9 @@ import { createSim, validateEnv } from '../src/index.js';
 import { createTestMap } from '../src/testing.js';
 import { CONFIG, DATA, REAL_CONFIG, envOf, testInit } from './helpers.js';
 
-// Raiders (data 0.21.0): the sim does not play them yet. These tests pin what the sim already does with the Raider data:
-// it loads and validates it, picks the right hero base, claim building, hq and safety-net unit, and starts a match with
-// a Raider player without a crash. The Raider rules (slaves, capture, chems, tents) come in the sim round.
+// Raiders (data 0.21.0): the sim reads the Raider data (sim 0.18.0). These tests pin that it loads and validates, picks
+// the right hero base (baseLoadoutId), claim building, hq and safety-net unit, and starts a match with a Raider player.
+// The Raider rules themselves (slaves, capture, chems, tents, plunder, tribute) are tested in raiders.test.ts.
 
 const RAIDERS = DATA.factions.findIndex((f) => f.key === 'raiders');
 const keyOfType = (typeId: number): string | undefined =>
@@ -57,7 +57,7 @@ describe('sim: Raider data (data 0.21.0)', () => {
       const key = keyOfType(u.typeId) ?? `type${u.typeId}`;
       counts.set(key, (counts.get(key) ?? 0) + 1);
     }
-    expect(counts.get('slaaf')).toBe(3);
+    expect(counts.get('slaaf')).toBe(6); // data 0.23.0 (was 3)
     expect(counts.get('slaaf_bouwer')).toBe(1);
     expect(counts.get('plunderaar')).toBe(3);
     expect(counts.get('knuppelaar')).toBe(1);

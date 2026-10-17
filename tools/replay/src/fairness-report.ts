@@ -7,15 +7,21 @@ import { FAIRNESS_SEEDS, TICKS_PER_MINUTE, playMatch } from './balance.js';
 import { playMatchesParallel, summarize } from './fairness.js';
 
 const args = process.argv.slice(2);
-const seeds = args.map(Number).filter((n) => Number.isInteger(n));
+// --factions a,b: the faction of each player (sim 0.18.0; default both dwellers)
+const fi = args.indexOf('--factions');
+const factions = fi >= 0 ? args[fi + 1]!.split(',') : undefined;
+const seeds = args
+  .filter((_, k) => fi < 0 || k !== fi + 1)
+  .map(Number)
+  .filter((n) => Number.isInteger(n));
 const list = seeds.length > 0 ? seeds : FAIRNESS_SEEDS;
 
 if (args.includes('--json')) {
   for (const seed of list)
-    console.log(JSON.stringify(playMatch(seed, { maxFrames: 45 * TICKS_PER_MINUTE })));
+    console.log(JSON.stringify(playMatch(seed, { maxFrames: 45 * TICKS_PER_MINUTE, factions })));
 } else {
   const t0 = Date.now();
-  const results = await playMatchesParallel(list);
+  const results = await playMatchesParallel(list, undefined, factions);
   for (const r of results) {
     console.log(
       `seed ${r.seed}: winnaar ${r.winner ?? '-'} (${r.reason ?? 'geen'}) op frame ${r.frame} = ${r.minutes.toFixed(1)} min`,

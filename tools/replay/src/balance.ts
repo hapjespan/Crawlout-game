@@ -29,6 +29,8 @@ export interface PlayerTrace {
   popCapByMinute: number[];
   /** Militie (rol militia) aan het eind van elke minuut. */
   militiaByMinute: number[];
+  /** Slaves and captives (Raiders, sim 0.18.0) aan het eind van elke minuut. */
+  slavesByMinute: number[];
   /** Claimpunten van deze speler aan het eind van elke minuut. */
   claimsByMinute: number[];
   /** Totaal binnengekomen en uitgegeven scrap (som van de stijgingen en dalingen per tick). */
@@ -62,11 +64,11 @@ export interface MatchResult {
   players: PlayerTrace[];
 }
 
-const lobby = (ai: readonly boolean[]): LobbyPlayer[] =>
+const lobby = (ai: readonly boolean[], factions?: readonly string[]): LobbyPlayer[] =>
   ai.map((isAi, i) => ({
     playerId: i,
     name: `p${i}`,
-    faction: 'dwellers',
+    faction: factions?.[i] ?? 'dwellers',
     ready: true,
     online: !isAi,
     ai: isAi,
@@ -79,6 +81,8 @@ export interface MatchOptions {
   controllers?: readonly Controller[];
   /** Hoogstens zoveel frames (standaard 60 minuten). */
   maxFrames?: number;
+  /** Factie per speler (standaard dwellers; sim 0.18.0: raiders). */
+  factions?: readonly string[] | undefined;
 }
 
 const militiaRole = ROLES.indexOf('militia');
@@ -89,6 +93,7 @@ function newTrace(): PlayerTrace {
     settlersByMinute: [],
     popCapByMinute: [],
     militiaByMinute: [],
+    slavesByMinute: [],
     claimsByMinute: [],
     income: 0,
     spent: 0,
@@ -108,7 +113,7 @@ function newTrace(): PlayerTrace {
 /** Speelt één potje op Rustbelt tot er een winnaar is (of maxFrames) en geeft de meting. */
 export function playMatch(seed: number, opts: MatchOptions = {}): MatchResult {
   const ai = opts.ai ?? [true, true];
-  const env = buildEnv('rustbelt', lobby(ai), { mode: 'skirmish', delayFrames: 4 });
+  const env = buildEnv('rustbelt', lobby(ai, opts.factions), { mode: 'skirmish', delayFrames: 4 });
   const sim = createSim({ seed, ...env });
   const maxFrames = opts.maxFrames ?? 60 * TICKS_PER_MINUTE;
   const n = ai.length;
@@ -212,6 +217,16 @@ export function playMatch(seed: number, opts: MatchOptions = {}): MatchResult {
 function sample(sim: Sim, traces: PlayerTrace[]): void {
   const claims = traces.map(() => 0);
   const militia = traces.map(() => 0);
+  const slaves = traces.map(() => 0);
+  const w = sim.world;
+  for (let i = 0; i < w.highWater; i++)
+    if (
+      w.alive[i] === 1 &&
+      w.owner[i]! < traces.length &&
+      w.slaveState[i]! !== 0 &&
+      w.slaveState[i]! !== 3
+    )
+      slaves[w.owner[i]!]!++;
   for (const id of sim.entityIds()) {
     const u = sim.getUnit(id)!;
     if (u.owner >= traces.length) continue;
@@ -224,6 +239,7 @@ function sample(sim: Sim, traces: PlayerTrace[]): void {
     t.settlersByMinute.push(st.settlers);
     t.popCapByMinute.push(st.popCap);
     t.militiaByMinute.push(militia[p]!);
+    t.slavesByMinute.push(slaves[p]!);
     t.claimsByMinute.push(claims[p]!);
   });
 }

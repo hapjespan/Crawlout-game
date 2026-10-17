@@ -2,7 +2,7 @@ import { MAX_ENTITIES, MAX_PLAYERS, OWNER_NEUTRAL } from '@crawlout/protocol';
 import type { SimBuildingType, SimConfig, SimMap, SimPlayer, SimUnitType } from '../config.js';
 import { MAX_ABILITIES, SPECIAL_COUNT } from '../config.js';
 import type { World } from '../ecs/world.js';
-import { BSTATE_DONE, C, NO_FIELD, NO_GOAL } from '../ecs/world.js';
+import { BSTATE_DONE, C, NO_FIELD, NO_GOAL, SLAVE_CAPTIVE, SLAVE_SLAVE } from '../ecs/world.js';
 import type { EventBuffer } from '../events.js';
 import type { FlowFields } from '../flowfield.js';
 import type { TerrainDistances } from '../pathdist.js';
@@ -64,6 +64,12 @@ export class PlayerState {
   readonly netArrivals = new Int32Array(MAX_PLAYERS);
   /** Scripted AI: index in de robotvolgorde (robots.sequence) van de volgende robot. */
   readonly aiRobot = new Int32Array(MAX_PLAYERS);
+  /** Tribute (data 0.21.0): owed scrap in thousandths times ticksPerMinute, paid out per whole scrap (systems/plunder.ts). */
+  readonly tributeAcc = new Int32Array(MAX_PLAYERS);
+  /** Raider AI (systems/aiRaiders.ts): position in the fighter mix, and the slave raid (frame it ends or may start, out). */
+  readonly aiMix = new Int32Array(MAX_PLAYERS);
+  readonly aiRaidAt = new Int32Array(MAX_PLAYERS);
+  readonly aiRaidOut = new Uint8Array(MAX_PLAYERS);
 }
 
 export const NO_WINNER = OWNER_NEUTRAL;
@@ -361,6 +367,9 @@ export function face(w: World, i: number, x: number, y: number): void {
 /** Vijandige, levende entity met Health (unit of gebouw) voor unit i. */
 export function isEnemy(w: World, i: number, t: number): boolean {
   if (!w.has(t, C.health) || w.hp[t]! <= 0) return false;
+  // a slave or captive (data 0.21.0) is no target for shots: it is freed by touch (systems/slaves.ts)
+  const st = w.slaveState[t]!;
+  if (st === SLAVE_SLAVE || st === SLAVE_CAPTIVE) return false;
   const o = w.owner[t]!;
   const p = w.owner[i]!;
   // fog of war (sim 0.17.0): only an enemy that the owner of i sees now is a target (shooting, chasing, acquiring)
@@ -521,15 +530,28 @@ export function nearestReachableBuilding(
  * Dichtstbijzijnde scrap-node met voorraad waar speler p mag verzamelen (nodeAllowed) en waar een unit op (x, y) kan
  * komen (nodeReachable: niet onder een gebouw, in hetzelfde stuk terrein), of -1. Tiebreak laagste index.
  */
-export function nearestNode(ctx: SimContext, p: number, x: number, y: number): number {
+export function nearestNode(
+  ctx: SimContext,
+  p: number,
+  x: number,
+  y: number,
+  reach: { readonly x: number; readonly y: number; readonly r: number } | null = null,
+): number {
   const w = ctx.world;
   const idx = ctx.index;
   idx.refresh(w);
   let best = -1;
   let bestD = 0;
+  if (reach !== null && reach.r < 0) return -1;
   for (let k = 0; k < idx.nodeCount; k++) {
     const j = idx.nodes[k]!;
     if (w.amount[j]! <= 0 || !nodeAllowed(ctx, j, p)) continue;
+    // a slave only within the work radius of its cage (data 0.21.0, systems/slaves.ts workReach)
+    if (reach !== null) {
+      const rx = w.x[j]! - reach.x;
+      const ry = w.y[j]! - reach.y;
+      if (rx * rx + ry * ry > reach.r * reach.r) continue;
+    }
     const dx = w.x[j]! - x;
     const dy = w.y[j]! - y;
     const d = dx * dx + dy * dy;
