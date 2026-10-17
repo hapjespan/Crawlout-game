@@ -15,6 +15,7 @@ import type {
   MinimapData,
   NetworkState,
   PerkOption,
+  RaiderStats,
   RecruitOption,
   ResearchOption,
   RosterGroup,
@@ -31,6 +32,8 @@ export type ActionId =
   | 'move'
   | 'stop'
   | 'attackMove'
+  | 'capture'
+  | 'liberate'
   | 'gather'
   | 'roleScavenger'
   | 'roleBuilder'
@@ -112,6 +115,11 @@ export interface SelectionSummary {
   militia: number;
   /** Units zonder een van de drie rollen en zonder held: robots, technici. */
   other: number;
+  /** Raiders: slaven die verzamelen of bouwen, Slavers, en andere Raider-vechters (de laatste twee tellen niet als militie). */
+  slaveScavengers: number;
+  slaveBuilders: number;
+  slavers: number;
+  raiderFighters: number;
 }
 
 /** Commandokaart: volgorde is de volgorde op het scherm. Wat er staat hangt af van de selectie (zie appliesTo). */
@@ -119,6 +127,8 @@ export const ACTIONS: readonly ActionDef[] = [
   { id: 'move', label: 'Verplaats', key: 'm', needsSelection: true },
   { id: 'stop', label: 'Stop', key: 's', needsSelection: true },
   { id: 'attackMove', label: 'Val aan', key: 'a', needsSelection: true },
+  { id: 'capture', label: 'Vang', key: 'f', needsSelection: true },
+  { id: 'liberate', label: 'Bevrijd', key: 'r', needsSelection: true },
   { id: 'gather', label: 'Verzamel', key: 'g', needsSelection: true },
   { id: 'build', label: 'Bouw', key: 'b', needsSelection: true },
   { id: 'roleScavenger', label: 'Plunderaar', key: '1', needsSelection: true },
@@ -139,6 +149,10 @@ export function summarize(selection: readonly SelectedEntity[]): SelectionSummar
     scavengers: 0,
     militia: 0,
     other: 0,
+    slaveScavengers: 0,
+    slaveBuilders: 0,
+    slavers: 0,
+    raiderFighters: 0,
   };
   for (const s of selection) {
     if (s.enemy) continue; // an enemy is inspected, never commanded
@@ -148,7 +162,12 @@ export function summarize(selection: readonly SelectedEntity[]): SelectionSummar
       sum.hero = true;
     } else {
       sum.units++;
-      if (s.role === 'builder') sum.builders++;
+      if (s.raiderKind === 'slave') {
+        if (s.role === 'builder') sum.slaveBuilders++;
+        else sum.slaveScavengers++;
+      } else if (s.raiderKind === 'slaver') sum.slavers++;
+      else if (s.raiderKind) sum.raiderFighters++;
+      else if (s.role === 'builder') sum.builders++;
       else if (s.role === 'scavenger') sum.scavengers++;
       else if (s.role === 'militia') sum.militia++;
       else sum.other++;
@@ -162,23 +181,34 @@ export function summarize(selection: readonly SelectedEntity[]): SelectionSummar
  * alleen plunderaars of bouwers); Verzamel bij plunderaars; Bouw bij bouwers; een rol alleen met een voltooide
  * werkplaats (canSwitchRole) en als minstens een bewoner die rol nog niet heeft.
  */
-function appliesTo(id: ActionId, s: SelectionSummary, canSwitchRole: boolean): boolean {
+function appliesTo(
+  id: ActionId,
+  s: SelectionSummary,
+  canSwitchRole: boolean,
+  enemySlaves = false,
+): boolean {
+  const slaves = s.slaveScavengers + s.slaveBuilders;
   switch (id) {
+    case 'capture':
+      return s.slavers > 0;
+    case 'liberate':
+      // Attack on an enemy slave is "go and touch him" for any unit that can walk and is no slave itself.
+      return enemySlaves && s.militia + s.other + s.slavers + s.raiderFighters > 0;
     case 'move':
     case 'stop':
       return s.units > 0;
     case 'attackMove':
-      return s.militia + s.other > 0 || s.hero;
+      return s.militia + s.other + s.raiderFighters > 0 || s.hero;
     case 'gather':
-      return s.scavengers > 0;
+      return s.scavengers + s.slaveScavengers > 0;
     case 'build':
-      return s.builders > 0;
+      return s.builders + s.slaveBuilders > 0;
     case 'roleScavenger':
-      return canSwitchRole && s.builders + s.militia > 0;
+      return canSwitchRole && (s.builders + s.militia > 0 || s.slaveBuilders > 0);
     case 'roleBuilder':
-      return canSwitchRole && s.scavengers + s.militia > 0;
+      return canSwitchRole && (s.scavengers + s.militia > 0 || s.slaveScavengers > 0);
     case 'roleMilitia':
-      return canSwitchRole && s.scavengers + s.builders > 0;
+      return canSwitchRole && slaves === 0 && s.scavengers + s.builders > 0;
     default:
       return true;
   }
@@ -199,6 +229,25 @@ export function unitStateOf(activity: UnitActivity): UnitState {
     default:
       return 'busy';
   }
+}
+
+/**
+ * Label of a command for this selection: a Raider slave's role switch is "Slaaf" / "Slaaf-bouwer" (the Dweller names would
+ * be wrong), everything else is the static label.
+ */
+export function actionLabel(a: ActionDef, s: SelectionSummary): string {
+  if (s.slaveScavengers + s.slaveBuilders > 0) {
+    if (a.id === 'roleScavenger') return 'Slaaf';
+    if (a.id === 'roleBuilder') return 'Slaaf-bouwer';
+  }
+  return a.label;
+}
+
+/** Role of a selected unit in plain Dutch: a Raider slave is a "Slaaf", a Raider fighter a "Vechter", else the SetRole role. */
+export function roleLabelOf(u: Pick<SelectedEntity, 'role' | 'raiderKind'>): string | undefined {
+  if (u.raiderKind === 'slave') return u.role === 'builder' ? 'Slaaf-bouwer' : 'Slaaf';
+  if (u.raiderKind) return 'Vechter';
+  return u.role ? ROLE_LABEL[u.role] : undefined;
 }
 
 /** Sneltoets als label. */
@@ -268,6 +317,8 @@ const ACTION_ROLE: Partial<Record<ActionId, Role>> = {
 const ACTION_TARGETING: Partial<Record<ActionId, TargetingKind>> = {
   move: 'move',
   attackMove: 'attackMove',
+  capture: 'capture',
+  liberate: 'liberate',
   gather: 'gather',
 };
 
@@ -308,6 +359,10 @@ export interface HudState {
   rosterOpen: string | null;
   /** Staat er een voltooide werkplaats? Pas dan kunnen bewoners van rol wisselen (rolknoppen op de commandokaart). */
   canSwitchRole: boolean;
+  /** Raiders: tellers voor de bovenbalk, of null zonder Raiders. */
+  raider: RaiderStats | null;
+  /** Ziet de speler een vijandelijke slaaf of gevangene (dan staat Bevrijd op de kaart)? */
+  enemySlaves: boolean;
   /** Het perk-paneel is open (alleen zinvol zolang er een perk te kiezen is). */
   perkPanelOpen: boolean;
 }
@@ -360,6 +415,8 @@ export class HudController implements HudHandle {
       roster: [],
       rosterOpen: null,
       canSwitchRole: true,
+      raider: null,
+      enemySlaves: false,
       perkPanelOpen: false,
       network: NO_NETWORK,
       targeting: null,
@@ -465,7 +522,12 @@ export class HudController implements HudHandle {
       case 'lobby':
         return this.deps.getLobby !== undefined;
       default:
-        return appliesTo(action.id, this.selectionSummary(), this.state.canSwitchRole);
+        return appliesTo(
+          action.id,
+          this.selectionSummary(),
+          this.state.canSwitchRole,
+          this.state.enemySlaves,
+        );
     }
   }
 
@@ -899,7 +961,7 @@ export class HudController implements HudHandle {
       this.deps.sendCommand('Gather', { ids, nodeId: target.nodeId });
     } else if ('enemyId' in target) {
       // Attack-move onto an enemy unit or building: attack that entity.
-      if (kind !== 'attackMove') return false;
+      if (kind !== 'attackMove' && kind !== 'capture' && kind !== 'liberate') return false;
       this.deps.sendCommand('Attack', { ids, target: target.enemyId });
     } else {
       if (!('x' in target)) return false;
@@ -1218,6 +1280,8 @@ export class HudController implements HudHandle {
       roster: d.getRoster?.() ?? [],
       buildingButtons: d.getBuildingButtons?.() ?? [],
       canSwitchRole: d.canSwitchRole?.() ?? true,
+      raider: d.getRaiderStats?.() ?? null,
+      enemySlaves: d.hasEnemySlaves?.() ?? false,
       perkPanelOpen: pendingPerks && this.state.perkPanelOpen,
       network: this.deps.getNetwork?.() ?? NO_NETWORK,
       targeting,

@@ -21,6 +21,17 @@ const BY_LOADOUT: Record<string, PortraitId> = {
   shotgun_composiet: '9',
   slagwapen_leer: '10',
   slagwapen_composiet: '10',
+  // Raiders: distinct faces per type inside the faction; the dog and the buggy get the generic CRT unit
+  plunderaar: '8',
+  plunderaar_staal: '11',
+  knuppelaar: '10',
+  molotovgooier: '9',
+  slaver: '7',
+  chemdealer: '2',
+  slaaf: '4',
+  slaaf_bouwer: '3',
+  hond: 'robot',
+  buggy: 'robot',
   beveiligingsrobot: 'robot',
   reparatiedrone: 'robot',
   sentinel: 'robot',
@@ -35,6 +46,17 @@ function hashed(name: string): PortraitId {
   return String((h % 11) + 1);
 }
 
+/** Raider loadouts by their Dutch display name (selected entities carry the name, not the key); order matters. */
+const RAIDER_BY_NAME: readonly (readonly [RegExp, PortraitId])[] = [
+  [/staal/, BY_LOADOUT.plunderaar_staal!],
+  [/molotov/, BY_LOADOUT.molotovgooier!],
+  [/slaver/, BY_LOADOUT.slaver!],
+  [/chem/, BY_LOADOUT.chemdealer!],
+  [/slaaf-bouwer/, BY_LOADOUT.slaaf_bouwer!],
+  [/slaaf/, BY_LOADOUT.slaaf!],
+  [/hond|buggy/, 'robot'],
+];
+
 /** The portrait of a unit-bar group (key: `hero` or a loadout key). */
 export function portraitOfGroup(key: string): PortraitId {
   return BY_LOADOUT[key] ?? hashed(key);
@@ -44,8 +66,12 @@ export function portraitOfGroup(key: string): PortraitId {
 export function portraitOfEntity(e: SelectedEntity): PortraitId {
   if (kindOfTypeId(e.typeId).kind === 'building') return 'building';
   if (heroIdOfTypeId(e.typeId) >= 0) return BY_LOADOUT.hero!;
-  if (e.role && BY_ROLE[e.role]) return BY_ROLE[e.role]!;
   const name = (e.loadoutName ?? '').toLowerCase();
+  // Raider types first: their role (militia) would otherwise give every fighter the Dwellers' militia face.
+  const raider = RAIDER_BY_NAME.find(([pattern]) => pattern.test(name));
+  if (raider) return raider[1];
+  if (name === 'plunderaar' && e.role === 'militia') return BY_LOADOUT.plunderaar!; // a Raider fighter, not the Dweller scavenger
+  if (e.role && BY_ROLE[e.role]) return BY_ROLE[e.role]!;
   if (/robot|drone|sentinel/.test(name)) return 'robot';
   if (name.includes('technicus')) return BY_LOADOUT.technicus!;
   if (name.includes('geweer')) return BY_LOADOUT.geweer_leer!;

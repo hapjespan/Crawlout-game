@@ -33,6 +33,13 @@ export interface SelectedEntity {
    * gezien" en de hp en staat van toen; hij is niet te bevelen en geen doelwit (de sim weigert het).
    */
   lastSeen?: boolean;
+  /**
+   * Soort Raider-unit (Raiders, sim 0.18.0): een slaaf (verzamelt of bouwt, vecht nooit, is aan een Kooi gebonden), de Slaver
+   * (Attack is vangen), de Chem-dealer (doseert in gevecht) of een andere vechter. Ontbreekt bij de Dwellers.
+   */
+  raiderKind?: RaiderKind;
+  /** Extra regels in het selectiepaneel, kant-en-klaar Nederlands (bijvoorbeeld "Kooi: Raiderkamp, werkstraal 45 m"). */
+  lines?: readonly string[];
   /** Positie in sim-eenheden: een klik op de kaart in het selectiepaneel zet de camera erop. Zonder positie blijft de camera staan. */
   x?: number;
   y?: number;
@@ -45,7 +52,10 @@ export interface NetworkState {
 }
 
 /** Soorten doel die de HUD van de volgende wereldklik verwacht. */
-export type TargetingKind = 'move' | 'attackMove' | 'gather' | 'heroAbility';
+export type TargetingKind =
+  'move' | 'attackMove' | 'gather' | 'heroAbility' | 'capture' | 'liberate';
+/** Soort Raider-unit in de selectie, zie SelectedEntity.raiderKind. */
+export type RaiderKind = 'slave' | 'slaver' | 'chemDealer' | 'fighter';
 export interface TargetPoint {
   x: number;
   y: number;
@@ -265,7 +275,7 @@ export interface BuildingButton {
   progressPct?: number;
 }
 
-export type AlertKind = 'attack' | 'settlerLost' | 'claimLost' | 'dominance';
+export type AlertKind = 'attack' | 'settlerLost' | 'claimLost' | 'dominance' | 'revolt';
 export interface HudAlert {
   kind: AlertKind;
   /** Locatie in sim-eenheden. Bij 'dominance' zonder betekenis (0): die toast heeft geen locatie en verplaatst de camera niet. */
@@ -328,7 +338,10 @@ export interface RosterUnit {
 /** Eigen units van één type (loadout of held), in vaste volgorde. */
 export interface RosterGroup {
   key: string;
+  /** Volledige Nederlandse naam: tooltip en schermlezer. */
   naam: string;
+  /** Korte naam voor op de tegel als `naam` er niet op past (bijvoorbeeld "Molotov"); ontbreekt: `naam`. */
+  short?: string;
   units: readonly RosterUnit[];
 }
 
@@ -413,6 +426,37 @@ export interface HudDeps {
    * Bouwer, Militie; 1 tot 3) niet op de commandokaart. Ontbreekt de dep: de knoppen staan er altijd.
    */
   canSwitchRole?(): boolean;
+  /** Raiders: tellers voor de bovenbalk (slaven, vechters, Kooien). Null of ontbrekend: geen Raiders. */
+  getRaiderStats?(): RaiderStats | null;
+  /** Ziet de speler een vijandelijke slaaf of gevangene? Dan staat Bevrijd op de commandokaart. */
+  hasEnemySlaves?(): boolean;
+}
+
+/** Eén Kooi met zijn slaven en garnizoen (Raiders). */
+export interface RaiderCage {
+  id: number;
+  x: number;
+  y: number;
+  naam: string;
+  slaves: number;
+  capacity: number;
+  /** Eigen vechters binnen de garnizoensstraal, en hoeveel de opstandregel eist. */
+  guards: number;
+  guardsNeeded: number;
+}
+/** Raider-tellers voor de bovenbalk; de client leidt ze af uit de eigen units die hij ziet (de status levert ze niet). */
+export interface RaiderStats {
+  /** Slaven (werkers) en hoeveel daarvan nu verzamelen, bouwen of afleveren. */
+  slaves: number;
+  slavesWorking: number;
+  /** Gevangenen onderweg naar of in een Kooi (nog geen slaaf). */
+  prisoners: number;
+  /** Vechters (geen held, geen slaaf) en de drempel van het tentenvangnet. */
+  fighters: number;
+  safetyThreshold: number;
+  /** Staat er een voltooide tent? Dan komt er onder de drempel een Plunderaar bij. */
+  tentReady: boolean;
+  cages: readonly RaiderCage[];
 }
 
 export interface HudHandle {

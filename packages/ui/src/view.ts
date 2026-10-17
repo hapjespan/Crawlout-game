@@ -6,7 +6,8 @@ import {
   ABILITY_KEYS,
   PERK_KEYS,
   PERK_PANEL_KEY,
-  ROLE_LABEL,
+  actionLabel,
+  roleLabelOf,
   keyLabel,
   threatOf,
   unitStateOf,
@@ -21,6 +22,7 @@ import {
   UNIT_STATE_TEXT,
   UnitConsole,
 } from './consoles.js';
+import { RaiderBar } from './raiderBar.js';
 import { portraitOfGroup } from './portraits.js';
 import { drawMinimap } from './minimap.js';
 import type {
@@ -32,11 +34,21 @@ import type {
   UnitState,
 } from './types.js';
 
+/** Tooltips of the commands that need one (the Raiders' own commands); the other buttons explain themselves. */
+const ACTION_HINT: Partial<Record<string, string>> = {
+  capture:
+    'Sla een vijandelijke bewoner neer buiten zijn basis; blijf bij hem staan om hem te vangen (rechtsklik werkt ook)',
+  liberate:
+    'Raak een vijandelijke slaaf of gevangene aan om hem te bevrijden (rechtsklik werkt ook)',
+};
+
 const TARGETING_TEXT: Record<TargetingKind, string> = {
   move: 'Kies een bestemming op de kaart (Esc om te annuleren)',
   attackMove: 'Kies een aanvalsdoel op de kaart (Esc om te annuleren)',
   gather: 'Kies een grondstofbron op de kaart (Esc om te annuleren)',
   heroAbility: 'Kies een doelpositie voor de ability (Esc om te annuleren)',
+  capture: 'Sla een vijandelijke bewoner neer buiten zijn basis (Esc om te annuleren)',
+  liberate: 'Kies een slaaf of gevangene om te bevrijden (Esc om te annuleren)',
 };
 
 function mmss(totalSeconds: number): string {
@@ -182,9 +194,12 @@ function SelectionPanel(props: {
         { class: 'co-unit-meta' },
         kindOfTypeId(u.typeId).kind === 'building'
           ? `Gebouw · ${u.hpPct}%`
-          : `Loadout: ${u.loadoutName ?? 'geen'} · Rol: ${u.role ? ROLE_LABEL[u.role] : 'geen'} · ${u.hpPct}%`,
+          : u.raiderKind
+            ? `${roleLabelOf(u) ?? 'Raider'} · ${u.hpPct}%`
+            : `Loadout: ${u.loadoutName ?? 'geen'} · Rol: ${roleLabelOf(u) ?? 'geen'} · ${u.hpPct}%`,
       ),
       u.note ? h('p', { class: 'co-unit-note' }, u.note) : null,
+      (u.lines ?? []).map((l) => h('p', { class: 'co-unit-note co-unit-line', key: l }, l)),
       h(HpBar, { pct: u.hpPct }),
     ];
   } else {
@@ -207,7 +222,7 @@ function SelectionPanel(props: {
               'aria-label': `${label}. Selecteer alleen deze.`,
               onClick: () => ctl.selectSelected(u.id),
             },
-            h('b', null, u.role ? ROLE_LABEL[u.role].slice(0, 1) : '?'),
+            h('b', null, (roleLabelOf(u) ?? '?').slice(0, 1)),
             // Decorative: the health is in the card's label, so no meter semantics for 50 cards.
             h(
               'span',
@@ -420,7 +435,7 @@ function RosterBar(props: { ctl: HudController; state: HudState }): ComponentChi
             h(
               'span',
               { class: 'co-tile-label' },
-              h('span', { class: 'co-roster-name' }, g.naam),
+              h('span', { class: 'co-roster-name' }, g.short ?? g.naam),
               h(
                 'span',
                 { class: 'co-tile-line' },
@@ -495,14 +510,15 @@ function CommandCard(props: { ctl: HudController; state: HudState }): ComponentC
                 type: 'button',
                 class: 'co-btn',
                 disabled: !ctl.isEnabled(a),
-                'aria-label': `${a.label} (sneltoets ${keyLabel(a.key)})`,
+                'aria-label': `${actionLabel(a, ctl.selectionSummary())} (sneltoets ${keyLabel(a.key)})`,
+                title: ACTION_HINT[a.id],
                 'aria-keyshortcuts': a.key === ' ' ? 'Space' : a.key.toUpperCase(),
                 'aria-pressed': pressed,
                 'data-action': a.id,
                 onClick: () => ctl.run(a.id),
               },
               h('span', { class: 'co-btn-icon', 'aria-hidden': 'true' }),
-              h('span', { class: 'co-btn-label' }, a.label),
+              h('span', { class: 'co-btn-label' }, actionLabel(a, ctl.selectionSummary())),
               h('span', { class: 'co-key', 'aria-hidden': 'true' }, keyLabel(a.key)),
             );
           }),
@@ -826,6 +842,7 @@ const ALERT_TEXT: Record<AlertKind, string> = {
   settlerLost: 'Bewoner verloren',
   claimLost: 'Claim verloren',
   dominance: 'Tegenstander telt mee voor dominantie!',
+  revolt: 'Kooi onbewaakt: slaven ontsnappen!',
 };
 
 function Toasts(props: { ctl: HudController; state: HudState }): ComponentChild {
@@ -993,6 +1010,7 @@ export function Hud(props: { ctl: HudController }): ComponentChild {
       },
     },
     h(ResourceBar, { status: state.status }),
+    h(RaiderBar, { stats: state.raider }),
     h(
       'div',
       { class: 'co-top-right' },

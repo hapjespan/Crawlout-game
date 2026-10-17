@@ -57,7 +57,7 @@ describe('leftClickIs', () => {
   });
 
   it('an enemy unit or building is the target in attack-move and ability targeting', () => {
-    for (const kind of ['attackMove', 'heroAbility'] as const)
+    for (const kind of ['attackMove', 'capture', 'liberate', 'heroAbility'] as const)
       for (const hit of ['unit', 'building'] as const)
         expect(leftClickIs({ mode: 'targeting', kind }, hit, true)).toBe('complete');
   });
