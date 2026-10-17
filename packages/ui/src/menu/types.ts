@@ -73,7 +73,8 @@ export interface MenuHandle {
   /** Everything is loaded: the splash offers "Druk op een toets". */
   setLoaded(): void;
   setLink(status: 'up' | 'down'): void;
-  setLobby(roomId: string, map: string, players: readonly LobbyPlayer[]): void;
+  /** `you`: the playerId the relay gave this connection; omit (or null) only for a relay without it. */
+  setLobby(roomId: string, map: string, players: readonly LobbyPlayer[], you?: number | null): void;
   setError(message: string): void;
   /** Hides the menu (the match starts); `show()` brings it back. */
   hide(): void;

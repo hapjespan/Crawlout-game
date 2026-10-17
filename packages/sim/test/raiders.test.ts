@@ -401,6 +401,23 @@ describe('Raiders: chems', () => {
     expect([CHEM_NONE, CHEM_ACTIVE]).toContain(w.chemPhase[i]);
   });
 
+  it('PlayerStatus.chems (protocol 0.13.0, proposal) lists the dosed units with phase and ticks left', () => {
+    const { sim, dealer, fighter } = chemSim();
+    expect(sim.playerStatus(0).chems).toEqual([]);
+    play(sim, 5);
+    const chems = sim.playerStatus(0).chems!;
+    const fighterId = sim.world.idOf(idx(sim, fighter));
+    const own = chems.find((c) => c.unitId === fighterId)!;
+    expect(own).toMatchObject({ chem: 0, phase: 'active' });
+    expect(own.ticksLeft).toBeGreaterThan(0);
+    expect(own.ticksLeft).toBeLessThanOrEqual(psycho.activeTicks);
+    expect(chems.map((c) => c.unitId)).toEqual(
+      [...chems.map((c) => c.unitId)].sort((a, b) => a - b),
+    );
+    expect(chems.some((c) => c.unitId === sim.world.idOf(idx(sim, dealer)))).toBe(true);
+    expect(sim.playerStatus(1).chems).toEqual([]);
+  });
+
   it('no dose without a fight, without the tech or without scrap; refined stretches the active phase', () => {
     const sim = open();
     research(sim, 0, 'chemie');

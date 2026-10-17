@@ -122,7 +122,14 @@ export type MenuAction =
   | { type: 'pvp/form'; patch: Partial<PvpForm> }
   | { type: 'pvp/connect'; create: boolean }
   | { type: 'pvp/link'; status: 'up' | 'down' }
-  | { type: 'pvp/lobby'; roomId: string; map: string; players: readonly LobbyPlayer[] }
+  | {
+      type: 'pvp/lobby';
+      roomId: string;
+      map: string;
+      players: readonly LobbyPlayer[];
+      /** The relay's `you`; the name match (identifyYou) is only the fallback without it. */
+      you?: number | null | undefined;
+    }
   | { type: 'pvp/error'; message: string };
 
 export type MenuEffect =
@@ -330,7 +337,9 @@ export function reduceMenu(state: MenuState, action: MenuAction, env: MenuEnv): 
       );
     case 'pvp/lobby': {
       if (state.pvp.phase !== 'lobby') return done(state);
-      const youId = identifyYou(action.players, state.pvp.sentName, state.pvp.lobby?.youId ?? null);
+      const youId =
+        action.you ??
+        identifyYou(action.players, state.pvp.sentName, state.pvp.lobby?.youId ?? null);
       return done(
         withPvp(state, {
           lobby: { roomId: action.roomId, map: action.map, players: action.players, youId },

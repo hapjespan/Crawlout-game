@@ -25,6 +25,7 @@ const status: PlayerStatus = {
   dominance: { pointsHeld: 0, pointsRequired: 2, ticksHeld: 0, ticksRequired: 9600, leader: null },
   robotPop: 0,
   trained: [0, 0, 0, 0, 0, 0, 0],
+  claimPoints: [],
 };
 
 const typeId = unitTypeId(1);

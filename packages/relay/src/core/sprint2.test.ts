@@ -83,6 +83,28 @@ describe('lobby: namen en facties', () => {
     expect(names(h, 'a')[4]!.length).toBe(32);
   });
 
+  it('elke verbinding krijgt in het lobby-bericht zijn eigen playerId als you, ook bij gelijke namen', () => {
+    const h = harness();
+    h.say('a', { kind: 'join', roomId: 'r', name: 'Speler' });
+    h.say('b', { kind: 'join', roomId: 'r', name: 'Speler' });
+    h.say('c', { kind: 'join', roomId: 'r', name: 'Speler' });
+    h.say('a', { kind: 'addAi', faction: 'raiders' });
+    for (const [conn, id] of [
+      ['a', 0],
+      ['b', 1],
+      ['c', 2],
+    ] as const) {
+      const last = h.of(conn, 'lobby').at(-1)!;
+      expect(last.you).toBe(id);
+      expect(last.players.map((p) => p.name)).toEqual(['Speler', 'Speler 2', 'Speler 3', 'AI 4']);
+    }
+    // the same lobby content for everyone; only `you` differs
+    const withoutYou = (conn: string) => ({ ...h.of(conn, 'lobby').at(-1)!, you: undefined });
+    const fromA = withoutYou('a');
+    const fromB = withoutYou('b');
+    expect(fromA).toEqual(fromB);
+  });
+
   it('een vrijgekomen naam is weer te gebruiken en een AI blokkeert geen menselijke naam', () => {
     const h = harness();
     h.say('a', { kind: 'join', roomId: 'r', name: 'AI 2' });

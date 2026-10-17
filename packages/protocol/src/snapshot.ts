@@ -263,10 +263,32 @@ export interface PlayerStatus {
    * architect in fase-0 sectie 22), zodat de HUD een ring met voortgang rond het claimpunt kan tonen: een paal in
    * aanbouw, de held die het punt claimt door erin te staan, of de overname van een punt zonder paal. pointId is het
    * entity-id van het claimpunt in de snapshot. Oplopend op pointId. De sim levert hem altijd (Sim.status,
-   * claims.ts claimPointStatus) en de client leest hem (render: de ring; minimap); optioneel tot de PlayerStatus-literals
-   * van hud en client hem dragen, dan verplicht in de volgende protocolversie (sectie 22 besluit 3).
+   * claims.ts claimPointStatus) en de client leest hem (render: de ring; minimap). Verplicht sinds protocol 0.13.0
+   * (voorstel, ter bevestiging door de architect; sectie 22 besluit 3): alle PlayerStatus-literals dragen hem.
    */
-  claimPoints?: ClaimPointStatus[];
+  claimPoints: ClaimPointStatus[];
+  /**
+   * Chem-dosis per eenheid (protocol 0.13.0; voorstel van hud, ter bevestiging door de architect, fase-0 sectie 23
+   * besluit 8): elke eigen eenheid met een chem in een fase (active, crash of cooldown), zodat de HUD de dosis en de
+   * cooldown van een Chem-dealer uit state leest en niet uit de snapshot benadert. Oplopend op unitId. De sim houdt
+   * ze al bij (w.chem, w.chemPhase, w.chemTicks), dus geen state en geen hashwijziging; Sim.chems. Optioneel tot de
+   * HUD hem leest (de sim levert hem altijd); leeg zonder doses.
+   */
+  chems?: ChemStatus[];
+}
+
+/** Fase van een chem op een eenheid (ChemStatus.phase). */
+export type ChemPhase = 'active' | 'crash' | 'cooldown';
+
+/** De chem van één eenheid (PlayerStatus.chems, protocol 0.13.0, voorstel). */
+export interface ChemStatus {
+  /** Entity-id van de gedoseerde eenheid. */
+  unitId: number;
+  /** Index in `factions[].chems` van de eigen factie (0-based). */
+  chem: number;
+  phase: ChemPhase;
+  /** Ticks tot het einde van deze fase. */
+  ticksLeft: number;
 }
 
 /** Wat een claimpunt nu verandert (ClaimPointStatus.activity). */
