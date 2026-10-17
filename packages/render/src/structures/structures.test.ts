@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ANIM } from '@crawlout/protocol';
+import { ANIM, ENTITY_FLAG } from '@crawlout/protocol';
 import {
   BoxGeometry,
   Mesh,
@@ -13,12 +13,15 @@ import { BUILDING_ROOF_TOP, buildingWallHeight, FootprintTable } from '../entiti
 import { buildingTypeId, TYPE_ID_SCRAP_NODE } from '../entities/typeIds.js';
 import { createInterpolatedFrame, type InterpolatedFrame } from '../snapshot/interpolate.js';
 import type { BuildingVisual } from './buildingAssets.js';
+import { NEUTRAL_TEAM } from '../palette.js';
 import { NO_CUT } from './instanceBatch.js';
 import { createScaffoldGeometry } from './structureGeometry.js';
 import { StructureLayer } from './structureLayer.js';
 import {
   constructionHeight,
   constructionTint,
+  GHOST_TINT,
+  ghostTint,
   SCAFFOLD_HEIGHT,
   SITE_MIN_HEIGHT,
   scrapHeapScale,
@@ -39,6 +42,16 @@ describe('structure visuals', () => {
     expect(constructionTint(1, tint, [0, 0, 0])).toEqual(
       [0.9, 0.8, 0.7].map((v) => expect.closeTo(v, 6)),
     );
+  });
+
+  it('dims a ghost with the cool multiplier, in place or into another array', () => {
+    const out: [number, number, number] = [0, 0, 0];
+    expect(ghostTint([1, 1, 1], out)).toEqual([...GHOST_TINT]);
+    const t: [number, number, number] = [0.5, 1, 2];
+    ghostTint(t, t);
+    expect(t).toEqual([0.5 * GHOST_TINT[0], GHOST_TINT[1], 2 * GHOST_TINT[2]]);
+    for (const v of GHOST_TINT) expect(v).toBeLessThan(1);
+    expect(GHOST_TINT[2]).toBeGreaterThan(GHOST_TINT[0]); // cool, not warm
   });
 
   it('shrinks and flattens a scrap heap with its remaining stock', () => {
@@ -144,6 +157,42 @@ describe('StructureLayer', () => {
     expect(s[0]).toBeGreaterThan(4);
     expect(s[1]).toBeCloseTo(wall * SCAFFOLD_HEIGHT);
     expect(instance(scaffolds, 'iPos', 0)[0]).toBeCloseTo(-4);
+  });
+
+  it('draws a ghost building greyed: neutral team color, dimmed tint, the progress it had when last seen', () => {
+    const { layer, scene, frame, camera } = setup();
+    const typeId = buildingTypeId(0);
+    frame.count = 3;
+    for (const i of [0, 1, 2]) {
+      frame.id[i] = 300 + i;
+      frame.typeId[i] = typeId;
+      frame.x[i] = i * 8 - 8;
+      frame.z[i] = 0;
+      frame.owner[i] = 1;
+      frame.hpPct[i] = 100;
+      frame.anim[i] = ANIM.idle;
+      frame.animT[i] = 0;
+    }
+    frame.flags[0] = ENTITY_FLAG.ghost;
+    frame.flags[1] = 0;
+    frame.flags[2] = ENTITY_FLAG.ghost;
+    frame.anim[2] = ANIM.build;
+    frame.animT[2] = 0.5;
+    layer.update(frame, camera, decals);
+    const lod0 = batch(scene, 'buildings-lod0');
+    expect(lod0.count).toBe(3);
+    const team = (k: number): number => instance(lod0, 'iScale', k)[3]!;
+    expect(team(0)).toBe(NEUTRAL_TEAM);
+    expect(team(1)).toBe(1); // a visible enemy keeps his color
+    const live = instance(lod0, 'iTint', 1);
+    const ghost = instance(lod0, 'iTint', 0);
+    for (let c = 0; c < 3; c++) expect(ghost[c]).toBeLessThan(live[c]!);
+    const wall = buildingWallHeight({ w: 4, h: 4 });
+    expect(instance(lod0, 'iScale', 2)[1]).toBeCloseTo(wall * constructionHeight(0.5));
+    expect(team(2)).toBe(NEUTRAL_TEAM);
+    const scaffolds = batch(scene, 'building-scaffolds');
+    expect(scaffolds.count).toBe(1);
+    expect(instance(scaffolds, 'iScale', 0)[3]).toBe(NEUTRAL_TEAM);
   });
 
   it('scales scrap nodes by hpPct', () => {

@@ -333,6 +333,23 @@ describe('vijand aanklikken om te bekijken', () => {
     expect(actions(t.el)).toContain('move');
   });
 
+  it('een ghost (laatst gezien) zegt dat in het paneel en in de console, en is nog steeds niet te bevelen', () => {
+    const ghost = foe({ typeId: 1024 + 6, loadoutName: 'Turret', lastSeen: true });
+    delete ghost.detail;
+    const t = setup({ selection: [ghost] });
+    mounted = t.handle;
+    const panel = t.el.querySelector('.co-selection');
+    expect(panel?.textContent).toContain('Laatst gezien');
+    expect(panel?.textContent).toContain('Turret');
+    expect(t.el.querySelector('.co-console')?.textContent).toContain('laatst gezien');
+    expect(actions(t.el)).toEqual([]);
+    // A visible enemy says nothing of the kind.
+    t.state.selection = [foe()];
+    act(() => t.handle.refresh());
+    expect(t.el.querySelector('.co-selection')?.textContent).not.toContain('Laatst gezien');
+    expect(t.el.querySelector('.co-console')?.textContent).not.toContain('laatst gezien');
+  });
+
   it('een vijand beweegt de camera niet', () => {
     const t = setup({ selection: [] });
     mounted = t.handle;

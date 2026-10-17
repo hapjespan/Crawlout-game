@@ -28,6 +28,7 @@ export type {
   MinimapBlip,
   MinimapClaim,
   MinimapData,
+  MinimapFog,
   NetworkState,
   PerkOption,
   RosterGroup,

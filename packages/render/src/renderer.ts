@@ -1,6 +1,12 @@
 // Public entry point: createRenderer({ canvas }). The renderer reads snapshots only, never sim state (contract 1).
 import type { GameData } from '@crawlout/data';
-import { MAX_ENTITIES, TICK_MS, UNITS_PER_METER, type ClaimPointStatus } from '@crawlout/protocol';
+import {
+  MAX_ENTITIES,
+  TICK_MS,
+  UNITS_PER_METER,
+  type ClaimPointStatus,
+  type FogMask,
+} from '@crawlout/protocol';
 import { claimRingArcs } from './claims/claimRing.js';
 import { stampInspected } from './entities/inspected.js';
 import {
@@ -47,6 +53,7 @@ import {
   type PickShape,
   type ScreenRect,
 } from './picking/selection.js';
+import { createFogOfWar, markMapKnowledge } from './fog/fogOfWar.js';
 import { createAtmosphere } from './lighting/atmosphere.js';
 import { SUN_DIR, TONE_EXPOSURE, TONE_MAPPING } from './lighting/lightRig.js';
 import { defaultShadowQuality, SunShadow, type ShadowQuality } from './shadows/sunShadow.js';
@@ -314,6 +321,14 @@ export interface CrawloutRenderer {
    * the circle. Pass the latest list on every status; an empty list or undefined clears the arcs.
    */
   setClaimStates(states: readonly ClaimPointStatus[] | undefined): void;
+  /**
+   * Fog of war: this player's mask on the vision grid (protocol FogMask, the sim's `fog` answer). Darkens and desaturates
+   * what is explored but not in view, and turns what is unexplored near-black, in the terrain, water, skirt, props,
+   * buildings, units and decals (one texture sampled in the existing materials: no draw calls). New masks fade in over
+   * a quarter second; an identical mask costs a compare. null switches it off. Claim points and scrap heaps (map
+   * knowledge) stay readable in the dark.
+   */
+  setFog(mask: FogMask | null): void;
   /** Entities the player inspects but does not own (enemy units and buildings): they get a red ring instead of the green selection ring. */
   setInspectedIds(ids: Iterable<number>): void;
   /** What lies under canvas-local CSS pixel (x, y). Units, buildings, scrap nodes and claim points can be hit. */
@@ -418,7 +433,9 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
 
   const scene = new Scene();
   // Gradient sky and a fog of its horizon colour (lighting/atmosphere.ts).
-  const atmosphere = createAtmosphere();
+  // The fog of war rides in the atmosphere's fog node: every material gets it without a draw call of its own.
+  const fogOfWar = createFogOfWar();
+  const atmosphere = createAtmosphere(fogOfWar);
   scene.backgroundNode = atmosphere.backgroundNode;
   scene.fogNode = atmosphere.fogNode;
   const camera = new PerspectiveCamera(45, 1, 0.5, 800);
@@ -555,19 +572,24 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
         name: 'crawlout-building-toon',
         shadow: sun,
       }),
-      scrap: createPropMaterial({
-        lightDir: DEFAULT_LIGHT_DIR,
-        name: 'crawlout-scrap-toon',
-        surface: 'rustMetal',
-        shadow: sun,
-      }),
-      claim: createPropMaterial({
-        lightDir: DEFAULT_LIGHT_DIR,
-        name: 'crawlout-claim-toon',
-        time,
-        surface: 'paintedMetal',
-        shadow: sun,
-      }),
+      // Scrap heaps and claim points are map knowledge: they keep the explored look in the unexplored dark.
+      scrap: markMapKnowledge(
+        createPropMaterial({
+          lightDir: DEFAULT_LIGHT_DIR,
+          name: 'crawlout-scrap-toon',
+          surface: 'rustMetal',
+          shadow: sun,
+        }),
+      ),
+      claim: markMapKnowledge(
+        createPropMaterial({
+          lightDir: DEFAULT_LIGHT_DIR,
+          name: 'crawlout-claim-toon',
+          time,
+          surface: 'paintedMetal',
+          shadow: sun,
+        }),
+      ),
     },
   });
   const windStrength = uniform(opts.props?.wind === false ? 0 : 1);
@@ -856,6 +878,7 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
     additive.commit();
     smoke.commit();
     atmosphere.update(controls.distance);
+    fogOfWar.update(dt);
     profiler.mark('effects');
     sun?.update(camera, groundLo, groundHi);
     profiler.mark('shadowFit');
@@ -992,6 +1015,9 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
     setInspectedIds(ids) {
       inspectedIds = new Set(ids);
     },
+    setFog(mask) {
+      fogOfWar.setMask(mask);
+    },
     setClaimStates(states) {
       structures.setClaimArcs(claimRingArcs(states ?? []));
     },
@@ -1079,6 +1105,7 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
       additive.dispose();
       smoke.dispose();
       sun?.dispose();
+      fogOfWar.dispose();
       skirt.dispose();
       terrainGeneration++;
       terrain.dispose();

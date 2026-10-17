@@ -138,7 +138,8 @@ function terminalLine(
   if (sel.length === 0) return 'Wacht op bevel';
   const lead = sel[0];
   if (sel.length > 1 || !lead) return null;
-  if (lead.enemy) return `${lead.ownerLabel ?? 'Vijand'} in beeld`;
+  if (lead.enemy)
+    return `${lead.ownerLabel ?? 'Vijand'} ${lead.lastSeen ? '(laatst gezien)' : 'in beeld'}`;
   if (lead.note) return lead.note;
   const unit = roster.flatMap((g) => g.units).find((u) => u.id === lead.id);
   const name = lead.loadoutName ?? `Type ${lead.typeId}`;
@@ -167,6 +168,8 @@ function SelectionPanel(props: {
         { class: 'co-unit-meta' },
         `${foe.ownerLabel ?? 'Vijand'} · ${isBuilding ? 'Gebouw' : 'Eenheid'} · ${foe.hpPct}%`,
       ),
+      // A ghost (fog of war): what the player last saw of it, not what it is now.
+      foe.lastSeen ? h('p', { class: 'co-unit-note co-last-seen' }, 'Laatst gezien') : null,
       foe.detail ? h('p', { class: 'co-unit-detail' }, foe.detail) : null,
       h(HpBar, { pct: foe.hpPct }),
     ];

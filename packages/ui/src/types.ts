@@ -28,6 +28,11 @@ export interface SelectedEntity {
   ownerLabel?: string;
   /** Bij een vijand: korte extra regel, bijvoorbeeld "Wapen: Geweer (ballistisch) · Pantser: Licht". */
   detail?: string;
+  /**
+   * True voor een ghost: een vijandelijk gebouw dat de speler eerder zag en nu niet meer ziet. Het paneel toont "Laatst
+   * gezien" en de hp en staat van toen; hij is niet te bevelen en geen doelwit (de sim weigert het).
+   */
+  lastSeen?: boolean;
   /** Positie in sim-eenheden: een klik op de kaart in het selectiepaneel zet de camera erop. Zonder positie blijft de camera staan. */
   x?: number;
   y?: number;
@@ -62,6 +67,8 @@ export interface MinimapBlip {
   y: number;
   owner: number;
   kind: 'unit' | 'building' | 'hero' | 'node';
+  /** Een vijandelijk gebouw dat de speler eerder zag maar nu niet ziet (ghost, protocol 0.11.0): gedimd getekend. */
+  ghost?: boolean;
 }
 /** Een claimpunt; owner null = niemand. */
 export interface MinimapClaim {
@@ -71,6 +78,16 @@ export interface MinimapClaim {
   /** Claim in progress (hero claim, post, takeover): 0..1 and who is claiming; drawn as an arc around the marker. */
   progress?: number;
   claimer?: number;
+}
+/**
+ * Fog of war voor de minimap (zichtraster van de sim, cellen van 2 m; het hele raster beslaat de hele kaart). Per cel 1
+ * of 0: `visible` = nu in beeld, `explored` = ooit gezien (ook de zichtbare cellen).
+ */
+export interface MinimapFog {
+  w: number;
+  h: number;
+  visible: Uint8Array;
+  explored: Uint8Array;
 }
 /**
  * Minimap-invoer. Houd het object stabiel tussen lezingen als er niets verandert (de HUD leest elke refresh).
@@ -91,6 +108,12 @@ export interface MinimapData {
   claims: readonly MinimapClaim[];
   /** w*h cellen, 1 = zichtbaar. Ontbreekt: geen fog. Vijandelijke blips buiten het zicht worden verborgen. */
   visible?: Uint8Array;
+  /**
+   * Klassieke fog of war op het zichtraster (onverkend donker, verkend gedimd, zichtbaar helder; zachte randen). Gaat
+   * voor `visible`. Houd het object stabiel tot er een nieuw masker komt: de laag wordt gecachet op de arrays.
+   * Vijandelijke eenheden buiten het zicht en ghost-gebouwen (`MinimapBlip.ghost`, gedimd) volgen daaruit.
+   */
+  fog?: MinimapFog;
 }
 
 export interface BuildOption {

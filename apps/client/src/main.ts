@@ -10,6 +10,7 @@ import {
   type CommandPayload,
   type CommandType,
   type DesyncEvent,
+  type FogMask,
   type PlayerStatus,
   type StallNotice,
 } from '@crawlout/protocol';
@@ -31,6 +32,7 @@ import {
   type HudAlert,
   type HudDeps,
   type MinimapData,
+  type MinimapFog,
   type NetworkState,
   type SelectedEntity,
   type TargetingKind,
@@ -84,6 +86,7 @@ import {
 import { placementIssue, type CellRect } from './game/placementRules.js';
 import { createPerfBadge } from './net/perfBadge.js';
 import { dominanceView } from './game/dominance.js';
+import { FOG_POLL_MS, fogEnabled, minimapFogOf, sameMinimapFog } from './game/fogView.js';
 import { minimapLayers } from './game/minimapLayers.js';
 import { LOADOUT_NAMES, buildRoster } from './game/roster.js';
 import { EVENT_TYPE, readSnapshot, type EntityRow } from './game/snapshot.js';
@@ -151,6 +154,19 @@ async function main(): Promise<void> {
   const alertListeners = new Set<(a: HudAlert) => void>();
   const alert = (a: HudAlert): void => alertListeners.forEach((l) => l(a));
   let lastAttackAlert = -Infinity;
+  // Fog of war: `?fog=0` (or window.crawlout.revealAll(true)) turns it off; otherwise the sim's mask is asked for at
+  // FOG_POLL_MS, drawn by the renderer in every material and handed to the minimap.
+  let fogOn = fogEnabled(params);
+  let minimapFog: MinimapFog | undefined;
+  const applyFog = (mask: FogMask | null): void => {
+    renderer.setFog(mask);
+    if (!mask) minimapFog = undefined;
+    else {
+      const next = minimapFogOf(mask);
+      if (!sameMinimapFog(minimapFog, next)) minimapFog = next;
+    }
+    notify();
+  };
 
   const loadoutOf = (typeId: number) => {
     const k = kindOfTypeId(typeId);
@@ -220,6 +236,9 @@ async function main(): Promise<void> {
       }
       notify();
     },
+    onFog(mask) {
+      if (fogOn) applyFog(mask);
+    },
     onStatus(next, winner) {
       status = next;
       renderer.setClaimStates(next.claimPoints);
@@ -238,6 +257,9 @@ async function main(): Promise<void> {
     onError: (message) => console.error(`sim: ${message}`),
   });
   const statusPoll = window.setInterval(() => session.requestStatus(), STATUS_POLL_MS);
+  const fogPoll = window.setInterval(() => {
+    if (fogOn) session.requestFog();
+  }, FOG_POLL_MS);
 
   let ended = false;
   function showEnd(winner: SimWinner): void {
@@ -582,6 +604,8 @@ async function main(): Promise<void> {
             enemy: true,
             ownerLabel: info.ownerLabel,
             ...(info.detail ? { detail: info.detail } : {}),
+            // A ghost (fog of war): an enemy building as the player last saw it.
+            ...((foe.flags & ENTITY_FLAG.ghost) !== 0 ? { lastSeen: true } : {}),
           },
         ];
       }
@@ -647,6 +671,7 @@ async function main(): Promise<void> {
             y: e.y,
             owner: e.owner,
             kind: kind === 'building' ? 'building' : 'unit',
+            ...((e.flags & ENTITY_FLAG.ghost) !== 0 ? { ghost: true } : {}),
           });
       }
       return {
@@ -656,6 +681,7 @@ async function main(): Promise<void> {
         ...minimapStatic,
         blips,
         claims,
+        ...(minimapFog ? { fog: minimapFog } : {}),
       };
     },
     focusCamera: (x, y) => renderer.focus(x, y),
@@ -749,6 +775,8 @@ async function main(): Promise<void> {
   void session.started.then(() => {
     const home = map.grid.spawns[session.playerId];
     if (home) renderer.focus(home.ux, home.uy);
+    if (fogOn) session.requestFog();
+    else session.revealAll(true);
   });
 
   // Pointer: left click/drag selects (shift adds); while placing or targeting a left click picks the spot.
@@ -791,6 +819,8 @@ async function main(): Promise<void> {
         : { mode: 'targeting', kind: targeting! };
       const hostile =
         picked !== undefined && picked.owner !== session.playerId && picked.owner !== OWNER_NEUTRAL;
+      // A ghost is no target (the sim refuses it): a click on one is a click on its spot.
+      const ghost = picked !== undefined && (picked.flags & ENTITY_FLAG.ghost) !== 0;
       if (leftClickIs(state, hitKind, hostile) === 'complete') {
         if (placing) {
           const at = placementAt(p.x, p.y);
@@ -809,7 +839,7 @@ async function main(): Promise<void> {
             renderer.setPlacementPreview(null);
             canvas.style.cursor = 'default';
           }
-        } else if (picked && hostile && (hitKind === 'unit' || hitKind === 'building')) {
+        } else if (picked && hostile && !ghost && (hitKind === 'unit' || hitKind === 'building')) {
           hud.completeTargeting({ enemyId: picked.id, x: picked.x, y: picked.y });
         } else if (targeting === 'gather' && picked && hitKind === 'scrapNode') {
           hud.completeTargeting({ nodeId: picked.id });
@@ -899,6 +929,7 @@ async function main(): Promise<void> {
   window.addEventListener('beforeunload', () => {
     perfBadge?.dispose();
     window.clearInterval(statusPoll);
+    window.clearInterval(fogPoll);
     session.dispose();
     hud.unmount();
     renderer.dispose();
@@ -929,7 +960,13 @@ async function main(): Promise<void> {
       return l ? unitTypeId(l.id) : -1;
     },
     /** Fog of war, dev and tests (tools/replay hud-clicks): true shows every entity, false only what this player sees. */
-    revealAll: (on: boolean) => session.revealAll(on),
+    revealAll: (on: boolean) => {
+      // The sim's reveal-all view shows every entity: the fog of war goes with it, and returns when switched off.
+      fogOn = !on;
+      if (on) applyFog(null);
+      else session.requestFog();
+      session.revealAll(on);
+    },
     /** This player's territory mask (1 per cell, map width), for a later territory overlay in render or the HUD. */
     territory: () => territoryNow(),
     /** For the real-browser HUD test (tools/replay hud-clicks): building type ids by data key, and the sim's rule. */
