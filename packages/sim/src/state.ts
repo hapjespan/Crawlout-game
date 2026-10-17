@@ -5,6 +5,7 @@ import { MAX_FLOW_FIELDS } from './flowfield.js';
 import { FNV_OFFSET, fnv1a } from './math/fnv.js';
 import type { GlobalState, PlayerState } from './systems/common.js';
 import type { Vision } from './vision.js';
+import type { CreepCamps } from './systems/creeps.js';
 
 // Volledige state als één reeks byte-chunks in vaste volgorde. serialize() plakt ze achter elkaar in één
 // ArrayBuffer; hash() is FNV-1a 32-bit over precies dezelfde bytes. Daardoor geldt per constructie:
@@ -17,8 +18,12 @@ if (new Uint8Array(new Uint16Array([1]).buffer)[0] !== 1)
   throw new Error('sim: big-endian platform; state en hash vereisen little-endian');
 
 export const STATE_MAGIC = 0x4c575243; // 'CRWL' als little-endian bytes
-/** 12: the Raiders (sim 0.18.0; voorstel, ter bevestiging door de architect): see World and PlayerState. */
-export const STATE_FORMAT_VERSION = 12;
+/**
+ * 12: the Raiders (sim 0.18.0; voorstel, ter bevestiging door de architect): see World and PlayerState.
+ * 13: creep camps (sim 0.20.0; voorstel, ter bevestiging door de architect): World.creepCamp and creepHome, and the
+ * camp state (systems/creeps.ts CreepCamps) after the explored bitsets.
+ */
+export const STATE_FORMAT_VERSION = 13;
 
 /** Header-velden (uint32), in volgorde. */
 const H = {
@@ -72,6 +77,8 @@ export interface StateParts {
   readonly globals: GlobalState;
   /** Fog of war: the explored bitsets per player are state (sim 0.17.0); the visible counts are derived. */
   readonly vision: Vision;
+  /** Creep camps (sim 0.20.0): per camp its state, timer and who cleared it when. */
+  readonly creeps: CreepCamps;
 }
 
 /** De chunks na de header, gemaakt op basis van de huidige highWater en freeCount. */
@@ -108,6 +115,8 @@ function bodyChunks(p: StateParts): Uint8Array[] {
   for (const a of players) out.push(bytesOf(a, a.length));
   out.push(bytesOf(p.globals.words, p.globals.words.length));
   out.push(p.vision.explored);
+  for (const a of [p.creeps.state, p.creeps.timer, p.creeps.clearedBy, p.creeps.clearedAt])
+    out.push(bytesOf(a, a.length));
   return out;
 }
 

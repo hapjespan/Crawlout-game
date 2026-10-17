@@ -38,6 +38,7 @@ import { letterRunning, trainCost, trainedOn } from './training.js';
 import { DEPOT_MASK, ROLE_MILITIA } from './orders.js';
 import type { WorkReach } from './slaves.js';
 import { raiderThink } from './aiRaiders.js';
+import { aiCreepRun, campAlive, campAt } from './creeps.js';
 import {
   PLACE_OK,
   hqCentres,
@@ -1188,6 +1189,23 @@ function think(
     drawToThreat(ctx, threat, enemySpawn, r2, militia, idleMilitia, true);
     drawToThreat(ctx, threat, enemySpawn, r2, robots, idleRobots, false);
   }
+  // 10a2 creep camps (sim 0.20.0, ai/*.json creeps): without a threat, a big enough idle army clears the nearest camp
+  if (
+    threat < 0 &&
+    fields !== null &&
+    aiCreepRun(
+      ctx,
+      p,
+      script,
+      fields.home,
+      [...idleMilitia, ...idleRobots],
+      // the hero along unless he is claiming a point nearby (heroClaimNear walks him there)
+      heroId >= 0 && w.orderType(hero) === ORDER_NONE && !heroClaimNear(ctx, p, hero, script)
+        ? heroId
+        : -1,
+    )
+  )
+    return;
 
   // 10b verdedigen of verzamelen: militie (en de held) zonder taak
   const idle = [...idleMilitia, ...idleRobots];
@@ -1501,6 +1519,9 @@ export function raidOver(ctx: SimContext, p: number, i: number): boolean {
   const o = w.currentOrder(i);
   const x = w.ordX[o]!;
   const y = w.ordY[o]!;
+  // a creep run (sim 0.20.0) is over once its camp is cleared
+  const camp = campAt(ctx, x, y);
+  if (camp >= 0) return !campAlive(ctx, camp);
   for (const pt of ctx.claimPoints) {
     if (w.x[pt] !== x || w.y[pt] !== y) continue;
     const owner = w.owner[pt]!;

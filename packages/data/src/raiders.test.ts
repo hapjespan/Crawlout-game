@@ -47,7 +47,7 @@ describe('Raiders: de factie laadt', () => {
     );
     expect(faction.robotRules).toBeNull();
     expect(faction.housingGrowthPerMin).toBe(0);
-    expect(data.dataVersion).toBe('0.24.0');
+    expect(data.dataVersion).toBe('0.25.0'); // data 0.25.0: the creep camps (0.24.0: Raider balance)
     // Dwellers ongewijzigd: nog altijd training en geen Raider-blokken
     expect(dwellers.specialChannel).toBe('training');
     expect(dwellers.slaves).toBeNull();

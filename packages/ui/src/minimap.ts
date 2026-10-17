@@ -1,7 +1,10 @@
+import { OWNER_NEUTRAL } from '@crawlout/protocol';
 import type { MinimapData, MinimapFog } from './types.js';
 
 const OWN = [102, 187, 106];
 const ENEMY = [239, 83, 80];
+/** Neutral units (the bandits of the creep camps, sim 0.20.0): the grey-brown of the neutral team in the render. */
+const NEUTRAL = [154, 148, 138];
 const PASS = [74, 80, 86];
 const WALL = [30, 33, 36];
 const FOG = 0.45;
@@ -183,7 +186,9 @@ export function drawMinimap(canvas: HTMLCanvasElement, m: MinimapData, me: numbe
         ? '#ffd54f'
         : b.owner === me
           ? rgb(OWN)
-          : rgb(ENEMY);
+          : b.owner === OWNER_NEUTRAL
+            ? rgb(NEUTRAL)
+            : rgb(ENEMY);
     const size = b.kind === 'building' ? 4 : b.kind === 'hero' ? 5 : 2;
     ctx.fillRect(b.x * sx - size / 2, b.y * sy - size / 2, size, size);
   }

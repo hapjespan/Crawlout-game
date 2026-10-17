@@ -25,6 +25,7 @@ export function readDataDir(dir: string): RawGameData {
     damageMatrix: readJson(join(dir, 'damage-matrix.json')),
     sim: readJson(join(dir, 'sim.json')),
     ai: aiFiles.map((name) => readJson(join(aiDir, name))),
+    creeps: readJson(join(dir, 'creeps.json')),
   };
 }
 

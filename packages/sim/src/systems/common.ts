@@ -13,6 +13,7 @@ import type { Rng } from '../rng.js';
 import type { Auras } from './hero.js';
 import type { RobotRates } from './robots.js';
 import type { Vision } from '../vision.js';
+import type { CreepCamps } from './creeps.js';
 
 /** Per-speler state (SoA op MAX_PLAYERS). Gaat de hash en de serialisatie in. */
 export class PlayerState {
@@ -190,6 +191,8 @@ export interface SimContext {
   readonly terrainDist: TerrainDistances;
   /** Fog of war (vision.ts): explored per player (state), visible counts and World.visTo (derived). */
   readonly vision: Vision;
+  /** Creep camps (sim 0.20.0, systems/creeps.ts): state per camp. */
+  readonly creeps: CreepCamps;
   unitType(typeId: number): SimUnitType | undefined;
   buildingType(typeId: number): SimBuildingType | undefined;
 }
@@ -372,8 +375,13 @@ export function isEnemy(w: World, i: number, t: number): boolean {
   if (st === SLAVE_SLAVE || st === SLAVE_CAPTIVE) return false;
   const o = w.owner[t]!;
   const p = w.owner[i]!;
+  // creep camps (sim 0.20.0): a bandit fights player units (systems/creeps.ts picks them), and is an enemy of every
+  // player who sees it; any other neutral (a wanderer) is nobody's enemy
+  if (p === OWNER_NEUTRAL)
+    return w.creepCamp[i] !== 0 && o < MAX_PLAYERS && (w.mask[t]! & C.unit) !== 0;
+  if (o === OWNER_NEUTRAL) return w.creepCamp[t] !== 0 && visibleTo(w, t, p);
   // fog of war (sim 0.17.0): only an enemy that the owner of i sees now is a target (shooting, chasing, acquiring)
-  return o !== OWNER_NEUTRAL && o !== p && visibleTo(w, t, p);
+  return o !== p && visibleTo(w, t, p);
 }
 
 /**

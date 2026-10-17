@@ -39,6 +39,20 @@ for (const { raider, r } of rows) {
         );
     });
 }
+// creep camps (sim 0.20.0): who clears how many, and when
+const camps = rows.flatMap(({ raider, r }) =>
+  r.camps
+    .filter((c) => c.clearedBy !== null)
+    .map((c) => ({ tier: c.tier, raiders: c.clearedBy === raider, minute: c.minute! })),
+);
+const median = (xs: number[]): string =>
+  xs.length === 0 ? '-' : [...xs].sort((a, b) => a - b)[Math.floor(xs.length / 2)]!.toFixed(1);
+for (const side of [true, false]) {
+  const mine = camps.filter((c) => c.raiders === side);
+  console.log(
+    `kampen door de ${side ? 'Raiders' : 'Dwellers'}: ${mine.length} in ${rows.length} potjes (tier 1 ${mine.filter((c) => c.tier === 1).length}, tier 2 ${mine.filter((c) => c.tier === 2).length}); mediaan minuut ${median(mine.map((c) => c.minute))}`,
+  );
+}
 const s = raiderSummary(rows);
 for (const line of formatRaiderSummary(s)) console.log(line);
 console.log(`[${((Date.now() - t0) / 1000).toFixed(1)} s]`);

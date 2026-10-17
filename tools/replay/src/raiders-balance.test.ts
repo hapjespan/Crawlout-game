@@ -19,12 +19,17 @@ import { formatRaiderSummary, raiderSummary } from './raiders.js';
 // 30. All 66 between 24.5 and 32.4 minutes, no destruction before minute 15. Seeds 200 to 232: the Raiders 28 of 66,
 // all 66 between 24.5 and 34.7, the Dwellers win all 20 after minute 30. Was (data 0.23.0): 15 Raider destructions at
 // 10 to 11 minutes, 11 Raider dominance wins at 15.5, the Dwellers all 36 matches of 25 to 40 minutes.
+// Creep camps (data 0.25.0, sim 0.20.0; voorstel): the Raider AI clears its three camps (from minute 10, median minute
+// 10.6, all 198), the Dweller script against Raiders clears none on purpose (ai/dwellers-vs-raiders.json: with the camp
+// rule of dwellers-basic the loot and hero xp gave the Dwellers all 66 matches). The Raiders win 31 of 66 (16 as player
+// 0, 15 as player 1), 26 on dominance; 23.5 to 41.7 minutes, 63 of 66 between 22 and 38, none decided before minute 22.
+// Seeds 200 to 232: the Raiders 30 of 66, 23.7 to 38.2 minutes. The pinned seeds are measured again.
 // One seed of each group is pinned here (winner and reason).
 const EXPECTED = [
-  { seed: 1, raider: 0, winner: 'raiders', reason: 'dominance' },
-  { seed: 1, raider: 1, winner: 'dwellers', reason: 'destruction' },
-  { seed: 4, raider: 0, winner: 'dwellers', reason: 'dominance' },
-  { seed: 9, raider: 1, winner: 'dwellers', reason: 'destruction' },
+  { seed: 2, raider: 0, winner: 'raiders', reason: 'dominance' },
+  { seed: 4, raider: 1, winner: 'dwellers', reason: 'destruction' },
+  { seed: 9, raider: 0, winner: 'dwellers', reason: 'dominance' },
+  { seed: 7, raider: 1, winner: 'dwellers', reason: 'destruction' },
 ] as const;
 
 describe.skipIf(process.env.REPLAY_FAST === '1')(

@@ -692,6 +692,37 @@ async function runIn(browser: Browser, width: number, height: number): Promise<v
     // the building; the unit case is covered by the unit tests of the selection panel and game/inspect.ts.)
   }
 
+  // --- Creep camps (sim 0.20.0): a bandit is a neutral unit, drawn in the neutral team colour and clickable; the
+  // selection panel reads "Neutraal · Bandiet". (The fog is revealed above.)
+  const bandit = await ev<{ id: number; x: number; y: number } | null>(
+    `(() => { const c = window.crawlout; const e = [...c.entities().values()].find((e) => e.owner === 255 && e.typeId > 0 && e.typeId < 1000); return e ? { id: e.id, x: e.x, y: e.y } : null; })()`,
+  );
+  check(bandit !== null, 'a bandit of a creep camp is in the snapshot');
+  if (bandit) {
+    await ev(`window.crawlout.renderer.focus(${bandit.x}, ${bandit.y})`);
+    await wait(800);
+    let picked = false;
+    for (const h of [0.9, 1.2, 0.6, 1.5]) {
+      const p = await ev<Pt | null>(project(bandit.x / 256, h, bandit.y / 256));
+      if (!p || !(await ev<boolean>(onCanvas(p.x, p.y)))) continue;
+      const id = await ev<number | null>(
+        `window.crawlout.renderer.pickAt(${p.x}, ${p.y}).entityId`,
+      );
+      if (id !== bandit.id) continue;
+      await click(p);
+      picked = true;
+      break;
+    }
+    check(picked, 'a bandit can be picked on the canvas');
+    const panel = await selection();
+    check(
+      panel.includes('Neutraal · Bandiet'),
+      'clicking a bandit shows it as "Neutraal · Bandiet"',
+      panel.replace(/\s+/g, ' ').slice(0, 80),
+    );
+    await shot('09-bandit');
+  }
+
   await ev(`window.crawlout.revealAll(false)`);
 
   // --- Ctrl+click (macOS right click) on the HUD must not open the browser menu or start anything.

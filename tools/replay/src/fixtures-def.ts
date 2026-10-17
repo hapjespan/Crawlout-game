@@ -81,6 +81,8 @@ function startOf(r: Replay): Start {
     const u = sim.getUnit(id)!;
     if (u.kind === 'scrapNode') s.nodes.push(id);
     else if (u.kind === 'claimPoint') s.claims.push(id);
+    else if (u.owner >= r.players.length)
+      continue; // the bandits of the creep camps (sim 0.20.0)
     else if (u.kind === 'building') s.hq.push(id);
     else if (u.kind === 'hero') s.hero[u.owner]!.push(id);
     else if (u.role === ROLES.indexOf('scavenger')) s.scav[u.owner]!.push(id);
@@ -281,7 +283,8 @@ const FIXTURES_UP_TO_S3: FixtureDef[] = [
       s.add(1100, 1, 'Move', { ids: st.scav[1]!.slice(0, 2), x: c.x, y: c.y });
       // (speler 0 stuurt ze naar waar de held van speler 1 op frame 1500 staat; dat volgt deterministisch uit de run)
       r.bundles = s.bundles();
-      const h1 = stateAt(r, 1500).getUnit(st.hero[1]![0]!)!;
+      // creep camps (sim 0.20.0): the hero of player 1 may have fallen at the high camp on his way; then the centre
+      const h1 = stateAt(r, 1500).getUnit(st.hero[1]![0]!) ?? c;
       s.add(1500, 0, 'Move', { ids: st.scav[0]!.slice(1), x: h1.x, y: h1.y });
       for (let k = 0; k < 6; k++)
         s.add(1500 + 1000 * k, 1, 'PickPerk', {
@@ -829,6 +832,55 @@ const FIXTURES_S10: FixtureDef[] = [
 ];
 
 const FIXTURES_S11: FixtureDef[] = [
+  {
+    // Creep camps (sim 0.20.0, data 0.25.0; voorstel, ter bevestiging door de architect): six bandit camps on Rustbelt
+    // XL. Player 0 is the scripted Dweller AI: from minute 10 it clears its near camp, the ford camp and (with 16 idle
+    // militia) the high camp, with loot and hero xp. Player 1 is a human script: his hero walks up to his near camp and
+    // stops outside the aggro radius (the camp sleeps), attacks a bandit (the hit wakes the camp), runs home (the camp
+    // chases to its leash, goes home and heals), and later sends his hero and militia at the camp again with an
+    // AttackMove. Until minute 19, after the AI cleared its camps.
+    name: 's11-rustbelt-creeps',
+    build() {
+      const r = base('rustbelt', 1101, [true, false]);
+      const st = startOf(r);
+      const sim = st.sim;
+      const s = new Script();
+      const camps = sim.map.creepCamps!;
+      const spawn = sim.map.spawns[1]!;
+      // the near camp of player 1: the one closest to his spawn
+      let near = camps[0]!;
+      for (const c of camps)
+        if (
+          (c.x - spawn.x) ** 2 + (c.y - spawn.y) ** 2 <
+          (near.x - spawn.x) ** 2 + (near.y - spawn.y) ** 2
+        )
+          near = c;
+      const bandit = sim
+        .entityIds()
+        .filter((id) => {
+          const u = sim.getUnit(id)!;
+          return (
+            u.owner === 255 &&
+            u.kind === 'unit' &&
+            (u.x - near.x) ** 2 + (u.y - near.y) ** 2 < (4 * 256) ** 2
+          );
+        })
+        .sort((a, b) => a - b)[0]!;
+      const node = nearest(sim, st.nodes, spawn.x, spawn.y);
+      s.add(6, 1, 'Gather', { ids: st.scav[1]!, nodeId: node });
+      s.add(10, 1, 'Move', { ids: st.hero[1]!, ...toward(near, spawn, 11) });
+      s.add(900, 1, 'Attack', { ids: st.hero[1]!, target: bandit });
+      s.add(1000, 1, 'Move', { ids: st.hero[1]!, ...toward(spawn, near, 10) });
+      s.add(3000, 1, 'AttackMove', {
+        ids: [...st.hero[1]!, ...st.militia[1]!],
+        x: near.x,
+        y: near.y,
+      });
+      r.bundles = s.bundles();
+      r.hashes = [{ frame: 22799, hash: 0 }];
+      return r;
+    },
+  },
   {
     // Raiders against Raiders (sim 0.19.0, data 0.24.0): two Raider AIs on Rustbelt XL, seed 2, for nine minutes. At
     // 5:52 their two Slavers catch each other in the same tick; sim.rng picks who catches whom (systems/slaves.ts
