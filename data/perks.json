@@ -100,5 +100,68 @@
       }
     ],
     "_comment": "startwaarde, geen balans. +8 procent schade van de held (Luck 3); Luck stuurt crits en loot. Effect voor de sim: stat damagePct, doel 'held', delta 8 (procent, loader levert promille); optelbaar bij het basisgetal van dat doel."
+  },
+  {
+    "id": "gebroken_flessen",
+    "naam": "Gebroken Flessen",
+    "flavourText": "Als de kroeg dicht is, is de straat open. En vol scherven.",
+    "requires": { "stat": "S", "min": 6 },
+    "effects": [{ "stat": "damagePct", "target": "held", "delta": 10 }],
+    "_comment": "startwaarde, geen balans. Gebroken Flessen (vereist S 6): +10 procent schade voor de held zelf. De Warlord begint met S 7, dus meteen te kiezen."
+  },
+  {
+    "id": "dubbele_dosis",
+    "naam": "Dubbele Dosis",
+    "flavourText": "Op de bijsluiter stond: niet innemen met alcohol, gevechten of andere dingen die je leuk vindt.",
+    "requires": { "stat": "E", "min": 5 },
+    "effects": [{ "stat": "hpPct", "target": "held", "delta": 12 }],
+    "_comment": "startwaarde, geen balans. Dubbele Dosis (vereist E 5): +12 procent hp voor de held. Het Raider-antwoord op Zware Laarzen."
+  },
+  {
+    "id": "schuldeiser",
+    "naam": "De Schuldeiser",
+    "flavourText": "Wie niet betaalt, werkt. Wie niet werkt, wordt ingedeeld.",
+    "requires": { "stat": "C", "min": 6 },
+    "effects": [{ "stat": "gatherRatePct", "target": "slaaf", "delta": 10 }],
+    "_comment": "startwaarde, geen balans. De Schuldeiser (vereist C 6): +10 procent scrap per rit voor elke slaaf (stapelt met slavenboeien). De economische perk van de Warlord."
+  },
+  {
+    "id": "rammelende_ketting",
+    "naam": "Rammelende Ketting",
+    "flavourText": "Je hoort ze voordat je ze ziet. Zij horen jou ook, maar dat is dan hun probleem.",
+    "requires": { "stat": "A", "min": 5 },
+    "effects": [{ "stat": "speedPct", "target": "held", "delta": 8 }],
+    "_comment": "startwaarde, geen balans. Rammelende Ketting (vereist A 5): +8 procent snelheid voor de held. Past bij Jet, dat Behendigheid van de held tijdelijk verhoogt."
+  },
+  {
+    "id": "grote_bek",
+    "naam": "Grote Bek",
+    "flavourText": "Intimidatie is voor negentig procent een kwestie van volume. De rest is spijkers.",
+    "requires": { "stat": "C", "min": 5 },
+    "effects": [
+      { "stat": "damagePct", "target": "plunderaar", "delta": 6 },
+      { "stat": "damagePct", "target": "plunderaar_staal", "delta": 6 },
+      { "stat": "damagePct", "target": "knuppelaar", "delta": 6 }
+    ],
+    "_comment": "startwaarde, geen balans. Grote Bek (vereist C 5): +6 procent schade voor plunderaar, plunderaar_staal en knuppelaar: de horde vecht harder onder een luide baas. Geldt zolang de held leeft, met dezelfde semantiek als de andere perks (geschaald met de oplap-straf)."
+  },
+  {
+    "id": "goot_scherpschutter",
+    "naam": "Scherpschutter van de Goot",
+    "flavourText": "Hij mikt niet. Hij gooit gewoon meer rond.",
+    "requires": { "stat": "P", "min": 4 },
+    "effects": [
+      { "stat": "rangeM", "target": "plunderaar", "delta": 1 },
+      { "stat": "rangeM", "target": "plunderaar_staal", "delta": 1 }
+    ],
+    "_comment": "startwaarde, geen balans. Scherpschutter van de Goot (vereist P 4): 1 m meer bereik voor plunderaar en plunderaar_staal (8,5 m, dus boven het pijppistool van 8 m van de Dwellers). De Warlord heeft P 4, dus ook deze is meteen kiesbaar."
+  },
+  {
+    "id": "vakbond_verboden",
+    "naam": "Vakbond Verboden",
+    "flavourText": "Pauzes zijn een privilege dat we nog niet hebben uitgevonden.",
+    "requires": { "stat": "I", "min": 3 },
+    "effects": [{ "stat": "buildTimePct", "target": "slaaf_bouwer", "delta": -15 }],
+    "_comment": "startwaarde, geen balans. Vakbond Verboden (vereist I 3): slaaf_bouwers bouwen 15 procent sneller (stapelt met slavenboeien). De Warlord heeft I 3, dus kiesbaar. Elk perk is bereikbaar met het basis-SPECIAL van de Warlord; de chems tillen hem er tijdelijk boven."
   }
 ]

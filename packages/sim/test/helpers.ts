@@ -26,6 +26,15 @@ export const COMPACT_FOOTPRINTS: Readonly<Record<string, readonly [number, numbe
   robotfabriek: [5, 5],
   lab: [3, 3],
   trainingsfaciliteit: [3, 3],
+  // Raiders (data 0.21.0): the sim does not play them yet, the compact sizes only keep the table complete
+  raiderkamp: [5, 5],
+  tent: [3, 3],
+  kooi: [3, 3],
+  plundermarkt: [3, 3],
+  chemlab: [3, 3],
+  autosloperij: [5, 5],
+  mitrailleursnest: [2, 2],
+  plunderpost: [1, 1],
 };
 /** De sim-config uit de echte data, met de footprints van de echte schaal. */
 export const REAL_CONFIG = simConfigFromGameData(DATA);
@@ -34,6 +43,9 @@ export const CONFIG: typeof REAL_CONFIG = {
   // compact footprints are not the real scale: no territory rule here (data 0.20.0; placement.test.ts tests it on
   // REAL_CONFIG)
   placement: { ...REAL_CONFIG.placement, buildRange: 0 },
+  // Several tests replace aiScripts by one script of the Dwellers (index 0): another faction (Raiders, data 0.21.0) then
+  // runs without a script, so its index never points past the replaced list
+  factions: REAL_CONFIG.factions.map((f) => (f.aiScript > 0 ? { ...f, aiScript: -1 } : f)),
   buildingTypes: REAL_CONFIG.buildingTypes.map((t) => {
     const key = DATA.buildings.find((b) => b.id === t.buildingId)!.key;
     const fp = COMPACT_FOOTPRINTS[key];

@@ -26,5 +26,103 @@
     "uniqueBuildings": ["radiobaken", "trainingsfaciliteit", "robotfabriek", "turret_laser"],
     "specialChannel": "training",
     "_comment": "Balans speltest 14 oktober voor startScrap en housingGrowthPerMin, de rest startwaarde, geen balans. Start: 4 scavengers, 1 bouwer, 1 militie en 300 scrap (was 200): met het tragere verzamelen (scavenger 6 per 13 s) blijft de opening even snel, een woning en een werkplaats meteen. housingGrowthPerMin 2 bewoners per minuut (was 3; basisgroei, alleen met vrije bedden): legers groeien trager, zodat het beslissende gevecht later valt en een potje 25 tot 35 minuten duurt. bodyTypes human en robot (data 0.16.0): de Dwellers hebben ook robots (Robotfabriek). VANGNET (safetyNet, data 0.16.0, Spelfundament 4 en 11), de regel voor de sim: zolang het aantal eigen BEWONERS kleiner is dan threshold (3) en de speler een voltooid gebouw met provides beacon (radiobaken) heeft, komt er elke intervalS (40 s) een bewoner van het loadout loadoutId (scavenger) bij dat baken. Bewoners zijn hier: levende eigen units met bodyType human; robots en de held tellen niet mee. Eén timer per speler (niet per baken, dus meer bakens geven geen snellere instroom); de bewoner verschijnt naast het voltooide baken met het laagste entity-id. De timer loopt alleen zolang aan de voorwaarde voldaan is, de pop-cap vrij is en maxArrivals niet bereikt is; zodra niet meer aan de voorwaarde voldaan is, gaat de timer terug naar 0 (niets opsparen). Zonder bedden-eis: de aankomst telt wel voor pop en mag nooit boven sim.json popCapMax uitkomen, maar vraagt geen vrij bed. maxArrivals 12 is het totaal aantal aankomsten per speler per potje (een vangnet, geen economie: het baken is geen woning). Het baken zelf is kwetsbaar (250 hp): een vijand die het sloopt, sloopt het vangnet. TECHNICUS-REGEL (robotRules, data 0.16.0): elke robot (loadout met bodyType robot) heeft een technicus nodig. Eén technicus is een levende eigen bewoner (bodyType human) met een rol uit technicianRoles (technician of builder) en dekt robotsPerTechnician (4) robots; dekking van de speler = aantal technici maal 4. De levende eigen robots worden op oplopend entity-id gedekt tot de dekking op is; de rest is ongedekt. Een ongedekte robot werkt op (100 - robotPenaltyPct) procent: zijn snelheid, zijn aanvalssnelheid (cooldown) en zijn repareersnelheid worden met die factor vermenigvuldigd; 50 betekent half tempo en 100 betekent dat ongedekte robots niet werken (stilstaan en niets doen). Productie van een robot blijft altijd mogelijk, ook zonder dekking. Dezelfde bewoner telt in beide rollen mee: een bouwer die bouwt, dekt ook robots. POP: robots tellen voor pop (loadout popCost) maar niet voor bedden: bewonerspop (units met bodyType human) moet binnen het aantal bedden blijven, de totale pop (bewoners plus robots) binnen sim.json popCapMax. uniqueUnits en uniqueBuildings (data 0.16.0): de drie unieke units uit het Spelfundament en de nieuwe gebouwen. specialChannel training: Dwellers trainen SPECIAL in de trainingsfaciliteit (data/training.json)."
+  },
+  {
+    "id": "raiders",
+    "naam": "Raiders (De Horde)",
+    "bodyTypes": ["human", "beast", "vehicle"],
+    "startUnits": [
+      { "loadoutId": "slaaf", "count": 3 },
+      { "loadoutId": "slaaf_bouwer", "count": 1 },
+      { "loadoutId": "plunderaar", "count": 3 },
+      { "loadoutId": "knuppelaar", "count": 1 }
+    ],
+    "startScrap": 260,
+    "housingGrowthPerMin": 0,
+    "safetyNet": {
+      "threshold": 5,
+      "action": "tenten_instroom",
+      "intervalS": 30,
+      "maxArrivals": 10,
+      "loadoutId": "plunderaar"
+    },
+    "uniqueUnits": ["slaver", "chemdealer", "buggy"],
+    "uniqueBuildings": ["kooi", "tent", "chemlab", "autosloperij"],
+    "specialChannel": "chems",
+    "slaves": {
+      "capturedLoadoutId": "slaaf",
+      "minDistanceFromOwnerBaseM": 36,
+      "liberation": {
+        "touchS": 3,
+        "touchRangeM": 2,
+        "guardRadiusM": 12,
+        "freedSpeedPct": 25
+      },
+      "revolt": {
+        "garrisonRadiusM": 30,
+        "slavesPerGuard": 3,
+        "minGuards": 1,
+        "graceS": 40,
+        "emptyGraceS": 15,
+        "escapePct": 50,
+        "repeatS": 25
+      }
+    },
+    "plunder": {
+      "buildingLootPct": 30,
+      "depotLootMultiplierPct": 200,
+      "carryLootPct": 100,
+      "bonusTech": "afpersing",
+      "bonusPct": 25
+    },
+    "tribute": {
+      "claimKind": "settlement",
+      "scrapPerMin": 20,
+      "bonusTech": "afpersing",
+      "bonusPct": 50
+    },
+    "chems": [
+      {
+        "id": "psycho",
+        "naam": "Psycho",
+        "flavourText": "Zes uur lang ben je onoverwinnelijk. Daarna ben je ook gewoon moe.",
+        "requiresTech": "psycho",
+        "doseScrap": 20,
+        "activeS": 12,
+        "crashS": 10,
+        "cooldownS": 40,
+        "effects": [
+          { "stat": "damagePct", "target": "alle", "delta": 35 },
+          { "stat": "S", "target": "held", "delta": 2 }
+        ],
+        "crash": [
+          { "stat": "damagePct", "target": "alle", "delta": -25 },
+          { "stat": "speedPct", "target": "alle", "delta": -20 }
+        ],
+        "refined": { "requiresTech": "zuivere_stoffen", "activePct": 30, "crashPct": -30 },
+        "_comment": "startwaarde, geen balans. Psycho (Spelfundament 6: schade, met een crash erna, geen verslaving): een dosis kost 20 scrap en geeft 12 s (activeS) +35 procent schade aan elke eigen unit in de aura van de dealer (target alle) en +2 Strength voor de held als hij in die aura staat (target held, SPECIAL-kanaal), daarna 10 s (crashS) crash: -25 procent schade en -20 procent snelheid. Daarna 40 s (cooldownS) voordat dezelfde unit weer een dosis krijgt. Netto: in een gevecht van 12 s ben je sterker, daarna kwetsbaar; de vijand moet de crash kunnen uitbuiten. Effecten op één unit tellen op met techs en perks; twee doses tegelijk kunnen niet (één chem per unit). Verfijnd (zuivere_stoffen): werking +30 procent, crash -30 procent."
+      },
+      {
+        "id": "jet",
+        "naam": "Jet",
+        "flavourText": "Tijd vertraagt. Jouw knieën ook, straks.",
+        "requiresTech": "jet",
+        "doseScrap": 20,
+        "activeS": 10,
+        "crashS": 8,
+        "cooldownS": 35,
+        "effects": [
+          { "stat": "speedPct", "target": "alle", "delta": 40 },
+          { "stat": "A", "target": "held", "delta": 2 }
+        ],
+        "crash": [
+          { "stat": "speedPct", "target": "alle", "delta": -30 },
+          { "stat": "damagePct", "target": "alle", "delta": -10 }
+        ],
+        "refined": { "requiresTech": "zuivere_stoffen", "activePct": 30, "crashPct": -30 },
+        "_comment": "startwaarde, geen balans. Jet (Spelfundament 6: snelheid, met een crash erna, geen verslaving): een dosis kost 20 scrap en geeft 10 s +40 procent snelheid aan elke eigen unit in de aura en +2 Agility voor de held in de aura, daarna 8 s crash: -30 procent snelheid en -10 procent schade; cooldown 35 s. Bedoeld voor een overval, een slavenroof en een vlucht; een mislukte overval op Jet eindigt in een crash midden in vijandelijk vuur. Verfijnd (zuivere_stoffen): werking +30 procent, crash -30 procent."
+      }
+    ],
+    "_comment": "Startwaarde, geen balans (data 0.21.0, Raiders; voorstel, ter bevestiging door de architect). Spelfundament 4 en 6 uitgewerkt tot data; de sim leest alleen de oude velden (startUnits, startScrap, housingGrowthPerMin, safetyNet-velden), de rest is voor de sim-ronde. IDENTITEIT: tempo midden (plunderaar 3 m/s), pantser staal (medium via staalplaten en slaver, knuppelaar), instroom door roven (slaven) en tenten (vechters); Raiders werken nooit (alleen slaven verzamelen en bouwen: slaaf role scavenger en slaaf_bouwer role builder, beide damage 0), economie door plunderen en tribute, natuurlijke winroute dominantie (plunderpost 40 scrap, claimFromS vroeg in het AI-script). Unieke units: slaver (capture), chemdealer (buff-aura), buggy (harass); basisvechters plunderaar (pijpgeweer), knuppelaar (melee), honden en molotovgooiers. SPECIAL-kanaal: chems. START: 3 slaven, 1 slaaf-bouwer, 3 plunderaars, 1 knuppelaar en 260 scrap (Dwellers 300): de eerste uitgave is tenten en een Kooi, de slaven werken vanaf tick 0 bij het kamp (de Raiderkamp is zelf een Kooi met 4 plaatsen). housingGrowthPerMin 0: er groeit geen bewoner bij, instroom komt alleen van roven (slaven) en tenten (vechters). Houd de sim hieraan: de gewone huisvestingsgroei levert in de sim een settlerTypeId (de slaaf) en moet voor deze factie dus uit blijven (waarde 0 doet dat vanzelf). VANGNET (safetyNet, action tenten_instroom): zolang het aantal eigen VECHTERS kleiner is dan threshold (5) en de speler een voltooid gebouw met provides tent heeft, komt er elke intervalS (30 s) een plunderaar (loadoutId) bij die tent, hoogstens maxArrivals (10) keer per speler per potje. Vechters zijn: levende eigen units met role militia (bodyType human, beast of vehicle: ook de Slaver, de Chem-dealer, honden en buggies), zonder de held en zonder slaven; dezelfde definitie geldt voor het garnizoen. Eén timer per speler; de unit verschijnt naast de voltooide tent met het laagste entity-id; zonder pop-ruimte (popCapMax) wacht de timer. SLAVENREGELS (slaves, Spelfundament 6): (1) roven alleen verder dan minDistanceFromOwnerBaseM (36 m) van het hoofdgebouw van de eigenaar van het doel (een zwerver heeft geen eigenaar: altijd te roven); (2) de Slaver (loadouts capture) vangt het doel en het loopt naar de dichtstbijzijnde eigen Kooi met vrije plek (cage.capacity); na cage.transitionS (20 s) is het een slaaf van loadout capturedLoadoutId; zonder vrije Kooi blijft de gevangene bij de Slaver staan en telt hij niet als slaaf; (3) een slaaf is aan één Kooi gebonden en werkt (verzamelt, bouwt) alleen binnen cage.workRadiusM (45 m) van die Kooi; (4) BEVRIJDING: raakt een vijandelijke unit (alles behalve de Raiders en neutrale units) een slaaf of gevangene touchS (3 s) onafgebroken aan binnen touchRangeM (2 m) en staat er in guardRadiusM (12 m) om de slaaf geen eigen vechter (geen slaven), dan is hij bevrijd: hij verandert van eigenaar terug naar de speler van wie hij geroofd is (bij een zwerver: naar de bevrijder) als scavenger-loadout van die factie en loopt naar het dichtstbijzijnde eigen hoofdgebouw, met freedSpeedPct (+25 procent) loopsnelheid: de bevrijder krijgt tempo, de ontsnapte slaaf is moeilijk in te halen; (5) OPSTAND: per Kooi is het garnizoen het aantal eigen vechters (zelfde definitie als bij het vangnet) binnen revolt.garrisonRadiusM (30 m) van die Kooi; nodig = max(minGuards (1), ceil(aantal slaven bij die Kooi / slavesPerGuard (3))). Zolang het garnizoen kleiner is dan nodig loopt een teller; na graceS (40 s) breekt de opstand uit, bij nul vechters al na emptyGraceS (15 s). Bij een opstand ontsnapt escapePct (50 procent, afgerond naar beneden, minstens 1) van de slaven bij die Kooi: ze veranderen in neutrale zwervers (eigenaar neutraal, te roven door iedereen) en lopen weg van de Kooi. Duurt het tekort voort, dan volgt na repeatS (25 s) een nieuwe ronde. De tegenstander ziet niet hoeveel garnizoen er is: een goed getimede afleiding is een winst. Het AI-script (raidPlan.garrison.minFighters) houdt altijd 3 vechters thuis; (6) START: de startUnits geven de Raiders slaven (3 en 1 slaaf_bouwer), anders staat de economie stil; (7) COMEBACK: wie bewoners kwijt is kan ze terughalen uit de Raider-basis (regel 4: een bevrijde slaaf keert terug naar de oorspronkelijke eigenaar). PLUNDER (plunder): elk door een Raider-unit gesloopt vijandelijk gebouw levert buildingLootPct (30 procent) van zijn scrapCost op, bij een depot (provides hq, werkplaats of depot) depotLootMultiplierPct (200 procent dus 60 procent van de prijs), een gedode vijandelijke verzamelaar zijn vracht (carryLootPct 100 procent); na afpersing 25 procent meer. TRIBUTE (tribute): een door een plunderpost bezet neutraal claimpunt van kind settlement levert scrapPerMin (20) scrap per minuut aan de eigenaar zolang het bezet is, na afpersing 50 procent meer. CHEMS (chems): zie de twee chems; ze worden uitgedeeld door de Chem-dealer (loadouts aura). BALANSDOEL (balansintentie, Spelfundament 4 driehoek): Raiders verslaan Dwellers VROEG, vóór de turrets (de eerste turret van de Dweller-AI valt op 240 s en is met tech geweerrek pas effectief rond minuut 5): per scrap leveren de Raiders 20 procent meer man (plunderaar 25 tegen 30 scrap), een tent is 12 s en 45 scrap tegen 20 s en 95 voor een woning, de Raiders hebben geen werkplaats nodig, dus 8 tot 14 vechters op minuut 4 tegen 6 tot 8 militie, en een eerste golf op 200 s. De zwerm wint dan een veldslag per Lanchester; de Buggy pest verzamelaars en de Slaver haalt losse bewoners weg (Dweller-groei is traag: 2 per minuut). Daarna MOETEN de Raiders winnen of door: ze zijn FRAGIEL LAAT (hp 55 tot 85, geen heavy, hoofdgebouw 1100 medium, mitrailleursnest 260 hp, melee en pipe guns raken robots, heavy en turrets slecht; molotovs raken robots 50 procent), hebben geen late schaal zonder loot (afpersing) en tribute en kunnen een Kooi niet houden zonder garnizoen (opstand). De Garde verslaat de Raiders mid (heavy pantser negeert pipe guns). Dit is startwaarde, geen balans: meten met tools/replay en een speltest zodra de sim de Raiders kent (Raiders-AI tegen Dwellers-AI, doel: Raiders winnen 70 tot 85 procent van de potjes die voor minuut 12 beslist worden en verliezen een potje van meer dan 25 minuten tegen een Dweller met robots)."
   }
 ]

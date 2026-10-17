@@ -38,6 +38,15 @@ export const BUILDING_NAMES: Record<string, string> = {
   robotfabriek: 'Robotfabriek',
   lab: 'Lab',
   trainingsfaciliteit: 'Training',
+  // Raiders (data 0.21.0): names only, the faction is not playable yet
+  raiderkamp: 'Raiderkamp',
+  tent: 'Tent',
+  kooi: 'Kooi',
+  plundermarkt: 'Plundermarkt',
+  chemlab: 'Chemlab',
+  autosloperij: 'Autosloperij',
+  mitrailleursnest: 'Mitrailleursnest',
+  plunderpost: 'Plunderpost',
 };
 
 /** Order of the building buttons: what the player works with first, then the rest in data order. */

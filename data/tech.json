@@ -165,5 +165,162 @@
     "prereqTech": [],
     "effects": [],
     "_comment": "startwaarde, geen balans. Slagwapen-ontwerp (data 0.16.0): ontgrendelt de loadouts slagwapen_leer en slagwapen_composiet (de laatste vraagt ook composiet_pantser). Geen stat-effect. 90 scrap en 20 s in de werkplaats."
+  },
+  {
+    "id": "staalplaten",
+    "faction": "raiders",
+    "scrapCost": 120,
+    "researchS": 30,
+    "building": "plundermarkt",
+    "prereqTech": [],
+    "effects": [
+      { "stat": "hpPct", "target": "plunderaar", "delta": 10 },
+      { "stat": "hpPct", "target": "knuppelaar", "delta": 10 },
+      { "stat": "hpPct", "target": "molotovgooier", "delta": 10 },
+      { "stat": "hpPct", "target": "slaver", "delta": 10 }
+    ],
+    "_comment": "startwaarde, geen balans. Staalplaten (het \"staal\" van Spelfundament 4): autodeuren en pijpen als pantser. Ontgrendelt plunderaar_staal (dat verwijst ernaar via prereqTech) en geeft de lichte en middelzware Raiders 10 procent meer hp (plunderaar, knuppelaar, molotovgooier, slaver; plunderaar_staal heeft het pantser al). 120 scrap en 30 s in de plundermarkt. Eerste weaponstech: de Raiders hebben geen tech nodig om te beginnen (plunderaar, knuppelaar en slaver zijn er vanaf tick 0)."
+  },
+  {
+    "id": "molotovs",
+    "faction": "raiders",
+    "scrapCost": 100,
+    "researchS": 25,
+    "building": "plundermarkt",
+    "prereqTech": [],
+    "effects": [],
+    "_comment": "startwaarde, geen balans. Molotovs: ontgrendelt de molotovgooier (die verwijst ernaar via prereqTech). Geen stat-effect. 100 scrap en 25 s in de plundermarkt. Vuur is de tegenhanger van de Dweller-lichte units en van gebouwen met licht pantser; het raakt robots en heavy nauwelijks."
+  },
+  {
+    "id": "slavenboeien",
+    "faction": "raiders",
+    "scrapCost": 110,
+    "researchS": 25,
+    "building": "plundermarkt",
+    "prereqTech": [],
+    "effects": [
+      { "stat": "gatherRatePct", "target": "slaaf", "delta": 20 },
+      { "stat": "buildTimePct", "target": "slaaf_bouwer", "delta": -20 }
+    ],
+    "_comment": "startwaarde, geen balans. Slavenboeien: slaven werken harder (de slavendrijver heeft een zweep): +20 procent scrap per rit voor de slaaf en 20 procent snellere bouw voor de slaaf_bouwer. 110 scrap en 25 s in de plundermarkt. De economische tegenhanger van raffinage bij de Dwellers; het vraagt wel slaven, dus roven."
+  },
+  {
+    "id": "afpersing",
+    "faction": "raiders",
+    "scrapCost": 160,
+    "researchS": 35,
+    "building": "plundermarkt",
+    "prereqTech": ["slavenboeien"],
+    "effects": [],
+    "_comment": "startwaarde, geen balans. Afpersing: meer buit en meer tribute. Geen stat-effect; de bonus staat in factions.json: plunder.bonusTech (25 procent meer buit uit gesloopte gebouwen en vrachten) en tribute.bonusTech (50 procent meer tribute per bezet punt). 160 scrap en 35 s in de plundermarkt, achter slavenboeien. Dit is de late-schaal van de Raiders: geen late schaal zonder loot (Spelfundament 4), dus de loot-tech kost iets."
+  },
+  {
+    "id": "wapenslijpen",
+    "faction": "raiders",
+    "scrapCost": 140,
+    "researchS": 30,
+    "building": "plundermarkt",
+    "prereqTech": [],
+    "effects": [
+      { "stat": "damagePct", "target": "plunderaar", "delta": 10 },
+      { "stat": "damagePct", "target": "plunderaar_staal", "delta": 10 },
+      { "stat": "damagePct", "target": "knuppelaar", "delta": 10 },
+      { "stat": "damagePct", "target": "molotovgooier", "delta": 10 },
+      { "stat": "damagePct", "target": "hond", "delta": 10 }
+    ],
+    "_comment": "startwaarde, geen balans. Wapenslijpen: scherpere pijpen en spijkers: +10 procent schade voor plunderaar, plunderaar_staal, knuppelaar, molotovgooier en hond. 140 scrap en 30 s in de plundermarkt. Stapelt met de perks en met Psycho. De slaver en de dealer zijn bewust uitgesloten (geen vechters)."
+  },
+  {
+    "id": "chemie",
+    "faction": "raiders",
+    "scrapCost": 150,
+    "researchS": 35,
+    "building": "chemlab",
+    "prereqTech": [],
+    "effects": [],
+    "_comment": "startwaarde, geen balans. Chemie: ontgrendelt de Chem-dealer (die verwijst ernaar via prereqTech) en opent de chem-onderzoeken psycho en jet. Geen stat-effect. 150 scrap en 35 s in de chemlab. Het SPECIAL-kanaal van de Raiders (Spelfundament 4 en 5): wat de Dwellers trainen, koken de Raiders."
+  },
+  {
+    "id": "psycho",
+    "faction": "raiders",
+    "scrapCost": 130,
+    "researchS": 30,
+    "building": "chemlab",
+    "prereqTech": ["chemie"],
+    "effects": [],
+    "_comment": "startwaarde, geen balans. Psycho: ontgrendelt de chem psycho (factions.json chems requiresTech): schade omhoog met een crash erna. Geen stat-effect (de effecten staan op de chem). 130 scrap en 30 s in de chemlab, achter chemie. Geen verslaving (Spelfundament 6): alleen een crash."
+  },
+  {
+    "id": "jet",
+    "faction": "raiders",
+    "scrapCost": 130,
+    "researchS": 30,
+    "building": "chemlab",
+    "prereqTech": ["chemie"],
+    "effects": [],
+    "_comment": "startwaarde, geen balans. Jet: ontgrendelt de chem jet: snelheid omhoog met een crash erna. 130 scrap en 30 s in de chemlab, achter chemie. Jet is de chem voor een overval of een vlucht; de crash maakt een mislukte overval dodelijk."
+  },
+  {
+    "id": "zuivere_stoffen",
+    "faction": "raiders",
+    "scrapCost": 170,
+    "researchS": 40,
+    "building": "chemlab",
+    "prereqTech": ["psycho", "jet"],
+    "effects": [],
+    "_comment": "startwaarde, geen balans. Zuivere stoffen: verfijnde chems. Geen stat-effect; chems[].refined in factions.json: elke chem werkt 30 procent langer en de crash duurt 30 procent korter. 170 scrap en 40 s in de chemlab, achter psycho en jet. De duurste chem-tech, bedoeld voor een Raider die mid-game nog rijk is."
+  },
+  {
+    "id": "buggy_chassis",
+    "faction": "raiders",
+    "scrapCost": 160,
+    "researchS": 35,
+    "building": "plundermarkt",
+    "prereqTech": [],
+    "effects": [],
+    "_comment": "startwaarde, geen balans. Buggy-chassis: ontgrendelt de autosloperij (buildings.json prereqTech) en de Buggy (loadouts.json prereqTech). Geen stat-effect. 160 scrap en 35 s in de plundermarkt. Het is bewust het eerste onderzoek van de AI: harass met buggies is de vroege agressie vóór de turrets."
+  },
+  {
+    "id": "nitro",
+    "faction": "raiders",
+    "scrapCost": 140,
+    "researchS": 30,
+    "building": "autosloperij",
+    "prereqTech": ["buggy_chassis"],
+    "effects": [
+      { "stat": "speedPct", "target": "buggy", "delta": 15 },
+      { "stat": "rangeM", "target": "buggy", "delta": 1 }
+    ],
+    "_comment": "startwaarde, geen balans. Nitro: de Buggy 15 procent sneller en 1 m meer bereik (10 m, dus nog altijd onder de 12 m van een turret). 140 scrap en 30 s in de autosloperij, achter buggy_chassis."
+  },
+  {
+    "id": "honden_africhten",
+    "faction": "raiders",
+    "scrapCost": 90,
+    "researchS": 20,
+    "building": "plundermarkt",
+    "prereqTech": [],
+    "effects": [],
+    "_comment": "startwaarde, geen balans. Honden africhten: ontgrendelt de hond (die verwijst ernaar via prereqTech). Geen stat-effect. 90 scrap en 20 s in de plundermarkt."
+  },
+  {
+    "id": "hondenvoer",
+    "faction": "raiders",
+    "scrapCost": 80,
+    "researchS": 20,
+    "building": "plundermarkt",
+    "prereqTech": ["honden_africhten"],
+    "effects": [{ "stat": "hpPct", "target": "hond", "delta": 25 }],
+    "_comment": "startwaarde, geen balans. Hondenvoer: honden 25 procent meer hp (50 in plaats van 40). 80 scrap en 20 s in de plundermarkt, achter honden_africhten. Hoopt op het feit dat niemand navraagt wat erin zit."
+  },
+  {
+    "id": "schootsvelden",
+    "faction": "raiders",
+    "scrapCost": 100,
+    "researchS": 25,
+    "building": "plundermarkt",
+    "prereqTech": [],
+    "effects": [],
+    "_comment": "startwaarde, geen balans. Schootsvelden: ontgrendelt het mitrailleursnest (buildings.json prereqTech). Geen stat-effect. 100 scrap en 25 s in de plundermarkt. De Raiders verdedigen zich dus pas na een eigen keuze: tot die tijd is er geen turret en is de aanval de verdediging."
   }
 ]
