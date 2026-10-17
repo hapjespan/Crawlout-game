@@ -37,7 +37,7 @@ async function run(width: number, height: number): Promise<void> {
     page.setDefaultTimeout(30000);
     page.on('pageerror', (e) => failures.push(`pageerror ${e.message}`));
     await page.clock.install();
-    await page.goto(`${URL}?faction=raiders`);
+    await page.goto(`${URL}?skip=1&faction=raiders`);
     await page.clock.resume();
     await page.waitForFunction(`window.crawlout && window.crawlout.entities().size > 10`, null, {
       timeout: 60000,

@@ -26,9 +26,21 @@ import {
   unitTypeId,
   type BuildingData,
 } from '@crawlout/data';
-import { createRenderer, snapFootprintCenter } from '@crawlout/render';
+import { createRenderer, snapFootprintCenter, type CrawloutRenderer } from '@crawlout/render';
 import {
+  defaultRelayUrl,
+  effectiveParams,
+  hudScaleFromParams,
+  loadSettings,
   mountHud,
+  mountMatchEnd,
+  mountMenu,
+  saveSettings,
+  setSkinAttribute,
+  skinComplete,
+  type HudHandle,
+  type MenuMount,
+  type PvpForm,
   type BuildOption,
   type HudAlert,
   type HudDeps,
@@ -67,7 +79,12 @@ import { shadowOption } from './render/shadows.js';
 import { albedoLayoutForMap } from './render/terrainLayout.js';
 import { loadClientMapWater } from './render/water.js';
 import { loadClientGameData, loadClientMap } from './game/content.js';
-import { startSession } from './game/session.js';
+import { startSession, type SessionEvents, type SessionOptions } from './game/session.js';
+import { createSessionSlot } from './game/sessionSlot.js';
+import { EMPTY_MENU_CONTENT, menuContent } from './game/menuContent.js';
+import { menuUrl, startMode } from './game/menuParams.js';
+import { startAmbientCamera, type AmbientCamera } from './ui/ambientCamera.js';
+import { netOptionsFromSearch, type WsNetOptions } from './net/params.js';
 import { createStatusOverlay } from './net/statusOverlay.js';
 import {
   buildingButtons,
@@ -113,41 +130,178 @@ function showError(message: string): void {
   el.style.display = 'grid';
 }
 
+const DEFAULT_YAW = Math.PI * 0.25;
+const DEFAULT_ZOOM_M = 42;
+/** The splash waits at most this long for the props to load; the menu does not need them to be usable. */
+const PROPS_WAIT_MS = 15000;
+
+const nextFrame = (): Promise<void> =>
+  new Promise((resolve) => requestAnimationFrame(() => resolve()));
+
+function safeLocalStorage(): Storage | null {
+  try {
+    return window.localStorage;
+  } catch {
+    return null;
+  }
+}
+
+/** HUD size from the settings or `?hudscale=`: `--hud-scale` on the page (units.ts reads it, 0.64 without). */
+function applyHudScale(scale: number | null): void {
+  const style = document.documentElement.style;
+  if (scale === null) style.removeProperty('--hud-scale');
+  else style.setProperty('--hud-scale', String(scale));
+}
+
+const PVP_FORM_KEY = 'crawlout.pvpForm.v1';
+/** The name and relay address of the last "Speler tegen speler", so the form is filled in next time. */
+function loadPvpForm(storage: Storage | null, params: URLSearchParams): PvpForm {
+  let saved: Partial<PvpForm> = {};
+  try {
+    saved = JSON.parse(storage?.getItem(PVP_FORM_KEY) ?? '{}') as Partial<PvpForm>;
+  } catch {
+    // unreadable storage: the defaults
+  }
+  const str = (v: unknown): string => (typeof v === 'string' ? v : '');
+  return {
+    name:
+      params.get('name') ||
+      str(saved.name) ||
+      `Speler${String(1000 + Math.floor(Math.random() * 9000))}`,
+    room: '',
+    relayUrl: params.get('relayurl') || str(saved.relayUrl) || defaultRelayUrl(location),
+  };
+}
+
 async function main(): Promise<void> {
   const canvas = document.getElementById('view') as HTMLCanvasElement | null;
   const marquee = document.getElementById('marquee') as HTMLDivElement | null;
   const hudEl = document.getElementById('hud');
   const endEl = document.getElementById('end');
-  if (!canvas || !marquee || !hudEl || !endEl)
-    throw new Error('index.html mist #view, #marquee, #hud of #end');
+  const menuEl = document.getElementById('menu');
+  if (!canvas || !marquee || !hudEl || !endEl || !menuEl)
+    throw new Error('index.html mist #view, #marquee, #hud, #end of #menu');
 
-  const data = loadClientGameData();
-  const map = loadClientMap(SLICE_MAP);
-  const params = new URLSearchParams(location.search);
+  const urlParams = new URLSearchParams(location.search);
+  const mode = startMode(urlParams);
+  const storage = safeLocalStorage();
+  // Options the player chose in the menu fill in whatever the URL does not say itself (the URL wins).
+  let settings = loadSettings(storage);
+  const params = effectiveParams(urlParams, settings);
+  applyHudScale(hudScaleFromParams(params));
   const perfEl = document.getElementById('perf');
+  if (perfEl) perfEl.style.visibility = 'hidden';
+
+  // The bitmap HUD skin (local art, assets/local/hud) is dev only; a production build drops this import. It loads first
+  // so the splash already has the final look. `?noskin` (or the setting) shows the CSS-only look that production gets.
+  const hudSkin = import.meta.env.DEV ? (await import('./ui/hudSkin.js')).loadHudSkin() : undefined;
+  const skinOn = !params.has('noskin');
+  const skinUsable = hudSkin !== undefined && skinComplete(hudSkin);
+
+  // The match is started from the menu, or at once from URL parameters (`?skip=1`, `?relay=`, `?faction=`, ...).
+  let launchMatch: (net: WsNetOptions | null, options: SessionOptions) => void = () => undefined;
+  let menu: MenuMount | null = null;
+  if (mode !== 'match') {
+    menu = mountMenu(
+      menuEl,
+      {
+        content: EMPTY_MENU_CONTENT,
+        settings,
+        skinAvailable: skinUsable,
+        initialForm: loadPvpForm(storage, urlParams),
+        skipSplash: mode === 'menu',
+        stillBackground: params.has('still'),
+        startAi: (config) =>
+          launchMatch(null, { faction: config.faction, aiFaction: config.aiFaction }),
+        connect: (config) => {
+          try {
+            storage?.setItem(
+              PVP_FORM_KEY,
+              JSON.stringify({ name: config.name, relayUrl: config.relayUrl }),
+            );
+          } catch {
+            // not saved: the form is empty next time
+          }
+          launchMatch(
+            { relayUrl: config.relayUrl, roomId: config.roomId, name: config.name, ai: false },
+            { lobby: 'manual' },
+          );
+        },
+        leave: () => session.current?.dispose(),
+        lobbyRequest: (request) => session.lobbyRequest(request),
+        onSettings: (next) => {
+          settings = next;
+          saveSettings(storage, next);
+          applyHudScale(hudScaleFromParams(effectiveParams(urlParams, next)));
+          const on = skinUsable && next.hudSkin && !urlParams.has('noskin');
+          menu?.setSkin(on);
+          for (const el of [hudEl, endEl]) setSkinAttribute(el, on);
+        },
+        reload: () => location.reload(),
+      },
+      { ...(hudSkin ? { skin: hudSkin } : {}), skinOn },
+    );
+    // Let the splash paint before the heavy loading starts.
+    await nextFrame();
+  }
+  const step = (value: number, label: string): void => menu?.setProgress(value, label);
+
+  step(0.04, 'Spelregels laden');
+  const data = loadClientGameData();
+  step(0.14, 'Kaart laden');
+  const map = loadClientMap(SLICE_MAP);
+  step(0.26, 'Lokale kunst');
   // Local fan art only in dev: a production build drops this import, so it never ships.
   const localAssets = import.meta.env.DEV ? await import('./game/localAssets.js') : null;
   const assets = assetConfig(params, data.heroes, localAssets);
   const textures = terrainTextures();
-  const renderer = await createRenderer({
-    canvas,
-    forceWebGL: params.has('webgl'),
-    warmDraw: params.get('warmdraw') !== '0',
-    ...(lodPixelsParam(params) ? { lodPixels: lodPixelsParam(params)! } : {}),
-    shadows: shadowOption(params),
-    // The frame stats are the compact badge in the top right (createPerfBadge), not the renderer's own overlay.
-    stats: false,
-    // A and S are HUD hotkeys (attack-move, stop); W, D, arrows and Q/E keep moving the camera.
-    camera: { panKeys: { KeyA: null, KeyS: null } },
-    ...(assets ? { assets } : {}),
-    ...(textures ? { terrainTextures: textures } : {}),
-  });
+  step(0.34, 'Renderer starten');
+  let renderer: CrawloutRenderer;
+  try {
+    renderer = await createRenderer({
+      canvas,
+      forceWebGL: params.has('webgl'),
+      warmDraw: params.get('warmdraw') !== '0',
+      ...(lodPixelsParam(params) ? { lodPixels: lodPixelsParam(params)! } : {}),
+      shadows: shadowOption(params),
+      // The frame stats are the compact badge in the top right (createPerfBadge), not the renderer's own overlay.
+      stats: false,
+      // A and S are HUD hotkeys (attack-move, stop); W, D, arrows and Q/E keep moving the camera.
+      camera: { panKeys: { KeyA: null, KeyS: null } },
+      ...(assets ? { assets } : {}),
+      ...(textures ? { terrainTextures: textures } : {}),
+    });
+  } catch (err) {
+    menu?.hide();
+    throw err;
+  }
+  step(0.62, 'Terrein opbouwen');
   renderer.setTerrain(map.terrain, { albedoLayout: albedoLayoutForMap(SLICE_MAP) });
   renderer.setGameData(data);
-  void renderer.setProps(map.props, propSource());
+  const propsLoaded = renderer.setProps(map.props, propSource());
   const water = loadClientMapWater(SLICE_MAP);
   if (water) renderer.setWater(water);
   const minimapStatic = minimapLayers(map.grid.w, map.grid.h, map.grid.passable, map.props, water);
+  const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true;
+  let ambient: AmbientCamera | null = null;
+  if (menu) {
+    menu.setContent(
+      menuContent(data, map.grid, map.dominance, minimapStatic, `data ${data.dataVersion}`),
+    );
+    ambient = startAmbientCamera(
+      renderer,
+      { w: map.grid.w, h: map.grid.h },
+      { still: reducedMotion },
+    );
+    step(0.8, 'Props plaatsen');
+    await Promise.race([
+      propsLoaded,
+      new Promise((resolve) => window.setTimeout(resolve, PROPS_WAIT_MS)),
+    ]);
+    step(0.97, 'Eerste beeld');
+    await nextFrame();
+    menu.setLoaded();
+  } else void propsLoaded;
 
   // Selection is local UI state, never sim state: it is stamped into each snapshot's flags for the renderer.
   let selection = new Set<number>();
@@ -225,7 +379,8 @@ async function main(): Promise<void> {
 
   const perfBadge = perfEl ? createPerfBadge(perfEl, () => renderer.stats()) : null;
   const netStatus = createStatusOverlay();
-  const session = startSession(data, map, {
+  const session = createSessionSlot();
+  const sessionEvents: SessionEvents = {
     onSnapshot(buf) {
       const previous = entities;
       const snap = readSnapshot(buf, selection);
@@ -273,9 +428,16 @@ async function main(): Promise<void> {
       network = { ...network, stall: notice };
       notify();
     },
-    onConnection: (text) => netStatus.set(text),
-    onError: (message) => console.error(`sim: ${message}`),
-  });
+    // While the menu is up it shows the connection itself; the overlay is for the match (reconnects, waiting).
+    onConnection: (text) => netStatus.set(menu?.isVisible() ? null : text),
+    // The menu's lobby shows the relay's side of the story (the link, the lobby, its error messages).
+    onLobby: (lobby) => menu?.setLobby(lobby.roomId, lobby.map, lobby.players),
+    onLink: (link) => menu?.setLink(link),
+    onError: (message) => {
+      console.error(`sim: ${message}`);
+      menu?.setError(message);
+    },
+  };
   const statusPoll = window.setInterval(() => session.requestStatus(), STATUS_POLL_MS);
   const fogPoll = window.setInterval(() => {
     if (fogOn) session.requestFog();
@@ -289,7 +451,13 @@ async function main(): Promise<void> {
     const how = { destruction: 'vernietiging', dominance: 'dominantie', surrender: 'opgave' }[
       winner.reason
     ];
-    endEl!.textContent = `${won ? 'Gewonnen' : 'Verloren'} door ${how}. Herlaad de pagina voor een nieuw potje.`;
+    mountMatchEnd(endEl!, {
+      won,
+      how,
+      onMenu: () => location.assign(menuUrl(location)),
+      ...(hudSkin ? { skin: hudSkin } : {}),
+      skinOn: skinOn && settings.hudSkin,
+    });
     endEl!.style.display = 'grid';
   }
 
@@ -829,21 +997,44 @@ async function main(): Promise<void> {
       return () => listeners.delete(l);
     },
   };
-  // The bitmap HUD skin (local art, assets/local/hud) is dev only; a production build drops this import. `?noskin`
-  // shows the CSS-only look that production gets.
-  const hudSkin =
-    import.meta.env.DEV && !params.has('noskin')
-      ? (await import('./ui/hudSkin.js')).loadHudSkin()
-      : undefined;
-  const hud = mountHud(hudEl, deps, hudSkin ? { skin: hudSkin } : {});
+  // The HUD mounts when the match starts (the menu has the screen until then); until then it is a stand-in that does
+  // nothing, so the pointer code below needs no checks.
+  let realHud: HudHandle | null = null;
+  const hud: HudHandle = {
+    completePlacement: (p) => realHud?.completePlacement(p) ?? false,
+    cancelPlacement: () => realHud?.cancelPlacement(),
+    setPlacementHint: (r) => realHud?.setPlacementHint(r),
+    showHint: (t) => realHud?.showHint(t),
+    completeTargeting: (t) => realHud?.completeTargeting(t) ?? false,
+    cancelTargeting: () => realHud?.cancelTargeting(),
+    targetingActive: () => realHud?.targetingActive() ?? false,
+    placementActive: () => realHud?.placementActive() ?? false,
+    refresh: () => realHud?.refresh(),
+    unmount: () => realHud?.unmount(),
+  };
 
-  // Over ws the start message arrives later than the loopback's; playerId is valid once `started` resolves.
-  void session.started.then(() => {
+  /** The match is on: the menu goes, the HUD and frame stats come, the camera goes to this player's base. */
+  function enterMatch(): void {
+    ambient?.stop();
+    menu?.hide();
+    realHud ??= mountHud(hudEl!, deps, { ...(hudSkin ? { skin: hudSkin } : {}), skinOn });
+    if (perfEl) perfEl.style.visibility = '';
+    const cam = renderer.cameraControls;
+    cam.yaw = DEFAULT_YAW;
+    cam.zoomTo(DEFAULT_ZOOM_M, true);
     const home = map.grid.spawns[session.playerId];
     if (home) renderer.focus(home.ux, home.uy);
     if (fogOn) session.requestFog();
     else session.revealAll(true);
-  });
+  }
+
+  launchMatch = (net, options) => {
+    const real = startSession(data, map, sessionEvents, net, options);
+    session.attach(real);
+    void real.started.then(enterMatch);
+  };
+  // No menu: the match starts from the URL, as it always did (also over `?relay=` with the automatic lobby).
+  if (mode === 'match') launchMatch(netOptionsFromSearch(location.search), {});
 
   // Pointer: left click/drag selects (shift adds); while placing or targeting a left click picks the spot.
   let drag: { x: number; y: number; moved: boolean } | null = null;
@@ -1003,6 +1194,8 @@ async function main(): Promise<void> {
   (window as unknown as { crawlout: unknown }).crawlout = {
     renderer,
     session,
+    /** The pre-match menu (null when the URL started the match directly); for the browser tests. */
+    menu,
     /** Scripted camera run for the render bench (render/bench.ts): base turn, pan to the middle, wide turns. */
     bench: (opts?: { seconds?: number }) => {
       const mine = own();

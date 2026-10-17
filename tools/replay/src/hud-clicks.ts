@@ -131,7 +131,8 @@ async function runIn(browser: Browser, width: number, height: number): Promise<v
   page.on('pageerror', (e) => failures.push(`pageerror ${e.message}`));
   // The fake clock lets the sim run minutes in seconds (runFor) while the page also runs in real time (resume).
   await page.clock.install();
-  await page.goto(URL);
+  // ?skip=1: straight into a loopback match, past the splash and the menu
+  await page.goto(`${URL}?skip=1`);
   await page.clock.resume();
   await page.waitForFunction(`window.crawlout && window.crawlout.entities().size > 10`, null, {
     timeout: 60000,

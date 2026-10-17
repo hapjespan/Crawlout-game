@@ -10,6 +10,8 @@
     "hud-clicks": "node --import tsx src/hud-clicks.ts",
     "hud-raiders": "node --import tsx src/hud-raiders.ts",
     "hud-shots": "node --import tsx src/hud-shots.ts",
+    "menu-shots": "node --import tsx src/menu-shots.ts",
+    "menu-smoke": "node --import tsx src/menu-smoke.ts",
     "playtest": "node --import tsx src/playtest.ts",
     "balance": "node --import tsx src/balance-report.ts",
     "fairness": "node --import tsx src/fairness-report.ts",

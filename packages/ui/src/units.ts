@@ -2,12 +2,13 @@
  * The HUD is laid out in units of the 1024x572 mockup, then scaled down by `HUD_SCALE`, so the whole interface keeps its
  * proportions at any window size and takes a fixed, small share of the screen: the tallest bottom panel (the unit bar,
  * 134 units) is 134 * 0.64 / 572 = 15% of the window height on a 16:9 screen. `--u` (one unit, in px) is set on
- * `.co-hud` (styles.ts) as `min(100vh / 572, 100vw / 1024) * HUD_SCALE`.
+ * `.co-hud` (styles.ts) as `min(100vh / 572, 100vw / 1024) * HUD_SCALE`. The settings screen can set `--hud-scale` on the
+ * page (HUD size: klein, normaal, groot, extra groot); without it HUD_SCALE applies.
  */
 export const HUD_SCALE = 0.64;
 
 /** The CSS value of `--u`: one layout unit in px. */
-export const UNIT_CSS = `calc(min(calc(100vh / 572), calc(100vw / 1024)) * ${HUD_SCALE})`;
+export const UNIT_CSS = `calc(min(calc(100vh / 572), calc(100vw / 1024)) * var(--hud-scale, ${HUD_SCALE}))`;
 
 /**
  * The unit of the top-left brass bar (and what hangs under it): never under 1.2 px, so its 11 px labels fit their windows

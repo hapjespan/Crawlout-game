@@ -12,6 +12,17 @@ pnpm --filter @crawlout/replay run replay:browsers # de replay-set in Chromium, 
 pnpm --filter @crawlout/replay run balance         # balansmeting: AI tegen AI over vijf seeds en een bot tegen de AI
 ```
 
+## Menu in de browser
+
+Met een eigen vite op een vrije poort (`cd apps/client && npx vite --port 5212 --strictPort`); de relay start het script zelf op een vrije poort, nooit op 8787:
+
+```
+MENU_URL=http://localhost:5212/ pnpm --filter @crawlout/replay menu-smoke   # splash, menu, Tegen AI, lobby met twee spelers, instellingen, URL-snelwegen
+MENU_URL=http://localhost:5212/ MENU_SHOTS=/some/dir pnpm --filter @crawlout/replay menu-shots   # schermafbeeldingen, 1600x900 en 1280x720, met lokale kunst en met de CSS-fallback (?noskin=1)
+```
+
+De andere browserscripts (hud-clicks, hud-raiders, playtest) sturen `?skip=1`: dat slaat splash en menu over.
+
 ## Balansmeting
 
 `pnpm --filter @crawlout/replay run balance [-- seed ...]` (src/balance-report.ts, meting in src/balance.ts) speelt de scripted AI tegen zichzelf op Rustbelt, standaard over de seeds 1, 5, 7, 42 en 99 (dezelfde als match-length.test.ts), en daarna een bot-speler (src/bot.ts) tegen de AI: passief (geeft na zijn plan niets meer uit) en actief (schoolt boven een drempel om tot patrol). Per potje: winnaar, reden en lengte in minuten, en per speler het scrap-verloop (bank per drie minuten, piek, inkomen en uitgaven), bewoners en pop-cap, militie, claimpunten, gebouwen, techs, verliezen en het level van de held. Alleen lezen wat de sim publiek laat zien; de meting zelf mag floats gebruiken. `src/match-length.test.ts` legt de uitkomst van de vijf seeds vast (25 tot 35 minuten, scrap die niet oploopt, de held die levelt) en eist dat beide winroutes voorkomen (vernietiging en dominantie, Spelfundament 12).

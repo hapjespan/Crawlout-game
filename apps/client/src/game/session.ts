@@ -2,8 +2,10 @@
 // human plus an AI player (the AI itself runs in the sim); with `?relay=ws://host:8787&room=..&name=..` it is the ws
 // relay. Both speak the same messages, so everything below the transport choice is shared.
 //
-// Lobby over ws (no HUD lobby yet): the session joins with a clientId from sessionStorage, sets the map to the one the
-// client loaded, lets the host (`?ai=1`) add one AI, and readies up automatically; the relay starts once everyone is ready.
+// Lobby over ws: the session joins with a clientId from sessionStorage and sets the map to the one the client loaded.
+// With `lobby: 'auto'` (the URL shortcuts) it also lets the host (`?ai=1`) add one AI and readies up automatically; with
+// `lobby: 'manual'` (the menu's "Speler tegen speler") it only reports the lobby (onLobby, onLink) and leaves faction,
+// AI and ready to the player through `lobbyRequest`. The relay starts once everyone is ready.
 // Factions (sim 0.18.0, the Raiders are simulated): `?faction=raiders` plays the Raiders, `?aifaction=raiders` gives the
 // AI the Raiders; both default to the Dwellers. Over ws and in the loopback alike.
 // Reconnect: a dropped socket is re-joined with the same clientId; the relay sends `start` again and a resync, which
@@ -14,6 +16,7 @@ import {
   TICK_MS,
   readSnapshotHeader,
   type CommandPayload,
+  type ClientMessage,
   type CommandType,
   type DesyncEvent,
   type FogMask,
@@ -34,6 +37,7 @@ import {
 } from '@crawlout/sim';
 import type { SimWorkerInbound, SimWorkerOutbound } from '@crawlout/sim';
 import SimWorker from '@crawlout/sim/worker?worker';
+import { identifyYou } from '@crawlout/ui';
 import type { ClientMap } from './content.js';
 import { buildDesyncDump, saveDesyncDump } from '../net/desyncDump.js';
 import { dataVersionError } from '../net/dataVersion.js';
@@ -41,11 +45,37 @@ import { getClientId, netOptionsFromSearch, type WsNetOptions } from '../net/par
 import { ReconnectingTransport } from '../net/reconnectingTransport.js';
 import { BundleFeed, base64ToBuffer, bufferToBase64 } from '../net/resync.js';
 
-/** A faction key from a URL parameter if the data knows it, else the default (dwellers). */
-function factionParam(data: GameData, name: 'faction' | 'aifaction'): string {
-  const wanted = new URLSearchParams(window.location.search).get(name);
+/** A faction key if the data knows it, else the default (dwellers). */
+function knownFaction(data: GameData, wanted: string | null | undefined): string {
   return data.factions.find((f) => f.key === wanted)?.key ?? 'dwellers';
 }
+
+/** A faction key from a URL parameter if the data knows it, else the default (dwellers). */
+function factionParam(data: GameData, name: 'faction' | 'aifaction'): string {
+  return knownFaction(data, new URLSearchParams(window.location.search).get(name));
+}
+
+export interface SessionOptions {
+  /** This player's faction; default `?faction=`. */
+  faction?: string;
+  /** The AI's faction (loopback and `?ai=1`); default `?aifaction=`. */
+  aiFaction?: string;
+  /** Over ws: `auto` (default) readies itself from the URL options, `manual` leaves the lobby to the player (the menu). */
+  lobby?: 'auto' | 'manual';
+}
+
+/** What the relay's lobby message says, for the menu's lobby screen. */
+export interface SessionLobby {
+  roomId: string;
+  map: string;
+  players: readonly LobbyPlayer[];
+}
+
+/** The lobby messages a player can send from the menu. */
+export type SessionLobbyRequest = Extract<
+  ClientMessage,
+  { kind: 'ready' | 'setFaction' | 'addAi' | 'removeAi' }
+>;
 
 /** No bundle for this long while a match runs = the lockstep is waiting; shown through onStall. */
 const LOCAL_STALL_MS = 2000;
@@ -62,6 +92,10 @@ export interface SessionEvents {
   onFog?(mask: FogMask): void;
   /** Connection or lobby text for an overlay (Dutch, user-facing); null clears it. */
   onConnection?(text: string | null): void;
+  /** Over ws: the lobby changed (every lobby message of the relay). */
+  onLobby?(lobby: SessionLobby): void;
+  /** Over ws: the socket is up (a join was sent) or went down; a down before the first connect means it never worked. */
+  onLink?(status: 'up' | 'down'): void;
 }
 
 export interface Session {
@@ -76,6 +110,8 @@ export interface Session {
   /** Display name of a player from the start message (AI players included). */
   playerName(playerId: number): string;
   sendCommand<T extends CommandType>(type: T, payload: CommandPayload<T>): void;
+  /** Lobby (ws, before the match): faction, AI, ready. Ignored without a relay connection. */
+  lobbyRequest(request: SessionLobbyRequest): void;
   /** Asks the sim worker for this player's status (queryMessage, contract 1); the answer arrives in onStatus. */
   requestStatus(): void;
   /** Asks the sim worker for this player's fog mask (protocol 0.11.0); the answer arrives in onFog. */
@@ -90,7 +126,15 @@ export function startSession(
   map: ClientMap,
   events: SessionEvents,
   net: WsNetOptions | null = netOptionsFromSearch(location.search),
+  options: SessionOptions = {},
 ): Session {
+  const ownFaction = options.faction
+    ? knownFaction(data, options.faction)
+    : factionParam(data, 'faction');
+  const aiFaction = options.aiFaction
+    ? knownFaction(data, options.aiFaction)
+    : factionParam(data, 'aifaction');
+  const manualLobby = options.lobby === 'manual';
   const worker = new SimWorker();
   const post = (msg: SimWorkerInbound, transfer: Transferable[] = []): void =>
     worker.postMessage(msg, transfer);
@@ -192,10 +236,17 @@ export function startSession(
   // Lobby over ws: set the map, let the host add the AI, ready up once per distinct lobby (a join or a map change
   // un-readies everyone, so a changed lobby needs a fresh ready).
   let lobbyKeyReadied = '';
+  let youId: number | null = null;
   let aiRequested = false;
   const onLobby = (msg: Extract<ServerMessage, { kind: 'lobby' }>): void => {
     if (!net) return;
     roster = msg.players;
+    events.onLobby?.({ roomId: msg.roomId, map: msg.map, players: msg.players });
+    if (manualLobby) {
+      // The player drives the lobby; only the map is ours to set (one map, the one this client loaded).
+      if (msg.map !== map.grid.id) link.send({ kind: 'setMap', map: map.grid.id });
+      return;
+    }
     const humans = msg.players.filter((p) => !p.ai);
     events.onConnection?.(
       `Lobby ${msg.roomId}: ${humans.map((p) => p.name).join(', ')}${msg.players.length - humans.length > 0 ? ' + AI' : ''}. Het potje start zodra iedereen er is.`,
@@ -214,14 +265,15 @@ export function startSession(
     if (net.ai && !aiRequested && !msg.players.some((p) => p.ai)) {
       aiRequested = true;
       // Only the host (lowest human playerId) may add an AI; the relay answers any other with an error.
-      link.send({ kind: 'addAi', faction: factionParam(data, 'aifaction') });
+      link.send({ kind: 'addAi', faction: aiFaction });
       return;
     }
     // this player's faction (`?faction=`): set it once the lobby shows another
-    const mine = msg.players.find((p) => !p.ai && p.name === net.name);
-    const faction = factionParam(data, 'faction');
-    if (mine !== undefined && mine.faction !== faction) {
-      link.send({ kind: 'setFaction', faction });
+    // (the relay renames a duplicate name to "Naam 2", so match with identifyYou)
+    youId = identifyYou(msg.players, net.name, youId);
+    const mine = msg.players.find((p) => p.playerId === youId);
+    if (mine !== undefined && mine.faction !== ownFaction) {
+      link.send({ kind: 'setFaction', faction: ownFaction });
       return;
     }
     lobbyKeyReadied = key;
@@ -327,8 +379,8 @@ export function startSession(
     link.onMessage(onServerMessage);
     // The AI is a lobby player without a connection; it runs in the sim on every client and reports no hashes.
     link.send({ kind: 'join', roomId: 'skirmish', name: 'Jij' });
-    link.send({ kind: 'setFaction', faction: factionParam(data, 'faction') });
-    loopback.addAi(factionParam(data, 'aifaction'));
+    link.send({ kind: 'setFaction', faction: ownFaction });
+    loopback.addAi(aiFaction);
     link.send({ kind: 'ready', ready: true });
     const relay = loopback;
     pump = window.setInterval(() => {
@@ -342,6 +394,7 @@ export function startSession(
       clientId: getClientId(safeSessionStorage()),
       onConnection: (up, reconnect) => {
         connected = up;
+        events.onLink?.(up ? 'up' : 'down');
         if (!up) {
           lobbyKeyReadied = '';
           events.onConnection?.('Verbinding met de relay verbroken, opnieuw verbinden…');
@@ -372,6 +425,9 @@ export function startSession(
       const p = roster.find((r) => r.playerId === playerId);
       if (!p) return `Speler ${playerId + 1}`;
       return playerId === you ? 'Jij' : p.name;
+    },
+    lobbyRequest(request) {
+      if (net && !disposed && !started) link.send(request);
     },
     sendCommand(type, payload) {
       if (disposed || you < 0 || awaitingResync) return;

@@ -230,7 +230,7 @@ describe('portretten', () => {
 describe('indeling in eenheden van het ontwerp', () => {
   it('legt de HUD uit in units van 1024x572, geschaald naar 15% van het scherm, en houdt tekst op minstens 11 px', () => {
     expect(HUD_CSS).toContain(
-      `--u:calc(min(calc(100vh / 572), calc(100vw / 1024)) * ${HUD_SCALE})`,
+      `--u:calc(min(calc(100vh / 572), calc(100vw / 1024)) * var(--hud-scale, ${HUD_SCALE}))`,
     );
     expect(HUD_CSS).toContain('max(11px,');
     // The tallest bottom panel (the unit bar, 134 units of 572) stays within 15% of a 16:9 window.

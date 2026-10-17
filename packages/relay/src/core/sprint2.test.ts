@@ -63,6 +63,50 @@ function startTwo(options: Partial<RoomOptions> = {}) {
   return h;
 }
 
+describe('lobby: namen en facties', () => {
+  const names = (h: ReturnType<typeof harness>, id: string) =>
+    h
+      .of(id, 'lobby')
+      .at(-1)!
+      .players.map((p) => p.name);
+
+  it('maakt menselijke namen uniek in een room (Speler, Speler 2, Speler 3), hoofdletterongevoelig, binnen 32 tekens', () => {
+    const h = harness();
+    h.say('a', { kind: 'join', roomId: 'r', name: 'Speler' });
+    h.say('b', { kind: 'join', roomId: 'r', name: 'speler' });
+    h.say('c', { kind: 'join', roomId: 'r', name: 'Speler' });
+    expect(names(h, 'a')).toEqual(['Speler', 'speler 2', 'Speler 3']);
+    const long = 'x'.repeat(32);
+    h.say('d', { kind: 'join', roomId: 'r', name: long });
+    h.say('e', { kind: 'join', roomId: 'r', name: long });
+    expect(names(h, 'a')[4]).toBe(`${'x'.repeat(30)} 2`);
+    expect(names(h, 'a')[4]!.length).toBe(32);
+  });
+
+  it('een vrijgekomen naam is weer te gebruiken en een AI blokkeert geen menselijke naam', () => {
+    const h = harness();
+    h.say('a', { kind: 'join', roomId: 'r', name: 'AI 2' });
+    h.say('a', { kind: 'addAi', faction: 'raiders' });
+    h.say('b', { kind: 'join', roomId: 'r', name: 'AI 2' });
+    expect(names(h, 'a')).toEqual(['AI 2', 'AI 2', 'AI 2 2']);
+    h.room.disconnect('b');
+    h.say('c', { kind: 'join', roomId: 'r', name: 'AI 2' });
+    expect(names(h, 'a').at(-1)).toBe('AI 2 2');
+  });
+
+  it('een eigen factie per speler: setFaction komt in de lobby en in start, en vraagt opnieuw om ready', () => {
+    const h = harness();
+    h.say('a', { kind: 'join', roomId: 'r', name: 'A' });
+    h.say('b', { kind: 'join', roomId: 'r', name: 'B' });
+    h.say('b', { kind: 'setFaction', faction: 'raiders' });
+    h.say('a', { kind: 'ready', ready: true });
+    h.say('b', { kind: 'ready', ready: true });
+    const start = h.of('a', 'start')[0]!;
+    expect(start.players.map((p) => p.faction)).toEqual(['dwellers', 'raiders']);
+    expect(h.of('b', 'start')[0]!.you).toBe(1);
+  });
+});
+
 describe('instellingen en AI', () => {
   it('alleen de host zet settings; ze gaan mee in lobby en start, zonder defaultgetal voor dominanceMinutes', () => {
     const h = harness();

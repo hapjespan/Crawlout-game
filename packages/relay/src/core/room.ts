@@ -28,6 +28,8 @@ export const RESYNC_HISTORY_FRAMES = 1200;
 export const RESYNC_TIMEOUT_MS = 5000;
 /** Na een resync negeren we de latency-metingen van die speler zo lang (de client haalt dan versneld in). */
 const SAMPLE_GRACE_FRAMES = 100;
+/** Zelfde maximum als `name` in het protocol (lobby.ts). */
+const MAX_NAME_LENGTH = 32;
 
 export interface RoomOptions {
   roomId: string;
@@ -306,7 +308,7 @@ export class Room {
     if (clientId !== undefined) this.clientIds.set(playerId, clientId);
     this.players.set(playerId, {
       playerId,
-      name,
+      name: this.uniqueName(name),
       faction: this.defaultFaction,
       ready: false,
       online: true,
@@ -314,6 +316,22 @@ export class Room {
     });
     this.unreadyHumans();
     this.broadcastLobby();
+  }
+
+  /**
+   * Menselijke namen zijn uniek in een room: een tweede "Speler" wordt "Speler 2", de volgende "Speler 3". De client
+   * herkent zijn eigen regel in de lobby aan de naam (de lobby-berichten dragen geen `you`), dus twee gelijke namen
+   * mogen niet naast elkaar bestaan. Hoofdletterongevoelig; past binnen de 32 tekens van het protocol.
+   */
+  private uniqueName(name: string): string {
+    const taken = new Set<string>();
+    for (const p of this.players.values()) if (!p.ai) taken.add(p.name.toLowerCase());
+    if (!taken.has(name.toLowerCase())) return name;
+    for (let n = 2; ; n++) {
+      const suffix = ` ${n}`;
+      const candidate = `${name.slice(0, MAX_NAME_LENGTH - suffix.length)}${suffix}`;
+      if (!taken.has(candidate.toLowerCase())) return candidate;
+    }
   }
 
   /** Bekende clientId: zelfde playerId, online weer aan. Na start volgt de resync. */

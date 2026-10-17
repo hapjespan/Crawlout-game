@@ -1,7 +1,6 @@
 import { h, render } from 'preact';
 import { HudController } from './controller.js';
-import { HUD_CSS } from './styles.js';
-import { SKIN_ATTR, SKIN_VALUE, hudSkinCss } from './skin.js';
+import { installHudStyles, installSkin, setSkinAttribute } from './install.js';
 import type { HudSkin } from './skin.js';
 import { Hud } from './view.js';
 import type { HudDeps, HudHandle } from './types.js';
@@ -47,15 +46,45 @@ export type {
 } from './types.js';
 export { CARD_ICON_IDS } from './types.js';
 export { ACTIONS, HudController, unitStateOf } from './controller.js';
-export { hudSkinCss, skinComplete } from './skin.js';
+export { hudSkinCss, menuSkinCss, skinComplete } from './skin.js';
 export type { HudSkin, HudSkinFrame, HudSkinManifest, HudSkinTile } from './skin.js';
-
-const STYLE_ID = 'co-hud-style';
-const SKIN_STYLE_ID = 'co-hud-skin-style';
+export { setSkinAttribute } from './install.js';
+export { mountMenu } from './menu/mount.js';
+export { mountMatchEnd } from './menu/end.js';
+export type { MatchEndOptions } from './menu/end.js';
+export type { MenuMount, MenuMountOptions } from './menu/mount.js';
+export type {
+  LobbyRequest,
+  MenuContent,
+  MenuDeps,
+  MenuFaction,
+  MenuHandle,
+  MenuMapInfo,
+} from './menu/types.js';
+export type {
+  AiMatchConfig,
+  GameTypeId,
+  MenuScreen,
+  PvpConnectConfig,
+  PvpForm,
+} from './menu/flow.js';
+export { defaultRelayUrl, RANDOM_FACTION } from './menu/flow.js';
+export { identifyYou } from './menu/lobbyModel.js';
+export {
+  DEFAULT_SETTINGS,
+  effectiveParams,
+  hudScaleFromParams,
+  loadSettings,
+  saveSettings,
+  HUD_SCALE_VALUE,
+} from './menu/settings.js';
+export type { MenuSettings, SettingsStorage } from './menu/settings.js';
 
 export interface HudMountOptions {
   /** Dev-only bitmap skin laid over the CSS look; absent (production, CI) means the CSS-only look. */
   skin?: HudSkin;
+  /** With a skin: start with it on (default) or off (the "HUD-uiterlijk" setting); `setSkinAttribute` toggles it live. */
+  skinOn?: boolean;
   /**
    * Demo-only (the HUD demo page's mid-game preset, for the design review image): keep the build menu open while a
    * building is being placed, so the menu, the placement strip and the card window show at once. The game never sets it.
@@ -66,23 +95,9 @@ export interface HudMountOptions {
 /** Monteert de HUD als overlay in `el`. `el` moet zelf gepositioneerd zijn (relative of absolute). */
 export function mountHud(el: HTMLElement, deps: HudDeps, options: HudMountOptions = {}): HudHandle {
   const doc = el.ownerDocument;
-  if (!doc.getElementById(STYLE_ID)) {
-    const style = doc.createElement('style');
-    style.id = STYLE_ID;
-    style.textContent = HUD_CSS;
-    doc.head.appendChild(style);
-  }
+  installHudStyles(doc);
   // The bitmap skin is optional and only ever handed over in dev; an incomplete skin leaves the CSS look as it is.
-  const skinCss = options.skin ? hudSkinCss(options.skin) : '';
-  if (skinCss) {
-    if (!doc.getElementById(SKIN_STYLE_ID)) {
-      const style = doc.createElement('style');
-      style.id = SKIN_STYLE_ID;
-      style.textContent = skinCss;
-      doc.head.appendChild(style);
-    }
-    el.setAttribute(SKIN_ATTR, SKIN_VALUE);
-  }
+  if (installSkin(doc, options.skin, false)) setSkinAttribute(el, options.skinOn ?? true);
   const ctl = new HudController(deps, options.keepBuildMenuWhilePlacing === true);
   const onKey = (e: KeyboardEvent): void => {
     if (ctl.handleKeyDown(e)) e.preventDefault();
@@ -102,7 +117,7 @@ export function mountHud(el: HTMLElement, deps: HudDeps, options: HudMountOption
     refresh: () => ctl.refresh(),
     unmount: () => {
       doc.removeEventListener('keydown', onKey);
-      el.removeAttribute(SKIN_ATTR);
+      setSkinAttribute(el, false);
       ctl.unmount();
       render(null, el);
     },

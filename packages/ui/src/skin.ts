@@ -1,3 +1,4 @@
+import { m } from './menu/styles.js';
 import { px, u } from './units.js';
 
 /**
@@ -88,9 +89,8 @@ const BUILD_ICONS: Record<string, string> = {
   build: 'icon-build',
 };
 
-/** The CSS for the bitmap skin; an empty string when the skin is incomplete. */
-export function hudSkinCss(skin: HudSkin): string {
-  if (!skinComplete(skin)) return '';
+/** The small helpers both the HUD skin and the menu skin build their CSS from. */
+function skinTools(skin: HudSkin) {
   const { frames, tiles } = skin.manifest;
   const images = skin.manifest.images ?? {};
   const url = (file: string): string => `url("${skin.urls[file] ?? ''}")`;
@@ -116,6 +116,13 @@ export function hudSkinCss(skin: HudSkin): string {
     const i = images[name];
     return i ? url(i.file) : 'none';
   };
+  return { frames, tiles, images, url, frame, tile, region, img };
+}
+
+/** The CSS for the bitmap skin; an empty string when the skin is incomplete. */
+export function hudSkinCss(skin: HudSkin): string {
+  if (!skinComplete(skin)) return '';
+  const { tiles, images, url, frame, tile, region, img } = skinTools(skin);
   const hazard = tiles['hazard'];
   const hazardBg = hazard
     ? `background:${url(hazard.file)} 0 0/${px(hazard.w)} 100% repeat-x;`
@@ -209,5 +216,42 @@ ${s} .co-building-badge{${frame('badge-chip', 5)}min-width:0;height:auto;padding
 ${s} .co-building-progress{left:0;right:0;bottom:0;height:${u(3)};border:0}
 ${s} .co-building-progress>span,${s} .co-card-progress>span,${s} .co-dom-warn .co-dom-bar>span{${hazardBg}}
 ${s} .co-placement-reason{${frame('chip-paper', 5)}padding:0 ${px(5)};background:linear-gradient(180deg,#e6dcbc,#c9bd96);box-shadow:none}
+`;
+}
+
+/**
+ * The menu's plates, buttons and screens in the designer's art, on top of the CSS look (menu/styles.ts): the same 9-slice
+ * frames and rust tile as the HUD panels, drawn in menu units (`--m`). Dev only, like the rest of the skin; an
+ * incomplete skin gives an empty string.
+ */
+export function menuSkinCss(skin: HudSkin): string {
+  if (!skinComplete(skin)) return '';
+  const { tiles, url, frame, tile } = skinTools(skin);
+  const hazard = tiles['hazard'];
+  const s = SCOPE;
+  return `
+${s} .co-m-plate{${frame('frame-plate', m(12))}background:linear-gradient(rgba(10,12,8,.5),rgba(10,12,8,.5)),${tile('plate-rust')} 0 0/${m(385)} auto;background-color:#14170f;padding:${m(18)} ${m(26)};box-shadow:0 3px 8px rgba(0,0,0,.55)}
+${s} .co-m-titleplate{padding:${m(22)} ${m(60)} ${m(16)}}
+${s} .co-m-hazard{${hazard ? `background:${url(hazard.file)} 0 0/${m(hazard.w)} 100% repeat-x;border:0;` : ''}}
+${s} .co-m-tab{${frame('frame-header', m(8))}height:auto;padding:${m(2)} ${m(10)};background:linear-gradient(180deg,#4b4a2b,#2f2e1b);color:#e6d48a;text-shadow:none;box-shadow:none}
+${s} .co-m-crt{${frame('frame-bezel', m(14))}padding:${m(8)} ${m(14)};box-shadow:none}
+${s} .co-btn.co-m-btn,${s} .co-m-press{${frame('btn-normal', m(9))}padding:${m(6)} ${m(16)};background:linear-gradient(180deg,#323829,#262b1f);box-shadow:0 2px 3px rgba(0,0,0,.5)}
+${s} .co-m-press{background:rgba(244,166,42,.06);box-shadow:none}
+${s} .co-btn.co-m-btn:hover:not(:disabled){background:linear-gradient(180deg,#3c4431,#2c3324)}
+${s} .co-btn.co-m-primary{${frame('btn-amber', m(9))}background:linear-gradient(180deg,#ffd27a,#d9951c)}
+${s} .co-btn.co-m-primary:disabled{${frame('btn-rust', m(9))}background:linear-gradient(180deg,#2e2c25,#222019)}
+${s} .co-m-item{${frame('btn-normal', m(11))}padding:${m(6)} ${m(16)};background:linear-gradient(180deg,#323829,#262b1f);box-shadow:0 2px 3px rgba(0,0,0,.5)}
+${s} .co-m-item:hover,${s} .co-m-item:focus-visible{${frame('btn-amber', m(11))}background:linear-gradient(180deg,#4a3a18,#2b2210);box-shadow:0 0 12px rgba(244,166,42,.4)}
+${s} .co-btn.co-m-choice,${s} .co-m-player,${s} .co-m-mapcard{${frame('frame-card', m(7))}background-image:none;box-shadow:none}
+${s} .co-btn.co-m-choice{padding:${m(8)} ${m(10)};background:linear-gradient(180deg,#232a1d,#161b12)}
+${s} .co-btn.co-m-choice[aria-checked=true]{${frame('btn-amber', m(8))}background:linear-gradient(180deg,#4a3a18,#2b2210);box-shadow:0 0 8px rgba(244,166,42,.3)}
+${s} .co-btn.co-m-choice[aria-disabled=true]{${frame('btn-rust', m(8))}background:linear-gradient(180deg,#2e2c25,#222019);box-shadow:none}
+${s} .co-m-player{padding:${m(6)} ${m(10)};background:linear-gradient(180deg,#232a1d,#161b12)}
+${s} .co-m-mapcard{padding:${m(8)};background:linear-gradient(180deg,#171a14,#0e100c)}
+${s} .co-m-field{${frame('frame-well', m(9))}padding:${m(2)} ${m(8)};background:linear-gradient(180deg,#06140a,#040d07);box-shadow:none}
+${s} .co-m-status{${frame('frame-strip', m(11))}padding:${m(2)} ${m(8)};box-shadow:none}
+${s} .co-m-reload{${frame('frame-strip', m(11))}padding:${m(2)} ${m(8)}}
+${s} .co-m-minimap{${frame('frame-minimap', m(8))}box-shadow:none}
+${s} .co-key.co-m-key{${frame('badge-key', m(5))}padding:0 ${m(5)};line-height:1.1;background:#1c150a}
 `;
 }
