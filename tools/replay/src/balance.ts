@@ -52,6 +52,10 @@ export interface PlayerTrace {
   trained: number;
   /** Eigen units die sneuvelden. */
   lost: number;
+  /** Units this player caught (they became its captives; Raiders, data 0.24.0), sampled every second. */
+  captured: number;
+  /** Slaves and captives that were freed back to this player (or to it as the liberator), sampled every second. */
+  freed: number;
 }
 
 export interface MatchResult {
@@ -107,6 +111,8 @@ function newTrace(): PlayerTrace {
     robots: {},
     trained: 0,
     lost: 0,
+    captured: 0,
+    freed: 0,
   };
 }
 
@@ -124,6 +130,7 @@ export function playMatch(seed: number, opts: MatchOptions = {}): MatchResult {
   const techSeen = ai.map(() => 0);
   const last = ai.map((_, p) => sim.playerStatus(p).scrap);
   const seq: number[] = [];
+  const slaveSeen = new Uint8Array(sim.world.slaveState.length);
   let f = 0;
   for (; f < maxFrames && sim.winner() === null; f++) {
     const commands: {
@@ -183,6 +190,7 @@ export function playMatch(seed: number, opts: MatchOptions = {}): MatchResult {
           traces[u.owner]!.lost++;
       }
     }
+    if ((f + 1) % 20 === 0) countSlaveChanges(sim, traces, slaveSeen);
     if ((f + 1) % 20 === 0)
       for (let p = 0; p < n; p++) {
         const bits = sim.ps.tech[p]!;
@@ -212,6 +220,20 @@ export function playMatch(seed: number, opts: MatchOptions = {}): MatchResult {
     minutes: (frame + 1) / TICKS_PER_MINUTE,
     players: traces,
   };
+}
+
+/** Captures (none to captive) and liberations (slave or captive to freed) since the last call, per new owner. */
+function countSlaveChanges(sim: Sim, traces: PlayerTrace[], seen: Uint8Array): void {
+  const w = sim.world;
+  for (let i = 0; i < w.highWater; i++) {
+    const st = w.alive[i] === 1 ? w.slaveState[i]! : 0;
+    const was = seen[i]!;
+    if (st !== was && w.alive[i] === 1 && w.owner[i]! < traces.length) {
+      if (st === 1 && was === 0) traces[w.owner[i]!]!.captured++;
+      else if (st === 3) traces[w.owner[i]!]!.freed++;
+    }
+    seen[i] = st;
+  }
 }
 
 function sample(sim: Sim, traces: PlayerTrace[]): void {

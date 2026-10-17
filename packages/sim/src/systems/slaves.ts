@@ -276,6 +276,24 @@ export function captureTick(ctx: SimContext, i: number, cap: SimCapture): boolea
   w.capWork[i] = w.capWork[i]! + 1;
   if (w.capWork[i]! >= cap.captureTicks) {
     w.capWork[i] = 0;
+    // Two Slavers of different players that catch each other in the same tick (Raiders against Raiders) must not be
+    // split by entity index (fase-0 section 19 decision 3): t, later in this loop, would also finish now; sim.rng picks
+    // who catches whom (sim 0.19.0, proposal to be confirmed by the architect; measured: the mirror of two Raider AIs
+    // broke on this at 5:52 and player 0 won 92 of 99 matches; now 53 of 99)
+    const ct = captureOf(ctx, t);
+    if (
+      ct !== null &&
+      t > i &&
+      w.target[t] === w.idOf(i) &&
+      w.capWork[t]! + 1 >= ct.captureTicks &&
+      capturable(ctx, t, i, ct) &&
+      withinReach(w, t, i, ct.range) &&
+      ctx.rng.nextInt(2) === 1
+    ) {
+      w.capWork[t] = 0;
+      catchUnit(ctx, t, i);
+      return true;
+    }
     catchUnit(ctx, i, t);
   }
   return true;

@@ -688,6 +688,25 @@ export const AiScript = z
     // Data 0.21.0 (Raiders; voorstel, ter bevestiging door de architect): het roof- en harassplan van het Raider-script
     // (optioneel; Dwellers hebben het niet). De rest van het script (bouwvolgorde, golven, claims) gebruikt de gewone velden.
     raidPlan: RaidPlan.optional(),
+    // Data 0.24.0 (proposal, to be confirmed by the architect): the script an AI of `faction` plays against an opponent of
+    // this faction (optional; the opponent's faction is lobby knowledge). Without `versus` it is the faction's default
+    // script; at most one script per faction and opponent (the loader checks).
+    versus: id.optional(),
+    // Data 0.24.0 (proposal, to be confirmed by the architect): liberation (optional). With at least minFree idle militia
+    // and no threat, the AI sends up to `units` of them (Attack: walk up and touch) to the visible enemy slave or captive
+    // nearest its headquarters within radiusM of one of its own buildings.
+    liberate: z
+      .object({
+        minFree: z.number().int().positive(),
+        units: z.number().int().positive(),
+        radiusM: nonneg,
+      })
+      .strict()
+      .optional(),
+    // Data 0.24.0 (proposal, to be confirmed by the architect): while an enemy stands within defendRadiusM of the
+    // headquarters, every militia and robot that is not on a push turns to that threat, also those already on their way
+    // to a threat elsewhere or on a raid (optional, default false)
+    defendHqFirst: z.boolean().optional(),
     allInWithoutNodes: z.boolean(), // zonder bruikbare scrap-node (geen inkomen meer) gaan elke golf naar het hoofdgebouw, met de plunderaars mee
     _comment: comment,
   })

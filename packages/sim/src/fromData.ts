@@ -163,7 +163,11 @@ export function simConfigFromGameData(data: GameData): SimConfig {
       const l = defaultLoadoutForRole(data, f.id, role);
       return l === undefined ? 0 : unitTypeId(l.id);
     });
-    const aiScript = data.aiScripts.findIndex((a) => a.factionId === f.id);
+    // data 0.24.0: the default script has no versus; a versus script per opponent faction
+    const aiScript = data.aiScripts.findIndex((a) => a.factionId === f.id && a.versusFactionId < 0);
+    const aiScriptVersus = data.factions.map((g) =>
+      data.aiScripts.findIndex((a) => a.factionId === f.id && a.versusFactionId === g.id),
+    );
     // Claim-commando (besluit sprint 2): het goedkoopste gebouw met provides claim dat geen hoofdgebouw is, dan laagste id.
     let claim: (typeof data.buildings)[number] | undefined;
     for (const b of data.buildings) {
@@ -184,6 +188,7 @@ export function simConfigFromGameData(data: GameData): SimConfig {
       settlerTypeId: roleTypeIds[ROLE_SCAVENGER] ?? 0,
       roleTypeIds,
       aiScript,
+      aiScriptVersus,
       claimTypeId: claim === undefined ? 0 : buildingTypeId(claim.id),
       // De eerste held van de factie (laagste id): de lobby kent nog geen heldkeuze.
       heroId: data.heroes.findIndex((h) => h.factionId === f.id),
@@ -456,6 +461,11 @@ export function simConfigFromGameData(data: GameData): SimConfig {
               garrisonMinFighters: a.raidPlan.garrison.minFighters,
               dominancePush: { ...a.raidPlan.dominancePush },
             },
+      liberate:
+        a.liberate === null
+          ? null
+          : { minFree: a.liberate.minFree, units: a.liberate.units, radius: a.liberate.radiusU },
+      defendHqFirst: a.defendHqFirst,
     })),
     techs: data.tech.map((t) => ({
       techId: t.id,

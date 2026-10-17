@@ -48,14 +48,16 @@ describe('data/ valideert', () => {
     expect(data.tech.filter(dwellers)).toHaveLength(14);
     expect(data.training).toHaveLength(7);
     expect(data.heroes.filter(dwellers)).toHaveLength(1);
-    expect(data.aiScripts.filter(dwellers)).toHaveLength(1);
+    // data 0.24.0: the default script and the one against the Raiders (versus)
+    expect(data.aiScripts.filter(dwellers)).toHaveLength(2);
+    expect(data.aiScripts.filter(dwellers).filter((a) => a.versusFactionId < 0)).toHaveLength(1);
     // totalen met de Raiders; de sim kent hoogstens 32 techs en 32 perks
     expect(data.loadouts).toHaveLength(24);
     expect(data.buildings).toHaveLength(18);
     expect(data.tech).toHaveLength(28);
     expect(data.heroes).toHaveLength(2);
     expect(data.perks).toHaveLength(13);
-    expect(data.aiScripts).toHaveLength(2);
+    expect(data.aiScripts).toHaveLength(3);
     expect(data.dataVersion).toMatch(/^\d+\.\d+\.\d+$/);
   });
 

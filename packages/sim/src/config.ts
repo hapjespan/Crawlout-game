@@ -313,6 +313,11 @@ export interface SimFaction {
   readonly roleTypeIds: readonly number[];
   /** Index in SimConfig.aiScripts voor AI-spelers van deze factie, -1 = geen script. */
   readonly aiScript: number;
+  /**
+   * Data 0.24.0 (proposal, to be confirmed by the architect; ai/*.json versus): per opponent factionId the script index
+   * an AI of this faction plays against that opponent, -1 = aiScript. Length = factions.length.
+   */
+  readonly aiScriptVersus: readonly number[];
   /** Het gebouw dat het Claim-commando bouwt (provides claim, geen hoofdgebouw); 0 = geen. */
   readonly claimTypeId: number;
   /** De held van deze factie (index in SimConfig.heroes), -1 = geen held. */
@@ -484,6 +489,21 @@ export interface SimAiScript {
   readonly training: { readonly programIds: readonly number[]; readonly fromTicks: number } | null;
   /** Raider plan (data 0.21.0 ai raidPlan): the script then runs the Raider AI (systems/aiRaiders.ts); null = Dwellers. */
   readonly raidPlan: SimRaidPlan | null;
+  /**
+   * Liberation (data 0.24.0 ai liberate, proposal): with at least minFree idle militia and no threat, up to `units` of
+   * them go (Attack) to the visible enemy slave or captive nearest the headquarters within `radius` of an own building;
+   * null = never.
+   */
+  readonly liberate: {
+    readonly minFree: number;
+    readonly units: number;
+    readonly radius: number;
+  } | null;
+  /**
+   * Data 0.24.0 (ai defendHqFirst, proposal): while an enemy stands within defendRadius of the headquarters, every militia
+   * and robot that is not on a push turns to that threat.
+   */
+  readonly defendHqFirst: boolean;
 }
 
 /** Raid plan of the Raider AI (ai/*.json raidPlan), in sim units. */
@@ -884,6 +904,11 @@ export function validateEnv(env: SimEnv): void {
     req(f.settlerTypeId === 0 || unitIds.has(f.settlerTypeId), `${at}: settlerTypeId`);
     for (const t of f.roleTypeIds) req(t === 0 || unitIds.has(t), `${at}: roleTypeIds`);
     req(intIn(f.aiScript, -1, config.aiScripts.length - 1), `${at}: aiScript`);
+    req(
+      f.aiScriptVersus.length === config.factions.length &&
+        f.aiScriptVersus.every((v) => intIn(v, -1, config.aiScripts.length - 1)),
+      `${at}: aiScriptVersus`,
+    );
     req(f.claimTypeId === 0 || buildingIds.has(f.claimTypeId), `${at}: claimTypeId`);
     if (f.safetyNet !== null)
       req(
@@ -1252,6 +1277,14 @@ export function validateEnv(env: SimEnv): void {
         'aiScript raidPlan',
       );
     }
+    const lb = s.liberate;
+    if (lb !== null)
+      req(
+        intIn(lb.minFree, 1, 4096) &&
+          intIn(lb.units, 1, 4096) &&
+          intIn(lb.radius, 0, MAX_MAP_CELLS_SIDE << 8),
+        'aiScript liberate',
+      );
   }
   for (const p of players) {
     req(
@@ -1412,6 +1445,7 @@ export function envHash(env: SimEnv): number {
       f.claimTypeId,
       f.heroId,
     ]);
+    h = hashInts(h, f.aiScriptVersus);
     h = fnv1aInt(h, f.startUnits.length);
     for (const s of f.startUnits) h = hashInts(h, [s.typeId, s.count]);
     h = hashInts(h, f.roleTypeIds);
@@ -1559,6 +1593,9 @@ export function envHash(env: SimEnv): number {
         rp.dominancePush.minArmy,
       ]);
     }
+    const lb = s.liberate;
+    h = hashInts(h, lb === null ? [0] : [1, lb.minFree, lb.units, lb.radius]);
+    h = fnv1aInt(h, s.defendHqFirst ? 1 : 0);
   }
   h = fnv1aInt(h, c.techs.length);
   for (const t of c.techs) {

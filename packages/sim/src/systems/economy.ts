@@ -185,7 +185,12 @@ function craftWork(ctx: SimContext, i: number): void {
 const ROLE_BUILDER = ROLES.indexOf('builder');
 const ROLE_MILITIA = ROLES.indexOf('militia');
 
-/** Of speler p geen voltooide werkplaats heeft en geen bouwer (ook niet in opleiding tot bouwer). */
+/**
+ * Of speler p geen voltooide werkplaats heeft en geen bouwer. Sim 0.19.0 (voorstel, ter bevestiging door de
+ * architect): een unit in opleiding tot bouwer telt niet meer; zonder voltooide werkplaats wacht zijn omscholing voor
+ * altijd (orders.ts craft), dus is hij geen bouwer (gemeten: twee plunderaars op weg naar een gesloopte werkplaats
+ * hielden het vangnet het hele potje dicht).
+ */
 function needsBuilder(ctx: SimContext, p: number): boolean {
   const w = ctx.world;
   for (let i = 0; i < w.highWater; i++) {
@@ -202,11 +207,6 @@ function needsBuilder(ctx: SimContext, p: number): boolean {
     }
     if (!w.has(i, C.unit | C.orders | C.health) || w.has(i, C.hero)) continue;
     if (w.role[i] === ROLE_BUILDER) return false;
-    if (
-      w.orderType(i) === ORDER_CRAFT &&
-      ctx.unitType(w.ordX[w.currentOrder(i)]!)?.role === ROLE_BUILDER
-    )
-      return false;
   }
   return true;
 }
@@ -220,7 +220,11 @@ function growth(ctx: SimContext, census: Census, p: number): void {
     ps.defeated[p] !== 0 ||
     hq < 0 ||
     settler === undefined ||
-    census.pop[p]! + settler.popCost > census.popCap(ctx, p)
+    (census.pop[p]! + settler.popCost > census.popCap(ctx, p) &&
+      // the safety net below also without a free bed (sim 0.19.0, proposal): with full beds, no workshop and no
+      // builder nobody could ever build a house or a workshop again (measured: a Dweller AI whose workshops, lab and
+      // builders a Raider push razed sat on 26 of 26 beds and 4000 scrap until minute 45); popCapMax still holds
+      !(census.pop[p]! + settler.popCost <= ctx.config.popCapMax && needsBuilder(ctx, p)))
   ) {
     ps.growth[p] = 0; // geen bed, geen groei (en niets opsparen)
     return;

@@ -3,7 +3,8 @@ import { OWNER_NEUTRAL } from '@crawlout/protocol';
 import type { CommandEnvelope } from '@crawlout/protocol';
 import { ROLES } from '@crawlout/data';
 import { HERO_DEAD, createSim } from '../src/index.js';
-import type { Sim } from '../src/index.js';
+import type { Sim, SimAiScript, SimConfig } from '../src/index.js';
+import { AI_SITE_HQ } from '../src/config.js';
 import {
   CHEM_ACTIVE,
   CHEM_COOL,
@@ -478,5 +479,105 @@ describe('Raiders: the Warlord, plunder and tribute', () => {
     play(sim, CONFIG.ticksPerMinute);
     expect(sim.playerStatus(0).scrap).toBeGreaterThanOrEqual(tr.scrapPerMin - 1);
     expect(sim.playerStatus(0).scrap).toBeLessThanOrEqual(tr.scrapPerMin);
+  });
+});
+
+describe('Dweller AI against Raiders (data 0.24.0): liberate and defendHqFirst', () => {
+  // a Dweller AI that does nothing else: no builds, waves, claims or retraining; its militia stay where they stand
+  const quietDwellers: SimAiScript = {
+    ...CONFIG.aiScripts[0]!,
+    buildOrder: [],
+    attackTimersTicks: [],
+    militiaPermille: 0,
+    militiaPermilleMax: 0,
+    militiaPermillePerMin: 0,
+    threatMilitiaPermille: 0,
+    builders: 0,
+    housingTypeId: 0,
+    research: [],
+    richBuilds: [],
+    claimFromTicks: 1 << 30,
+    claimFarFromTicks: 1 << 30,
+    heroClaimRadius: 0,
+    waveIntervalTicks: 1 << 30,
+    waveJitterTicks: 0,
+    rallySite: AI_SITE_HQ,
+    rallyRadius: 64 << 8,
+    robots: null,
+    reserve: null,
+    training: null,
+    allInWithoutNodes: false, // the open map has no scrap nodes
+  };
+  const LIBERATE = { minFree: 2, units: 2, radius: 40 << 8 };
+
+  /** The slave's owner after 30 s: a Raider slave (taken from the Dwellers) 11 m from the Dweller headquarters. */
+  function run(liberate: SimAiScript['liberate'], militia: number): number {
+    const config: SimConfig = { ...CONFIG, aiScripts: [{ ...quietDwellers, liberate }] };
+    const sim = createSim(
+      {
+        seed: 1,
+        players: [
+          { factionId: RAIDERS, ai: false },
+          { factionId: 0, ai: true },
+        ],
+        map: createOpenMap(64, 64),
+        config,
+      },
+      { start: false },
+    );
+    const camp = sim.spawnBuilding(CAMP, 0, 2, 2, true);
+    sim.spawnBuilding(HQ, 1, 44, 44, true);
+    const s = slave(sim, 36, 38, camp, 1);
+    spawn(sim, PLUNDERAAR, 0, 8, 8); // the garrison of the camp (no revolt), far from the slave
+    for (let k = 0; k < militia; k++) spawn(sim, MILITIE, 1, 54, 40 + k);
+    play(sim, 600);
+    return sim.world.owner[idx(sim, s)]!;
+  }
+
+  it('with spare idle militia the AI frees a visible enemy slave near its buildings (Attack = touch)', () => {
+    expect(run(LIBERATE, 3)).toBe(1);
+  });
+  it('without liberate the slave stays a Raider slave (the militia do not walk there by themselves)', () => {
+    expect(run(null, 3)).toBe(0);
+  });
+  it('with fewer idle militia than minFree it waits', () => {
+    expect(run({ ...LIBERATE, minFree: 4 }, 3)).toBe(0);
+  });
+
+  /** Where the Dweller militia head 1 s after a Raider shows up at their headquarters while they march elsewhere. */
+  function hqFirst(defendHqFirst: boolean): { x: number; y: number }[] {
+    const config: SimConfig = { ...CONFIG, aiScripts: [{ ...quietDwellers, defendHqFirst }] };
+    const sim = createSim(
+      {
+        seed: 1,
+        players: [
+          { factionId: RAIDERS, ai: false },
+          { factionId: 0, ai: true },
+        ],
+        map: createOpenMap(64, 64),
+        config,
+      },
+      { start: false },
+    );
+    sim.spawnBuilding(CAMP, 0, 2, 2, true);
+    sim.spawnBuilding(HQ, 1, 44, 44, true);
+    const ms = [0, 1, 2].map((k) => spawn(sim, MILITIE, 1, 54, 30 + k));
+    // on their way to a far point (as to a threat elsewhere): not idle, so the AI otherwise leaves them
+    now(sim, 1, 'AttackMove', { ids: ms, ...cellCenter(60, 4) });
+    spawn(sim, PLUNDERAAR, 0, 40, 52);
+    play(sim, 20);
+    const w = sim.world;
+    return ms.map((id) => {
+      const o = w.currentOrder(idx(sim, id));
+      return { x: w.ordX[o]! >> 8, y: w.ordY[o]! >> 8 };
+    });
+  }
+
+  it('defendHqFirst (data 0.24.0): an enemy at the headquarters turns militia that march elsewhere', () => {
+    for (const to of hqFirst(true))
+      expect(Math.abs(to.x - 40) + Math.abs(to.y - 52)).toBeLessThan(4);
+  });
+  it('without defendHqFirst they march on', () => {
+    for (const to of hqFirst(false)) expect(to).toEqual({ x: 60, y: 4 });
   });
 });

@@ -479,6 +479,12 @@ export interface AiScriptData {
   training: { sequence: number[]; fromTicks: number } | null;
   /** Roofplan van het Raider-script (data 0.21.0); null zonder. */
   raidPlan: RaidPlanData | null;
+  /** Data 0.24.0 (proposal): the opponent faction this script is for; -1 = the faction's default script. */
+  versusFactionId: number;
+  /** Data 0.24.0 (proposal): liberation of enemy-held slaves; null without. */
+  liberate: { minFree: number; units: number; radiusU: number } | null;
+  /** Data 0.24.0 (proposal): an enemy at the headquarters draws every militia and robot not on a push. */
+  defendHqFirst: boolean;
   allInWithoutNodes: boolean;
 }
 
@@ -1143,9 +1149,29 @@ export function loadGameData(raw: RawGameData): GameData {
                 minArmy: a.raidPlan.dominancePush.minArmy,
               },
             },
+      versusFactionId: a.versus === undefined ? -1 : ref(factionIx, 'factie', where, a.versus),
+      liberate:
+        a.liberate === undefined
+          ? null
+          : {
+              minFree: a.liberate.minFree,
+              units: a.liberate.units,
+              radiusU: metersToUnits(a.liberate.radiusM),
+            },
+      defendHqFirst: a.defendHqFirst ?? false,
       allInWithoutNodes: a.allInWithoutNodes,
     };
   });
+  // data 0.24.0: at most one script per faction and opponent (the default one has no versus)
+  for (let i = 0; i < aiScripts.length; i++)
+    for (let j = 0; j < i; j++) {
+      const a = aiScripts[i]!;
+      const b = aiScripts[j]!;
+      if (a.factionId === b.factionId && a.versusFactionId === b.versusFactionId)
+        throw new Error(
+          `data/ai '${a.key}': same faction and opponent as '${b.key}' (one script per faction and versus)`,
+        );
+    }
 
   // Vaste volgorde via de enum-lijsten; nooit via Object.keys.
   const damageMatrix = DAMAGE_TYPES.map((damageType) =>

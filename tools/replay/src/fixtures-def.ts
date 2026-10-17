@@ -728,7 +728,10 @@ const FIXTURES_S10: FixtureDef[] = [
   {
     // Raiders in the sim (sim 0.18.0, data 0.23.0): the scripted Raider AI (player 0) against the Dweller AI on Rustbelt
     // XL until just after the win: tents and Produce, slave builders via SetRole, slave raids, buggies, the garrison,
-    // claims and the dominance camp, plunder and tribute, the Warlord's aura and Raid.
+    // claims and the dominance camp, plunder and tribute, the Warlord's aura and Raid. Sim 0.19.0, data 0.24.0: the
+    // Dweller AI plays ai/dwellers-vs-raiders.json (versus: defendHqFirst, liberate), the Raider camp holds its own
+    // point and answers what it sees; the Dwellers win by destruction in frame 34.526 (28:47; data 0.23.0: on
+    // dominance in frame 30.962).
     name: 's10-rustbelt-raiders-ai-vs-ai',
     build() {
       const r = raidersVsDwellers(base('rustbelt', 5, [true, true]));
@@ -825,6 +828,21 @@ const FIXTURES_S10: FixtureDef[] = [
   },
 ];
 
+const FIXTURES_S11: FixtureDef[] = [
+  {
+    // Raiders against Raiders (sim 0.19.0, data 0.24.0): two Raider AIs on Rustbelt XL, seed 2, for nine minutes. At
+    // 5:52 their two Slavers catch each other in the same tick; sim.rng picks who catches whom (systems/slaves.ts
+    // captureTick; with seed 2 player 1), where entity order gave it to player 0 every time.
+    name: 's11-rustbelt-raiders-mirror',
+    build() {
+      const r = base('rustbelt', 2, [true, true]);
+      r.players = r.players.map((pl) => ({ ...pl, faction: 'raiders' }));
+      r.hashes = [{ frame: 10799, hash: 0 }];
+      return r;
+    },
+  },
+];
+
 export const FIXTURES: readonly FixtureDef[] = [
   ...FIXTURES_UP_TO_S3,
   ...FIXTURES_S4,
@@ -834,6 +852,7 @@ export const FIXTURES: readonly FixtureDef[] = [
   ...FIXTURES_S8,
   ...FIXTURES_S9,
   ...FIXTURES_S10,
+  ...FIXTURES_S11,
 ];
 
 /** De sim na het uitvoeren van de frames 0 tot `frame` (exclusief) met de bundels die de replay tot dan heeft. */
