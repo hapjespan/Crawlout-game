@@ -9,6 +9,7 @@ import {
 import type { SimContext } from './systems/common.js';
 import { cellCenterOf, face, nthFreeCellAround } from './systems/common.js';
 import { spawnStartHero } from './systems/hero.js';
+import { bindStartSlave } from './systems/slaves.js';
 
 // Startopstelling (contract 2, besluit sprint 1): volgt deterministisch uit map, data en spelers, voor frame 0.
 // Entity-ids in deze volgorde:
@@ -17,7 +18,7 @@ import { spawnStartHero } from './systems/hero.js';
 //  3. per speler in playerId-volgorde: het hoofdgebouw van zijn factie, gecentreerd op spawns[playerId], daarna
 //     factions.startUnits in bestandsvolgorde, één unit per vrije cel rond het hoofdgebouw (ring voor ring,
 //     rij voor rij), kijkend naar het midden van de map; daarna zijn held (als de factie er een heeft) op de
-//     volgende vrije cel.
+//     volgende vrije cel. Start units of a slave loadout (Raiders) are slaves bound to the headquarters (a cage).
 // Elke speler krijgt startScrap.
 
 export function setupStart(ctx: SimContext): void {
@@ -38,7 +39,8 @@ export function setupStart(ctx: SimContext): void {
       throw new Error(
         `start: hoofdgebouw van speler ${p} past niet op spawn ${spawn.x},${spawn.y}`,
       );
-    if (createBuilding(ctx, bt, p, fx, fy, true) < 0) throw new Error('start: wereld vol');
+    const hq = createBuilding(ctx, bt, p, fx, fy, true);
+    if (hq < 0) throw new Error('start: wereld vol');
     let k = 0;
     for (const su of faction.startUnits) {
       const t = ctx.unitType(su.typeId)!;
@@ -49,6 +51,8 @@ export function setupStart(ctx: SimContext): void {
         const i = createUnit(ctx, t, p, at.x, at.y, 0);
         if (i < 0) throw new Error('start: wereld vol');
         face(ctx.world, i, midX, midY);
+        // Raiders (data 0.21.0): a slave start unit is a slave of the headquarters (the Raiderkamp is a cage)
+        bindStartSlave(ctx, i, hq);
       }
     }
     if (faction.heroId >= 0) {

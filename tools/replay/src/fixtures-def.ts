@@ -5,6 +5,7 @@ import type { Sim } from '@crawlout/sim';
 import { gameData } from './env.js';
 import { createReplaySim } from './run.js';
 import type { BotPlan, PlannedBuilding } from './bot.js';
+import { dwellerBaitBot, raiderBot } from './raiders-bot.js';
 import {
   SitePlanner,
   centrePoint,
@@ -717,6 +718,113 @@ const FIXTURES_S9: FixtureDef[] = [
   },
 ];
 
+/** Player 0 plays the Raiders (sim 0.18.0), player 1 the Dwellers. */
+const raidersVsDwellers = (r: Replay): Replay => {
+  r.players = r.players.map((pl) => (pl.playerId === 0 ? { ...pl, faction: 'raiders' } : pl));
+  return r;
+};
+
+const FIXTURES_S10: FixtureDef[] = [
+  {
+    // Raiders in the sim (sim 0.18.0, data 0.23.0): the scripted Raider AI (player 0) against the Dweller AI on Rustbelt
+    // XL until just after the win: tents and Produce, slave builders via SetRole, slave raids, buggies, the garrison,
+    // claims and the dominance camp, plunder and tribute, the Warlord's aura and Raid.
+    name: 's10-rustbelt-raiders-ai-vs-ai',
+    build() {
+      const r = raidersVsDwellers(base('rustbelt', 5, [true, true]));
+      const sim = createReplaySim(r);
+      let end = 47999;
+      for (let f = 0; f < 48000; f++) {
+        sim.applyBundle({ frame: f, commands: [] });
+        sim.tick();
+        const w = sim.winner();
+        if (w !== null) {
+          end = w.frame + 20;
+          break;
+        }
+      }
+      r.hashes = [{ frame: end, hash: 0 }];
+      return r;
+    },
+  },
+  {
+    // Slaves (sim 0.18.0): player 0 (Raiders, a bot) puts up a tent, produces Slavers and hunts the Dweller settlers that
+    // gather outside their base (player 1 sends them to a far node): the Slaver beats one down and catches it, the
+    // captive walks to the Raiderkamp and becomes a slave after the transition. Player 1 then walks his militia and hero
+    // into the Raiders' camp and frees every slave he sees by touch (Attack on a slave); player 0 has sent all his
+    // fighters and his hero away to a settlement point, so his slaves revolt (no garrison) and nobody guards them.
+    name: 's10-rustbelt-raiders-slaves',
+    build() {
+      const r = raidersVsDwellers(base('rustbelt', 1001, [false, false]));
+      recordControlled(r, 12000, [
+        raiderBot(0, {
+          builds: ['tent', 'kooi'],
+          research: [],
+          produce: ['slaver', 'slaver', 'plunderaar'],
+          huntFrom: 300,
+          toSettlementAt: 6000,
+        }),
+        dwellerBaitBot(1, { farM: 40, liberateAt: 5000 }),
+      ]);
+      return r;
+    },
+  },
+  {
+    // Chems, tribute and plunder (sim 0.18.0): player 0 (Raiders, a bot) builds a tent and a chemlab, claims his
+    // settlement point with a plunderpost (tribute), researches chemie and psycho and produces a Chem-dealer among his
+    // fighters; player 1 (Dwellers) attacks the Raiders' camp with his militia and hero, the dealer doses in the fight
+    // (Psycho: damage, then the crash), and the Raiders strike back at the Dweller base (plunder).
+    name: 's10-rustbelt-raiders-chems',
+    build() {
+      const r = raidersVsDwellers(base('rustbelt', 1002, [false, false]));
+      recordControlled(r, 14000, [
+        raiderBot(0, {
+          builds: ['tent', 'chemlab', 'tent'],
+          claimAt: 900,
+          research: ['chemie', 'psycho'],
+          produce: ['plunderaar', 'chemdealer', 'knuppelaar'],
+          keep: 140,
+          allOutAt: 11500,
+        }),
+        settlementBot(1, {
+          builds: [{ key: 'werkplaats', at: 'hq' }, HOUSE, HOUSE],
+          research: [],
+          builders: 1,
+          militiaAtSettlers: 99,
+          militiaFrame: 2400,
+          militiaCount: 8,
+          attackWithMilitia: 8,
+          attackFrame: 8000,
+        }),
+      ]);
+      return r;
+    },
+  },
+  {
+    // The Raiders' safety net (tenten_instroom, sim 0.18.0): player 0 (Raiders, a bot) puts up a tent and sends every
+    // fighter and his hero at the Dweller headquarters, where player 1 (a bot with a workshop and eight militie guarding
+    // it) beats them; under five fighters a plunderaar comes at the tent every 30 s, the timer stops at five.
+    name: 's10-rustbelt-raiders-net',
+    build() {
+      const r = raidersVsDwellers(base('rustbelt', 1003, [false, false]));
+      recordControlled(r, 9000, [
+        raiderBot(0, { builds: ['tent'], research: [], produce: [], allOutAt: 3600 }),
+        settlementBot(1, {
+          builds: [{ key: 'werkplaats', at: 'hq' }, HOUSE],
+          research: [],
+          builders: 1,
+          militiaAtSettlers: 99,
+          militiaFrame: 1200,
+          militiaCount: 8,
+          attackWithMilitia: 99,
+          guard: 'hq',
+        }),
+      ]);
+      return r;
+    },
+  },
+];
+
 export const FIXTURES: readonly FixtureDef[] = [
   ...FIXTURES_UP_TO_S3,
   ...FIXTURES_S4,
@@ -725,6 +833,7 @@ export const FIXTURES: readonly FixtureDef[] = [
   ...FIXTURES_S7,
   ...FIXTURES_S8,
   ...FIXTURES_S9,
+  ...FIXTURES_S10,
 ];
 
 /** De sim na het uitvoeren van de frames 0 tot `frame` (exclusief) met de bundels die de replay tot dan heeft. */

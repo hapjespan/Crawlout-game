@@ -29,6 +29,9 @@ import { heroSystem } from './hero.js';
 import { productionWork, repairWork } from './robots.js';
 import { safetyNetSystem } from './safetyNet.js';
 import { trainingWork } from './training.js';
+import { chemSystem } from './chems.js';
+import { tributeSystem } from './plunder.js';
+import { slaveSystem } from './slaves.js';
 import {
   PROGRESS_ONE,
   applyUnitType,
@@ -76,6 +79,10 @@ export function economySystem(ctx: SimContext, census: Census): void {
     else if (w.jobKind[i] === JOB_TRAIN) trainingWork(ctx, i);
   }
   repairWork(ctx);
+  // Raiders (data 0.21.0, sim 0.18.0): captives, liberation and revolt; chems; tribute
+  slaveSystem(ctx, ROLE_MILITIA);
+  chemSystem(ctx);
+  tributeSystem(ctx);
   takeCensus(ctx, census);
   // de groei in dezelfde doordraaiende beurtvolgorde als de AI: wie eerst groeit, krijgt de lagere index
   for (let k = 0; k < ctx.playerCount; k++) growth(ctx, census, playerInTurn(ctx, k));
@@ -176,6 +183,7 @@ function craftWork(ctx: SimContext, i: number): void {
 }
 
 const ROLE_BUILDER = ROLES.indexOf('builder');
+const ROLE_MILITIA = ROLES.indexOf('militia');
 
 /** Of speler p geen voltooide werkplaats heeft en geen bouwer (ook niet in opleiding tot bouwer). */
 function needsBuilder(ctx: SimContext, p: number): boolean {

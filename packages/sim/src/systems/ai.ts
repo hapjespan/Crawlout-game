@@ -14,7 +14,7 @@ import {
   ORDER_GATHER,
   ORDER_NONE,
 } from '../ecs/world.js';
-import { PROVIDES_HQ, PROVIDES_WORKSHOP } from '../fromData.js';
+import { PROVIDES_CLAIM, PROVIDES_HQ, PROVIDES_WORKSHOP } from '../fromData.js';
 import { clampI, idiv, imod } from '../math/int.js';
 import { TERRAIN_UNREACHABLE } from '../pathdist.js';
 import type { Census } from './census.js';
@@ -34,8 +34,12 @@ import { pointsOf } from './claims.js';
 import { heroIndex } from './hero.js';
 import { letterRunning, trainCost, trainedOn } from './training.js';
 import { DEPOT_MASK, ROLE_MILITIA } from './orders.js';
+import type { WorkReach } from './slaves.js';
+import { raiderThink } from './aiRaiders.js';
 import {
   PLACE_OK,
+  hqCentres,
+  inHqRange,
   marginCells,
   placeAs,
   neighbourReason,
@@ -110,7 +114,7 @@ import {
 const ROLE_SCAVENGER = ROLES.indexOf('scavenger');
 const ROLE_BUILDER = ROLES.indexOf('builder');
 
-function chunks(ids: readonly number[]): number[][] {
+export function chunks(ids: readonly number[]): number[][] {
   const out: number[][] = [];
   for (let k = 0; k < ids.length; k += MAX_ENTITIES_PER_COMMAND)
     out.push(ids.slice(k, k + MAX_ENTITIES_PER_COMMAND));
@@ -141,7 +145,10 @@ export function aiSystem(ctx: SimContext, census: Census, scratch: AiScratch): v
       takeCensus(ctx, census);
       counted = true;
     }
-    think(ctx, census, scratch, p, ctx.config.aiScripts[si]!);
+    const script = ctx.config.aiScripts[si]!;
+    // data 0.21.0: a script with a raid plan plays the Raiders (systems/aiRaiders.ts)
+    if (script.raidPlan !== null) raiderThink(ctx, census, scratch, p, script, script.raidPlan);
+    else think(ctx, census, scratch, p, script);
   }
 }
 
@@ -150,7 +157,7 @@ export function aiSystem(ctx: SimContext, census: Census, scratch: AiScratch): v
  * kant van de eigen spawn vandaan. Dat is onder de 180-gradenspiegel gelijk: een vaste +1 werd bij het spiegelbeeld -1
  * en liet twee gespiegelde escortes een eenheid verschillend lopen (woning 3x3: spiegel brak in frame 3606).
  */
-const ESCORT_OFFSET = 1;
+export const ESCORT_OFFSET = 1;
 /**
  * Geometrie: zover (Chebyshev, in cellen van het midden van het anker tot het midden van de footprint) zoekt de AI een
  * bouwplek. Echte-schaalronde (data 0.14.0): een woning is 13 x 19 m en het hoofdgebouw 21 x 21 m, dus negen woningen,
@@ -173,7 +180,7 @@ const TURRET_FORWARD_CELLS = 3;
 const RALLY_FORWARD_CELLS = 4;
 
 /** Eigen claimpunt met de kleinste waarde in afstandsveld f (padafstand tot de bron van f), of -1. Tiebreak laagste index. */
-function ownClaimNear(ctx: SimContext, p: number, f: Uint16Array): number {
+export function ownClaimNear(ctx: SimContext, p: number, f: Uint16Array): number {
   const w = ctx.world;
   let best = -1;
   let bestD = 0;
@@ -189,13 +196,13 @@ function ownClaimNear(ctx: SimContext, p: number, f: Uint16Array): number {
 }
 
 /** Afstandsveld over het terrein vanaf de footprint van gebouw b. */
-function fieldOf(ctx: SimContext, b: number): Uint16Array {
+export function fieldOf(ctx: SimContext, b: number): Uint16Array {
   const w = ctx.world;
   return ctx.terrainDist.field(w.fx[b]!, w.fy[b]!, w.fw[b]!, w.fh[b]!);
 }
 
 /** Afstanden die de AI deze beurt gebruikt: vanaf het eigen hoofdgebouw en vanaf de spawn van de vijand. */
-interface Fields {
+export interface Fields {
   readonly home: Uint16Array;
   readonly enemy: Uint16Array | null;
   /** Cel van de bron van enemy (de spawn van de vijand); alleen geldig als enemy er is. */
@@ -210,7 +217,7 @@ interface Fields {
  * buur rechts van de richting naar de bron; dan de vaste volgorde O, W, Z, N, ZO, ZW, NO, NW). Zo ligt "richting de
  * vijand" langs de weg erheen, niet over een rivier.
  */
-function stepAlong(
+export function stepAlong(
   ctx: SimContext,
   f: Uint16Array,
   tx: number,
@@ -270,7 +277,11 @@ function stepAlong(
  * Het verzamelpunt voor het hoofdgebouw hq (cel), op de weg naar de vijand; null zonder vijand. Alleen terrein, geen
  * gebouwen: het ligt vast, ook als er later iets omheen wordt gebouwd. findSite houdt de cel vrij.
  */
-function rallyCell(ctx: SimContext, hq: number, fields: Fields): { cx: number; cy: number } | null {
+export function rallyCell(
+  ctx: SimContext,
+  hq: number,
+  fields: Fields,
+): { cx: number; cy: number } | null {
   if (fields.enemy === null) return null;
   const w = ctx.world;
   return stepAlong(
@@ -373,16 +384,21 @@ function walkSums(ctx: SimContext, x0: number, y0: number, w: number, h: number)
  * Een plek moet vanaf het anker te belopen zijn zonder grote omweg (lokale padafstand hoogstens 2 maal de ring plus 2):
  * nooit aan de overkant van een rivier of bosrand.
  */
-function findSite(
+export function findSite(
   ctx: SimContext,
   p: number,
   hq: number,
   bt: SimBuildingType,
   site: number,
   fields: Fields,
+  reach: WorkReach | null = null,
 ): { x: number; y: number } | null {
   const w = ctx.world;
   const map = ctx.map;
+  // data 0.21.0 (Raiders): a slave builder builds only within its work reach (a claim building anywhere), and a
+  // building with a distance rule to the headquarters (the Kooi) only within that range (systems/placement.ts)
+  const limit = reach !== null && (bt.provides & PROVIDES_CLAIM) === 0 ? reach : null;
+  const hqs = bt.hqRange === null ? null : hqCentres(ctx, p);
   let cx = w.fx[hq]! + (w.fw[hq]! >> 1);
   let cy = w.fy[hq]! + (w.fh[hq]! >> 1);
   let rx = w.fx[hq]!;
@@ -509,6 +525,13 @@ function findSite(
       if (ld < 0 || ld > r2 + 2) continue;
       // het eigen gebied (data 0.20.0): de footprint raakt een cel binnen bouwbereik van een eigen gebouw
       if (terr !== null && !touchesTerritory(terr, map.w, fx, fy, fw, fh)) continue;
+      if (
+        limit !== null &&
+        (limit.r < 0 || distToRect2(limit.x, limit.y, fx, fy, fw, fh) > limit.r * limit.r)
+      )
+        continue;
+      if (hqs !== null && !inHqRange(hqs, bt.hqRange!.min, bt.hqRange!.max, fx, fy, fw, fh))
+        continue;
       // nodes, claimpunten en de gang rond een depot (de rand zelf is hierboven al vrij en begaanbaar)
       if (neighbourReason(input, fx, fy, fw, fh, as) !== PLACE_OK) continue;
       found = (fy + (fh >> 1)) * map.w + fx + (fw >> 1);
@@ -528,7 +551,7 @@ function findSite(
  * padafstand (tiebreak laagste index). Een onbereikbaar punt slaat hij over. Een punt verder dan claimSafeRadius (te
  * lopen) krijgt de militie zonder taak als escorte mee; ligt het niet aan de eigen kant, dan pas vanaf claimFarFromTicks.
  */
-function claimNext(
+export function claimNext(
   ctx: SimContext,
   p: number,
   builder: number,
@@ -587,7 +610,7 @@ function claimNext(
  * Of claimpunt pt aan de eigen kant ligt: op padafstand duidelijk dichter bij het eigen hoofdgebouw dan bij de spawn van
  * de vijand (OWN_SIDE_NUM/DEN op de kwadraten). Zonder vijand ligt alles aan de eigen kant.
  */
-function isOwnSide(ctx: SimContext, pt: number, fields: Fields): boolean {
+export function isOwnSide(ctx: SimContext, pt: number, fields: Fields): boolean {
   if (fields.enemy === null) return true;
   const w = ctx.world;
   const h = ctx.terrainDist.at(fields.home, w.x[pt]!, w.y[pt]!);
@@ -596,7 +619,7 @@ function isOwnSide(ctx: SimContext, pt: number, fields: Fields): boolean {
 }
 
 /** Eerste tegenstander na p (cyclisch) die nog meedoet, of -1. */
-function enemyOf(ctx: SimContext, p: number): number {
+export function enemyOf(ctx: SimContext, p: number): number {
   for (let k = 1; k < ctx.playerCount; k++) {
     let q = p + k;
     if (q >= ctx.playerCount) q -= ctx.playerCount;
@@ -606,7 +629,7 @@ function enemyOf(ctx: SimContext, p: number): number {
 }
 
 /** Of node j binnen exclusiveRadius ligt van een claimpunt van p (dan is hij exclusief van p). */
-function exclusiveFor(ctx: SimContext, j: number, p: number): boolean {
+export function exclusiveFor(ctx: SimContext, j: number, p: number): boolean {
   const w = ctx.world;
   const r = ctx.config.exclusiveRadius;
   for (const pt of ctx.claimPoints) {
@@ -1185,7 +1208,12 @@ function think(
  * dan loopt hij erheen en blijft hij in de cirkel staan tot het van zijn speler is. True als de held daarmee bezig is
  * (dan gaat hij niet mee naar het verzamelpunt). Alleen zonder dreiging (de aanroeper).
  */
-function heroClaimNear(ctx: SimContext, p: number, hero: number, script: SimAiScript): boolean {
+export function heroClaimNear(
+  ctx: SimContext,
+  p: number,
+  hero: number,
+  script: SimAiScript,
+): boolean {
   const w = ctx.world;
   const rr = script.heroClaimRadius;
   if (rr <= 0 || ctx.config.heroClaimTicks <= 0) return false;
@@ -1336,7 +1364,7 @@ function richBuild(ctx: SimContext, p: number, script: SimAiScript): number {
  * neutraal of van hemzelf). Dan telt hij als zonder taak en keert hij terug naar het verzamelpunt, in plaats van achter
  * gebouwen aan de vijandelijke basis in te lopen.
  */
-function raidOver(ctx: SimContext, p: number, i: number): boolean {
+export function raidOver(ctx: SimContext, p: number, i: number): boolean {
   const w = ctx.world;
   const o = w.currentOrder(i);
   const x = w.ordX[o]!;
@@ -1385,7 +1413,13 @@ function upgradeOne(ctx: SimContext, militia: readonly number[], best: number): 
  * Eerst de eigen gebouwen en hun omhullende (plus r), dan per vijandelijke unit alleen binnen die omhullende de
  * gebouwen: zelfde uitkomst als alle paren, maar op een grote map met verre vijanden bijna gratis.
  */
-function findThreat(ctx: SimContext, scratch: AiScratch, p: number, hq: number, r: number): number {
+export function findThreat(
+  ctx: SimContext,
+  scratch: AiScratch,
+  p: number,
+  hq: number,
+  r: number,
+): number {
   const w = ctx.world;
   const r2 = r * r;
   const idx = ctx.index;
@@ -1449,7 +1483,7 @@ interface Wave {
  * De golf die nu kan vertrekken, of null. De eerste op attackTimersTicks, daarna op aiWaveAt; met minstens waveMinArmy
  * + k maal waveArmyGrowth militie (golf k), of na waveMaxWaitTicks wachten met waveMinArmy; all-in zonder nodes.
  */
-function waveReady(
+export function waveReady(
   ctx: SimContext,
   p: number,
   script: SimAiScript,
@@ -1483,7 +1517,7 @@ function waveReady(
  * (meestal het midden, waar de vijand zijn leger heeft staan) maar ook zijn settlements: één punt breken is genoeg om
  * zijn dominantie te stoppen.
  */
-function enemyClaimFor(
+export function enemyClaimFor(
   ctx: SimContext,
   home: Uint16Array | null,
   enemy: number,
@@ -1510,13 +1544,13 @@ function enemyClaimFor(
 }
 
 /** Het claimgebouw van de factie van speler p, of undefined. */
-function claimType(ctx: SimContext, p: number): SimBuildingType | undefined {
+export function claimType(ctx: SimContext, p: number): SimBuildingType | undefined {
   const typeId = ctx.config.factions[ctx.players[p]!.factionId]!.claimTypeId;
   return typeId === 0 ? undefined : ctx.buildingType(typeId);
 }
 
 /** Bouwer `builder` zet een claimgebouw bij punt pt (Claim), als speler p het kan betalen. */
-function claimAt(ctx: SimContext, p: number, builder: number, pt: number): boolean {
+export function claimAt(ctx: SimContext, p: number, builder: number, pt: number): boolean {
   const bt = claimType(ctx, p);
   if (bt === undefined || !canPlaceType(ctx, p, bt.typeId) || ctx.ps.scrap[p]! < bt.scrapCost)
     return false;
@@ -1529,9 +1563,9 @@ function claimAt(ctx: SimContext, p: number, builder: number, pt: number): boole
 }
 
 /** researchFor: er loopt al onderzoek in de keten, of het gebouw is bezet of nog niet af, of de scrap ontbreekt. */
-const RESEARCH_WAIT = -1;
+export const RESEARCH_WAIT = -1;
 /** researchFor: de keten kan niet (andere factie, of geen eigen gebouw van het type, af of in aanbouw). */
-const RESEARCH_IMPOSSIBLE = -2;
+export const RESEARCH_IMPOSSIBLE = -2;
 
 /** Uitkomst van researchFor. */
 interface ResearchStep {
@@ -1548,7 +1582,7 @@ const IMPOSSIBLE: ResearchStep = { techId: RESEARCH_IMPOSSIBLE, cost: 0 };
  * De tech die speler p nu moet onderzoeken voor `need` (diepte eerst in de prereqTech-keten, in lijstvolgorde): een
  * techId als Research nu kan, anders RESEARCH_WAIT (met de prijs als alleen de scrap ontbreekt) of RESEARCH_IMPOSSIBLE.
  */
-function researchFor(
+export function researchFor(
   ctx: SimContext,
   p: number,
   need: readonly number[],
@@ -1588,7 +1622,7 @@ function researchFor(
   return WAIT;
 }
 
-function heroThink(ctx: SimContext, p: number, hq: number): void {
+export function heroThink(ctx: SimContext, p: number, hq: number): void {
   const ps = ctx.ps;
   const w = ctx.world;
   const h = heroOf(ctx, p);

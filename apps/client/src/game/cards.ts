@@ -380,12 +380,24 @@ export function buildingCards(ctx: CardContext): BuildingCard[] {
 
 /** Does the player own a finished workshop? Crafting and role switching (SetRole) both walk to one. */
 export function hasFinishedWorkshop(data: GameData, own: readonly EntityRow[]): boolean {
-  const workshopIdx = PROVIDES.indexOf('werkplaats');
+  return hasFinished(data, own, 'werkplaats');
+}
+
+/**
+ * Does the player own a finished building that provides `what`? A Raider slave switches role at a cage (provides
+ * kooi; the Raiderkamp is one), sim 0.18.0.
+ */
+export function hasFinished(
+  data: GameData,
+  own: readonly EntityRow[],
+  what: (typeof PROVIDES)[number],
+): boolean {
+  const idx = PROVIDES.indexOf(what);
   return own.some((e) => {
     const k = kindOfTypeId(e.typeId);
     return (
       k.kind === 'building' &&
-      data.buildings[k.index]?.provides.includes(workshopIdx) === true &&
+      data.buildings[k.index]?.provides.includes(idx) === true &&
       e.anim !== ANIM.build
     );
   });

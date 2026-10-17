@@ -6,6 +6,7 @@ import { distToRect2, face, isEnemy, withinReach } from './common.js';
 import { grantXp, heroIndex } from './hero.js';
 import { robotRate } from './robots.js';
 import { SPECIAL_L, heroOf, heroSpecial, scalePermille } from '../effects.js';
+import { captureOf, captureTick } from './slaves.js';
 
 // Systeem 5: gevecht. Elke unit met een doel in bereik en een lege cooldown schiet: schade (plus ability-zones) maal
 // de damage-matrix (promille) op het pantser van het doel. Hitscan, geen projectielen. Dood en opruimen gebeuren pas in
@@ -27,6 +28,9 @@ export function combatSystem(ctx: SimContext): void {
     if (!w.has(i, need)) continue;
     if (w.cooldown[i]! > 0) w.cooldown[i] = w.cooldown[i]! - 1;
     if ((w.mask[i]! & C.building) !== 0) turretAim(ctx, i);
+    // a Slaver (data 0.21.0) holds a capturable target instead of hitting it (systems/slaves.ts)
+    const cap = captureOf(ctx, i);
+    if (cap !== null && captureTick(ctx, i, cap)) continue;
     const tid = w.target[i]!;
     if (tid === NO_ENTITY || w.cooldown[i]! > 0 || w.damage[i]! <= 0) continue;
     const t = w.resolve(tid);
@@ -50,6 +54,8 @@ export function combatSystem(ctx: SimContext): void {
     }
     const before = w.hp[t]!;
     w.hp[t] = before - idiv(dmg * mult, 1000);
+    // who razes or kills it plunders it (data 0.21.0, systems/plunder.ts)
+    w.lastHit[t] = w.owner[i]! + 1;
     if (before > 0 && w.hp[t]! <= 0 && (w.mask[t]! & C.unit) !== 0) killXp(ctx, i, t, hero);
     w.cooldown[i] = rate >= 1000 ? w.cooldownMax[i]! : idiv(w.cooldownMax[i]! * 1000, rate);
     face(w, i, w.x[t]!, w.y[t]!);

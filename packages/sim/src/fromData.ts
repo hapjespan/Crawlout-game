@@ -1,4 +1,6 @@
 import {
+  BODY_TYPES,
+  CAPTURE_TARGETS,
   EffectStat,
   PROVIDES,
   REPAIR_TARGETS,
@@ -11,6 +13,7 @@ import {
 import type { AbilityEffectData, EffectData, GameData, LoadoutData } from '@crawlout/data';
 import type {
   SimAuraEffect,
+  SimChem,
   SimConfig,
   SimEffect,
   SimFaction,
@@ -27,6 +30,8 @@ import {
   EFFECT_TARGET_ALL,
   EFFECT_TARGET_HERO,
   EFFECT_TARGET_TYPE,
+  SAFETY_NET_BEACON,
+  SAFETY_NET_TENTS,
 } from './config.js';
 
 /** Volgorde van de effect-stats (EffectStat in packages/data); de index gaat de sim in (SimEffect.stat). */
@@ -83,6 +88,12 @@ function simEffect(data: GameData, e: EffectData, where: string): SimEffect {
 export const CLAIM_KINDS = ['scrap', 'settlement', 'powerArmor'] as const;
 export type ClaimKind = (typeof CLAIM_KINDS)[number];
 
+function claimKindIndex(kind: string): number {
+  const k = CLAIM_KINDS.indexOf(kind as ClaimKind);
+  if (k < 0) throw new Error(`onbekend claimpunt-soort ${kind}`);
+  return k;
+}
+
 const providesBit = (name: (typeof PROVIDES)[number]): number => 1 << PROVIDES.indexOf(name);
 /** Bits in SimBuildingType.provides. */
 export const PROVIDES_HQ = providesBit('hq');
@@ -90,6 +101,31 @@ export const PROVIDES_WORKSHOP = providesBit('werkplaats');
 export const PROVIDES_CLAIM = providesBit('claim');
 export const PROVIDES_TURRET = providesBit('turret');
 export const PROVIDES_BEACON = providesBit('beacon');
+/** Raiders (data 0.21.0, sim 0.18.0): tents (fighters, safety net), cages (slaves), depots (drop-off) and chem labs. */
+export const PROVIDES_TENT = providesBit('tent');
+export const PROVIDES_KOOI = providesBit('kooi');
+export const PROVIDES_DEPOT = providesBit('depot');
+export const PROVIDES_CHEMLAB = providesBit('chemlab');
+
+/** Index of the robot body (BODY_TYPES): a robot needs no bed and never retrains (census.ts isRobot). */
+export const BODY_ROBOT = BODY_TYPES.indexOf('robot');
+/** Index of the human body: only humans are caught by a Slaver. */
+export const BODY_HUMAN = BODY_TYPES.indexOf('human');
+
+/** Stats a chem can change: damage and speed of every dosed unit, Strength and Agility of a dosed hero. */
+const CHEM_STATS: readonly EffectStatName[] = ['damagePct', 'speedPct'];
+const CHEM_HERO_STATS: readonly EffectStatName[] = ['S', 'A'];
+
+function simChemEffect(data: GameData, e: EffectData, where: string): SimEffect {
+  const ok =
+    (e.target === TARGET_ALL && CHEM_STATS.includes(e.stat)) ||
+    (e.target === TARGET_HERO && (CHEM_STATS.includes(e.stat) || CHEM_HERO_STATS.includes(e.stat)));
+  if (!ok)
+    throw new Error(
+      `${where}: chem-effect '${e.stat}' op '${e.target}' kan de sim niet toepassen; alleen ${CHEM_STATS.join(', ')} op alle of held, ${CHEM_HERO_STATS.join(', ')} op held`,
+    );
+  return simEffect(data, e, where);
+}
 
 const ROLE_SCAVENGER = ROLES.indexOf('scavenger');
 
@@ -155,6 +191,8 @@ export function simConfigFromGameData(data: GameData): SimConfig {
         f.safetyNet.loadoutId < 0
           ? null
           : {
+              action:
+                f.safetyNet.action === 'tenten_instroom' ? SAFETY_NET_TENTS : SAFETY_NET_BEACON,
               threshold: f.safetyNet.threshold,
               intervalTicks: f.safetyNet.intervalTicks,
               maxArrivals: f.safetyNet.maxArrivals,
@@ -168,10 +206,52 @@ export function simConfigFromGameData(data: GameData): SimConfig {
               technicianRoles: [...f.robotRules.technicianRoles],
               penaltyPermille: f.robotRules.robotPenaltyPermille,
             },
+      slaves:
+        f.slaves === null
+          ? null
+          : {
+              capturedTypeId: unitTypeId(f.slaves.capturedLoadoutId),
+              minDistanceFromOwnerBase: f.slaves.minDistanceFromOwnerBaseU,
+              touchTicks: f.slaves.liberation.touchTicks,
+              touchRange: f.slaves.liberation.touchRangeU,
+              guardRadius: f.slaves.liberation.guardRadiusU,
+              freedSpeedPermille: f.slaves.liberation.freedSpeedPermille,
+              garrisonRadius: f.slaves.revolt.garrisonRadiusU,
+              slavesPerGuard: f.slaves.revolt.slavesPerGuard,
+              minGuards: f.slaves.revolt.minGuards,
+              graceTicks: f.slaves.revolt.graceTicks,
+              emptyGraceTicks: f.slaves.revolt.emptyGraceTicks,
+              escapePermille: f.slaves.revolt.escapePermille,
+              repeatTicks: f.slaves.revolt.repeatTicks,
+            },
+      plunder: f.plunder === null ? null : { ...f.plunder },
+      tribute:
+        f.tribute === null
+          ? null
+          : {
+              claimKind: claimKindIndex(f.tribute.claimKind),
+              scrapPerMin: f.tribute.scrapPerMin,
+              bonusTech: f.tribute.bonusTech,
+              bonusPermille: f.tribute.bonusPermille,
+            },
+      chems: f.chems.map((c): SimChem => ({
+        requiresTech: c.requiresTech,
+        doseScrap: c.doseScrap,
+        activeTicks: c.activeTicks,
+        crashTicks: c.crashTicks,
+        cooldownTicks: c.cooldownTicks,
+        effects: c.effects.map((e) => simChemEffect(data, e, `chem ${c.key}`)),
+        crash: c.crash.map((e) => simChemEffect(data, e, `chem ${c.key} crash`)),
+        refined: c.refined === null ? null : { ...c.refined },
+      })),
     };
   });
   const heroes: SimHero[] = data.heroes.map((h) => {
-    const base = factions[h.factionId]!.roleTypeIds[ROLES.indexOf('militia')] ?? 0;
+    // data 0.21.0: baseLoadoutId when set, else the militia loadout of the faction (the default before)
+    const base =
+      h.baseLoadoutId >= 0
+        ? unitTypeId(h.baseLoadoutId)
+        : (factions[h.factionId]!.roleTypeIds[ROLES.indexOf('militia')] ?? 0);
     if (base === 0) throw new Error(`held ${h.key}: factie heeft geen militie-loadout als basis`);
     return {
       heroId: h.id,
@@ -198,6 +278,14 @@ export function simConfigFromGameData(data: GameData): SimConfig {
       revivePenaltyPermille: h.revivePenaltyPermille,
       maxRevives: h.maxRevives,
       sight: h.sightU,
+      aura:
+        h.aura === null
+          ? null
+          : {
+              radius: h.aura.radiusU,
+              effects: h.aura.effects.map((e) => simAuraEffect(e, `held ${h.key} aura`)),
+            },
+      xpPerCapture: h.xpPerCapture,
     };
   });
   return {
@@ -241,6 +329,18 @@ export function simConfigFromGameData(data: GameData): SimConfig {
               buildingsFirst: l.siege.buildingsFirst,
             },
       sight: l.sightU,
+      slave: l.slave,
+      capture:
+        l.capture === null
+          ? null
+          : {
+              range: l.capture.rangeU,
+              captureTicks: l.capture.captureTicks,
+              wanderers: l.capture.targets.includes(CAPTURE_TARGETS.indexOf('wanderer')),
+              residents: l.capture.targets.includes(CAPTURE_TARGETS.indexOf('resident')),
+              maxHpPermille: l.capture.maxHpPermille,
+            },
+      aura: l.aura === null ? null : { radius: l.aura.radiusU, chems: [...l.aura.chems] },
     })),
     buildingTypes: data.buildings.map((b) => ({
       typeId: buildingTypeId(b.id),
@@ -269,6 +369,16 @@ export function simConfigFromGameData(data: GameData): SimConfig {
               maxDamagePermille: b.network.maxDamagePermille,
             },
       sight: b.sightU,
+      cage:
+        b.cage === null
+          ? null
+          : {
+              capacity: b.cage.capacity,
+              transitionTicks: b.cage.transitionTicks,
+              workRadius: b.cage.workRadiusU,
+            },
+      hqRange:
+        b.placement === null ? null : { min: b.placement.minFromHqU, max: b.placement.maxFromHqU },
     })),
     factions,
     aiScripts: data.aiScripts.map((a) => ({
@@ -321,6 +431,31 @@ export function simConfigFromGameData(data: GameData): SimConfig {
         a.training === null
           ? null
           : { programIds: [...a.training.sequence], fromTicks: a.training.fromTicks },
+      raidPlan:
+        a.raidPlan === null
+          ? null
+          : {
+              fighterMix: a.raidPlan.fighterMix.map((m) => ({
+                typeId: unitTypeId(m.loadoutId),
+                weight: m.weight,
+              })),
+              harass: {
+                typeId: unitTypeId(a.raidPlan.harass.loadoutId),
+                fromTicks: a.raidPlan.harass.fromTicks,
+                max: a.raidPlan.harass.max,
+                retreatHpPermille: a.raidPlan.harass.retreatHpPermille,
+              },
+              slaveRaids: {
+                slaverTypeId: unitTypeId(a.raidPlan.slaveRaids.slaverLoadoutId),
+                fromTicks: a.raidPlan.slaveRaids.fromTicks,
+                slavers: a.raidPlan.slaveRaids.slavers,
+                escort: a.raidPlan.slaveRaids.escort,
+                maxRaidTicks: a.raidPlan.slaveRaids.maxRaidTicks,
+                retryTicks: a.raidPlan.slaveRaids.retryTicks,
+              },
+              garrisonMinFighters: a.raidPlan.garrison.minFighters,
+              dominancePush: { ...a.raidPlan.dominancePush },
+            },
     })),
     techs: data.tech.map((t) => ({
       techId: t.id,

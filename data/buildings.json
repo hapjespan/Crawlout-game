@@ -173,9 +173,9 @@
     "provides": ["hq", "claim", "huisvesting", "kooi"],
     "prereqTech": [],
     "visuals": { "mesh": "raider_building_camp" },
-    "cage": { "capacity": 4, "transitionS": 20, "workRadiusM": 45 },
+    "cage": { "capacity": 8, "transitionS": 20, "workRadiusM": 45 },
     "sightM": 24,
-    "_comment": "startwaarde, geen balans. Raider-kamp (hoofdgebouw, provides hq): een omheind kamp van schroot en palen met een uitkijktoren. Staat bij de start (0 scrap, 0 s). 1100 hp medium pantser (de Dwellers hebben 1500 en heavy): fragiel, het hoofdgebouw is de winroute van de tegenstander. Footprint 17x17 (een omheining van 17 m, lager en kleiner dan het bronhuis van de Dwellers met 21x21). 6 bedden, hier lapt de held zich op. Het kamp is tevens een Kooi (provides kooi, cage): capaciteit 4 slaven, transitie 20 s, werkstraal 45 m, zodat de startslaven vanaf tick 0 werken zonder aparte Kooi (Spelfundament 6 punt 5). De extra Kooien volgen aan de rand van de basis. Zichtstraal 24 m (sightM): de uitkijktoren."
+    "_comment": "startwaarde, geen balans. Raider-kamp (hoofdgebouw, provides hq): een omheind kamp van schroot en palen met een uitkijktoren. Staat bij de start (0 scrap, 0 s). 1100 hp medium pantser (de Dwellers hebben 1500 en heavy): fragiel, het hoofdgebouw is de winroute van de tegenstander. Footprint 17x17 (een omheining van 17 m, lager en kleiner dan het bronhuis van de Dwellers met 21x21). 6 bedden, hier lapt de held zich op. Het kamp is tevens een Kooi (provides kooi, cage): capaciteit 8 slaven (data 0.23.0, was 4: de zes startslaven en de slaaf-bouwer passen erin), transitie 20 s, werkstraal 45 m, zodat de startslaven vanaf tick 0 werken zonder aparte Kooi (Spelfundament 6 punt 5). De extra Kooien volgen aan de rand van de basis. Zichtstraal 24 m (sightM): de uitkijktoren."
   },
   {
     "id": "tent",

@@ -15,9 +15,19 @@ import {
   PHASE_GO,
   PHASE_RETURN,
   PHASE_WORK,
+  SLAVE_CAPTIVE,
+  SLAVE_FREED,
 } from '../ecs/world.js';
 import { gatherAmountOf } from '../effects.js';
-import { PROVIDES_HQ, PROVIDES_WORKSHOP } from '../fromData.js';
+import { PROVIDES_DEPOT, PROVIDES_HQ, PROVIDES_KOOI, PROVIDES_WORKSHOP } from '../fromData.js';
+import {
+  boundOrders,
+  liberatable,
+  mayBuild,
+  reachesPoint,
+  wandererFor,
+  workReach,
+} from './slaves.js';
 import type { SimContext } from './common.js';
 import { repairIdle } from './robots.js';
 import { castOrder } from './hero.js';
@@ -53,8 +63,8 @@ export const ROLE_MILITIA = ROLES.indexOf('militia');
 export const ROLE_ROBOT = ROLES.indexOf('robot');
 const ROLE_BUILDER = ROLES.indexOf('builder');
 
-/** Depots voor scrap: hoofdgebouw en werkplaats. */
-export const DEPOT_MASK = PROVIDES_HQ | PROVIDES_WORKSHOP;
+/** Depots voor scrap: hoofdgebouw en werkplaats, en (Raiders, data 0.21.0) de plundermarkt (provides depot). */
+export const DEPOT_MASK = PROVIDES_HQ | PROVIDES_WORKSHOP | PROVIDES_DEPOT;
 
 export class OrdersScratch {
   /** Indices van alle entities met Health en een eigenaar (units en gebouwen), oplopend. */
@@ -119,7 +129,28 @@ function acquire(ctx: SimContext, s: OrdersScratch, i: number): number {
     }
   }
   if (buildingsFirst) return bestB >= 0 ? bestB : bestU;
+  if (bestU < 0 && bestB < 0) return acquireWanderer(ctx, s, i, r2);
   return bestU >= 0 ? bestU : bestB;
+}
+
+/** A Slaver without an enemy in aggro range takes the nearest neutral wanderer it can catch (data 0.21.0), or -1. */
+function acquireWanderer(ctx: SimContext, s: OrdersScratch, i: number, r2: number): number {
+  const w = ctx.world;
+  if (ctx.unitType(w.typeId[i]!)?.capture == null || (w.mask[i]! & C.hero) !== 0) return -1;
+  let best = -1;
+  let bestD = 0;
+  for (let k = 0; k < s.targetCount; k++) {
+    const j = s.targets[k]!;
+    if (!wandererFor(ctx, i, j)) continue;
+    const dx = w.x[j]! - w.x[i]!;
+    const dy = w.y[j]! - w.y[i]!;
+    const d = dx * dx + dy * dy;
+    if (d <= r2 && (best < 0 || d < bestD)) {
+      best = j;
+      bestD = d;
+    }
+  }
+  return best;
 }
 
 /** Huidig doel van i als het nog een geldige vijand is (en, met leash, binnen aggroRange plus wapenbereik), anders -1. */
@@ -128,7 +159,7 @@ function currentTarget(ctx: SimContext, i: number, leash: boolean): number {
   const id = w.target[i]!;
   if (id === NO_ENTITY) return -1;
   const t = w.resolve(id);
-  if (t < 0 || !isEnemy(w, i, t)) return -1;
+  if (t < 0 || !(isEnemy(w, i, t) || wandererFor(ctx, i, t))) return -1;
   if (leash && !withinReach(w, i, t, ctx.config.aggroRange + w.range[i]!)) return -1;
   return t;
 }
@@ -197,6 +228,7 @@ function ownSite(ctx: SimContext, i: number, id: number): number {
 function builderIdle(ctx: SimContext, s: OrdersScratch, i: number): boolean {
   const w = ctx.world;
   let b = ownSite(ctx, i, w.resumeSite[i]!);
+  if (b >= 0 && !mayBuild(ctx, i, b)) b = -1;
   if (b < 0) {
     w.resumeSite[i] = NO_ENTITY;
     if (w.buildHold[i] !== 0) return false;
@@ -221,7 +253,7 @@ function nearestOwnSite(ctx: SimContext, s: OrdersScratch, i: number, r: number)
   let bestD = 0;
   for (let k = 0; k < s.siteCount; k++) {
     const b = s.sites[k]!;
-    if (w.owner[b] !== p) continue;
+    if (w.owner[b] !== p || !mayBuild(ctx, i, b)) continue;
     const d = distToRect2(x, y, w.fx[b]!, w.fy[b]!, w.fw[b]!, w.fh[b]!);
     if (d <= r2 && (best < 0 || d < bestD)) {
       best = b;
@@ -250,6 +282,15 @@ function attackMove(ctx: SimContext, s: OrdersScratch, i: number, o: number): vo
 function attack(ctx: SimContext, i: number, o: number): void {
   const w = ctx.world;
   w.target[i] = w.ordT[o]!;
+  // an enemy slave or captive (data 0.21.0): no shot, it is freed by touch (systems/slaves.ts): walk up to it
+  const b = w.resolve(w.ordT[o]!);
+  if (b >= 0 && liberatable(ctx, i, b)) {
+    if (withinReach(w, i, b, 0)) {
+      if (w.mvOn[i] === 1) stopMoving(ctx, i);
+      face(w, i, w.x[b]!, w.y[b]!);
+    } else steerChase(ctx, i, w.x[b]!, w.y[b]!);
+    return;
+  }
   const t = currentTarget(ctx, i, false);
   if (t < 0) {
     w.target[i] = NO_ENTITY;
@@ -269,8 +310,16 @@ function gather(ctx: SimContext, i: number, o: number): void {
     return;
   }
   let node = w.resolve(w.ordT[o]!);
+  // a slave gathers only within the work radius of its cage (data 0.21.0)
+  const work = workReach(ctx, i);
   // Een node die (inmiddels) exclusief van een ander is, telt als weg: zoek een andere (Spelfundament 3.1).
-  if (node >= 0 && (!w.has(node, C.resource) || !nodeAllowed(ctx, node, w.owner[i]!))) node = -1;
+  if (
+    node >= 0 &&
+    (!w.has(node, C.resource) ||
+      !nodeAllowed(ctx, node, w.owner[i]!) ||
+      !reachesPoint(work, w.x[node]!, w.y[node]!))
+  )
+    node = -1;
   const reach = ctx.config.interactRange;
   if (w.phase[i] === PHASE_WORK && (node < 0 || !withinReach(w, i, node, reach)))
     w.phase[i] = PHASE_GO;
@@ -279,7 +328,7 @@ function gather(ctx: SimContext, i: number, o: number): void {
     // a node it cannot walk to (under a building, another piece of terrain) counts as gone: never walk on the spot
     if (node >= 0 && !nodeReachable(ctx, w.x[i]!, w.y[i]!, node)) node = -1;
     if (node < 0) {
-      node = nearestNode(ctx, w.owner[i]!, w.x[i]!, w.y[i]!);
+      node = nearestNode(ctx, w.owner[i]!, w.x[i]!, w.y[i]!, work);
       if (node < 0) {
         if (w.carry[i]! > 0) w.phase[i] = PHASE_RETURN;
         else {
@@ -327,7 +376,7 @@ export function autoGather(ctx: SimContext, i: number): void {
   if (r <= 0 || ctx.players[p] === undefined || ctx.players[p].ai) return;
   const type = ctx.unitType(w.typeId[i]!);
   if (type === undefined || type.gatherAmount <= 0) return;
-  const node = nearestNode(ctx, p, w.x[i]!, w.y[i]!);
+  const node = nearestNode(ctx, p, w.x[i]!, w.y[i]!, workReach(ctx, i));
   if (node < 0) return;
   const dx = w.x[node]! - w.x[i]!;
   const dy = w.y[node]! - w.y[i]!;
@@ -370,7 +419,7 @@ function approachNode(ctx: SimContext, i: number, o: number, node: number, reach
 function build(ctx: SimContext, i: number, o: number): void {
   const w = ctx.world;
   const b = w.resolve(w.ordT[o]!);
-  if (b < 0 || !w.has(b, C.building) || w.bstate[b] !== BSTATE_SITE) {
+  if (b < 0 || !w.has(b, C.building) || w.bstate[b] !== BSTATE_SITE || !mayBuild(ctx, i, b)) {
     if (w.resumeSite[i] === w.ordT[o]) w.resumeSite[i] = NO_ENTITY; // af of weg: niets meer te hervatten
     w.popOrder(i);
     stopMoving(ctx, i);
@@ -386,10 +435,16 @@ function build(ctx: SimContext, i: number, o: number): void {
   }
 }
 
+/** Where unit i retrains (SetRole, Craft) to type `typeId`: a cage for a slave loadout (data 0.21.0), else a workshop. */
+export function craftSiteMask(ctx: SimContext, typeId: number): number {
+  return ctx.unitType(typeId)?.slave === true ? PROVIDES_KOOI : PROVIDES_WORKSHOP;
+}
+
 function craft(ctx: SimContext, i: number): void {
   const w = ctx.world;
   if (w.phase[i] !== PHASE_GO) return; // betalen en omscholen in systeem 6
-  const ws = nearestReachableBuilding(ctx, w.owner[i]!, w.x[i]!, w.y[i]!, PROVIDES_WORKSHOP);
+  const mask = craftSiteMask(ctx, w.ordX[w.currentOrder(i)]!);
+  const ws = nearestReachableBuilding(ctx, w.owner[i]!, w.x[i]!, w.y[i]!, mask);
   if (ws < 0) {
     if (w.mvOn[i] === 1) stopMoving(ctx, i); // geen bereikbare werkplaats: wachten
     return;
@@ -410,6 +465,12 @@ export function ordersSystem(ctx: SimContext, s: OrdersScratch): void {
   const need = C.unit | C.orders;
   for (let i = 0; i < w.highWater; i++) {
     if (!w.has(i, need)) continue;
+    // a captive or a freed unit (data 0.21.0) follows the slave rules, not orders (systems/slaves.ts)
+    const st = w.slaveState[i]!;
+    if (st === SLAVE_CAPTIVE || st === SLAVE_FREED) {
+      boundOrders(ctx, i);
+      continue;
+    }
     const o = w.currentOrder(i);
     const type = o < 0 ? ORDER_NONE : w.ordType[o]!;
     switch (type) {

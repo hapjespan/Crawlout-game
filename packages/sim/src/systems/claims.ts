@@ -21,7 +21,7 @@ import { NO_WINNER, WIN_DESTRUCTION, WIN_DOMINANCE, WIN_SURRENDER, distToRect2 }
 // Presentatie: claimBy/claimProgress volgen het verst gevorderde claimgebouw in aanbouw van een andere speler dan de
 // eigenaar binnen de straal (animT van het claimpunt).
 // Claimen zonder paal (data 0.20.0, de claimronde; Martien: "de held mag ook palen claimen door 3 minuten in de zone
-// te blijven staan"; voorstel, ter bevestiging door de architect):
+// te blijven staan"; bevestigd in fase-0 sectie 22 besluit 6):
 //  - de held van p claimt een punt dat neutraal is en waar geen voltooid claimgebouw staat, door heroClaimTicks in de
 //    cirkel (claimRadius) te staan zonder dat er een unit van een andere speler in staat (dan staat de teller stil);
 //    verlaat hij de cirkel of sneuvelt hij, dan begint het opnieuw. Daarna is het punt van p met beacon = 1: geen

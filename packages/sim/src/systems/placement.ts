@@ -1,5 +1,5 @@
 import { BSTATE_DONE, C } from '../ecs/world.js';
-import { PROVIDES_CLAIM, PROVIDES_HQ, PROVIDES_WORKSHOP } from '../fromData.js';
+import { PROVIDES_CLAIM, PROVIDES_DEPOT, PROVIDES_HQ, PROVIDES_WORKSHOP } from '../fromData.js';
 import { idiv } from '../math/int.js';
 import type { SimBuildingType } from '../config.js';
 import type { SimContext } from './common.js';
@@ -39,6 +39,11 @@ export const PLACE_DEPOT = 4;
 export const PLACE_FEATURE = 5;
 /** No cell of the footprint lies in the player's territory (data 0.20.0, territoryMask). */
 export const PLACE_TERRITORY = 6;
+/**
+ * The building must stand within a distance range of an own headquarters and does not (data 0.21.0 buildings
+ * placement, the Kooi at the edge of the Raider base; voorstel, ter bevestiging door de architect).
+ */
+export const PLACE_HQ_RANGE = 7;
 /** Name of each reason code, by code: for the client and its preview text. */
 export const PLACEMENT_REASONS = [
   'ok',
@@ -48,6 +53,7 @@ export const PLACEMENT_REASONS = [
   'depot',
   'feature',
   'territory',
+  'hqRange',
 ] as const;
 export type PlacementReason = (typeof PLACEMENT_REASONS)[number];
 
@@ -97,6 +103,16 @@ export interface PlacementInput {
    * Claim (AS_CLAIM) does not need it: a claim post is how a player reaches a point outside his territory.
    */
   readonly territory?: ArrayLike<number> | null;
+  /**
+   * Distance rule of the building being placed (data 0.21.0, buildings placement; SimBuildingType.hqRange): the centre
+   * of the footprint lies between min and max (sim units, inclusive) from the centre of one of the placing player's
+   * headquarters, given as x, y pairs in sim units. null/absent: no such rule.
+   */
+  readonly hqRange?: {
+    readonly hqs: ArrayLike<number>;
+    readonly min: number;
+    readonly max: number;
+  } | null;
 }
 
 /**
@@ -125,6 +141,8 @@ export function placementReason(
   const t = inp.territory;
   if (t != null && (as & AS_CLAIM) === 0 && !touchesTerritory(t, W, fx, fy, fw, fh))
     return PLACE_TERRITORY;
+  const hr = inp.hqRange;
+  if (hr != null && !inHqRange(hr.hqs, hr.min, hr.max, fx, fy, fw, fh)) return PLACE_HQ_RANGE;
   if (c === 0) return near;
   const x0 = fx - c;
   const y0 = fy - c;
@@ -197,9 +215,51 @@ export function neighbourReason(
   return PLACE_OK;
 }
 
-/** What building type bt is for the rule: AS_DEPOT for a drop-off building (provides hq or workshop), else 0. */
+/**
+ * What building type bt is for the rule: AS_DEPOT for a drop-off building (provides hq, workshop or, data 0.21.0,
+ * depot), else 0.
+ */
 export const placeAs = (bt: SimBuildingType): number =>
-  (bt.provides & (PROVIDES_HQ | PROVIDES_WORKSHOP)) !== 0 ? AS_DEPOT : 0;
+  (bt.provides & (PROVIDES_HQ | PROVIDES_WORKSHOP | PROVIDES_DEPOT)) !== 0 ? AS_DEPOT : 0;
+
+/**
+ * Whether the centre of the footprint (fx, fy, fw, fh) lies between min and max (inclusive, sim units) from one of the
+ * headquarters centres in `hqs` (x, y pairs in sim units).
+ */
+export function inHqRange(
+  hqs: ArrayLike<number>,
+  min: number,
+  max: number,
+  fx: number,
+  fy: number,
+  fw: number,
+  fh: number,
+): boolean {
+  const cx = (fx << 8) + (fw << 7);
+  const cy = (fy << 8) + (fh << 7);
+  for (let k = 0; k + 1 < hqs.length; k += 2) {
+    const dx = cx - hqs[k]!;
+    const dy = cy - hqs[k + 1]!;
+    const d = dx * dx + dy * dy;
+    if (d >= min * min && d <= max * max) return true;
+  }
+  return false;
+}
+
+/** Centres (x, y pairs, sim units) of player p's headquarters (any build state), for PlacementInput.hqRange. */
+export function hqCentres(ctx: SimContext, p: number): number[] {
+  const w = ctx.world;
+  const idx = ctx.index;
+  idx.refresh(w);
+  const out: number[] = [];
+  for (let k = 0; k < idx.buildingCount; k++) {
+    const j = idx.buildings[k]!;
+    if (w.owner[j] !== p) continue;
+    const bt = ctx.buildingType(w.typeId[j]!);
+    if (bt !== undefined && (bt.provides & PROVIDES_HQ) !== 0) out.push(w.x[j]!, w.y[j]!);
+  }
+  return out;
+}
 
 /** Whether any cell of the footprint fw x fh at (fx, fy) is inside the territory mask (map width W). */
 export function touchesTerritory(
@@ -375,8 +435,10 @@ export function placementReasonAt(
   claim = 0,
   p = -1,
 ): number {
+  const inp = placementInput(ctx, p);
+  const hr = bt.hqRange;
   return placementReason(
-    placementInput(ctx, p),
+    hr === null || p < 0 ? inp : { ...inp, hqRange: { hqs: hqCentres(ctx, p), ...hr } },
     fx,
     fy,
     bt.footprintW,

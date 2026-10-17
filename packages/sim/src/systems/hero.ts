@@ -7,8 +7,19 @@ import {
   MAX_ABILITIES,
   SPECIAL_COUNT,
 } from '../config.js';
+import type { SimAuraEffect } from '../config.js';
+import { chemModifiers } from './chems.js';
 import type { World } from '../ecs/world.js';
-import { BSTATE_DONE, C, NO_ENTITY, NO_FIELD, ORDER_CAST, PHASE_WORK } from '../ecs/world.js';
+import {
+  BSTATE_DONE,
+  C,
+  CHEM_NONE,
+  NO_ENTITY,
+  NO_FIELD,
+  ORDER_CAST,
+  PHASE_WORK,
+  SLAVE_FREED,
+} from '../ecs/world.js';
 import {
   HERO_ALIVE,
   HERO_DEAD,
@@ -58,6 +69,8 @@ export class Auras {
   any = false;
   readonly speed = new Int32Array(MAX_ENTITIES);
   readonly damage = new Int32Array(MAX_ENTITIES);
+  /** Scratch for the chem modifiers of one unit: [speed, damage]. */
+  readonly scratch = new Int32Array(2);
 }
 
 /** Maakt de held van speler p op (x, y). Geeft de index of -1. Zet heroEnt en heroState. */
@@ -165,44 +178,96 @@ export function heroSystem(ctx: SimContext, census: Census): void {
   }
 }
 
-/** Voor systeem 4 en 5: promille op speed en damage van units binnen actieve zones. */
+/**
+ * Voor systeem 4 en 5: promille op speed en damage van units binnen actieve zones. Sim 0.18.0 (data 0.21.0) adds, in
+ * this order: the aura of a living hero (the Warlord's intimidation, a zone that follows him), the chem of every dosed
+ * unit (systems/chems.ts), the speed bonus of a freed slave walking home, and the target of a Slaver that is catching
+ * it stands still (systems/slaves.ts). All derived from state, so the same after a load; the sums commute.
+ */
 export function auraSystem(ctx: SimContext, auras: Auras): void {
   const ps = ctx.ps;
   const w = ctx.world;
   auras.any = false;
-  for (let k = 0; k < ctx.playerCount * MAX_ABILITIES; k++)
-    if (ps.zoneTicks[k]! > 0) auras.any = true;
-  if (!auras.any) return;
-  auras.speed.fill(0, 0, w.highWater);
-  auras.damage.fill(0, 0, w.highWater);
+  const begin = (): void => {
+    if (auras.any) return;
+    auras.any = true;
+    auras.speed.fill(0, 0, w.highWater);
+    auras.damage.fill(0, 0, w.highWater);
+  };
   for (let p = 0; p < ctx.playerCount; p++) {
     const h = heroOf(ctx, p);
     if (h === undefined) continue;
     for (let a = 0; a < h.abilities.length; a++) {
       const k = p * MAX_ABILITIES + a;
       if (ps.zoneTicks[k]! <= 0) continue;
+      begin();
       const ab = h.abilities[a]!;
-      const zx = ps.zoneX[k]!;
-      const zy = ps.zoneY[k]!;
-      const r = ab.radiusU;
-      for (let i = 0; i < w.highWater; i++) {
-        if (!w.has(i, C.health)) continue;
-        // units, en turrets: voltooide gebouwen met Combat (besluit 8). Andere gebouwen hebben geen speed of damage.
-        const m = w.mask[i]!;
-        const turret = (m & (C.building | C.combat)) === (C.building | C.combat);
-        if (!turret && (m & C.unit) === 0) continue;
-        const o = w.owner[i]!;
-        if (o >= ctx.playerCount) continue;
-        const dx = w.x[i]! - zx;
-        const dy = w.y[i]! - zy;
-        if (dx > r || -dx > r || dy > r || -dy > r || dx * dx + dy * dy > r * r) continue;
-        for (const e of ab.effects) {
-          if (e.target === (turret ? AURA_TARGET_UNITS : AURA_TARGET_TURRETS)) continue;
-          if ((e.side === AURA_SIDE_ENEMY) === (o === p)) continue;
-          if (e.stat === STAT_SPEED) auras.speed[i] = auras.speed[i]! + e.delta;
-          else if (e.stat === STAT_DAMAGE) auras.damage[i] = auras.damage[i]! + e.delta;
-        }
+      applyZone(ctx, auras, p, ps.zoneX[k]!, ps.zoneY[k]!, ab.radiusU, ab.effects);
+    }
+    if (h.aura !== null) {
+      const i = heroIndex(ctx, p);
+      if (i >= 0) {
+        begin();
+        applyZone(ctx, auras, p, w.x[i]!, w.y[i]!, h.aura.radius, h.aura.effects);
       }
+    }
+  }
+  const mods = auras.scratch;
+  for (let i = 0; i < w.highWater; i++) {
+    if (w.alive[i] !== 1 || !w.has(i, C.unit | C.health)) continue;
+    if (w.chemPhase[i] !== CHEM_NONE) {
+      mods[0] = 0;
+      mods[1] = 0;
+      if (chemModifiers(ctx, i, mods)) {
+        begin();
+        auras.speed[i] = auras.speed[i]! + mods[0]!;
+        auras.damage[i] = auras.damage[i]! + mods[1]!;
+      }
+    }
+    if (w.slaveState[i] === SLAVE_FREED && w.slaveTicks[i]! > 0) {
+      begin();
+      auras.speed[i] = auras.speed[i]! + w.slaveTicks[i]!;
+    }
+    if (w.capWork[i]! > 0 && w.has(i, C.combat) && w.target[i] !== NO_ENTITY) {
+      const t = w.resolve(w.target[i]!);
+      if (t >= 0) {
+        begin();
+        auras.speed[t] = auras.speed[t]! + PINNED;
+      }
+    }
+  }
+}
+
+/** Speed permille of a unit held by a Slaver: far below -1000, so it stands still whatever else it has. */
+const PINNED = -1_000_000;
+
+/** The effects of a zone of player p (an ability, or a hero's aura) at (zx, zy) with radius r on everything in it. */
+function applyZone(
+  ctx: SimContext,
+  auras: Auras,
+  p: number,
+  zx: number,
+  zy: number,
+  r: number,
+  effects: readonly SimAuraEffect[],
+): void {
+  const w = ctx.world;
+  for (let i = 0; i < w.highWater; i++) {
+    if (!w.has(i, C.health)) continue;
+    // units, en turrets: voltooide gebouwen met Combat (besluit 8). Andere gebouwen hebben geen speed of damage.
+    const m = w.mask[i]!;
+    const turret = (m & (C.building | C.combat)) === (C.building | C.combat);
+    if (!turret && (m & C.unit) === 0) continue;
+    const o = w.owner[i]!;
+    if (o >= ctx.playerCount) continue;
+    const dx = w.x[i]! - zx;
+    const dy = w.y[i]! - zy;
+    if (dx > r || -dx > r || dy > r || -dy > r || dx * dx + dy * dy > r * r) continue;
+    for (const e of effects) {
+      if (e.target === (turret ? AURA_TARGET_UNITS : AURA_TARGET_TURRETS)) continue;
+      if ((e.side === AURA_SIDE_ENEMY) === (o === p)) continue;
+      if (e.stat === STAT_SPEED) auras.speed[i] = auras.speed[i]! + e.delta;
+      else if (e.stat === STAT_DAMAGE) auras.damage[i] = auras.damage[i]! + e.delta;
     }
   }
 }

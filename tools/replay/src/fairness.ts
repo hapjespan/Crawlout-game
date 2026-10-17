@@ -14,6 +14,7 @@ const SCRIPT = fileURLToPath(new URL('./fairness-report.ts', import.meta.url));
 export async function playMatchesParallel(
   seeds: readonly number[],
   procs = Math.max(1, Math.min(8, availableParallelism() - 1)),
+  factions?: readonly string[],
 ): Promise<MatchResult[]> {
   const parts: number[][] = Array.from({ length: Math.min(procs, seeds.length) }, () => []);
   seeds.forEach((s, k) => parts[k % parts.length]!.push(s));
@@ -22,7 +23,14 @@ export async function playMatchesParallel(
       new Promise<MatchResult[]>((resolve, reject) => {
         execFile(
           process.execPath,
-          ['--import', 'tsx', SCRIPT, '--json', ...part.map(String)],
+          [
+            '--import',
+            'tsx',
+            SCRIPT,
+            '--json',
+            ...(factions === undefined ? [] : ['--factions', factions.join(',')]),
+            ...part.map(String),
+          ],
           { cwd: REPLAY_DIR, maxBuffer: 64 * 1024 * 1024 },
           (err, stdout) => {
             if (err !== null) {

@@ -42,6 +42,22 @@ export const JOB_NONE = 0;
 export const JOB_PRODUCE = 1;
 export const JOB_TRAIN = 2;
 
+/** Slave state (field `slaveState`, Raiders, systems/slaves.ts). */
+export const SLAVE_NONE = 0;
+/** Caught by a Slaver: walks to its cage and stands there for the cage's transition; not yet a worker. */
+export const SLAVE_CAPTIVE = 1;
+/** A worker of its owner, bound to a cage (slaveCage). */
+export const SLAVE_SLAVE = 2;
+/** Liberated: walks home to its owner's headquarters, faster (slaveTicks is the bonus); then an ordinary unit. */
+export const SLAVE_FREED = 3;
+
+/** Chem phase of a unit (field `chemPhase`, systems/chems.ts). */
+export const CHEM_NONE = 0;
+export const CHEM_ACTIVE = 1;
+export const CHEM_CRASH = 2;
+/** After the crash: no new dose until the cooldown is over. */
+export const CHEM_COOL = 3;
+
 /** Bouwstatus (veld `bstate`). */
 export const BSTATE_NONE = 0;
 export const BSTATE_SITE = 1; // in aanbouw
@@ -202,6 +218,28 @@ export class World {
    * by vision.ts at the end of each tick, rebuilt after deserialize, 0 for an entity allocated during this tick.
    */
   readonly visTo = new Uint8Array(MAX_ENTITIES);
+  // Raiders (sim 0.18.0, STATE_FORMAT_VERSION 12; systems/slaves.ts, systems/chems.ts, systems/plunder.ts; contract 1,
+  // voorstel, ter bevestiging door de architect)
+  /** SLAVE_* (systems/slaves.ts): none, captive (caught, on its way to a cage or in its transition), slave, freed. */
+  readonly slaveState = new Uint8Array(MAX_ENTITIES);
+  /** Slave or captive: id of its Kooi (0 = none yet: a captive waits for a free cage). */
+  readonly slaveCage = new Uint32Array(MAX_ENTITIES);
+  /** Slave or captive: the player it was caught from (OWNER_NEUTRAL for a wanderer or a start slave). */
+  readonly slaveFrom = new Uint8Array(MAX_ENTITIES);
+  /** Captive: ticks of its transition at the cage so far. Freed: the speed bonus of its walk home, in permille. */
+  readonly slaveTicks = new Int32Array(MAX_ENTITIES);
+  /** Slave or captive: ticks an enemy unit has touched it without a guard near (liberation). */
+  readonly touchTicks = new Int32Array(MAX_ENTITIES);
+  /** Slaver: ticks it has held its current target within capture range. */
+  readonly capWork = new Int32Array(MAX_ENTITIES);
+  /** Kooi: ticks of the current garrison deficit (revolt; negative after an escape, see systems/slaves.ts). */
+  readonly revolt = new Int32Array(MAX_ENTITIES);
+  /** Chem on this unit: faction-local chem index + 1 (0 = none), its phase (CHEM_*) and the ticks left in it. */
+  readonly chem = new Uint8Array(MAX_ENTITIES);
+  readonly chemPhase = new Uint8Array(MAX_ENTITIES);
+  readonly chemTicks = new Int32Array(MAX_ENTITIES);
+  /** Owner + 1 of the last unit or turret that damaged this entity (0 = none): who plunders it (systems/plunder.ts). */
+  readonly lastHit = new Uint8Array(MAX_ENTITIES);
   // Presentatie (gaat de snapshot in, is ook state zodat de hash de hele snapshot dekt)
   readonly anim = new Uint8Array(MAX_ENTITIES);
   readonly animT = new Uint16Array(MAX_ENTITIES);
@@ -395,6 +433,17 @@ export function entityStateArrays(w: World): readonly StateArray[] {
     one('jobWork', w.jobWork),
     one('repairMilli', w.repairMilli),
     one('spotted', w.spotted),
+    one('slaveState', w.slaveState),
+    one('slaveCage', w.slaveCage),
+    one('slaveFrom', w.slaveFrom),
+    one('slaveTicks', w.slaveTicks),
+    one('touchTicks', w.touchTicks),
+    one('capWork', w.capWork),
+    one('revolt', w.revolt),
+    one('chem', w.chem),
+    one('chemPhase', w.chemPhase),
+    one('chemTicks', w.chemTicks),
+    one('lastHit', w.lastHit),
     one('anim', w.anim),
     one('animT', w.animT),
     one('flags', w.flags),

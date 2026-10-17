@@ -3,6 +3,7 @@ import type { CommandPayload } from '@crawlout/protocol';
 import type { SimRepair, SimUnitType } from '../config.js';
 import { BSTATE_DONE, C, JOB_NONE, JOB_PRODUCE, NO_ENTITY, ORDER_NONE } from '../ecs/world.js';
 import { hasTechs } from '../effects.js';
+import { BODY_ROBOT } from '../fromData.js';
 import { createUnit } from '../entities.js';
 import { idiv, imod, isInt } from '../math/int.js';
 import { Census, isRobot, takeCensus } from './census.js';
@@ -126,7 +127,8 @@ export function idleOwnBuilding(ctx: SimContext, p: number, id: number): number 
 
 /**
  * Produce (buildingId, loadoutId): een robot in een eigen voltooide fabriek zonder lopend werk, met prereqTech, scrap
- * en ruimte binnen popCapMax (ook voor de robots in productie). Kosten meteen.
+ * en ruimte binnen popCapMax (ook voor de robots in productie). Kosten meteen. Sim 0.18.0 (Raiders): the same for any
+ * loadout with producedAt (a fighter in a tent, a buggy in the autosloperij); a human one also needs a free bed.
  */
 export function applyProduce(ctx: SimContext, p: number, pl: CommandPayload<'Produce'>): boolean {
   const b = idleOwnBuilding(ctx, p, pl.buildingId);
@@ -138,6 +140,8 @@ export function applyProduce(ctx: SimContext, p: number, pl: CommandPayload<'Pro
   const census = new Census();
   takeCensus(ctx, census);
   if (census.totalPop(p) + t.popCost > ctx.config.popCapMax) return false;
+  // a human from a tent (Raiders, data 0.21.0) also needs a free bed; a robot never does
+  if (t.bodyType !== BODY_ROBOT && census.pop[p]! + t.popCost > census.popCap(ctx, p)) return false;
   const w = ctx.world;
   ctx.ps.scrap[p] = ctx.ps.scrap[p]! - t.scrapCost;
   w.job[b] = t.typeId;
