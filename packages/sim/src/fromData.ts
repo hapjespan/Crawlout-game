@@ -335,6 +335,7 @@ export function simConfigFromGameData(data: GameData): SimConfig {
             },
       sight: l.sightU,
       slave: l.slave,
+      canBuild: l.canBuild,
       capture:
         l.capture === null
           ? null
@@ -430,6 +431,14 @@ export function simConfigFromGameData(data: GameData): SimConfig {
               max: a.robots.max,
               countAsArmy: a.robots.countAsArmy,
               reservePop: a.robots.reservePop,
+              builders:
+                a.robots.builders === null
+                  ? null
+                  : {
+                      typeId: unitTypeId(a.robots.builders.loadout),
+                      max: a.robots.builders.max,
+                      fromTicks: a.robots.builders.fromTicks,
+                    },
             },
       reserve: a.reserve === null ? null : { ...a.reserve },
       training:

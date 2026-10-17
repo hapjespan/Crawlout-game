@@ -441,7 +441,14 @@ describe('scripted AI: budget rules for the tech tree (data 0.17.0)', () => {
     const run = (countAsArmy: boolean): number => {
       const sim = setup({
         reserve: { fromTicks: 0, minArmy: 4, robotsFirstFromTicks: 1 << 30 },
-        robots: { typeIds: [SENTINEL], fromTicks: 1 << 30, max: 0, countAsArmy, reservePop: 0 },
+        robots: {
+          typeIds: [SENTINEL],
+          fromTicks: 1 << 30,
+          max: 0,
+          countAsArmy,
+          reservePop: 0,
+          builders: null,
+        },
       });
       sim.spawnUnit({ typeId: SENTINEL, owner: 0, ...cellCenter(30, 30) }); // pop 4
       sim.setScrap(0, 3 * militiaCost);
@@ -493,6 +500,7 @@ describe('scripted AI: budget rules for the tech tree (data 0.17.0)', () => {
             max: 0,
             countAsArmy: false,
             reservePop,
+            builders: null,
           },
         },
         createOpenMap(192, 192),

@@ -26,7 +26,7 @@ import {
   workRate,
 } from '../effects.js';
 import { heroSystem } from './hero.js';
-import { productionWork, repairWork } from './robots.js';
+import { productionWork, repairWork, robotRate } from './robots.js';
 import { safetyNetSystem } from './safetyNet.js';
 import { trainingWork } from './training.js';
 import { chemSystem } from './chems.js';
@@ -40,11 +40,12 @@ import {
   siteHpAt,
   takeFromNode,
 } from '../entities.js';
-import { imod } from '../math/int.js';
+import { idiv, imod } from '../math/int.js';
 import type { Census } from './census.js';
 import { takeCensus } from './census.js';
 import type { SimContext } from './common.js';
 import {
+  canBuild,
   cellCenterOf,
   nearestReachableBuilding,
   nodeAllowed,
@@ -151,9 +152,11 @@ function buildWork(ctx: SimContext, i: number, reach: number): void {
   if (bt === undefined) return;
   const total = bt.buildTicks * PROGRESS_ONE;
   const p0 = w.progress[b]!;
-  const rate = workRate(
-    PROGRESS_ONE,
-    effectSum(ctx, w.owner[i]!, STAT_BUILD_TIME, w.typeId[i]!, false),
+  // data 0.26.0: a robot without a technician (the bouwrobot) builds at its robot rate, like it moves and repairs
+  const rate = idiv(
+    workRate(PROGRESS_ONE, effectSum(ctx, w.owner[i]!, STAT_BUILD_TIME, w.typeId[i]!, false)) *
+      robotRate(ctx, i),
+    1000,
   );
   const p1 = p0 + rate < total ? p0 + rate : total;
   w.hp[b] = w.hp[b]! + siteHpAt(w.maxHp[b]!, total, p1) - siteHpAt(w.maxHp[b]!, total, p0);
@@ -206,7 +209,7 @@ function needsBuilder(ctx: SimContext, p: number): boolean {
       continue;
     }
     if (!w.has(i, C.unit | C.orders | C.health) || w.has(i, C.hero)) continue;
-    if (w.role[i] === ROLE_BUILDER) return false;
+    if (canBuild(ctx, i)) return false; // data 0.26.0: a builder robot builds too
   }
   return true;
 }

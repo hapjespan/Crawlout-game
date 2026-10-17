@@ -104,6 +104,11 @@ export interface SimUnitType {
   readonly capture: SimCapture | null;
   /** Chem-dealer (data 0.21.0 loadouts aura), or null. */
   readonly aura: SimUnitAura | null;
+  /**
+   * Data 0.26.0 (voorstel, ter bevestiging door de architect; loadouts canBuild): a robot that builds like a builder
+   * (Build, Claim, help at a site, resume a site; systems/common.ts canBuild). False for every other type.
+   */
+  readonly canBuild: boolean;
 }
 
 /** Capture (Slaver, data 0.21.0): catches a beaten-down human of another player (or a neutral wanderer). */
@@ -501,6 +506,15 @@ export interface SimAiScript {
     readonly countAsArmy: boolean;
     /** Data 0.17.0: the AI keeps this much pop free for robots (housing only up to popCapMax - reservePop beds). */
     readonly reservePop: number;
+    /**
+     * Data 0.26.0 (voorstel, ter bevestiging door de architect): builder robots (a type with canBuild) besides typeIds:
+     * from fromTicks on up to max of them (alive plus in production); null = none.
+     */
+    readonly builders: {
+      readonly typeId: number;
+      readonly max: number;
+      readonly fromTicks: number;
+    } | null;
   } | null;
   /**
    * Spending rules for the tech tree (data 0.17.0): from fromTicks on, the next research (or training run) that only
@@ -869,6 +883,7 @@ export function validateEnv(env: SimEnv): void {
     if (u.siege !== null) req(intIn(u.siege.vsBuildingsPermille, 0, 100000), `${at}: siege`);
     req(intIn(u.sight, 0, MAX_SIGHT), `${at}: sight`);
     req(typeof u.slave === 'boolean', `${at}: slave`);
+    req(typeof u.canBuild === 'boolean', `${at}: canBuild`);
     if (u.capture !== null)
       req(
         intIn(u.capture.range, 0, MAX_MAP_CELLS_SIDE << 8) &&
@@ -1318,6 +1333,18 @@ export function validateEnv(env: SimEnv): void {
           intIn(s.robots.reservePop, 0, 4096),
         'aiScript robots',
       );
+    const rb = s.robots === null ? null : s.robots.builders;
+    if (rb !== null) {
+      const t = config.unitTypes.find((u) => u.typeId === rb.typeId);
+      req(
+        t !== undefined &&
+          t.canBuild &&
+          t.producedAtTypeId !== 0 &&
+          intIn(rb.max, 1, 4096) &&
+          intIn(rb.fromTicks, 0, I31),
+        'aiScript robots.builders',
+      );
+    }
     if (s.reserve !== null)
       req(
         intIn(s.reserve.fromTicks, 0, I31) &&
@@ -1473,6 +1500,7 @@ export function envHash(env: SimEnv): number {
       u.siege === null ? [0] : [1, u.siege.vsBuildingsPermille, u.siege.buildingsFirst ? 1 : 0],
     );
     h = hashInts(h, [u.sight, u.slave ? 1 : 0]);
+    if (u.canBuild) h = hashInts(h, [1]); // data 0.26.0: only when set, like the creep camps
     const cp = u.capture;
     h = hashInts(
       h,
@@ -1645,6 +1673,9 @@ export function envHash(env: SimEnv): number {
         : [1, s.robots.fromTicks, s.robots.max, s.robots.countAsArmy ? 1 : 0, s.robots.reservePop],
     );
     if (s.robots !== null) h = hashInts(h, s.robots.typeIds);
+    // data 0.26.0: only when set, so a script without builder robots keeps its hash
+    const hb = s.robots === null ? null : s.robots.builders;
+    if (hb !== null) h = hashInts(h, [hb.typeId, hb.max, hb.fromTicks]);
     h = hashInts(
       h,
       s.reserve === null

@@ -1,4 +1,5 @@
 import { MAX_ENTITIES, MAX_PLAYERS, OWNER_NEUTRAL } from '@crawlout/protocol';
+import { ROLES } from '@crawlout/data';
 import type { SimBuildingType, SimConfig, SimMap, SimPlayer, SimUnitType } from '../config.js';
 import { MAX_ABILITIES, SPECIAL_COUNT } from '../config.js';
 import type { World } from '../ecs/world.js';
@@ -351,6 +352,18 @@ export function withinReach(w: World, i: number, t: number, r: number): boolean 
   const dy = w.y[t]! - w.y[i]!;
   const rr = r + w.radius[t]!;
   return dx * dx + dy * dy <= rr * rr;
+}
+
+const ROLE_BUILDER_INDEX = ROLES.indexOf('builder');
+
+/**
+ * Whether unit i builds like a builder (Build, Claim, help at a site, resume a site): role builder, or a robot whose
+ * type has canBuild (data 0.26.0, the bouwrobot; voorstel, ter bevestiging door de architect). The hero never builds.
+ */
+export function canBuild(ctx: SimContext, i: number): boolean {
+  const w = ctx.world;
+  if ((w.mask[i]! & C.hero) !== 0) return false;
+  return w.role[i] === ROLE_BUILDER_INDEX || ctx.unitType(w.typeId[i]!)?.canBuild === true;
 }
 
 /** Laat unit i naar entity t lopen: een gebouw via zijn footprint, anders via de cel van t. */

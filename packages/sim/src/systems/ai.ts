@@ -1,6 +1,6 @@
 import { MAX_ENTITIES, MAX_ENTITIES_PER_COMMAND, OWNER_NEUTRAL } from '@crawlout/protocol';
 import { ROLES } from '@crawlout/data';
-import type { SimAiScript, SimBuildingType } from '../config.js';
+import type { SimAiScript, SimBuildingType, SimUnitType } from '../config.js';
 import { AI_SITE_FRONT, AI_SITE_HQ, MAX_ABILITIES } from '../config.js';
 import { HERO_DEAD, hasTechs, heroOf, researchCost } from '../effects.js';
 import {
@@ -711,6 +711,9 @@ function think(
   // data 0.17.0 (robots.countAsArmy): de pop van de robots telt mee voor de legergrootte van golven, push en reserve
   let robotArmy = 0;
   let producing = 0;
+  // data 0.26.0 (robots.builders): builder robots (canBuild) alive and in production; they work with the builders
+  let builderRobots = 0;
+  let builderRobotsProducing = 0;
   let units = 0;
   let militiaPlanned = 0;
   let buildersPlanned = 0;
@@ -733,7 +736,10 @@ function think(
         if (isWorkshop) workshop = true;
         if (bt !== undefined && (bt.provides & DEPOT_MASK) !== 0) depots.push(i);
       }
-      if (w.jobKind[i] === JOB_PRODUCE && w.job[i] !== 0) producing++;
+      if (w.jobKind[i] === JOB_PRODUCE && w.job[i] !== 0) {
+        if (ctx.unitType(w.job[i]!)?.canBuild === true) builderRobotsProducing++;
+        else producing++;
+      }
       if (w.bstate[i] === BSTATE_SITE) {
         if (site < 0) site = i;
         if (w.typeId[i] === script.housingTypeId) housingSite = true;
@@ -745,6 +751,14 @@ function think(
     const ord = w.orderType(i);
     const id = w.idOf(i);
     if (isRobot(ctx, i)) {
+      if (ctx.unitType(w.typeId[i]!)?.canBuild === true) {
+        // a builder robot (data 0.26.0): one of the builders (build order, claims, help at a site), not in the army
+        // and not one of the `builders` humans (those also cover the robots as technicians)
+        builderRobots++;
+        builders.push(id);
+        if (ord === ORDER_NONE) idleBuilders.push(id);
+        continue;
+      }
       robots.push(id);
       robotArmy += ctx.unitType(w.typeId[i]!)?.popCost ?? 0;
       // een robot die repareert (zonder order, met een doel) is niet vrij
@@ -1003,10 +1017,18 @@ function think(
     return 0;
   };
   // robots (data 0.16.0): vanaf fromTicks in de fabriek, cyclisch uit de volgorde, tot max levende robots
-  const robotStep = (): number =>
-    script.robots !== null && tick >= script.robots.fromTicks
+  // data 0.26.0: first a builder robot while robots.builders asks for one (builderRobotStep, -1 = not now)
+  const robotStep = (): number => {
+    if (script.robots === null) return 0;
+    const rb = script.robots.builders;
+    if (rb !== null && tick >= rb.fromTicks) {
+      const cost = builderRobotStep(ctx, p, rb, builderRobots + builderRobotsProducing, reserve);
+      if (cost >= 0) return cost;
+    }
+    return tick >= script.robots.fromTicks
       ? produceRobot(ctx, p, script.robots, robots.length + producing, reserve)
       : 0;
+  };
   // training is luxe: alleen met een leger van minstens reserve.minArmy en zonder dreiging (reserveOn)
   const trainingStep = (): number =>
     script.training !== null && tick >= script.training.fromTicks && reserveOn
@@ -1115,7 +1137,8 @@ function think(
     const excess = scavs.length - nodes * script.scavengersPerNode;
     const pick = idleScavs.length > 0 ? idleScavs[idleScavs.length - 1]! : scavs[scavs.length - 1]!;
     const army = armyType(ctx, p, script);
-    if (builders.length + buildersPlanned < script.builders) {
+    // the human builders (a builder robot does not count: the humans also cover the robots as technicians)
+    if (builders.length - builderRobots + buildersPlanned < script.builders) {
       applyCommand(ctx, {
         playerId: p,
         seq: 0,
@@ -1406,37 +1429,68 @@ function produceRobot(
   reserve: number,
 ): number {
   if (have >= rs.max) return 0;
-  const w = ctx.world;
   const n = rs.typeIds.length;
   for (let k = 0; k < n; k++) {
     const at = imod(ctx.ps.aiRobot[p]! + k, n);
     const t = ctx.unitType(rs.typeIds[at]!);
     if (t === undefined || t.producedAtTypeId === 0 || !hasTechs(ctx, p, t.prereqTech)) continue;
-    let b = -1;
-    for (let i = 0; i < w.highWater && b < 0; i++) {
-      if (
-        w.has(i, C.building) &&
-        w.owner[i] === p &&
-        w.typeId[i] === t.producedAtTypeId &&
-        w.bstate[i] === BSTATE_DONE &&
-        w.job[i] === 0 &&
-        w.research[i] === 0
-      )
-        b = i;
-    }
-    if (b < 0) return 0;
-    if (ctx.ps.scrap[p]! < t.scrapCost + reserve) return t.scrapCost;
-    if (
-      applyCommand(ctx, {
-        playerId: p,
-        seq: 0,
-        type: 'Produce',
-        payload: { buildingId: w.idOf(b), loadoutId: t.loadoutId },
-      })
-    )
+    return orderRobot(ctx, p, t, reserve, () => {
       ctx.ps.aiRobot[p] = at + 1 < n ? at + 1 : 0;
-    return 0;
+    });
   }
+  return 0;
+}
+
+/**
+ * Data 0.26.0 (voorstel, ter bevestiging door de architect; ai/*.json robots.builders): a builder robot while there are
+ * fewer than max (alive plus in production) and its techs are researched, the same way as produceRobot (the first
+ * free factory, the price to save for). -1: none is due, the combat robots go on.
+ */
+function builderRobotStep(
+  ctx: SimContext,
+  p: number,
+  rb: NonNullable<NonNullable<SimAiScript['robots']>['builders']>,
+  have: number,
+  reserve: number,
+): number {
+  if (have >= rb.max) return -1;
+  const t = ctx.unitType(rb.typeId);
+  if (t === undefined || t.producedAtTypeId === 0 || !hasTechs(ctx, p, t.prereqTech)) return -1;
+  return orderRobot(ctx, p, t, reserve);
+}
+
+/** Produce type t in the first free own factory of its type: 0 (ordered, or no free factory) or the price to save for. */
+function orderRobot(
+  ctx: SimContext,
+  p: number,
+  t: SimUnitType,
+  reserve: number,
+  onOrdered?: () => void,
+): number {
+  const w = ctx.world;
+  let b = -1;
+  for (let i = 0; i < w.highWater && b < 0; i++) {
+    if (
+      w.has(i, C.building) &&
+      w.owner[i] === p &&
+      w.typeId[i] === t.producedAtTypeId &&
+      w.bstate[i] === BSTATE_DONE &&
+      w.job[i] === 0 &&
+      w.research[i] === 0
+    )
+      b = i;
+  }
+  if (b < 0) return 0;
+  if (ctx.ps.scrap[p]! < t.scrapCost + reserve) return t.scrapCost;
+  if (
+    applyCommand(ctx, {
+      playerId: p,
+      seq: 0,
+      type: 'Produce',
+      payload: { buildingId: w.idOf(b), loadoutId: t.loadoutId },
+    })
+  )
+    onOrdered?.();
   return 0;
 }
 

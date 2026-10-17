@@ -34,6 +34,7 @@ import { castOrder } from './hero.js';
 import { creepAwake } from './creeps.js';
 import { MAX_ABILITIES } from '../config.js';
 import {
+  canBuild,
   distToRect2,
   face,
   isEnemy,
@@ -62,7 +63,6 @@ import {
 export const ROLE_MILITIA = ROLES.indexOf('militia');
 /** Robots (data 0.16.0): vechten zelf zoals militie, een robot met reparatie repareert zonder order. */
 export const ROLE_ROBOT = ROLES.indexOf('robot');
-const ROLE_BUILDER = ROLES.indexOf('builder');
 
 /** Depots voor scrap: hoofdgebouw en werkplaats, en (Raiders, data 0.21.0) de plundermarkt (provides depot). */
 export const DEPOT_MASK = PROVIDES_HQ | PROVIDES_WORKSHOP | PROVIDES_DEPOT;
@@ -203,7 +203,8 @@ function idle(ctx: SimContext, s: OrdersScratch, i: number): void {
     if (rep !== undefined && rep !== null && repairIdle(ctx, i, rep)) return;
   }
   w.target[i] = NO_ENTITY;
-  if (w.role[i] === ROLE_BUILDER && !w.has(i, C.hero)) {
+  // role builder, or a robot with canBuild (data 0.26.0, the bouwrobot): help at a site, resume a site
+  if (canBuild(ctx, i)) {
     if (builderIdle(ctx, s, i)) return;
   } else w.resumeSite[i] = NO_ENTITY; // geen bouwer (meer): niets te onthouden
   if (w.mvOn[i] === 1) stopMoving(ctx, i); // zonder order loopt een unit alleen achter een doel aan

@@ -303,10 +303,19 @@ export const Loadout = z
     // Data 0.22.0 (fog of war; bevestigd in fase-0 sectie 23 besluit 1): sight radius from the unit's centre;
     // absent = sim.json vision.unitSightM
     sightM: sight.optional(),
+    // Data 0.26.0 (voorstel, ter bevestiging door de architect): a robot that builds like a builder (Build, help at a
+    // site, resume a site, Claim). Only for role robot (a human builder has role builder); absent = false.
+    canBuild: z.boolean().optional(),
     _comment: comment,
   })
   .strict()
   .superRefine((l, ctx) => {
+    if (l.canBuild === true && l.role !== 'robot')
+      ctx.addIssue({
+        code: 'custom',
+        path: ['canBuild'],
+        message: 'alleen voor een robot (een bewoner bouwt met role builder)',
+      });
     if (l.slave === true) {
       const bad = (path: string, message: string): void =>
         ctx.addIssue({ code: 'custom', path: [path], message });
@@ -660,6 +669,17 @@ export const AiScript = z
         // data 0.17.0 (confirmed, section 21 decision 1): the AI keeps this much pop free for robots (no housing
         // beyond popCapMax - reservePop beds)
         reservePop: z.number().int().nonnegative().optional(),
+        // data 0.26.0 (voorstel, ter bevestiging door de architect): builder robots (a loadout with canBuild) besides
+        // the sequence: from fromS on the AI keeps up to max of them (alive plus in production); they build like its
+        // builders, do not count toward max, the army or the human builders of `builders`
+        builders: z
+          .object({
+            loadoutId: id,
+            max: z.number().int().positive(),
+            fromS: nonneg,
+          })
+          .strict()
+          .optional(),
       })
       .strict()
       .optional(),

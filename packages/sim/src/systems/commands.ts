@@ -30,7 +30,7 @@ import { inClaimRadius } from './claims.js';
 import { applyHeroAbility, applyPickPerk, applyRecruit, cancelRevive } from './hero.js';
 import { idiv, isInt } from '../math/int.js';
 import type { SimContext } from './common.js';
-import { WIN_SURRENDER, inMap, isEnemy, stopMoving } from './common.js';
+import { WIN_SURRENDER, canBuild, inMap, isEnemy, stopMoving } from './common.js';
 import { SLOT_PENDING, SPOT_PENDING } from './formation.js';
 import {
   liberatable,
@@ -89,8 +89,6 @@ export function applyCommands(ctx: SimContext, cmds: readonly SimCommand[]): voi
   });
   for (const k of order) applyCommand(ctx, cmds[k]!);
 }
-
-const ROLE_BUILDER = ROLES.indexOf('builder');
 
 /** Past één commando toe. Geeft true als er iets veranderd is (voor de AI). */
 export function applyCommand(ctx: SimContext, cmd: SimCommand): boolean {
@@ -314,8 +312,7 @@ function applyBuild(ctx: SimContext, p: number, pl: CommandPayload<'Build'>, cla
   // a slave builder only within the work radius of its cage, a claim building excepted (data 0.21.0, slaves.ts)
   const builders = ownedWith(ctx, pl.ids, p, UNIT).filter(
     (i) =>
-      w.role[i] === ROLE_BUILDER &&
-      mayBuildAt(ctx, i, bt.provides, fx, fy, bt.footprintW, bt.footprintH),
+      canBuild(ctx, i) && mayBuildAt(ctx, i, bt.provides, fx, fy, bt.footprintW, bt.footprintH),
   );
   if (builders.length === 0) return false;
   let site = ownSiteAt(ctx, p, bt.typeId, fx, fy);

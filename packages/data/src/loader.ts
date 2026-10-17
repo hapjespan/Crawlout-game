@@ -269,6 +269,8 @@ export interface LoadoutData {
   aura: UnitAuraData | null;
   /** Sight radius from the unit's centre (data 0.22.0, fog of war): sightM, else sim.json vision.unitSightM. */
   sightU: number;
+  /** Data 0.26.0 (voorstel, ter bevestiging door de architect): a robot that builds like a builder (canBuild). */
+  canBuild: boolean;
 }
 
 export interface RepairData {
@@ -475,6 +477,8 @@ export interface AiScriptData {
     max: number;
     countAsArmy: boolean;
     reservePop: number;
+    /** Data 0.26.0 (voorstel, ter bevestiging door de architect): builder robots besides the sequence; null without. */
+    builders: { loadout: number; max: number; fromTicks: number } | null;
   } | null;
   /** Spending rules for the tech tree (data 0.17.0); null without. */
   reserve: { fromTicks: number; minArmy: number; robotsFirstFromTicks: number } | null;
@@ -923,6 +927,7 @@ export function loadGameData(raw: RawGameData): GameData {
               trigger: l.aura.trigger,
             },
       sightU: metersToUnits(l.sightM ?? simRaw.vision.unitSightM),
+      canBuild: l.canBuild === true,
     };
   });
 
@@ -967,6 +972,7 @@ export function loadGameData(raw: RawGameData): GameData {
       capture: null,
       aura: null,
       sightU: metersToUnits(u.sightM ?? simRaw.vision.unitSightM),
+      canBuild: false,
     });
   }
   const tierSeen = new Set<number>();
@@ -1153,6 +1159,15 @@ export function loadGameData(raw: RawGameData): GameData {
     };
   });
 
+  // data 0.26.0 (voorstel, ter bevestiging door de architect): robots.builders names a produced loadout with canBuild
+  const builderRobotRef = (where: string, key: string, factionId: number): number => {
+    const l = loadouts[ref(loadoutIx, 'loadout', where, key)]!;
+    if (!l.canBuild || l.producedAt < 0 || l.factionId !== factionId)
+      throw new Error(
+        `${where}: '${key}' is geen bouwrobot van deze factie (canBuild en producedAt)`,
+      );
+    return l.id;
+  };
   const aiScripts: AiScriptData[] = aiRaw.map((a, id) => {
     const where = `data/ai '${a.id}'`;
     return {
@@ -1206,6 +1221,18 @@ export function loadGameData(raw: RawGameData): GameData {
               max: a.robots.max,
               countAsArmy: a.robots.countAsArmy ?? false,
               reservePop: a.robots.reservePop ?? 0,
+              builders:
+                a.robots.builders === undefined
+                  ? null
+                  : {
+                      loadout: builderRobotRef(
+                        `${where} robots.builders`,
+                        a.robots.builders.loadoutId,
+                        ref(factionIx, 'factie', where, a.faction),
+                      ),
+                      max: a.robots.builders.max,
+                      fromTicks: secondsToTicks(a.robots.builders.fromS),
+                    },
             },
       reserve:
         a.reserve === undefined
