@@ -52,6 +52,7 @@ import {
 import {
   constructionHeight,
   constructionTint,
+  ghostTint,
   SCAFFOLD_HEIGHT,
   SCAFFOLD_MARGIN,
   scrapHeapScale,
@@ -163,6 +164,7 @@ export class StructureLayer {
   private readonly materials: StructureMaterials;
   private readonly siteTint: [number, number, number] = [1, 1, 1];
   private readonly gainTint: [number, number, number] = [1, 1, 1];
+  private readonly ghostWhite: [number, number, number] = [1, 1, 1];
   private readonly heap: [number, number] = [1, 1];
   private readonly scene: Scene;
   private readonly capacity: number;
@@ -429,7 +431,9 @@ export class StructureLayer {
       if ((flags & ENTITY_FLAG.dead) !== 0) continue;
       const x = frame.x[i]!;
       const z = frame.z[i]!;
-      const team = teamIndex(frame.owner[i]!);
+      // A ghost (an enemy building as last seen, out of sight) is greyed: neutral team color, dimmed albedo, still.
+      const ghost = (flags & ENTITY_FLAG.ghost) !== 0;
+      const team = ghost ? NEUTRAL_TEAM : teamIndex(frame.owner[i]!);
 
       if (kind === ENTITY_KIND.building) {
         const f = this.footprints.get(typeId);
@@ -440,7 +444,7 @@ export class StructureLayer {
         this.pushContact(decals, x, y, z, typeId, f, frame.anim[i] === ANIM.build);
         const asset = this.assetByBuilding.get(buildingIdOf(typeId));
         if (asset) {
-          this.pushAsset(asset, frame, i, x, y, z, f.w, f.h, wall, team);
+          this.pushAsset(asset, frame, i, x, y, z, f.w, f.h, wall, team, ghost);
           if ((flags & ENTITY_FLAG.selected) !== 0)
             decals.push(
               x,
@@ -475,12 +479,34 @@ export class StructureLayer {
             wall * constructionHeight(progress),
             f.h,
             team,
-            constructionTint(progress, tint, this.siteTint),
+            ghost
+              ? ghostTint(constructionTint(progress, tint, this.siteTint), this.siteTint)
+              : constructionTint(progress, tint, this.siteTint),
           );
           const m = 2 * SCAFFOLD_MARGIN;
-          this.scaffolds.push(x, y, z, 0, f.w + m, wall * SCAFFOLD_HEIGHT, f.h + m, team, WHITE);
+          this.scaffolds.push(
+            x,
+            y,
+            z,
+            0,
+            f.w + m,
+            wall * SCAFFOLD_HEIGHT,
+            f.h + m,
+            team,
+            ghost ? ghostTint(WHITE, this.ghostWhite) : WHITE,
+          );
         } else {
-          batch.push(x, y, z, 0, f.w, wall, f.h, team, tint);
+          batch.push(
+            x,
+            y,
+            z,
+            0,
+            f.w,
+            wall,
+            f.h,
+            team,
+            ghost ? ghostTint(tint, this.siteTint) : tint,
+          );
         }
         if ((flags & ENTITY_FLAG.selected) !== 0)
           decals.push(
@@ -534,6 +560,7 @@ export class StructureLayer {
     h: number,
     wall: number,
     team: number,
+    ghost: boolean,
   ): void {
     const v = asset.visual;
     const top = v.height;
@@ -551,13 +578,24 @@ export class StructureLayer {
     lit[0] = lit[1] = lit[2] = g;
     if (frame.anim[i] === ANIM.build) {
       const progress = frame.animT[i]!;
-      const tint = constructionTint(progress, lit, this.siteTint);
+      const built = constructionTint(progress, lit, this.siteTint);
+      const tint = ghost ? ghostTint(built, this.siteTint) : built;
       batch.push(x, y, z, 0, sx, 1, sz, team, tint, top * constructionHeight(progress));
       const m = 2 * SCAFFOLD_MARGIN;
       const scaffold = Math.min(wall * SCAFFOLD_HEIGHT, top * ASSET_SCAFFOLD_HEIGHT);
-      this.scaffolds.push(x, y, z, 0, w + m, scaffold, h + m, team, WHITE);
+      this.scaffolds.push(
+        x,
+        y,
+        z,
+        0,
+        w + m,
+        scaffold,
+        h + m,
+        team,
+        ghost ? ghostTint(WHITE, this.ghostWhite) : WHITE,
+      );
     } else {
-      batch.push(x, y, z, 0, sx, 1, sz, team, lit);
+      batch.push(x, y, z, 0, sx, 1, sz, team, ghost ? ghostTint(lit, lit) : lit);
     }
   }
 

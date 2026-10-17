@@ -1,12 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import {
+  buildFogLayerPixels,
   buildFogPixels,
   buildStaticPixels,
   drawMinimap,
+  fogVisibleAt,
   minimapBuildCount,
   minimapCellColor,
 } from './minimap.js';
-import type { MinimapData } from './types.js';
+import type { MinimapData, MinimapFog } from './types.js';
 
 const base = (over: Partial<MinimapData> = {}): MinimapData => ({
   w: 4,
@@ -48,6 +50,111 @@ describe('minimap statische laag', () => {
   it('fog-overlay: alleen onzichtbare cellen krijgen alpha', () => {
     const d = buildFogPixels(base(), new Uint8Array([1, 0, 1, 0]));
     expect([d[3], d[7], d[11], d[15]]).toEqual([0, 140, 0, 140]);
+  });
+});
+
+describe('minimap fog of war', () => {
+  const fog = (): MinimapFog => ({
+    w: 3,
+    h: 1,
+    visible: new Uint8Array([1, 0, 0]),
+    explored: new Uint8Array([1, 1, 0]),
+  });
+  const alpha = (d: Uint8ClampedArray, i: number): number => d[i * 4 + 3]!;
+
+  it('zichtbaar is helder, verkend gedimd, onverkend bijna zwart', () => {
+    const d = buildFogLayerPixels(fog());
+    expect(alpha(d, 0)).toBe(0);
+    expect(alpha(d, 1)).toBeGreaterThan(60);
+    expect(alpha(d, 1)).toBeLessThan(180);
+    expect(alpha(d, 2)).toBeGreaterThan(220);
+    expect(alpha(d, 2)).toBeGreaterThan(alpha(d, 1));
+    for (const c of [0, 1, 2]) expect(d[2 * 4 + c]!).toBeLessThan(20);
+  });
+
+  it('fogVisibleAt zoekt de cel op de kaart-eenheidscoordinaat en klemt aan de rand', () => {
+    const f = fog();
+    expect(fogVisibleAt(f, 0.1, 0.5)).toBe(true);
+    expect(fogVisibleAt(f, 0.5, 0.5)).toBe(false);
+    expect(fogVisibleAt(f, -3, 0.5)).toBe(true);
+    expect(fogVisibleAt(f, 9, 0.5)).toBe(false);
+  });
+
+  /** A canvas whose 2D context records the fills and the fog layer's smoothing. */
+  const recording = () => {
+    const fills: { style: string; x: number }[] = [];
+    const state = { fillStyle: '', imageSmoothingEnabled: false, smoothedAtDraw: [] as boolean[] };
+    const ctx = {
+      get fillStyle() {
+        return state.fillStyle;
+      },
+      set fillStyle(v: string) {
+        state.fillStyle = v;
+      },
+      imageSmoothingEnabled: false,
+      drawImage() {
+        state.smoothedAtDraw.push(ctx.imageSmoothingEnabled);
+      },
+      putImageData: () => undefined,
+      fillRect: (x: number) => void fills.push({ style: state.fillStyle, x }),
+      strokeRect: () => undefined,
+      beginPath: () => undefined,
+      arc: () => undefined,
+      stroke: () => undefined,
+    };
+    const offscreen = (): HTMLCanvasElement =>
+      ({ width: 0, height: 0, getContext: () => ctx }) as unknown as HTMLCanvasElement;
+    const canvas = {
+      width: 300,
+      height: 100,
+      getContext: () => ctx,
+      ownerDocument: { createElement: offscreen },
+    } as unknown as HTMLCanvasElement;
+    return { canvas, fills, state };
+  };
+
+  it('verbergt vijanden buiten het zicht, toont eigen blips, nodes en ghosts (gedimd)', () => {
+    if (typeof ImageData === 'undefined') {
+      (globalThis as { ImageData?: unknown }).ImageData = class {
+        constructor(
+          public data: Uint8ClampedArray,
+          public width: number,
+          public height: number,
+        ) {}
+      };
+    }
+    const t = recording();
+    // 3 minimap cells of 256 units (x 0..767), the fog grid has 3 cells too: cell 0 visible only
+    const m = base({
+      w: 3,
+      h: 1,
+      passable: new Uint8Array([1, 1, 1]),
+      fog: fog(),
+      blips: [
+        { x: 100, y: 100, owner: 1, kind: 'unit' }, // enemy in sight: shown
+        { x: 400, y: 100, owner: 1, kind: 'unit' }, // enemy out of sight: hidden
+        { x: 400, y: 100, owner: 0, kind: 'unit' }, // own, anywhere: shown
+        { x: 600, y: 100, owner: 255, kind: 'node' }, // map knowledge: shown
+        { x: 600, y: 100, owner: 1, kind: 'building', ghost: true }, // remembered: shown, dimmed
+      ],
+    });
+    drawMinimap(t.canvas, m, 0);
+    expect(t.fills.length).toBe(4);
+    expect(t.fills.filter((f) => f.style.startsWith('rgba('))).toHaveLength(1);
+    expect(t.fills.some((f) => f.style === 'rgb(239,83,80)' && f.x > 90)).toBe(false);
+    // the fog layer is drawn smoothed (soft edge), the static layer crisp
+    expect(t.state.smoothedAtDraw).toEqual([false, true]);
+  });
+
+  it('cachet de fog-laag op de arrays: zelfde object bouwt een keer, een nieuw masker opnieuw', () => {
+    const t = recording();
+    const f = fog();
+    const m = base({ w: 3, h: 1, passable: new Uint8Array([1, 1, 1]), fog: f });
+    const f0 = minimapBuildCount.fog;
+    for (let i = 0; i < 4; i++) drawMinimap(t.canvas, { ...m, blips: [] }, 0);
+    expect(minimapBuildCount.fog - f0).toBe(1);
+    drawMinimap(t.canvas, { ...m, fog: fog() }, 0);
+    expect(minimapBuildCount.fog - f0).toBe(2);
   });
 });
 

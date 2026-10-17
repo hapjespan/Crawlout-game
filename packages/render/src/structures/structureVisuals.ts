@@ -45,3 +45,21 @@ export function scrapHeapScale(hpPct: number, out: [number, number]): [number, n
   out[1] = SCRAP_MIN_HEIGHT + (1 - SCRAP_MIN_HEIGHT) * p;
   return out;
 }
+
+/**
+ * A ghost (ENTITY_FLAG.ghost: an enemy building as last seen, now out of sight, protocol 0.11.0) is drawn greyed and
+ * still: it takes the neutral team color, this cool dimming multiplier on its albedo (the fog of war then desaturates
+ * the explored ground and everything on it), and no animation (a ghost site keeps the progress it had when last seen).
+ */
+export const GHOST_TINT: readonly [number, number, number] = [0.78, 0.8, 0.86];
+
+/** `tint` times GHOST_TINT, into `out` (may be `tint` itself). */
+export function ghostTint(
+  tint: readonly [number, number, number],
+  out: [number, number, number],
+): [number, number, number] {
+  out[0] = tint[0] * GHOST_TINT[0];
+  out[1] = tint[1] * GHOST_TINT[1];
+  out[2] = tint[2] * GHOST_TINT[2];
+  return out;
+}

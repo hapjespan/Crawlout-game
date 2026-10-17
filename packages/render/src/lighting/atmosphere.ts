@@ -3,6 +3,7 @@
 // the background), so the far terrain and the map edge dissolve into the sky without a seam.
 // The fog has two terms, the larger wins: distance from the camera, scaled with the zoom (lightRig.ts FOG), and
 // distance outside the map bounds (EDGE_FOG), which turns the edge of the map and the skirt beyond it into haze.
+// The fog of war (fog/fogOfWar.ts) rides in the same node.
 import { Vector4, type Node } from 'three/webgpu';
 import {
   cameraPosition,
@@ -20,6 +21,7 @@ import {
   vec2,
   vec3,
 } from 'three/tsl';
+import type { FogOfWar } from '../fog/fogOfWar.js';
 import { EDGE_FOG, FOG, FOG_COLOR, SKY_HORIZON, SKY_ZENITH } from './lightRig.js';
 
 export interface Atmosphere {
@@ -33,7 +35,7 @@ export interface Atmosphere {
   setBounds(bounds: { minX: number; maxX: number; minZ: number; maxZ: number } | null): void;
 }
 
-export function createAtmosphere(): Atmosphere {
+export function createAtmosphere(fogOfWar?: FogOfWar): Atmosphere {
   const fogColor = vec3(...FOG_COLOR);
   const start = uniform(60);
   const invRange = uniform(1 / 120);
@@ -49,7 +51,8 @@ export function createAtmosphere(): Atmosphere {
   const outside = length(max(q, vec2(0, 0))).add(min(max(q.x, q.y), 0));
   const edgeTerm = smoothstep(EDGE_FOG.start, EDGE_FOG.end, outside);
   const factor = clamp(max(distanceTerm, edgeTerm), 0, 1);
-  const fogNode = fog(fogColor, factor);
+  // With the fog of war (fog/fogOfWar.ts) the same node shades the finished color first, then adds this haze.
+  const fogNode = fogOfWar ? fogOfWar.fogNode(fogColor, factor) : fog(fogColor, factor);
 
   // Background: the view direction's height. At and below the horizon the fog colour, above it a soft blend to the
   // zenith (most of the gradient sits in the first 30 degrees, where the eye expects the haze).

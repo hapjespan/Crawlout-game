@@ -249,7 +249,7 @@ export function UnitConsole(props: { ctl: HudController; state: HudState }): Com
   const status = !lead
     ? 'Niets geselecteerd'
     : foe
-      ? `${foe.ownerLabel ?? 'Vijand'} in beeld`
+      ? `${foe.ownerLabel ?? 'Vijand'} ${foe.lastSeen ? '(laatst gezien)' : 'in beeld'}`
       : shown > 1
         ? `${shown} eenheden geselecteerd`
         : (lead.note ??

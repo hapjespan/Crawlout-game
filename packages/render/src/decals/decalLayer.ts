@@ -40,6 +40,7 @@ import {
   vec4,
   vertexStage,
 } from 'three/tsl';
+import { markMapKnowledge } from '../fog/fogOfWar.js';
 import { teamPalette } from '../palette.js';
 import { terrainHeightNode, type HeightTexture } from '../terrain/heightTexture.js';
 
@@ -215,7 +216,8 @@ function createDecalMaterial(
   m.polygonOffset = true;
   m.polygonOffsetFactor = -2;
   m.name = 'crawlout-ground-decal';
-  return m;
+  // Claim rings and scrap blobs are map knowledge: they stay readable in the unexplored dark (fog/fogOfWar.ts).
+  return markMapKnowledge(m);
 }
 
 export class DecalLayer {
