@@ -3,7 +3,7 @@ import type { MinimapData, MinimapFog } from './types.js';
 
 const OWN = [102, 187, 106];
 const ENEMY = [239, 83, 80];
-/** Neutral units (the bandits of the creep camps, sim 0.19.0): the grey-brown of the neutral team in the render. */
+/** Neutral units (the bandits of the creep camps, sim 0.20.0): the grey-brown of the neutral team in the render. */
 const NEUTRAL = [154, 148, 138];
 const PASS = [74, 80, 86];
 const WALL = [30, 33, 36];

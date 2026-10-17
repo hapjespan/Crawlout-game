@@ -28,6 +28,18 @@ describe('Raider fixtures: the mechanics happen', () => {
     expect(m.tributeTicks).toBeGreaterThan(1200);
   });
 
+  it('s10-rustbelt-raiders-ai-vs-ai: the Raider AI catches settlers and lives on tribute (data 0.24.0)', () => {
+    const m = raiderMechanics(load('s10-rustbelt-raiders-ai-vs-ai'));
+    expect(m.captures).toBeGreaterThanOrEqual(1);
+    expect(m.tributeTicks).toBeGreaterThan(12000);
+  });
+
+  it('s11-rustbelt-raiders-mirror: the two Raider AIs catch a Slaver (the sim.rng tie, sim 0.19.0)', () => {
+    const m = raiderMechanics(load('s11-rustbelt-raiders-mirror'));
+    expect(m.captures).toBeGreaterThanOrEqual(1);
+    expect(m.transitions).toBeGreaterThanOrEqual(1);
+  });
+
   it('s10-rustbelt-raiders-net: the tent safety net brings fighters under the threshold', () => {
     const m = raiderMechanics(load('s10-rustbelt-raiders-net'));
     expect(m.netArrivals).toBeGreaterThanOrEqual(3);

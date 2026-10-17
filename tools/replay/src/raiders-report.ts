@@ -1,11 +1,12 @@
 // Raiders against Dwellers (sim 0.18.0): scripted AI against scripted AI on Rustbelt XL over a set of seeds, each seed
 // on both sides (Raiders as player 0 and as player 1), in parallel processes (fairness.ts). Per match winner, reason
-// and length; then the table the balance asks for (wins per faction, early decisions, length window).
+// and length; then the table the balance asks for (wins per faction and side, routes per minute bucket, captures and
+// liberations; data 0.24.0).
 // Usage: node --import tsx src/raiders-report.ts [--detail] [seed ...]   (default the 33 seeds of FAIRNESS_SEEDS)
 import { FAIRNESS_SEEDS } from './balance.js';
 import type { MatchResult } from './balance.js';
 import { playMatchesParallel } from './fairness.js';
-import { raiderSummary } from './raiders.js';
+import { formatRaiderSummary, raiderSummary } from './raiders.js';
 
 const args = process.argv.slice(2);
 const seeds = args.map(Number).filter((n) => Number.isInteger(n));
@@ -30,7 +31,7 @@ for (const { raider, r } of rows) {
   if (args.includes('--detail'))
     r.players.forEach((p, i) => {
       console.log(
-        `  p${i} ${i === raider ? 'R' : 'D'}: inkomen ${p.income}, piek ${p.peakScrap}, held ${p.heroLevel}, techs ${p.techs}, verloren ${p.lost}; leger ${fmt(p.militiaByMinute)}; slaven ${fmt(p.slavesByMinute)}; claims ${fmt(p.claimsByMinute)}`,
+        `  p${i} ${i === raider ? 'R' : 'D'}: inkomen ${p.income}, piek ${p.peakScrap}, held ${p.heroLevel}, techs ${p.techs}, verloren ${p.lost}, gevangen ${p.captured}, bevrijd ${p.freed}; leger ${fmt(p.militiaByMinute)}; slaven ${fmt(p.slavesByMinute)}; claims ${fmt(p.claimsByMinute)}`,
       );
       if (i === raider)
         console.log(
@@ -38,7 +39,7 @@ for (const { raider, r } of rows) {
         );
     });
 }
-// creep camps (sim 0.19.0): who clears how many, and when
+// creep camps (sim 0.20.0): who clears how many, and when
 const camps = rows.flatMap(({ raider, r }) =>
   r.camps
     .filter((c) => c.clearedBy !== null)
@@ -53,9 +54,5 @@ for (const side of [true, false]) {
   );
 }
 const s = raiderSummary(rows);
-console.log(
-  `Raiders winnen ${s.raiderWins} van ${s.matches} (Dwellers ${s.dwellerWins}, geen winnaar ${s.none}); vernietiging ${s.reasons.destruction}, dominantie ${s.reasons.dominance}`,
-);
-console.log(
-  `voor minuut 12 beslist: ${s.early} (Raiders ${s.earlyRaiders}); 25 tot 40 minuten: ${s.inWindow} (Raiders ${s.windowRaiders}, Dwellers ${s.windowDwellers}); lengte ${s.minMinutes.toFixed(1)} tot ${s.maxMinutes.toFixed(1)} min  [${((Date.now() - t0) / 1000).toFixed(1)} s]`,
-);
+for (const line of formatRaiderSummary(s)) console.log(line);
+console.log(`[${((Date.now() - t0) / 1000).toFixed(1)} s]`);

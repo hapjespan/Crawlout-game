@@ -10,6 +10,7 @@ import {
   type QueueItem,
 } from '@crawlout/protocol';
 import {
+  BODY_TYPES,
   PROVIDES,
   heroIdOfTypeId,
   kindOfTypeId,
@@ -24,6 +25,7 @@ import type {
   CardState,
 } from '@crawlout/ui';
 import { LOADOUT_NAMES } from './roster.js';
+import { chemLines } from './raiders.js';
 import type { EntityRow } from './snapshot.js';
 
 /** Display names per building key; buildings.json has no name field yet, so unknown keys are humanized. */
@@ -38,7 +40,7 @@ export const BUILDING_NAMES: Record<string, string> = {
   robotfabriek: 'Robotfabriek',
   lab: 'Lab',
   trainingsfaciliteit: 'Training',
-  // Raiders (data 0.21.0): names only, the faction is not playable yet
+  // Raiders (data 0.21.0)
   raiderkamp: 'Raiderkamp',
   tent: 'Tent',
   kooi: 'Kooi',
@@ -51,6 +53,11 @@ export const BUILDING_NAMES: Record<string, string> = {
 
 /** Order of the building buttons: what the player works with first, then the rest in data order. */
 const BUTTON_ORDER = [
+  'raiderkamp',
+  'plundermarkt',
+  'chemlab',
+  'tent',
+  'autosloperij',
   'hoofdgebouw',
   'werkplaats',
   'lab',
@@ -231,7 +238,9 @@ export function buildingCards(ctx: CardContext): BuildingCard[] {
         ...data.loadouts
           .filter((l) => l.prereqTech.includes(t.id))
           .map((l) => LOADOUT_NAMES[l.key] ?? humanize(l.key)),
-        ...data.buildings.filter((b) => b.prereqTech.includes(t.id)).map((b) => humanize(b.key)),
+        ...data.buildings
+          .filter((b) => b.prereqTech.includes(t.id))
+          .map((b) => buildingName(b.key)),
       ];
       const first = t.effects[0];
       const st = stateOf(
@@ -252,7 +261,7 @@ export function buildingCards(ctx: CardContext): BuildingCard[] {
             : 'research',
         scrapCost: t.scrapCost,
         seconds: Math.round(t.researchTicks / TICK_HZ),
-        effects: effectTexts(t.effects),
+        effects: [...effectTexts(t.effects), ...raiderTechEffects(data, factionId, t.key)],
         unlocks,
         requires: missing(t.prereqTech),
         ...st,
@@ -272,6 +281,10 @@ export function buildingCards(ctx: CardContext): BuildingCard[] {
         const pop = (status?.pop ?? 0) + (status?.robotPop ?? 0) + producingPop(data, status);
         const popFull = pop + l.popCost > data.sim.popCapMax;
         let st = stateOf(l.scrapCost, l.prereqTech, run !== undefined, false, idx);
+        // A Raider fighter from a tent also needs a free bed (slaves and prisoners sleep in the Kooi and do not count).
+        const needsBed = data.factions[l.factionId]?.slaves != null && !isRobotBody(data, l);
+        if (st.state === 'available' && needsBed && (status?.pop ?? 0) >= (status?.popCap ?? 0))
+          st = { state: 'locked', reason: 'Geen vrij bed: bouw een tent' };
         if ((st.state === 'available' || st.state === 'tooExpensive') && popFull)
           st = {
             state: 'locked',
@@ -376,6 +389,40 @@ export function buildingCards(ctx: CardContext): BuildingCard[] {
     }
   }
   return cards.map((c, i) => ({ ...c, hotkey: String(i + 1) }));
+}
+
+const isRobotBody = (data: GameData, l: { bodyType: number }): boolean =>
+  BODY_TYPES[l.bodyType] === 'robot';
+
+/**
+ * What a Raider tech does when its effect list is empty (chems, the plunder bonus, refined chems): read from the faction
+ * data and put in plain Dutch, so the card says what the player gets.
+ */
+export function raiderTechEffects(
+  data: GameData,
+  factionId: number | undefined,
+  techKey: string,
+): string[] {
+  const faction = factionId === undefined ? undefined : data.factions[factionId];
+  if (!faction) return [];
+  const chem = faction.chems.find((c) => c.key === techKey);
+  if (chem) return chemLines(chem, TICK_HZ);
+  const techId = data.tech.find((t) => t.key === techKey && t.factionId === faction.id)?.id;
+  const out: string[] = [];
+  if (faction.plunder && faction.plunder.bonusTech === techId)
+    out.push(
+      `+${faction.plunder.bonusPermille / 10}% buit uit gesloopte gebouwen en gedode verzamelaars`,
+    );
+  if (faction.tribute && faction.tribute.bonusTech === techId)
+    out.push(`+${faction.tribute.bonusPermille / 10}% tribuut van bezette nederzettingen`);
+  const refined = faction.chems.filter((c) => c.refined?.requiresTech === techId);
+  if (refined.length > 0) {
+    const r = refined[0]!.refined!;
+    out.push(
+      `Chems werken ${r.activePermille / 10}% langer en de crash is ${Math.abs(r.crashPermille) / 10}% korter (${refined.map((c) => c.naam).join(', ')})`,
+    );
+  }
+  return out;
 }
 
 /** Does the player own a finished workshop? Crafting and role switching (SetRole) both walk to one. */

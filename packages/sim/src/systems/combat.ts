@@ -107,7 +107,7 @@ function turretAcquire(ctx: SimContext, i: number, r: number): number {
   let bestBD = 0;
   for (let j = 0; j < w.highWater; j++) {
     if (!isEnemy(w, i, j)) continue;
-    if (w.creepCamp[j] !== 0 && !creepAwake(ctx, j)) continue; // a sleeping camp (sim 0.19.0)
+    if (w.creepCamp[j] !== 0 && !creepAwake(ctx, j)) continue; // a sleeping camp (sim 0.20.0)
     if ((w.mask[j]! & C.building) !== 0) {
       if (bestU >= 0) continue;
       const d = distToRect2(x, y, w.fx[j]!, w.fy[j]!, w.fw[j]!, w.fh[j]!);

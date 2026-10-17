@@ -111,7 +111,7 @@ function acquire(ctx: SimContext, s: OrdersScratch, i: number): number {
   for (let k = 0; k < s.targetCount; k++) {
     const j = s.targets[k]!;
     if (!isEnemy(w, i, j)) continue;
-    // a bandit only while its camp fights (sim 0.19.0): units walking past a sleeping camp leave it alone
+    // a bandit only while its camp fights (sim 0.20.0): units walking past a sleeping camp leave it alone
     if (w.creepCamp[j] !== 0 && !creepAwake(ctx, j)) continue;
     if ((w.mask[j]! & C.building) !== 0) {
       if (bestU >= 0 && !buildingsFirst) continue;

@@ -20,7 +20,7 @@ import { TERRAIN_UNREACHABLE } from '../pathdist.js';
 import type { Census } from './census.js';
 import { applyCommand, canPlaceType } from './commands.js';
 import type { SimContext } from './common.js';
-import { distToRect2, nodeAllowed } from './common.js';
+import { distToRect2, nodeAllowed, visibleTo } from './common.js';
 import { heroIndex } from './hero.js';
 import { DEPOT_MASK } from './orders.js';
 import type { AiScratch, Fields } from './ai.js';
@@ -47,6 +47,7 @@ import {
 import type { WorkReach } from './slaves.js';
 import { cageIndex, workReach } from './slaves.js';
 import { aiCreepRun, campAlive, campAt } from './creeps.js';
+import { pointsOf } from './claims.js';
 
 // System 2 (AI part) for a script with a raid plan (ai/raiders-basic.json, data 0.21.0; sim 0.18.0): the scripted
 // Raider. No cheats, the same commands and fog of war as the Dweller AI (systems/ai.ts, whose helpers it uses), and
@@ -73,8 +74,10 @@ import { aiCreepRun, campAlive, campAt } from './creeps.js';
 //  9. waves as the Dwellers (attackTimers, waveInterval, waveMinArmy and growth, a push from pushFromTicks with
 //     pushMinArmy, a raid on an enemy claim point while he holds enough for dominance; else the wave lapses); from dominancePush.fromTicks with at least minArmy free fighters the army camps
 //     at the claim point nearest home that is not its own (the hero claims it there, a slave builder puts a plunderpost
-//     there, the fighters take a beacon over or raze a post);
-// 10. defend against a threat, else rally (rallySite) as the Dwellers.
+//     there, the fighters take a beacon over or raze a post); while p holds enough points for dominance the army camps
+//     at its own point nearest the enemy instead (sim 0.19.0);
+// 10. defend against a threat (also an enemy the army sees within defendRadius of its camp, sim 0.19.0), else rally
+//     (rallySite) as the Dwellers.
 
 const ROLE_SCAVENGER = ROLES.indexOf('scavenger');
 const ROLE_BUILDER = ROLES.indexOf('builder');
@@ -118,7 +121,7 @@ function onMission(ctx: SimContext, p: number, i: number): boolean {
     if (q !== p && sp.x === x && sp.y === y) return true;
   }
   for (const pt of ctx.claimPoints) if (w.x[pt] === x && w.y[pt] === y) return !raidOver(ctx, p, i);
-  // a creep run (sim 0.19.0) until its camp is cleared
+  // a creep run (sim 0.20.0) until its camp is cleared
   const camp = campAt(ctx, x, y);
   return camp >= 0 && campAlive(ctx, camp);
 }
@@ -429,7 +432,7 @@ export function raiderThink(
       return;
     }
   }
-  // creep camps (sim 0.19.0, ai/*.json creeps): without a threat, a big enough free army clears the nearest camp
+  // creep camps (sim 0.20.0, ai/*.json creeps): without a threat, a big enough free army clears the nearest camp
   if (
     threat < 0 &&
     aiCreepRun(
@@ -710,7 +713,9 @@ function gatherIdle(
 /**
  * Where the Raiders rob and harass, outside the enemy's base radius (minDistanceFromOwnerBase from each of his
  * headquarters) and with scrap (map knowledge): a node exclusive to him (near one of his claim points: his workers go
- * there first) nearest home over land; else the node nearest his spawn over land; -1 without one.
+ * there first), else any node, each the nearest his spawn over land; -1 without one. Sim 0.19.0: nearest his spawn
+ * also for his exclusive nodes (was: nearest home, which is his front claim point where his army gathers; no catch in
+ * 66 matches).
  */
 function raidSpot(ctx: SimContext, enemy: number, rules: SimSlaveRules, fields: Fields): number {
   if (fields.enemy === null) return -1;
@@ -737,9 +742,7 @@ function raidSpot(ctx: SimContext, enemy: number, rules: SimSlaveRules, fields: 
     }
     if (inBase) continue;
     const ex = exclusiveFor(ctx, j, enemy);
-    const d = ex
-      ? ctx.terrainDist.at(fields.home, w.x[j]!, w.y[j]!)
-      : ctx.terrainDist.at(fields.enemy, w.x[j]!, w.y[j]!);
+    const d = ctx.terrainDist.at(fields.enemy, w.x[j]!, w.y[j]!);
     if (best < 0 || (ex && !bestEx) || (ex === bestEx && d < bestD)) {
       best = j;
       bestD = d;
@@ -869,9 +872,16 @@ function harass(
   attackMove(ctx, p, go, at.x, at.y);
 }
 
-/** The claim point nearest home over land that is not p's own (neutral or the enemy's), or -1. */
+/**
+ * The claim point nearest home over land that is not p's own (neutral or the enemy's), or -1. While p holds enough
+ * points for dominance, its own point nearest the enemy instead: the army holds the count there rather than storming a
+ * defended enemy point (measured, data 0.24.0: the camp ran into the Dwellers' front turret at minute 14 and the Raiders
+ * never rebuilt).
+ */
 function dominanceTarget(ctx: SimContext, p: number, fields: Fields): number {
   const w = ctx.world;
+  if (pointsOf(ctx, p) >= ctx.map.dominance.pointsRequired && fields.enemy !== null)
+    return ownClaimNear(ctx, p, fields.enemy);
   let best = -1;
   let bestD = 0;
   for (const pt of ctx.claimPoints) {
@@ -882,6 +892,27 @@ function dominanceTarget(ctx: SimContext, p: number, fields: Fields): number {
       best = pt;
       bestD = d;
     }
+  }
+  return best;
+}
+
+/** The visible enemy unit (no slave or captive) nearest (x, y) within r, then the lowest index; -1 without one. */
+function enemyNear(ctx: SimContext, p: number, x: number, y: number, r: number): number {
+  const w = ctx.world;
+  const r2 = r * r;
+  let best = -1;
+  let bestD = 0;
+  for (let j = 0; j < w.highWater; j++) {
+    if (!w.has(j, C.unit | C.health) || w.hp[j]! <= 0) continue;
+    const o = w.owner[j]!;
+    if (o === p || o >= ctx.playerCount || w.slaveState[j] !== SLAVE_NONE) continue;
+    if (!visibleTo(w, j, p)) continue;
+    const dx = w.x[j]! - x;
+    const dy = w.y[j]! - y;
+    const d = dx * dx + dy * dy;
+    if (d > r2 || (best >= 0 && d >= bestD)) continue;
+    best = j;
+    bestD = d;
   }
   return best;
 }
@@ -913,8 +944,14 @@ function rally(
   if (idle.length === 0 || fields === null) return;
   let to: { x: number; y: number };
   let r = script.rallyRadius;
-  if (threat >= 0) {
-    to = { x: w.x[threat]!, y: w.y[threat]! };
+  // the camp is no building, so findThreat does not cover it: an enemy the army sees within defendRadius of its camp
+  // is a threat too (measured, data 0.24.0: a passing Dweller wave shot the idle camp from beyond the aggro range)
+  const at =
+    threat < 0 && push >= 0
+      ? enemyNear(ctx, p, w.x[push]!, w.y[push]!, script.defendRadius)
+      : threat;
+  if (at >= 0) {
+    to = { x: w.x[at]!, y: w.y[at]! };
     r = 0;
   } else if (push >= 0) {
     // camp next to the point (one unit off: raidOver must not take the march for a finished raid)

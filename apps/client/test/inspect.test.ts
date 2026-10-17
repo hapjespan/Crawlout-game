@@ -32,7 +32,7 @@ describe('inspect (enemy selection)', () => {
     expect(info.detail).toBeNull();
   });
 
-  it('shows a bandit of a creep camp as neutral (data 0.24.0): "Neutraal · Bandiet", its own name', () => {
+  it('shows a bandit of a creep camp as neutral (data 0.25.0): "Neutraal · Bandiet", its own name', () => {
     const boss = inspect(data, unitTypeId(loadout('bandiet_baas').id));
     expect(boss.ownerLabel).toBe('Neutraal · Bandiet');
     expect(boss.name).toBe('Bandietenbaas');

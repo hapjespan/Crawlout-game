@@ -52,7 +52,7 @@ export interface RawGameData {
   sim: unknown;
   /** Alle bestanden uit data/ai/, in elke volgorde (de loader sorteert op id). */
   ai: unknown[];
-  /** Contents of data/creeps.json (data 0.24.0); absent = no creep camps. */
+  /** Contents of data/creeps.json (data 0.25.0); absent = no creep camps. */
   creeps?: unknown;
 }
 
@@ -482,12 +482,18 @@ export interface AiScriptData {
   training: { sequence: number[]; fromTicks: number } | null;
   /** Roofplan van het Raider-script (data 0.21.0); null zonder. */
   raidPlan: RaidPlanData | null;
-  /** When the AI clears creep camps (data 0.24.0); null = never. */
+  /** When the AI clears creep camps (data 0.25.0); null = never. */
   creeps: AiCreepsData | null;
+  /** Data 0.24.0 (proposal): the opponent faction this script is for; -1 = the faction's default script. */
+  versusFactionId: number;
+  /** Data 0.24.0 (proposal): liberation of enemy-held slaves; null without. */
+  liberate: { minFree: number; units: number; radiusU: number } | null;
+  /** Data 0.24.0 (proposal): an enemy at the headquarters draws every militia and robot not on a push. */
+  defendHqFirst: boolean;
   allInWithoutNodes: boolean;
 }
 
-/** ai/*.json `creeps` in sim units (data 0.24.0). */
+/** ai/*.json `creeps` in sim units (data 0.25.0). */
 export interface AiCreepsData {
   fromTicks: number;
   maxPathU: number;
@@ -495,10 +501,10 @@ export interface AiCreepsData {
   tiers: { tier: number; minArmy: number }[];
 }
 
-/** The neutral faction of the creep loadouts (data 0.24.0): LoadoutData.factionId of a bandit. */
+/** The neutral faction of the creep loadouts (data 0.25.0): LoadoutData.factionId of a bandit. */
 export const NEUTRAL_FACTION_ID = -1;
 
-/** One tier of creep camp (data/creeps.json tiers, data 0.24.0) in sim units. */
+/** One tier of creep camp (data/creeps.json tiers, data 0.25.0) in sim units. */
 export interface CreepTierData {
   tier: number;
   naam: string;
@@ -513,7 +519,7 @@ export interface CreepTierData {
   heroXpRadiusU: number;
 }
 
-/** data/creeps.json (data 0.24.0). The bandit loadouts themselves are in GameData.loadouts (factionId NEUTRAL_FACTION_ID). */
+/** data/creeps.json (data 0.25.0). The bandit loadouts themselves are in GameData.loadouts (factionId NEUTRAL_FACTION_ID). */
 export interface CreepsData {
   /** Loadout ids of the bandits, in the order of creeps.json units. */
   units: number[];
@@ -606,7 +612,7 @@ export interface GameData {
   /** Trainingsprogramma's (data 0.16.0). */
   training: TrainingProgramData[];
   aiScripts: AiScriptData[];
-  /** Creep camps (data/creeps.json, data 0.24.0); empty without the file. */
+  /** Creep camps (data/creeps.json, data 0.25.0); empty without the file. */
   creeps: CreepsData;
   /** damageMatrix[damageTypeIndex][armorTypeIndex] = multiplier in promille (1000 = 100 procent). */
   damageMatrix: number[][];
@@ -920,7 +926,7 @@ export function loadGameData(raw: RawGameData): GameData {
     };
   });
 
-  // Creep camps (data 0.24.0): the bandit loadouts follow the faction loadouts (ids loadoutsRaw.length + k, in the
+  // Creep camps (data 0.25.0): the bandit loadouts follow the faction loadouts (ids loadoutsRaw.length + k, in the
   // order of creeps.json units), so no faction loadout changes id; their faction is NEUTRAL_FACTION_ID.
   const creepsRaw =
     raw.creeps === undefined
@@ -1265,9 +1271,29 @@ export function loadGameData(raw: RawGameData): GameData {
               maxPathU: metersToUnits(a.creeps.maxPathM),
               tiers: a.creeps.tiers.map((t) => ({ tier: t.tier, minArmy: t.minArmy })),
             },
+      versusFactionId: a.versus === undefined ? -1 : ref(factionIx, 'factie', where, a.versus),
+      liberate:
+        a.liberate === undefined
+          ? null
+          : {
+              minFree: a.liberate.minFree,
+              units: a.liberate.units,
+              radiusU: metersToUnits(a.liberate.radiusM),
+            },
+      defendHqFirst: a.defendHqFirst ?? false,
       allInWithoutNodes: a.allInWithoutNodes,
     };
   });
+  // data 0.24.0: at most one script per faction and opponent (the default one has no versus)
+  for (let i = 0; i < aiScripts.length; i++)
+    for (let j = 0; j < i; j++) {
+      const a = aiScripts[i]!;
+      const b = aiScripts[j]!;
+      if (a.factionId === b.factionId && a.versusFactionId === b.versusFactionId)
+        throw new Error(
+          `data/ai '${a.key}': same faction and opponent as '${b.key}' (one script per faction and versus)`,
+        );
+    }
 
   // Vaste volgorde via de enum-lijsten; nooit via Object.keys.
   const damageMatrix = DAMAGE_TYPES.map((damageType) =>

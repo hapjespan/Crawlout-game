@@ -33,7 +33,7 @@ export interface SimMap {
   /** Winroute B: pointsRequired claimpunten gedurende ticks vasthouden. */
   readonly dominance: { readonly pointsRequired: number; readonly ticks: number };
   /**
-   * Creep camps (sim 0.19.0, data 0.24.0; voorstel, ter bevestiging door de architect): the centre of each bandit camp
+   * Creep camps (sim 0.20.0, data 0.25.0; voorstel, ter bevestiging door de architect): the centre of each bandit camp
    * and its tier (SimConfig.creepTiers). Absent or empty = no camps (the programmatic test maps).
    */
   readonly creepCamps?: readonly SimCreepCamp[];
@@ -58,7 +58,7 @@ export interface SimCreepTier {
   readonly heroXpRadius: number;
 }
 
-/** The faction of a neutral unit type (the bandits of the creep camps, data 0.24.0). */
+/** The faction of a neutral unit type (the bandits of the creep camps, data 0.25.0). */
 export const NEUTRAL_FACTION = -1;
 
 /** Eén unittype (body plus loadout) in sim-eenheden. typeId = unitTypeId(loadoutId) uit @crawlout/data. */
@@ -340,6 +340,11 @@ export interface SimFaction {
   readonly roleTypeIds: readonly number[];
   /** Index in SimConfig.aiScripts voor AI-spelers van deze factie, -1 = geen script. */
   readonly aiScript: number;
+  /**
+   * Data 0.24.0 (proposal, to be confirmed by the architect; ai/*.json versus): per opponent factionId the script index
+   * an AI of this faction plays against that opponent, -1 = aiScript. Length = factions.length.
+   */
+  readonly aiScriptVersus: readonly number[];
   /** Het gebouw dat het Claim-commando bouwt (provides claim, geen hoofdgebouw); 0 = geen. */
   readonly claimTypeId: number;
   /** De held van deze factie (index in SimConfig.heroes), -1 = geen held. */
@@ -512,7 +517,7 @@ export interface SimAiScript {
   /** Raider plan (data 0.21.0 ai raidPlan): the script then runs the Raider AI (systems/aiRaiders.ts); null = Dwellers. */
   readonly raidPlan: SimRaidPlan | null;
   /**
-   * Creep camps (data 0.24.0): from fromTicks, with no threat, an idle army of at least minArmy for the camp's tier
+   * Creep camps (data 0.25.0): from fromTicks, with no threat, an idle army of at least minArmy for the camp's tier
    * clears the nearest living camp within maxPath over land (systems/creeps.ts aiCreepRun). Absent or null = never.
    */
   readonly creeps?: {
@@ -520,6 +525,21 @@ export interface SimAiScript {
     readonly maxPath: number;
     readonly tiers: readonly { readonly tier: number; readonly minArmy: number }[];
   } | null;
+  /**
+   * Liberation (data 0.24.0 ai liberate, proposal): with at least minFree idle militia and no threat, up to `units` of
+   * them go (Attack) to the visible enemy slave or captive nearest the headquarters within `radius` of an own building;
+   * null = never.
+   */
+  readonly liberate: {
+    readonly minFree: number;
+    readonly units: number;
+    readonly radius: number;
+  } | null;
+  /**
+   * Data 0.24.0 (ai defendHqFirst, proposal): while an enemy stands within defendRadius of the headquarters, every militia
+   * and robot that is not on a push turns to that threat.
+   */
+  readonly defendHqFirst: boolean;
 }
 
 /** Raid plan of the Raider AI (ai/*.json raidPlan), in sim units. */
@@ -552,7 +572,7 @@ export interface SimConfig {
   /** Op factionId: factions[k].factionId === k. */
   readonly factions: readonly SimFaction[];
   readonly aiScripts: readonly SimAiScript[];
-  /** Creep camp tiers (data/creeps.json, data 0.24.0), ascending tier; absent = none. */
+  /** Creep camp tiers (data/creeps.json, data 0.25.0), ascending tier; absent = none. */
   readonly creepTiers?: readonly SimCreepTier[];
   /** Op techId; hoogstens MAX_TECHS (bitset per speler). */
   readonly techs: readonly SimTech[];
@@ -693,7 +713,7 @@ export const EFFECT_STAT_COUNT = 15;
 export const MAX_TRAINED_POINTS = 255;
 /** Grens voor bouw- en onderzoekstijd in ticks: voortgang telt in duizendsten van een tick (PROGRESS_ONE) in een int32. */
 export const MAX_WORK_TICKS = 2_000_000;
-/** Creep camps per map and bandits per camp (data 0.24.0): bounds of CreepCamps and the camp bookkeeping. */
+/** Creep camps per map and bandits per camp (data 0.25.0): bounds of CreepCamps and the camp bookkeeping. */
 export const MAX_CREEP_CAMPS = 16;
 export const MAX_CREEPS_PER_CAMP = 16;
 const U16 = 0xffff;
@@ -740,7 +760,7 @@ export function validateEnv(env: SimEnv): void {
     intIn(map.dominance.pointsRequired, 1, 0xff) && intIn(map.dominance.ticks, 1, I31),
     'dominance',
   );
-  // creep camps (data 0.24.0): every camp of the map has a tier of the data
+  // creep camps (data 0.25.0): every camp of the map has a tier of the data
   const camps = map.creepCamps ?? [];
   req(camps.length <= MAX_CREEP_CAMPS, `meer dan ${MAX_CREEP_CAMPS} creep-kampen`);
   for (const c of camps) {
@@ -821,7 +841,7 @@ export function validateEnv(env: SimEnv): void {
       intIn(u.bodyType, 0, 0xff) && intIn(u.role, 0, 0xff) && intIn(u.loadoutId, 0, U16),
       `${at}: bodyType, role of loadoutId`,
     );
-    // the bandits of the creep camps (data 0.24.0) have no faction
+    // the bandits of the creep camps (data 0.25.0) have no faction
     req(
       u.factionId === NEUTRAL_FACTION || intIn(u.factionId, 0, config.factions.length - 1),
       `${at}: factionId`,
@@ -939,6 +959,11 @@ export function validateEnv(env: SimEnv): void {
     req(f.settlerTypeId === 0 || unitIds.has(f.settlerTypeId), `${at}: settlerTypeId`);
     for (const t of f.roleTypeIds) req(t === 0 || unitIds.has(t), `${at}: roleTypeIds`);
     req(intIn(f.aiScript, -1, config.aiScripts.length - 1), `${at}: aiScript`);
+    req(
+      f.aiScriptVersus.length === config.factions.length &&
+        f.aiScriptVersus.every((v) => intIn(v, -1, config.aiScripts.length - 1)),
+      `${at}: aiScriptVersus`,
+    );
     req(f.claimTypeId === 0 || buildingIds.has(f.claimTypeId), `${at}: claimTypeId`);
     if (f.safetyNet !== null)
       req(
@@ -1338,6 +1363,14 @@ export function validateEnv(env: SimEnv): void {
         'aiScript raidPlan',
       );
     }
+    const lb = s.liberate;
+    if (lb !== null)
+      req(
+        intIn(lb.minFree, 1, 4096) &&
+          intIn(lb.units, 1, 4096) &&
+          intIn(lb.radius, 0, MAX_MAP_CELLS_SIDE << 8),
+        'aiScript liberate',
+      );
   }
   for (const p of players) {
     req(
@@ -1498,6 +1531,7 @@ export function envHash(env: SimEnv): number {
       f.claimTypeId,
       f.heroId,
     ]);
+    h = hashInts(h, f.aiScriptVersus);
     h = fnv1aInt(h, f.startUnits.length);
     for (const s of f.startUnits) h = hashInts(h, [s.typeId, s.count]);
     h = hashInts(h, f.roleTypeIds);
@@ -1645,6 +1679,9 @@ export function envHash(env: SimEnv): number {
         rp.dominancePush.minArmy,
       ]);
     }
+    const lb = s.liberate;
+    h = hashInts(h, lb === null ? [0] : [1, lb.minFree, lb.units, lb.radius]);
+    h = fnv1aInt(h, s.defendHqFirst ? 1 : 0);
   }
   h = fnv1aInt(h, c.techs.length);
   for (const t of c.techs) {
@@ -1729,7 +1766,7 @@ export function envHash(env: SimEnv): number {
   h = fnv1aInt(h, map.claimPoints.length);
   for (const p of map.claimPoints) h = hashInts(h, [p.x, p.y, p.kind]);
   h = hashInts(h, [map.dominance.pointsRequired, map.dominance.ticks]);
-  // creep camps (data 0.24.0): only when there are any, so an env without them keeps its hash
+  // creep camps (data 0.25.0): only when there are any, so an env without them keeps its hash
   const camps = map.creepCamps ?? [];
   const tiers = c.creepTiers ?? [];
   const aiCreeps = c.aiScripts.some((s) => s.creeps !== undefined && s.creeps !== null);

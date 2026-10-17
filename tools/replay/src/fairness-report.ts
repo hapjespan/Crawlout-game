@@ -35,7 +35,7 @@ if (args.includes('--json')) {
         );
       });
   }
-  // creep camps (sim 0.19.0): how often and when each was cleared, and by whom
+  // creep camps (sim 0.20.0): how often and when each was cleared, and by whom
   if (args.includes('--camps')) {
     for (const r of results)
       console.log(

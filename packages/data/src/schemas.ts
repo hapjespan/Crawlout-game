@@ -688,7 +688,7 @@ export const AiScript = z
     // Data 0.21.0 (Raiders; voorstel, ter bevestiging door de architect): het roof- en harassplan van het Raider-script
     // (optioneel; Dwellers hebben het niet). De rest van het script (bouwvolgorde, golven, claims) gebruikt de gewone velden.
     raidPlan: RaidPlan.optional(),
-    // Data 0.24.0 (creep camps; voorstel, ter bevestiging door de architect): when the AI clears the bandit camps of the
+    // Data 0.25.0 (creep camps; voorstel, ter bevestiging door de architect): when the AI clears the bandit camps of the
     // map (data/creeps.json). From fromS on, with no enemy at its buildings, an idle army of at least minArmy (the
     // entry for the camp's tier; a tier without an entry is never attacked) walks to the nearest living camp within
     // maxPathM over land of its headquarters, with the hero. Absent = the AI leaves the camps alone.
@@ -707,6 +707,25 @@ export const AiScript = z
       })
       .strict()
       .optional(),
+    // Data 0.24.0 (proposal, to be confirmed by the architect): the script an AI of `faction` plays against an opponent of
+    // this faction (optional; the opponent's faction is lobby knowledge). Without `versus` it is the faction's default
+    // script; at most one script per faction and opponent (the loader checks).
+    versus: id.optional(),
+    // Data 0.24.0 (proposal, to be confirmed by the architect): liberation (optional). With at least minFree idle militia
+    // and no threat, the AI sends up to `units` of them (Attack: walk up and touch) to the visible enemy slave or captive
+    // nearest its headquarters within radiusM of one of its own buildings.
+    liberate: z
+      .object({
+        minFree: z.number().int().positive(),
+        units: z.number().int().positive(),
+        radiusM: nonneg,
+      })
+      .strict()
+      .optional(),
+    // Data 0.24.0 (proposal, to be confirmed by the architect): while an enemy stands within defendRadiusM of the
+    // headquarters, every militia and robot that is not on a push turns to that threat, also those already on their way
+    // to a threat elsewhere or on a raid (optional, default false)
+    defendHqFirst: z.boolean().optional(),
     allInWithoutNodes: z.boolean(), // zonder bruikbare scrap-node (geen inkomen meer) gaan elke golf naar het hoofdgebouw, met de plunderaars mee
     _comment: comment,
   })
@@ -819,7 +838,7 @@ export const SimTuning = z
     path: ['exclusiveRadiusM'],
   });
 
-// Creep camps (data 0.24.0, phase 2 round 2; voorstel, ter bevestiging door de architect): data/creeps.json. Bandit
+// Creep camps (data 0.25.0, phase 2 round 2; voorstel, ter bevestiging door de architect): data/creeps.json. Bandit
 // nests of the map (MapDef.creepCamps, Spelfundament 3.2: "bandietennesten als creeps met loot en held-XP"). `units`
 // are the neutral loadouts of the camps (no faction: they are never trained or built; the loader appends them after
 // the loadouts of the factions, so their typeIds follow the faction loadouts); `tiers` is what a camp of a map tier

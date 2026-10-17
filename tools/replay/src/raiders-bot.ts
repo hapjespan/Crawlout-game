@@ -226,7 +226,7 @@ export function raiderBot(p: number, plan: RaiderPlan, every = 10): Controller {
 }
 
 /**
- * Creep camps (sim 0.19.0): a player walks a lone unit around a living bandit camp instead of past it. The next
+ * Creep camps (sim 0.20.0): a player walks a lone unit around a living bandit camp instead of past it. The next
  * waypoint on the shortest walk from (x, y) to (tx, ty) over walkable cells that keeps 10 m from every living camp
  * centre, `ahead` cells along it (4-neighbour BFS from the target, the same metric as the sim's terrain distances);
  * the target itself when that walk does not exist or is short.

@@ -1,6 +1,7 @@
 import type { CommandEnvelope } from '@crawlout/protocol';
 import { createSim } from '../src/index.js';
 import type { Sim, SimConfig } from '../src/index.js';
+import { BODY_ROBOT } from '../src/fromData.js';
 import { cellCenter, createOpenMap, testPlayers } from '../src/testing.js';
 import { CONFIG, bundle, cmd, typeByKey } from './helpers.js';
 
@@ -10,6 +11,8 @@ import { CONFIG, bundle, cmd, typeByKey } from './helpers.js';
 // time runs out. The robot side gets one technicus per robotsPerTechnician robots far behind its start (out of aggro
 // range of everything), as a player with robots has in a real game, so the robots fight at full rate. The outcome
 // depends only on data (hp, armour, damage matrix, damage, cooldown, range, speed): there is no rng in this fight.
+// Data 0.24.0: the "robot" side may be any loadout (a group of Raiders, `robots` the group size); only a side of robots
+// gets technici.
 
 /** Map of 128 by 128 cells of 1 m: open ground with only the border wall. */
 const MAP_CELLS = 128;
@@ -92,7 +95,9 @@ export function duel(spec: DuelSpec): DuelResult {
     if (id === 0) throw new Error('robot spawn failed');
     robots.push(id);
   }
-  const perTech = config.factions[0]!.robotRules?.robotsPerTechnician ?? 0;
+  // a side of Raiders (data 0.24.0: the harness also runs Raider lines) needs no technicus
+  const robotSide = config.unitTypes.find((u) => u.typeId === robotType)?.bodyType === BODY_ROBOT;
+  const perTech = robotSide ? (config.factions[0]!.robotRules?.robotsPerTechnician ?? 0) : 0;
   const techs = perTech > 0 ? Math.ceil(nRobots / perTech) : 0;
   for (let k = 0; k < techs; k++) {
     const id = sim.spawnUnit({

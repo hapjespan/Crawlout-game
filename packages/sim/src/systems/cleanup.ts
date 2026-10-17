@@ -41,7 +41,7 @@ export function cleanupSystem(ctx: SimContext): void {
     }
     if ((m & C.health) === 0 || w.hp[i]! > 0) continue;
     ctx.events.push(EVENT_TYPE.death, w.idOf(i), w.typeId[i]!, w.x[i]!, w.y[i]!);
-    creepDeath(ctx, i); // sim 0.19.0: the last bandit of a camp gives its loot
+    creepDeath(ctx, i); // sim 0.20.0: the last bandit of a camp gives its loot
     plunderOnDeath(ctx, i); // data 0.21.0: the killer's owner may plunder it (before its cargo is gone)
     const owner = w.owner[i]!;
     if ((m & C.building) !== 0) removeBuilding(ctx, i);

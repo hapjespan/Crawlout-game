@@ -25,7 +25,7 @@ const DAMAGE_NL: Record<string, string> = {
   fire: 'vuur',
 };
 
-/** The owner line of a bandit of a creep camp (sim 0.19.0): neutral, the third side. */
+/** The owner line of a bandit of a creep camp (sim 0.20.0): neutral, the third side. */
 export const NEUTRAL_LABEL = 'Neutraal · Bandiet';
 
 export interface Inspection {
@@ -66,7 +66,7 @@ export function inspect(data: GameData, typeId: number): Inspection {
     if (!l) return { name: 'Eenheid', ownerLabel: 'Vijand', detail: null };
     const armor = ARMOR_TYPES[l.armorType] ?? '';
     const damage = DAMAGE_TYPES[l.damageType] ?? '';
-    // a bandit of a creep camp (data 0.24.0): neutral, named from data/creeps.json
+    // a bandit of a creep camp (data 0.25.0): neutral, named from data/creeps.json
     const creep = l.factionId === NEUTRAL_FACTION_ID ? data.creeps.units.indexOf(l.id) : -1;
     return {
       name:

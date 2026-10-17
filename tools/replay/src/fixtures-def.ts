@@ -82,7 +82,7 @@ function startOf(r: Replay): Start {
     if (u.kind === 'scrapNode') s.nodes.push(id);
     else if (u.kind === 'claimPoint') s.claims.push(id);
     else if (u.owner >= r.players.length)
-      continue; // the bandits of the creep camps (sim 0.19.0)
+      continue; // the bandits of the creep camps (sim 0.20.0)
     else if (u.kind === 'building') s.hq.push(id);
     else if (u.kind === 'hero') s.hero[u.owner]!.push(id);
     else if (u.role === ROLES.indexOf('scavenger')) s.scav[u.owner]!.push(id);
@@ -283,7 +283,7 @@ const FIXTURES_UP_TO_S3: FixtureDef[] = [
       s.add(1100, 1, 'Move', { ids: st.scav[1]!.slice(0, 2), x: c.x, y: c.y });
       // (speler 0 stuurt ze naar waar de held van speler 1 op frame 1500 staat; dat volgt deterministisch uit de run)
       r.bundles = s.bundles();
-      // creep camps (sim 0.19.0): the hero of player 1 may have fallen at the high camp on his way; then the centre
+      // creep camps (sim 0.20.0): the hero of player 1 may have fallen at the high camp on his way; then the centre
       const h1 = stateAt(r, 1500).getUnit(st.hero[1]![0]!) ?? c;
       s.add(1500, 0, 'Move', { ids: st.scav[0]!.slice(1), x: h1.x, y: h1.y });
       for (let k = 0; k < 6; k++)
@@ -731,7 +731,10 @@ const FIXTURES_S10: FixtureDef[] = [
   {
     // Raiders in the sim (sim 0.18.0, data 0.23.0): the scripted Raider AI (player 0) against the Dweller AI on Rustbelt
     // XL until just after the win: tents and Produce, slave builders via SetRole, slave raids, buggies, the garrison,
-    // claims and the dominance camp, plunder and tribute, the Warlord's aura and Raid.
+    // claims and the dominance camp, plunder and tribute, the Warlord's aura and Raid. Sim 0.19.0, data 0.24.0: the
+    // Dweller AI plays ai/dwellers-vs-raiders.json (versus: defendHqFirst, liberate), the Raider camp holds its own
+    // point and answers what it sees; the Dwellers win by destruction in frame 34.526 (28:47; data 0.23.0: on
+    // dominance in frame 30.962).
     name: 's10-rustbelt-raiders-ai-vs-ai',
     build() {
       const r = raidersVsDwellers(base('rustbelt', 5, [true, true]));
@@ -830,7 +833,7 @@ const FIXTURES_S10: FixtureDef[] = [
 
 const FIXTURES_S11: FixtureDef[] = [
   {
-    // Creep camps (sim 0.19.0, data 0.24.0; voorstel, ter bevestiging door de architect): six bandit camps on Rustbelt
+    // Creep camps (sim 0.20.0, data 0.25.0; voorstel, ter bevestiging door de architect): six bandit camps on Rustbelt
     // XL. Player 0 is the scripted Dweller AI: from minute 10 it clears its near camp, the ford camp and (with 16 idle
     // militia) the high camp, with loot and hero xp. Player 1 is a human script: his hero walks up to his near camp and
     // stops outside the aggro radius (the camp sleeps), attacks a bandit (the hit wakes the camp), runs home (the camp
@@ -875,6 +878,18 @@ const FIXTURES_S11: FixtureDef[] = [
       });
       r.bundles = s.bundles();
       r.hashes = [{ frame: 22799, hash: 0 }];
+      return r;
+    },
+  },
+  {
+    // Raiders against Raiders (sim 0.19.0, data 0.24.0): two Raider AIs on Rustbelt XL, seed 2, for nine minutes. At
+    // 5:52 their two Slavers catch each other in the same tick; sim.rng picks who catches whom (systems/slaves.ts
+    // captureTick; with seed 2 player 1), where entity order gave it to player 0 every time.
+    name: 's11-rustbelt-raiders-mirror',
+    build() {
+      const r = base('rustbelt', 2, [true, true]);
+      r.players = r.players.map((pl) => ({ ...pl, faction: 'raiders' }));
+      r.hashes = [{ frame: 10799, hash: 0 }];
       return r;
     },
   },

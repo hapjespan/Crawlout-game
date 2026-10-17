@@ -691,7 +691,7 @@ async function runIn(browser: Browser, width: number, height: number): Promise<v
     // the building; the unit case is covered by the unit tests of the selection panel and game/inspect.ts.)
   }
 
-  // --- Creep camps (sim 0.19.0): a bandit is a neutral unit, drawn in the neutral team colour and clickable; the
+  // --- Creep camps (sim 0.20.0): a bandit is a neutral unit, drawn in the neutral team colour and clickable; the
   // selection panel reads "Neutraal · Bandiet". (The fog is revealed above.)
   const bandit = await ev<{ id: number; x: number; y: number } | null>(
     `(() => { const c = window.crawlout; const e = [...c.entities().values()].find((e) => e.owner === 255 && e.typeId > 0 && e.typeId < 1000); return e ? { id: e.id, x: e.x, y: e.y } : null; })()`,

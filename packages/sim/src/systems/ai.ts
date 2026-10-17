@@ -13,6 +13,8 @@ import {
   ORDER_CRAFT,
   ORDER_GATHER,
   ORDER_NONE,
+  SLAVE_CAPTIVE,
+  SLAVE_SLAVE,
 } from '../ecs/world.js';
 import { PROVIDES_CLAIM, PROVIDES_HQ, PROVIDES_WORKSHOP } from '../fromData.js';
 import { clampI, idiv, imod } from '../math/int.js';
@@ -110,7 +112,10 @@ import {
 // 10. verdedigen: staat er een vijandelijke unit binnen defendRadius van een eigen gebouw, dan gaat militie zonder
 //     taak (en de held) erop af; anders verzamelen ze bij het verzamelpunt zodra ze verder dan rallyRadius weg zijn:
 //     rallySite hq is een begaanbare plek voor het hoofdgebouw op de weg naar de vijand, claim en front het eigen
-//     claimpunt het dichtst bij huis of bij de vijand (over land).
+//     claimpunt het dichtst bij huis of bij de vijand (over land). Data 0.24.0 (sim 0.19.0, alleen met de scriptvelden):
+//     liberate stuurt vrije militie naar een zichtbare vijandelijke slaaf of gevangene bij de eigen gebouwen, en
+//     defendHqFirst trekt bij een vijand aan het hoofdgebouw ook militie die al elders heen liep. Het script is dat voor
+//     de factie van de tegenstander als er een is (ai/*.json versus), anders het standaardscript van de factie.
 
 const ROLE_SCAVENGER = ROLES.indexOf('scavenger');
 const ROLE_BUILDER = ROLES.indexOf('builder');
@@ -140,7 +145,11 @@ export function aiSystem(ctx: SimContext, census: Census, scratch: AiScratch): v
     const p = playerInTurn(ctx, k);
     const pl = ctx.players[p]!;
     if (!pl.ai || ctx.ps.defeated[p] !== 0) continue;
-    const si = ctx.config.factions[pl.factionId]!.aiScript;
+    const faction = ctx.config.factions[pl.factionId]!;
+    // data 0.24.0 (proposal): a script for the opponent's faction (lobby knowledge) goes before the default one
+    const enemy = enemyOf(ctx, p);
+    const vs = enemy < 0 ? -1 : faction.aiScriptVersus[ctx.players[enemy]!.factionId]!;
+    const si = vs >= 0 ? vs : faction.aiScript;
     if (si < 0) continue;
     if (!counted) {
       takeCensus(ctx, census);
@@ -1161,7 +1170,26 @@ function think(
     return;
   }
 
-  // 10a2 creep camps (sim 0.19.0, ai/*.json creeps): without a threat, a big enough idle army clears the nearest camp
+  // 10a liberation (data 0.24.0, script.liberate): spare idle militia free a visible enemy-held slave or captive near
+  // the own buildings
+  if (script.liberate !== null && threat < 0 && hq >= 0)
+    liberate(ctx, p, hq, script.liberate, idleMilitia);
+
+  // 10a' the headquarters first (data 0.24.0, script.defendHqFirst): an enemy at the headquarters draws every militia
+  // and robot that is not on a push, also those on their way to a threat elsewhere or on a raid (measured: the army ran
+  // after a Slaver at a far node while the Raider push razed the headquarters). A unit already heading for a point
+  // within defendRadius of the threat keeps its order (no new formation every tick).
+  const r2 = script.defendRadius * script.defendRadius;
+  const hqThreatened =
+    threat >= 0 &&
+    hq >= 0 &&
+    distToRect2(w.x[threat]!, w.y[threat]!, w.fx[hq]!, w.fy[hq]!, w.fw[hq]!, w.fh[hq]!) <= r2;
+  if (script.defendHqFirst && hqThreatened && enemySpawn !== null) {
+    // an idle robot is free already; one without an order that is not idle repairs and stays
+    drawToThreat(ctx, threat, enemySpawn, r2, militia, idleMilitia, true);
+    drawToThreat(ctx, threat, enemySpawn, r2, robots, idleRobots, false);
+  }
+  // 10a2 creep camps (sim 0.20.0, ai/*.json creeps): without a threat, a big enough idle army clears the nearest camp
   if (
     threat < 0 &&
     fields !== null &&
@@ -1258,6 +1286,109 @@ export function heroClaimNear(
     payload: { ids: [w.idOf(hero)], x: w.x[best]!, y: w.y[best]! },
   });
   return true;
+}
+
+/**
+ * defendHqFirst (data 0.24.0): adds to `idle` every unit of `units` that is not on a push (an AttackMove to the enemy
+ * spawn) and not already heading for a point within defendRadius (r2 squared) of the threat: AttackMove units elsewhere
+ * and, with `orderless`, units without an order. Crafting and liberating units keep their order.
+ */
+function drawToThreat(
+  ctx: SimContext,
+  threat: number,
+  enemySpawn: { x: number; y: number },
+  r2: number,
+  units: readonly number[],
+  idle: number[],
+  orderless: boolean,
+): void {
+  const w = ctx.world;
+  for (const id of units) {
+    if (idle.includes(id)) continue;
+    const i = w.resolve(id);
+    const ord = w.orderType(i);
+    if (ord === ORDER_NONE) {
+      if (orderless) idle.push(id);
+      continue;
+    }
+    if (ord !== ORDER_ATTACK_MOVE) continue;
+    const o = w.currentOrder(i);
+    const x = w.ordX[o]!;
+    const y = w.ordY[o]!;
+    const isPush = x === enemySpawn.x && y === enemySpawn.y;
+    const dx = x - w.x[threat]!;
+    const dy = y - w.y[threat]!;
+    const nearThreat = dx * dx + dy * dy <= r2;
+    if (!isPush && !nearThreat) idle.push(id);
+  }
+}
+
+/**
+ * Liberation (data 0.24.0, ai/*.json liberate): with at least minFree idle militia, the visible slave or captive of
+ * another player within `radius` of one of p's buildings, nearest p's headquarters (then the lowest index), gets up to
+ * `units` of them, nearest first (then the lowest index), with Attack: walk up and touch it (systems/slaves.ts frees it
+ * when no guard of its owner stands near). They leave `idle` (they are on a task now); once the slave is freed the
+ * Attack ends and they are idle again. Only what p sees (fog of war), no other knowledge.
+ */
+function liberate(
+  ctx: SimContext,
+  p: number,
+  hq: number,
+  lb: NonNullable<SimAiScript['liberate']>,
+  idle: number[],
+): void {
+  if (idle.length < lb.minFree) return;
+  const w = ctx.world;
+  const idx = ctx.index;
+  idx.refresh(w);
+  const r2 = lb.radius * lb.radius;
+  let best = -1;
+  let bestD = 0;
+  for (let j = 0; j < w.highWater; j++) {
+    if (w.alive[j] !== 1 || !w.has(j, C.unit | C.health)) continue;
+    const st = w.slaveState[j]!;
+    if (st !== SLAVE_SLAVE && st !== SLAVE_CAPTIVE) continue;
+    const o = w.owner[j]!;
+    if (o === p || o >= ctx.playerCount || !visibleTo(w, j, p)) continue;
+    const x = w.x[j]!;
+    const y = w.y[j]!;
+    let near = false;
+    for (let k = 0; k < idx.buildingCount && !near; k++) {
+      const b = idx.buildings[k]!;
+      if (w.owner[b] === p && distToRect2(x, y, w.fx[b]!, w.fy[b]!, w.fw[b]!, w.fh[b]!) <= r2)
+        near = true;
+    }
+    if (!near) continue;
+    const d = distToRect2(x, y, w.fx[hq]!, w.fy[hq]!, w.fw[hq]!, w.fh[hq]!);
+    if (best < 0 || d < bestD) {
+      best = j;
+      bestD = d;
+    }
+  }
+  if (best < 0) return;
+  const send: number[] = [];
+  while (send.length < lb.units && idle.length > 0) {
+    let k = -1;
+    let kd = 0;
+    for (let q = 0; q < idle.length; q++) {
+      const i = w.resolve(idle[q]!);
+      const dx = w.x[i]! - w.x[best]!;
+      const dy = w.y[i]! - w.y[best]!;
+      const d = dx * dx + dy * dy;
+      if (k < 0 || d < kd || (d === kd && i < w.resolve(idle[k]!))) {
+        k = q;
+        kd = d;
+      }
+    }
+    send.push(idle[k]!);
+    idle.splice(k, 1);
+  }
+  applyCommand(ctx, {
+    playerId: p,
+    seq: 0,
+    type: 'Attack',
+    payload: { ids: send, target: w.idOf(best) },
+  });
 }
 
 /**
@@ -1388,7 +1519,7 @@ export function raidOver(ctx: SimContext, p: number, i: number): boolean {
   const o = w.currentOrder(i);
   const x = w.ordX[o]!;
   const y = w.ordY[o]!;
-  // a creep run (sim 0.19.0) is over once its camp is cleared
+  // a creep run (sim 0.20.0) is over once its camp is cleared
   const camp = campAt(ctx, x, y);
   if (camp >= 0) return !campAlive(ctx, camp);
   for (const pt of ctx.claimPoints) {
@@ -1472,6 +1603,9 @@ export function findThreat(
     if (!w.has(j, C.unit | C.health) || w.hp[j]! <= 0) continue;
     const o = w.owner[j]!;
     if (o === p || o >= ctx.playerCount) continue;
+    // a slave or captive (data 0.21.0) is no threat and no target: it is freed by touch (liberate)
+    const st = w.slaveState[j]!;
+    if (st === SLAVE_SLAVE || st === SLAVE_CAPTIVE) continue;
     // fog of war (sim 0.17.0): the AI only reacts to what its own units and buildings see
     if (!visibleTo(w, j, p)) continue;
     const x = w.x[j]!;

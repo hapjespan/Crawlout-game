@@ -17,6 +17,11 @@ const HUD_LAYOUT_CSS = `
 .co-counter-pop{left:${u(177)};width:${u(64)}}
 .co-counter-beds{left:${u(248)};width:${u(55)}}
 .co-counter-robots{left:${u(177)};top:${u(52)};width:${u(64)};height:${u(18)};flex-direction:row;align-items:center;justify-content:space-between}
+.co-raiders{position:absolute;left:50%;transform:translateX(-50%);top:${u(46)};display:flex;gap:${u(6)};margin:0;padding:${u(2)} ${u(6)};list-style:none;font-size:${font(11)};white-space:nowrap}
+.co-raider-item{display:flex;align-items:baseline;gap:${u(3)}}
+.co-raider-label{text-transform:uppercase;letter-spacing:.04em;font-size:${font(9)};color:#9aa0a6}
+.co-raider-sub{color:#9aa0a6;font-size:${font(10)}}
+.co-raider-warn b,.co-raider-warn .co-raider-sub{color:#ff8a65}
 .co-counter-label{font-size:${font(8)};text-transform:uppercase;letter-spacing:.04em;white-space:nowrap;color:#9aa0a6}
 .co-counter-value{font-size:${font(16)};line-height:1.1;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
 .co-counter-value.co-full{color:#ff8a65}
@@ -113,7 +118,7 @@ const HUD_LAYOUT_CSS = `
 .co-roster{position:absolute;left:${u(283)};bottom:0;width:${u(407)};height:${u(134)};padding:${u(36)} ${u(27)} ${u(6)} ${u(20)}}
 .co-roster-title{position:absolute;left:${u(109)};top:${u(4)};width:${u(174)};height:${u(24)};margin:0;display:flex;align-items:center;justify-content:center;font-size:${font(15)};letter-spacing:.03em}
 .co-roster-row{display:flex;flex-direction:column;gap:${u(3)};height:100%;min-height:0;padding:${u(4)} ${u(6)}}
-.co-roster-groups{flex:1;min-height:0;display:flex;gap:${u(8)};align-items:stretch}
+.co-roster-groups{flex:1;min-height:0;display:flex;gap:${u(3)};align-items:stretch}
 .co-building-buttons{position:absolute;left:${u(20)};bottom:calc(100% - ${u(2)});height:${u(30)};max-width:${u(367)};display:flex;gap:${u(4)};padding:${u(3)} ${u(5)} ${u(2)};min-width:0;pointer-events:auto}
 .co-building-btn{position:relative;flex:0 1 auto;min-width:0;display:flex;align-items:center;gap:${u(4)};padding:0 ${u(6)};font:inherit;cursor:pointer;overflow:hidden}
 .co-building-btn:focus-visible{outline:3px solid #ffd54f;outline-offset:1px}
@@ -132,7 +137,7 @@ const HUD_LAYOUT_CSS = `
 .co-tile-bar>i[data-state=available]{background:#2e9a45}
 .co-tile-bar>i[data-state=working]{background:#e08a12}
 .co-tile-bar>i[data-state=busy]{background:#d33a35}
-.co-roster-name{flex:none;display:block;padding:${u(2)} ${u(4)} 0;font-size:${font(11)};font-weight:700;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.co-roster-name{flex:none;display:block;padding:${u(2)} ${u(2)} 0;font-size:${font(11)};letter-spacing:-.02em;font-weight:700;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .co-tile-line{flex:none;display:flex;justify-content:space-between;gap:${u(3)};padding:0 ${u(4)} ${u(2)};font-size:${font(11)};line-height:1.15;white-space:nowrap}
 .co-roster-count{font-weight:700}
 .co-roster-idle{margin-left:auto;font-size:${font(11)};color:#ffd54f}

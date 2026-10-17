@@ -20,7 +20,7 @@ if (new Uint8Array(new Uint16Array([1]).buffer)[0] !== 1)
 export const STATE_MAGIC = 0x4c575243; // 'CRWL' als little-endian bytes
 /**
  * 12: the Raiders (sim 0.18.0; voorstel, ter bevestiging door de architect): see World and PlayerState.
- * 13: creep camps (sim 0.19.0; voorstel, ter bevestiging door de architect): World.creepCamp and creepHome, and the
+ * 13: creep camps (sim 0.20.0; voorstel, ter bevestiging door de architect): World.creepCamp and creepHome, and the
  * camp state (systems/creeps.ts CreepCamps) after the explored bitsets.
  */
 export const STATE_FORMAT_VERSION = 13;
@@ -77,7 +77,7 @@ export interface StateParts {
   readonly globals: GlobalState;
   /** Fog of war: the explored bitsets per player are state (sim 0.17.0); the visible counts are derived. */
   readonly vision: Vision;
-  /** Creep camps (sim 0.19.0): per camp its state, timer and who cleared it when. */
+  /** Creep camps (sim 0.20.0): per camp its state, timer and who cleared it when. */
   readonly creeps: CreepCamps;
 }
 

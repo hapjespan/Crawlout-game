@@ -60,6 +60,51 @@ describe('combat balance: beveiligingsrobot against militie (1 robot is 3 humans
   });
 });
 
+// Raider lines (data 0.24.0): the faction identity of Spelfundament 4, "cheap, fragile, hard-hitting early", against
+// the Dwellers' early militie, their workers and a robot. The Raider group is the first side of the harness (`robots`
+// is its size). Costs: plunderaar 25, knuppelaar 35, molotovgooier 42, hond 28, buggy 90; militie 30, scavenger 0,
+// beveiligingsrobot 150. Measured with data 0.24.0 (unchanged loadouts since 0.21.0), mean margin of the Raider side:
+// 6 plunderaar vs 5 militie +0.24 and 5 vs 5 -0.39; 4 knuppelaar vs 4 militie +0.56 and 3 vs 4 +0.15; 4 molotovgooier
+// vs 4 militie +0.49; 3 hond vs 4 scavenger +0.62 and vs 3 militie -0.77; 1 buggy vs 2 militie +0.30 and vs 3 -0.45;
+// 3 plunderaar vs 1 beveiligingsrobot +0.67 in 49 s. A plain plunderaar loses to the patrol rifle at equal cost (3 vs 2
+// patrol -0.53): early pipe guns, not a late army.
+const raiders = (unit: string, n: number, dweller: string, m: number): SweepResult =>
+  sweep(unit, dweller, m, { robots: n });
+
+describe('combat balance: Raiders are cheap, fragile and hit hard early', () => {
+  it('cheap: 6 plunderaar beat 5 militie (equal cost) in every layout, by a smaller margin', () => {
+    const s = raiders('plunderaar', 6, HUMAN, 5);
+    expect(s.robotWins, show('6 plunderaar vs 5 militie', s)).toBe(s.runs);
+    expect(s.meanMargin, show('6 plunderaar vs 5 militie', s)).toBeGreaterThanOrEqual(0.1);
+  });
+  it('fragile: 5 plunderaar lose to 5 militie (equal numbers)', () => {
+    expectHumansWin('5 plunderaar vs 5 militie', raiders('plunderaar', 5, HUMAN, 5));
+  });
+  it('early only: 3 plunderaar lose to 2 patrol (equal cost, the Dwellers after geweerrek)', () => {
+    expectHumansWin('3 plunderaar vs 2 patrol', raiders('plunderaar', 3, 'patrol', 2));
+  });
+  it('hard-hitting: 4 knuppelaar beat 4 militie clearly, 3 against 4 is even (equal cost)', () => {
+    expectRobotWins('4 knuppelaar vs 4 militie', raiders('knuppelaar', 4, HUMAN, 4));
+    expectEven('3 knuppelaar vs 4 militie', raiders('knuppelaar', 3, HUMAN, 4));
+  });
+  it('the molotovgooier outranges militie: 4 against 4 win clearly', () => {
+    expectRobotWins('4 molotovgooier vs 4 militie', raiders('molotovgooier', 4, HUMAN, 4));
+  });
+  it('the hond hunts workers and dies to soldiers', () => {
+    expectRobotWins('3 hond vs 4 scavenger', raiders('hond', 3, 'scavenger', 4));
+    expectHumansWin('3 hond vs 3 militie', raiders('hond', 3, HUMAN, 3));
+  });
+  it('the buggy harasses: it beats 2 militie and loses to 3 (equal cost)', () => {
+    expectRobotWins('buggy vs 2 militie', raiders('buggy', 1, HUMAN, 2));
+    expectHumansWin('buggy vs 3 militie', raiders('buggy', 1, HUMAN, 3));
+  });
+  it('a robot outlasts Raiders: 3 plunderaar need more than half a minute for a beveiligingsrobot', () => {
+    const s = raiders('plunderaar', 3, 'beveiligingsrobot', 1);
+    expectRobotWins('3 plunderaar vs beveiligingsrobot', s);
+    expect(s.meanSeconds, show('3 plunderaar vs beveiligingsrobot', s)).toBeGreaterThan(30);
+  });
+});
+
 describe('combat harness', () => {
   it('is fair: the mirrored layout (robot on the other side) gives the same outcome', () => {
     for (const robot of ['sentinel', 'beveiligingsrobot'])

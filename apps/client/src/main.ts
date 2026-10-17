@@ -6,6 +6,7 @@ import {
   ENTITY_NONE,
   MAX_ENTITIES_PER_COMMAND,
   OWNER_NEUTRAL,
+  TICK_HZ,
   UNITS_PER_METER,
   type CommandPayload,
   type CommandType,
@@ -40,6 +41,7 @@ import {
 import type { SimWinner } from '@crawlout/sim';
 import {
   AS_DEPOT,
+  PLACE_HQ_RANGE,
   PLACE_OK,
   POINT_CLAIM,
   POINT_NODE,
@@ -90,6 +92,7 @@ import { dominanceView } from './game/dominance.js';
 import { FOG_POLL_MS, fogEnabled, minimapFogOf, sameMinimapFog } from './game/fogView.js';
 import { minimapLayers } from './game/minimapLayers.js';
 import { LOADOUT_NAMES, buildRoster } from './game/roster.js';
+import { raiderKindOf, raiderLines, raiderStats, seesEnemySlaves } from './game/raiders.js';
 import { EVENT_TYPE, readSnapshot, type EntityRow } from './game/snapshot.js';
 
 const SLICE_MAP = 'rustbelt';
@@ -100,6 +103,8 @@ const DRAG_THRESHOLD_PX = 8;
 const SMALL_DRAG_PX = 24;
 /** Under-attack alerts are rate limited so a long fight is one toast, not a flood. */
 const ATTACK_ALERT_COOLDOWN_MS = 8000;
+/** A Kooi with too few guards warns again after this long (the sim lets slaves escape every 25 s while it lasts). */
+const REVOLT_ALERT_COOLDOWN_MS = 20000;
 
 function showError(message: string): void {
   const el = document.getElementById('error');
@@ -205,6 +210,19 @@ async function main(): Promise<void> {
       (e) => e.owner === session.playerId && buildingOf(e.typeId)?.provides.includes(hqProvidesIdx),
     );
 
+  const raiderStatsNow = (): ReturnType<typeof raiderStats> =>
+    raiderStats(data, myFaction()?.id, session.playerId, own());
+  /** Toast when a Kooi's garrison is below the revolt rule (computed from the visible own units; the status has no census). */
+  let lastRevoltAlert = -Infinity;
+  function checkRevolt(): void {
+    const now = performance.now();
+    if (now - lastRevoltAlert < REVOLT_ALERT_COOLDOWN_MS) return;
+    const short = raiderStatsNow()?.cages.find((c) => c.slaves > 0 && c.guards < c.guardsNeeded);
+    if (!short) return;
+    lastRevoltAlert = now;
+    alert({ kind: 'revolt', x: short.x, y: short.y });
+  }
+
   const perfBadge = perfEl ? createPerfBadge(perfEl, () => renderer.stats()) : null;
   const netStatus = createStatusOverlay();
   const session = startSession(data, map, {
@@ -235,6 +253,7 @@ async function main(): Promise<void> {
           }
         }
       }
+      checkRevolt();
       notify();
     },
     onFog(mask) {
@@ -277,7 +296,7 @@ async function main(): Promise<void> {
   const mine = (ids: Iterable<number>): number[] =>
     [...ids].filter((id) => entities.get(id)?.owner === session.playerId);
   /**
-   * Hostile: another player's unit or building, or a neutral unit (a bandit of a creep camp, sim 0.19.0; the sim refuses
+   * Hostile: another player's unit or building, or a neutral unit (a bandit of a creep camp, sim 0.20.0; the sim refuses
    * an Attack on a neutral wanderer for anyone but a Slaver). Neutral nodes and claim points are not.
    */
   const hostileRow = (e: EntityRow): boolean =>
@@ -559,6 +578,14 @@ async function main(): Promise<void> {
     const hud = hudPlacementReason(option, cx, cy);
     if (hud) return hud;
     const code = placementReasonFor(option, cx, cy);
+    if (code === PLACE_HQ_RANGE) {
+      // the Kooi's rule, in meters from the data: "Kooi moet aan de rand van je basis staan (18–34 m van het kamp)"
+      const rule = buildingOf(option.typeId)?.placement;
+      const key = buildingOf(option.typeId)?.key ?? '';
+      return rule
+        ? `${buildingName(key)} moet aan de rand van je basis staan (${Math.round(rule.minFromHqU / UNITS_PER_METER)}–${Math.round(rule.maxFromHqU / UNITS_PER_METER)} m van het kamp)`
+        : SIM_REASON_TEXT[code]!;
+    }
     return code === PLACE_OK ? null : (SIM_REASON_TEXT[code] ?? 'Hier kun je niet bouwen');
   }
 
@@ -654,12 +681,24 @@ async function main(): Promise<void> {
           dataRole === 'scavenger' || dataRole === 'builder' || dataRole === 'militia'
             ? dataRole
             : null;
+        const raiderKind = raiderKindOf(data, l);
+        const lines = raiderLines(
+          data,
+          myFaction()?.id,
+          session.playerId,
+          e,
+          entities.values(),
+          TICK_HZ,
+          status?.techs ?? [],
+        );
         return {
           id,
           typeId: e.typeId,
           loadoutName: name,
           hpPct: e.hpPct,
           role,
+          ...(raiderKind ? { raiderKind } : {}),
+          ...(lines.length > 0 ? { lines } : {}),
           // For the camera when the player clicks a unit card in the selection panel (HUD selections only).
           x: e.x,
           y: e.y,
@@ -781,6 +820,8 @@ async function main(): Promise<void> {
       if (ids.length > 0) sendChunked('Cancel', ids, {});
     },
     getDominance: () => dominanceView(status, (id) => session.playerName(id), session.playerId),
+    getRaiderStats: raiderStatsNow,
+    hasEnemySlaves: () => seesEnemySlaves(data, session.playerId, OWNER_NEUTRAL, entities.values()),
     getRoster: () => buildRoster(data, myFaction()?.id, session.playerId, entities.values()),
     selectUnits: (ids, add) => {
       selection = add ? new Set([...selection, ...ids]) : new Set(ids);

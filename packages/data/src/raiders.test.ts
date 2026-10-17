@@ -47,7 +47,7 @@ describe('Raiders: de factie laadt', () => {
     );
     expect(faction.robotRules).toBeNull();
     expect(faction.housingGrowthPerMin).toBe(0);
-    expect(data.dataVersion).toBe('0.24.0'); // data 0.24.0: the creep camps
+    expect(data.dataVersion).toBe('0.25.0'); // data 0.25.0: the creep camps (0.24.0: Raider balance)
     // Dwellers ongewijzigd: nog altijd training en geen Raider-blokken
     expect(dwellers.specialChannel).toBe('training');
     expect(dwellers.slaves).toBeNull();
@@ -610,6 +610,8 @@ describe('Raiders: AI-script', () => {
   const raiders = data.factions.find((f) => f.key === 'raiders')!;
   const ai = data.aiScripts.find((a) => a.key === 'raiders-basic')!;
   const dwellerAi = data.aiScripts.find((a) => a.key === 'dwellers-basic')!;
+  // data 0.24.0: the Dweller AI plays this script against the Raiders
+  const versusAi = data.aiScripts.find((a) => a.key === 'dwellers-vs-raiders')!;
 
   it('raiders-basic hoort bij de factie en elk id bestaat', () => {
     expect(ai.factionId).toBe(raiders.id);
@@ -622,11 +624,10 @@ describe('Raiders: AI-script', () => {
     expect(data.loadouts[plan.harass.loadoutId]!.key).toBe('buggy');
     expect(data.loadouts[plan.slaveRaids.slaverLoadoutId]!.key).toBe('slaver');
     // geen robots en geen training: de Raiders hebben ze niet. Data 0.23.0 (sim 0.18.0, gemeten): wel een reserve voor
-    // het onderzoek, pas na het venster van de vroege push (anders haalt de push zijn leger niet)
+    // het onderzoek
     expect(ai.robots).toBeNull();
     expect(ai.training).toBeNull();
     expect(ai.reserve).not.toBeNull();
-    expect(ai.reserve!.fromTicks).toBeGreaterThan(ai.pushFromTicks);
     // en de Dwellers hebben geen raidPlan
     expect(dwellerAi.raidPlan).toBeNull();
   });
@@ -635,8 +636,13 @@ describe('Raiders: AI-script', () => {
     expect(ai.attackTimersTicks[0]!).toBeLessThan(dwellerAi.attackTimersTicks[0]!);
     expect(ai.claimFromTicks).toBeLessThan(dwellerAi.claimFromTicks);
     expect(ai.claimFarFromTicks).toBeLessThan(dwellerAi.claimFarFromTicks);
-    expect(ai.pushFromTicks).toBeLessThan(dwellerAi.pushFromTicks);
     expect(ai.waveIntervalTicks).toBeLessThan(dwellerAi.waveIntervalTicks);
+    // data 0.24.0 (sim 0.19.0, gemeten): de push op het hoofdgebouw is laat (de vroege push won niet meer tegen een
+    // Dweller die zijn hoofdgebouw eerst verdedigt), maar nog altijd voor die van de Dweller-AI tegen de Raiders
+    expect(ai.pushFromTicks).toBeLessThan(versusAi.pushFromTicks);
+    expect(versusAi.versusFactionId).toBe(raiders.id);
+    expect(versusAi.defendHqFirst).toBe(true);
+    expect(versusAi.liberate).not.toBeNull();
     // data 0.23.0 (sim 0.18.0, gemeten): eerst staalplaten (betere vechters voor de vroege push), de buggies na de
     // autosloperij (zijn onderzoek buggy_chassis volgt uit de bouwvolgorde, de AI onderzoekt de keten zelf)
     const firstResearch = data.tech[ai.research[0]!]!.key;
@@ -647,9 +653,8 @@ describe('Raiders: AI-script', () => {
     // slavenroof vóór de eerste golf, dominantie-push na de eerste golf
     expect(ai.raidPlan!.slaveRaids.fromTicks).toBeLessThan(ai.attackTimersTicks[0]!);
     expect(ai.raidPlan!.dominancePush.fromTicks).toBeGreaterThan(ai.attackTimersTicks[0]!);
-    // data 0.23.0 (sim 0.18.0, gemeten): het kamp bij de claimpunten pas na het begin van de vroege push (een leger dat
-    // al bij een punt kampeert, haalt de push niet)
-    expect(ai.raidPlan!.dominancePush.fromTicks).toBeGreaterThanOrEqual(ai.pushFromTicks);
+    // data 0.24.0 (sim 0.19.0, gemeten): dominantie is de route, het kamp bij de claimpunten komt ruim voor de push
+    expect(ai.raidPlan!.dominancePush.fromTicks).toBeLessThan(ai.pushFromTicks);
   });
 
   it('houdt een garnizoen thuis (anders opstand): minstens het benodigde minimum van de slavenregels', () => {
@@ -669,6 +674,20 @@ describe('Raiders: AI-script', () => {
 describe('Raiders: schema weigert ongeldige data', () => {
   const rec = (r: RawGameData, key: 'loadouts' | 'buildings' | 'factions' | 'heroes', id: string) =>
     records(r, key).find((x) => x.id === id)!;
+
+  it('ai (data 0.24.0): hoogstens één script per factie en tegenstander, versus is een bestaande factie', () => {
+    const vs = (r: RawGameData): Rec =>
+      (r.ai as Rec[]).find((a) => a.id === 'dwellers-vs-raiders')!;
+    const twice = clone(raw());
+    twice.ai.push({ ...vs(twice), id: 'dwellers-vs-raiders-2' });
+    expect(() => loadGameData(twice)).toThrow(/one script per faction and versus/);
+    const unknown = clone(raw());
+    vs(unknown).versus = 'garde';
+    expect(() => loadGameData(unknown)).toThrow(/onbekende factie 'garde'/);
+    const bad = clone(raw());
+    vs(bad).liberate = { minFree: 0, units: 3, radiusM: 70 };
+    expect(() => loadGameData(bad)).toThrow(/minFree/);
+  });
 
   it('slaaf: vecht niet, is een arbeider en wordt niet gebouwd', () => {
     const fights = clone(raw());

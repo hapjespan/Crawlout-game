@@ -44,8 +44,13 @@ export const CONFIG: typeof REAL_CONFIG = {
   // REAL_CONFIG)
   placement: { ...REAL_CONFIG.placement, buildRange: 0 },
   // Several tests replace aiScripts by one script of the Dwellers (index 0): another faction (Raiders, data 0.21.0) then
-  // runs without a script, so its index never points past the replaced list
-  factions: REAL_CONFIG.factions.map((f) => (f.aiScript > 0 ? { ...f, aiScript: -1 } : f)),
+  // runs without a script, so its index never points past the replaced list; the same for the versus scripts (data
+  // 0.24.0): here every faction plays its default script
+  factions: REAL_CONFIG.factions.map((f) => ({
+    ...f,
+    aiScript: f.aiScript > 0 ? -1 : f.aiScript,
+    aiScriptVersus: f.aiScriptVersus.map(() => -1),
+  })),
   buildingTypes: REAL_CONFIG.buildingTypes.map((t) => {
     const key = DATA.buildings.find((b) => b.id === t.buildingId)!.key;
     const fp = COMPACT_FOOTPRINTS[key];

@@ -17,7 +17,7 @@ import { cellCenter, testPlayers } from '../src/testing.js';
 import { CAMP_CELL, armyAt, bandits, campMap, fightCamp, heroOf } from './creepHarness.js';
 import { CONFIG, MILITIA, bundle, cmd, envOf, typeByKey } from './helpers.js';
 
-// Creep camps (sim 0.19.0, data 0.24.0; voorstel, ter bevestiging door de architect): the bandits of a camp spawn at
+// Creep camps (sim 0.20.0, data 0.25.0; voorstel, ter bevestiging door de architect): the bandits of a camp spawn at
 // the start, wake on a player unit in the aggro radius or a hit, fight player units within the leash circle and never
 // buildings, go home and heal when leashed, and give their loot to the killing blow on the last bandit. Balance: a hero
 // with 4 to 6 militia clears a low camp with losses, the high camp takes about ten units. On an open 128 x 128 map with

@@ -49,16 +49,18 @@ describe('data/ valideert', () => {
     expect(data.tech.filter(dwellers)).toHaveLength(14);
     expect(data.training).toHaveLength(7);
     expect(data.heroes.filter(dwellers)).toHaveLength(1);
-    expect(data.aiScripts.filter(dwellers)).toHaveLength(1);
+    // data 0.24.0: the default script and the one against the Raiders (versus)
+    expect(data.aiScripts.filter(dwellers)).toHaveLength(2);
+    expect(data.aiScripts.filter(dwellers).filter((a) => a.versusFactionId < 0)).toHaveLength(1);
     // totalen met de Raiders; de sim kent hoogstens 32 techs en 32 perks
-    // 21 faction loadouts plus the 3 bandits of the creep camps (data 0.24.0), appended after them
+    // 21 faction loadouts plus the 3 bandits of the creep camps (data 0.25.0), appended after them
     expect(data.loadouts).toHaveLength(27);
     expect(data.loadouts.filter((l) => l.factionId === NEUTRAL_FACTION_ID)).toHaveLength(3);
     expect(data.buildings).toHaveLength(18);
     expect(data.tech).toHaveLength(28);
     expect(data.heroes).toHaveLength(2);
     expect(data.perks).toHaveLength(13);
-    expect(data.aiScripts).toHaveLength(2);
+    expect(data.aiScripts).toHaveLength(3);
     expect(data.dataVersion).toMatch(/^\d+\.\d+\.\d+$/);
   });
 
@@ -74,7 +76,7 @@ describe('data/ valideert', () => {
       data.aiScripts,
     ]) {
       list.forEach((record, i) => expect(record.id).toBe(i));
-      // the bandits of the creep camps (data 0.24.0) follow the faction loadouts, in the order of creeps.json
+      // the bandits of the creep camps (data 0.25.0) follow the faction loadouts, in the order of creeps.json
       const keys = list
         .filter((r) => !('factionId' in r) || r.factionId !== NEUTRAL_FACTION_ID)
         .map((r) => r.key);
@@ -1016,7 +1018,7 @@ describe('content-x (data 0.16.0): turret-netwerk, uitrusting in tiers, held-pas
   });
 });
 
-// Creep camps (data 0.24.0; voorstel, ter bevestiging door de architect): data/creeps.json and ai/*.json creeps.
+// Creep camps (data 0.25.0; voorstel, ter bevestiging door de architect): data/creeps.json and ai/*.json creeps.
 describe('data/creeps.json', () => {
   const data = loadGameData(raw());
   const creepsOf = (r: RawGameData) =>
@@ -1062,8 +1064,13 @@ describe('data/creeps.json', () => {
       for (const id of t.units) expect(data.loadouts[id]!.factionId).toBe(NEUTRAL_FACTION_ID);
   });
 
-  it('the AI scripts of both factions clear camps from the same time on', () => {
+  it('the default AI scripts of both factions clear camps from the same time on; the Dwellers against Raiders do not', () => {
     for (const a of data.aiScripts) {
+      if (a.versusFactionId >= 0) {
+        // ai/dwellers-vs-raiders.json: no camp runs (measured: with them the Raiders won none of 66)
+        expect(a.creeps).toBeNull();
+        continue;
+      }
       expect(a.creeps).not.toBeNull();
       expect(a.creeps!.fromTicks).toBe(secondsToTicks(600));
       expect(a.creeps!.tiers.map((t) => t.tier)).toEqual([1, 2]);

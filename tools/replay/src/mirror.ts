@@ -22,6 +22,8 @@ export interface MirrorOptions {
   full?: boolean;
   /** Hoogstens zoveel verschillen in het rapport (standaard 12). */
   maxDiffs?: number;
+  /** De factie van beide spelers (standaard dwellers; data 0.24.0: raiders voor de Raider-spiegel). */
+  faction?: string;
 }
 
 export interface MirrorEconomy {
@@ -46,18 +48,19 @@ export interface MirrorResult {
   frame: number;
 }
 
-const lobby: LobbyPlayer[] = [0, 1].map((i) => ({
-  playerId: i,
-  name: `p${i}`,
-  faction: 'dwellers',
-  ready: true,
-  online: false,
-  ai: true,
-}));
+const lobby = (faction: string): LobbyPlayer[] =>
+  [0, 1].map((i) => ({
+    playerId: i,
+    name: `p${i}`,
+    faction,
+    ready: true,
+    online: false,
+    ai: true,
+  }));
 
-/** Rustbelt XL met twee AI's; met neutral zonder toeval (geen jitter, geen kritieke schoten). */
-export function mirrorEnv(neutral: boolean): SimEnv {
-  const env = buildEnv('rustbelt', lobby, { mode: 'skirmish', delayFrames: 4 });
+/** Rustbelt XL met twee AI's (van één factie); met neutral zonder toeval (geen jitter, geen kritieke schoten). */
+export function mirrorEnv(neutral: boolean, faction = 'dwellers'): SimEnv {
+  const env = buildEnv('rustbelt', lobby(faction), { mode: 'skirmish', delayFrames: 4 });
   if (!neutral) return env;
   const config: SimConfig = {
     ...env.config,
@@ -90,14 +93,14 @@ function describe(sim: Sim, p: number, mirror: boolean): string[] {
       out.push(`lijk t${u.typeId} @${mx(u.x)},${my(u.y)} t${w.work[i]}`);
     } else {
       out.push(
-        `${u.kind} t${u.typeId} @${mx(u.x)},${my(u.y)} hp${u.hp} ord${u.order} ph${u.phase} rol${u.role} carry${u.carry} mv${u.moving ? 1 : 0} work${w.work[i]} cd${w.cooldown[i]} rm${w.repairMilli[i]}`,
+        `${u.kind} t${u.typeId} @${mx(u.x)},${my(u.y)} hp${u.hp} ord${u.order} ph${u.phase} rol${u.role} carry${u.carry} mv${u.moving ? 1 : 0} work${w.work[i]} cd${w.cooldown[i]} rm${w.repairMilli[i]} sl${w.slaveState[i]}/${w.slaveTicks[i]}/${w.capWork[i]} chem${w.chem[i]}/${w.chemPhase[i]}/${w.chemTicks[i]}`,
       );
     }
   }
   out.sort();
   const ps = sim.ps;
   out.push(
-    `ps scrap${ps.scrap[p]} growth${ps.growth[p]} dom${ps.domTicks[p]} build${ps.aiBuild[p]} attack${ps.aiAttack[p]} waveAt${ps.aiWaveAt[p]} claimAt${ps.aiClaimAt[p]} tech${ps.tech[p]} hero${ps.heroState[p]}/${ps.heroLevel[p]}/${ps.heroXp[p]}/${ps.heroPerks[p]}/${ps.heroTimer[p]} trained${ps.trained.slice(p * 7, p * 7 + 7).join('.')} net${ps.netTimer[p]}/${ps.netArrivals[p]} robot${ps.aiRobot[p]}`,
+    `ps scrap${ps.scrap[p]} growth${ps.growth[p]} dom${ps.domTicks[p]} build${ps.aiBuild[p]} attack${ps.aiAttack[p]} waveAt${ps.aiWaveAt[p]} claimAt${ps.aiClaimAt[p]} tech${ps.tech[p]} hero${ps.heroState[p]}/${ps.heroLevel[p]}/${ps.heroXp[p]}/${ps.heroPerks[p]}/${ps.heroTimer[p]} trained${ps.trained.slice(p * 7, p * 7 + 7).join('.')} net${ps.netTimer[p]}/${ps.netArrivals[p]} robot${ps.aiRobot[p]} mix${ps.aiMix[p]} raid${ps.aiRaidAt[p]}/${ps.aiRaidOut[p]} trib${ps.tributeAcc[p]}`,
   );
   return out;
 }
@@ -180,8 +183,9 @@ export function mirrorSwap(
   seedB: number,
   maxFrames = 45 * 1200,
   max = 12,
+  faction = 'dwellers',
 ): SwapResult {
-  const env = mirrorEnv(true);
+  const env = mirrorEnv(true, faction);
   const a = createSim({ seed: seedA, ...env });
   const b = createSim({ seed: seedB, ...env });
   let breakFrame: number | null = null;
@@ -262,7 +266,7 @@ function listDiff(a: string[], b: string[], max: number): string[] {
 
 /** AI tegen AI op Rustbelt XL; vergelijkt elke tick speler 0 met het spiegelbeeld van speler 1. */
 export function mirrorRun(seed: number, opts: MirrorOptions = {}): MirrorResult {
-  const sim = createSim({ seed, ...mirrorEnv(opts.neutral ?? true) });
+  const sim = createSim({ seed, ...mirrorEnv(opts.neutral ?? true, opts.faction) });
   const maxFrames = opts.maxFrames ?? 20 * 1200;
   const max = opts.maxDiffs ?? 12;
   const tpm = sim.config.ticksPerMinute;
