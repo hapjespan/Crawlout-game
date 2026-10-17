@@ -21,6 +21,8 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm replay
+      - name: Client production build (fase-0 sectie 22 besluit 9)
+        run: pnpm --filter @crawlout/client build
       - name: Benchmark (meldt, blokkeert niet)
         run: pnpm bench
         continue-on-error: true
