@@ -232,6 +232,37 @@ Alle 24 manifest-ids die de Raider-data gebruikt (`data/buildings.json` `visuals
 
 **Preview**: `tools/asset-cli/preview/raiders.html` (serveer de repo-root statisch; opties `manifest`, `ref`, `lod`, `w`, `az`, `el`, `team`, `only=<id,id>`, `norefs=1`, `loadouts=1`): de gebouwen en units naast een poppetje van 1,8 m en het Dweller-huis (`dweller_building_housing`) met de footprint als rechthoek; met `loadouts=1` een rij poppetjes met hun wapens en gear (het wapen naast de heup gehouden, zoals de arm in de animaties hangt).
 
+## Dweller-uitrusting (`assets/src/dwellers-gear.json`)
+
+De negen wapen-, gereedschap- en pantser-ids die de Dweller-loadouts in `visuals.meshSlots` noemen (`data/loadouts.json`) hadden geen asset; render sloeg ze stil over. Nu zijn het procedurele aanhangsels in dezelfde bouwer en hetzelfde formaat als de Raider-aanhangsels (groep `attachments` van `src/robots.ts`, `kind: 'prop'`, `teamMask: 'none'`, geen footprint, geen teammateriaal, `anchor` `grip` of `body`, budget 2000/800/300). De config heeft geen `units` of `buildings`; `buildAssets` bouwt hem naast `robots.json` en `raiders.json` (optie `dwellersGearPath`). Alle getallen staan in het bestand.
+
+Eigen stijl tegenover de Raiders: opgeruimde "vault-tech" in plaats van schroot. Blauwgrijs geverfd metaal in drie tinten (`metal_vault`, `_dark`, `_light`), composietplaat (`composite_metal`), gele veiligheidsbanden (`metal_vault_yellow`), blank staal (`steel_bare`: hamerkop, koevoet, sleutelbek), rubberen grepen (`rubber_grip`), grijs canvas (`canvas_grey`) en blauwe lenzen (`lens_blue`: richtkijkers, contactdop, statuslampen). Geen roest, spijkers, schedels of logo's, ook geen tekst of cijfers; vlakken zijn recht met kleine afschuiningen.
+
+| Id                            | Slot en anker | Maat (b x h x d, m) | LOD0 / 1 / 2 | Wat                                                                                          |
+| ----------------------------- | ------------- | ------------------- | ------------ | -------------------------------------------------------------------------------------------- |
+| `dweller_weapon_pipe_pistol`  | weapon, grip  | 0,05 x 0,19 x 0,37  | 180/104/72   | pijppistool: korte loop in blauwgrijze huls, gele monding, rubberen greep                    |
+| `dweller_weapon_rifle`        | weapon, grip  | 0,05 x 0,28 x 1,11  | 280/200/84   | geweer: kast met gele band, lange loop, kolf, richtkijker met blauwe lens                    |
+| `dweller_weapon_patrol_rifle` | weapon, grip  | 0,06 x 0,30 x 1,18  | 344/268/84   | patrolgeweer: composiet kast, handguard met voorgreep, draagbalk met optiek, demper          |
+| `dweller_weapon_shotgun`      | weapon, grip  | 0,07 x 0,18 x 1,10  | 256/184/84   | pompgeweer: dikke loop met magazijnbuis, gele pompgreep, kolf                                |
+| `dweller_weapon_club`         | weapon, grip  | 0,11 x 0,10 x 1,03  | 304/192/52   | slagwapen (stoknuppel): stalen schacht, rubberen greep, kop met gele banden, blauwe dop      |
+| `dweller_tool_multitool`      | tool, grip    | 0,14 x 0,09 x 0,43  | 184/144/72   | multitool: handvat, kop met sleutelbek, schroevendraaier, blauwe statuslamp                  |
+| `dweller_tool_hammer`         | tool, grip    | 0,29 x 0,09 x 0,53  | 156/128/68   | bouwhamer: stalen schacht, rubberen greep, blokkop van blank staal met gele band             |
+| `dweller_tool_scrapbag`       | tool, grip    | 0,31 x 0,68 x 0,21  | 204/132/72   | schroottas van de scavenger: canvas tas aan riem onder de hand, gele gesp, koevoet           |
+| `dweller_armor_composite`     | armor, body   | 0,74 x 0,58 x 0,38  | 244/84/54    | composietpantser: borstplaat met gele band en blauwe lamp, schouderkappen, buik- en rugplaat |
+
+Maten en ankers volgen het Raider-hoofdstuk: wapens en gereedschap hebben de oorsprong in de greep met de loop of kop naar +Z en de bovenkant op +Y; de tas hangt onder de greep; het pantser staat in lichaamsruimte (voeten y = 0, borst op 1,1 tot 1,5 m). De slots zijn die van de Dweller-data: `weapon` voor de vijf wapens, `tool` voor multitool, hamer en tas, `armor` voor het composietpantser.
+
+**Oppervlaksoort per materiaal** (render leest de soort uit de naam; `test/dwellers-gear.test.ts` bewaakt de tabel):
+
+| Materiaal                                                                    | Soort          |
+| ---------------------------------------------------------------------------- | -------------- |
+| `metal_vault`, `_dark`, `_light`, `_yellow`, `composite_metal`, `steel_bare` | geverfd metaal |
+| `rubber_grip`                                                                | leer           |
+| `canvas_grey`                                                                | doek           |
+| `lens_blue`                                                                  | lens           |
+
+**Controles** (`test/dwellers-gear.test.ts`, windrichting in `test/winding.test.ts`): de ids tegen `data/loadouts.json` (alle niet-body ids, negen), het anker bij het slot, maat-bereik per as, budgetten en dalend aantal driehoeken per LOD, `teamMask` `none`, geen Raider-materiaal of teammateriaal, oppervlaksoort per materiaal, byte-gelijke tweede bouw en `assets/dist` is de bouw van deze config.
+
 ## KTX2
 
 KTX2 is optioneel. Staat `toktx` (KTX-Software) op PATH, dan worden PNG-textures per LOD naar KTX2 (UASTC) omgezet. Ontbreekt hij, dan blijven textures PNG en meldt de CLI dat als waarschuwing. Dat is geen fout. De toktx-route is in sprint 1 niet getest (geen binary beschikbaar).

@@ -55,6 +55,8 @@ export interface BuildOptions {
   robotsPath?: string;
   /** Pad naar de Raider-config (zelfde formaat als robots.json); standaard `<srcDir>/raiders.json`. Optioneel. */
   raidersPath?: string;
+  /** Path to the Dweller gear config (same format, attachments only); default `<srcDir>/dwellers-gear.json`. Optional. */
+  dwellersGearPath?: string;
   /** Pad naar de prop-packs-config; standaard `<srcDir>/packs.json`. Ontbreekt hij, dan zijn er geen pack-props. */
   packsPath?: string;
   /** Map met de pack-GLB's; standaard `<srcDir>/packs`, vanuit een worktree ook die van de hoofdcheckout. */
@@ -296,11 +298,12 @@ export async function buildAssets(options: BuildOptions): Promise<BuildResult> {
     reports.push(report);
   }
 
-  // Procedural models (src/robots.ts): the Dweller robots (robots.json) and the Raiders (raiders.json), each config
+  // Procedural models (src/robots.ts): the Dweller robots (robots.json), the Raiders (raiders.json) and the Dweller gear (dwellers-gear.json), each config
   // with rigid units, buildings and attachments from basic shapes.
   const robotConfigs = [
     options.robotsPath ?? join(srcDir, 'robots.json'),
     options.raidersPath ?? join(srcDir, 'raiders.json'),
+    options.dwellersGearPath ?? join(srcDir, 'dwellers-gear.json'),
   ].filter((path) => existsSync(path));
   const robots: RobotsResult = { reports: [], entries: [], outputs: new Map() };
   for (const robotsSource of robotConfigs) {

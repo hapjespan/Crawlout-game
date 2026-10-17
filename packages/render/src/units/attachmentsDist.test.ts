@@ -177,11 +177,11 @@ describe('attachments of the Raider loadouts in assets/dist', () => {
     { id: 3, visuals: { meshSlots: { body: 'raider_body_slave', tool: 'raider_tool_shovel' } } },
     {
       id: 4,
-      visuals: { meshSlots: { body: 'dweller_body_human', weapon: 'dweller_weapon_rifle' } },
+      visuals: { meshSlots: { body: 'dweller_body_human', weapon: 'dweller_weapon_not_yet_made' } },
     },
   ];
 
-  it('carries every prop that has art, skips the Dweller rifle that has none, and draws one mesh per prop', async () => {
+  it('carries every prop that has art, skips a Dweller weapon that has none, and draws one mesh per prop', async () => {
     stubBrowser();
     const { io, loader } = await distIO();
     const scene = new Scene();
@@ -216,7 +216,7 @@ describe('attachments of the Raider loadouts in assets/dist', () => {
       'raider_tool_shovel',
     ])
       expect(status[id]?.state, id).toBe('ready');
-    expect(status.dweller_weapon_rifle).toMatchObject({
+    expect(status.dweller_weapon_not_yet_made).toMatchObject({
       state: 'skipped',
       reason: 'not in the manifest',
     });
