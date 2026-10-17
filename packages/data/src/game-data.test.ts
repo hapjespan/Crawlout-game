@@ -12,6 +12,7 @@ import {
   convertDominance,
   cumulate,
   loadGameData,
+  NEUTRAL_FACTION_ID,
   PROVIDES,
   type RawGameData,
 } from './loader.js';
@@ -50,7 +51,9 @@ describe('data/ valideert', () => {
     expect(data.heroes.filter(dwellers)).toHaveLength(1);
     expect(data.aiScripts.filter(dwellers)).toHaveLength(1);
     // totalen met de Raiders; de sim kent hoogstens 32 techs en 32 perks
-    expect(data.loadouts).toHaveLength(24);
+    // 21 faction loadouts plus the 3 bandits of the creep camps (data 0.24.0), appended after them
+    expect(data.loadouts).toHaveLength(27);
+    expect(data.loadouts.filter((l) => l.factionId === NEUTRAL_FACTION_ID)).toHaveLength(3);
     expect(data.buildings).toHaveLength(18);
     expect(data.tech).toHaveLength(28);
     expect(data.heroes).toHaveLength(2);
@@ -71,7 +74,10 @@ describe('data/ valideert', () => {
       data.aiScripts,
     ]) {
       list.forEach((record, i) => expect(record.id).toBe(i));
-      const keys = list.map((r) => r.key);
+      // the bandits of the creep camps (data 0.24.0) follow the faction loadouts, in the order of creeps.json
+      const keys = list
+        .filter((r) => !('factionId' in r) || r.factionId !== NEUTRAL_FACTION_ID)
+        .map((r) => r.key);
       expect(keys).toEqual([...keys].sort());
     }
   });
@@ -1007,5 +1013,83 @@ describe('content-x (data 0.16.0): turret-netwerk, uitrusting in tiers, held-pas
       tech: [...(r.tech as unknown[])].reverse(),
     });
     expect(b).toEqual(a);
+  });
+});
+
+// Creep camps (data 0.24.0; voorstel, ter bevestiging door de architect): data/creeps.json and ai/*.json creeps.
+describe('data/creeps.json', () => {
+  const data = loadGameData(raw());
+  const creepsOf = (r: RawGameData) =>
+    r.creeps as {
+      units: { id: string; hp: number }[];
+      tiers: {
+        tier: number;
+        units: { unitId: string }[];
+        aggroRadiusM: number;
+        leashRadiusM: number;
+      }[];
+    };
+
+  it('appends the bandits after the faction loadouts, neutral, as militia without cost', () => {
+    const bandits = data.loadouts.filter((l) => l.factionId === NEUTRAL_FACTION_ID);
+    expect(bandits.map((l) => l.key)).toEqual([
+      'bandiet_schutter',
+      'bandiet_knokker',
+      'bandiet_baas',
+    ]);
+    const first = data.loadouts.length - bandits.length;
+    bandits.forEach((l, k) => {
+      expect(l.id).toBe(first + k);
+      expect(l.role).toBe(ROLES.indexOf('militia'));
+      expect(l.scrapCost).toBe(0);
+      expect(l.producedAt).toBe(-1);
+    });
+    expect(data.creeps.units).toEqual(bandits.map((l) => l.id));
+    expect(data.creeps.names).toEqual(['Schutter', 'Knokker', 'Bandietenbaas']);
+  });
+
+  it('converts the tiers to sim units, one entry per bandit, ascending tier', () => {
+    expect(data.creeps.tiers.map((t) => t.tier)).toEqual([1, 2]);
+    const low = data.creeps.tiers[0]!;
+    const high = data.creeps.tiers[1]!;
+    expect(low.units.length).toBeGreaterThan(0);
+    expect(high.units.length).toBeGreaterThan(low.units.length);
+    expect(low.aggroRadiusU).toBe(metersToUnits(6));
+    expect(low.leashRadiusU).toBe(metersToUnits(14));
+    expect(low.respawnTicks).toBe(0);
+    expect(high.lootScrap).toBeGreaterThan(low.lootScrap);
+    for (const t of data.creeps.tiers)
+      for (const id of t.units) expect(data.loadouts[id]!.factionId).toBe(NEUTRAL_FACTION_ID);
+  });
+
+  it('the AI scripts of both factions clear camps from the same time on', () => {
+    for (const a of data.aiScripts) {
+      expect(a.creeps).not.toBeNull();
+      expect(a.creeps!.fromTicks).toBe(secondsToTicks(600));
+      expect(a.creeps!.tiers.map((t) => t.tier)).toEqual([1, 2]);
+    }
+  });
+
+  it('without the file there are no camps and no bandits', () => {
+    const r = raw();
+    delete r.creeps;
+    const d = loadGameData(r);
+    expect(d.creeps).toEqual({ units: [], names: [], tiers: [] });
+    expect(d.loadouts.some((l) => l.factionId === NEUTRAL_FACTION_ID)).toBe(false);
+  });
+
+  it('refuses an unknown bandit, a duplicate id or tier, and a leash shorter than the aggro radius', () => {
+    const unknown = raw();
+    creepsOf(unknown).tiers[0]!.units[0]!.unitId = 'spook';
+    expect(() => loadGameData(unknown)).toThrow(/onbekende bandiet 'spook'/);
+    const dupId = raw();
+    creepsOf(dupId).units[0]!.id = 'militie';
+    expect(() => loadGameData(dupId)).toThrow(/dubbele id 'militie'/);
+    const dupTier = raw();
+    creepsOf(dupTier).tiers[1]!.tier = 1;
+    expect(() => loadGameData(dupTier)).toThrow(/dubbele tier/);
+    const leash = raw();
+    creepsOf(leash).tiers[0]!.leashRadiusM = 2;
+    expect(() => loadGameData(leash)).toThrow(/leashRadiusM/);
   });
 });

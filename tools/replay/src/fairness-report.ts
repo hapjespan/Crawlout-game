@@ -35,6 +35,23 @@ if (args.includes('--json')) {
         );
       });
   }
+  // creep camps (sim 0.19.0): how often and when each was cleared, and by whom
+  if (args.includes('--camps')) {
+    for (const r of results)
+      console.log(
+        `  seed ${r.seed} camps: ${r.camps.map((c) => (c.clearedBy === null ? `t${c.tier} -` : `t${c.tier} p${c.clearedBy}@${c.minute}`)).join(', ')}`,
+      );
+  }
+  const all = results.flatMap((r) => r.camps);
+  const cleared = all.filter((c) => c.minute !== null);
+  if (all.length > 0) {
+    const mins = cleared.map((c) => c.minute!).sort((a, b) => a - b);
+    const byTier = (t: number) => cleared.filter((c) => c.tier === t).length;
+    const ofTier = (t: number) => all.filter((c) => c.tier === t).length;
+    console.log(
+      `kampen: ${cleared.length} van ${all.length} geruimd (tier 1 ${byTier(1)}/${ofTier(1)}, tier 2 ${byTier(2)}/${ofTier(2)}); minuut ${mins[0]?.toFixed(1) ?? '-'} tot ${mins.at(-1)?.toFixed(1) ?? '-'}, mediaan ${mins[Math.floor(mins.length / 2)]?.toFixed(1) ?? '-'}; per potje ${(cleared.length / results.length).toFixed(1)}`,
+    );
+  }
   const s = summarize(results);
   console.log(
     `speler 0 wint ${s.wins[0]}, speler 1 wint ${s.wins[1]} van ${list.length}; vernietiging ${s.reasons.destruction}, dominantie ${s.reasons.dominance}; lengte ${s.minMinutes.toFixed(1)} tot ${s.maxMinutes.toFixed(1)} min, ${s.inWindow} tussen 25 en 35  [${((Date.now() - t0) / 1000).toFixed(1)} s]`,

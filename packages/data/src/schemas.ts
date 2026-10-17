@@ -688,6 +688,25 @@ export const AiScript = z
     // Data 0.21.0 (Raiders; voorstel, ter bevestiging door de architect): het roof- en harassplan van het Raider-script
     // (optioneel; Dwellers hebben het niet). De rest van het script (bouwvolgorde, golven, claims) gebruikt de gewone velden.
     raidPlan: RaidPlan.optional(),
+    // Data 0.24.0 (creep camps; voorstel, ter bevestiging door de architect): when the AI clears the bandit camps of the
+    // map (data/creeps.json). From fromS on, with no enemy at its buildings, an idle army of at least minArmy (the
+    // entry for the camp's tier; a tier without an entry is never attacked) walks to the nearest living camp within
+    // maxPathM over land of its headquarters, with the hero. Absent = the AI leaves the camps alone.
+    creeps: z
+      .object({
+        fromS: nonneg,
+        maxPathM: z.number().positive(),
+        tiers: z
+          .array(
+            z
+              .object({ tier: z.number().int().positive(), minArmy: z.number().int().positive() })
+              .strict(),
+          )
+          .min(1),
+        _comment: comment,
+      })
+      .strict()
+      .optional(),
     allInWithoutNodes: z.boolean(), // zonder bruikbare scrap-node (geen inkomen meer) gaan elke golf naar het hoofdgebouw, met de plunderaars mee
     _comment: comment,
   })
@@ -800,6 +819,63 @@ export const SimTuning = z
     path: ['exclusiveRadiusM'],
   });
 
+// Creep camps (data 0.24.0, phase 2 round 2; voorstel, ter bevestiging door de architect): data/creeps.json. Bandit
+// nests of the map (MapDef.creepCamps, Spelfundament 3.2: "bandietennesten als creeps met loot en held-XP"). `units`
+// are the neutral loadouts of the camps (no faction: they are never trained or built; the loader appends them after
+// the loadouts of the factions, so their typeIds follow the faction loadouts); `tiers` is what a camp of a map tier
+// holds and gives. The rules (sim, packages/sim/src/systems/creeps.ts): a camp aggroes on a player unit within
+// aggroRadiusM of its centre (or when one of its bandits is hit), its bandits fight player units within leashRadiusM of
+// the centre and never attack buildings; a bandit beyond leashRadiusM, or no player unit left in that circle, sends the
+// whole camp home, where it heals to full. The last bandit's killing blow gives lootScrap to that player and heroXp to
+// his living hero within heroXpRadiusM of the centre. respawnS 0: the camp stays empty, else it comes back that long
+// after it was cleared once no player unit is within aggroRadiusM.
+export const CreepUnit = z
+  .object({
+    id,
+    naam: z.string().min(1),
+    bodyType: BodyType,
+    weapon: z.string(),
+    armorType: ArmorType,
+    hp: z.number().positive(),
+    damage: nonneg,
+    damageType: DamageType,
+    rangeM: nonneg,
+    speedMps: nonneg,
+    cooldownS: nonneg,
+    sightM: sight.optional(),
+    visuals: z.object({ meshSlots: z.record(z.string(), z.string()) }).strict(),
+    _comment: comment,
+  })
+  .strict();
+export const CreepTier = z
+  .object({
+    tier: z.number().int().positive(),
+    naam: z.string().min(1),
+    units: z.array(z.object({ unitId: id, count: z.number().int().positive() }).strict()).min(1),
+    aggroRadiusM: z.number().positive(),
+    leashRadiusM: z.number().positive(),
+    respawnS: nonneg,
+    lootScrap: z.number().int().nonnegative(),
+    heroXp: z.number().int().nonnegative(),
+    heroXpRadiusM: nonneg,
+    _comment: comment,
+  })
+  .strict()
+  .refine((t) => t.leashRadiusM >= t.aggroRadiusM, {
+    message: 'leashRadiusM is minstens aggroRadiusM',
+    path: ['leashRadiusM'],
+  });
+export const Creeps = z
+  .object({
+    units: z.array(CreepUnit),
+    tiers: z.array(CreepTier),
+    _comment: comment,
+  })
+  .strict();
+
+export type CreepUnit = z.infer<typeof CreepUnit>;
+export type CreepTier = z.infer<typeof CreepTier>;
+export type Creeps = z.infer<typeof Creeps>;
 export type Faction = z.infer<typeof Faction>;
 export type Chem = z.infer<typeof Chem>;
 export type SlaveRules = z.infer<typeof SlaveRules>;

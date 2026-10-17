@@ -240,6 +240,11 @@ export class World {
   readonly chemTicks = new Int32Array(MAX_ENTITIES);
   /** Owner + 1 of the last unit or turret that damaged this entity (0 = none): who plunders it (systems/plunder.ts). */
   readonly lastHit = new Uint8Array(MAX_ENTITIES);
+  // Creep camps (sim 0.19.0, STATE_FORMAT_VERSION 13; systems/creeps.ts; voorstel, ter bevestiging door de architect)
+  /** Bandit of a creep camp: camp index + 1 (0 = not a creep). Stays on its corpse. */
+  readonly creepCamp = new Uint8Array(MAX_ENTITIES);
+  /** Bandit: the cell (index y * w + x) it guards in its camp and walks back to. */
+  readonly creepHome = new Int32Array(MAX_ENTITIES);
   // Presentatie (gaat de snapshot in, is ook state zodat de hash de hele snapshot dekt)
   readonly anim = new Uint8Array(MAX_ENTITIES);
   readonly animT = new Uint16Array(MAX_ENTITIES);
@@ -444,6 +449,8 @@ export function entityStateArrays(w: World): readonly StateArray[] {
     one('chemPhase', w.chemPhase),
     one('chemTicks', w.chemTicks),
     one('lastHit', w.lastHit),
+    one('creepCamp', w.creepCamp),
+    one('creepHome', w.creepHome),
     one('anim', w.anim),
     one('animT', w.animT),
     one('flags', w.flags),

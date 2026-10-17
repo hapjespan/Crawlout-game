@@ -218,11 +218,69 @@ export function raiderBot(p: number, plan: RaiderPlan, every = 10): Controller {
           );
           const nu = sim.getUnit(n);
           if (nu !== null && Math.hypot(nu.x - sx, nu.y - sy) > 6 * 256)
-            add(p, 'Move', { ids: [s.id], x: nu.x + 256, y: nu.y });
+            add(p, 'Move', { ids: [s.id], ...detour(sim, sx, sy, nu.x + 256, nu.y) });
         }
       }
     }
   };
+}
+
+/**
+ * Creep camps (sim 0.19.0): a player walks a lone unit around a living bandit camp instead of past it. The next
+ * waypoint on the shortest walk from (x, y) to (tx, ty) over walkable cells that keeps 10 m from every living camp
+ * centre, `ahead` cells along it (4-neighbour BFS from the target, the same metric as the sim's terrain distances);
+ * the target itself when that walk does not exist or is short.
+ */
+function detour(
+  sim: Sim,
+  x: number,
+  y: number,
+  tx: number,
+  ty: number,
+  ahead = 25,
+): { x: number; y: number } {
+  const { w, h, passable } = sim.map;
+  const camps = (sim.map.creepCamps ?? []).filter((_, k) => sim.creeps.state[k] !== 3);
+  if (camps.length === 0) return { x: tx, y: ty };
+  const avoid = (cx: number, cy: number): boolean =>
+    camps.some((c) => Math.hypot(cx + 0.5 - c.x / 256, cy + 0.5 - c.y / 256) < 10);
+  const dist = new Int32Array(w * h).fill(-1);
+  const t = (ty >> 8) * w + (tx >> 8);
+  dist[t] = 0;
+  const queue = [t];
+  for (let q = 0; q < queue.length; q++) {
+    const c = queue[q]!;
+    const cx = c % w;
+    const cy = (c - cx) / w;
+    for (const [nx, ny] of [
+      [cx + 1, cy],
+      [cx - 1, cy],
+      [cx, cy + 1],
+      [cx, cy - 1],
+    ] as const) {
+      if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
+      const n = ny * w + nx;
+      if (dist[n] !== -1 || passable[n] !== 1 || avoid(nx, ny)) continue;
+      dist[n] = dist[c]! + 1;
+      queue.push(n);
+    }
+  }
+  let c = (y >> 8) * w + (x >> 8);
+  if (dist[c] === -1 || dist[c]! <= ahead) return { x: tx, y: ty };
+  for (let k = 0; k < ahead; k++) {
+    const cx = c % w;
+    const cy = (c - cx) / w;
+    let best = c;
+    for (const n of [c + 1, c - 1, c + w, c - w]) {
+      const nx = n % w;
+      if (n < 0 || n >= w * h || Math.abs(nx - cx) > 1 || Math.abs((n - nx) / w - cy) > 1) continue;
+      if (dist[n] !== -1 && dist[n]! < dist[best]!) best = n;
+    }
+    if (best === c) break;
+    c = best;
+  }
+  const cx = c % w;
+  return { x: cx * 256 + 128, y: ((c - cx) / w) * 256 + 128 };
 }
 
 export interface DwellerBaitPlan {

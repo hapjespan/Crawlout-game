@@ -1,0 +1,114 @@
+{
+  "_comment": "Data 0.24.0 (creep camps, phase 2 round 2; voorstel, ter bevestiging door de architect en content; startwaarde, gemeten in packages/sim/test/creeps.test.ts en met AI tegen AI, zie packages/sim/CHANGELOG.md 0.19.0). Bandit nests of the map (MapDef.creepCamps, Spelfundament 3.2: bandietennesten als creeps met loot en held-XP, Warcraft 3). units: the neutral loadouts of the camps (no faction, never trained; owner OWNER_NEUTRAL in the sim; the loader appends them after the faction loadouts). tiers: what a camp of that map tier holds and gives. A camp wakes on a player unit within aggroRadiusM of its centre or when a bandit is hit; its bandits fight player units within leashRadiusM of the centre (never buildings), and the whole camp walks home and heals to full when a bandit strays beyond leashRadiusM or no player unit is left in that circle (hits on the way home are ignored). The killing blow on the last bandit gives lootScrap to that player and heroXp to his living hero within heroXpRadiusM of the centre (on top of the normal kill and assist xp per bandit). respawnS 0: a cleared camp stays empty.",
+  "units": [
+    {
+      "id": "bandiet_schutter",
+      "naam": "Schutter",
+      "bodyType": "human",
+      "weapon": "pipe_gun",
+      "armorType": "light",
+      "hp": 70,
+      "damage": 8,
+      "damageType": "ballistic",
+      "rangeM": 7.5,
+      "speedMps": 3,
+      "cooldownS": 1,
+      "visuals": {
+        "meshSlots": {
+          "body": "raider_body_human",
+          "weapon": "raider_weapon_pipe_gun"
+        }
+      },
+      "_comment": "The gunner of every camp: a militia's damage (8 per second) with a little more hp (70 against 60)."
+    },
+    {
+      "id": "bandiet_knokker",
+      "naam": "Knokker",
+      "bodyType": "human",
+      "weapon": "spiked_club",
+      "armorType": "medium",
+      "hp": 140,
+      "damage": 13,
+      "damageType": "melee",
+      "rangeM": 1.8,
+      "speedMps": 3.25,
+      "cooldownS": 1,
+      "visuals": {
+        "meshSlots": {
+          "body": "raider_body_human",
+          "weapon": "raider_weapon_spiked_club"
+        }
+      },
+      "_comment": "The bruiser: 140 hp behind medium armour (75 percent from ballistic), runs into the shooters; it is what kills the first militia."
+    },
+    {
+      "id": "bandiet_baas",
+      "naam": "Bandietenbaas",
+      "bodyType": "human",
+      "weapon": "scrap_revolver",
+      "armorType": "medium",
+      "hp": 180,
+      "damage": 14,
+      "damageType": "ballistic",
+      "rangeM": 8,
+      "speedMps": 3,
+      "cooldownS": 1,
+      "visuals": {
+        "meshSlots": {
+          "body": "raider_body_human",
+          "weapon": "raider_weapon_scrap_revolver",
+          "armor": "raider_armor_steel"
+        }
+      },
+      "_comment": "The boss of the high camp: three militia worth of hp behind medium armour, a patrol's punch. With 160 hp nine units cleared the high camp, with 220 it took twelve; 180 also kept AI against AI within its window (match-length.test.ts)."
+    }
+  ],
+  "tiers": [
+    {
+      "tier": 1,
+      "naam": "Bandietennest",
+      "units": [
+        {
+          "unitId": "bandiet_schutter",
+          "count": 3
+        },
+        {
+          "unitId": "bandiet_knokker",
+          "count": 1
+        }
+      ],
+      "aggroRadiusM": 6,
+      "leashRadiusM": 14,
+      "respawnS": 0,
+      "lootScrap": 120,
+      "heroXp": 100,
+      "heroXpRadiusM": 25,
+      "_comment": "Low camp: a hero with 4 militia clears it and loses two, with 5 one, with 6 none; with 2 or 3 he loses (creeps.test.ts). aggroRadiusM 6 m: the escorts and builders of the AI walk 6 to 8 m past the camps next to the settlement roads; with 9 m every one of them was fought from minute 2 on and AI matches ran up to 45 minutes. leashRadiusM 14 m: the scrap nodes of Rustbelt lie at least 21 m from a camp, so gatherers are never pulled in. 120 scrap is about two militia; 100 xp is a level for a fresh hero."
+    },
+    {
+      "tier": 2,
+      "naam": "Bandietenburcht",
+      "units": [
+        {
+          "unitId": "bandiet_schutter",
+          "count": 3
+        },
+        {
+          "unitId": "bandiet_knokker",
+          "count": 2
+        },
+        {
+          "unitId": "bandiet_baas",
+          "count": 1
+        }
+      ],
+      "aggroRadiusM": 4,
+      "leashRadiusM": 14,
+      "respawnS": 0,
+      "lootScrap": 300,
+      "heroXp": 250,
+      "heroXpRadiusM": 25,
+      "_comment": "High camp (the two camps next to the roads to the land bridge of Rustbelt): ten units clear it with heavy losses, eleven with about half, nine fail (creeps.test.ts). aggroRadiusM 4 m: the road from each base to the centre passes 4 to 8 m from it, and at 5 or 6 m it killed every lone unit walking to the centre (the Slavers of fixture s10-rustbelt-raiders-slaves, the militia of s6-rustbelt-dominance); once awake it fights everyone within its leash, the road included."
+    }
+  ]
+}

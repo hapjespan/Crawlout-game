@@ -456,6 +456,24 @@ export function simConfigFromGameData(data: GameData): SimConfig {
               garrisonMinFighters: a.raidPlan.garrison.minFighters,
               dominancePush: { ...a.raidPlan.dominancePush },
             },
+      creeps:
+        a.creeps === null
+          ? null
+          : {
+              fromTicks: a.creeps.fromTicks,
+              maxPath: a.creeps.maxPathU,
+              tiers: a.creeps.tiers.map((t) => ({ tier: t.tier, minArmy: t.minArmy })),
+            },
+    })),
+    creepTiers: data.creeps.tiers.map((t) => ({
+      tier: t.tier,
+      typeIds: t.units.map((l) => unitTypeId(l)),
+      aggroRadius: t.aggroRadiusU,
+      leashRadius: t.leashRadiusU,
+      respawnTicks: t.respawnTicks,
+      lootScrap: t.lootScrap,
+      heroXp: t.heroXp,
+      heroXpRadius: t.heroXpRadiusU,
     })),
     techs: data.tech.map((t) => ({
       techId: t.id,
@@ -549,6 +567,12 @@ export interface SimMapSource {
     readonly kind: string;
   }[];
   readonly dominance: { readonly pointsRequired: number; readonly ticks: number };
+  /** Creep camps (data 0.24.0); absent = none. */
+  readonly creepCamps?: readonly {
+    readonly ux: number;
+    readonly uy: number;
+    readonly tier: number;
+  }[];
 }
 
 /** MapGrid (plus dominantie in ticks) naar SimMap. */
@@ -565,6 +589,7 @@ export function simMapFromGrid(grid: SimMapSource): SimMap {
       return { x: c.ux, y: c.uy, kind };
     }),
     dominance: { pointsRequired: grid.dominance.pointsRequired, ticks: grid.dominance.ticks },
+    creepCamps: (grid.creepCamps ?? []).map((c) => ({ x: c.ux, y: c.uy, tier: c.tier })),
   };
 }
 

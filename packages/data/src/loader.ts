@@ -21,6 +21,7 @@ import {
   CaptureTarget,
   Provides,
   Archetype,
+  Creeps,
 } from './schemas.js';
 import {
   metersToUnits,
@@ -51,6 +52,8 @@ export interface RawGameData {
   sim: unknown;
   /** Alle bestanden uit data/ai/, in elke volgorde (de loader sorteert op id). */
   ai: unknown[];
+  /** Contents of data/creeps.json (data 0.24.0); absent = no creep camps. */
+  creeps?: unknown;
 }
 
 // Vaste volgorde van de enums: de index is de numerieke waarde in GameData.
@@ -479,7 +482,45 @@ export interface AiScriptData {
   training: { sequence: number[]; fromTicks: number } | null;
   /** Roofplan van het Raider-script (data 0.21.0); null zonder. */
   raidPlan: RaidPlanData | null;
+  /** When the AI clears creep camps (data 0.24.0); null = never. */
+  creeps: AiCreepsData | null;
   allInWithoutNodes: boolean;
+}
+
+/** ai/*.json `creeps` in sim units (data 0.24.0). */
+export interface AiCreepsData {
+  fromTicks: number;
+  maxPathU: number;
+  /** Per camp tier the idle army it takes; a tier without an entry is never attacked. */
+  tiers: { tier: number; minArmy: number }[];
+}
+
+/** The neutral faction of the creep loadouts (data 0.24.0): LoadoutData.factionId of a bandit. */
+export const NEUTRAL_FACTION_ID = -1;
+
+/** One tier of creep camp (data/creeps.json tiers, data 0.24.0) in sim units. */
+export interface CreepTierData {
+  tier: number;
+  naam: string;
+  /** Loadout ids (in GameData.loadouts, the neutral ones), one entry per bandit, in file order. */
+  units: number[];
+  aggroRadiusU: number;
+  leashRadiusU: number;
+  /** 0 = never. */
+  respawnTicks: number;
+  lootScrap: number;
+  heroXp: number;
+  heroXpRadiusU: number;
+}
+
+/** data/creeps.json (data 0.24.0). The bandit loadouts themselves are in GameData.loadouts (factionId NEUTRAL_FACTION_ID). */
+export interface CreepsData {
+  /** Loadout ids of the bandits, in the order of creeps.json units. */
+  units: number[];
+  /** Dutch name of each bandit (creeps.json naam), in the same order as units: for the selection panel. */
+  names: string[];
+  /** Sorted by tier. */
+  tiers: CreepTierData[];
 }
 
 /** Sim-tuning in sim-eenheden (integers). */
@@ -565,6 +606,8 @@ export interface GameData {
   /** Trainingsprogramma's (data 0.16.0). */
   training: TrainingProgramData[];
   aiScripts: AiScriptData[];
+  /** Creep camps (data/creeps.json, data 0.24.0); empty without the file. */
+  creeps: CreepsData;
   /** damageMatrix[damageTypeIndex][armorTypeIndex] = multiplier in promille (1000 = 100 procent). */
   damageMatrix: number[][];
   sim: SimTuningData;
@@ -877,6 +920,77 @@ export function loadGameData(raw: RawGameData): GameData {
     };
   });
 
+  // Creep camps (data 0.24.0): the bandit loadouts follow the faction loadouts (ids loadoutsRaw.length + k, in the
+  // order of creeps.json units), so no faction loadout changes id; their faction is NEUTRAL_FACTION_ID.
+  const creepsRaw =
+    raw.creeps === undefined
+      ? { units: [], tiers: [] }
+      : parseWith('creeps.json', Creeps, raw.creeps);
+  const creepIx = new Map<string, number>();
+  creepsRaw.units.forEach((u, k) => {
+    if (loadoutIx.has(u.id) || creepIx.has(u.id))
+      throw new Error(`data/creeps.json: dubbele id '${u.id}'`);
+    creepIx.set(u.id, loadoutsRaw.length + k);
+  });
+  for (const u of creepsRaw.units) {
+    loadouts.push({
+      id: creepIx.get(u.id)!,
+      key: u.id,
+      factionId: NEUTRAL_FACTION_ID,
+      bodyType: idx(BODY_TYPES, u.bodyType),
+      role: idx(ROLES, 'militia'),
+      weapon: u.weapon,
+      armorType: idx(ARMOR_TYPES, u.armorType),
+      damageType: idx(DAMAGE_TYPES, u.damageType),
+      hpI: Math.trunc(u.hp),
+      damage: Math.trunc(u.damage),
+      rangeU: metersToUnits(u.rangeM),
+      speedUPT: mpsToUnitsPerTick(u.speedMps),
+      cooldownTicks: secondsToTicks(u.cooldownS),
+      scrapCost: 0,
+      craftTicks: 0,
+      gatherAmount: 0,
+      gatherTicks: 0,
+      popCost: 1,
+      prereqTech: [],
+      visuals: { meshSlots: { ...u.visuals.meshSlots } },
+      producedAt: -1,
+      repair: null,
+      siege: null,
+      slave: false,
+      capture: null,
+      aura: null,
+      sightU: metersToUnits(u.sightM ?? simRaw.vision.unitSightM),
+    });
+  }
+  const tierSeen = new Set<number>();
+  const creeps: CreepsData = {
+    units: creepsRaw.units.map((u) => creepIx.get(u.id)!),
+    names: creepsRaw.units.map((u) => u.naam),
+    tiers: [...creepsRaw.tiers]
+      .sort((a, b) => a.tier - b.tier)
+      .map((t) => {
+        const where = `data/creeps.json tier ${t.tier}`;
+        if (tierSeen.has(t.tier)) throw new Error(`${where}: dubbele tier`);
+        tierSeen.add(t.tier);
+        return {
+          tier: t.tier,
+          naam: t.naam,
+          units: t.units.flatMap((e) => {
+            const id = creepIx.get(e.unitId);
+            if (id === undefined) throw new Error(`${where}: onbekende bandiet '${e.unitId}'`);
+            return Array.from({ length: e.count }, () => id);
+          }),
+          aggroRadiusU: metersToUnits(t.aggroRadiusM),
+          leashRadiusU: metersToUnits(t.leashRadiusM),
+          respawnTicks: secondsToTicks(t.respawnS),
+          lootScrap: t.lootScrap,
+          heroXp: t.heroXp,
+          heroXpRadiusU: metersToUnits(t.heroXpRadiusM),
+        };
+      }),
+  };
+
   const buildings: BuildingData[] = buildingsRaw.map((b, id) => {
     const where = `data/buildings.json '${b.id}'`;
     return {
@@ -1143,6 +1257,14 @@ export function loadGameData(raw: RawGameData): GameData {
                 minArmy: a.raidPlan.dominancePush.minArmy,
               },
             },
+      creeps:
+        a.creeps === undefined
+          ? null
+          : {
+              fromTicks: secondsToTicks(a.creeps.fromS),
+              maxPathU: metersToUnits(a.creeps.maxPathM),
+              tiers: a.creeps.tiers.map((t) => ({ tier: t.tier, minArmy: t.minArmy })),
+            },
       allInWithoutNodes: a.allInWithoutNodes,
     };
   });
@@ -1163,6 +1285,7 @@ export function loadGameData(raw: RawGameData): GameData {
     perks,
     training,
     aiScripts,
+    creeps,
     damageMatrix,
     sim: {
       unitRadiusU: metersToUnits(simRaw.unitRadiusM),

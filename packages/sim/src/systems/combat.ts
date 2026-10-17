@@ -7,6 +7,7 @@ import { grantXp, heroIndex } from './hero.js';
 import { robotRate } from './robots.js';
 import { SPECIAL_L, heroOf, heroSpecial, scalePermille } from '../effects.js';
 import { captureOf, captureTick } from './slaves.js';
+import { creepAwake } from './creeps.js';
 
 // Systeem 5: gevecht. Elke unit met een doel in bereik en een lege cooldown schiet: schade (plus ability-zones) maal
 // de damage-matrix (promille) op het pantser van het doel. Hitscan, geen projectielen. Dood en opruimen gebeuren pas in
@@ -56,7 +57,8 @@ export function combatSystem(ctx: SimContext): void {
     w.hp[t] = before - idiv(dmg * mult, 1000);
     // who razes or kills it plunders it (data 0.21.0, systems/plunder.ts)
     w.lastHit[t] = w.owner[i]! + 1;
-    if (before > 0 && w.hp[t]! <= 0 && (w.mask[t]! & C.unit) !== 0) killXp(ctx, i, t, hero);
+    if (before > 0 && w.hp[t]! <= 0 && (w.mask[t]! & C.unit) !== 0 && w.owner[i]! < ctx.playerCount)
+      killXp(ctx, i, t, hero);
     w.cooldown[i] = rate >= 1000 ? w.cooldownMax[i]! : idiv(w.cooldownMax[i]! * 1000, rate);
     face(w, i, w.x[t]!, w.y[t]!);
     const sid = w.idOf(i);
@@ -105,6 +107,7 @@ function turretAcquire(ctx: SimContext, i: number, r: number): number {
   let bestBD = 0;
   for (let j = 0; j < w.highWater; j++) {
     if (!isEnemy(w, i, j)) continue;
+    if (w.creepCamp[j] !== 0 && !creepAwake(ctx, j)) continue; // a sleeping camp (sim 0.19.0)
     if ((w.mask[j]! & C.building) !== 0) {
       if (bestU >= 0) continue;
       const d = distToRect2(x, y, w.fx[j]!, w.fy[j]!, w.fw[j]!, w.fh[j]!);

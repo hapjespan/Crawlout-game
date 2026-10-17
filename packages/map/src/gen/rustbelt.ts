@@ -153,7 +153,7 @@ export const RUSTBELT_SPEC: MapSpec = {
   centerClaims: [{ x: 191, y: 191, kind: 'powerArmor' }],
   creepCamps: [
     { x: 176, y: 56, tier: 1 }, // bij de noordelijke voorde
-    { x: 236, y: 132, tier: 1 }, // op de weg naar de landbrug
+    { x: 236, y: 132, tier: 2 }, // op de weg naar de landbrug (creep round, data 0.24.0: the high camp)
     { x: 274, y: 140, tier: 1 }, // tussen de basis en settlement 2
   ],
   river: {

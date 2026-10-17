@@ -48,10 +48,15 @@ describe('spiegel: AI tegen AI op Rustbelt XL zonder toeval', () => {
       // Without chance there are only these two games (seeds 1 to 24 all end in one of them). The AI now answers only
       // threats it sees, so the one-cell difference of the rebuilt posts (and their sight) grows into a different game.
       // Fairness over the 33 seeds with chance is 17 against 16 (match-length.test.ts).
+      // Creep camps (sim 0.19.0, data 0.24.0): the AIs clear their camps in mirrored frames; the centre ties now fall at
+      // 24.726 and 27.593, and the claim posts at the eccentric centre point are rebuilt at 29.304 (the known asymmetry
+      // above, now before minute 25). Seed 7 gives both ties to player 0, seed 9 both to player 1: exactly swapped until
+      // that rebuild, and the winner swaps (player 0 destroys player 1 in frame 37.028; player 1 destroys player 0 in
+      // frame 46.353 when the ties go to him). Whoever gets the centre wins (it was the other way round before).
       const r = mirrorSwap(7, 9);
-      expect(r.winners).toEqual([1, 0]);
+      expect(r.winners).toEqual([0, 1]);
       expect(r.breakFrame).not.toBeNull();
-      expect(r.breakFrame!).toBeGreaterThan(25 * 1200);
+      expect(r.breakFrame!).toBeGreaterThan(24 * 1200);
       expect(r.diffs[0]).toMatch(/gebouw t\d+ @192,191/); // the claim post
     },
   );

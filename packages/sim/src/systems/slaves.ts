@@ -231,6 +231,8 @@ function catchable(ctx: SimContext, t: number): boolean {
   const w = ctx.world;
   if (!w.has(t, C.unit | C.health) || (w.mask[t]! & (C.hero | C.corpse)) !== 0 || w.hp[t]! <= 0)
     return false;
+  // a bandit of a creep camp (sim 0.19.0) is no wanderer: it is fought, not caught
+  if (w.creepCamp[t] !== 0) return false;
   const st = w.slaveState[t]!;
   if (st !== SLAVE_NONE && st !== SLAVE_FREED) return false;
   return ctx.unitType(w.typeId[t]!)?.bodyType === BODY_HUMAN;

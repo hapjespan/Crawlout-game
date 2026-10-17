@@ -47,6 +47,7 @@ import {
   updateClaimPoints,
 } from './systems/claims.js';
 import { cleanupSystem } from './systems/cleanup.js';
+import { CreepCamps, creepSystem, spawnCreepCamps } from './systems/creeps.js';
 import { combatSystem } from './systems/combat.js';
 import type { SimCommand } from './systems/commands.js';
 import { applyCommands, normalizeCommand } from './systems/commands.js';
@@ -179,6 +180,8 @@ export class Sim implements SimContext {
   readonly terrainDist: TerrainDistances;
   /** Fog of war (sim 0.17.0): explored per player (state), visible counts (derived). */
   readonly vision: Vision;
+  /** Creep camps (sim 0.19.0): state per camp (systems/creeps.ts). */
+  readonly creeps = new CreepCamps();
 
   private tickNo = 0;
   private readonly envHashValue: number;
@@ -222,6 +225,7 @@ export class Sim implements SimContext {
       ps: this.ps,
       globals: this.globals,
       vision: this.vision,
+      creeps: this.creeps,
     };
   }
 
@@ -246,6 +250,8 @@ export class Sim implements SimContext {
     if (this.tickNo !== 0 || this.world.highWater !== 0)
       throw new Error('start() alleen op een verse sim');
     setupStart(this);
+    // creep camps (sim 0.19.0): the bandits after the players' start setup
+    spawnCreepCamps(this);
     this.indexClaimPoints();
     // Punten binnen de straal van een hoofdgebouw zijn meteen van die speler (besluit sprint 2), zonder events.
     updateClaimPoints(this, this.claimScratch, true);
@@ -301,6 +307,7 @@ export class Sim implements SimContext {
     aiSystem(this, this.census, this.aiScratch);
     probe?.(1);
     ordersSystem(this, this.ordersScratch);
+    creepSystem(this); // sim 0.19.0: the bandits of the creep camps (no orders of their own)
     probe?.(2);
     // 3 flow fields: de padgraaf bijwerken na gewijzigde begaanbaarheid; velden zelf lui en exact (flowfield.ts)
     this.flow.step();

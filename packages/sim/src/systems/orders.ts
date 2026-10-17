@@ -31,6 +31,7 @@ import {
 import type { SimContext } from './common.js';
 import { repairIdle } from './robots.js';
 import { castOrder } from './hero.js';
+import { creepAwake } from './creeps.js';
 import { MAX_ABILITIES } from '../config.js';
 import {
   distToRect2,
@@ -110,6 +111,8 @@ function acquire(ctx: SimContext, s: OrdersScratch, i: number): number {
   for (let k = 0; k < s.targetCount; k++) {
     const j = s.targets[k]!;
     if (!isEnemy(w, i, j)) continue;
+    // a bandit only while its camp fights (sim 0.19.0): units walking past a sleeping camp leave it alone
+    if (w.creepCamp[j] !== 0 && !creepAwake(ctx, j)) continue;
     if ((w.mask[j]! & C.building) !== 0) {
       if (bestU >= 0 && !buildingsFirst) continue;
       const d = distToRect2(x, y, w.fx[j]!, w.fy[j]!, w.fw[j]!, w.fh[j]!);

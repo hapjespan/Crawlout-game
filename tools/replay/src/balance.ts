@@ -62,6 +62,14 @@ export interface MatchResult {
   frame: number;
   minutes: number;
   players: PlayerTrace[];
+  /** Creep camps of the map (sim 0.19.0), in map order: who cleared each and in which minute (null = not cleared). */
+  camps: CampTrace[];
+}
+
+export interface CampTrace {
+  tier: number;
+  clearedBy: number | null;
+  minute: number | null;
 }
 
 const lobby = (ai: readonly boolean[], factions?: readonly string[]): LobbyPlayer[] =>
@@ -204,6 +212,14 @@ export function playMatch(seed: number, opts: MatchOptions = {}): MatchResult {
   }
   const w = sim.winner();
   const frame = w === null ? f - 1 : w.frame;
+  const camps = (sim.map.creepCamps ?? []).map((c, k): CampTrace => ({
+    tier: c.tier,
+    clearedBy: sim.creeps.clearedBy[k] === 0 ? null : sim.creeps.clearedBy[k]! - 1,
+    minute:
+      sim.creeps.clearedAt[k] === 0
+        ? null
+        : Math.floor((sim.creeps.clearedAt[k]! / TICKS_PER_MINUTE) * 10) / 10,
+  }));
   return {
     seed,
     winner: w?.playerId ?? null,
@@ -211,6 +227,7 @@ export function playMatch(seed: number, opts: MatchOptions = {}): MatchResult {
     frame,
     minutes: (frame + 1) / TICKS_PER_MINUTE,
     players: traces,
+    camps,
   };
 }
 

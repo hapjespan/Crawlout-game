@@ -276,10 +276,17 @@ async function main(): Promise<void> {
 
   const mine = (ids: Iterable<number>): number[] =>
     [...ids].filter((id) => entities.get(id)?.owner === session.playerId);
+  /**
+   * Hostile: another player's unit or building, or a neutral unit (a bandit of a creep camp, sim 0.19.0; the sim refuses
+   * an Attack on a neutral wanderer for anyone but a Slaver). Neutral nodes and claim points are not.
+   */
+  const hostileRow = (e: EntityRow): boolean =>
+    e.owner !== session.playerId &&
+    (e.owner !== OWNER_NEUTRAL || kindOfTypeId(e.typeId).kind === 'unit');
   /** An enemy unit or building (not own, not a neutral node or claim point): clicking one inspects it, nothing more. */
   const isEnemyId = (id: number): boolean => {
     const e = entities.get(id);
-    return e !== undefined && e.owner !== session.playerId && e.owner !== OWNER_NEUTRAL;
+    return e !== undefined && hostileRow(e);
   };
   /** Own entities of the latest snapshot, shared by the card and building-button deps (read at 20 Hz). */
   const own = (): EntityRow[] =>
@@ -310,7 +317,7 @@ async function main(): Promise<void> {
     const target = hit.entityId === null ? undefined : entities.get(hit.entityId);
     if (target) {
       const kind = kindOfTypeId(target.typeId).kind;
-      const hostile = target.owner !== session.playerId && target.owner !== OWNER_NEUTRAL;
+      const hostile = hostileRow(target);
       // fog of war: a ghost (an enemy building as last seen) is no valid Attack target; attack-move to its spot
       if (hostile && (target.flags & ENTITY_FLAG.ghost) !== 0)
         return sendChunked('AttackMove', ids, { x: target.x, y: target.y });
@@ -842,8 +849,7 @@ async function main(): Promise<void> {
       const state: ClickMode = placing
         ? { mode: 'placement' }
         : { mode: 'targeting', kind: targeting! };
-      const hostile =
-        picked !== undefined && picked.owner !== session.playerId && picked.owner !== OWNER_NEUTRAL;
+      const hostile = picked !== undefined && hostileRow(picked);
       // A ghost is no target (the sim refuses it): a click on one is a click on its spot.
       const ghost = picked !== undefined && (picked.flags & ENTITY_FLAG.ghost) !== 0;
       if (leftClickIs(state, hitKind, hostile) === 'complete') {

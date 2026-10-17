@@ -46,6 +46,7 @@ import {
 } from './ai.js';
 import type { WorkReach } from './slaves.js';
 import { cageIndex, workReach } from './slaves.js';
+import { aiCreepRun, campAlive, campAt } from './creeps.js';
 
 // System 2 (AI part) for a script with a raid plan (ai/raiders-basic.json, data 0.21.0; sim 0.18.0): the scripted
 // Raider. No cheats, the same commands and fog of war as the Dweller AI (systems/ai.ts, whose helpers it uses), and
@@ -117,7 +118,9 @@ function onMission(ctx: SimContext, p: number, i: number): boolean {
     if (q !== p && sp.x === x && sp.y === y) return true;
   }
   for (const pt of ctx.claimPoints) if (w.x[pt] === x && w.y[pt] === y) return !raidOver(ctx, p, i);
-  return false;
+  // a creep run (sim 0.19.0) until its camp is cleared
+  const camp = campAt(ctx, x, y);
+  return camp >= 0 && campAlive(ctx, camp);
 }
 
 function tally(
@@ -426,6 +429,19 @@ export function raiderThink(
       return;
     }
   }
+  // creep camps (sim 0.19.0, ai/*.json creeps): without a threat, a big enough free army clears the nearest camp
+  if (
+    threat < 0 &&
+    aiCreepRun(
+      ctx,
+      p,
+      script,
+      fields.home,
+      free,
+      heroId >= 0 && w.orderType(hero) === ORDER_NONE ? heroId : -1,
+    )
+  )
+    return;
   const push = tick >= plan.dominancePush.fromTicks ? dominanceTarget(ctx, p, fields) : -1;
   rally(
     ctx,

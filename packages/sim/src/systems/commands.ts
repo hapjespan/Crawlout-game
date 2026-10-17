@@ -236,7 +236,9 @@ function applyAttack(ctx: SimContext, p: number, pl: CommandPayload<'Attack'>): 
     if (
       !free &&
       !wanderer &&
-      (w.owner[t] === OWNER_NEUTRAL || w.damage[i]! <= 0 || !isEnemy(w, i, t))
+      ((w.owner[t] === OWNER_NEUTRAL && w.creepCamp[t] === 0) ||
+        w.damage[i]! <= 0 ||
+        !isEnemy(w, i, t))
     )
       continue;
     replaceOrder(ctx, i, ORDER_ATTACK, 0, 0, pl.target);

@@ -5,6 +5,7 @@ import {
   DAMAGE_TYPES,
   heroIdOfTypeId,
   kindOfTypeId,
+  NEUTRAL_FACTION_ID,
   type GameData,
 } from '@crawlout/data';
 import { buildingName, humanize } from './cards.js';
@@ -23,6 +24,9 @@ const DAMAGE_NL: Record<string, string> = {
   melee: 'melee',
   fire: 'vuur',
 };
+
+/** The owner line of a bandit of a creep camp (sim 0.19.0): neutral, the third side. */
+export const NEUTRAL_LABEL = 'Neutraal · Bandiet';
 
 export interface Inspection {
   name: string;
@@ -62,9 +66,15 @@ export function inspect(data: GameData, typeId: number): Inspection {
     if (!l) return { name: 'Eenheid', ownerLabel: 'Vijand', detail: null };
     const armor = ARMOR_TYPES[l.armorType] ?? '';
     const damage = DAMAGE_TYPES[l.damageType] ?? '';
+    // a bandit of a creep camp (data 0.24.0): neutral, named from data/creeps.json
+    const creep = l.factionId === NEUTRAL_FACTION_ID ? data.creeps.units.indexOf(l.id) : -1;
     return {
-      name: LOADOUT_NAMES[l.key] ?? humanize(l.key),
-      ownerLabel: enemyLabel(data, l.factionId),
+      name:
+        creep >= 0
+          ? (data.creeps.names[creep] ?? 'Bandiet')
+          : (LOADOUT_NAMES[l.key] ?? humanize(l.key)),
+      ownerLabel:
+        l.factionId === NEUTRAL_FACTION_ID ? NEUTRAL_LABEL : enemyLabel(data, l.factionId),
       detail: `Wapen: ${humanize(l.weapon)} (${DAMAGE_NL[damage] ?? damage}) · Pantser: ${ARMOR_NL[armor] ?? armor}`,
     };
   }
