@@ -34,14 +34,21 @@ import {
   type DecalStyle,
 } from '../decals/decalLayer.js';
 import { propContact } from '../decals/contact.js';
-import { PROP_LOD_PX, ScreenLod, type ScreenLodThresholds } from '../lod/screenLod.js';
+import { PROP_LOD_PX, ScreenLod, TREE_LOD_PX, type ScreenLodThresholds } from '../lod/screenLod.js';
 import { NEUTRAL_TEAM } from '../palette.js';
 import { simYawToRender } from '../snapshot/interpolate.js';
 import { InstanceBatch } from '../structures/instanceBatch.js';
-import { castsShadow, hasBlobShadow, propCategoryOf, type PropCategory } from './propCategory.js';
+import {
+  castsShadow,
+  hasBlobShadow,
+  isTree,
+  propCategoryOf,
+  type PropCategory,
+} from './propCategory.js';
 import { ensureCutoffAttribute } from './propGeometry.js';
 import { shedPlan, THIN_TIERS, thinTier, tierDensity, type ThinTier } from './propThinning.js';
 import { instanceTint } from './propVariation.js';
+import { sweepAlongShadow, type Vec3Like } from './shadowSweep.js';
 
 /**
  * One prop as the map delivers it (PropInstance of @crawlout/map fits as is): x and y in meters on the map (y is
@@ -95,6 +102,8 @@ export interface PropLayerOptions {
   screen?: ScreenLod;
   /** Projected heights (device px) below which an asset draws LOD 1 and LOD 2. Default PROP_LOD_PX. */
   lodPixels?: ScreenLodThresholds;
+  /** The same for trees (tree-leafy, tree-bare), which carry most of a forest view's triangles. Default TREE_LOD_PX. */
+  treeLodPixels?: ScreenLodThresholds;
   /** Chunk edge in meters. */
   chunkSize?: number;
   /** Most props drawn at once. Default 3000. */
@@ -109,7 +118,7 @@ export interface PropLayerOptions {
    * The sun shadow is on: props cast it by category (`smallProps`: rocks, crates, chests and barrels as well as trees
    * and structures), the blobs turn into contact darkening and culling keeps a margin. Default off.
    */
-  shadow?: { smallProps: boolean } | null;
+  shadow?: { smallProps: boolean; sunDir?: Vec3Like } | null;
 }
 
 export const PROP_CHUNK_SIZE = 16;
@@ -130,6 +139,8 @@ const BLOB: DecalStyle = {
 };
 /** The blob next to a real shadow: contact darkening under the trunk or the rock. */
 const CONTACT: DecalStyle = { ...BLOB, shadow: 0.32 };
+/** Props lower than this (m, mesh height times fit) stay out of the shadow pass: a pallet or a small rock throws a few pixels of it. */
+export const SHADOW_MIN_SIZE = 0.8;
 /** Culling margin (m) with shadows: about the shadow length of a 14 m tree under the 40 degree sun. */
 export const SHADOW_CULL_MARGIN = 16;
 const STRIDE = 8; // x, y, z, yaw (render radians), scale, brightness hash, tint hash, wind phase (radians)
@@ -173,6 +184,7 @@ export class PropLayer {
   private readonly opts: PropLayerOptions;
   private readonly screen: ScreenLod;
   private readonly lodPixels: ScreenLodThresholds;
+  private readonly treeLodPixels: ScreenLodThresholds;
   /** Camera distances at which some asset changes LOD (from the assets' heights), for change detection. */
   private breaks: number[] = [];
   private readonly chunkSize: number;
@@ -216,6 +228,7 @@ export class PropLayer {
     this.opts = opts;
     this.screen = opts.screen ?? new ScreenLod();
     this.lodPixels = opts.lodPixels ?? PROP_LOD_PX;
+    this.treeLodPixels = opts.treeLodPixels ?? TREE_LOD_PX;
     this.chunkSize = opts.chunkSize ?? PROP_CHUNK_SIZE;
     this.maxVisible = opts.maxVisible ?? 3000;
     this.thinDistance = opts.thinDistance ?? 160;
@@ -382,7 +395,9 @@ export class PropLayer {
       // Small props (rocks, crates) at their coarsest LOD leave the shadow pass: a few pixels of shadow for a draw call.
       const coarseOnly =
         g.lodBatch[2] === i && g.lodBatch[1] !== i && !castsShadow(g.category, false);
-      b.mesh.castShadow = !!shadow && castsShadow(g.category, shadow.smallProps) && !coarseOnly;
+      const tiny = visual.height * visual.fit < SHADOW_MIN_SIZE; // a shadow of a few pixels is not worth its draw
+      b.mesh.castShadow =
+        !!shadow && castsShadow(g.category, shadow.smallProps) && !coarseOnly && !tiny;
       return b;
     });
   }
@@ -446,9 +461,10 @@ export class PropLayer {
     for (const g of this.groups) {
       const size = this.sizeOf(g);
       if (size <= 0) continue;
+      const px = this.lodOf(g);
       breaks.push(
-        (size * this.screen.pxPerMeter) / this.lodPixels.lod1,
-        (size * this.screen.pxPerMeter) / this.lodPixels.lod2,
+        (size * this.screen.pxPerMeter) / px.lod1,
+        (size * this.screen.pxPerMeter) / px.lod2,
       );
     }
     const chunks = state.length;
@@ -457,11 +473,7 @@ export class PropLayer {
     for (let c = 0; c < chunks; c++) {
       const box = this.chunkBoxes[c]!;
       let s = -1;
-      const margin = this.opts.shadow ? SHADOW_CULL_MARGIN : 0;
-      if (
-        !box.isEmpty() &&
-        this.frustum.intersectsBox(this.cullBox.copy(box).expandByScalar(margin))
-      ) {
+      if (!box.isEmpty() && this.frustum.intersectsBox(this.castBox(box))) {
         const d = box.distanceToPoint(cam);
         dist[c] = d;
         s = 0;
@@ -539,7 +551,7 @@ export class PropLayer {
       for (let q = 0; q < g.ranges.length; q += 3) {
         const c = g.ranges[q]!;
         if (this.state[c]! < 0) continue;
-        const s = this.screen.lod(size, this.distance[c]!, this.lodPixels);
+        const s = this.screen.lod(size, this.distance[c]!, this.lodOf(g));
         const batch = g.batches[g.lodBatch[s]!]!;
         const k0 = g.ranges[q + 1]!;
         const n = g.ranges[q + 2]! - k0;
@@ -575,6 +587,22 @@ export class PropLayer {
       if (this.state[c]! >= 0 && this.screen.pixels(1, this.distance[c]!) >= BLOB_PX_PER_METER)
         this.blobChunks.push(c);
     this.blobChunks.sort((a, b) => this.distance[a]! - this.distance[b]!);
+  }
+
+  /**
+   * The box a chunk is culled with: as is, or with the sun's shadow on, swept along the shadow so a prop just outside the
+   * view that shades it is still drawn (shadowSweep.ts). Without a sun direction the box grows by SHADOW_CULL_MARGIN.
+   */
+  private castBox(box: Box3): Box3 {
+    const shadow = this.opts.shadow;
+    if (!shadow) return box;
+    if (shadow.sunDir) return sweepAlongShadow(box, shadow.sunDir, this.cullBox);
+    return this.cullBox.copy(box).expandByScalar(SHADOW_CULL_MARGIN);
+  }
+
+  /** The screen-size thresholds of an asset's LODs: trees have their own. */
+  private lodOf(g: Group): ScreenLodThresholds {
+    return isTree(g.category) ? this.treeLodPixels : this.lodPixels;
   }
 
   /** Nominal drawn height of an asset (m): mesh height times its fit; 0 without a visual. */

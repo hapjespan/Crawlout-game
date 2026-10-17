@@ -5,7 +5,12 @@ const PRESERVED_DIST_ENTRIES = new Set(['terrain']);
 import { basename, dirname, join, relative, sep } from 'node:path';
 import { BUDGETS } from './budgets.js';
 import { bakeAnimations } from './bake.js';
-import { buildBuildings, loadVariantsConfig, type BuildingDetails } from './buildings.js';
+import {
+  buildBuildings,
+  hexToLinear,
+  loadVariantsConfig,
+  type BuildingDetails,
+} from './buildings.js';
 import { EMPTY_CLIPMAP, parseClipmap, resolveClips, type Clipmap } from './clipmap.js';
 import { conformDocument, type ConformInfo } from './conform.js';
 import { animationIndex, findSockets, maxBoneCount } from './inspect.js';
@@ -47,6 +52,8 @@ export interface BuildOptions {
   variantsPath?: string;
   /** Pad naar de robots-config; standaard `<srcDir>/robots.json`. Ontbreekt hij, dan zijn er geen robots. */
   robotsPath?: string;
+  /** Pad naar de Raider-config (zelfde formaat als robots.json); standaard `<srcDir>/raiders.json`. Optioneel. */
+  raidersPath?: string;
   /** Pad naar de prop-packs-config; standaard `<srcDir>/packs.json`. Ontbreekt hij, dan zijn er geen pack-props. */
   packsPath?: string;
   /** Map met de pack-GLB's; standaard `<srcDir>/packs`, vanuit een worktree ook die van de hoofdcheckout. */
@@ -197,6 +204,8 @@ export async function buildAssets(options: BuildOptions): Promise<BuildResult> {
     kind: 'character' | 'prop';
     conform: ConformInfo;
     sourceBones: number;
+    /** A derived (re-coloured) asset shares the baked animation texture of this asset id. */
+    bakedFrom?: string;
   }[] = [];
 
   for (const file of files) {
@@ -230,15 +239,42 @@ export async function buildAssets(options: BuildOptions): Promise<BuildResult> {
       const result = validateAsset(document, { clipmap, assetId: sourceId });
       report.errors.push(...result.errors);
       report.warnings.push(...result.warnings);
-      if (result.errors.length === 0)
-        validated.push({
-          id,
-          sourceId,
-          buffer: await io.writeBinary(document),
-          kind: result.kind,
-          conform,
-          sourceBones,
-        });
+      if (result.errors.length === 0) {
+        const buffer = await io.writeBinary(document);
+        validated.push({ id, sourceId, buffer, kind: result.kind, conform, sourceBones });
+        for (const derived of rigmap.assets[sourceId]?.derive ?? []) {
+          const derivedReport: AssetReport = { id: derived.id, source, errors: [], warnings: [] };
+          reports.push(derivedReport);
+          const derivedClash = seen.get(derived.id);
+          if (derivedClash) {
+            derivedReport.errors.push(`id "${derived.id}" is al in gebruik door ${derivedClash}.`);
+            continue;
+          }
+          seen.set(derived.id, source);
+          const recoloured = await io.readBinary(buffer);
+          const materials = new Map(
+            recoloured
+              .getRoot()
+              .listMaterials()
+              .map((m) => [m.getName(), m]),
+          );
+          for (const [name, color] of Object.entries(derived.colors)) {
+            const material = materials.get(name);
+            if (material) material.setBaseColorFactor([...hexToLinear(color), 1]);
+            else derivedReport.errors.push(`derive: geen materiaal "${name}" in ${source}.`);
+          }
+          if (derivedReport.errors.length === 0)
+            validated.push({
+              id: derived.id,
+              sourceId,
+              buffer: await io.writeBinary(recoloured),
+              kind: result.kind,
+              conform,
+              sourceBones,
+              bakedFrom: id,
+            });
+        }
+      }
     } catch (error) {
       report.errors.push(
         `kan GLB niet verwerken: ${error instanceof Error ? error.message : String(error)}`,
@@ -256,15 +292,20 @@ export async function buildAssets(options: BuildOptions): Promise<BuildResult> {
     reports.push(report);
   }
 
-  // Robots (src/robots.ts): rigide units en twee extra gebouwen uit basisvormen, volgens robots.json.
-  const robotsSource = options.robotsPath ?? join(srcDir, 'robots.json');
-  let robots: RobotsResult | null = null;
-  if (existsSync(robotsSource)) {
+  // Procedural models (src/robots.ts): the Dweller robots (robots.json) and the Raiders (raiders.json), each config
+  // with rigid units, buildings and attachments from basic shapes.
+  const robotConfigs = [
+    options.robotsPath ?? join(srcDir, 'robots.json'),
+    options.raidersPath ?? join(srcDir, 'raiders.json'),
+  ].filter((path) => existsSync(path));
+  const robots: RobotsResult = { reports: [], entries: [], outputs: new Map() };
+  for (const robotsSource of robotConfigs) {
+    const source = relative(srcDir, robotsSource).split(sep).join('/');
     try {
-      robots = await buildRobots(
-        loadRobotsConfig(robotsSource),
-        relative(srcDir, robotsSource).split(sep).join('/'),
-      );
+      const built = await buildRobots(loadRobotsConfig(robotsSource), source);
+      robots.reports.push(...built.reports);
+      robots.entries.push(...built.entries);
+      for (const [path, data] of built.outputs) robots.outputs.set(path, data);
     } catch (error) {
       const reason = error instanceof Error ? error.message : String(error);
       return {
@@ -272,7 +313,7 @@ export async function buildAssets(options: BuildOptions): Promise<BuildResult> {
         reports: [
           {
             id: basename(robotsSource, '.json'),
-            source: relative(srcDir, robotsSource).split(sep).join('/'),
+            source,
             errors: [`ongeldige ${basename(robotsSource)}: ${reason}`],
             warnings: [],
           },
@@ -282,7 +323,7 @@ export async function buildAssets(options: BuildOptions): Promise<BuildResult> {
       };
     }
   }
-  for (const report of robots?.reports ?? []) {
+  for (const report of robots.reports) {
     const clash = seen.get(report.id);
     if (clash)
       report.errors.push(`id "${report.id}" is al in gebruik door ${clash}; hernoem de robot.`);
@@ -332,14 +373,15 @@ export async function buildAssets(options: BuildOptions): Promise<BuildResult> {
 
   const entries: AssetEntry[] = [
     ...(buildings?.entries ?? []),
-    ...(robots?.entries ?? []),
+    ...robots.entries,
     ...(packs?.entries ?? []),
   ];
   const outputs = new Map<string, Uint8Array | string>([
     ...(buildings?.outputs ?? []),
-    ...(robots?.outputs ?? []),
+    ...robots.outputs,
     ...(packs?.outputs ?? []),
   ]);
+  const bakedById = new Map<string, AssetEntry['baked']>();
   for (const asset of validated) {
     const lods = await buildLods(asset.buffer, asset.kind, { toktx });
     const sourceDoc = await io.readBinary(asset.buffer);
@@ -372,7 +414,13 @@ export async function buildAssets(options: BuildOptions): Promise<BuildResult> {
     for (const lod of lods) outputs.set(`${asset.id}/lod${lod.level}.glb`, lod.glb);
     const validation = validateAsset(sourceDoc, { clipmap, assetId: asset.sourceId });
     let baked: AssetEntry['baked'];
-    if (asset.kind === 'character' && sourceDoc.getRoot().listAnimations().length > 0) {
+    if (asset.bakedFrom) {
+      baked = bakedById.get(asset.bakedFrom);
+      if (!baked) {
+        report.errors.push(`geen gebakken animaties van ${asset.bakedFrom} om te delen.`);
+        continue;
+      }
+    } else if (asset.kind === 'character' && sourceDoc.getRoot().listAnimations().length > 0) {
       const names = sourceDoc
         .getRoot()
         .listAnimations()
@@ -398,6 +446,7 @@ export async function buildAssets(options: BuildOptions): Promise<BuildResult> {
       });
       outputs.set(result.baked.path, result.data);
       baked = result.baked;
+      bakedById.set(asset.id, baked);
     }
     const boneCount = maxBoneCount(sourceDoc);
     report.details = {

@@ -81,6 +81,8 @@ export {
   type PanDirection,
 } from './camera/rtsCamera.js';
 export { type FrameStats } from './perf/perfOverlay.js';
+export { type TriangleBreakdown } from './perf/triangleBreakdown.js';
+export { FRAME_PHASES, type FramePhase, type FrameTimings } from './perf/frameProfile.js';
 export { type RenderProp } from './props/propLayer.js';
 export {
   PROP_CATEGORIES,

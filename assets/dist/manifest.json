@@ -1391,6 +1391,1026 @@
       "alpha": "mask"
     },
     {
+      "id": "raider_armor_steel",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.38,
+          0.935,
+          -0.185
+        ],
+        "max": [
+          0.38,
+          1.67,
+          0.17
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "raider_armor_steel/lod0.glb",
+          "triangles": 280
+        },
+        {
+          "level": 1,
+          "path": "raider_armor_steel/lod1.glb",
+          "triangles": 108
+        },
+        {
+          "level": 2,
+          "path": "raider_armor_steel/lod2.glb",
+          "triangles": 66
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none"
+    },
+    {
+      "id": "raider_body_hound",
+      "kind": "rigid-unit",
+      "bounds": {
+        "min": [
+          -0.16,
+          0,
+          -0.643025
+        ],
+        "max": [
+          0.16,
+          0.77,
+          0.715
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "raider_body_hound/lod0.glb",
+          "triangles": 438
+        },
+        {
+          "level": 1,
+          "path": "raider_body_hound/lod1.glb",
+          "triangles": 228
+        },
+        {
+          "level": 2,
+          "path": "raider_body_hound/lod2.glb",
+          "triangles": 172
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMaterials": [
+        "team_trim"
+      ],
+      "teamMask": "materialName",
+      "rigid": true
+    },
+    {
+      "id": "raider_body_human",
+      "kind": "character",
+      "bounds": {
+        "min": [
+          -0.969676,
+          0.002415,
+          -0.162106
+        ],
+        "max": [
+          0.97012,
+          1.827399,
+          0.202271
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "raider_body_human/lod0.glb",
+          "triangles": 3598
+        },
+        {
+          "level": 1,
+          "path": "raider_body_human/lod1.glb",
+          "triangles": 1348
+        },
+        {
+          "level": 2,
+          "path": "raider_body_human/lod2.glb",
+          "triangles": 492
+        }
+      ],
+      "sockets": {
+        "hand": [
+          -0.7389,
+          1.4408,
+          -0.0654
+        ],
+        "back": [
+          0,
+          1.3148,
+          -0.0049
+        ],
+        "head": [
+          0,
+          1.5687,
+          0.0051
+        ]
+      },
+      "animations": [
+        {
+          "name": "death",
+          "durationSeconds": 2.4
+        },
+        {
+          "name": "build",
+          "durationSeconds": 5.2
+        },
+        {
+          "name": "idle",
+          "durationSeconds": 2.5
+        },
+        {
+          "name": "gather",
+          "durationSeconds": 2
+        },
+        {
+          "name": "run",
+          "durationSeconds": 0.933333
+        },
+        {
+          "name": "attack1",
+          "durationSeconds": 0.633333
+        },
+        {
+          "name": "attack2",
+          "durationSeconds": 1
+        },
+        {
+          "name": "walk",
+          "durationSeconds": 1.333333
+        }
+      ],
+      "boneCount": 20,
+      "teamMask": "materialName",
+      "baked": {
+        "path": "dweller_body_human/dweller_body_human.anim.f32",
+        "width": 80,
+        "height": 480,
+        "fps": 30,
+        "clips": [
+          {
+            "name": "idle",
+            "startRow": 0,
+            "frames": 75,
+            "loop": true,
+            "durationSeconds": 2.5
+          },
+          {
+            "name": "walk",
+            "startRow": 75,
+            "frames": 40,
+            "loop": true,
+            "durationSeconds": 1.333333
+          },
+          {
+            "name": "run",
+            "startRow": 115,
+            "frames": 28,
+            "loop": true,
+            "durationSeconds": 0.933333
+          },
+          {
+            "name": "attack1",
+            "startRow": 143,
+            "frames": 19,
+            "loop": true,
+            "durationSeconds": 0.633333
+          },
+          {
+            "name": "attack2",
+            "startRow": 162,
+            "frames": 30,
+            "loop": true,
+            "durationSeconds": 1
+          },
+          {
+            "name": "gather",
+            "startRow": 192,
+            "frames": 60,
+            "loop": true,
+            "durationSeconds": 2
+          },
+          {
+            "name": "build",
+            "startRow": 252,
+            "frames": 156,
+            "loop": true,
+            "durationSeconds": 5.2
+          },
+          {
+            "name": "death",
+            "startRow": 408,
+            "frames": 72,
+            "loop": false,
+            "durationSeconds": 2.4
+          }
+        ]
+      }
+    },
+    {
+      "id": "raider_building_cage",
+      "kind": "building",
+      "bounds": {
+        "min": [
+          -4.590451,
+          0,
+          -4.321244
+        ],
+        "max": [
+          4.6,
+          5.75,
+          4.597553
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "raider_building_cage/lod0.glb",
+          "triangles": 1710
+        },
+        {
+          "level": 1,
+          "path": "raider_building_cage/lod1.glb",
+          "triangles": 740
+        },
+        {
+          "level": 2,
+          "path": "raider_building_cage/lod2.glb",
+          "triangles": 232
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "footprint": {
+        "w": 9,
+        "h": 9
+      },
+      "teamMaterials": [
+        "team_trim"
+      ]
+    },
+    {
+      "id": "raider_building_camp",
+      "kind": "building",
+      "bounds": {
+        "min": [
+          -8.27,
+          0,
+          -8.4
+        ],
+        "max": [
+          9.03,
+          9.25,
+          8.343
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "raider_building_camp/lod0.glb",
+          "triangles": 2423
+        },
+        {
+          "level": 1,
+          "path": "raider_building_camp/lod1.glb",
+          "triangles": 990
+        },
+        {
+          "level": 2,
+          "path": "raider_building_camp/lod2.glb",
+          "triangles": 260
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "footprint": {
+        "w": 17,
+        "h": 17
+      },
+      "teamMaterials": [
+        "team_trim"
+      ]
+    },
+    {
+      "id": "raider_building_chemlab",
+      "kind": "building",
+      "bounds": {
+        "min": [
+          -5.05,
+          0,
+          -4.3
+        ],
+        "max": [
+          5.7,
+          8.5,
+          4
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "raider_building_chemlab/lod0.glb",
+          "triangles": 920
+        },
+        {
+          "level": 1,
+          "path": "raider_building_chemlab/lod1.glb",
+          "triangles": 426
+        },
+        {
+          "level": 2,
+          "path": "raider_building_chemlab/lod2.glb",
+          "triangles": 132
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "footprint": {
+        "w": 11,
+        "h": 9
+      },
+      "teamMaterials": [
+        "team_trim"
+      ]
+    },
+    {
+      "id": "raider_building_claim_post",
+      "kind": "building",
+      "bounds": {
+        "min": [
+          -1.5,
+          0,
+          -1.5
+        ],
+        "max": [
+          1.5,
+          6.85,
+          1.5
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "raider_building_claim_post/lod0.glb",
+          "triangles": 605
+        },
+        {
+          "level": 1,
+          "path": "raider_building_claim_post/lod1.glb",
+          "triangles": 218
+        },
+        {
+          "level": 2,
+          "path": "raider_building_claim_post/lod2.glb",
+          "triangles": 118
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "footprint": {
+        "w": 3,
+        "h": 3
+      },
+      "teamMaterials": [
+        "team_trim"
+      ]
+    },
+    {
+      "id": "raider_building_garage",
+      "kind": "building",
+      "bounds": {
+        "min": [
+          -8.7,
+          0,
+          -6.52
+        ],
+        "max": [
+          8.45,
+          8.2,
+          6.53
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "raider_building_garage/lod0.glb",
+          "triangles": 1618
+        },
+        {
+          "level": 1,
+          "path": "raider_building_garage/lod1.glb",
+          "triangles": 470
+        },
+        {
+          "level": 2,
+          "path": "raider_building_garage/lod2.glb",
+          "triangles": 152
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "footprint": {
+        "w": 17,
+        "h": 13
+      },
+      "teamMaterials": [
+        "team_trim"
+      ]
+    },
+    {
+      "id": "raider_building_market",
+      "kind": "building",
+      "bounds": {
+        "min": [
+          -6.72,
+          0,
+          -5.7
+        ],
+        "max": [
+          6.73,
+          6.45,
+          5.29
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "raider_building_market/lod0.glb",
+          "triangles": 1752
+        },
+        {
+          "level": 1,
+          "path": "raider_building_market/lod1.glb",
+          "triangles": 580
+        },
+        {
+          "level": 2,
+          "path": "raider_building_market/lod2.glb",
+          "triangles": 276
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "footprint": {
+        "w": 13,
+        "h": 11
+      },
+      "teamMaterials": [
+        "team_trim"
+      ]
+    },
+    {
+      "id": "raider_building_mg_nest",
+      "kind": "building",
+      "bounds": {
+        "min": [
+          -2.41,
+          0,
+          -2.341783
+        ],
+        "max": [
+          2.41,
+          3.55,
+          2.55
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "raider_building_mg_nest/lod0.glb",
+          "triangles": 1411
+        },
+        {
+          "level": 1,
+          "path": "raider_building_mg_nest/lod1.glb",
+          "triangles": 296
+        },
+        {
+          "level": 2,
+          "path": "raider_building_mg_nest/lod2.glb",
+          "triangles": 208
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "footprint": {
+        "w": 5,
+        "h": 5
+      },
+      "teamMaterials": [
+        "team_trim"
+      ]
+    },
+    {
+      "id": "raider_building_tent",
+      "kind": "building",
+      "bounds": {
+        "min": [
+          -3.619403,
+          0,
+          -2.45
+        ],
+        "max": [
+          3.619403,
+          4.45,
+          2.651846
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "raider_building_tent/lod0.glb",
+          "triangles": 469
+        },
+        {
+          "level": 1,
+          "path": "raider_building_tent/lod1.glb",
+          "triangles": 312
+        },
+        {
+          "level": 2,
+          "path": "raider_building_tent/lod2.glb",
+          "triangles": 104
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "footprint": {
+        "w": 7,
+        "h": 5
+      },
+      "teamMaterials": [
+        "team_trim"
+      ]
+    },
+    {
+      "id": "raider_gear_chem_tank",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.273033,
+          -0.45,
+          -0.395994
+        ],
+        "max": [
+          0.245,
+          0.29,
+          -0.1308
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "raider_gear_chem_tank/lod0.glb",
+          "triangles": 424
+        },
+        {
+          "level": 1,
+          "path": "raider_gear_chem_tank/lod1.glb",
+          "triangles": 288
+        },
+        {
+          "level": 2,
+          "path": "raider_gear_chem_tank/lod2.glb",
+          "triangles": 124
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none"
+    },
+    {
+      "id": "raider_gear_shackles",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.205,
+          -0.515,
+          -0.32
+        ],
+        "max": [
+          0.205,
+          0.18,
+          -0.135
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "raider_gear_shackles/lod0.glb",
+          "triangles": 220
+        },
+        {
+          "level": 1,
+          "path": "raider_gear_shackles/lod1.glb",
+          "triangles": 136
+        },
+        {
+          "level": 2,
+          "path": "raider_gear_shackles/lod2.glb",
+          "triangles": 76
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none"
+    },
+    {
+      "id": "raider_gear_warlord_helm",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.29853,
+          -0.02,
+          -0.178532
+        ],
+        "max": [
+          0.29853,
+          0.385,
+          0.1643
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "raider_gear_warlord_helm/lod0.glb",
+          "triangles": 282
+        },
+        {
+          "level": 1,
+          "path": "raider_gear_warlord_helm/lod1.glb",
+          "triangles": 110
+        },
+        {
+          "level": 2,
+          "path": "raider_gear_warlord_helm/lod2.glb",
+          "triangles": 60
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none"
+    },
+    {
+      "id": "raider_tool_hammer",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.185,
+          -0.065,
+          -0.2
+        ],
+        "max": [
+          0.185,
+          0.065,
+          0.685
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "raider_tool_hammer/lod0.glb",
+          "triangles": 122
+        },
+        {
+          "level": 1,
+          "path": "raider_tool_hammer/lod1.glb",
+          "triangles": 56
+        },
+        {
+          "level": 2,
+          "path": "raider_tool_hammer/lod2.glb",
+          "triangles": 28
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none"
+    },
+    {
+      "id": "raider_tool_shovel",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.1,
+          -0.025981,
+          -0.3775
+        ],
+        "max": [
+          0.1,
+          0.025981,
+          1.12
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "raider_tool_shovel/lod0.glb",
+          "triangles": 76
+        },
+        {
+          "level": 1,
+          "path": "raider_tool_shovel/lod1.glb",
+          "triangles": 48
+        },
+        {
+          "level": 2,
+          "path": "raider_tool_shovel/lod2.glb",
+          "triangles": 29
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none"
+    },
+    {
+      "id": "raider_vehicle_buggy",
+      "kind": "rigid-unit",
+      "bounds": {
+        "min": [
+          -1.185,
+          0,
+          -1.85
+        ],
+        "max": [
+          1.185,
+          2.5,
+          1.91
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "raider_vehicle_buggy/lod0.glb",
+          "triangles": 1584
+        },
+        {
+          "level": 1,
+          "path": "raider_vehicle_buggy/lod1.glb",
+          "triangles": 712
+        },
+        {
+          "level": 2,
+          "path": "raider_vehicle_buggy/lod2.glb",
+          "triangles": 264
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMaterials": [
+        "team_trim"
+      ],
+      "teamMask": "materialName",
+      "rigid": true
+    },
+    {
+      "id": "raider_weapon_chem_sprayer",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.052,
+          -0.624129,
+          -0.43301
+        ],
+        "max": [
+          0.113437,
+          0.1,
+          0.58
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "raider_weapon_chem_sprayer/lod0.glb",
+          "triangles": 180
+        },
+        {
+          "level": 1,
+          "path": "raider_weapon_chem_sprayer/lod1.glb",
+          "triangles": 116
+        },
+        {
+          "level": 2,
+          "path": "raider_weapon_chem_sprayer/lod2.glb",
+          "triangles": 100
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none"
+    },
+    {
+      "id": "raider_weapon_molotov",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.042,
+          -0.1,
+          -0.042
+        ],
+        "max": [
+          0.042,
+          0.38,
+          0.042
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "raider_weapon_molotov/lod0.glb",
+          "triangles": 100
+        },
+        {
+          "level": 1,
+          "path": "raider_weapon_molotov/lod1.glb",
+          "triangles": 66
+        },
+        {
+          "level": 2,
+          "path": "raider_weapon_molotov/lod2.glb",
+          "triangles": 44
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none"
+    },
+    {
+      "id": "raider_weapon_net_whip",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.172,
+          -0.282,
+          -0.2
+        ],
+        "max": [
+          0.326,
+          0.0702,
+          1.222517
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "raider_weapon_net_whip/lod0.glb",
+          "triangles": 392
+        },
+        {
+          "level": 1,
+          "path": "raider_weapon_net_whip/lod1.glb",
+          "triangles": 114
+        },
+        {
+          "level": 2,
+          "path": "raider_weapon_net_whip/lod2.glb",
+          "triangles": 46
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none"
+    },
+    {
+      "id": "raider_weapon_pipe_gun",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.038,
+          -0.13,
+          -0.55
+        ],
+        "max": [
+          0.038,
+          0.102321,
+          0.62
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "raider_weapon_pipe_gun/lod0.glb",
+          "triangles": 188
+        },
+        {
+          "level": 1,
+          "path": "raider_weapon_pipe_gun/lod1.glb",
+          "triangles": 80
+        },
+        {
+          "level": 2,
+          "path": "raider_weapon_pipe_gun/lod2.glb",
+          "triangles": 52
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none"
+    },
+    {
+      "id": "raider_weapon_scrap_revolver",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.04,
+          -0.17,
+          -0.1125
+        ],
+        "max": [
+          0.04,
+          0.12,
+          0.44
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "raider_weapon_scrap_revolver/lod0.glb",
+          "triangles": 196
+        },
+        {
+          "level": 1,
+          "path": "raider_weapon_scrap_revolver/lod1.glb",
+          "triangles": 84
+        },
+        {
+          "level": 2,
+          "path": "raider_weapon_scrap_revolver/lod2.glb",
+          "triangles": 40
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none"
+    },
+    {
+      "id": "raider_weapon_spiked_club",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.13,
+          -0.13,
+          -0.2
+        ],
+        "max": [
+          0.13,
+          0.13,
+          0.85
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "raider_weapon_spiked_club/lod0.glb",
+          "triangles": 169
+        },
+        {
+          "level": 1,
+          "path": "raider_weapon_spiked_club/lod1.glb",
+          "triangles": 109
+        },
+        {
+          "level": 2,
+          "path": "raider_weapon_spiked_club/lod2.glb",
+          "triangles": 44
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none"
+    },
+    {
       "id": "reed001",
       "kind": "prop",
       "bounds": {

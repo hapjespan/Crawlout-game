@@ -2,6 +2,7 @@
 // Een asset zonder entry gaat ongewijzigd naar de validatie.
 import { z } from 'zod';
 import { BUDGETS } from './budgets.js';
+import { hexColor } from './variants.js';
 
 const boneTable = z.record(z.string().min(1));
 
@@ -47,6 +48,22 @@ export const rigmapSchema = z.object({
           .optional(),
         /** Een emissive-only kleurtextuur (Sketchfab-unlit) als diffuse gebruiken. */
         emissiveAsBaseColor: z.boolean().optional(),
+        /**
+         * Extra uitvoer onder een andere id van dezelfde bron (een factie-variant van het poppetje): dezelfde mesh, skin
+         * en gebakken animaties, alleen de basiskleur van de genoemde materialen (naam in de bron, `#rrggbb` sRGB)
+         * verschilt. De animatietexture wordt gedeeld (het manifest wijst naar de texture van de bron), dus de variant
+         * kost alleen de drie LOD-GLB's.
+         */
+        derive: z
+          .array(
+            z.object({
+              id: z.string().regex(/^[a-z0-9_]+$/),
+              colors: z
+                .record(hexColor)
+                .refine((c) => Object.keys(c).length > 0, 'minstens één kleur'),
+            }),
+          )
+          .optional(),
         /** Alle diffuse textures samenvoegen tot één atlas van maximaal deze maat. */
         atlas: z.number().int().positive().optional(),
         /** Teammasker per texel in de alfa van de diffuse (src/textures.ts applyTeamMaskAlpha); manifest `teamMask` wordt 'diffuseAlpha'. */

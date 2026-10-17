@@ -33,6 +33,7 @@ import { PropLayer, type PropMaterialSpec, type PropVisual, type RenderProp } fr
 import { shedPlan, thinTier, tierDensity } from './propThinning.js';
 import { FOLIAGE_VARIATION, instanceTint } from './propVariation.js';
 import { windOf } from './propWind.js';
+import { PROP_LOD_PX } from '../lod/screenLod.js';
 import { TextureLayerTable } from '../structures/buildingGeometry.js';
 import { NO_LAYER } from '../structures/buildingGeometry.js';
 
@@ -213,6 +214,7 @@ describe('PropLayer: mask variants', () => {
   const make = (): PropLayer =>
     new PropLayer(new Scene(), {
       heightAt,
+      treeLodPixels: PROP_LOD_PX, // these tests read the LOD 0 batch of trees
       material: (spec) => {
         specs.push(spec);
         return createPropMaterial({

@@ -6,6 +6,7 @@ import {
   ENTITY_NONE,
   MAX_ENTITIES_PER_COMMAND,
   OWNER_NEUTRAL,
+  UNITS_PER_METER,
   type CommandPayload,
   type CommandType,
   type DesyncEvent,
@@ -54,6 +55,8 @@ import {
   type OwnClaimSite,
 } from './game/claimPlacement.js';
 import { assetConfig } from './game/assets.js';
+import { runBaseBench } from './render/bench.js';
+import { lodPixelsParam } from './render/lodParams.js';
 import { propSource } from './render/props.js';
 import { terrainTextures } from './render/terrain.js';
 import { shadowOption } from './render/shadows.js';
@@ -120,6 +123,8 @@ async function main(): Promise<void> {
   const renderer = await createRenderer({
     canvas,
     forceWebGL: params.has('webgl'),
+    warmDraw: params.get('warmdraw') !== '0',
+    ...(lodPixelsParam(params) ? { lodPixels: lodPixelsParam(params)! } : {}),
     shadows: shadowOption(params),
     // The frame stats are the compact badge in the top right (createPerfBadge), not the renderer's own overlay.
     stats: false,
@@ -901,6 +906,21 @@ async function main(): Promise<void> {
   (window as unknown as { crawlout: unknown }).crawlout = {
     renderer,
     session,
+    /** Scripted camera run for the render bench (render/bench.ts): base turn, pan to the middle, wide turns. */
+    bench: (opts?: { seconds?: number }) => {
+      const mine = own();
+      const n = Math.max(1, mine.length);
+      const bounds = renderer.cameraControls.bounds;
+      return runBaseBench(
+        renderer,
+        bounds ? bounds.maxX : 384,
+        [
+          mine.reduce((a, e) => a + e.x, 0) / n / UNITS_PER_METER,
+          mine.reduce((a, e) => a + e.y, 0) / n / UNITS_PER_METER,
+        ],
+        opts,
+      );
+    },
     entities: () => entities,
     status: () => status,
     /** Unit type id of a loadout by data key (-1 if unknown), so a browser test never hard-codes ids that shift with new data. */
