@@ -42,6 +42,7 @@ import {
   SYNTHETIC_ROBOT_TYPE_IDS,
 } from '@crawlout/render/dev';
 import { assetConfig } from '../game/assets.js';
+import { lodPixelsParam } from './lodParams.js';
 import { loadClientGameData, loadClientMap } from '../game/content.js';
 import { runBench } from './bench.js';
 import { loadMapProps, propSource } from './props.js';
@@ -122,6 +123,8 @@ async function main(): Promise<void> {
     dataTextures: params.has('half') ? 'half' : 'auto',
     ...(assets ? { assets } : {}),
     buildingAssets: params.get('buildings') !== 'ph',
+    warmDraw: params.get('warmdraw') !== '0',
+    ...(lodPixelsParam(params) ? { lodPixels: lodPixelsParam(params)! } : {}),
     ...(detail !== null ? { terrainDetail: { subdivide: Number(detail) } } : {}),
     ...(terrainChunks ? { terrainChunks } : {}),
     props: {

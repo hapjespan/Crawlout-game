@@ -18,12 +18,19 @@ import {
   type InstancedBufferAttribute,
 } from 'three/webgpu';
 import type { DecalLayer } from '../decals/decalLayer.js';
+import { PROP_LOD_PX, TREE_LOD_PX } from '../lod/screenLod.js';
 import { createGltfIO } from '../units/unitAssetLoader.js';
 import { NO_UV } from '../units/gltfUnitGeometry.js';
 import { PropAssetRegistry, type PropAssetIO, type ResolvedSource } from './propAssets.js';
 import { propFitScale, propKindOf, PROP_TARGET_HEIGHT, propTargetHeight } from './propFit.js';
 import { createPlaceholderPropGeometry, propGeometryFromGltf } from './propGeometry.js';
-import { PROP_CHUNK_SIZE, PropLayer, type PropVisual, type RenderProp } from './propLayer.js';
+import {
+  PROP_CHUNK_SIZE,
+  PropLayer,
+  SHADOW_MIN_SIZE,
+  type PropVisual,
+  type RenderProp,
+} from './propLayer.js';
 
 const heightAt = (x: number, z: number): number => 0.1 * x + 0.05 * z;
 
@@ -46,7 +53,11 @@ function visual(height = 2, lods?: PropVisual['lods']): PropVisual {
 }
 
 function layer(scene = new Scene()): PropLayer {
-  return new PropLayer(scene, { heightAt, material: () => new MeshBasicNodeMaterial() });
+  return new PropLayer(scene, {
+    heightAt,
+    treeLodPixels: PROP_LOD_PX,
+    material: () => new MeshBasicNodeMaterial(),
+  });
 }
 
 const props: RenderProp[] = [
@@ -173,6 +184,72 @@ describe('PropLayer', () => {
     expect(l.drawCount()).toBe(1);
     l.setProps([]);
     expect(scene.children.length).toBe(0);
+  });
+});
+
+describe('PropLayer LOD and shadow culling', () => {
+  const lodVisual = (height: number): PropVisual => {
+    const g = (): BoxGeometry => new BoxGeometry(1, height, 1).translate(0, height / 2, 0);
+    return { lods: [g(), g(), g()], map: null, fit: 1, height, radius: 0.7 };
+  };
+  const defaults = (): PropLayer =>
+    new PropLayer(new Scene(), { heightAt, material: () => new MeshBasicNodeMaterial() });
+
+  it('drops a tree to its lighter LOD at a larger screen size than any other prop (TREE_LOD_PX)', () => {
+    expect(TREE_LOD_PX.lod1).toBeGreaterThan(PROP_LOD_PX.lod1);
+    // A 10 m object seen from 100 m is about 217 px tall at the default 1800 px viewport: between the two thresholds.
+    const view = camera(new Vector3(30, 100, 30.01), new Vector3(30, 0, 30));
+    const tree = defaults();
+    tree.setProps([{ asset: 'treehigh001', x: 30, y: 30, yaw: 0, scale: 1 }]);
+    tree.setVisual('treehigh001', lodVisual(10));
+    tree.update(view, fakeDecals());
+    expect(tree.lodCounts).toEqual([0, 1, 0]);
+    const rock = defaults();
+    rock.setProps([{ asset: 'rock001', x: 30, y: 30, yaw: 0, scale: 1 }]);
+    rock.setVisual('rock001', lodVisual(10));
+    rock.update(view, fakeDecals());
+    expect(rock.lodCounts).toEqual([1, 0, 0]);
+  });
+
+  it('keeps props lower than SHADOW_MIN_SIZE out of the shadow pass', () => {
+    const l = new PropLayer(new Scene(), {
+      heightAt: () => 0,
+      material: () => new MeshBasicNodeMaterial(),
+      shadow: { smallProps: true },
+    });
+    l.setProps([
+      { asset: 'rock_small', x: 1, y: 1, yaw: 0, scale: 1 },
+      { asset: 'rock_big', x: 2, y: 2, yaw: 0, scale: 1 },
+    ]);
+    l.setVisual('rock_small', lodVisual(SHADOW_MIN_SIZE - 0.1));
+    l.setVisual('rock_big', lodVisual(SHADOW_MIN_SIZE + 0.5));
+    expect(l.meshes().length).toBe(6); // three distinct LOD geometries per asset
+    for (const m of l.meshes()) {
+      if (m.name.startsWith('props-rock_small')) expect(m.castShadow).toBe(false);
+    }
+    // The big rock's finest LOD casts (its coarsest does not: a small prop's far LOD leaves the pass anyway).
+    expect(l.meshes().find((m) => m.name === 'props-rock_big-0')!.castShadow).toBe(true);
+  });
+
+  it('with the sun shadow on, draws a tree outside the view only on the side its shadow falls from', () => {
+    // Looking straight down at x, z around (0, 0) from 40 m (the view is about 33 m across at the ground, z within 16.6). The sun is
+    // on the -z side, so shadows fall towards +z: a tree 13 m beyond the -z edge shades the view, one beyond +z does not.
+    const sunDir = new Vector3(0, 0.64, -0.77).normalize();
+    const l = new PropLayer(new Scene(), {
+      heightAt: () => 0,
+      material: () => new MeshBasicNodeMaterial(),
+      shadow: { smallProps: false, sunDir },
+    });
+    l.setProps([
+      { asset: 'treehigh001', x: 0, y: -30, yaw: 0, scale: 1 },
+      { asset: 'treehigh001', x: 0, y: 30, yaw: 0, scale: 1 },
+      { asset: 'treehigh001', x: 0, y: 0, yaw: 0, scale: 1 },
+    ]);
+    l.setVisual('treehigh001', lodVisual(12));
+    const cam = camera(new Vector3(0, 40, 0.01), new Vector3(0, 0, 0));
+    l.update(cam, fakeDecals());
+    // Chunks are 16 m: the middle tree is in view, the tree at z = -30 is swept into view by its 15 m shadow, z = +30 is not.
+    expect(l.visibleCount).toBe(2);
   });
 });
 
