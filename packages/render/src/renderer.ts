@@ -8,8 +8,6 @@ import {
   PCFShadowMap,
   DataTexture,
   LinearFilter,
-  type Mesh,
-  type Object3D,
   PerspectiveCamera,
   Plane,
   RGBAFormat,
@@ -36,8 +34,11 @@ import {
   WEBGPU_DATA_TEXTURE_CAPS,
   type DataTexturePrecision,
 } from './gpu/dataTextures.js';
-import { ScreenLod } from './lod/screenLod.js';
+import { ScreenLod, type ScreenLodThresholds } from './lod/screenLod.js';
 import { PerfMeter, PerfOverlay, type FrameStats } from './perf/perfOverlay.js';
+import { FrameProfiler, type FrameTimings } from './perf/frameProfile.js';
+import { forceDrawable } from './perf/warmDraw.js';
+import { triangleBreakdown, type TriangleBreakdown } from './perf/triangleBreakdown.js';
 import {
   pickEntity,
   pickNearestOnScreen,
@@ -47,7 +48,7 @@ import {
   type ScreenRect,
 } from './picking/selection.js';
 import { createAtmosphere } from './lighting/atmosphere.js';
-import { TONE_EXPOSURE, TONE_MAPPING } from './lighting/lightRig.js';
+import { SUN_DIR, TONE_EXPOSURE, TONE_MAPPING } from './lighting/lightRig.js';
 import { defaultShadowQuality, SunShadow, type ShadowQuality } from './shadows/sunShadow.js';
 import {
   createInterpolatedFrame,
@@ -152,6 +153,16 @@ export interface CreateRendererOptions {
    * twice it, 128 m roots at four times it, splitting under 40 and 100 m, roots at half resolution beyond 220 m.
    */
   terrainChunks?: TerrainChunkOptions;
+  /**
+   * Screen-size LOD thresholds (lod/screenLod.ts: projected height in device px under which LOD 1 and LOD 2 draw) per
+   * layer, for tuning and measuring; absent keeps the layer's default.
+   */
+  lodPixels?: {
+    units?: ScreenLodThresholds;
+    buildings?: ScreenLodThresholds;
+    props?: ScreenLodThresholds;
+    trees?: ScreenLodThresholds;
+  };
   /** Levels, bed and flow of the water (water/waterMask.ts). */
   water?: WaterOptions;
   /**
@@ -170,6 +181,11 @@ export interface CreateRendererOptions {
    * loaded by setGameData. Default true; false keeps the placeholder blocks.
    */
   buildingAssets?: boolean;
+  /**
+   * One warm draw of every mesh once loading settles (perf/warmDraw.ts), so the first sight of a hero, unit LOD or prop
+   * variant does not hitch. Default true; false only to measure what it saves.
+   */
+  warmDraw?: boolean;
   /**
    * Brightness factor on the albedo per asset id (units, buildings and props from the manifest), for art that reads
    * too dark or too light under the toon ramp next to the rest. 1 (or absent) keeps the art as it is; values are
@@ -328,6 +344,12 @@ export interface CrawloutRenderer {
   rigidUnitAssets(): RigidUnitStatus[];
   /** Triangles and draws per layer in the last frame. */
   layerStats(): LayerStats;
+  /** Triangles of the last frame per layer, main pass and shadow pass (perf/triangleBreakdown.ts); walks the scene, for the bench. */
+  triangleBreakdown(): TriangleBreakdown;
+  /** JavaScript time per phase of the last finished frame (perf/frameProfile.ts). */
+  frameTimings(): FrameTimings;
+  /** The slowest frame (by JavaScript time) since the previous call, or null; for the bench's hitch report. */
+  takeSlowestFrame(): FrameTimings | null;
   dispose(): void;
 }
 
@@ -460,12 +482,14 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
     anims,
     screen,
     shadow: sun,
+    ...(opts.lodPixels?.units ? { lodPixels: opts.lodPixels.units } : {}),
   });
   const rigid = new RigidUnitLayer(scene, {
     capacity,
     lightDir: DEFAULT_LIGHT_DIR,
     screen,
     shadow: sun,
+    ...(opts.lodPixels?.units ? { lodPixels: opts.lodPixels.units } : {}),
   });
   units.setSkip((typeId) => rigid.owns(typeId)); // the robots are the rigid layer's
   const assetConfig = opts.assets;
@@ -494,25 +518,21 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
     warn: (message) => console.warn(`[render] ${message}`),
     albedoGain: gainOf,
   });
-  // Pipelines of everything in the scene, also what is hidden or off screen now, are compiled once loading settles:
-  // otherwise a material first seen later (a building type on the far side of a large map, a unit LOD, a claim
-  // flag) compiles in that frame, 50 ms or more on WebGL2. compileAsync walks the scene synchronously when called,
-  // so the visibility flip is undone before the next frame renders.
+  // Everything in the scene, also what is hidden or off screen now, is made ready once loading settles; otherwise the
+  // first sight of a building type on the far side of a large map, a unit LOD, a hero or a prop variant costs a frame
+  // of 50 to 250 ms. Two steps: compileAsync links the programs (it walks the scene synchronously when called, so the
+  // flip is undone before the next frame renders), then one warm draw (perf/warmDraw.ts) of everything with an instance
+  // each, run inside the next frame just before its real draw, so the driver builds its pipeline states, vertex arrays,
+  // texture uploads and the shadow-depth programs now. It is not presented: the real draw follows in the same task.
   let warmTimer: ReturnType<typeof setTimeout> | undefined;
+  let warmDrawPending = false;
+  let warmDraws = 0;
   const warmUp = async (): Promise<void> => {
-    const flipped: [Object3D, boolean, boolean][] = [];
-    scene.traverse((o) => {
-      if (!(o as Mesh).isMesh) return;
-      flipped.push([o, o.visible, o.frustumCulled]);
-      o.visible = true;
-      o.frustumCulled = false;
-    });
+    const restore = forceDrawable(scene);
     const done = gpu.compileAsync(scene, camera);
-    for (const [o, visible, culled] of flipped) {
-      o.visible = visible;
-      o.frustumCulled = culled;
-    }
+    restore();
     await done;
+    warmDrawPending = opts.warmDraw !== false;
   };
   const scheduleWarmUp = (): void => {
     clearTimeout(warmTimer);
@@ -528,6 +548,7 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
     heightAt: (x, z) => terrain.heightAt(x, z),
     castShadows: shadowsOn,
     screen,
+    ...(opts.lodPixels?.buildings ? { lodPixels: opts.lodPixels.buildings } : {}),
     materials: {
       building: createPropMaterial({
         lightDir: DEFAULT_LIGHT_DIR,
@@ -554,7 +575,9 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
     ...opts.props,
     maxBlobs: propBlobs,
     screen,
-    shadow: sun ? { smallProps: sun.settings.smallProps } : null,
+    ...(opts.lodPixels?.props ? { lodPixels: opts.lodPixels.props } : {}),
+    ...(opts.lodPixels?.trees ? { treeLodPixels: opts.lodPixels.trees } : {}),
+    shadow: sun ? { smallProps: sun.settings.smallProps, sunDir: SUN_DIR } : null,
     heightAt: (x, z) => terrain.heightAt(x, z),
     material: ({ map, layers, mask, category, height }) => {
       const wind = windOf(category);
@@ -765,6 +788,7 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
 
   const overlay = createOverlay(opts.stats ?? true, canvas);
   const meter = new PerfMeter(backend === 'webgpu' ? 'WebGPU' : 'WebGL2');
+  const profiler = new FrameProfiler();
 
   const maxDpr = opts.maxPixelRatio ?? 2;
   const resize = (): void => {
@@ -782,6 +806,7 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
   let last = performance.now();
   const loop = (): void => {
     const now = performance.now();
+    profiler.begin();
     const dt = (now - last) / 1000;
     last = now;
     const t = clock(now);
@@ -790,13 +815,25 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
     camera.updateMatrixWorld();
     screen.setViewport(canvas.height);
     screen.update(camera);
+    profiler.mark('camera');
+    const builds = terrain.leafBuilds;
     terrain.update(camera);
+    profiler.count('leafBuilds', terrain.leafBuilds - builds);
+    profiler.mark('terrain');
     interp.sample(now, frame);
     stampInspected(frame.id, frame.flags, frame.count, inspectedIds);
     // Foundations first: buildings level the ground under them, and everything below reads the levelled ground.
-    if (terrain.setPlatforms(structures.platforms(frame, platformList), PLATFORM_BUDGET_MS))
-      props.relayout();
+    profiler.mark('interpolate');
+    const relayout = terrain.setPlatforms(
+      structures.platforms(frame, platformList),
+      PLATFORM_BUDGET_MS,
+    );
+    profiler.count('platformRelayout', relayout ? 1 : 0);
+    profiler.count('warmDraws', warmDraws);
+    if (relayout) props.relayout();
+    profiler.mark('platforms');
     for (let i = 0; i < frame.count; i++) frame.y[i] = terrain.heightAt(frame.x[i]!, frame.z[i]!);
+    profiler.mark('heights');
     decals.begin();
     zones.draw(t, decals); // first, so blobs and selection rings draw over the zone
     units.update(frame, camera, decals);
@@ -812,13 +849,28 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
         preview.valid ? PREVIEW_VALID : PREVIEW_INVALID,
       );
     }
+    profiler.mark('entities');
     props.update(camera, decals); // last: when the decal batch is full, prop blobs are what drops
+    profiler.mark('props');
     decals.end();
     additive.commit();
     smoke.commit();
     atmosphere.update(controls.distance);
+    profiler.mark('effects');
     sun?.update(camera, groundLo, groundHi);
+    profiler.mark('shadowFit');
+    if (warmDrawPending) {
+      warmDrawPending = false;
+      const restore = forceDrawable(scene);
+      gpu.render(scene, camera);
+      restore();
+      gpu.info.reset(); // the stats are the real draw's
+      warmDraws++;
+      profiler.mark('warmDraw');
+    }
     gpu.render(scene, camera);
+    profiler.mark('submit');
+    profiler.end();
     const info = gpu.info.render;
     if (meter.frame(now, performance.now() - now, info.drawCalls, info.triangles))
       overlay?.show(meter.stats);
@@ -995,6 +1047,9 @@ export async function createRenderer(opts: CreateRendererOptions): Promise<Crawl
       controls.focus(x / UNITS_PER_METER, y / UNITS_PER_METER);
     },
     stats: () => ({ ...meter.stats }),
+    triangleBreakdown: () => triangleBreakdown(scene, (id) => props.categoryOf(id)),
+    frameTimings: () => profiler.last,
+    takeSlowestFrame: () => profiler.takeSlowest(),
     layerStats: () => ({
       terrainTriangles: terrain.triangles,
       terrainDraws: terrain.drawCount,

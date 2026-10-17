@@ -20,6 +20,8 @@ export interface ScreenLodThresholds {
 export const UNIT_LOD_PX: ScreenLodThresholds = { lod1: 72, lod2: 30 };
 export const BUILDING_LOD_PX: ScreenLodThresholds = { lod1: 140, lod2: 60 };
 export const PROP_LOD_PX: ScreenLodThresholds = { lod1: 120, lod2: 50 };
+/** Trees: three times the triangles of any other prop at LOD 0 and two draws in the frame (view and shadow), so they drop sooner. */
+export const TREE_LOD_PX: ScreenLodThresholds = { lod1: 280, lod2: 100 };
 
 /** Drawing buffer height assumed until the renderer reports one (900 CSS px at DPR 2). */
 export const DEFAULT_VIEWPORT_PX = 1800;

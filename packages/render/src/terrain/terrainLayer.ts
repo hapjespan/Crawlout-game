@@ -416,6 +416,11 @@ export class TerrainLayer {
     return (this.mesh?.geometry.getIndex()?.count ?? 0) / 3;
   }
 
+  /** Leaf chunks built so far (the frame profiler reports the difference per frame). */
+  get leafBuilds(): number {
+    return this.chunks?.leafBuilds ?? 0;
+  }
+
   /** Terrain meshes drawn in the last update. */
   get drawCount(): number {
     return this.chunks ? this.chunks.drawn.length : this.mesh ? 1 : 0;
