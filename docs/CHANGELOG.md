@@ -3,6 +3,7 @@
 Elke wijziging aan een contract (fase-0 sectie 4 tot 6) komt hier, samen met de bijbehorende wijziging in packages/protocol.
 
 - 2026-10-18 (sim-core, winroute C, het Bouwproject; voorstel, ter bevestiging door de architect; docs/winroute-c-winkelcentrum.md): contract 1 `PlayerStatus.project` en STATE_FORMAT_VERSION 15 (PlayerState.projTicks en aiProjectAt, ProjectState na de kampen), contract 2 `MatchSettings.mode` `project` en Build op een ruine is herstellen, contract 3 data/project.json, MapDef.projectSites en ai/*.json `project` (data 0.31.0, protocol 0.16.0, sim 0.25.0).
+- 2026-10-18 (data 0.32.0, sim 0.26.0): Raider-AI legt een claim ook tijdens het sparen (oorzaak van de Raider-daling na de Kooi 5x5); balans terug op 36 van 66 (55 procent), details in packages/sim/CHANGELOG.md 0.26.0.
 - 2026-10-18 (data 0.30.0): Kooi 5x5, ontwerp Martien (was 9x9). Raider-balans verschuift (seeds 200 tot 232: Raiders 13 van 66 tegen 35 van 66), niet bijgesteld; details in packages/data/CHANGELOG.md 0.30.0.
 - 2026-10-13: fase 0 vastgelegd. Contract 1, 2 en 3 als doc en als code in packages/protocol en packages/data.
 - 2026-10-13 (architect-review sprint 1), contract 1:

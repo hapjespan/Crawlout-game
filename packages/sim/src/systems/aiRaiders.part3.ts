@@ -192,7 +192,12 @@ export function raiderThink(
   if (!heroWaits) produce(ctx, p, plan, t, reserve);
 
   // 6 claims, building help, gathering, slave builders
-  if (!saving && fields !== null && tick >= script.claimFromTicks && t.idleBuilders.length > 0) {
+  // Before the far claims open (claimFarFromS) saving for the build order or a tech does not hold the claims back
+  // (sim 0.26.0): a claim post on the own side is cheap, and the idle slave builder used to wait minutes for the next
+  // building while that claim was open: a race with the autosloperij of the build order that was won or lost on the
+  // spot of the second Kooi (the post went up at minute 9 or after minute 12; data 0.30.0, Kooi 5x5).
+  const claimHeld = tick < script.claimFarFromTicks ? heroWaits : saving;
+  if (!claimHeld && fields !== null && tick >= script.claimFromTicks && t.idleBuilders.length > 0) {
     if (claimNext(ctx, p, t.idleBuilders[0]!, script, free, fields)) t.idleBuilders.shift();
   }
   // win route C (sim 0.25.0, ai/*.json project): restore a ruin of a kind it lacks (the Raider script may leave it out)

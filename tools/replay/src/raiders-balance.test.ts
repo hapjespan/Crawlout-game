@@ -51,12 +51,12 @@ import { formatRaiderSummary, raiderSummary } from './raiders.js';
 // percent (Martien: the Raiders are not the weaker faction). With full-strength Raiders they win late too, so the
 // triangle below asks only that the Dwellers take at least half of the matches decided after minute 30 (were two
 // thirds). The pinned seeds are measured again.
-// One seed of each group is pinned here (winner and reason).
+// One seed of each group is pinned here (winner and reason; measured again for data 0.32.0).
 const EXPECTED = [
   { seed: 2, raider: 0, winner: 'raiders', reason: 'dominance' },
-  { seed: 1, raider: 0, winner: 'dwellers', reason: 'dominance' },
-  { seed: 9, raider: 0, winner: 'raiders', reason: 'destruction' },
-  { seed: 4, raider: 1, winner: 'raiders', reason: 'dominance' },
+  { seed: 6, raider: 0, winner: 'dwellers', reason: 'dominance' },
+  { seed: 1, raider: 0, winner: 'raiders', reason: 'dominance' },
+  { seed: 4, raider: 1, winner: 'raiders', reason: 'destruction' },
 ] as const;
 
 describe.skipIf(process.env.REPLAY_FAST === '1')(
@@ -79,17 +79,19 @@ describe.skipIf(process.env.REPLAY_FAST === '1')(
       }
     });
 
-    // data 0.30.0 (Kooi 5x5, ontwerp Martien): measured 20 of 66 (30 percent) on these seeds, 13 of 66 on seeds 200 to
-    // 232 (was 35). The design target stays 40 to 55 percent: the floor is lowered to 25 percent until Martien decides
-    // how to compensate the smaller Kooi (not retuned, see packages/data/CHANGELOG.md 0.30.0).
-    it('the Raiders win 25 to 55 percent (data 0.30.0; target 40 to 55, open), on both sides', () => {
+    // data 0.32.0 (sim 0.26.0): the band is back at 40 to 55 percent. The Kooi 5x5 of data 0.30.0 had dropped the
+    // Raiders to 20 of 66 (30 percent; 13 of 66 on seeds 200 to 232): the AI's second claim post went up after minute
+    // 12 instead of minute 9 (the claim waited behind the saving for the autosloperij of the build order, a race that
+    // was won or lost on the spot of the second Kooi). Now 36 of 66 (20 as player 0, 16 as player 1); seeds 200 to
+    // 232: 23 of 66 (35 percent, open: below the band; the two seed sets differ by about 20 points since this change).
+    it('the Raiders win 40 to 55 percent, on both sides', () => {
       const s = raiderSummary(rows);
-      expect(s.raiderWins, report()).toBeGreaterThanOrEqual(Math.ceil(s.matches * 0.25));
+      expect(s.raiderWins, report()).toBeGreaterThanOrEqual(Math.ceil(s.matches * 0.4));
       expect(s.raiderWins, report()).toBeLessThanOrEqual(Math.floor(s.matches * 0.55));
       // per side: 10 to 22 of 33 (the fairness band of match-length.test.ts, 12 to 21, widened by one or two: Rustbelt
       // favours the Raiders on the second spawn in this measurement, 21 against 10)
       for (const n of s.raiderWinsAs) {
-        expect(n, report()).toBeGreaterThanOrEqual(8); // data 0.30.0: 9 and 11 (was 10)
+        expect(n, report()).toBeGreaterThanOrEqual(10);
         expect(n, report()).toBeLessThanOrEqual(22);
       }
     });
@@ -126,7 +128,7 @@ describe.skipIf(process.env.REPLAY_FAST === '1')(
 
     it('the Raiders catch slaves and the Dwellers free some of them', () => {
       const s = raiderSummary(rows);
-      // data 0.30.0: 49 captures in 66 matches (was above 66 with the 9x9 Kooi)
+      // data 0.32.0: 88 captures in 66 matches (49 with the 5x5 Kooi before the claim fix)
       expect(s.captured, report()).toBeGreaterThan(Math.floor(s.matches / 2));
       expect(s.freed, report()).toBeGreaterThan(0);
     });
