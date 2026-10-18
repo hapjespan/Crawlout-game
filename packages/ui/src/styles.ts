@@ -286,6 +286,7 @@ const HUD_LAYOUT_CSS = `
 .co-toast-attack{background:#7a2323;border-color:#ff5252}
 .co-toast-settlerLost{background:#6a4a12;border-color:#ffb74d}
 .co-toast-claimLost{background:#4a2a6a;border-color:#ba68c8}
+.co-toast-noBeds{background:#5a4a12;border-color:#ffd54f}
 .co-toast-close{font:inherit;color:inherit;background:#2f353b;border:1px solid #4a5159;border-radius:4px;cursor:pointer;padding:0 ${px(8)}}
 .co-lobby{position:absolute;left:50%;top:30%;transform:translateX(-50%);width:${px(300)}}
 .co-lobby h2{margin:0 0 ${px(6)};font-size:${fpx(12)};text-transform:uppercase;color:#9aa0a6}

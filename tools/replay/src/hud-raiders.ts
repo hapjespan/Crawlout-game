@@ -69,7 +69,7 @@ async function run(width: number, height: number): Promise<void> {
       `[...document.querySelectorAll('.co-roster-group')].map((b) => b.getAttribute('title'))`,
     );
     check(
-      names.includes('Slaaf-bouwer') && names.includes('Plunderaar'),
+      names.includes('Slaaf-bouwer') && names.includes('Rover'),
       'Dutch full names in the tooltip',
       names.join(','),
     );
@@ -147,7 +147,7 @@ async function run(width: number, height: number): Promise<void> {
       await clickSel('[data-building="tent"]');
       const cards = await ev<string>(textOf('.co-cards'));
       check(
-        /Slaver/.test(cards) && /Knuppelaar/.test(cards) && /Plunderaar/.test(cards),
+        /Slaver/.test(cards) && /Knuppelaar/.test(cards) && /Rover/.test(cards),
         'the tent has Produce cards',
         cards.slice(0, 160),
       );

@@ -55,6 +55,7 @@ const RAIDER_BY_NAME: readonly (readonly [RegExp, PortraitId])[] = [
   [/chem/, BY_LOADOUT.chemdealer!],
   [/slaaf-bouwer/, BY_LOADOUT.slaaf_bouwer!],
   [/slaaf/, BY_LOADOUT.slaaf!],
+  [/^rover/, BY_LOADOUT.plunderaar!],
   [/hond|buggy/, 'robot'],
 ];
 
@@ -71,7 +72,6 @@ export function portraitOfEntity(e: SelectedEntity): PortraitId {
   // Raider types first: their role (militia) would otherwise give every fighter the Dwellers' militia face.
   const raider = RAIDER_BY_NAME.find(([pattern]) => pattern.test(name));
   if (raider) return raider[1];
-  if (name === 'plunderaar' && e.role === 'militia') return BY_LOADOUT.plunderaar!; // a Raider fighter, not the Dweller scavenger
   if (e.robot) return 'robot'; // the Bouwrobot has role builder but no builder's face
   if (e.role && BY_ROLE[e.role]) return BY_ROLE[e.role]!;
   if (/robot|drone|sentinel/.test(name)) return 'robot';

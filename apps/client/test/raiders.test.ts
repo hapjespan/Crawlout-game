@@ -60,7 +60,7 @@ describe('Raider roster', () => {
     const slaaf = buildRoster(data, raiders.id, 0, [row(3, unit('slaaf_bouwer'))]).find(
       (g) => g.key === 'slaaf_bouwer',
     )!;
-    expect(slaaf).toMatchObject({ naam: 'Slaaf-bouwer', short: 'Bouwer' });
+    expect(slaaf).toMatchObject({ naam: 'Slaaf-bouwer', short: 'Sl-bouw' });
   });
 
   it('shows Slaver and Chem-dealer once they exist', () => {
@@ -166,7 +166,7 @@ describe('Raider cards', () => {
     const cards = buildingCards(ctx([tent], [tent]));
     const names = cards.filter((c) => c.kind === 'produce').map((c) => c.naam);
     expect(names).toEqual(
-      expect.arrayContaining(['Plunderaar', 'Knuppelaar', 'Slaver', 'Hond', 'Chem-dealer']),
+      expect.arrayContaining(['Rover', 'Knuppelaar', 'Slaver', 'Hond', 'Chem-dealer']),
     );
     const dog = cards.find((c) => c.naam === 'Hond')!;
     expect(dog.state).toBe('locked');

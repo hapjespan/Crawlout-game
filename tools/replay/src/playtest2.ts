@@ -1615,7 +1615,7 @@ async function raidersOpening(c: Ctx): Promise<void> {
   await S(
     c,
     'tent-kaarten',
-    'de tent via de balk: kaarten Plunderaar, Knuppelaar en Slaver; drie Knuppelaars maken (de Plunderaars bewaken de Kooi)',
+    'de tent via de balk: kaarten Rover, Knuppelaar en Slaver; drie Knuppelaars maken (de Rovers bewaken de Kooi)',
     async () => {
       await waitScrap(bot, 85, 200);
       if (await barSelect(bot, 'tent', 'Tent')) {
@@ -1682,7 +1682,7 @@ async function raidersOpening(c: Ctx): Promise<void> {
         );
         bot.expect(
           acts2.includes('gather') && !acts2.includes('build'),
-          'rol Plunderaar (1) zet de slaven terug op Verzamel',
+          'rol Slaaf (1) zet de slaven terug op Verzamel',
           'laag',
           acts2.join(','),
         );
@@ -1816,7 +1816,7 @@ async function slaverHunt(c: Ctx): Promise<void> {
   await S(
     c,
     'slavenjacht',
-    'Warlord, Slaver en de overige vechters (de Plunderaars blijven als bewakers bij de Kooi) lopen naar een vijandelijke scrapbron; zodra een bewoner in zicht komt: F en een klik vangt hem; de gevangene loopt naar de Kooi en wordt slaaf',
+    'Warlord, Slaver en de overige vechters (de Rovers blijven als bewakers bij de Kooi) lopen naar een vijandelijke scrapbron; zodra een bewoner in zicht komt: F en een klik vangt hem; de gevangene loopt naar de Kooi en wordt slaaf',
     async () => {
       const n = await selectArmy(bot, true, c.guards);
       bot.say(
@@ -2053,9 +2053,7 @@ async function playOn(c: Ctx): Promise<void> {
           if (await bot.buildingButton('tent')) {
             const st = (await bot.cards()).find(
               (k) =>
-                k.kind === 'produce' &&
-                k.state === 'available' &&
-                /Plunderaar|Knuppelaar/.test(k.naam),
+                k.kind === 'produce' && k.state === 'available' && /Rover|Knuppelaar/.test(k.naam),
             );
             if (st) await bot.clickCard(st.naam);
           }

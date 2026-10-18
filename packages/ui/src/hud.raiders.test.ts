@@ -107,6 +107,20 @@ describe('Raider commands', () => {
     expect(t.el.querySelector('[data-action="roleScavenger"]')!.textContent).toContain('Slaaf');
   });
 
+  it('a multi-selection tells a slave (S) from a slave builder (SB) after SetRole (playtest M3)', () => {
+    const t = setup();
+    mounted = t.handle;
+    t.select([
+      unit({ id: 1, raiderKind: 'slave' }),
+      unit({ id: 2, raiderKind: 'slave', role: 'builder', loadoutName: 'Slaaf-bouwer' }),
+      unit({ id: 3, raiderKind: 'fighter', role: 'militia', loadoutName: 'Rover' }),
+    ]);
+    const cells = [...t.el.querySelectorAll('.co-selection .co-cell')];
+    expect(cells.map((c) => c.querySelector('b')!.textContent)).toEqual(['S', 'SB', 'V']);
+    expect(cells[1]!.getAttribute('aria-label')).toContain('Slaaf-bouwer');
+    expect(cells[2]!.getAttribute('aria-label')).toContain('Rover (Vechter)');
+  });
+
   it("Vang is the Slaver's own command: it aims with a hint and sends Attack on an enemy", () => {
     const t = setup();
     mounted = t.handle;
@@ -173,7 +187,7 @@ describe('Raider top bar', () => {
     const fighters = bar.querySelector('[data-raider="fighters"]')!;
     expect(fighters.textContent).toContain('3/5');
     expect(fighters.className).toContain('co-raider-warn');
-    expect(fighters.getAttribute('title')).toContain('komt er een Plunderaar bij de tent');
+    expect(fighters.getAttribute('title')).toContain('komt er een Rover bij de tent');
     expect(bar.querySelector('[data-raider="cages"]')!.className).not.toContain('warn');
   });
 
@@ -204,6 +218,23 @@ describe('Raider top bar', () => {
     act(() => alert!({ kind: 'revolt', x: 1, y: 2 }));
     expect(t.el.querySelector('[data-alert="revolt"]')!.textContent).toBe(
       'Kooi onbewaakt: slaven ontsnappen!',
+    );
+  });
+
+  it('shows the no-free-beds hint with its own text (playtest M5)', () => {
+    let alert: ((a: HudAlert) => void) | null = null;
+    const t = setup({
+      subscribeAlerts: (cb) => {
+        alert = cb;
+        return () => undefined;
+      },
+    });
+    mounted = t.handle;
+    act(() => alert!({ kind: 'noBeds', x: 1, y: 2, text: 'Geen vrije bedden: bouw een tent' }));
+    const toast = t.el.querySelector('[data-alert="noBeds"]')!;
+    expect(toast.textContent).toBe('Geen vrije bedden: bouw een tent');
+    expect(toast.getAttribute('aria-label')).toBe(
+      'Geen vrije bedden: bouw een tent, ga naar de locatie',
     );
   });
 });
@@ -244,7 +275,11 @@ describe('Raider roster tile and portraits', () => {
     // the selected-unit portrait agrees with the tile, also for a Raider fighter whose role is militia
     const sel = (loadoutName: string, role: SelectedEntity['role']): SelectedEntity =>
       unit({ loadoutName, role });
-    expect(portraitOfEntity(sel('Plunderaar', 'militia'))).toBe(portraitOfGroup('plunderaar'));
+    // the Raider fighter is called Rover (playtest L4), its steel variant Rover in staal
+    expect(portraitOfEntity(sel('Rover', 'militia'))).toBe(portraitOfGroup('plunderaar'));
+    expect(portraitOfEntity(sel('Rover in staal', 'militia'))).toBe(
+      portraitOfGroup('plunderaar_staal'),
+    );
     expect(portraitOfEntity(sel('Slaver', 'militia'))).toBe(portraitOfGroup('slaver'));
     expect(portraitOfEntity(sel('Chem-dealer', 'militia'))).toBe(portraitOfGroup('chemdealer'));
     expect(portraitOfEntity(sel('Molotovgooier', 'militia'))).toBe(

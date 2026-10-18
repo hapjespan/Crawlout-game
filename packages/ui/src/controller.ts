@@ -254,6 +254,19 @@ export function roleLabelOf(u: Pick<SelectedEntity, 'role' | 'raiderKind'>): str
   return u.role ? ROLE_LABEL[u.role] : undefined;
 }
 
+/**
+ * Short tag of the role on the small cards of a multi-selection: the first letter of each part of the role label, so a
+ * slave builder ("Slaaf-bouwer", SB) stands apart from a slave ("Slaaf", S) after SetRole (playtest M3). '?' without a role.
+ */
+export function roleTagOf(u: Pick<SelectedEntity, 'role' | 'raiderKind'>): string {
+  const label = roleLabelOf(u);
+  if (!label) return '?';
+  return label
+    .split('-')
+    .map((p) => p.slice(0, 1).toUpperCase())
+    .join('');
+}
+
 /** Sneltoets als label. */
 export const keyLabel = (key: string): string => (key === ' ' ? 'Spatie' : key.toUpperCase());
 

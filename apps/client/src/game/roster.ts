@@ -24,8 +24,9 @@ export const LOADOUT_NAMES: Record<string, string> = {
   // Raiders (data 0.21.0)
   slaaf: 'Slaaf',
   slaaf_bouwer: 'Slaaf-bouwer',
-  plunderaar: 'Plunderaar',
-  plunderaar_staal: 'Plunderaar (staal)',
+  // the Raider fighter is a "Rover" on screen (playtest L4): "Plunderaar" is the Dwellers' scavenger; the data ids stay
+  plunderaar: 'Rover',
+  plunderaar_staal: 'Rover in staal',
   knuppelaar: 'Knuppelaar',
   molotovgooier: 'Molotovgooier',
   hond: 'Hond',
@@ -39,12 +40,11 @@ export const LOADOUT_NAMES: Record<string, string> = {
  * the names that do not fit have one; the tooltip and the screen reader get the full name.
  */
 export const LOADOUT_SHORT_NAMES: Record<string, string> = {
-  plunderaar: 'Plunder',
   plunderaar_staal: 'Staal',
   knuppelaar: 'Knuppel',
   molotovgooier: 'Molotov',
   chemdealer: 'Chem',
-  slaaf_bouwer: 'Bouwer',
+  slaaf_bouwer: 'Sl-bouw',
   bouwrobot: 'Bouwbot',
 };
 

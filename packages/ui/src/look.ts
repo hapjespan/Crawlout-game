@@ -235,6 +235,7 @@ color:var(--paper-ink);font-weight:700;text-shadow:none;box-shadow:0 1px 2px rgb
 .co-hud .co-toast-settlerLost{background:linear-gradient(180deg,#7a5412,#43300a);border-color:var(--amber-500)}
 .co-hud .co-toast-claimLost{background:linear-gradient(180deg,#5a3a7a,#32204a);border-color:#ba68c8}
 .co-hud .co-toast-dominance{background:linear-gradient(180deg,#7a4a12,#43280a);border-color:#ff8a65}
+.co-hud .co-toast-noBeds{background:linear-gradient(180deg,#4a5418,#2a300c);border-color:var(--amber-500)}
 .co-hud .co-banner{font-size:${fpx(15)}}
 .co-hud .co-banner.co-desync{background:linear-gradient(180deg,#6a1a14,#3a0d0a);border-color:#ff5252}
 .co-hud .co-banner.co-stall{background:linear-gradient(180deg,#5a4510,#33270a);border-color:var(--amber-500)}

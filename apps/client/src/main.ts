@@ -110,6 +110,7 @@ import { dominanceView } from './game/dominance.js';
 import { FOG_POLL_MS, fogEnabled, minimapFogOf, sameMinimapFog } from './game/fogView.js';
 import { minimapLayers } from './game/minimapLayers.js';
 import { LOADOUT_NAMES, buildRoster } from './game/roster.js';
+import { BedHintThrottle, bedHintText, cappedByBeds } from './game/beds.js';
 import { raiderKindOf, raiderLines, raiderStats, seesEnemySlaves } from './game/raiders.js';
 import { EVENT_TYPE, readSnapshot, type EntityRow } from './game/snapshot.js';
 
@@ -377,6 +378,18 @@ async function main(): Promise<void> {
     lastRevoltAlert = now;
     alert({ kind: 'revolt', x: short.x, y: short.y });
   }
+  /** Hint when the beds cap the population (playtest M5): build a house (Dwellers) or a tent (Raiders); throttled. */
+  const bedHint = new BedHintThrottle();
+  function checkBeds(s: PlayerStatus): void {
+    if (!bedHint.check(cappedByBeds(data, s), performance.now())) return;
+    const hq = myHq();
+    alert({
+      kind: 'noBeds',
+      x: hq?.x ?? 0,
+      y: hq?.y ?? 0,
+      text: bedHintText(data, myFaction()?.id),
+    });
+  }
 
   const perfBadge = perfEl ? createPerfBadge(perfEl, () => renderer.stats()) : null;
   const netStatus = createStatusOverlay();
@@ -419,6 +432,7 @@ async function main(): Promise<void> {
       status = next;
       renderer.setClaimStates(next.claimPoints);
       if (winner) showEnd(winner);
+      else checkBeds(next);
       notify();
     },
     onDesync(event: DesyncEvent) {

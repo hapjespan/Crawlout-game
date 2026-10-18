@@ -8,6 +8,7 @@ import {
   PERK_PANEL_KEY,
   actionLabel,
   roleLabelOf,
+  roleTagOf,
   keyLabel,
   threatOf,
   unitStateOf,
@@ -207,7 +208,9 @@ function SelectionPanel(props: {
       'ul',
       { class: 'co-grid' },
       sel.map((u) => {
-        const label = `${u.loadoutName ?? `Type ${u.typeId}`}, ${u.hpPct}% gezondheid`;
+        const name = u.loadoutName ?? `Type ${u.typeId}`;
+        const role = roleLabelOf(u);
+        const label = `${name}${role && role !== name ? ` (${role})` : ''}, ${u.hpPct}% gezondheid`;
         // A click on a unit card selects only that unit and puts the camera on it.
         return h(
           'li',
@@ -222,7 +225,7 @@ function SelectionPanel(props: {
               'aria-label': `${label}. Selecteer alleen deze.`,
               onClick: () => ctl.selectSelected(u.id),
             },
-            h('b', null, (roleLabelOf(u) ?? '?').slice(0, 1)),
+            h('b', null, roleTagOf(u)),
             // Decorative: the health is in the card's label, so no meter semantics for 50 cards.
             h(
               'span',
@@ -843,6 +846,7 @@ const ALERT_TEXT: Record<AlertKind, string> = {
   claimLost: 'Claim verloren',
   dominance: 'Tegenstander telt mee voor dominantie!',
   revolt: 'Kooi onbewaakt: slaven ontsnappen!',
+  noBeds: 'Geen vrije bedden',
 };
 
 function Toasts(props: { ctl: HudController; state: HudState }): ComponentChild {
@@ -850,8 +854,9 @@ function Toasts(props: { ctl: HudController; state: HudState }): ComponentChild 
   return h(
     'ul',
     { class: 'co-toasts', role: 'log', 'aria-live': 'polite', 'aria-label': 'Waarschuwingen' },
-    state.toasts.map((t) =>
-      h(
+    state.toasts.map((t) => {
+      const text = t.text ?? ALERT_TEXT[t.kind];
+      return h(
         'li',
         { key: t.id },
         h(
@@ -860,13 +865,10 @@ function Toasts(props: { ctl: HudController; state: HudState }): ComponentChild 
             type: 'button',
             class: `co-btn co-toast co-toast-${t.kind}`,
             'data-alert': t.kind,
-            'aria-label':
-              t.kind === 'dominance'
-                ? ALERT_TEXT[t.kind]
-                : `${ALERT_TEXT[t.kind]}, ga naar de locatie`,
+            'aria-label': t.kind === 'dominance' ? text : `${text}, ga naar de locatie`,
             onClick: () => ctl.focusAlert(t),
           },
-          ALERT_TEXT[t.kind],
+          text,
         ),
         h(
           'button',
@@ -878,8 +880,8 @@ function Toasts(props: { ctl: HudController; state: HudState }): ComponentChild 
           },
           '×',
         ),
-      ),
-    ),
+      );
+    }),
   );
 }
 

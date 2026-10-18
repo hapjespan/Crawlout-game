@@ -19,7 +19,7 @@ export function RaiderBar(props: { stats: RaiderStats | null }): ComponentChild 
   const short = understaffedCages(s);
   const slaveText = `${s.slavesWorking} aan het werk${s.prisoners > 0 ? `, ${s.prisoners} gevangen` : ''}`;
   const netText = s.tentReady
-    ? `Onder ${s.safetyThreshold} vechters komt er een Plunderaar bij de tent`
+    ? `Onder ${s.safetyThreshold} vechters komt er een Rover bij de tent`
     : `Onder ${s.safetyThreshold} vechters helpt een tent: bouw er een`;
   const cageText = s.cages
     .map(

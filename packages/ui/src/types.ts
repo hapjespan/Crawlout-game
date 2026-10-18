@@ -280,12 +280,17 @@ export interface BuildingButton {
   progressPct?: number;
 }
 
-export type AlertKind = 'attack' | 'settlerLost' | 'claimLost' | 'dominance' | 'revolt';
+export type AlertKind = 'attack' | 'settlerLost' | 'claimLost' | 'dominance' | 'revolt' | 'noBeds';
 export interface HudAlert {
   kind: AlertKind;
   /** Locatie in sim-eenheden. Bij 'dominance' zonder betekenis (0): die toast heeft geen locatie en verplaatst de camera niet. */
   x: number;
   y: number;
+  /**
+   * Eigen tekst in plaats van de vaste tekst van de soort, bijvoorbeeld bij 'noBeds' het gebouw van de factie ("Geen vrije
+   * bedden: bouw een woning" of "…: bouw een tent").
+   */
+  text?: string;
 }
 export interface ToastAlert extends HudAlert {
   id: number;
@@ -459,7 +464,7 @@ export interface RaiderStats {
   /** Vechters (geen held, geen slaaf) en de drempel van het tentenvangnet. */
   fighters: number;
   safetyThreshold: number;
-  /** Staat er een voltooide tent? Dan komt er onder de drempel een Plunderaar bij. */
+  /** Staat er een voltooide tent? Dan komt er onder de drempel een Rover bij. */
   tentReady: boolean;
   cages: readonly RaiderCage[];
 }
