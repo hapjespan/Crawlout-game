@@ -32,7 +32,8 @@ if (local && !hasGlb(srcDir)) {
 }
 
 // The delivered models (assets/local/delivered.json, art in assets/local/delivered; both gitignored) only go through the local pipeline.
-const deliveredPath = argValue('--delivered') ?? `${repoRoot}assets/local/delivered.json`;
+// Its default follows --src, so a worktree building the main checkout's assets/local keeps the delivered models.
+const deliveredPath = argValue('--delivered') ?? join(srcDir, 'delivered.json');
 const result = await buildAssets({
   srcDir,
   distDir,

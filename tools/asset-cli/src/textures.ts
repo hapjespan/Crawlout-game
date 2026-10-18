@@ -460,6 +460,12 @@ export interface TeamMaskRule {
   minValue?: number | undefined;
   /** Zachtheid van de rand: sigma van een gauss-vervaging van het masker in texels (standaard 1, 0 = hard). */
   softness?: number | undefined;
+  /**
+   * Only on the skin of these bones (Mixamo names, for example the upper arms for an arm band): texels covered by a
+   * triangle whose mean weight on these bones is at least `minWeight` (default 0.5). Needs a skinned mesh.
+   */
+  bones?: readonly string[] | undefined;
+  minWeight?: number | undefined;
 }
 
 export interface TeamMaskInfo {
@@ -492,6 +498,95 @@ export function inTeamRange(rule: TeamMaskRule, r: number, g: number, b: number)
 }
 
 /**
+ * Texels (width x height, 1 = inside) covered by the triangles of `texture`'s primitives whose mean skin weight on
+ * `bones` is at least `minWeight`, grown by two texels so the band does not stop short at a UV seam.
+ */
+export function boneRegion(
+  document: Document,
+  texture: Texture,
+  bones: readonly string[],
+  minWeight: number,
+  width: number,
+  height: number,
+): Uint8Array {
+  const wanted = new Set(bones);
+  const region = new Uint8Array(width * height);
+  let skinned = false;
+  for (const node of document.getRoot().listNodes()) {
+    const mesh = node.getMesh();
+    const skin = node.getSkin();
+    if (!mesh || !skin) continue;
+    const names = skin.listJoints().map((j) => j.getName().replace(/^mixamorig[:_]?/i, ''));
+    for (const prim of mesh.listPrimitives()) {
+      if (prim.getMaterial()?.getBaseColorTexture() !== texture) continue;
+      const uv = prim.getAttribute('TEXCOORD_0');
+      const joints = prim.getAttribute('JOINTS_0');
+      const weights = prim.getAttribute('WEIGHTS_0');
+      if (!uv || !joints || !weights) continue;
+      skinned = true;
+      const count = uv.getCount();
+      const share = new Float64Array(count);
+      const j = [0, 0, 0, 0];
+      const w = [0, 0, 0, 0];
+      for (let i = 0; i < count; i++) {
+        joints.getElement(i, j);
+        weights.getElement(i, w);
+        const sum = w.reduce((a, b) => a + b, 0) || 1;
+        for (let k = 0; k < 4; k++) if (wanted.has(names[j[k]!] ?? '')) share[i]! += w[k]! / sum;
+      }
+      const idx = prim.getIndices();
+      const triCount = idx ? idx.getCount() / 3 : count / 3;
+      const at = (k: number): number => (idx ? idx.getScalar(k) : k);
+      const t = [0, 0];
+      for (let tri = 0; tri < triCount; tri++) {
+        const ids = [at(tri * 3), at(tri * 3 + 1), at(tri * 3 + 2)];
+        if ((share[ids[0]!]! + share[ids[1]!]! + share[ids[2]!]!) / 3 < minWeight) continue;
+        const pts = ids.map((i) => {
+          uv.getElement(i, t);
+          return [t[0]! * width, t[1]! * height] as const;
+        });
+        const x0 = Math.max(0, Math.floor(Math.min(...pts.map((q) => q[0]))) - 2);
+        const x1 = Math.min(width - 1, Math.ceil(Math.max(...pts.map((q) => q[0]))) + 2);
+        const y0 = Math.max(0, Math.floor(Math.min(...pts.map((q) => q[1]))) - 2);
+        const y1 = Math.min(height - 1, Math.ceil(Math.max(...pts.map((q) => q[1]))) + 2);
+        for (let y = y0; y <= y1; y++)
+          for (let x = x0; x <= x1; x++)
+            if (distanceToTriangle(x + 0.5, y + 0.5, pts) <= 2) region[y * width + x] = 1;
+      }
+    }
+  }
+  if (!skinned) throw new Error('teamMask.bones needs a skinned mesh with TEXCOORD_0');
+  return region;
+}
+
+/** Distance (texels) from a point to a 2D triangle; 0 inside. */
+function distanceToTriangle(
+  x: number,
+  y: number,
+  p: readonly (readonly [number, number])[],
+): number {
+  const [a, b, c] = p as [
+    readonly [number, number],
+    readonly [number, number],
+    readonly [number, number],
+  ];
+  const side = (u: readonly [number, number], v: readonly [number, number]): number =>
+    (v[0] - u[0]) * (y - u[1]) - (v[1] - u[1]) * (x - u[0]);
+  const s0 = side(a, b);
+  const s1 = side(b, c);
+  const s2 = side(c, a);
+  if ((s0 >= 0 && s1 >= 0 && s2 >= 0) || (s0 <= 0 && s1 <= 0 && s2 <= 0)) return 0;
+  const seg = (u: readonly [number, number], v: readonly [number, number]): number => {
+    const dx = v[0] - u[0];
+    const dy = v[1] - u[1];
+    const len2 = dx * dx + dy * dy;
+    const f = len2 > 0 ? Math.min(1, Math.max(0, ((x - u[0]) * dx + (y - u[1]) * dy) / len2)) : 0;
+    return Math.hypot(x - u[0] - f * dx, y - u[1] - f * dy);
+  };
+  return Math.min(seg(a, b), seg(b, c), seg(c, a));
+}
+
+/**
  * Maakt het teammasker per texel in de alfa van de diffuse (render: modus 'diffuseAlpha', manifest `teamMask`):
  * texels in het kleurbereik van `rule` krijgen alfa 1, de rest 0, met een zachte rand (gauss-vervaging van het
  * masker, daarna een smoothstep rond de helft). De kleur van de texels blijft ongemoeid, ook waar de alfa 0 is. Een eventuele bestaande alfa vervalt; het
@@ -515,8 +610,15 @@ export async function applyTeamMaskAlpha(
       .toBuffer({ resolveWithObject: true });
     const texels = raw.width * raw.height;
     const mask = Buffer.alloc(texels);
+    const region = rule.bones
+      ? boneRegion(document, texture, rule.bones, rule.minWeight ?? 0.5, raw.width, raw.height)
+      : null;
     for (let i = 0; i < texels; i++)
-      if (inTeamRange(rule, data[i * 4]!, data[i * 4 + 1]!, data[i * 4 + 2]!)) mask[i] = 255;
+      if (
+        (!region || region[i]) &&
+        inTeamRange(rule, data[i * 4]!, data[i * 4 + 1]!, data[i * 4 + 2]!)
+      )
+        mask[i] = 255;
     let soft: Buffer = mask;
     let stride = 1;
     if (sigma > 0) {
