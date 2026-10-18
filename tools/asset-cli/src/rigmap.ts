@@ -47,6 +47,27 @@ export const rigmapSchema = z.object({
             alignRest: z.boolean().optional(),
           })
           .optional(),
+        /**
+         * Auto-rig a static mesh (src/autorig.ts): `from` (a GLB without skeleton, T- or A-pose) gets the skin, bind pose
+         * and clips of `skeleton` (conformed with its own `rigmap` and `clipmap`); paths relative to this file. The entry
+         * key is a name of its own, the source does not need to be a GLB in this folder. Not combined with `meshes`,
+         * `fit`, `rig` or `retarget`.
+         */
+        autoRig: z
+          .object({
+            from: z.string().min(1),
+            skeleton: z.string().min(1),
+            rigmap: z.string().min(1),
+            clipmap: z.string().min(1),
+            /** Body height after scaling (m, without small loose parts); default 1.8. */
+            height: z.number().positive().optional(),
+            yawDegrees: z.number().optional(),
+            /** Bone-heat constant (larger: stiffer joints); default 1. */
+            heat: z.number().positive().optional(),
+            /** Small loose parts within this distance (m) take the weights of the body under them; default 0.05. */
+            attachRadius: z.number().nonnegative().optional(),
+          })
+          .optional(),
         /** Een emissive-only kleurtextuur (Sketchfab-unlit) als diffuse gebruiken. */
         emissiveAsBaseColor: z.boolean().optional(),
         /**
@@ -76,6 +97,9 @@ export const rigmapSchema = z.object({
             minSaturation: z.number().min(0).max(1).optional(),
             minValue: z.number().min(0).max(1).optional(),
             softness: z.number().min(0).max(20).optional(),
+            /** Only on the skin of these bones (Mixamo names): texels of triangles with at least `minWeight` on them. */
+            bones: z.array(z.string().min(1)).min(1).optional(),
+            minWeight: z.number().min(0).max(1).optional(),
           })
           .optional(),
       }),
@@ -89,6 +113,8 @@ export const EMPTY_RIGMAP: Rigmap = { rigs: {}, assets: {} };
 export function parseRigmap(json: unknown): Rigmap {
   const map = rigmapSchema.parse(json);
   for (const [id, entry] of Object.entries(map.assets)) {
+    if (entry.autoRig && (entry.meshes || entry.fit || entry.rig || entry.retarget))
+      throw new Error(`asset "${id}": autoRig gaat niet samen met meshes, fit, rig of retarget`);
     if (entry.rig && !map.rigs[entry.rig])
       throw new Error(`asset "${id}" verwijst naar onbekende rig "${entry.rig}"`);
     const [min, max] = [BUDGETS.characterMinTris[0], BUDGETS.characterMaxTris[0]];

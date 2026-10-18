@@ -1,4 +1,4 @@
-import { Logger, NodeIO, type Document } from '@gltf-transform/core';
+import { Logger, NodeIO, type Document, type Primitive } from '@gltf-transform/core';
 import { ALL_EXTENSIONS, EXTMeshoptCompression } from '@gltf-transform/extensions';
 import { dedup, prune, reorder, simplify, weld } from '@gltf-transform/functions';
 import { MeshoptDecoder, MeshoptEncoder, MeshoptSimplifier } from 'meshoptimizer';
@@ -52,6 +52,7 @@ export async function simplifyToTarget(document: Document, target: number): Prom
   await MeshoptSimplifier.ready;
   const start = countTriangles(document);
   if (start <= target) return;
+  const original = snapshot(document);
   let ratio = target / start;
   for (let pass = 0; pass < 6; pass++) {
     await document.transform(weld(), simplify({ simplifier: MeshoptSimplifier, ratio, error: 1 }));
@@ -59,13 +60,47 @@ export async function simplifyToTarget(document: Document, target: number): Prom
     if (now <= target) return;
     ratio = Math.max(0.01, (ratio * target) / now) * 0.9;
   }
-  // Vastgelopen op attribuutnaden (bijvoorbeeld een atlas met veel UV-eilanden): eerst over naden heen ('Permissive'),
-  // als laatste redmiddel simplifySloppy. Alleen als het doel na de gewone passes niet gehaald is.
+  // Vastgelopen op attribuutnaden (bijvoorbeeld een atlas met veel UV-eilanden): terug naar de onvereenvoudigde mesh
+  // (de herhaalde passes met foutgrens 1 hebben dan al hele delen, zoals een hoofd, weggevouwen) en in één pass over
+  // naden heen ('Permissive', met uv en normaal als gewogen attributen), als laatste redmiddel simplifySloppy. Alleen
+  // als het doel na de gewone passes niet gehaald is.
+  restore(document, original);
   for (const mode of ['permissive', 'sloppy'] as const) {
     const now = countTriangles(document);
     if (now <= target) return;
     simplifyIndices(document, target / now, mode);
   }
+}
+
+/** Copies of every primitive's attribute arrays and indices, in document order. */
+function snapshot(
+  document: Document,
+): { attributes: Map<string, ArrayLike<number>>; indices: ArrayLike<number> | null }[] {
+  return document
+    .getRoot()
+    .listMeshes()
+    .flatMap((m) => m.listPrimitives())
+    .map((prim) => ({
+      attributes: new Map(
+        prim.listSemantics().map((s) => [s, prim.getAttribute(s)!.getArray()!.slice()] as const),
+      ),
+      indices: prim.getIndices()?.getArray()?.slice() ?? null,
+    }));
+}
+
+/** Puts the arrays of `snapshot` back (weld may have merged vertices; the accessors keep their types). */
+function restore(document: Document, saved: ReturnType<typeof snapshot>): void {
+  const prims = document
+    .getRoot()
+    .listMeshes()
+    .flatMap((m) => m.listPrimitives());
+  prims.forEach((prim, i) => {
+    const entry = saved[i];
+    if (!entry) return;
+    for (const [semantic, array] of entry.attributes)
+      prim.getAttribute(semantic)?.setArray(array as Float32Array);
+    if (entry.indices) prim.getIndices()?.setArray(entry.indices as Uint32Array);
+  });
 }
 
 /** Reduceert de indexbuffer van elke primitive tot ongeveer `ratio`; vertices en attributen blijven ongewijzigd. */
@@ -85,7 +120,7 @@ function simplifyIndices(document: Document, ratio: number, mode: 'permissive' |
     const targetCount = Math.max(3, Math.floor((indices.length * ratio) / 3) * 3);
     const [out] =
       mode === 'permissive'
-        ? MeshoptSimplifier.simplify(indices, positions, 3, targetCount, 1, ['Permissive'])
+        ? simplifyAcrossSeams(prim, indices, positions, targetCount)
         : MeshoptSimplifier.simplifySloppy(indices, positions, 3, null, targetCount, 1);
     if (out.length === 0 || out.length >= indices.length) continue;
     idx.setArray(position.getCount() > 65535 ? new Uint32Array(out) : new Uint16Array(out));
@@ -131,4 +166,43 @@ export async function buildLods(
     });
   }
   return outputs;
+}
+
+/** Permissive simplification (collapses across UV seams) with uv and normal as weighted attributes. */
+function simplifyAcrossSeams(
+  prim: Primitive,
+  indices: Uint32Array,
+  positions: Float32Array,
+  targetCount: number,
+): [Uint32Array, number] {
+  const uv = prim.getAttribute('TEXCOORD_0');
+  const normal = prim.getAttribute('NORMAL');
+  const count = positions.length / 3;
+  if (!uv && !normal)
+    return MeshoptSimplifier.simplify(indices, positions, 3, targetCount, 1, ['Permissive']);
+  const attributes = new Float32Array(count * 5);
+  const t = [0, 0, 0];
+  for (let i = 0; i < count; i++) {
+    if (uv) attributes.set(uv.getElement(i, t).slice(0, 2), i * 5);
+    if (normal) attributes.set(normal.getElement(i, t).slice(0, 3), i * 5 + 2);
+  }
+  const weights = [
+    uv ? 0.5 : 0,
+    uv ? 0.5 : 0,
+    normal ? 0.2 : 0,
+    normal ? 0.2 : 0,
+    normal ? 0.2 : 0,
+  ];
+  return MeshoptSimplifier.simplifyWithAttributes(
+    indices,
+    positions,
+    3,
+    attributes,
+    5,
+    weights,
+    null,
+    targetCount,
+    1,
+    ['Permissive'],
+  );
 }
