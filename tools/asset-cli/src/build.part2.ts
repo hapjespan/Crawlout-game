@@ -63,7 +63,7 @@ export async function buildAssets(options: BuildOptions): Promise<BuildResult> {
   // Gebouwen (src/buildings.ts): de varianten komen uit variants.json; de bron-GLB's daarin zijn zelf geen asset.
   const variantsSource = options.variantsPath ?? join(srcDir, 'buildings', 'variants.json');
   let variants: VariantsConfig | null = null;
-  if (existsSync(variantsSource)) {
+  if (splitJsonExists(variantsSource)) {
     try {
       variants = loadVariantsConfig(variantsSource);
     } catch (error) {

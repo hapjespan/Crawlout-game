@@ -22,7 +22,7 @@ import { EXTMeshoptCompression } from '@gltf-transform/extensions';
 import { createIO } from './lods.js';
 import { countTriangles, textureSizes } from './inspect.js';
 import type { AssetEntry } from './manifest.js';
-import { readFileSync } from 'node:fs';
+import { readSplitJson } from './splitJson.js';
 import { join } from 'node:path';
 import {
   assemble,
@@ -250,9 +250,9 @@ export const EMPTY_BUILDINGS: BuildingsResult = {
   sourceFiles: new Set(),
 };
 
-/** Leest variants.json (als hij bestaat) en geeft de bronbestanden terug die geen eigen asset zijn. */
+/** Leest variants.json (het bestand of de gesplitste map, zie src/splitJson.ts) en valideert hem. */
 export function loadVariantsConfig(path: string): VariantsConfig {
-  return parseVariants(JSON.parse(readFileSync(path, 'utf8')));
+  return parseVariants(readSplitJson(path));
 }
 
 /** Bouwt alle varianten uit `config`: validatie per LOD, GLB's, manifestregels. Fouten staan in het verslag. */

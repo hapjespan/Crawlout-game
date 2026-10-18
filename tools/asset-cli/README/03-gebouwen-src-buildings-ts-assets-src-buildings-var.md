@@ -1,6 +1,6 @@
 ## Gebouwen (`src/buildings.ts`, `assets/src/buildings/variants.json`)
 
-De acht Dweller-gebouwen zijn geen losse GLB's in `assets/src` maar varianten van een bron-huisje (`buildings/base_house.glb`, Low poly House van winwoods, CC-BY-4.0, de naamsvermelding staat in `assets/src/licenses` en in het veld `asset.copyright` van elke LOD-GLB). De bron zelf wordt geen asset: bestanden die in `variants.json` onder `sources` staan, slaat de buis over. Alle vormgetallen staan in `variants.json`, niet in code.
+De acht Dweller-gebouwen zijn geen losse GLB's in `assets/src` maar varianten van een bron-huisje (`buildings/base_house.glb`, Low poly House van winwoods, CC-BY-4.0, de naamsvermelding staat in `assets/src/licenses` en in het veld `asset.copyright` van elke LOD-GLB). De bron zelf wordt geen asset: bestanden die in `variants.json` onder `sources` staan, slaat de buis over. Alle vormgetallen staan in `variants.json` (gesplitst in de fragmenten `assets/src/buildings/variants/*.json`, zie README, Gesplitste configs), niet in code.
 
 De asset-id is de sleutel in `variants`, exact de `visuals.mesh` uit `data/buildings/*.json` (`dweller_building_hq` enzovoort). Per variant:
 

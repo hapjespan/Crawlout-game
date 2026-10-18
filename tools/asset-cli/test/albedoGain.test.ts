@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { albedoGainSchema, assetEntrySchema, ALBEDO_GAIN_RANGE } from '../src/manifest.js';
 import { parseVariants } from '../src/variants.js';
 import { parsePacksConfig } from '../src/packs.js';
+import { readSplitJson } from '../src/splitJson.js';
 
 const srcDir = fileURLToPath(new URL('../../../assets/src/', import.meta.url));
 const entry = {
@@ -25,11 +26,13 @@ describe('manifest albedoGain', () => {
   });
 
   it('can be configured per variant and per pack prop', () => {
-    const variants = JSON.parse(readFileSync(`${srcDir}buildings/variants.json`, 'utf8'));
+    const variants = readSplitJson(`${srcDir}buildings/variants.json`) as {
+      variants: Record<string, { albedoGain?: number }>;
+    };
     const first = Object.keys(variants.variants)[0]!;
-    variants.variants[first].albedoGain = 1.2;
+    variants.variants[first]!.albedoGain = 1.2;
     expect(parseVariants(variants).variants[first]!.albedoGain).toBe(1.2);
-    variants.variants[first].albedoGain = 5;
+    variants.variants[first]!.albedoGain = 5;
     expect(() => parseVariants(variants)).toThrow();
 
     const packs = JSON.parse(readFileSync(`${srcDir}packs.json`, 'utf8'));

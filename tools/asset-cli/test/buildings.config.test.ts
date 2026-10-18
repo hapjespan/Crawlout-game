@@ -38,7 +38,7 @@ describe('variants.json', () => {
 
   it('verwijst alleen naar bestaande bronnen, bronmaterialen en effen materialen', () => {
     // parseVariants controleert de verwijzingen; een kapotte verwijzing gooit een fout met het pad.
-    expect(() => parseVariants(JSON.parse(readFileSync(variantsPath, 'utf8')))).not.toThrow();
+    expect(() => parseVariants(readSplitJson(variantsPath))).not.toThrow();
   });
 
   it('weigert een onbekende bron, een onbekend materiaal en een ontbrekend team-materiaal', () => {

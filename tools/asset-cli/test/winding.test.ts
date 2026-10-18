@@ -14,12 +14,11 @@ import type { Mesh } from '../src/geometry.js';
 import { manifestSchema } from '../src/manifest.js';
 import { expandParts } from '../src/partExpand.js';
 import { loadRobotsConfig } from '../src/robots.js';
+import { readSplitJson } from '../src/splitJson.js';
 import { parseVariants, type HousePart, type VariantPart } from '../src/variants.js';
 
 const repo = fileURLToPath(new URL('../../../', import.meta.url));
-const variants = parseVariants(
-  JSON.parse(readFileSync(join(repo, 'assets/src/buildings/variants.json'), 'utf8')),
-);
+const variants = parseVariants(readSplitJson(join(repo, 'assets/src/buildings/variants.json')));
 const robots = loadRobotsConfig(join(repo, 'assets/src/robots.json'));
 const raiders = loadRobotsConfig(join(repo, 'assets/src/raiders.json'));
 const dwellerGear = loadRobotsConfig(join(repo, 'assets/src/dwellers-gear.json'));
