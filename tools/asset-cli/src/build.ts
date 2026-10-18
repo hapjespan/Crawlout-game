@@ -13,6 +13,7 @@ import {
 } from './buildings.js';
 import { EMPTY_CLIPMAP, parseClipmap, resolveClips, type Clipmap } from './clipmap.js';
 import { conformDocument, type ConformInfo } from './conform.js';
+import { buildDelivered, loadDeliveredConfig, type DeliveredDetails } from './delivered.js';
 import { animationIndex, findSockets, maxBoneCount } from './inspect.js';
 import { buildLods, createIO, lodMaxTris } from './lods.js';
 import { detectToktx } from './ktx2.js';
@@ -57,6 +58,11 @@ export interface BuildOptions {
   raidersPath?: string;
   /** Path to the Dweller gear config (same format, attachments only); default `<srcDir>/dwellers-gear.json`. Optional. */
   dwellersGearPath?: string;
+  /**
+   * Config of the delivered models (src/delivered.ts, `assets/local/delivered.json`), only used when given or when
+   * `<srcDir>/delivered.json` exists; its `file` paths are relative to `srcDir`.
+   */
+  deliveredPath?: string;
   /** Pad naar de prop-packs-config; standaard `<srcDir>/packs.json`. Ontbreekt hij, dan zijn er geen pack-props. */
   packsPath?: string;
   /** Map met de pack-GLB's; standaard `<srcDir>/packs`, vanuit een worktree ook die van de hoofdcheckout. */
@@ -69,7 +75,7 @@ export interface AssetReport {
   errors: string[];
   warnings: string[];
   /** Wat de buis aan de bron veranderd heeft en wat eruit kwam; komt in validation-report.json. */
-  details?: AssetDetails | BuildingDetails | RobotDetails | PackPropDetails;
+  details?: AssetDetails | BuildingDetails | RobotDetails | PackPropDetails | DeliveredDetails;
 }
 
 export interface AssetDetails {
@@ -194,7 +200,11 @@ export async function buildAssets(options: BuildOptions): Promise<BuildResult> {
   // assets/src/packs (de grote pack-bronnen, buiten git) loopt via packs.json, niet als losse props.
   const files = listGlbs(srcDir).filter((file) => {
     const relativePath = relative(srcDir, file).split(sep).join('/');
-    return !variantSources.has(relativePath) && !relativePath.startsWith('packs/');
+    return (
+      !variantSources.has(relativePath) &&
+      !relativePath.startsWith('packs/') &&
+      !relativePath.startsWith('delivered/')
+    );
   });
 
   const io = createIO();
@@ -338,6 +348,44 @@ export async function buildAssets(options: BuildOptions): Promise<BuildResult> {
     reports.push(report);
   }
 
+  // Delivered models (src/delivered.ts): GLB's processed as delivered, config assets/local/delivered.json (local pipeline).
+  const deliveredSource = options.deliveredPath ?? join(srcDir, 'delivered.json');
+  const delivered: RobotsResult = { reports: [], entries: [], outputs: new Map() };
+  if (existsSync(deliveredSource)) {
+    const source = relative(srcDir, deliveredSource).split(sep).join('/');
+    try {
+      const built = await buildDelivered(loadDeliveredConfig(deliveredSource), srcDir, source);
+      delivered.reports.push(...built.reports);
+      delivered.entries.push(...built.entries);
+      for (const [path, data] of built.outputs) delivered.outputs.set(path, data);
+      for (const report of delivered.reports) {
+        const details = built.details.get(report.id);
+        if (details) (report as AssetReport).details = details;
+      }
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : String(error);
+      return {
+        ok: false,
+        reports: [
+          {
+            id: basename(deliveredSource, '.json'),
+            source,
+            errors: [`ongeldige ${basename(deliveredSource)}: ${reason}`],
+            warnings: [],
+          },
+        ],
+        notices,
+        manifest: null,
+      };
+    }
+  }
+  for (const report of delivered.reports) {
+    const clash = seen.get(report.id);
+    if (clash) report.errors.push(`id "${report.id}" is al in gebruik door ${clash}.`);
+    seen.set(report.id, report.source);
+    reports.push(report);
+  }
+
   // Prop-packs (src/packs.ts): splitsen, echte schaal, atlas en LOD's volgens packs.json.
   const packsSource = options.packsPath ?? join(srcDir, 'packs.json');
   let packsConfig: PacksConfig | null = null;
@@ -381,11 +429,13 @@ export async function buildAssets(options: BuildOptions): Promise<BuildResult> {
   const entries: AssetEntry[] = [
     ...(buildings?.entries ?? []),
     ...robots.entries,
+    ...delivered.entries,
     ...(packs?.entries ?? []),
   ];
   const outputs = new Map<string, Uint8Array | string>([
     ...(buildings?.outputs ?? []),
     ...robots.outputs,
+    ...delivered.outputs,
     ...(packs?.outputs ?? []),
   ]);
   const bakedById = new Map<string, AssetEntry['baked']>();
