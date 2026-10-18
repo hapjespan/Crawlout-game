@@ -275,6 +275,36 @@ export interface PlayerStatus {
    * HUD hem leest (de sim levert hem altijd); leeg zonder doses.
    */
   chems?: ChemStatus[];
+  /**
+   * Creep-kampen (protocol 0.14.0; voorstel van sim-core, ter bevestiging door de architect): elk kamp van de map met
+   * zijn stand, zodat de HUD een overgenomen kamp in de kleur van zijn eigenaar toont (minimap) en de Raiders bij een
+   * bandiet "Overnemen" zien. Op kampindex (de volgorde van MapDef.creepCamps). Kaartkennis zoals claimPoints (een
+   * kamp is een map-feature; wie het houdt is openbaar, of het nu vecht niet). De sim levert hem altijd (Sim.camps,
+   * leest alleen state, geen hashwijziging); leeg op een map zonder kampen. Optioneel tot alle PlayerStatus-literals
+   * hem dragen.
+   */
+  camps?: CreepCampStatus[];
+}
+
+/** Stand van een creep-kamp (CreepCampStatus.state): nog bandieten, geruimd, of overgenomen (een buitenpost). */
+export type CampState = 'bandits' | 'cleared' | 'taken';
+
+/** Eén creep-kamp (PlayerStatus.camps, protocol 0.14.0, voorstel). */
+export interface CreepCampStatus {
+  /** Index in MapDef.creepCamps. */
+  camp: number;
+  /** Midden van het kamp in sim-eenheden. */
+  x: number;
+  y: number;
+  tier: number;
+  state: CampState;
+  /** Bij taken de playerId van de eigenaar van de buitenpost, anders OWNER_NEUTRAL. */
+  owner: number;
+  /**
+   * Of de factie van de speler van deze status dit kamp overneemt in plaats van ruimt (data/creeps.json takeover voor
+   * zijn tier); alleen zinvol zolang state bandits is.
+   */
+  takeover: boolean;
 }
 
 /** Fase van een chem op een eenheid (ChemStatus.phase). */

@@ -523,6 +523,24 @@ export interface CreepTierData {
   heroXpRadiusU: number;
 }
 
+/**
+ * Camp takeover of one faction (data/creeps.json takeover, data 0.27.0; voorstel, ter bevestiging door de architect)
+ * in sim units: per camp tier the surrender rule and the outpost yield.
+ */
+export interface CreepTakeoverData {
+  factionId: number;
+  /** Sorted by tier; every tier exists in CreepsData.tiers. */
+  tiers: {
+    tier: number;
+    /** 0..1000 of the summed max hp of the living bandits. */
+    surrenderPermille: number;
+    minUnits: number;
+    /** 0 = the outpost yields nothing. */
+    yieldTicks: number;
+    yieldMax: number;
+  }[];
+}
+
 /** data/creeps.json (data 0.25.0). The bandit loadouts themselves are in GameData.loadouts (factionId NEUTRAL_FACTION_ID). */
 export interface CreepsData {
   /** Loadout ids of the bandits, in the order of creeps.json units. */
@@ -531,6 +549,8 @@ export interface CreepsData {
   names: string[];
   /** Sorted by tier. */
   tiers: CreepTierData[];
+  /** Camp takeover per faction (data 0.27.0), ascending factionId; empty = every faction clears camps. */
+  takeover: CreepTakeoverData[];
 }
 
 /** Sim-tuning in sim-eenheden (integers). */
@@ -933,7 +953,7 @@ export function loadGameData(raw: RawGameData): GameData {
 
   // Creep camps (data 0.25.0): the bandit loadouts follow the faction loadouts (ids loadoutsRaw.length + k, in the
   // order of creeps.json units), so no faction loadout changes id; their faction is NEUTRAL_FACTION_ID.
-  const creepsRaw =
+  const creepsRaw: Creeps =
     raw.creeps === undefined
       ? { units: [], tiers: [] }
       : parseWith('creeps.json', Creeps, raw.creeps);
@@ -1001,7 +1021,34 @@ export function loadGameData(raw: RawGameData): GameData {
           heroXpRadiusU: metersToUnits(t.heroXpRadiusM),
         };
       }),
+    takeover: (creepsRaw.takeover ?? [])
+      .map((r) => {
+        const where = `data/creeps.json takeover '${r.faction}'`;
+        const factionId = ref(factionIx, 'factie', where, r.faction);
+        const seen = new Set<number>();
+        return {
+          factionId,
+          tiers: [...r.tiers]
+            .sort((a, b) => a.tier - b.tier)
+            .map((t) => {
+              if (!tierSeen.has(t.tier)) throw new Error(`${where}: onbekende tier ${t.tier}`);
+              if (seen.has(t.tier)) throw new Error(`${where}: dubbele tier ${t.tier}`);
+              seen.add(t.tier);
+              return {
+                tier: t.tier,
+                surrenderPermille: pctToPermille(t.surrenderHpPct),
+                minUnits: t.minUnits,
+                yieldTicks: secondsToTicks(t.yieldS),
+                yieldMax: t.yieldMax,
+              };
+            }),
+        };
+      })
+      .sort((a, b) => a.factionId - b.factionId),
   };
+  for (let k = 1; k < creeps.takeover.length; k++)
+    if (creeps.takeover[k]!.factionId === creeps.takeover[k - 1]!.factionId)
+      throw new Error('data/creeps.json takeover: dubbele factie');
 
   const buildings: BuildingData[] = buildingsRaw.map((b, id) => {
     const where = `data/buildings.json '${b.id}'`;

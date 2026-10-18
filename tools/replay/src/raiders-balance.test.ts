@@ -24,18 +24,27 @@ import { formatRaiderSummary, raiderSummary } from './raiders.js';
 // rule of dwellers-basic the loot and hero xp gave the Dwellers all 66 matches). The Raiders win 31 of 66 (16 as player
 // 0, 15 as player 1), 26 on dominance; 23.5 to 41.7 minutes, 63 of 66 between 22 and 38, none decided before minute 22.
 // Seeds 200 to 232: the Raiders 30 of 66, 23.7 to 38.2 minutes. The pinned seeds are measured again.
-// Sim 0.22.0, data 0.27.0 (playtest H1; voorstel, ter bevestiging door de architect): a Move to a point inside a footprint
-// no longer leaves units walking on the spot at its edge. The Raider garrison sends its fighters with a Move to the middle
-// of the camp, so until now about 25 fighters stood frozen in the camp from the first call (mostly after minute 22),
-// with a Move order that does not fight back; the balance above rested on that. Fixed, the Raiders won 63 of 66. Data
-// 0.27.0 keeps 14 fighters home from the start instead (ai/raiders-basic.json garrison.minFighters, was 3): the Raiders
-// win 32 of 66 (as player 0 17, as player 1 15), 30 of them on dominance before minute 30; the Dwellers 34, 32 by
-// destruction; 22.7 to 36.3 minutes, all 66 between 22 and 38. Seeds 200 to 232: the Raiders 35 of 66, 22.7 to 38.5.
+// Camp takeover and weaker Raider fighters (data 0.27.0, sim 0.22.0; voorstel, ter bevestiging door de architect en
+// content; Martien 18 oktober: "die zijn zwakker dan bouwers. nu is de raider faction dus de moeilijk om te spelen"):
+// the Raider AI takes its two low camps over in minute 2 (median 2.1, all 132) and its high camp later (all 66), the
+// Dweller script against Raiders still clears none. The Raiders win 29 of 66 (44 percent; 12 as player 0, 17 as
+// player 1), 29 on dominance at 23.1 to 28.3 minutes; the Dwellers 37 (27 by destruction); 23.1 to 37.4 minutes, none
+// before minute 22. Seeds 200 to 232: the Raiders 28 of 66 (42 percent; 9 and 19), 23.5 to 34.9 minutes. The target
+// band is now 35 to 50 percent for the Raiders (was 40 to 60): the harder faction. AI against AI tips sharply here:
+// with the slave raid from minute 2 as before the Raiders won 80 percent once the camps on the roads were gone, with
+// an outpost yielding one bandit instead of two 33 percent, with a surrender at 25 instead of 30 percent 18 percent
+// (the _comment of data/creeps.json and ai/raiders-basic.json, packages/sim/CHANGELOG.md 0.22.0).
+// Playtest H1 (sim 0.23.0, data 0.28.0; voorstel, ter bevestiging door de architect): a Move to a point inside a
+// footprint no longer leaves units walking on the spot at its edge. The Raider garrison sends its fighters with a Move
+// to the middle of the camp, so until now up to about 25 fighters stood frozen in the camp from the first call, with a
+// Move order that does not fight back; the balance above rested on that. Fixed, the Raiders won 45 of 66. Data 0.28.0:
+// claimFarFromS 1000 and dominancePush.fromS 1200 (were 600 and 900): the Raiders win 26 of 66 (39 percent; 12 as
+// player 0, 14 as player 1), 25.6 to 35.8 minutes; seeds 200 to 232: 29 of 66 (44 percent), 25.9 to 37.7 minutes.
 // One seed of each group is pinned here (winner and reason).
 const EXPECTED = [
-  { seed: 2, raider: 0, winner: 'raiders', reason: 'dominance' },
-  { seed: 9, raider: 1, winner: 'dwellers', reason: 'destruction' },
-  { seed: 20, raider: 0, winner: 'dwellers', reason: 'dominance' },
+  { seed: 4, raider: 0, winner: 'raiders', reason: 'dominance' },
+  { seed: 2, raider: 0, winner: 'dwellers', reason: 'destruction' },
+  { seed: 9, raider: 0, winner: 'dwellers', reason: 'dominance' },
   { seed: 4, raider: 1, winner: 'raiders', reason: 'dominance' },
 ] as const;
 
@@ -59,14 +68,23 @@ describe.skipIf(process.env.REPLAY_FAST === '1')(
       }
     });
 
-    it('each faction wins 40 to 60 percent, and the Raiders win on both sides', () => {
+    it('the Raiders (the harder faction, data 0.27.0) win 35 to 50 percent, on both sides', () => {
       const s = raiderSummary(rows);
-      expect(s.raiderWins, report()).toBeGreaterThanOrEqual(Math.ceil(s.matches * 0.4));
-      expect(s.raiderWins, report()).toBeLessThanOrEqual(Math.floor(s.matches * 0.6));
-      // per side as the fairness band of match-length.test.ts: 12 to 21 of 33
+      expect(s.raiderWins, report()).toBeGreaterThanOrEqual(Math.ceil(s.matches * 0.35));
+      expect(s.raiderWins, report()).toBeLessThanOrEqual(Math.floor(s.matches * 0.5));
+      // per side: 10 to 20 of 33 (the fairness band of match-length.test.ts, 12 to 21, moved down with the target)
       for (const n of s.raiderWinsAs) {
-        expect(n, report()).toBeGreaterThanOrEqual(12);
-        expect(n, report()).toBeLessThanOrEqual(21);
+        expect(n, report()).toBeGreaterThanOrEqual(10);
+        expect(n, report()).toBeLessThanOrEqual(20);
+      }
+    });
+
+    it('the Raider AI takes a camp over in the first minutes of every match, and its two low camps', () => {
+      for (const { raider, r } of rows) {
+        const mine = r.camps.filter((c) => c.clearedBy === raider);
+        expect(mine.length, `seed ${r.seed} raider ${raider}`).toBeGreaterThanOrEqual(2);
+        const first = Math.min(...mine.map((c) => c.minute!));
+        expect(first, `seed ${r.seed} raider ${raider}`).toBeLessThan(4);
       }
     });
 
@@ -108,16 +126,17 @@ describe.skipIf(process.env.REPLAY_FAST === '1')(
 // Raiders against Raiders (data 0.24.0, sim 0.19.0): before, player 0 won 5 of 6 (92 of 99 over the seeds 1 to 99):
 // two Slavers that caught each other in the same tick were split by entity index, player 0's always first. Now sim.rng
 // picks (systems/slaves.ts captureTick, fase-0 section 19 decision 3): 53 against 46 over the seeds 1 to 99.
+// Camp takeover (data 0.27.0, sim 0.22.0): both AIs take their camps over from minute 1 and raid for slaves from minute
+// 6, so the mirror holds through the takeovers and ends at 7:20, where the two armies with their recruits meet (who
+// strikes first in a fight on the mirror line); the takeovers themselves are mirror-equal.
 describe('Raiders against Raiders: the mirror', () => {
   it(
-    'player 1 plays the exact mirror image of player 0 until the two Slavers catch each other (a sim.rng tie)',
+    'player 1 plays the exact mirror image of player 0 through the camp takeovers, until the armies meet',
     { timeout: 60_000 },
     () => {
-      const r = mirrorRun(1, { maxFrames: 8 * 1200, faction: 'raiders' });
+      const r = mirrorRun(1, { maxFrames: 9 * 1200, faction: 'raiders' });
       expect(r.breakFrame).not.toBeNull();
-      expect(r.breakFrame!).toBeGreaterThan(5 * 1200);
-      // the first difference is the catch itself: a captive (slave state 1) on one side only
-      expect(r.diffs.some((d) => / sl1\//.test(d))).toBe(true);
+      expect(r.breakFrame!).toBeGreaterThan(6 * 1200);
       expect(r.buildOrder[0].length).toBeGreaterThanOrEqual(8);
       expect(r.buildOrder[1]).toEqual(r.buildOrder[0]);
     },

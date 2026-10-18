@@ -144,7 +144,7 @@ export function movementSystem(ctx: SimContext, s: MovementScratch): void {
       } else if (nb === cell && gr > 0 && goalInTarget(ctx, slot, gx, gy)) {
         // Edge of the target rectangle reached and the goal lies inside it (a footprint: an AttackMove onto a building
         // of somebody else, or a building raised on the point after the order): as close as walking gets, so the unit
-        // has arrived instead of walking on the spot at the edge for good (sim 0.22.0, playtest H1).
+        // has arrived instead of walking on the spot at the edge for good (sim 0.23.0, playtest H1).
         arrive(ctx, i);
         s.moving[i] = 0;
         continue;

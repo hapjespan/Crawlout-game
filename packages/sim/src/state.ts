@@ -22,8 +22,9 @@ export const STATE_MAGIC = 0x4c575243; // 'CRWL' als little-endian bytes
  * 12: the Raiders (sim 0.18.0; bevestigd in fase-0 sectie 23 besluit 3): see World and PlayerState.
  * 13: creep camps (sim 0.20.0; bevestigd in fase-0 sectie 23 besluit 5): World.creepCamp and creepHome, and the
  * camp state (systems/creeps.ts CreepCamps) after the explored bitsets.
+ * 14: camp takeover (sim 0.22.0; voorstel, ter bevestiging door de architect): CreepCamps.yields after clearedAt.
  */
-export const STATE_FORMAT_VERSION = 13;
+export const STATE_FORMAT_VERSION = 14;
 
 /** Header-velden (uint32), in volgorde. */
 const H = {
@@ -115,7 +116,8 @@ function bodyChunks(p: StateParts): Uint8Array[] {
   for (const a of players) out.push(bytesOf(a, a.length));
   out.push(bytesOf(p.globals.words, p.globals.words.length));
   out.push(p.vision.explored);
-  for (const a of [p.creeps.state, p.creeps.timer, p.creeps.clearedBy, p.creeps.clearedAt])
+  const cc = p.creeps;
+  for (const a of [cc.state, cc.timer, cc.clearedBy, cc.clearedAt, cc.yields])
     out.push(bytesOf(a, a.length));
   return out;
 }

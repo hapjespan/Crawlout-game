@@ -336,7 +336,7 @@
     "producedAt": "robotfabriek",
     "canBuild": true,
     "visuals": { "meshSlots": { "body": "dweller_robot_builder" } },
-    "_comment": "Data 0.26.0 (voorstel, ter bevestiging door de architect), startwaarde, geen balans. Bouwrobot (Martien: protectron = bouw robot): een robot die bouwt zoals de bouwer. canBuild true: Build, Claim, helpen bij een bouwplaats binnen builderAutoHelpRadiusM en een onafgemaakte bouwplaats hervatten, met hetzelfde bouwtempo als een bewoner (een tick voortgang per tick, de tech bouwrobots geldt ook voor hem). Steviger dan een bouwer (160 hp tegen 60, armorType robot) en iets trager (2,5 m/s tegen 3). Vecht niet (damage 0, rangeM 0): een militie sloopt hem in ruim een halve minuut (combat-balance.test.ts). Robot (data 0.16.0): bodyType robot, rol robot, geen bed nodig (telt wel voor pop: popCost 1) en hij vraagt een technicus zoals elke robot (factions.json robotRules: een technicus per 4 robots; hij is zelf geen technicus); ongedekt bouwt, loopt en repareert hij op half tempo. producedAt robotfabriek (75 scrap, 15 s), niet omschoolbaar, geen bewoner gaat ervoor verloren. Vraagt tech robotica. Mesh dweller_robot_builder (procedurele placeholder in assets/src/robots.json, ongeveer 1,9 m)."
+    "_comment": "Data 0.26.0 (voorstel, ter bevestiging door de architect), startwaarde, geen balans. Bouwrobot: een robot die bouwt zoals de bouwer. canBuild true: Build, Claim, helpen bij een bouwplaats binnen builderAutoHelpRadiusM en een onafgemaakte bouwplaats hervatten, met hetzelfde bouwtempo als een bewoner (een tick voortgang per tick, de tech bouwrobots geldt ook voor hem). Steviger dan een bouwer (160 hp tegen 60, armorType robot) en iets trager (2,5 m/s tegen 3). Vecht niet (damage 0, rangeM 0): een militie sloopt hem in ruim een halve minuut (combat-balance.test.ts). Robot (data 0.16.0): bodyType robot, rol robot, geen bed nodig (telt wel voor pop: popCost 1) en hij vraagt een technicus zoals elke robot (factions.json robotRules: een technicus per 4 robots; hij is zelf geen technicus); ongedekt bouwt, loopt en repareert hij op half tempo. producedAt robotfabriek (75 scrap, 15 s), niet omschoolbaar, geen bewoner gaat ervoor verloren. Vraagt tech robotica. Mesh dweller_robot_builder (procedurele placeholder in assets/src/robots.json, ongeveer 1,9 m)."
   },
   {
     "id": "slaaf",
@@ -397,8 +397,8 @@
     "role": "militia",
     "weapon": "pijppistool_roest",
     "armorType": "light",
-    "hp": 55,
-    "damage": 7,
+    "hp": 46,
+    "damage": 6,
     "damageType": "ballistic",
     "rangeM": 7.5,
     "speedMps": 3,
@@ -414,7 +414,7 @@
     },
     "producedAt": "tent",
     "sightM": 14,
-    "_comment": "startwaarde, geen balans. Plunderaar: de basisvechter van de Raiders, een pijpgeweer in lappen en schrootplaat (light). 7 schade per 0,9 s (7,8 per s, tegen 8 voor de Dweller-militie) op 7,5 m (tegen 8), 55 hp (tegen 60) en 3 m/s (midden, Spelfundament 4): iets zwakker per man maar veel goedkoper (25 scrap en 4 s tegen 30 en 5) en uit de tent in plaats van omgeschoold uit een bewoner. De zwerm is het wapen: Raiders verslaan Dwellers vroeg doordat dezelfde scrap 20 procent meer man levert. Zonder prereqTech. Nieuw gebouwd in een tent (producedAt tent, geen werkplaats: de Raiders hebben geen bewoners om om te scholen). Het vangnet van de tenten levert dit loadout gratis zolang er minder dan 5 vechters zijn."
+    "_comment": "startwaarde, geen balans. Plunderaar: de basisvechter van de Raiders, een pijpgeweer in lappen en schrootplaat (light). 7 schade per 0,9 s (7,8 per s, tegen 8 voor de Dweller-militie) op 7,5 m (tegen 8), 55 hp (tegen 60) en 3 m/s (midden, Spelfundament 4): iets zwakker per man maar veel goedkoper (25 scrap en 4 s tegen 30 en 5) en uit de tent in plaats van omgeschoold uit een bewoner. De zwerm is het wapen: Raiders verslaan Dwellers vroeg doordat dezelfde scrap 20 procent meer man levert. Zonder prereqTech. Nieuw gebouwd in een tent (producedAt tent, geen werkplaats: de Raiders hebben geen bewoners om om te scholen). Het vangnet van de tenten levert dit loadout gratis zolang er minder dan 5 vechters zijn. DATA 0.27.0 (voorstel, ter bevestiging door content en de architect; Martien, 18 oktober: \"die zijn zwakker dan bouwers. nu is de raider faction dus de moeilijk om te spelen\": een Raider-vechter is man tegen man zwakker dan zijn Dweller-tegenhanger; de Raiders winnen op aantal, met de kampen die ze overnemen (creeps.json takeover) en met slaven.) 46 hp en 6 schade (was 55 en 7; 6,7 per s): verliest nu van een militie man tegen man (marge -0,40, was -0,18), 6 verliezen van 5 militie (dezelfde scrap, -0,35, was +0,24), 7 winnen (+0,24); wint nog altijd van een Dweller-bouwer (+0,61): een vechter blijft een vechter. Gemeten in combat-balance.test.ts. 46 en niet 45: met 45 won de Raider-AI tegen de Dweller-AI 41 en 38 procent maar als speler 0 op de tweede seedset 0 van 33 (packages/sim/CHANGELOG.md 0.22.0)."
   },
   {
     "id": "plunderaar_staal",
@@ -423,8 +423,8 @@
     "role": "militia",
     "weapon": "pijppistool_roest",
     "armorType": "medium",
-    "hp": 60,
-    "damage": 7,
+    "hp": 51,
+    "damage": 6,
     "damageType": "ballistic",
     "rangeM": 7.5,
     "speedMps": 2.75,
@@ -444,7 +444,7 @@
     },
     "producedAt": "tent",
     "sightM": 14,
-    "_comment": "startwaarde, geen balans. Plunderaar in staal (medium pantser, het \"staal\" van de Raiders uit Spelfundament 4): hetzelfde pijpgeweer met platen van autodeuren. 60 hp en medium pantser (ballistic 75 procent, melee 80), trager (2,75 m/s) en bijna dubbel zo duur (48 scrap en 7 s). Vraagt tech staalplaten. Dit is het loadout dat de Raiders mid-game op gang houdt tegen de patrol van de Dwellers; het blijft licht genoeg om tegen Garde-pantser (heavy, vroeg) niets te kunnen."
+    "_comment": "startwaarde, geen balans. Plunderaar in staal (medium pantser, het \"staal\" van de Raiders uit Spelfundament 4): hetzelfde pijpgeweer met platen van autodeuren. 60 hp en medium pantser (ballistic 75 procent, melee 80), trager (2,75 m/s) en bijna dubbel zo duur (48 scrap en 7 s). Vraagt tech staalplaten. Dit is het loadout dat de Raiders mid-game op gang houdt tegen de patrol van de Dwellers; het blijft licht genoeg om tegen Garde-pantser (heavy, vroeg) niets te kunnen. DATA 0.27.0 (voorstel; zie plunderaar): 51 hp en 6 schade (was 60 en 7); 1 tegen 1 militie -0,10, 4 tegen 4 -0,13, 5 tegen 4 +0,46."
   },
   {
     "id": "knuppelaar",
@@ -452,9 +452,9 @@
     "bodyType": "human",
     "role": "militia",
     "weapon": "knuppel_met_spijkers",
-    "armorType": "medium",
-    "hp": 70,
-    "damage": 14,
+    "armorType": "light",
+    "hp": 61,
+    "damage": 10,
     "damageType": "melee",
     "rangeM": 1.8,
     "speedMps": 3.25,
@@ -470,7 +470,7 @@
     },
     "producedAt": "tent",
     "sightM": 12,
-    "_comment": "startwaarde, geen balans. Knuppelaar: melee-zwerm in schrootplaat (medium). 14 melee-schade per 1,0 s op 1,8 m (15,4 per s tegen licht pantser: melee doet 110 procent op light, 80 op medium, 40 op heavy), 70 hp, 3,25 m/s, 35 scrap en 5 s, zonder prereqTech. Het eerste antwoord op pipe pistols is erop afrennen: een knuppelaar sloopt een Dweller-militie (light) in vijf seconden maar kan niets doen tegen een robot (melee 30 procent) of een turret (heavy, 40 procent): daarom vroeg sterk en laat zwak."
+    "_comment": "startwaarde, geen balans. Knuppelaar: melee-zwerm in schrootplaat (medium). 14 melee-schade per 1,0 s op 1,8 m (15,4 per s tegen licht pantser: melee doet 110 procent op light, 80 op medium, 40 op heavy), 70 hp, 3,25 m/s, 35 scrap en 5 s, zonder prereqTech. Het eerste antwoord op pipe pistols is erop afrennen: een knuppelaar sloopt een Dweller-militie (light) in vijf seconden maar kan niets doen tegen een robot (melee 30 procent) of een turret (heavy, 40 procent): daarom vroeg sterk en laat zwak. DATA 0.27.0 (voorstel; zie plunderaar): 61 hp, 10 schade en licht pantser (was 70, 14 en medium): 4 knuppelaars verliezen van 4 militie (-0,38, was +0,56) en 1 van 1 slagwapen_leer (-0,25), 5 tegen 4 militie winnen (+0,26). Met medium pantser won hij ook met 60 hp en 11 schade nog man tegen man van de militie (ballistic doet 75 procent op medium)."
   },
   {
     "id": "molotovgooier",
@@ -479,8 +479,8 @@
     "role": "militia",
     "weapon": "molotov",
     "armorType": "light",
-    "hp": 50,
-    "damage": 13,
+    "hp": 45,
+    "damage": 11,
     "damageType": "fire",
     "rangeM": 9,
     "speedMps": 3,
@@ -496,7 +496,7 @@
     },
     "producedAt": "tent",
     "sightM": 14,
-    "_comment": "startwaarde, geen balans. Molotovgooier: gooit brandende flessen, schadetype fire (damage-matrix: 120 procent op light, 125 op onbeschermd, 90 op medium, 60 op heavy, 50 op robot). 13 schade per 1,6 s op 9 m (8,1 per s, met 120 procent op de Dwellers dus 9,8), 50 hp light, 3 m/s, 42 scrap en 6 s. Vraagt tech molotovs. Goed tegen de lichte bewoners en gebouwen van licht pantser (woning, radiobaken), slecht tegen robots en heavy: een bewuste zwakte tegen de late Dwellers en de Garde. Nog zonder splash (de sim kent geen vlakschade); de molotov is hier een gewone vuurschade-schutter."
+    "_comment": "startwaarde, geen balans. Molotovgooier: gooit brandende flessen, schadetype fire (damage-matrix: 120 procent op light, 125 op onbeschermd, 90 op medium, 60 op heavy, 50 op robot). 13 schade per 1,6 s op 9 m (8,1 per s, met 120 procent op de Dwellers dus 9,8), 50 hp light, 3 m/s, 42 scrap en 6 s. Vraagt tech molotovs. Goed tegen de lichte bewoners en gebouwen van licht pantser (woning, radiobaken), slecht tegen robots en heavy: een bewuste zwakte tegen de late Dwellers en de Garde. Nog zonder splash (de sim kent geen vlakschade); de molotov is hier een gewone vuurschade-schutter. DATA 0.27.0 (voorstel; zie plunderaar): 45 hp en 11 schade (was 50 en 13): 4 tegen 4 militie verliezen nu (-0,19, was +0,49), 5 tegen 4 winnen (+0,49)."
   },
   {
     "id": "hond",

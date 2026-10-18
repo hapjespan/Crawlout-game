@@ -47,7 +47,7 @@ describe('Raiders: de factie laadt', () => {
     );
     expect(faction.robotRules).toBeNull();
     expect(faction.housingGrowthPerMin).toBe(0);
-    expect(data.dataVersion).toBe('0.27.0'); // data 0.27.0: the Raider garrison (0.26.0: the bouwrobot)
+    expect(data.dataVersion).toBe('0.28.0'); // data 0.28.0: the Raider garrison (0.27.0: camp takeover)
     // Dwellers ongewijzigd: nog altijd training en geen Raider-blokken
     expect(dwellers.specialChannel).toBe('training');
     expect(dwellers.slaves).toBeNull();
@@ -635,7 +635,9 @@ describe('Raiders: AI-script', () => {
   it('is vroege agressie: eerder aanvallen, eerder claimen en eerder pushen dan de Dweller-AI', () => {
     expect(ai.attackTimersTicks[0]!).toBeLessThan(dwellerAi.attackTimersTicks[0]!);
     expect(ai.claimFromTicks).toBeLessThan(dwellerAi.claimFromTicks);
-    expect(ai.claimFarFromTicks).toBeLessThan(dwellerAi.claimFarFromTicks);
+    // data 0.28.0 (sim 0.23.0, speltest H1, gemeten): de verre claims vallen nu 10 s na die van de Dweller-AI (1000 tegen
+    // 990 s; 940 tot 985 lagen op een van de twee seedsets buiten de balans), maar nog voor de dominantie-push
+    expect(ai.claimFarFromTicks).toBeLessThan(ai.raidPlan!.dominancePush.fromTicks);
     expect(ai.waveIntervalTicks).toBeLessThan(dwellerAi.waveIntervalTicks);
     // data 0.24.0 (sim 0.19.0, gemeten): de push op het hoofdgebouw is laat (de vroege push won niet meer tegen een
     // Dweller die zijn hoofdgebouw eerst verdedigt), maar nog altijd voor die van de Dweller-AI tegen de Raiders
@@ -650,8 +652,11 @@ describe('Raiders: AI-script', () => {
     const garage = data.buildings.find((b) => b.key === 'autosloperij')!.id;
     const garageAt = ai.buildOrder.find((o) => o.buildingId === garage)!.atTick;
     expect(garageAt).toBeLessThanOrEqual(ai.raidPlan!.harass.fromTicks);
-    // slavenroof vóór de eerste golf, dominantie-push na de eerste golf
-    expect(ai.raidPlan!.slaveRaids.fromTicks).toBeLessThan(ai.attackTimersTicks[0]!);
+    // data 0.27.0 (gemeten, voorstel): eerst de kampen overnemen (vanaf minuut 1), dan de slavenroof (minuut 6, na de
+    // eerste golf: een vroege roof zonder de kampen langs de weg ving tot 578 slaven in 66 potjes en won 80 procent);
+    // dominantie-push na de eerste golf
+    expect(ai.creeps!.fromTicks).toBeLessThan(ai.attackTimersTicks[0]!);
+    expect(ai.raidPlan!.slaveRaids.fromTicks).toBeGreaterThan(ai.creeps!.fromTicks);
     expect(ai.raidPlan!.dominancePush.fromTicks).toBeGreaterThan(ai.attackTimersTicks[0]!);
     // data 0.24.0 (sim 0.19.0, gemeten): dominantie is de route, het kamp bij de claimpunten komt ruim voor de push
     expect(ai.raidPlan!.dominancePush.fromTicks).toBeLessThan(ai.pushFromTicks);
@@ -660,11 +665,8 @@ describe('Raiders: AI-script', () => {
   it('houdt een garnizoen thuis (anders opstand): minstens het benodigde minimum van de slavenregels', () => {
     const revolt = raiders.slaves!.revolt;
     expect(ai.raidPlan!.garrison.minFighters).toBeGreaterThanOrEqual(revolt.minGuards);
-    // data 0.27.0 (sim 0.22.0, gemeten): het garnizoen is groter dan de eerste golf (14 thuis, de golven gaan met wat
-    // erboven staat); garnizoen plus golf passen samen binnen popCapMax, dus er is iets om heen te sturen
-    expect(ai.raidPlan!.garrison.minFighters + ai.waveMinArmy).toBeLessThanOrEqual(
-      data.sim.popCapMax,
-    );
+    // de eerste golf is groter dan het garnizoen: er is iets om heen te sturen
+    expect(ai.waveMinArmy).toBeGreaterThan(ai.raidPlan!.garrison.minFighters);
     // de bouwvolgorde begint met twee tenten en een Kooi (bedden voor de vroege push, dan slavenopslag; data 0.23.0),
     // in tijdsvolgorde
     const keys = ai.buildOrder.map((o) => data.buildings[o.buildingId]!.key);

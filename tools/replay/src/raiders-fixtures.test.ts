@@ -34,10 +34,26 @@ describe('Raider fixtures: the mechanics happen', () => {
     expect(m.tributeTicks).toBeGreaterThan(12000);
   });
 
-  it('s11-rustbelt-raiders-mirror: the two Raider AIs catch a Slaver (the sim.rng tie, sim 0.19.0)', () => {
+  it('s11-rustbelt-raiders-mirror: a Raider AI catches a unit of the other (sim 0.19.0; after 7:20 since sim 0.22.0)', () => {
     const m = raiderMechanics(load('s11-rustbelt-raiders-mirror'));
     expect(m.captures).toBeGreaterThanOrEqual(1);
     expect(m.transitions).toBeGreaterThanOrEqual(1);
+  });
+
+  it('s13-rustbelt-raiders-takeover: the start army takes the near camp over, bandits join, the outpost yields', () => {
+    const m = raiderMechanics(load('s13-rustbelt-raiders-takeover'));
+    expect(m.takeovers).toBeGreaterThanOrEqual(1);
+    expect(m.recruits).toBeGreaterThanOrEqual(1);
+    expect(m.yields).toBe(2);
+  });
+
+  it('s10-rustbelt-raiders-ai-vs-ai and s11-rustbelt-raiders-mirror: the Raider AI takes its camps over (sim 0.22.0)', () => {
+    for (const name of ['s10-rustbelt-raiders-ai-vs-ai', 's11-rustbelt-raiders-mirror']) {
+      const m = raiderMechanics(load(name));
+      expect(m.takeovers, name).toBeGreaterThanOrEqual(2);
+      expect(m.recruits, name).toBeGreaterThanOrEqual(2);
+      expect(m.yields, name).toBeGreaterThanOrEqual(2);
+    }
   });
 
   it('s10-rustbelt-raiders-net: the tent safety net brings fighters under the threshold', () => {

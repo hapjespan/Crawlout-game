@@ -95,6 +95,16 @@ export interface MinimapClaim {
   claimer?: number;
 }
 /**
+ * Een creep-kamp op de minimap (PlayerStatus.camps, protocol 0.14.0; voorstel): owner null = nog bandieten (neutraal),
+ * anders de speler wiens buitenpost het is (overgenomen, data 0.27.0). cleared: geruimd, geen markering.
+ */
+export interface MinimapCamp {
+  x: number;
+  y: number;
+  owner: number | null;
+  cleared?: boolean;
+}
+/**
  * Fog of war voor de minimap (zichtraster van de sim, cellen van 2 m; het hele raster beslaat de hele kaart). Per cel 1
  * of 0: `visible` = nu in beeld, `explored` = ooit gezien (ook de zichtbare cellen).
  */
@@ -121,6 +131,8 @@ export interface MinimapData {
   cellU?: number;
   blips: readonly MinimapBlip[];
   claims: readonly MinimapClaim[];
+  /** Creep-kampen (kaartkennis): neutraal grijsbruin, een overgenomen kamp in de kleur van zijn eigenaar. */
+  camps?: readonly MinimapCamp[];
   /** w*h cellen, 1 = zichtbaar. Ontbreekt: geen fog. Vijandelijke blips buiten het zicht worden verborgen. */
   visible?: Uint8Array;
   /**

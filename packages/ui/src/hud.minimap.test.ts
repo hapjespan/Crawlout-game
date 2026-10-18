@@ -3,6 +3,7 @@ import {
   buildFogLayerPixels,
   buildFogPixels,
   buildStaticPixels,
+  campMarkerColor,
   drawMinimap,
   fogVisibleAt,
   minimapBuildCount,
@@ -236,5 +237,14 @@ describe('minimap cache', () => {
     }
     runs.sort((a, b) => a - b);
     expect(runs[3] ?? Infinity).toBeLessThan(2);
+  });
+});
+
+describe('minimap creep camps (protocol 0.14.0, data 0.27.0)', () => {
+  it('a camp with bandits is neutral, a taken camp has the colour of its owner, a cleared camp no marker', () => {
+    expect(campMarkerColor({ x: 0, y: 0, owner: null }, 0)).toBe('rgb(154,148,138)');
+    expect(campMarkerColor({ x: 0, y: 0, owner: 0 }, 0)).toBe('rgb(102,187,106)');
+    expect(campMarkerColor({ x: 0, y: 0, owner: 1 }, 0)).toBe('rgb(239,83,80)');
+    expect(campMarkerColor({ x: 0, y: 0, owner: null, cleared: true }, 0)).toBeNull();
   });
 });

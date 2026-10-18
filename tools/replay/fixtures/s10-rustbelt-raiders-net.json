@@ -1,5 +1,5 @@
 {
- "dataVersion": "0.27.0",
+ "dataVersion": "0.28.0",
  "seed": 1003,
  "map": "rustbelt",
  "players": [
@@ -12362,23 +12362,11 @@
       "ids": [
        38797313,
        39845889,
-       44040193,
+       41943041,
        45088769
       ],
       "x": 21376,
       "y": 78720
-     }
-    },
-    {
-     "frame": 5747,
-     "playerId": 1,
-     "seq": 580,
-     "type": "HeroAbility",
-     "payload": {
-      "heroId": 0,
-      "abilityId": 0,
-      "x": 24696,
-      "y": 73560
      }
     }
    ]
@@ -12389,12 +12377,16 @@
     {
      "frame": 5757,
      "playerId": 1,
-     "seq": 581,
+     "seq": 580,
      "type": "AttackMove",
      "payload": {
       "ids": [
        38797313,
-       39845889
+       39845889,
+       40894465,
+       41943041,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -12408,7 +12400,84 @@
     {
      "frame": 5767,
      "playerId": 1,
+     "seq": 581,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       39845889,
+       40894465,
+       41943041,
+       45088769
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 5781,
+   "commands": [
+    {
+     "frame": 5777,
+     "playerId": 1,
      "seq": 582,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       39845889,
+       40894465,
+       44040193,
+       45088769
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 5791,
+   "commands": [
+    {
+     "frame": 5787,
+     "playerId": 1,
+     "seq": 583,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       39845889,
+       40894465,
+       41943041
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    },
+    {
+     "frame": 5787,
+     "playerId": 1,
+     "seq": 584,
+     "type": "HeroAbility",
+     "payload": {
+      "heroId": 0,
+      "abilityId": 0,
+      "x": 24696,
+      "y": 73560
+     }
+    }
+   ]
+  },
+  {
+   "frame": 5801,
+   "commands": [
+    {
+     "frame": 5797,
+     "playerId": 1,
+     "seq": 585,
      "type": "AttackMove",
      "payload": {
       "ids": [
@@ -12422,43 +12491,17 @@
    ]
   },
   {
-   "frame": 5801,
-   "commands": [
-    {
-     "frame": 5797,
-     "playerId": 1,
-     "seq": 583,
-     "type": "AttackMove",
-     "payload": {
-      "ids": [
-       38797313,
-       39845889,
-       40894465,
-       41943041,
-       44040193,
-       45088769
-      ],
-      "x": 21376,
-      "y": 78720
-     }
-    }
-   ]
-  },
-  {
    "frame": 5811,
    "commands": [
     {
      "frame": 5807,
      "playerId": 1,
-     "seq": 584,
+     "seq": 586,
      "type": "AttackMove",
      "payload": {
       "ids": [
        38797313,
-       39845889,
-       41943041,
-       44040193,
-       45088769
+       39845889
       ],
       "x": 21376,
       "y": 78720
@@ -12472,13 +12515,12 @@
     {
      "frame": 5817,
      "playerId": 1,
-     "seq": 585,
+     "seq": 587,
      "type": "AttackMove",
      "payload": {
       "ids": [
        38797313,
        39845889,
-       40894465,
        45088769
       ],
       "x": 21376,
@@ -12493,7 +12535,7 @@
     {
      "frame": 5827,
      "playerId": 1,
-     "seq": 586,
+     "seq": 588,
      "type": "AttackMove",
      "payload": {
       "ids": [
@@ -12516,7 +12558,7 @@
     {
      "frame": 5837,
      "playerId": 1,
-     "seq": 587,
+     "seq": 589,
      "type": "AttackMove",
      "payload": {
       "ids": [
@@ -12539,14 +12581,15 @@
     {
      "frame": 5847,
      "playerId": 1,
-     "seq": 588,
+     "seq": 590,
      "type": "AttackMove",
      "payload": {
       "ids": [
        38797313,
        40894465,
        41943041,
-       44040193
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -12560,13 +12603,14 @@
     {
      "frame": 5857,
      "playerId": 1,
-     "seq": 589,
+     "seq": 591,
      "type": "AttackMove",
      "payload": {
       "ids": [
        38797313,
        39845889,
-       40894465,
+       41943041,
+       44040193,
        45088769
       ],
       "x": 21376,
@@ -12581,14 +12625,13 @@
     {
      "frame": 5867,
      "playerId": 1,
-     "seq": 590,
+     "seq": 592,
      "type": "AttackMove",
      "payload": {
       "ids": [
        38797313,
        39845889,
        40894465,
-       41943041,
        44040193,
        45088769
       ],
@@ -12604,7 +12647,7 @@
     {
      "frame": 5877,
      "playerId": 1,
-     "seq": 591,
+     "seq": 593,
      "type": "AttackMove",
      "payload": {
       "ids": [
@@ -12627,12 +12670,13 @@
     {
      "frame": 5887,
      "playerId": 1,
-     "seq": 592,
+     "seq": 594,
      "type": "AttackMove",
      "payload": {
       "ids": [
        38797313,
-       40894465
+       40894465,
+       44040193
       ],
       "x": 21376,
       "y": 78720
@@ -12646,7 +12690,7 @@
     {
      "frame": 5897,
      "playerId": 1,
-     "seq": 593,
+     "seq": 595,
      "type": "AttackMove",
      "payload": {
       "ids": [
@@ -12654,7 +12698,7 @@
        39845889,
        40894465,
        41943041,
-       45088769
+       44040193
       ],
       "x": 21376,
       "y": 78720
@@ -12668,14 +12712,13 @@
     {
      "frame": 5907,
      "playerId": 1,
-     "seq": 594,
+     "seq": 596,
      "type": "AttackMove",
      "payload": {
       "ids": [
        38797313,
        39845889,
-       40894465,
-       45088769
+       44040193
       ],
       "x": 21376,
       "y": 78720
@@ -12689,14 +12732,14 @@
     {
      "frame": 5917,
      "playerId": 1,
-     "seq": 595,
+     "seq": 597,
      "type": "AttackMove",
      "payload": {
       "ids": [
        38797313,
        39845889,
        40894465,
-       45088769
+       44040193
       ],
       "x": 21376,
       "y": 78720
@@ -12710,14 +12753,14 @@
     {
      "frame": 5927,
      "playerId": 1,
-     "seq": 596,
+     "seq": 598,
      "type": "AttackMove",
      "payload": {
       "ids": [
        38797313,
        39845889,
        40894465,
-       45088769
+       44040193
       ],
       "x": 21376,
       "y": 78720
@@ -12731,14 +12774,14 @@
     {
      "frame": 5937,
      "playerId": 1,
-     "seq": 597,
+     "seq": 599,
      "type": "AttackMove",
      "payload": {
       "ids": [
        38797313,
        39845889,
        40894465,
-       45088769
+       44040193
       ],
       "x": 21376,
       "y": 78720
@@ -12752,14 +12795,14 @@
     {
      "frame": 5947,
      "playerId": 1,
-     "seq": 598,
+     "seq": 600,
      "type": "AttackMove",
      "payload": {
       "ids": [
        38797313,
        39845889,
        40894465,
-       45088769
+       44040193
       ],
       "x": 21376,
       "y": 78720
@@ -12773,14 +12816,14 @@
     {
      "frame": 5957,
      "playerId": 1,
-     "seq": 599,
+     "seq": 601,
      "type": "AttackMove",
      "payload": {
       "ids": [
        38797313,
        39845889,
        40894465,
-       45088769
+       44040193
       ],
       "x": 21376,
       "y": 78720
@@ -12794,13 +12837,12 @@
     {
      "frame": 5967,
      "playerId": 1,
-     "seq": 600,
+     "seq": 602,
      "type": "AttackMove",
      "payload": {
       "ids": [
        38797313,
-       39845889,
-       40894465
+       44040193
       ],
       "x": 21376,
       "y": 78720
@@ -12814,13 +12856,12 @@
     {
      "frame": 5977,
      "playerId": 1,
-     "seq": 601,
+     "seq": 603,
      "type": "AttackMove",
      "payload": {
       "ids": [
        38797313,
-       39845889,
-       40894465
+       44040193
       ],
       "x": 21376,
       "y": 78720
@@ -12834,13 +12875,12 @@
     {
      "frame": 5987,
      "playerId": 1,
-     "seq": 602,
+     "seq": 604,
      "type": "AttackMove",
      "payload": {
       "ids": [
        38797313,
-       39845889,
-       40894465
+       44040193
       ],
       "x": 21376,
       "y": 78720
@@ -12854,13 +12894,12 @@
     {
      "frame": 5997,
      "playerId": 1,
-     "seq": 603,
+     "seq": 605,
      "type": "AttackMove",
      "payload": {
       "ids": [
        38797313,
-       39845889,
-       40894465
+       44040193
       ],
       "x": 21376,
       "y": 78720
@@ -12874,16 +12913,75 @@
     {
      "frame": 6007,
      "playerId": 1,
-     "seq": 604,
+     "seq": 606,
      "type": "AttackMove",
      "payload": {
       "ids": [
        38797313,
-       39845889,
-       40894465
+       44040193
       ],
       "x": 21376,
       "y": 78720
+     }
+    },
+    {
+     "frame": 6007,
+     "playerId": 1,
+     "seq": 607,
+     "type": "PickPerk",
+     "payload": {
+      "heroId": 0,
+      "perkId": 12
+     }
+    },
+    {
+     "frame": 6007,
+     "playerId": 1,
+     "seq": 608,
+     "type": "PickPerk",
+     "payload": {
+      "heroId": 0,
+      "perkId": 6
+     }
+    },
+    {
+     "frame": 6007,
+     "playerId": 1,
+     "seq": 609,
+     "type": "PickPerk",
+     "payload": {
+      "heroId": 0,
+      "perkId": 5
+     }
+    },
+    {
+     "frame": 6007,
+     "playerId": 1,
+     "seq": 610,
+     "type": "PickPerk",
+     "payload": {
+      "heroId": 0,
+      "perkId": 7
+     }
+    },
+    {
+     "frame": 6007,
+     "playerId": 1,
+     "seq": 611,
+     "type": "PickPerk",
+     "payload": {
+      "heroId": 0,
+      "perkId": 10
+     }
+    },
+    {
+     "frame": 6007,
+     "playerId": 1,
+     "seq": 612,
+     "type": "PickPerk",
+     "payload": {
+      "heroId": 0,
+      "perkId": 2
      }
     }
    ]
@@ -12894,13 +12992,164 @@
     {
      "frame": 6017,
      "playerId": 1,
-     "seq": 605,
+     "seq": 613,
      "type": "AttackMove",
      "payload": {
       "ids": [
        38797313,
-       39845889,
-       40894465
+       44040193
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6031,
+   "commands": [
+    {
+     "frame": 6027,
+     "playerId": 1,
+     "seq": 614,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       44040193
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6041,
+   "commands": [
+    {
+     "frame": 6037,
+     "playerId": 1,
+     "seq": 615,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       44040193
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6051,
+   "commands": [
+    {
+     "frame": 6047,
+     "playerId": 1,
+     "seq": 616,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       44040193
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6061,
+   "commands": [
+    {
+     "frame": 6057,
+     "playerId": 1,
+     "seq": 617,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       44040193
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6071,
+   "commands": [
+    {
+     "frame": 6067,
+     "playerId": 1,
+     "seq": 618,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       44040193
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6081,
+   "commands": [
+    {
+     "frame": 6077,
+     "playerId": 1,
+     "seq": 619,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       44040193
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6091,
+   "commands": [
+    {
+     "frame": 6087,
+     "playerId": 1,
+     "seq": 620,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       44040193
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6101,
+   "commands": [
+    {
+     "frame": 6097,
+     "playerId": 1,
+     "seq": 621,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       44040193
       ],
       "x": 21376,
       "y": 78720
@@ -12914,10 +13163,1580 @@
     {
      "frame": 6107,
      "playerId": 1,
-     "seq": 606,
-     "type": "Recruit",
+     "seq": 622,
+     "type": "AttackMove",
      "payload": {
-      "buildingId": 37748737
+      "ids": [
+       38797313,
+       44040193
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6121,
+   "commands": [
+    {
+     "frame": 6117,
+     "playerId": 1,
+     "seq": 623,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       44040193
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6131,
+   "commands": [
+    {
+     "frame": 6127,
+     "playerId": 1,
+     "seq": 624,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       44040193
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6141,
+   "commands": [
+    {
+     "frame": 6137,
+     "playerId": 1,
+     "seq": 625,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       44040193
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6151,
+   "commands": [
+    {
+     "frame": 6147,
+     "playerId": 1,
+     "seq": 626,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       44040193
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6161,
+   "commands": [
+    {
+     "frame": 6157,
+     "playerId": 1,
+     "seq": 627,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       44040193
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6171,
+   "commands": [
+    {
+     "frame": 6167,
+     "playerId": 1,
+     "seq": 628,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       44040193
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6181,
+   "commands": [
+    {
+     "frame": 6177,
+     "playerId": 1,
+     "seq": 629,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       44040193
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6191,
+   "commands": [
+    {
+     "frame": 6187,
+     "playerId": 1,
+     "seq": 630,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       44040193
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6201,
+   "commands": [
+    {
+     "frame": 6197,
+     "playerId": 1,
+     "seq": 631,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       44040193
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6211,
+   "commands": [
+    {
+     "frame": 6207,
+     "playerId": 1,
+     "seq": 632,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       44040193
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6221,
+   "commands": [
+    {
+     "frame": 6217,
+     "playerId": 1,
+     "seq": 633,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       44040193
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6231,
+   "commands": [
+    {
+     "frame": 6227,
+     "playerId": 1,
+     "seq": 634,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       44040193
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6241,
+   "commands": [
+    {
+     "frame": 6237,
+     "playerId": 1,
+     "seq": 635,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       44040193
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6251,
+   "commands": [
+    {
+     "frame": 6247,
+     "playerId": 1,
+     "seq": 636,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       44040193
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6261,
+   "commands": [
+    {
+     "frame": 6257,
+     "playerId": 1,
+     "seq": 637,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       44040193
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6271,
+   "commands": [
+    {
+     "frame": 6267,
+     "playerId": 1,
+     "seq": 638,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       44040193,
+       45088769
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6281,
+   "commands": [
+    {
+     "frame": 6277,
+     "playerId": 1,
+     "seq": 639,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       44040193,
+       45088769
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6291,
+   "commands": [
+    {
+     "frame": 6287,
+     "playerId": 1,
+     "seq": 640,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       44040193,
+       45088769
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6301,
+   "commands": [
+    {
+     "frame": 6297,
+     "playerId": 1,
+     "seq": 641,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       44040193,
+       45088769
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6311,
+   "commands": [
+    {
+     "frame": 6307,
+     "playerId": 1,
+     "seq": 642,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       44040193,
+       45088769
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6321,
+   "commands": [
+    {
+     "frame": 6317,
+     "playerId": 1,
+     "seq": 643,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       44040193,
+       45088769
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6331,
+   "commands": [
+    {
+     "frame": 6327,
+     "playerId": 1,
+     "seq": 644,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       44040193,
+       45088769
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6341,
+   "commands": [
+    {
+     "frame": 6337,
+     "playerId": 1,
+     "seq": 645,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       44040193,
+       45088769
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6351,
+   "commands": [
+    {
+     "frame": 6347,
+     "playerId": 1,
+     "seq": 646,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       44040193,
+       45088769
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6361,
+   "commands": [
+    {
+     "frame": 6357,
+     "playerId": 1,
+     "seq": 647,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       44040193,
+       45088769
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6371,
+   "commands": [
+    {
+     "frame": 6367,
+     "playerId": 1,
+     "seq": 648,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       44040193,
+       45088769
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6381,
+   "commands": [
+    {
+     "frame": 6377,
+     "playerId": 1,
+     "seq": 649,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       44040193,
+       45088769
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6391,
+   "commands": [
+    {
+     "frame": 6387,
+     "playerId": 1,
+     "seq": 650,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       44040193,
+       45088769
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6401,
+   "commands": [
+    {
+     "frame": 6397,
+     "playerId": 1,
+     "seq": 651,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       44040193,
+       45088769
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6411,
+   "commands": [
+    {
+     "frame": 6407,
+     "playerId": 1,
+     "seq": 652,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       44040193,
+       45088769
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6421,
+   "commands": [
+    {
+     "frame": 6417,
+     "playerId": 1,
+     "seq": 653,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       44040193,
+       45088769
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6431,
+   "commands": [
+    {
+     "frame": 6427,
+     "playerId": 1,
+     "seq": 654,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       44040193,
+       45088769
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6441,
+   "commands": [
+    {
+     "frame": 6437,
+     "playerId": 1,
+     "seq": 655,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       44040193,
+       45088769
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6451,
+   "commands": [
+    {
+     "frame": 6447,
+     "playerId": 1,
+     "seq": 656,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       44040193,
+       45088769
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6461,
+   "commands": [
+    {
+     "frame": 6457,
+     "playerId": 1,
+     "seq": 657,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       44040193,
+       45088769
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6471,
+   "commands": [
+    {
+     "frame": 6467,
+     "playerId": 1,
+     "seq": 658,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       44040193,
+       45088769
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6481,
+   "commands": [
+    {
+     "frame": 6477,
+     "playerId": 1,
+     "seq": 659,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       44040193,
+       45088769
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6491,
+   "commands": [
+    {
+     "frame": 6487,
+     "playerId": 1,
+     "seq": 660,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       44040193,
+       45088769
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6501,
+   "commands": [
+    {
+     "frame": 6497,
+     "playerId": 1,
+     "seq": 661,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       44040193,
+       45088769
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6511,
+   "commands": [
+    {
+     "frame": 6507,
+     "playerId": 1,
+     "seq": 662,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       44040193,
+       45088769
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6521,
+   "commands": [
+    {
+     "frame": 6517,
+     "playerId": 1,
+     "seq": 663,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       44040193,
+       45088769
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6531,
+   "commands": [
+    {
+     "frame": 6527,
+     "playerId": 1,
+     "seq": 664,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       44040193,
+       45088769
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6541,
+   "commands": [
+    {
+     "frame": 6537,
+     "playerId": 1,
+     "seq": 665,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       44040193,
+       45088769
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6551,
+   "commands": [
+    {
+     "frame": 6547,
+     "playerId": 1,
+     "seq": 666,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       44040193,
+       45088769
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6561,
+   "commands": [
+    {
+     "frame": 6557,
+     "playerId": 1,
+     "seq": 667,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       44040193,
+       45088769
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6571,
+   "commands": [
+    {
+     "frame": 6567,
+     "playerId": 1,
+     "seq": 668,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       44040193,
+       45088769
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6581,
+   "commands": [
+    {
+     "frame": 6577,
+     "playerId": 1,
+     "seq": 669,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       44040193,
+       45088769
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6591,
+   "commands": [
+    {
+     "frame": 6587,
+     "playerId": 1,
+     "seq": 670,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       44040193,
+       45088769
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6601,
+   "commands": [
+    {
+     "frame": 6597,
+     "playerId": 1,
+     "seq": 671,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       44040193,
+       45088769
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6611,
+   "commands": [
+    {
+     "frame": 6607,
+     "playerId": 1,
+     "seq": 672,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       44040193,
+       45088769
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6621,
+   "commands": [
+    {
+     "frame": 6617,
+     "playerId": 1,
+     "seq": 673,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       44040193,
+       45088769
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6631,
+   "commands": [
+    {
+     "frame": 6627,
+     "playerId": 1,
+     "seq": 674,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       44040193,
+       45088769
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6641,
+   "commands": [
+    {
+     "frame": 6637,
+     "playerId": 1,
+     "seq": 675,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       44040193,
+       45088769
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6651,
+   "commands": [
+    {
+     "frame": 6647,
+     "playerId": 1,
+     "seq": 676,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       44040193,
+       45088769
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6661,
+   "commands": [
+    {
+     "frame": 6657,
+     "playerId": 1,
+     "seq": 677,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       44040193,
+       45088769
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6671,
+   "commands": [
+    {
+     "frame": 6667,
+     "playerId": 1,
+     "seq": 678,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       44040193,
+       45088769
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6681,
+   "commands": [
+    {
+     "frame": 6677,
+     "playerId": 1,
+     "seq": 679,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       44040193,
+       45088769
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6691,
+   "commands": [
+    {
+     "frame": 6687,
+     "playerId": 1,
+     "seq": 680,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       44040193,
+       45088769
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6701,
+   "commands": [
+    {
+     "frame": 6697,
+     "playerId": 1,
+     "seq": 681,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       44040193,
+       45088769
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6711,
+   "commands": [
+    {
+     "frame": 6707,
+     "playerId": 1,
+     "seq": 682,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       44040193,
+       45088769
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6721,
+   "commands": [
+    {
+     "frame": 6717,
+     "playerId": 1,
+     "seq": 683,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       44040193,
+       45088769
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6731,
+   "commands": [
+    {
+     "frame": 6727,
+     "playerId": 1,
+     "seq": 684,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       44040193,
+       45088769
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6741,
+   "commands": [
+    {
+     "frame": 6737,
+     "playerId": 1,
+     "seq": 685,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       44040193,
+       45088769
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6751,
+   "commands": [
+    {
+     "frame": 6747,
+     "playerId": 1,
+     "seq": 686,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       44040193,
+       45088769
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6761,
+   "commands": [
+    {
+     "frame": 6757,
+     "playerId": 1,
+     "seq": 687,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       44040193,
+       45088769
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6771,
+   "commands": [
+    {
+     "frame": 6767,
+     "playerId": 1,
+     "seq": 688,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       44040193,
+       45088769
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6781,
+   "commands": [
+    {
+     "frame": 6777,
+     "playerId": 1,
+     "seq": 689,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       44040193,
+       45088769
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6791,
+   "commands": [
+    {
+     "frame": 6787,
+     "playerId": 1,
+     "seq": 690,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       44040193,
+       45088769
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6801,
+   "commands": [
+    {
+     "frame": 6797,
+     "playerId": 1,
+     "seq": 691,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       44040193,
+       45088769
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6811,
+   "commands": [
+    {
+     "frame": 6807,
+     "playerId": 1,
+     "seq": 692,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       44040193,
+       45088769
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6821,
+   "commands": [
+    {
+     "frame": 6817,
+     "playerId": 1,
+     "seq": 693,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       44040193,
+       45088769
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6831,
+   "commands": [
+    {
+     "frame": 6827,
+     "playerId": 1,
+     "seq": 694,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       44040193,
+       45088769
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6841,
+   "commands": [
+    {
+     "frame": 6837,
+     "playerId": 1,
+     "seq": 695,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       44040193,
+       45088769
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6851,
+   "commands": [
+    {
+     "frame": 6847,
+     "playerId": 1,
+     "seq": 696,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       44040193,
+       45088769
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6861,
+   "commands": [
+    {
+     "frame": 6857,
+     "playerId": 1,
+     "seq": 697,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       44040193,
+       45088769
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6871,
+   "commands": [
+    {
+     "frame": 6867,
+     "playerId": 1,
+     "seq": 698,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       44040193,
+       45088769
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6881,
+   "commands": [
+    {
+     "frame": 6877,
+     "playerId": 1,
+     "seq": 699,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       44040193,
+       45088769
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6891,
+   "commands": [
+    {
+     "frame": 6887,
+     "playerId": 1,
+     "seq": 700,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       44040193,
+       45088769
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6901,
+   "commands": [
+    {
+     "frame": 6897,
+     "playerId": 1,
+     "seq": 701,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       44040193,
+       45088769
+      ],
+      "x": 21376,
+      "y": 78720
      }
     }
    ]
@@ -12928,26 +14747,56 @@
     {
      "frame": 6907,
      "playerId": 1,
-     "seq": 607,
+     "seq": 702,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
      }
-    },
+    }
+   ]
+  },
+  {
+   "frame": 6921,
+   "commands": [
     {
-     "frame": 6907,
+     "frame": 6917,
      "playerId": 1,
-     "seq": 608,
-     "type": "HeroAbility",
+     "seq": 703,
+     "type": "AttackMove",
      "payload": {
-      "heroId": 0,
-      "abilityId": 0,
-      "x": 23844,
-      "y": 73874
+      "ids": [
+       38797313,
+       44040193,
+       45088769
+      ],
+      "x": 21376,
+      "y": 78720
+     }
+    }
+   ]
+  },
+  {
+   "frame": 6931,
+   "commands": [
+    {
+     "frame": 6927,
+     "playerId": 1,
+     "seq": 704,
+     "type": "AttackMove",
+     "payload": {
+      "ids": [
+       38797313,
+       44040193,
+       45088769
+      ],
+      "x": 21376,
+      "y": 78720
      }
     }
    ]
@@ -12958,74 +14807,16 @@
     {
      "frame": 6937,
      "playerId": 1,
-     "seq": 609,
+     "seq": 705,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
-     }
-    },
-    {
-     "frame": 6937,
-     "playerId": 1,
-     "seq": 610,
-     "type": "PickPerk",
-     "payload": {
-      "heroId": 0,
-      "perkId": 12
-     }
-    },
-    {
-     "frame": 6937,
-     "playerId": 1,
-     "seq": 611,
-     "type": "PickPerk",
-     "payload": {
-      "heroId": 0,
-      "perkId": 6
-     }
-    },
-    {
-     "frame": 6937,
-     "playerId": 1,
-     "seq": 612,
-     "type": "PickPerk",
-     "payload": {
-      "heroId": 0,
-      "perkId": 5
-     }
-    },
-    {
-     "frame": 6937,
-     "playerId": 1,
-     "seq": 613,
-     "type": "PickPerk",
-     "payload": {
-      "heroId": 0,
-      "perkId": 7
-     }
-    },
-    {
-     "frame": 6937,
-     "playerId": 1,
-     "seq": 614,
-     "type": "PickPerk",
-     "payload": {
-      "heroId": 0,
-      "perkId": 10
-     }
-    },
-    {
-     "frame": 6937,
-     "playerId": 1,
-     "seq": 615,
-     "type": "PickPerk",
-     "payload": {
-      "heroId": 0,
-      "perkId": 2
      }
     }
    ]
@@ -13036,11 +14827,13 @@
     {
      "frame": 6947,
      "playerId": 1,
-     "seq": 616,
+     "seq": 706,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -13054,11 +14847,13 @@
     {
      "frame": 6957,
      "playerId": 1,
-     "seq": 617,
+     "seq": 707,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -13072,11 +14867,13 @@
     {
      "frame": 6967,
      "playerId": 1,
-     "seq": 618,
+     "seq": 708,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -13090,11 +14887,13 @@
     {
      "frame": 6977,
      "playerId": 1,
-     "seq": 619,
+     "seq": 709,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -13108,11 +14907,13 @@
     {
      "frame": 6987,
      "playerId": 1,
-     "seq": 620,
+     "seq": 710,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -13126,11 +14927,13 @@
     {
      "frame": 6997,
      "playerId": 1,
-     "seq": 621,
+     "seq": 711,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -13144,11 +14947,13 @@
     {
      "frame": 7007,
      "playerId": 1,
-     "seq": 622,
+     "seq": 712,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -13162,11 +14967,13 @@
     {
      "frame": 7017,
      "playerId": 1,
-     "seq": 623,
+     "seq": 713,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -13180,11 +14987,13 @@
     {
      "frame": 7027,
      "playerId": 1,
-     "seq": 624,
+     "seq": 714,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -13198,11 +15007,13 @@
     {
      "frame": 7037,
      "playerId": 1,
-     "seq": 625,
+     "seq": 715,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -13216,11 +15027,13 @@
     {
      "frame": 7047,
      "playerId": 1,
-     "seq": 626,
+     "seq": 716,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -13234,11 +15047,13 @@
     {
      "frame": 7057,
      "playerId": 1,
-     "seq": 627,
+     "seq": 717,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -13252,11 +15067,13 @@
     {
      "frame": 7067,
      "playerId": 1,
-     "seq": 628,
+     "seq": 718,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -13270,11 +15087,13 @@
     {
      "frame": 7077,
      "playerId": 1,
-     "seq": 629,
+     "seq": 719,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -13288,11 +15107,13 @@
     {
      "frame": 7087,
      "playerId": 1,
-     "seq": 630,
+     "seq": 720,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -13306,11 +15127,13 @@
     {
      "frame": 7097,
      "playerId": 1,
-     "seq": 631,
+     "seq": 721,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -13324,11 +15147,13 @@
     {
      "frame": 7107,
      "playerId": 1,
-     "seq": 632,
+     "seq": 722,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -13342,11 +15167,13 @@
     {
      "frame": 7117,
      "playerId": 1,
-     "seq": 633,
+     "seq": 723,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -13360,11 +15187,13 @@
     {
      "frame": 7127,
      "playerId": 1,
-     "seq": 634,
+     "seq": 724,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -13378,11 +15207,13 @@
     {
      "frame": 7137,
      "playerId": 1,
-     "seq": 635,
+     "seq": 725,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -13396,11 +15227,13 @@
     {
      "frame": 7147,
      "playerId": 1,
-     "seq": 636,
+     "seq": 726,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -13414,11 +15247,13 @@
     {
      "frame": 7157,
      "playerId": 1,
-     "seq": 637,
+     "seq": 727,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -13432,11 +15267,13 @@
     {
      "frame": 7167,
      "playerId": 1,
-     "seq": 638,
+     "seq": 728,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -13450,11 +15287,13 @@
     {
      "frame": 7177,
      "playerId": 1,
-     "seq": 639,
+     "seq": 729,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -13468,11 +15307,13 @@
     {
      "frame": 7187,
      "playerId": 1,
-     "seq": 640,
+     "seq": 730,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -13486,11 +15327,13 @@
     {
      "frame": 7197,
      "playerId": 1,
-     "seq": 641,
+     "seq": 731,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -13504,11 +15347,13 @@
     {
      "frame": 7207,
      "playerId": 1,
-     "seq": 642,
+     "seq": 732,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -13522,11 +15367,13 @@
     {
      "frame": 7217,
      "playerId": 1,
-     "seq": 643,
+     "seq": 733,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -13540,11 +15387,13 @@
     {
      "frame": 7227,
      "playerId": 1,
-     "seq": 644,
+     "seq": 734,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -13558,11 +15407,13 @@
     {
      "frame": 7237,
      "playerId": 1,
-     "seq": 645,
+     "seq": 735,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -13576,11 +15427,13 @@
     {
      "frame": 7247,
      "playerId": 1,
-     "seq": 646,
+     "seq": 736,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -13594,11 +15447,13 @@
     {
      "frame": 7257,
      "playerId": 1,
-     "seq": 647,
+     "seq": 737,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -13612,11 +15467,13 @@
     {
      "frame": 7267,
      "playerId": 1,
-     "seq": 648,
+     "seq": 738,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -13630,11 +15487,13 @@
     {
      "frame": 7277,
      "playerId": 1,
-     "seq": 649,
+     "seq": 739,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -13648,11 +15507,13 @@
     {
      "frame": 7287,
      "playerId": 1,
-     "seq": 650,
+     "seq": 740,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -13666,11 +15527,13 @@
     {
      "frame": 7297,
      "playerId": 1,
-     "seq": 651,
+     "seq": 741,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -13684,11 +15547,13 @@
     {
      "frame": 7307,
      "playerId": 1,
-     "seq": 652,
+     "seq": 742,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -13702,11 +15567,13 @@
     {
      "frame": 7317,
      "playerId": 1,
-     "seq": 653,
+     "seq": 743,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -13720,11 +15587,13 @@
     {
      "frame": 7327,
      "playerId": 1,
-     "seq": 654,
+     "seq": 744,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -13738,11 +15607,13 @@
     {
      "frame": 7337,
      "playerId": 1,
-     "seq": 655,
+     "seq": 745,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -13756,11 +15627,13 @@
     {
      "frame": 7347,
      "playerId": 1,
-     "seq": 656,
+     "seq": 746,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -13774,11 +15647,13 @@
     {
      "frame": 7357,
      "playerId": 1,
-     "seq": 657,
+     "seq": 747,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -13792,11 +15667,13 @@
     {
      "frame": 7367,
      "playerId": 1,
-     "seq": 658,
+     "seq": 748,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -13810,11 +15687,13 @@
     {
      "frame": 7377,
      "playerId": 1,
-     "seq": 659,
+     "seq": 749,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -13828,11 +15707,13 @@
     {
      "frame": 7387,
      "playerId": 1,
-     "seq": 660,
+     "seq": 750,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -13846,11 +15727,13 @@
     {
      "frame": 7397,
      "playerId": 1,
-     "seq": 661,
+     "seq": 751,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -13864,11 +15747,13 @@
     {
      "frame": 7407,
      "playerId": 1,
-     "seq": 662,
+     "seq": 752,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -13882,11 +15767,13 @@
     {
      "frame": 7417,
      "playerId": 1,
-     "seq": 663,
+     "seq": 753,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -13900,11 +15787,13 @@
     {
      "frame": 7427,
      "playerId": 1,
-     "seq": 664,
+     "seq": 754,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -13918,11 +15807,13 @@
     {
      "frame": 7437,
      "playerId": 1,
-     "seq": 665,
+     "seq": 755,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -13936,11 +15827,13 @@
     {
      "frame": 7447,
      "playerId": 1,
-     "seq": 666,
+     "seq": 756,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -13954,11 +15847,13 @@
     {
      "frame": 7457,
      "playerId": 1,
-     "seq": 667,
+     "seq": 757,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -13972,11 +15867,13 @@
     {
      "frame": 7467,
      "playerId": 1,
-     "seq": 668,
+     "seq": 758,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -13990,11 +15887,13 @@
     {
      "frame": 7477,
      "playerId": 1,
-     "seq": 669,
+     "seq": 759,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -14008,11 +15907,13 @@
     {
      "frame": 7487,
      "playerId": 1,
-     "seq": 670,
+     "seq": 760,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -14026,11 +15927,13 @@
     {
      "frame": 7497,
      "playerId": 1,
-     "seq": 671,
+     "seq": 761,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -14044,11 +15947,13 @@
     {
      "frame": 7507,
      "playerId": 1,
-     "seq": 672,
+     "seq": 762,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -14062,11 +15967,13 @@
     {
      "frame": 7517,
      "playerId": 1,
-     "seq": 673,
+     "seq": 763,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -14080,11 +15987,13 @@
     {
      "frame": 7527,
      "playerId": 1,
-     "seq": 674,
+     "seq": 764,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -14098,11 +16007,13 @@
     {
      "frame": 7537,
      "playerId": 1,
-     "seq": 675,
+     "seq": 765,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -14116,11 +16027,13 @@
     {
      "frame": 7547,
      "playerId": 1,
-     "seq": 676,
+     "seq": 766,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -14134,11 +16047,13 @@
     {
      "frame": 7557,
      "playerId": 1,
-     "seq": 677,
+     "seq": 767,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -14152,11 +16067,13 @@
     {
      "frame": 7567,
      "playerId": 1,
-     "seq": 678,
+     "seq": 768,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -14170,11 +16087,13 @@
     {
      "frame": 7577,
      "playerId": 1,
-     "seq": 679,
+     "seq": 769,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -14188,11 +16107,13 @@
     {
      "frame": 7587,
      "playerId": 1,
-     "seq": 680,
+     "seq": 770,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -14206,11 +16127,13 @@
     {
      "frame": 7597,
      "playerId": 1,
-     "seq": 681,
+     "seq": 771,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -14224,11 +16147,13 @@
     {
      "frame": 7607,
      "playerId": 1,
-     "seq": 682,
+     "seq": 772,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -14242,11 +16167,13 @@
     {
      "frame": 7617,
      "playerId": 1,
-     "seq": 683,
+     "seq": 773,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -14260,11 +16187,13 @@
     {
      "frame": 7627,
      "playerId": 1,
-     "seq": 684,
+     "seq": 774,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -14278,11 +16207,13 @@
     {
      "frame": 7637,
      "playerId": 1,
-     "seq": 685,
+     "seq": 775,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -14296,11 +16227,13 @@
     {
      "frame": 7647,
      "playerId": 1,
-     "seq": 686,
+     "seq": 776,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -14314,11 +16247,13 @@
     {
      "frame": 7657,
      "playerId": 1,
-     "seq": 687,
+     "seq": 777,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -14332,11 +16267,13 @@
     {
      "frame": 7667,
      "playerId": 1,
-     "seq": 688,
+     "seq": 778,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -14350,11 +16287,13 @@
     {
      "frame": 7677,
      "playerId": 1,
-     "seq": 689,
+     "seq": 779,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -14368,11 +16307,13 @@
     {
      "frame": 7687,
      "playerId": 1,
-     "seq": 690,
+     "seq": 780,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -14386,11 +16327,13 @@
     {
      "frame": 7697,
      "playerId": 1,
-     "seq": 691,
+     "seq": 781,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -14404,11 +16347,13 @@
     {
      "frame": 7707,
      "playerId": 1,
-     "seq": 692,
+     "seq": 782,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -14422,11 +16367,13 @@
     {
      "frame": 7717,
      "playerId": 1,
-     "seq": 693,
+     "seq": 783,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -14440,11 +16387,13 @@
     {
      "frame": 7727,
      "playerId": 1,
-     "seq": 694,
+     "seq": 784,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -14458,11 +16407,13 @@
     {
      "frame": 7737,
      "playerId": 1,
-     "seq": 695,
+     "seq": 785,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -14476,11 +16427,13 @@
     {
      "frame": 7747,
      "playerId": 1,
-     "seq": 696,
+     "seq": 786,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -14494,11 +16447,13 @@
     {
      "frame": 7757,
      "playerId": 1,
-     "seq": 697,
+     "seq": 787,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -14512,11 +16467,13 @@
     {
      "frame": 7767,
      "playerId": 1,
-     "seq": 698,
+     "seq": 788,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -14530,11 +16487,13 @@
     {
      "frame": 7777,
      "playerId": 1,
-     "seq": 699,
+     "seq": 789,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -14548,11 +16507,13 @@
     {
      "frame": 7787,
      "playerId": 1,
-     "seq": 700,
+     "seq": 790,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -14566,11 +16527,13 @@
     {
      "frame": 7797,
      "playerId": 1,
-     "seq": 701,
+     "seq": 791,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -14584,11 +16547,13 @@
     {
      "frame": 7807,
      "playerId": 1,
-     "seq": 702,
+     "seq": 792,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -14602,11 +16567,13 @@
     {
      "frame": 7817,
      "playerId": 1,
-     "seq": 703,
+     "seq": 793,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -14620,11 +16587,13 @@
     {
      "frame": 7827,
      "playerId": 1,
-     "seq": 704,
+     "seq": 794,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -14638,11 +16607,13 @@
     {
      "frame": 7837,
      "playerId": 1,
-     "seq": 705,
+     "seq": 795,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -14656,11 +16627,13 @@
     {
      "frame": 7847,
      "playerId": 1,
-     "seq": 706,
+     "seq": 796,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -14674,11 +16647,13 @@
     {
      "frame": 7857,
      "playerId": 1,
-     "seq": 707,
+     "seq": 797,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -14692,11 +16667,13 @@
     {
      "frame": 7867,
      "playerId": 1,
-     "seq": 708,
+     "seq": 798,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -14710,11 +16687,13 @@
     {
      "frame": 7877,
      "playerId": 1,
-     "seq": 709,
+     "seq": 799,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -14728,11 +16707,13 @@
     {
      "frame": 7887,
      "playerId": 1,
-     "seq": 710,
+     "seq": 800,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -14746,11 +16727,13 @@
     {
      "frame": 7897,
      "playerId": 1,
-     "seq": 711,
+     "seq": 801,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -14764,11 +16747,13 @@
     {
      "frame": 7907,
      "playerId": 1,
-     "seq": 712,
+     "seq": 802,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -14782,11 +16767,13 @@
     {
      "frame": 7917,
      "playerId": 1,
-     "seq": 713,
+     "seq": 803,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -14800,11 +16787,13 @@
     {
      "frame": 7927,
      "playerId": 1,
-     "seq": 714,
+     "seq": 804,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -14818,11 +16807,13 @@
     {
      "frame": 7937,
      "playerId": 1,
-     "seq": 715,
+     "seq": 805,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -14836,11 +16827,13 @@
     {
      "frame": 7947,
      "playerId": 1,
-     "seq": 716,
+     "seq": 806,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -14854,11 +16847,13 @@
     {
      "frame": 7957,
      "playerId": 1,
-     "seq": 717,
+     "seq": 807,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -14872,11 +16867,13 @@
     {
      "frame": 7967,
      "playerId": 1,
-     "seq": 718,
+     "seq": 808,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -14890,11 +16887,13 @@
     {
      "frame": 7977,
      "playerId": 1,
-     "seq": 719,
+     "seq": 809,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -14908,11 +16907,13 @@
     {
      "frame": 7987,
      "playerId": 1,
-     "seq": 720,
+     "seq": 810,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -14926,11 +16927,13 @@
     {
      "frame": 7997,
      "playerId": 1,
-     "seq": 721,
+     "seq": 811,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -14944,11 +16947,13 @@
     {
      "frame": 8007,
      "playerId": 1,
-     "seq": 722,
+     "seq": 812,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -14962,11 +16967,13 @@
     {
      "frame": 8017,
      "playerId": 1,
-     "seq": 723,
+     "seq": 813,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -14980,11 +16987,13 @@
     {
      "frame": 8027,
      "playerId": 1,
-     "seq": 724,
+     "seq": 814,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -14998,11 +17007,13 @@
     {
      "frame": 8037,
      "playerId": 1,
-     "seq": 725,
+     "seq": 815,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -15016,11 +17027,13 @@
     {
      "frame": 8047,
      "playerId": 1,
-     "seq": 726,
+     "seq": 816,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -15034,11 +17047,13 @@
     {
      "frame": 8057,
      "playerId": 1,
-     "seq": 727,
+     "seq": 817,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -15052,11 +17067,13 @@
     {
      "frame": 8067,
      "playerId": 1,
-     "seq": 728,
+     "seq": 818,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -15070,11 +17087,13 @@
     {
      "frame": 8077,
      "playerId": 1,
-     "seq": 729,
+     "seq": 819,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -15088,11 +17107,13 @@
     {
      "frame": 8087,
      "playerId": 1,
-     "seq": 730,
+     "seq": 820,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -15106,11 +17127,13 @@
     {
      "frame": 8097,
      "playerId": 1,
-     "seq": 731,
+     "seq": 821,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -15124,11 +17147,13 @@
     {
      "frame": 8107,
      "playerId": 1,
-     "seq": 732,
+     "seq": 822,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -15142,11 +17167,13 @@
     {
      "frame": 8117,
      "playerId": 1,
-     "seq": 733,
+     "seq": 823,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -15160,11 +17187,13 @@
     {
      "frame": 8127,
      "playerId": 1,
-     "seq": 734,
+     "seq": 824,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -15178,11 +17207,13 @@
     {
      "frame": 8137,
      "playerId": 1,
-     "seq": 735,
+     "seq": 825,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -15196,11 +17227,13 @@
     {
      "frame": 8147,
      "playerId": 1,
-     "seq": 736,
+     "seq": 826,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -15214,11 +17247,13 @@
     {
      "frame": 8157,
      "playerId": 1,
-     "seq": 737,
+     "seq": 827,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -15232,11 +17267,13 @@
     {
      "frame": 8167,
      "playerId": 1,
-     "seq": 738,
+     "seq": 828,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -15250,11 +17287,13 @@
     {
      "frame": 8177,
      "playerId": 1,
-     "seq": 739,
+     "seq": 829,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -15268,11 +17307,13 @@
     {
      "frame": 8187,
      "playerId": 1,
-     "seq": 740,
+     "seq": 830,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -15286,11 +17327,13 @@
     {
      "frame": 8197,
      "playerId": 1,
-     "seq": 741,
+     "seq": 831,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -15304,11 +17347,13 @@
     {
      "frame": 8207,
      "playerId": 1,
-     "seq": 742,
+     "seq": 832,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -15322,11 +17367,13 @@
     {
      "frame": 8217,
      "playerId": 1,
-     "seq": 743,
+     "seq": 833,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -15340,11 +17387,13 @@
     {
      "frame": 8227,
      "playerId": 1,
-     "seq": 744,
+     "seq": 834,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -15358,11 +17407,13 @@
     {
      "frame": 8237,
      "playerId": 1,
-     "seq": 745,
+     "seq": 835,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -15376,11 +17427,13 @@
     {
      "frame": 8247,
      "playerId": 1,
-     "seq": 746,
+     "seq": 836,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -15394,11 +17447,13 @@
     {
      "frame": 8257,
      "playerId": 1,
-     "seq": 747,
+     "seq": 837,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -15412,11 +17467,13 @@
     {
      "frame": 8267,
      "playerId": 1,
-     "seq": 748,
+     "seq": 838,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -15430,11 +17487,13 @@
     {
      "frame": 8277,
      "playerId": 1,
-     "seq": 749,
+     "seq": 839,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -15448,11 +17507,13 @@
     {
      "frame": 8287,
      "playerId": 1,
-     "seq": 750,
+     "seq": 840,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -15466,11 +17527,13 @@
     {
      "frame": 8297,
      "playerId": 1,
-     "seq": 751,
+     "seq": 841,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -15484,11 +17547,13 @@
     {
      "frame": 8307,
      "playerId": 1,
-     "seq": 752,
+     "seq": 842,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -15502,11 +17567,13 @@
     {
      "frame": 8317,
      "playerId": 1,
-     "seq": 753,
+     "seq": 843,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -15520,11 +17587,13 @@
     {
      "frame": 8327,
      "playerId": 1,
-     "seq": 754,
+     "seq": 844,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -15538,11 +17607,13 @@
     {
      "frame": 8337,
      "playerId": 1,
-     "seq": 755,
+     "seq": 845,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -15556,11 +17627,13 @@
     {
      "frame": 8347,
      "playerId": 1,
-     "seq": 756,
+     "seq": 846,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -15574,11 +17647,13 @@
     {
      "frame": 8357,
      "playerId": 1,
-     "seq": 757,
+     "seq": 847,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -15592,11 +17667,13 @@
     {
      "frame": 8367,
      "playerId": 1,
-     "seq": 758,
+     "seq": 848,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -15610,11 +17687,13 @@
     {
      "frame": 8377,
      "playerId": 1,
-     "seq": 759,
+     "seq": 849,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -15628,11 +17707,13 @@
     {
      "frame": 8387,
      "playerId": 1,
-     "seq": 760,
+     "seq": 850,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -15646,11 +17727,13 @@
     {
      "frame": 8397,
      "playerId": 1,
-     "seq": 761,
+     "seq": 851,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -15664,11 +17747,13 @@
     {
      "frame": 8407,
      "playerId": 1,
-     "seq": 762,
+     "seq": 852,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -15682,11 +17767,13 @@
     {
      "frame": 8417,
      "playerId": 1,
-     "seq": 763,
+     "seq": 853,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -15700,11 +17787,13 @@
     {
      "frame": 8427,
      "playerId": 1,
-     "seq": 764,
+     "seq": 854,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -15718,11 +17807,13 @@
     {
      "frame": 8437,
      "playerId": 1,
-     "seq": 765,
+     "seq": 855,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -15736,11 +17827,13 @@
     {
      "frame": 8447,
      "playerId": 1,
-     "seq": 766,
+     "seq": 856,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -15754,11 +17847,13 @@
     {
      "frame": 8457,
      "playerId": 1,
-     "seq": 767,
+     "seq": 857,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -15772,11 +17867,13 @@
     {
      "frame": 8467,
      "playerId": 1,
-     "seq": 768,
+     "seq": 858,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -15790,11 +17887,13 @@
     {
      "frame": 8477,
      "playerId": 1,
-     "seq": 769,
+     "seq": 859,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -15808,11 +17907,13 @@
     {
      "frame": 8487,
      "playerId": 1,
-     "seq": 770,
+     "seq": 860,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -15826,11 +17927,13 @@
     {
      "frame": 8497,
      "playerId": 1,
-     "seq": 771,
+     "seq": 861,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -15844,11 +17947,13 @@
     {
      "frame": 8507,
      "playerId": 1,
-     "seq": 772,
+     "seq": 862,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -15862,11 +17967,13 @@
     {
      "frame": 8517,
      "playerId": 1,
-     "seq": 773,
+     "seq": 863,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -15880,11 +17987,13 @@
     {
      "frame": 8527,
      "playerId": 1,
-     "seq": 774,
+     "seq": 864,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -15898,11 +18007,13 @@
     {
      "frame": 8537,
      "playerId": 1,
-     "seq": 775,
+     "seq": 865,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -15916,11 +18027,13 @@
     {
      "frame": 8547,
      "playerId": 1,
-     "seq": 776,
+     "seq": 866,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -15934,11 +18047,13 @@
     {
      "frame": 8557,
      "playerId": 1,
-     "seq": 777,
+     "seq": 867,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -15952,11 +18067,13 @@
     {
      "frame": 8567,
      "playerId": 1,
-     "seq": 778,
+     "seq": 868,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -15970,11 +18087,13 @@
     {
      "frame": 8577,
      "playerId": 1,
-     "seq": 779,
+     "seq": 869,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -15988,11 +18107,13 @@
     {
      "frame": 8587,
      "playerId": 1,
-     "seq": 780,
+     "seq": 870,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -16006,11 +18127,13 @@
     {
      "frame": 8597,
      "playerId": 1,
-     "seq": 781,
+     "seq": 871,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -16024,11 +18147,13 @@
     {
      "frame": 8607,
      "playerId": 1,
-     "seq": 782,
+     "seq": 872,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -16042,11 +18167,13 @@
     {
      "frame": 8617,
      "playerId": 1,
-     "seq": 783,
+     "seq": 873,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -16060,11 +18187,13 @@
     {
      "frame": 8627,
      "playerId": 1,
-     "seq": 784,
+     "seq": 874,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -16078,11 +18207,13 @@
     {
      "frame": 8637,
      "playerId": 1,
-     "seq": 785,
+     "seq": 875,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -16096,11 +18227,13 @@
     {
      "frame": 8647,
      "playerId": 1,
-     "seq": 786,
+     "seq": 876,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -16114,11 +18247,13 @@
     {
      "frame": 8657,
      "playerId": 1,
-     "seq": 787,
+     "seq": 877,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -16132,11 +18267,13 @@
     {
      "frame": 8667,
      "playerId": 1,
-     "seq": 788,
+     "seq": 878,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -16150,11 +18287,13 @@
     {
      "frame": 8677,
      "playerId": 1,
-     "seq": 789,
+     "seq": 879,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -16168,11 +18307,13 @@
     {
      "frame": 8687,
      "playerId": 1,
-     "seq": 790,
+     "seq": 880,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -16186,11 +18327,13 @@
     {
      "frame": 8697,
      "playerId": 1,
-     "seq": 791,
+     "seq": 881,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -16204,11 +18347,13 @@
     {
      "frame": 8707,
      "playerId": 1,
-     "seq": 792,
+     "seq": 882,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -16222,11 +18367,13 @@
     {
      "frame": 8717,
      "playerId": 1,
-     "seq": 793,
+     "seq": 883,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -16240,11 +18387,13 @@
     {
      "frame": 8727,
      "playerId": 1,
-     "seq": 794,
+     "seq": 884,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -16258,11 +18407,13 @@
     {
      "frame": 8737,
      "playerId": 1,
-     "seq": 795,
+     "seq": 885,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -16276,11 +18427,13 @@
     {
      "frame": 8747,
      "playerId": 1,
-     "seq": 796,
+     "seq": 886,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -16294,11 +18447,13 @@
     {
      "frame": 8757,
      "playerId": 1,
-     "seq": 797,
+     "seq": 887,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -16312,11 +18467,13 @@
     {
      "frame": 8767,
      "playerId": 1,
-     "seq": 798,
+     "seq": 888,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -16330,11 +18487,13 @@
     {
      "frame": 8777,
      "playerId": 1,
-     "seq": 799,
+     "seq": 889,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -16348,11 +18507,13 @@
     {
      "frame": 8787,
      "playerId": 1,
-     "seq": 800,
+     "seq": 890,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -16366,11 +18527,13 @@
     {
      "frame": 8797,
      "playerId": 1,
-     "seq": 801,
+     "seq": 891,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -16384,11 +18547,13 @@
     {
      "frame": 8807,
      "playerId": 1,
-     "seq": 802,
+     "seq": 892,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -16402,11 +18567,13 @@
     {
      "frame": 8817,
      "playerId": 1,
-     "seq": 803,
+     "seq": 893,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -16420,11 +18587,13 @@
     {
      "frame": 8827,
      "playerId": 1,
-     "seq": 804,
+     "seq": 894,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -16438,11 +18607,13 @@
     {
      "frame": 8837,
      "playerId": 1,
-     "seq": 805,
+     "seq": 895,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -16456,11 +18627,13 @@
     {
      "frame": 8847,
      "playerId": 1,
-     "seq": 806,
+     "seq": 896,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -16474,11 +18647,13 @@
     {
      "frame": 8857,
      "playerId": 1,
-     "seq": 807,
+     "seq": 897,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -16492,11 +18667,13 @@
     {
      "frame": 8867,
      "playerId": 1,
-     "seq": 808,
+     "seq": 898,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -16510,11 +18687,13 @@
     {
      "frame": 8877,
      "playerId": 1,
-     "seq": 809,
+     "seq": 899,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -16528,11 +18707,13 @@
     {
      "frame": 8887,
      "playerId": 1,
-     "seq": 810,
+     "seq": 900,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -16546,11 +18727,13 @@
     {
      "frame": 8897,
      "playerId": 1,
-     "seq": 811,
+     "seq": 901,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -16564,11 +18747,13 @@
     {
      "frame": 8907,
      "playerId": 1,
-     "seq": 812,
+     "seq": 902,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -16582,11 +18767,13 @@
     {
      "frame": 8917,
      "playerId": 1,
-     "seq": 813,
+     "seq": 903,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -16600,11 +18787,13 @@
     {
      "frame": 8927,
      "playerId": 1,
-     "seq": 814,
+     "seq": 904,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -16618,11 +18807,13 @@
     {
      "frame": 8937,
      "playerId": 1,
-     "seq": 815,
+     "seq": 905,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -16636,11 +18827,13 @@
     {
      "frame": 8947,
      "playerId": 1,
-     "seq": 816,
+     "seq": 906,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -16654,11 +18847,13 @@
     {
      "frame": 8957,
      "playerId": 1,
-     "seq": 817,
+     "seq": 907,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -16672,11 +18867,13 @@
     {
      "frame": 8967,
      "playerId": 1,
-     "seq": 818,
+     "seq": 908,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -16690,11 +18887,13 @@
     {
      "frame": 8977,
      "playerId": 1,
-     "seq": 819,
+     "seq": 909,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -16708,11 +18907,13 @@
     {
      "frame": 8987,
      "playerId": 1,
-     "seq": 820,
+     "seq": 910,
      "type": "AttackMove",
      "payload": {
       "ids": [
-       39845890
+       38797313,
+       44040193,
+       45088769
       ],
       "x": 21376,
       "y": 78720
@@ -16724,1807 +18925,1807 @@
  "hashes": [
   {
    "frame": 0,
-   "hash": 3433652946
+   "hash": 2557261887
   },
   {
    "frame": 20,
-   "hash": 3279890759
+   "hash": 1180114144
   },
   {
    "frame": 40,
-   "hash": 2623011082
+   "hash": 444693769
   },
   {
    "frame": 60,
-   "hash": 1688458182
+   "hash": 251408061
   },
   {
    "frame": 80,
-   "hash": 3738296119
+   "hash": 337888424
   },
   {
    "frame": 100,
-   "hash": 409624128
+   "hash": 2928181735
   },
   {
    "frame": 120,
-   "hash": 715622297
+   "hash": 3721631350
   },
   {
    "frame": 140,
-   "hash": 2100471343
+   "hash": 1135218216
   },
   {
    "frame": 160,
-   "hash": 2387463342
+   "hash": 2354263657
   },
   {
    "frame": 180,
-   "hash": 2394989623
+   "hash": 1842335876
   },
   {
    "frame": 200,
-   "hash": 123174624
+   "hash": 992460075
   },
   {
    "frame": 220,
-   "hash": 1742503511
+   "hash": 3957102708
   },
   {
    "frame": 240,
-   "hash": 202045626
+   "hash": 1262976973
   },
   {
    "frame": 260,
-   "hash": 3950155588
+   "hash": 3204430599
   },
   {
    "frame": 280,
-   "hash": 3092952032
+   "hash": 2583812475
   },
   {
    "frame": 300,
-   "hash": 2013328736
+   "hash": 2184362295
   },
   {
    "frame": 320,
-   "hash": 3518156740
+   "hash": 884041507
   },
   {
    "frame": 340,
-   "hash": 3470466960
+   "hash": 3859665771
   },
   {
    "frame": 360,
-   "hash": 1560921470
+   "hash": 2401159849
   },
   {
    "frame": 380,
-   "hash": 182116618
+   "hash": 3910294141
   },
   {
    "frame": 400,
-   "hash": 2826426337
+   "hash": 1501477526
   },
   {
    "frame": 420,
-   "hash": 1613776733
+   "hash": 1112025666
   },
   {
    "frame": 440,
-   "hash": 284489018
+   "hash": 888765309
   },
   {
    "frame": 460,
-   "hash": 3680306299
+   "hash": 99945836
   },
   {
    "frame": 480,
-   "hash": 3008100432
+   "hash": 2969749431
   },
   {
    "frame": 500,
-   "hash": 350734388
+   "hash": 3584566979
   },
   {
    "frame": 520,
-   "hash": 2802857639
+   "hash": 2308657996
   },
   {
    "frame": 540,
-   "hash": 410076999
+   "hash": 1900868772
   },
   {
    "frame": 560,
-   "hash": 403858570
+   "hash": 1660887725
   },
   {
    "frame": 580,
-   "hash": 689506042
+   "hash": 4147310913
   },
   {
    "frame": 600,
-   "hash": 1762186040
+   "hash": 3791632039
   },
   {
    "frame": 620,
-   "hash": 1880961177
+   "hash": 2014296754
   },
   {
    "frame": 640,
-   "hash": 1778929092
+   "hash": 1118302503
   },
   {
    "frame": 660,
-   "hash": 3767805402
+   "hash": 288658249
   },
   {
    "frame": 680,
-   "hash": 2780999519
+   "hash": 1412075004
   },
   {
    "frame": 700,
-   "hash": 3815716849
+   "hash": 579532402
   },
   {
    "frame": 720,
-   "hash": 1936623856
+   "hash": 1235407441
   },
   {
    "frame": 740,
-   "hash": 3605763708
+   "hash": 2464032085
   },
   {
    "frame": 760,
-   "hash": 2632111660
+   "hash": 4170758885
   },
   {
    "frame": 780,
-   "hash": 3490434204
+   "hash": 1174255945
   },
   {
    "frame": 800,
-   "hash": 2619862803
+   "hash": 2244675422
   },
   {
    "frame": 820,
-   "hash": 2545216316
+   "hash": 2872728605
   },
   {
    "frame": 840,
-   "hash": 4188014074
+   "hash": 2374427295
   },
   {
    "frame": 860,
-   "hash": 1784887882
+   "hash": 3692066675
   },
   {
    "frame": 880,
-   "hash": 665331609
+   "hash": 2015791476
   },
   {
    "frame": 900,
-   "hash": 676613708
+   "hash": 3461337989
   },
   {
    "frame": 920,
-   "hash": 1377428009
+   "hash": 2781324444
   },
   {
    "frame": 940,
-   "hash": 3412529603
+   "hash": 3902633046
   },
   {
    "frame": 960,
-   "hash": 1718047081
+   "hash": 3090910792
   },
   {
    "frame": 980,
-   "hash": 1540854
+   "hash": 1247183592
   },
   {
    "frame": 1000,
-   "hash": 3335566568
+   "hash": 2394013162
   },
   {
    "frame": 1020,
-   "hash": 937758547
+   "hash": 125715977
   },
   {
    "frame": 1040,
-   "hash": 2464154096
+   "hash": 1167158938
   },
   {
    "frame": 1060,
-   "hash": 780891474
+   "hash": 1287950252
   },
   {
    "frame": 1080,
-   "hash": 3902679770
+   "hash": 356615892
   },
   {
    "frame": 1100,
-   "hash": 545756579
+   "hash": 3845877885
   },
   {
    "frame": 1120,
-   "hash": 3126970856
+   "hash": 1285984946
   },
   {
    "frame": 1140,
-   "hash": 1303365324
+   "hash": 1297324518
   },
   {
    "frame": 1160,
-   "hash": 124201923
+   "hash": 1745083901
   },
   {
    "frame": 1180,
-   "hash": 2789810310
+   "hash": 3364296440
   },
   {
    "frame": 1200,
-   "hash": 863630856
+   "hash": 278059002
   },
   {
    "frame": 1220,
-   "hash": 3693031491
+   "hash": 4187978505
   },
   {
    "frame": 1240,
-   "hash": 2943157948
+   "hash": 3857606654
   },
   {
    "frame": 1260,
-   "hash": 497475642
+   "hash": 3294023656
   },
   {
    "frame": 1280,
-   "hash": 3538736040
+   "hash": 4280297210
   },
   {
    "frame": 1300,
-   "hash": 1943222261
+   "hash": 94399731
   },
   {
    "frame": 1320,
-   "hash": 2108532806
+   "hash": 3052404392
   },
   {
    "frame": 1340,
-   "hash": 857478602
+   "hash": 2064227824
   },
   {
    "frame": 1360,
-   "hash": 520628063
+   "hash": 881641941
   },
   {
    "frame": 1380,
-   "hash": 3329749507
+   "hash": 3413549517
   },
   {
    "frame": 1400,
-   "hash": 4206563608
+   "hash": 3328481450
   },
   {
    "frame": 1420,
-   "hash": 1153316742
+   "hash": 3012037876
   },
   {
    "frame": 1440,
-   "hash": 3150448388
+   "hash": 3345771218
   },
   {
    "frame": 1460,
-   "hash": 3372791258
+   "hash": 1189188692
   },
   {
    "frame": 1480,
-   "hash": 2331498022
+   "hash": 642540164
   },
   {
    "frame": 1500,
-   "hash": 1670846543
+   "hash": 3357833461
   },
   {
    "frame": 1520,
-   "hash": 664318247
+   "hash": 3700396225
   },
   {
    "frame": 1540,
-   "hash": 2641174997
+   "hash": 532932115
   },
   {
    "frame": 1560,
-   "hash": 4018047747
+   "hash": 536749165
   },
   {
    "frame": 1580,
-   "hash": 609214563
+   "hash": 848016993
   },
   {
    "frame": 1600,
-   "hash": 1295641055
+   "hash": 2914891505
   },
   {
    "frame": 1620,
-   "hash": 4114730395
+   "hash": 67750789
   },
   {
    "frame": 1640,
-   "hash": 2114409309
+   "hash": 125381983
   },
   {
    "frame": 1660,
-   "hash": 2849101073
+   "hash": 1488142455
   },
   {
    "frame": 1680,
-   "hash": 2091650048
+   "hash": 389663746
   },
   {
    "frame": 1700,
-   "hash": 149200704
+   "hash": 1515627334
   },
   {
    "frame": 1720,
-   "hash": 2309757163
+   "hash": 4167806297
   },
   {
    "frame": 1740,
-   "hash": 82236283
+   "hash": 3446707613
   },
   {
    "frame": 1760,
-   "hash": 1591973179
+   "hash": 1308310891
   },
   {
    "frame": 1780,
-   "hash": 4152277000
+   "hash": 612720276
   },
   {
    "frame": 1800,
-   "hash": 1365290115
+   "hash": 626098063
   },
   {
    "frame": 1820,
-   "hash": 1790626544
+   "hash": 101306216
   },
   {
    "frame": 1840,
-   "hash": 3332631626
+   "hash": 239558018
   },
   {
    "frame": 1860,
-   "hash": 4232117859
+   "hash": 3324253423
   },
   {
    "frame": 1880,
-   "hash": 1326489724
+   "hash": 690039976
   },
   {
    "frame": 1900,
-   "hash": 1444160005
+   "hash": 3010670573
   },
   {
    "frame": 1920,
-   "hash": 2990273173
+   "hash": 3308932957
   },
   {
    "frame": 1940,
-   "hash": 3371199223
+   "hash": 3299403887
   },
   {
    "frame": 1960,
-   "hash": 138138570
+   "hash": 331451926
   },
   {
    "frame": 1980,
-   "hash": 2488927679
+   "hash": 2573025319
   },
   {
    "frame": 2000,
-   "hash": 1211215857
+   "hash": 1955812501
   },
   {
    "frame": 2020,
-   "hash": 1145865057
+   "hash": 1181212589
   },
   {
    "frame": 2040,
-   "hash": 336876165
+   "hash": 2504822257
   },
   {
    "frame": 2060,
-   "hash": 3439021874
+   "hash": 3368137282
   },
   {
    "frame": 2080,
-   "hash": 188340678
+   "hash": 138983850
   },
   {
    "frame": 2100,
-   "hash": 3328968762
+   "hash": 716925294
   },
   {
    "frame": 2120,
-   "hash": 3368365956
+   "hash": 1787653484
   },
   {
    "frame": 2140,
-   "hash": 127185773
+   "hash": 1023484017
   },
   {
    "frame": 2160,
-   "hash": 1996653338
+   "hash": 2455622398
   },
   {
    "frame": 2180,
-   "hash": 3259194992
+   "hash": 2730321312
   },
   {
    "frame": 2200,
-   "hash": 3294678736
+   "hash": 3310342944
   },
   {
    "frame": 2220,
-   "hash": 326145794
+   "hash": 2060494722
   },
   {
    "frame": 2240,
-   "hash": 3285373359
+   "hash": 1083570495
   },
   {
    "frame": 2260,
-   "hash": 2295274166
+   "hash": 799688508
   },
   {
    "frame": 2280,
-   "hash": 987215382
+   "hash": 669521904
   },
   {
    "frame": 2300,
-   "hash": 2217899562
+   "hash": 3652647844
   },
   {
    "frame": 2320,
-   "hash": 846734374
+   "hash": 143122048
   },
   {
    "frame": 2340,
-   "hash": 666931297
+   "hash": 475294311
   },
   {
    "frame": 2360,
-   "hash": 907312067
+   "hash": 3785955113
   },
   {
    "frame": 2380,
-   "hash": 3760291589
+   "hash": 658070391
   },
   {
    "frame": 2400,
-   "hash": 3977876424
+   "hash": 995972606
   },
   {
    "frame": 2420,
-   "hash": 2010314983
+   "hash": 3709080173
   },
   {
    "frame": 2440,
-   "hash": 2268968573
+   "hash": 4143000163
   },
   {
    "frame": 2460,
-   "hash": 911074838
+   "hash": 2525929600
   },
   {
    "frame": 2480,
-   "hash": 4212132497
+   "hash": 3003013931
   },
   {
    "frame": 2500,
-   "hash": 1392367454
+   "hash": 4233405136
   },
   {
    "frame": 2520,
-   "hash": 761264345
+   "hash": 3911932927
   },
   {
    "frame": 2540,
-   "hash": 954288105
+   "hash": 3933654947
   },
   {
    "frame": 2560,
-   "hash": 34943172
+   "hash": 41710502
   },
   {
    "frame": 2580,
-   "hash": 2528964193
+   "hash": 1802494887
   },
   {
    "frame": 2600,
-   "hash": 2258353479
+   "hash": 2623511705
   },
   {
    "frame": 2620,
-   "hash": 16778867
+   "hash": 4042958965
   },
   {
    "frame": 2640,
-   "hash": 3349228272
+   "hash": 1985420786
   },
   {
    "frame": 2660,
-   "hash": 2307615520
+   "hash": 3563491574
   },
   {
    "frame": 2680,
-   "hash": 1477167307
+   "hash": 2667987093
   },
   {
    "frame": 2700,
-   "hash": 3287827801
+   "hash": 1077401739
   },
   {
    "frame": 2720,
-   "hash": 2943958913
+   "hash": 1972292143
   },
   {
    "frame": 2740,
-   "hash": 1163110008
+   "hash": 3721562898
   },
   {
    "frame": 2760,
-   "hash": 1003626050
+   "hash": 4034390698
   },
   {
    "frame": 2780,
-   "hash": 1902448533
+   "hash": 2443718109
   },
   {
    "frame": 2800,
-   "hash": 731851633
+   "hash": 2626006725
   },
   {
    "frame": 2820,
-   "hash": 1986042722
+   "hash": 3335497086
   },
   {
    "frame": 2840,
-   "hash": 1035817898
+   "hash": 3051588114
   },
   {
    "frame": 2860,
-   "hash": 1941030089
+   "hash": 1922327433
   },
   {
    "frame": 2880,
-   "hash": 2101298908
+   "hash": 1037956032
   },
   {
    "frame": 2900,
-   "hash": 2167845126
+   "hash": 1014301778
   },
   {
    "frame": 2920,
-   "hash": 469031267
+   "hash": 821292695
   },
   {
    "frame": 2940,
-   "hash": 668168006
+   "hash": 244784506
   },
   {
    "frame": 2960,
-   "hash": 4019914997
+   "hash": 2051522893
   },
   {
    "frame": 2980,
-   "hash": 1838131569
+   "hash": 3435168689
   },
   {
    "frame": 3000,
-   "hash": 379515334
+   "hash": 342179530
   },
   {
    "frame": 3020,
-   "hash": 1643476938
+   "hash": 3650189618
   },
   {
    "frame": 3040,
-   "hash": 1890470029
+   "hash": 3059264721
   },
   {
    "frame": 3060,
-   "hash": 1687742636
+   "hash": 587944260
   },
   {
    "frame": 3080,
-   "hash": 2100569128
+   "hash": 3983192652
   },
   {
    "frame": 3100,
-   "hash": 2895244078
+   "hash": 1068248190
   },
   {
    "frame": 3120,
-   "hash": 1652881946
+   "hash": 3640064406
   },
   {
    "frame": 3140,
-   "hash": 240486206
+   "hash": 2922304450
   },
   {
    "frame": 3160,
-   "hash": 3253324321
+   "hash": 2234351349
   },
   {
    "frame": 3180,
-   "hash": 752735938
+   "hash": 3963906646
   },
   {
    "frame": 3200,
-   "hash": 4177384832
+   "hash": 1403267196
   },
   {
    "frame": 3220,
-   "hash": 3122366156
+   "hash": 1414694924
   },
   {
    "frame": 3240,
-   "hash": 1241089124
+   "hash": 3702375376
   },
   {
    "frame": 3260,
-   "hash": 1956806575
+   "hash": 495620077
   },
   {
    "frame": 3280,
-   "hash": 1501683081
+   "hash": 1410435611
   },
   {
    "frame": 3300,
-   "hash": 2938574397
+   "hash": 173776295
   },
   {
    "frame": 3320,
-   "hash": 3935443412
+   "hash": 369192182
   },
   {
    "frame": 3340,
-   "hash": 1100688352
+   "hash": 1235040602
   },
   {
    "frame": 3360,
-   "hash": 3962755361
+   "hash": 896623755
   },
   {
    "frame": 3380,
-   "hash": 2781387663
+   "hash": 2731888625
   },
   {
    "frame": 3400,
-   "hash": 782489328
+   "hash": 1789352498
   },
   {
    "frame": 3420,
-   "hash": 1362202794
+   "hash": 485759256
   },
   {
    "frame": 3440,
-   "hash": 3373128104
+   "hash": 2741016150
   },
   {
    "frame": 3460,
-   "hash": 1807209526
+   "hash": 2333034272
   },
   {
    "frame": 3480,
-   "hash": 2079803384
+   "hash": 1019172862
   },
   {
    "frame": 3500,
-   "hash": 2956419902
+   "hash": 364722244
   },
   {
    "frame": 3520,
-   "hash": 4192933183
+   "hash": 3037544945
   },
   {
    "frame": 3540,
-   "hash": 3107786657
+   "hash": 4258596983
   },
   {
    "frame": 3560,
-   "hash": 2093269628
+   "hash": 506706970
   },
   {
    "frame": 3580,
-   "hash": 1466122821
+   "hash": 3396272951
   },
   {
    "frame": 3600,
-   "hash": 4250228571
+   "hash": 4025327361
   },
   {
    "frame": 3620,
-   "hash": 1626049139
+   "hash": 3555140061
   },
   {
    "frame": 3640,
-   "hash": 1698546081
+   "hash": 3543367075
   },
   {
    "frame": 3660,
-   "hash": 2809305226
+   "hash": 289778212
   },
   {
    "frame": 3680,
-   "hash": 2071405235
+   "hash": 1462542485
   },
   {
    "frame": 3700,
-   "hash": 424987796
+   "hash": 874452538
   },
   {
    "frame": 3720,
-   "hash": 4097779080
+   "hash": 159858786
   },
   {
    "frame": 3740,
-   "hash": 1806775691
+   "hash": 1636372621
   },
   {
    "frame": 3760,
-   "hash": 1974476519
+   "hash": 85416935
   },
   {
    "frame": 3780,
-   "hash": 953910753
+   "hash": 3966919769
   },
   {
    "frame": 3800,
-   "hash": 2854129427
+   "hash": 2413879359
   },
   {
    "frame": 3820,
-   "hash": 4033012148
+   "hash": 253909316
   },
   {
    "frame": 3840,
-   "hash": 1292333404
+   "hash": 2754512044
   },
   {
    "frame": 3860,
-   "hash": 690977127
+   "hash": 1372817483
   },
   {
    "frame": 3880,
-   "hash": 2066098760
+   "hash": 2853268000
   },
   {
    "frame": 3900,
-   "hash": 3765877756
+   "hash": 1696081952
   },
   {
    "frame": 3920,
-   "hash": 1263440045
+   "hash": 1980053405
   },
   {
    "frame": 3940,
-   "hash": 3658587048
+   "hash": 1638015556
   },
   {
    "frame": 3960,
-   "hash": 685013246
+   "hash": 3317021410
   },
   {
    "frame": 3980,
-   "hash": 871644236
+   "hash": 308664728
   },
   {
    "frame": 4000,
-   "hash": 1836397210
+   "hash": 3283637558
   },
   {
    "frame": 4020,
-   "hash": 826655558
+   "hash": 624086382
   },
   {
    "frame": 4040,
-   "hash": 2866589351
+   "hash": 615578663
   },
   {
    "frame": 4060,
-   "hash": 3579692618
+   "hash": 1830012494
   },
   {
    "frame": 4080,
-   "hash": 3389340130
+   "hash": 2661891986
   },
   {
    "frame": 4100,
-   "hash": 2904755036
+   "hash": 1824761312
   },
   {
    "frame": 4120,
-   "hash": 1874611078
+   "hash": 86147794
   },
   {
    "frame": 4140,
-   "hash": 3685642885
+   "hash": 4216016869
   },
   {
    "frame": 4160,
-   "hash": 782163587
+   "hash": 2678909139
   },
   {
    "frame": 4180,
-   "hash": 1217509369
+   "hash": 3730534845
   },
   {
    "frame": 4200,
-   "hash": 2943263734
+   "hash": 421524282
   },
   {
    "frame": 4220,
-   "hash": 4072901739
+   "hash": 2948143519
   },
   {
    "frame": 4240,
-   "hash": 341480415
+   "hash": 2947993371
   },
   {
    "frame": 4260,
-   "hash": 1773095375
+   "hash": 1246092111
   },
   {
    "frame": 4280,
-   "hash": 2374105591
+   "hash": 144609419
   },
   {
    "frame": 4300,
-   "hash": 2381048648
+   "hash": 4189538656
   },
   {
    "frame": 4320,
-   "hash": 500484090
+   "hash": 4126240262
   },
   {
    "frame": 4340,
-   "hash": 2281408272
+   "hash": 555558508
   },
   {
    "frame": 4360,
-   "hash": 4020747919
+   "hash": 4108980235
   },
   {
    "frame": 4380,
-   "hash": 4019100363
+   "hash": 3310759963
   },
   {
    "frame": 4400,
-   "hash": 2740748230
+   "hash": 4273726718
   },
   {
    "frame": 4420,
-   "hash": 682490587
+   "hash": 2564186543
   },
   {
    "frame": 4440,
-   "hash": 1495790029
+   "hash": 174769441
   },
   {
    "frame": 4460,
-   "hash": 1802230401
+   "hash": 3473097489
   },
   {
    "frame": 4480,
-   "hash": 2284592885
+   "hash": 3258223269
   },
   {
    "frame": 4500,
-   "hash": 268497564
+   "hash": 3241714820
   },
   {
    "frame": 4520,
-   "hash": 3083226573
+   "hash": 3203359393
   },
   {
    "frame": 4540,
-   "hash": 2406382657
+   "hash": 1203893145
   },
   {
    "frame": 4560,
-   "hash": 1562955195
+   "hash": 4074301259
   },
   {
    "frame": 4580,
-   "hash": 3289224573
+   "hash": 1566920345
   },
   {
    "frame": 4600,
-   "hash": 1498177169
+   "hash": 3169391701
   },
   {
    "frame": 4620,
-   "hash": 2827506242
+   "hash": 3701854642
   },
   {
    "frame": 4640,
-   "hash": 1234821560
+   "hash": 1389880784
   },
   {
    "frame": 4660,
-   "hash": 1635416731
+   "hash": 2770814435
   },
   {
    "frame": 4680,
-   "hash": 2536607235
+   "hash": 3241236967
   },
   {
    "frame": 4700,
-   "hash": 1814461735
+   "hash": 2659928723
   },
   {
    "frame": 4720,
-   "hash": 3250665876
+   "hash": 154780388
   },
   {
    "frame": 4740,
-   "hash": 2483772900
+   "hash": 3268334648
   },
   {
    "frame": 4760,
-   "hash": 2256531406
+   "hash": 3639646574
   },
   {
    "frame": 4780,
-   "hash": 3690618589
+   "hash": 3884044001
   },
   {
    "frame": 4800,
-   "hash": 181413852
+   "hash": 4036220572
   },
   {
    "frame": 4820,
-   "hash": 2794123596
+   "hash": 2572859564
   },
   {
    "frame": 4840,
-   "hash": 1084391228
+   "hash": 2825162348
   },
   {
    "frame": 4860,
-   "hash": 3514002351
+   "hash": 2864239459
   },
   {
    "frame": 4880,
-   "hash": 1106322587
+   "hash": 1050963563
   },
   {
    "frame": 4900,
-   "hash": 371111189
+   "hash": 1398279461
   },
   {
    "frame": 4920,
-   "hash": 792152730
+   "hash": 71328234
   },
   {
    "frame": 4940,
-   "hash": 497035467
+   "hash": 2143705655
   },
   {
    "frame": 4960,
-   "hash": 2678274223
+   "hash": 963731635
   },
   {
    "frame": 4980,
-   "hash": 2578484978
+   "hash": 2438357226
   },
   {
    "frame": 5000,
-   "hash": 4196963888
+   "hash": 2848193600
   },
   {
    "frame": 5020,
-   "hash": 2744239409
+   "hash": 2835216809
   },
   {
    "frame": 5040,
-   "hash": 251839090
+   "hash": 118753742
   },
   {
    "frame": 5060,
-   "hash": 1437683928
+   "hash": 3538848604
   },
   {
    "frame": 5080,
-   "hash": 939600757
+   "hash": 2425679365
   },
   {
    "frame": 5100,
-   "hash": 2844489570
+   "hash": 497531258
   },
   {
    "frame": 5120,
-   "hash": 1818279018
+   "hash": 7036890
   },
   {
    "frame": 5140,
-   "hash": 1180713123
+   "hash": 1528981327
   },
   {
    "frame": 5160,
-   "hash": 634396883
+   "hash": 2205059187
   },
   {
    "frame": 5180,
-   "hash": 1716687122
+   "hash": 1562900346
   },
   {
    "frame": 5200,
-   "hash": 627460400
+   "hash": 2533318488
   },
   {
    "frame": 5220,
-   "hash": 117754899
+   "hash": 1376270147
   },
   {
    "frame": 5240,
-   "hash": 376648950
+   "hash": 3948199130
   },
   {
    "frame": 5260,
-   "hash": 2239265209
+   "hash": 3131743169
   },
   {
    "frame": 5280,
-   "hash": 2705759842
+   "hash": 3388800886
   },
   {
    "frame": 5300,
-   "hash": 3541167056
+   "hash": 2778984940
   },
   {
    "frame": 5320,
-   "hash": 354334619
+   "hash": 4073651595
   },
   {
    "frame": 5340,
-   "hash": 2430674677
+   "hash": 384173781
   },
   {
    "frame": 5360,
-   "hash": 3889996612
+   "hash": 2484587812
   },
   {
    "frame": 5380,
-   "hash": 2765136271
+   "hash": 963487127
   },
   {
    "frame": 5400,
-   "hash": 3959997379
+   "hash": 2984459063
   },
   {
    "frame": 5420,
-   "hash": 577851079
+   "hash": 3495027871
   },
   {
    "frame": 5440,
-   "hash": 2487428333
+   "hash": 2596439465
   },
   {
    "frame": 5460,
-   "hash": 3481892057
+   "hash": 2338309830
   },
   {
    "frame": 5480,
-   "hash": 3842459501
+   "hash": 3869606495
   },
   {
    "frame": 5500,
-   "hash": 3201354118
+   "hash": 194164103
   },
   {
    "frame": 5520,
-   "hash": 759183952
+   "hash": 415384036
   },
   {
    "frame": 5540,
-   "hash": 1203903443
+   "hash": 2695203716
   },
   {
    "frame": 5560,
-   "hash": 1770405959
+   "hash": 1057119052
   },
   {
    "frame": 5580,
-   "hash": 1403554581
+   "hash": 464101189
   },
   {
    "frame": 5600,
-   "hash": 4131611471
+   "hash": 2276742881
   },
   {
    "frame": 5620,
-   "hash": 1446116378
+   "hash": 3233579255
   },
   {
    "frame": 5640,
-   "hash": 576416566
+   "hash": 3923823732
   },
   {
    "frame": 5660,
-   "hash": 2517718631
+   "hash": 2241696734
   },
   {
    "frame": 5680,
-   "hash": 1288221254
+   "hash": 4169763343
   },
   {
    "frame": 5700,
-   "hash": 3310337051
+   "hash": 1852209749
   },
   {
    "frame": 5720,
-   "hash": 8701865
+   "hash": 585989607
   },
   {
    "frame": 5740,
-   "hash": 451257203
+   "hash": 1081905022
   },
   {
    "frame": 5760,
-   "hash": 1253193167
+   "hash": 3917266409
   },
   {
    "frame": 5780,
-   "hash": 1652939775
+   "hash": 2179221300
   },
   {
    "frame": 5800,
-   "hash": 2941017513
+   "hash": 1078632340
   },
   {
    "frame": 5820,
-   "hash": 4000491958
+   "hash": 3511030263
   },
   {
    "frame": 5840,
-   "hash": 2294858951
+   "hash": 860556191
   },
   {
    "frame": 5860,
-   "hash": 1388177132
+   "hash": 2145831406
   },
   {
    "frame": 5880,
-   "hash": 1376510962
+   "hash": 2117747245
   },
   {
    "frame": 5900,
-   "hash": 884181776
+   "hash": 1055997527
   },
   {
    "frame": 5920,
-   "hash": 2756688913
+   "hash": 2754163931
   },
   {
    "frame": 5940,
-   "hash": 1825490678
+   "hash": 1585665016
   },
   {
    "frame": 5960,
-   "hash": 558532586
+   "hash": 3060600406
   },
   {
    "frame": 5980,
-   "hash": 140605975
+   "hash": 1029599177
   },
   {
    "frame": 6000,
-   "hash": 1387410780
+   "hash": 4034429064
   },
   {
    "frame": 6020,
-   "hash": 1540677153
+   "hash": 3032476442
   },
   {
    "frame": 6040,
-   "hash": 1748343180
+   "hash": 178492518
   },
   {
    "frame": 6060,
-   "hash": 1247321350
+   "hash": 3292680856
   },
   {
    "frame": 6080,
-   "hash": 1513710276
+   "hash": 238818443
   },
   {
    "frame": 6100,
-   "hash": 4121597368
+   "hash": 1936647490
   },
   {
    "frame": 6120,
-   "hash": 172724228
+   "hash": 1085637206
   },
   {
    "frame": 6140,
-   "hash": 2323853363
+   "hash": 2329831693
   },
   {
    "frame": 6160,
-   "hash": 2159823143
+   "hash": 823399295
   },
   {
    "frame": 6180,
-   "hash": 1001535598
+   "hash": 3265804237
   },
   {
    "frame": 6200,
-   "hash": 1267770661
+   "hash": 1688655238
   },
   {
    "frame": 6220,
-   "hash": 1454616883
+   "hash": 1225192500
   },
   {
    "frame": 6240,
-   "hash": 3883752248
+   "hash": 1944363272
   },
   {
    "frame": 6260,
-   "hash": 1215135105
+   "hash": 1031315533
   },
   {
    "frame": 6280,
-   "hash": 38140224
+   "hash": 749676387
   },
   {
    "frame": 6300,
-   "hash": 3172054201
+   "hash": 125630219
   },
   {
    "frame": 6320,
-   "hash": 3843514436
+   "hash": 3421745999
   },
   {
    "frame": 6340,
-   "hash": 546099219
+   "hash": 3736955239
   },
   {
    "frame": 6360,
-   "hash": 4010865707
+   "hash": 4122516177
   },
   {
    "frame": 6380,
-   "hash": 1864674844
+   "hash": 1198504257
   },
   {
    "frame": 6400,
-   "hash": 803279554
+   "hash": 2195467240
   },
   {
    "frame": 6420,
-   "hash": 4161421017
+   "hash": 876128087
   },
   {
    "frame": 6440,
-   "hash": 120916034
+   "hash": 1366149973
   },
   {
    "frame": 6460,
-   "hash": 3952956535
+   "hash": 2110912581
   },
   {
    "frame": 6480,
-   "hash": 419639092
+   "hash": 1149123416
   },
   {
    "frame": 6500,
-   "hash": 2176066842
+   "hash": 3415154206
   },
   {
    "frame": 6520,
-   "hash": 1715850826
+   "hash": 1300955281
   },
   {
    "frame": 6540,
-   "hash": 342826706
+   "hash": 1334061264
   },
   {
    "frame": 6560,
-   "hash": 433748225
+   "hash": 1933395733
   },
   {
    "frame": 6580,
-   "hash": 431018889
+   "hash": 652066315
   },
   {
    "frame": 6600,
-   "hash": 3447177407
+   "hash": 47673400
   },
   {
    "frame": 6620,
-   "hash": 3813289206
+   "hash": 3503157500
   },
   {
    "frame": 6640,
-   "hash": 499962081
+   "hash": 3392896165
   },
   {
    "frame": 6660,
-   "hash": 2835164281
+   "hash": 1182399121
   },
   {
    "frame": 6680,
-   "hash": 1689999153
+   "hash": 1294548213
   },
   {
    "frame": 6700,
-   "hash": 128191923
+   "hash": 2586288894
   },
   {
    "frame": 6720,
-   "hash": 3162995211
+   "hash": 4281403927
   },
   {
    "frame": 6740,
-   "hash": 1457093400
+   "hash": 1909191157
   },
   {
    "frame": 6760,
-   "hash": 2033678479
+   "hash": 46419414
   },
   {
    "frame": 6780,
-   "hash": 4041784674
+   "hash": 4122029740
   },
   {
    "frame": 6800,
-   "hash": 2618184987
+   "hash": 1687286959
   },
   {
    "frame": 6820,
-   "hash": 206621130
+   "hash": 1565650719
   },
   {
    "frame": 6840,
-   "hash": 2239203654
+   "hash": 1841225216
   },
   {
    "frame": 6860,
-   "hash": 932175243
+   "hash": 3333193687
   },
   {
    "frame": 6880,
-   "hash": 850316356
+   "hash": 1206163631
   },
   {
    "frame": 6900,
-   "hash": 4239630568
+   "hash": 195315648
   },
   {
    "frame": 6920,
-   "hash": 2732896476
+   "hash": 3773483297
   },
   {
    "frame": 6940,
-   "hash": 784475224
+   "hash": 3622020969
   },
   {
    "frame": 6960,
-   "hash": 361625747
+   "hash": 2389472801
   },
   {
    "frame": 6980,
-   "hash": 3079777175
+   "hash": 2420780012
   },
   {
    "frame": 7000,
-   "hash": 1350962433
+   "hash": 2238996869
   },
   {
    "frame": 7020,
-   "hash": 4080296070
+   "hash": 1997388929
   },
   {
    "frame": 7040,
-   "hash": 3719355368
+   "hash": 1859415170
   },
   {
    "frame": 7060,
-   "hash": 3175529330
+   "hash": 2255911984
   },
   {
    "frame": 7080,
-   "hash": 2762297024
+   "hash": 1947964722
   },
   {
    "frame": 7100,
-   "hash": 113107658
+   "hash": 2758224058
   },
   {
    "frame": 7120,
-   "hash": 2859891297
+   "hash": 3215136975
   },
   {
    "frame": 7140,
-   "hash": 4088979215
+   "hash": 4101945261
   },
   {
    "frame": 7160,
-   "hash": 296866775
+   "hash": 58915933
   },
   {
    "frame": 7180,
-   "hash": 2536626977
+   "hash": 2900279821
   },
   {
    "frame": 7200,
-   "hash": 1831426858
+   "hash": 3083613831
   },
   {
    "frame": 7220,
-   "hash": 1793062163
+   "hash": 1156701110
   },
   {
    "frame": 7240,
-   "hash": 4164034097
+   "hash": 4013781449
   },
   {
    "frame": 7260,
-   "hash": 637933791
+   "hash": 1466050779
   },
   {
    "frame": 7280,
-   "hash": 1190484263
+   "hash": 2698267552
   },
   {
    "frame": 7300,
-   "hash": 3003209390
+   "hash": 1862428713
   },
   {
    "frame": 7320,
-   "hash": 1596728044
+   "hash": 3340879031
   },
   {
    "frame": 7340,
-   "hash": 14736050
+   "hash": 1472164595
   },
   {
    "frame": 7360,
-   "hash": 3643479976
+   "hash": 3565199210
   },
   {
    "frame": 7380,
-   "hash": 4243181273
+   "hash": 3408120892
   },
   {
    "frame": 7400,
-   "hash": 1077810114
+   "hash": 2939297634
   },
   {
    "frame": 7420,
-   "hash": 3830878708
+   "hash": 2422808448
   },
   {
    "frame": 7440,
-   "hash": 3901535660
+   "hash": 1577891769
   },
   {
    "frame": 7460,
-   "hash": 1571010842
+   "hash": 2865995912
   },
   {
    "frame": 7480,
-   "hash": 4212637847
+   "hash": 241681086
   },
   {
    "frame": 7500,
-   "hash": 1497337771
+   "hash": 102353412
   },
   {
    "frame": 7520,
-   "hash": 3691310770
+   "hash": 1812744884
   },
   {
    "frame": 7540,
-   "hash": 1037664920
+   "hash": 2173869555
   },
   {
    "frame": 7560,
-   "hash": 335026695
+   "hash": 3112994144
   },
   {
    "frame": 7580,
-   "hash": 3787445086
+   "hash": 1606339478
   },
   {
    "frame": 7600,
-   "hash": 3677865453
+   "hash": 660288709
   },
   {
    "frame": 7620,
-   "hash": 69676405
+   "hash": 3832716606
   },
   {
    "frame": 7640,
-   "hash": 3961403637
+   "hash": 1345569318
   },
   {
    "frame": 7660,
-   "hash": 1061648791
+   "hash": 3638481229
   },
   {
    "frame": 7680,
-   "hash": 2443349301
+   "hash": 3530158348
   },
   {
    "frame": 7700,
-   "hash": 4073524956
+   "hash": 2021775572
   },
   {
    "frame": 7720,
-   "hash": 2056528301
+   "hash": 4064967798
   },
   {
    "frame": 7740,
-   "hash": 3452403055
+   "hash": 787548436
   },
   {
    "frame": 7760,
-   "hash": 2310799148
+   "hash": 3409307802
   },
   {
    "frame": 7780,
-   "hash": 775149791
+   "hash": 1606575017
   },
   {
    "frame": 7800,
-   "hash": 2201040779
+   "hash": 1097267681
   },
   {
    "frame": 7820,
-   "hash": 4069143879
+   "hash": 1342567144
   },
   {
    "frame": 7840,
-   "hash": 4131644415
+   "hash": 1666630409
   },
   {
    "frame": 7860,
-   "hash": 744119345
+   "hash": 85388275
   },
   {
    "frame": 7880,
-   "hash": 3161036871
+   "hash": 4128341839
   },
   {
    "frame": 7900,
-   "hash": 557214287
+   "hash": 2822773501
   },
   {
    "frame": 7920,
-   "hash": 2871160534
+   "hash": 1517841795
   },
   {
    "frame": 7940,
-   "hash": 2365969607
+   "hash": 2338466235
   },
   {
    "frame": 7960,
-   "hash": 478424248
+   "hash": 3619578626
   },
   {
    "frame": 7980,
-   "hash": 538677723
+   "hash": 3350189846
   },
   {
    "frame": 8000,
-   "hash": 2950464004
+   "hash": 1730038262
   },
   {
    "frame": 8020,
-   "hash": 1742651824
+   "hash": 2781189581
   },
   {
    "frame": 8040,
-   "hash": 847762971
+   "hash": 1476342414
   },
   {
    "frame": 8060,
-   "hash": 3871985132
+   "hash": 1250153487
   },
   {
    "frame": 8080,
-   "hash": 1755019688
+   "hash": 1592277095
   },
   {
    "frame": 8100,
-   "hash": 885750582
+   "hash": 3547973470
   },
   {
    "frame": 8120,
-   "hash": 802803194
+   "hash": 98419785
   },
   {
    "frame": 8140,
-   "hash": 1232812566
+   "hash": 3072272125
   },
   {
    "frame": 8160,
-   "hash": 2161933988
+   "hash": 2910272121
   },
   {
    "frame": 8180,
-   "hash": 3343454962
+   "hash": 960763359
   },
   {
    "frame": 8200,
-   "hash": 3863073557
+   "hash": 3678680656
   },
   {
    "frame": 8220,
-   "hash": 2812122929
+   "hash": 3753591104
   },
   {
    "frame": 8240,
-   "hash": 1070781017
+   "hash": 459548046
   },
   {
    "frame": 8260,
-   "hash": 2837239545
+   "hash": 1849109783
   },
   {
    "frame": 8280,
-   "hash": 2451983260
+   "hash": 1883943244
   },
   {
    "frame": 8300,
-   "hash": 3240132756
+   "hash": 302948010
   },
   {
    "frame": 8320,
-   "hash": 3163513343
+   "hash": 1738259240
   },
   {
    "frame": 8340,
-   "hash": 3688495666
+   "hash": 986028673
   },
   {
    "frame": 8360,
-   "hash": 3832100205
+   "hash": 2947989261
   },
   {
    "frame": 8380,
-   "hash": 206629491
+   "hash": 3576417011
   },
   {
    "frame": 8400,
-   "hash": 2679248620
+   "hash": 2655448139
   },
   {
    "frame": 8420,
-   "hash": 1744447257
+   "hash": 1923628385
   },
   {
    "frame": 8440,
-   "hash": 2222698756
+   "hash": 3352384740
   },
   {
    "frame": 8460,
-   "hash": 1177276218
+   "hash": 34674945
   },
   {
    "frame": 8480,
-   "hash": 2052312594
+   "hash": 712039752
   },
   {
    "frame": 8500,
-   "hash": 3078059382
+   "hash": 452474221
   },
   {
    "frame": 8520,
-   "hash": 1188543931
+   "hash": 2167414894
   },
   {
    "frame": 8540,
-   "hash": 448518483
+   "hash": 4063123074
   },
   {
    "frame": 8560,
-   "hash": 2782212066
+   "hash": 464276352
   },
   {
    "frame": 8580,
-   "hash": 2219329509
+   "hash": 1113204
   },
   {
    "frame": 8600,
-   "hash": 4001485022
+   "hash": 1819761403
   },
   {
    "frame": 8620,
-   "hash": 1186123104
+   "hash": 1849265605
   },
   {
    "frame": 8640,
-   "hash": 2567627715
+   "hash": 800555807
   },
   {
    "frame": 8660,
-   "hash": 3158260678
+   "hash": 833913977
   },
   {
    "frame": 8680,
-   "hash": 1373242128
+   "hash": 2926719698
   },
   {
    "frame": 8700,
-   "hash": 675847385
+   "hash": 538629701
   },
   {
    "frame": 8720,
-   "hash": 3109016853
+   "hash": 745320322
   },
   {
    "frame": 8740,
-   "hash": 186741395
+   "hash": 849065768
   },
   {
    "frame": 8760,
-   "hash": 2081173052
+   "hash": 166750586
   },
   {
    "frame": 8780,
-   "hash": 1944764741
+   "hash": 3996212291
   },
   {
    "frame": 8800,
-   "hash": 2464001379
+   "hash": 1017890232
   },
   {
    "frame": 8820,
-   "hash": 2892297254
+   "hash": 1873753722
   },
   {
    "frame": 8840,
-   "hash": 257065373
+   "hash": 4172985457
   },
   {
    "frame": 8860,
-   "hash": 2306099269
+   "hash": 1038178051
   },
   {
    "frame": 8880,
-   "hash": 1350188438
+   "hash": 2440820902
   },
   {
    "frame": 8900,
-   "hash": 2543085778
+   "hash": 3292374339
   },
   {
    "frame": 8920,
-   "hash": 3432377075
+   "hash": 3246901074
   },
   {
    "frame": 8940,
-   "hash": 3341350860
+   "hash": 1503577685
   },
   {
    "frame": 8960,
-   "hash": 3116334917
+   "hash": 4224044155
   },
   {
    "frame": 8980,
-   "hash": 2028960509
+   "hash": 1503440369
   },
   {
    "frame": 8999,
-   "hash": 717813281
+   "hash": 492710941
   }
  ]
 }

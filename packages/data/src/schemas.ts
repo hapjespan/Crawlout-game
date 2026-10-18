@@ -904,10 +904,36 @@ export const CreepTier = z
     message: 'leashRadiusM is minstens aggroRadiusM',
     path: ['leashRadiusM'],
   });
+// Camp takeover (data 0.27.0, sim 0.22.0; voorstel, ter bevestiging door de architect): per faction the camp tiers it
+// can take over instead of clearing them (Spelfundament 4, "plunderen en werven": the Raiders recruit). A camp of such
+// a tier that fights units of only that faction within its leash circle, at least `minUnits` of them, surrenders once
+// its bandits are down to `surrenderHpPct` of their summed hp: the survivors join that player as fighters, he gets the
+// tier's lootScrap and heroXp as for a clear, and the camp is his outpost. Killing the last bandit takes it over too.
+// The outpost yields one bandit of the tier (in tier order) every `yieldS` for its owner, at most `yieldMax` in all,
+// while no unit of another player stands within aggroRadiusM of the centre. A faction without an entry clears camps as
+// before.
+export const CreepTakeoverTier = z
+  .object({
+    tier: z.number().int().positive(),
+    surrenderHpPct: pct,
+    minUnits: z.number().int().positive(),
+    yieldS: nonneg,
+    yieldMax: z.number().int().nonnegative().max(255),
+    _comment: comment,
+  })
+  .strict();
+export const CreepTakeover = z
+  .object({
+    faction: id,
+    tiers: z.array(CreepTakeoverTier).min(1),
+    _comment: comment,
+  })
+  .strict();
 export const Creeps = z
   .object({
     units: z.array(CreepUnit),
     tiers: z.array(CreepTier),
+    takeover: z.array(CreepTakeover).optional(),
     _comment: comment,
   })
   .strict();
@@ -915,6 +941,7 @@ export const Creeps = z
 export type CreepUnit = z.infer<typeof CreepUnit>;
 export type CreepTier = z.infer<typeof CreepTier>;
 export type Creeps = z.infer<typeof Creeps>;
+export type CreepTakeover = z.infer<typeof CreepTakeover>;
 export type Faction = z.infer<typeof Faction>;
 export type Chem = z.infer<typeof Chem>;
 export type SlaveRules = z.infer<typeof SlaveRules>;

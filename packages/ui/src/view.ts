@@ -184,6 +184,8 @@ function SelectionPanel(props: {
       // A ghost (fog of war): what the player last saw of it, not what it is now.
       foe.lastSeen ? h('p', { class: 'co-unit-note co-last-seen' }, 'Laatst gezien') : null,
       foe.detail ? h('p', { class: 'co-unit-detail' }, foe.detail) : null,
+      // a bandit whose camp the player's faction takes over (data 0.27.0): how ("Overnemen: ...")
+      foe.note ? h('p', { class: 'co-unit-note co-takeover' }, foe.note) : null,
       h(HpBar, { pct: foe.hpPct }),
     ];
   } else if (sel.length === 1 && sel[0]) {

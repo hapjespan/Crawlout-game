@@ -62,6 +62,10 @@ Alle blokken zijn optioneel; een Dweller-record blijft geldig. Factie `raiders` 
 - **`tiers[]`**: `tier`, `naam`, `units` (`unitId` + `count`), `aggroRadiusM`, `leashRadiusM` (minstens `aggroRadiusM`), `respawnS` (0 = blijft leeg), `lootScrap`, `heroXp`, `heroXpRadiusM`.
 - **Regels**: een kamp aggroot op een spelersunit binnen `aggroRadiusM` van het midden (of als een bandiet geraakt wordt). Bandieten vechten alleen binnen `leashRadiusM`, vallen nooit gebouwen aan, en gaan met het hele kamp naar huis (en genezen) als een bandiet buiten de straal komt of er niemand meer binnen staat. De laatste dodelijke klap geeft `lootScrap` aan die speler en `heroXp` aan zijn levende held binnen `heroXpRadiusM`. Held-xp voor het nemen van een kamp: `heroes.json` `xpPerDiscovery`.
 
+## Kampovername (data 0.27.0; voorstel, ter bevestiging door de architect)
+
+`creeps.json` `takeover[]` (optioneel): per factie (`faction`) de tiers die hij overneemt in plaats van ruimt, elk met `tier`, `surrenderHpPct`, `minUnits`, `yieldS` en `yieldMax`. Een vechtend kamp geeft zich over als de units binnen `leashRadiusM` allemaal van één speler zijn (minstens `minUnits`) en de levende bandieten samen nog `surrenderHpPct` van hun hp hebben: ze sluiten zich bij die speler aan (militie, popCost 1, hun hp zoals het is), hij krijgt `lootScrap` en `heroXp` zoals bij ruimen, en het kamp is zijn buitenpost. De genadeklap op de laatste bandiet neemt het ook over, zonder rekruten. De buitenpost levert elke `yieldS` een bandiet van de tier (in tier-volgorde), hoogstens `yieldMax`, zolang er geen unit van een ander binnen `aggroRadiusM` staat. Een factie zonder regel (de Dwellers) ruimt kampen voor buit. Data 0.27.0: alleen de Raiders, en hun vechters zijn man tegen man zwakker dan die van de Dwellers (zie het `_comment` van plunderaar).
+
 ## AI-scripts (`ai/*.json`)
 
 Naast de gewone velden (bouwvolgorde, golven, onderzoek, claims) zijn er optionele blokken:

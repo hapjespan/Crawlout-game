@@ -184,7 +184,7 @@ function craftWork(ctx: SimContext, i: number): void {
   if (w.work[i]! < t.craftTicks) return;
   applyUnitType(ctx, i, t);
   w.popOrder(i);
-  // a slave retrained at its cage into a gatherer (SetRole slaaf_bouwer -> slaaf, sim 0.22.0, playtest M1) goes to
+  // a slave retrained at its cage into a gatherer (SetRole slaaf_bouwer -> slaaf, sim 0.23.0, playtest M1) goes to
   // work at once, like a new settler, instead of standing idle at the cage (autoGather: human players only)
   if (w.slaveState[i] === SLAVE_SLAVE && w.currentOrder(i) < 0) autoGather(ctx, i);
 }

@@ -255,7 +255,7 @@ interface Member {
  *
  * 0. An AttackMove onto a building of somebody else gets no formation: offset 0 for everybody, they walk at the
  *    building and fight it. Any other point that is not walkable (Move or AttackMove into an own or neutral building,
- *    water) resolves to the nearest reachable free point (sim 0.22.0, playtest H1: before, the group walked at a point
+ *    water) resolves to the nearest reachable free point (sim 0.23.0, playtest H1: before, the group walked at a point
  *    inside a footprint and stood at its edge in the walk animation for good).
  * 1. Anchor: the lattice point nearest to the clicked point (latticePoint); if that is not walkable (the edge of a
  *    building next to the point, or the point lies inside a footprint), the nearest walkable cell centre around it in

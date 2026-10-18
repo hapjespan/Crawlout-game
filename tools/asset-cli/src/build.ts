@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync
 
 /** Entries in the dist dir written by other asset commands; the asset build leaves them alone. */
 const PRESERVED_DIST_ENTRIES = new Set(['terrain']);
-import { basename, dirname, join, relative, sep } from 'node:path';
+import { basename, dirname, join, relative, resolve, sep } from 'node:path';
 import { BUDGETS } from './budgets.js';
 import { bakeAnimations } from './bake.js';
 import {
@@ -12,7 +12,7 @@ import {
   type BuildingDetails,
 } from './buildings.js';
 import { EMPTY_CLIPMAP, parseClipmap, resolveClips, type Clipmap } from './clipmap.js';
-import { conformDocument, type ConformInfo } from './conform.js';
+import { autoRigFromConfig, conformDocument, type ConformInfo } from './conform.js';
 import { buildDelivered, loadDeliveredConfig, type DeliveredDetails } from './delivered.js';
 import { animationIndex, findSockets, maxBoneCount } from './inspect.js';
 import { buildLods, createIO, lodMaxTris } from './lods.js';
@@ -98,6 +98,8 @@ export interface AssetDetails {
   teamMask?: ConformInfo['teamMask'];
   /** Primitives die geen normalen hadden en gladde normalen kregen. */
   normalsComputed?: number;
+  /** Auto-rigged from a static mesh (src/autorig.ts). */
+  autoRig?: ConformInfo['autoRig'];
 }
 
 export interface BuildResult {
@@ -223,14 +225,23 @@ export async function buildAssets(options: BuildOptions): Promise<BuildResult> {
     palette?: BodyPalette;
   }[] = [];
 
-  for (const file of files) {
+  // Auto-rig entries name their own source (a static mesh, for example under delivered/); the key is the source id.
+  const sources = [
+    ...files.map((file) => ({ file, sourceId: toId(file) })),
+    ...Object.entries(rigmap.assets)
+      .filter(([, entry]) => entry.autoRig)
+      .map(([key, entry]) => ({
+        file: resolve(dirname(rigmapSource), entry.autoRig!.from),
+        sourceId: key,
+      })),
+  ];
+  for (const { file, sourceId } of sources) {
     const source = relative(srcDir, file).split(sep).join('/');
-    if (options.onlyConfigured && !rigmap.assets[toId(file)]) {
+    if (options.onlyConfigured && !rigmap.assets[sourceId]) {
       notices.push(`${source} overgeslagen: geen entry in ${basename(rigmapSource)}.`);
       continue;
     }
     // Rigmap en clipmap gebruiken de bestandsnaam-id; `id` in de rigmap publiceert onder een andere id.
-    const sourceId = toId(file);
     const id = rigmap.assets[sourceId]?.id ?? sourceId;
     const report: AssetReport = { id, source, errors: [], warnings: [] };
     reports.push(report);
@@ -243,7 +254,12 @@ export async function buildAssets(options: BuildOptions): Promise<BuildResult> {
     }
     seen.set(id, source);
     try {
-      const document = await io.readBinary(new Uint8Array(readFileSync(file)));
+      let document = await io.readBinary(new Uint8Array(readFileSync(file)));
+      const autoRigConfig = rigmap.assets[sourceId]?.autoRig;
+      const rigged = autoRigConfig
+        ? await autoRigFromConfig(document, autoRigConfig, dirname(rigmapSource))
+        : null;
+      if (rigged) document = rigged.document;
       const sourceBones = maxBoneCount(document);
       const conform = await conformDocument(document, {
         assetId: sourceId,
@@ -251,6 +267,7 @@ export async function buildAssets(options: BuildOptions): Promise<BuildResult> {
         clipmap,
         configDir: dirname(rigmapSource),
       });
+      if (rigged) conform.autoRig = rigged.info;
       const result = validateAsset(document, { clipmap, assetId: sourceId });
       report.errors.push(...result.errors);
       report.warnings.push(...result.warnings);
@@ -524,6 +541,7 @@ export async function buildAssets(options: BuildOptions): Promise<BuildResult> {
       ...(asset.conform.atlas ? { atlas: asset.conform.atlas } : {}),
       ...(asset.conform.teamMask ? { teamMask: asset.conform.teamMask } : {}),
       ...(asset.conform.normalsComputed ? { normalsComputed: asset.conform.normalsComputed } : {}),
+      ...(asset.conform.autoRig ? { autoRig: asset.conform.autoRig } : {}),
     };
     entries.push({
       id: asset.id,

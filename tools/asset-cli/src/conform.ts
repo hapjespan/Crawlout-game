@@ -11,8 +11,9 @@ import { extractMeshes, fitCharacter, mergeSkinnedPrimitives, type FitInfo } fro
 import { countTriangles, hasSkin } from './inspect.js';
 import { createIO, simplifyToTarget } from './lods.js';
 import { ensureSmoothNormals } from './normals.js';
+import { autoRig, type AutoRigInfo } from './autorig.js';
 import { retargetClips, type RetargetInfo } from './retarget.js';
-import { parseRigmap, type Rigmap } from './rigmap.js';
+import { parseRigmap, type AssetConform, type Rigmap } from './rigmap.js';
 import {
   applyTeamMaskAlpha,
   buildAtlas,
@@ -41,6 +42,8 @@ export interface ConformInfo {
   teamMask?: TeamMaskInfo;
   /** Primitives die geen normalen hadden en gladde normalen kregen. */
   normalsComputed?: number;
+  /** Auto-rigged from a static mesh (`autoRig`, src/autorig.ts). */
+  autoRig?: AutoRigInfo & { from: string; skeleton: string };
 }
 
 /** Bakt een uniforme schaal in de vertices van een statische asset; de nodes komen op de identiteit onder de scene. */
@@ -150,6 +153,29 @@ export async function loadRetargetSource(
       `retarget-bron ${basename(from)}: geen clips gekoppeld via ${basename(clipmapPath)}`,
     );
   return document;
+}
+
+/**
+ * Auto-rigs a static source (rigmap `autoRig`): the skeleton GLB is conformed with its own rigmap and clipmap, then
+ * becomes the result with the source mesh skinned onto it (src/autorig.ts). Paths are relative to `configDir`.
+ */
+export async function autoRigFromConfig(
+  source: Document,
+  config: NonNullable<AssetConform['autoRig']>,
+  configDir: string,
+): Promise<{ document: Document; info: NonNullable<ConformInfo['autoRig']> }> {
+  const document = await loadRetargetSource(
+    resolve(configDir, config.skeleton),
+    resolve(configDir, config.rigmap),
+    resolve(configDir, config.clipmap),
+  );
+  const info = await autoRig(source, document, {
+    height: config.height,
+    yawDegrees: config.yawDegrees,
+    heat: config.heat,
+    attachRadius: config.attachRadius,
+  });
+  return { document, info: { from: config.from, skeleton: config.skeleton, ...info } };
 }
 
 export async function conformDocument(

@@ -110,5 +110,29 @@
       "heroXpRadiusM": 25,
       "_comment": "High camp (the two camps next to the roads to the land bridge of Rustbelt): ten units clear it with heavy losses, eleven with about half, nine fail (creeps.test.ts). aggroRadiusM 4 m: the road from each base to the centre passes 4 to 8 m from it, and at 5 or 6 m it killed every lone unit walking to the centre (the Slavers of fixture s10-rustbelt-raiders-slaves, the militia of s6-rustbelt-dominance); once awake it fights everyone within its leash, the road included."
     }
+  ],
+  "takeover": [
+    {
+      "faction": "raiders",
+      "tiers": [
+        {
+          "tier": 1,
+          "surrenderHpPct": 30,
+          "minUnits": 3,
+          "yieldS": 240,
+          "yieldMax": 2,
+          "_comment": "Low camp (data 0.27.0; voorstel, ter bevestiging door content en de architect): it surrenders at 30 percent of its hp to at least 3 Raider units. The Warlord with the four start fighters (3 plunderaar, 1 knuppelaar) takes it in the first minute and keeps one or two bandits; the Warlord with 3 plunderaar fails (packages/sim/test/takeover.test.ts). The outpost yields a bandit every 240 s, two in all. Measured AI against AI (tools/replay raiders-report, 66 matches per seed set): at 25 percent the Raiders won 18 percent, at 30 44 and 42; with one yield instead of two 35 and 32, with two every 120 s 53 and 61."
+        },
+        {
+          "tier": 2,
+          "surrenderHpPct": 25,
+          "minUnits": 6,
+          "yieldS": 0,
+          "yieldMax": 0,
+          "_comment": "High camp (data 0.27.0; voorstel): it surrenders at 25 percent to at least 6 Raider units: with Warlord and twelve plunderaar it falls, with eight not (takeover.test.ts); a mid-game target (the Raider AI goes with 18 free fighters). No yield: its boss and bruisers as recruits are enough; with a yield (one bandit every 150 s) the Raiders won 53 to 68 percent."
+        }
+      ],
+      "_comment": "Camp takeover (data 0.27.0, sim 0.22.0; voorstel, ter bevestiging door de architect). Martien, 18 oktober: \"raiders moeten wel vanaf het begin een camp over kunnen nemen\". Per faction the camp tiers it takes over instead of clearing them (Spelfundament 4: plunderen en werven). A fighting camp surrenders when the units within its leash circle are all of one player (at least minUnits), his faction has a rule for the tier, and the living bandits are down to surrenderHpPct of their summed hp: they join that player as fighters (hp as they are), he gets lootScrap and heroXp as for a clear, and the camp is his outpost. The killing blow on the last bandit takes it over too, without recruits. The outpost yields one bandit of the tier (in tier order) every yieldS for its owner, at most yieldMax in all, while no unit of another player stands within aggroRadiusM of the centre and he is below popCapMax. The Dwellers have no rule: they clear camps for loot as before. A recruit is a militia unit of popCost 1 (it needs a bed like a fighter from a tent)."
+    }
   ]
 }
