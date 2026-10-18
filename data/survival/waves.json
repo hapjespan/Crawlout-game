@@ -1,0 +1,433 @@
+{
+  "_comment": "Data 0.33.0 (Survival co-op; voorstel, ter bevestiging door de architect; docs/survival-coop.md). Alle waarden startwaarde, niet gemeten: de sim-ronde meet en stelt bij. Tijdlijn: golf 1 op 120 s (opbouwen), daarna elke 115 s; golf 15 start op 1730 s (28,8 min) en de Behemoth leeft tot ongeveer 32 tot 35 min. Aantallen in `spawns` gelden voor 1 speler; `scaling` schaalt ze.",
+  "players": {
+    "min": 1,
+    "max": 4
+  },
+  "edges": [
+    {
+      "id": "noord",
+      "xPct": 50,
+      "yPct": 3,
+      "spreadM": 24
+    },
+    {
+      "id": "oost",
+      "xPct": 97,
+      "yPct": 50,
+      "spreadM": 24
+    },
+    {
+      "id": "zuid",
+      "xPct": 50,
+      "yPct": 97,
+      "spreadM": 24
+    },
+    {
+      "id": "west",
+      "xPct": 3,
+      "yPct": 50,
+      "spreadM": 24
+    }
+  ],
+  "buildZones": [
+    {
+      "slot": 0,
+      "hqXPct": 25,
+      "hqYPct": 25,
+      "radiusM": 45,
+      "nearEdge": "noord"
+    },
+    {
+      "slot": 1,
+      "hqXPct": 75,
+      "hqYPct": 25,
+      "radiusM": 45,
+      "nearEdge": "oost"
+    },
+    {
+      "slot": 2,
+      "hqXPct": 75,
+      "hqYPct": 75,
+      "radiusM": 45,
+      "nearEdge": "zuid"
+    },
+    {
+      "slot": 3,
+      "hqXPct": 25,
+      "hqYPct": 75,
+      "radiusM": 45,
+      "nearEdge": "west"
+    }
+  ],
+  "buildZoneRule": "Een speler mag (behalve claimposten) alleen bouwen binnen radiusM van het middelpunt van zijn eigen zone (HQ-plek); kaart en claimpunten zijn gedeeld. Bij n spelers bestaan de zones met slot 0 tot n-1.",
+  "scaling": [
+    {
+      "players": 1,
+      "countPct": 100,
+      "hpPct": 100,
+      "damagePct": 100
+    },
+    {
+      "players": 2,
+      "countPct": 170,
+      "hpPct": 110,
+      "damagePct": 100
+    },
+    {
+      "players": 3,
+      "countPct": 240,
+      "hpPct": 120,
+      "damagePct": 105
+    },
+    {
+      "players": 4,
+      "countPct": 300,
+      "hpPct": 130,
+      "damagePct": 110
+    }
+  ],
+  "scalingRule": "count = ceil(count * countPct / 100) per eenheidssoort; elke vijand krijgt hp en damage met hpPct en damagePct. Miniboss en boss (rank) blijven altijd 1 stuk; alleen hp en damage schalen mee.",
+  "targetRule": {
+    "kind": "weakest_player",
+    "unitScrapPct": 100,
+    "turretScrapPct": 100,
+    "heroScrap": 300,
+    "tieBreak": ["lowestHqHpPct", "lowestSlot"],
+    "_comment": "Zwakste speler, precies: bij de start van elke golf (en opnieuw zodra het doel zijn HQ verliest) krijgt elke levende speler p met een HQ de score S(p) = unitScrapPct/100 * som(scrapCost van zijn levende eigen vechters en robots, geen bouwers of slaven) + turretScrapPct/100 * som(scrapCost van zijn voltooide turrets) + heroScrap als zijn held leeft. Wie het laagst scoort is het doel van de hele golf; gelijk: laagste hp-percentage van het HQ, dan laagste slot. Spelers zonder HQ doen niet mee. Alleen spelen: altijd jezelf."
+  },
+  "waveRule": "Een golf spawnt `batches` groepen om de `batchIntervalS` s; de eenheden verdelen zich gelijk over `edges` randen (rest naar de eerste), te beginnen met de rand het dichtst bij de zone van het doel (zijn nearEdge) en dan met de klok mee; elke eenheid staat binnen spreadM van het randpunt. Eenheden lopen aanvalsgericht naar het HQ van het doel en vallen onderweg alles aan wat ze blokkeert of raakt (units en gebouwen). De volgende golf komt op zijn atS, ongeacht of de vorige dood is.",
+  "win": {
+    "surviveWave": 15,
+    "requireAllWaveUnitsDead": true,
+    "_comment": "Winst: golf 15 is gespawnd en de Behemoth plus alle andere vijanden van golf 15 zijn dood terwijl minstens een HQ nog staat."
+  },
+  "loss": {
+    "kind": "allHqsDestroyed",
+    "_comment": "Verlies zodra elk HQ van elke speler vernietigd is; tot dan loopt de run door, ook als een speler zijn HQ kwijt is (die kijkt mee)."
+  },
+  "waves": [
+    {
+      "wave": 1,
+      "atS": 120,
+      "naam": "Eerste bloed",
+      "spawns": [
+        {
+          "unit": "survival_ghoul",
+          "count": 8
+        }
+      ],
+      "edges": 1,
+      "batches": 2,
+      "batchIntervalS": 6
+    },
+    {
+      "wave": 2,
+      "atS": 235,
+      "naam": "Zwerm",
+      "spawns": [
+        {
+          "unit": "survival_ghoul",
+          "count": 12
+        }
+      ],
+      "edges": 1,
+      "batches": 2,
+      "batchIntervalS": 6
+    },
+    {
+      "wave": 3,
+      "atS": 350,
+      "naam": "Sprinters",
+      "spawns": [
+        {
+          "unit": "survival_ghoul",
+          "count": 10
+        },
+        {
+          "unit": "survival_ghoul_runner",
+          "count": 4
+        }
+      ],
+      "edges": 1,
+      "batches": 2,
+      "batchIntervalS": 6
+    },
+    {
+      "wave": 4,
+      "atS": 465,
+      "naam": "Tweede kant",
+      "spawns": [
+        {
+          "unit": "survival_ghoul",
+          "count": 14
+        },
+        {
+          "unit": "survival_ghoul_runner",
+          "count": 6
+        }
+      ],
+      "edges": 2,
+      "batches": 3,
+      "batchIntervalS": 6
+    },
+    {
+      "wave": 5,
+      "atS": 580,
+      "naam": "De eerste mutant",
+      "spawns": [
+        {
+          "unit": "survival_ghoul",
+          "count": 10
+        },
+        {
+          "unit": "survival_mutant",
+          "count": 2
+        }
+      ],
+      "edges": 2,
+      "batches": 3,
+      "batchIntervalS": 8
+    },
+    {
+      "wave": 6,
+      "atS": 695,
+      "naam": "Vloed",
+      "spawns": [
+        {
+          "unit": "survival_ghoul",
+          "count": 16
+        },
+        {
+          "unit": "survival_ghoul_runner",
+          "count": 8
+        },
+        {
+          "unit": "survival_mutant",
+          "count": 3
+        }
+      ],
+      "edges": 2,
+      "batches": 3,
+      "batchIntervalS": 8
+    },
+    {
+      "wave": 7,
+      "atS": 810,
+      "naam": "Voor de storm",
+      "spawns": [
+        {
+          "unit": "survival_ghoul",
+          "count": 12
+        },
+        {
+          "unit": "survival_ghoul_runner",
+          "count": 10
+        },
+        {
+          "unit": "survival_mutant",
+          "count": 4
+        }
+      ],
+      "edges": 2,
+      "batches": 3,
+      "batchIntervalS": 8
+    },
+    {
+      "wave": 8,
+      "atS": 925,
+      "naam": "Klauwbeest",
+      "spawns": [
+        {
+          "unit": "survival_klauwbeest",
+          "count": 1
+        },
+        {
+          "unit": "survival_ghoul",
+          "count": 10
+        },
+        {
+          "unit": "survival_ghoul_runner",
+          "count": 6
+        }
+      ],
+      "edges": 2,
+      "batches": 2,
+      "batchIntervalS": 10
+    },
+    {
+      "wave": 9,
+      "atS": 1040,
+      "naam": "Mutantenjacht",
+      "spawns": [
+        {
+          "unit": "survival_ghoul",
+          "count": 20
+        },
+        {
+          "unit": "survival_mutant",
+          "count": 6
+        }
+      ],
+      "edges": 2,
+      "batches": 3,
+      "batchIntervalS": 8
+    },
+    {
+      "wave": 10,
+      "atS": 1155,
+      "naam": "Brutes",
+      "spawns": [
+        {
+          "unit": "survival_ghoul",
+          "count": 16
+        },
+        {
+          "unit": "survival_ghoul_runner",
+          "count": 10
+        },
+        {
+          "unit": "survival_mutant",
+          "count": 6
+        },
+        {
+          "unit": "survival_mutant_brute",
+          "count": 2
+        }
+      ],
+      "edges": 3,
+      "batches": 3,
+      "batchIntervalS": 8
+    },
+    {
+      "wave": 11,
+      "atS": 1270,
+      "naam": "Beleg",
+      "spawns": [
+        {
+          "unit": "survival_ghoul",
+          "count": 20
+        },
+        {
+          "unit": "survival_mutant",
+          "count": 8
+        },
+        {
+          "unit": "survival_mutant_brute",
+          "count": 3
+        }
+      ],
+      "edges": 3,
+      "batches": 3,
+      "batchIntervalS": 8
+    },
+    {
+      "wave": 12,
+      "atS": 1385,
+      "naam": "Rondom",
+      "spawns": [
+        {
+          "unit": "survival_ghoul",
+          "count": 24
+        },
+        {
+          "unit": "survival_ghoul_runner",
+          "count": 12
+        },
+        {
+          "unit": "survival_mutant",
+          "count": 10
+        },
+        {
+          "unit": "survival_mutant_brute",
+          "count": 4
+        }
+      ],
+      "edges": 3,
+      "batches": 4,
+      "batchIntervalS": 8
+    },
+    {
+      "wave": 13,
+      "atS": 1500,
+      "naam": "Muur van vlees",
+      "spawns": [
+        {
+          "unit": "survival_ghoul",
+          "count": 30
+        },
+        {
+          "unit": "survival_ghoul_runner",
+          "count": 14
+        },
+        {
+          "unit": "survival_mutant",
+          "count": 12
+        },
+        {
+          "unit": "survival_mutant_brute",
+          "count": 5
+        }
+      ],
+      "edges": 3,
+      "batches": 4,
+      "batchIntervalS": 8
+    },
+    {
+      "wave": 14,
+      "atS": 1615,
+      "naam": "Laatste adem",
+      "spawns": [
+        {
+          "unit": "survival_ghoul",
+          "count": 36
+        },
+        {
+          "unit": "survival_ghoul_runner",
+          "count": 16
+        },
+        {
+          "unit": "survival_mutant",
+          "count": 14
+        },
+        {
+          "unit": "survival_mutant_brute",
+          "count": 6
+        }
+      ],
+      "edges": 4,
+      "batches": 4,
+      "batchIntervalS": 8
+    },
+    {
+      "wave": 15,
+      "atS": 1730,
+      "naam": "Behemoth",
+      "spawns": [
+        {
+          "unit": "survival_behemoth",
+          "count": 1
+        },
+        {
+          "unit": "survival_ghoul",
+          "count": 30
+        },
+        {
+          "unit": "survival_ghoul_runner",
+          "count": 14
+        },
+        {
+          "unit": "survival_mutant",
+          "count": 12
+        },
+        {
+          "unit": "survival_mutant_brute",
+          "count": 6
+        }
+      ],
+      "edges": 3,
+      "batches": 4,
+      "batchIntervalS": 8
+    }
+  ]
+}

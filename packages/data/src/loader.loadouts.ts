@@ -9,7 +9,7 @@ import {
   type RawGameData,
 } from './loader.types.js';
 import { NEUTRAL_FACTION_ID, type CreepsData } from './loader.types.game.js';
-import { Creeps } from './schemas.js';
+import { Creeps, type CreepUnit, type SimTuning } from './schemas.js';
 import {
   metersToUnits,
   mpsToUnitsPerTick,
@@ -100,6 +100,40 @@ export function convertLoadouts(ctx: LoadContext): LoadoutData[] {
   return loadouts;
 }
 
+/** The neutral (factionless, militia, free) loadout of a creep or survival unit; `id` is its numeric loadout id. */
+export function neutralLoadout(u: CreepUnit, id: number, simRaw: SimTuning): LoadoutData {
+  return {
+    id,
+    key: u.id,
+    factionId: NEUTRAL_FACTION_ID,
+    bodyType: idx(BODY_TYPES, u.bodyType),
+    role: idx(ROLES, 'militia'),
+    weapon: u.weapon,
+    armorType: idx(ARMOR_TYPES, u.armorType),
+    damageType: idx(DAMAGE_TYPES, u.damageType),
+    hpI: Math.trunc(u.hp),
+    damage: Math.trunc(u.damage),
+    rangeU: metersToUnits(u.rangeM),
+    speedUPT: mpsToUnitsPerTick(u.speedMps),
+    cooldownTicks: secondsToTicks(u.cooldownS),
+    scrapCost: 0,
+    craftTicks: 0,
+    gatherAmount: 0,
+    gatherTicks: 0,
+    popCost: 1,
+    prereqTech: [],
+    visuals: { meshSlots: { ...u.visuals.meshSlots } },
+    producedAt: -1,
+    repair: null,
+    siege: null,
+    slave: false,
+    capture: null,
+    aura: null,
+    sightU: metersToUnits(u.sightM ?? simRaw.vision.unitSightM),
+    canBuild: false,
+  };
+}
+
 /** Stage 4: creep camps; appends the bandit loadouts to `loadouts` (after the faction loadouts). */
 export function convertCreeps(
   ctx: LoadContext,
@@ -119,38 +153,7 @@ export function convertCreeps(
       throw new Error(`data/creeps.json: dubbele id '${u.id}'`);
     creepIx.set(u.id, loadoutsRaw.length + k);
   });
-  for (const u of creepsRaw.units) {
-    loadouts.push({
-      id: creepIx.get(u.id)!,
-      key: u.id,
-      factionId: NEUTRAL_FACTION_ID,
-      bodyType: idx(BODY_TYPES, u.bodyType),
-      role: idx(ROLES, 'militia'),
-      weapon: u.weapon,
-      armorType: idx(ARMOR_TYPES, u.armorType),
-      damageType: idx(DAMAGE_TYPES, u.damageType),
-      hpI: Math.trunc(u.hp),
-      damage: Math.trunc(u.damage),
-      rangeU: metersToUnits(u.rangeM),
-      speedUPT: mpsToUnitsPerTick(u.speedMps),
-      cooldownTicks: secondsToTicks(u.cooldownS),
-      scrapCost: 0,
-      craftTicks: 0,
-      gatherAmount: 0,
-      gatherTicks: 0,
-      popCost: 1,
-      prereqTech: [],
-      visuals: { meshSlots: { ...u.visuals.meshSlots } },
-      producedAt: -1,
-      repair: null,
-      siege: null,
-      slave: false,
-      capture: null,
-      aura: null,
-      sightU: metersToUnits(u.sightM ?? simRaw.vision.unitSightM),
-      canBuild: false,
-    });
-  }
+  for (const u of creepsRaw.units) loadouts.push(neutralLoadout(u, creepIx.get(u.id)!, simRaw));
   const tierSeen = new Set<number>();
   const creeps: CreepsData = {
     units: creepsRaw.units.map((u) => creepIx.get(u.id)!),

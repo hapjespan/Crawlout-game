@@ -9,6 +9,7 @@ import { convertCreeps, convertLoadouts } from './loader.loadouts.js';
 import { convertBuildings, convertProject } from './loader.buildings.js';
 import { convertHeroes, convertPerks, convertTech, convertTraining } from './loader.progression.js';
 import { convertAiScripts } from './loader.ai.js';
+import { convertSurvival } from './loader.survival.js';
 
 // De loader: PUUR. Geen fs, geen IO, geen klok. Krijgt geparste JSON, valideert met de zod-schema's,
 // rekent om naar sim-eenheden (integers) en geeft numerieke ids terug (index op gesorteerde string-id).
@@ -70,6 +71,7 @@ export type {
   FormationTuningData,
   GameData,
 } from './loader.types.game.js';
+export type { RawSurvival, SurvivalData, SurvivalWaveData } from './loader.survival.js';
 export { convertDelta, convertDominance, cumulate, type DominanceData } from './loader.util.js';
 
 /**
@@ -83,6 +85,7 @@ export function loadGameData(raw: RawGameData): GameData {
   const factions = convertFactions(ctx);
   const loadouts = convertLoadouts(ctx);
   const creeps = convertCreeps(ctx, raw, loadouts);
+  const survival = convertSurvival(ctx, raw, loadouts);
   const buildings = convertBuildings(ctx);
   const project = convertProject(ctx, raw, buildings);
   const tech = convertTech(ctx);
@@ -109,6 +112,7 @@ export function loadGameData(raw: RawGameData): GameData {
     training,
     aiScripts,
     creeps,
+    survival,
     project,
     damageMatrix,
     sim: convertSimTuning(simRaw),

@@ -36,8 +36,9 @@ describe('data/ valideert', () => {
     // totalen met de Raiders; de sim kent hoogstens 32 techs en 32 perks
     // 25 faction loadouts (data 0.26.0: the bouwrobot) plus the 5 bandits of the creep camps (data 0.25.0; 0.29.0: the
     // two weak ones of the low camp)
-    expect(data.loadouts).toHaveLength(30);
-    expect(data.loadouts.filter((l) => l.factionId === NEUTRAL_FACTION_ID)).toHaveLength(5);
+    // data 0.33.0: plus the 6 hostile units of survival (data/survival/units.json)
+    expect(data.loadouts).toHaveLength(36);
+    expect(data.loadouts.filter((l) => l.factionId === NEUTRAL_FACTION_ID)).toHaveLength(11);
     // 18 faction buildings plus (data 0.31.0, win route C) a restored and a ruin type per part of the strip mall
     expect(data.buildings).toHaveLength(18 + 2 * 4);
     expect(data.buildings.filter((b) => b.factionId === NEUTRAL_FACTION_ID)).toHaveLength(8);

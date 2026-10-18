@@ -61,3 +61,14 @@ export {
   ProjectPart,
   Project,
 } from './schemas.part4.js';
+export {
+  SURVIVAL_RANKS,
+  SurvivalUnit,
+  SurvivalUnits,
+  SurvivalEdge,
+  SurvivalBuildZone,
+  SurvivalScaling,
+  SurvivalTargetRule,
+  SurvivalWave,
+  Survival,
+} from './schemas.part5.js';

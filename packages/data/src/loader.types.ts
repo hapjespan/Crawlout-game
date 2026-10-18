@@ -35,6 +35,8 @@ export interface RawGameData {
   creeps?: unknown;
   /** Contents of data/project.json (data 0.31.0, win route C); absent = no Bouwproject. */
   project?: unknown;
+  /** Contents of data/survival/units.json and waves.json (data 0.33.0, Survival co-op); absent = no survival mode. */
+  survival?: { units: unknown; waves: unknown };
 }
 
 // Vaste volgorde van de enums: de index is de numerieke waarde in GameData.

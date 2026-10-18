@@ -20,7 +20,9 @@ describe('data/creeps.json', () => {
     };
 
   it('appends the bandits after the faction loadouts, neutral, as militia without cost', () => {
-    const bandits = data.loadouts.filter((l) => l.factionId === NEUTRAL_FACTION_ID);
+    const bandits = data.loadouts.filter(
+      (l) => l.factionId === NEUTRAL_FACTION_ID && !l.key.startsWith('survival_'),
+    );
     expect(bandits.map((l) => l.key)).toEqual([
       'bandiet_dief',
       'bandiet_vechtjas',
@@ -28,7 +30,7 @@ describe('data/creeps.json', () => {
       'bandiet_knokker',
       'bandiet_baas',
     ]);
-    const first = data.loadouts.length - bandits.length;
+    const first = data.loadouts.findIndex((l) => l.key === bandits[0]!.key);
     bandits.forEach((l, k) => {
       expect(l.id).toBe(first + k);
       expect(l.role).toBe(ROLES.indexOf('militia'));
@@ -119,6 +121,7 @@ describe('data/creeps.json', () => {
   it('without the file there are no camps and no bandits', () => {
     const r = raw();
     delete r.creeps;
+    delete r.survival;
     const d = loadGameData(r);
     expect(d.creeps).toEqual({ units: [], names: [], tiers: [], takeover: [] });
     expect(d.loadouts.some((l) => l.factionId === NEUTRAL_FACTION_ID)).toBe(false);

@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { loadGameData, type GameData, type RawGameData } from './loader.js';
 
@@ -41,6 +41,14 @@ export function readDataDir(dir: string): RawGameData {
     ai: aiFiles.map((name) => readJson(join(aiDir, name))),
     creeps: readJson(join(dir, 'creeps.json')),
     project: readJson(join(dir, 'project.json')),
+    ...(existsSync(join(dir, 'survival'))
+      ? {
+          survival: {
+            units: readJson(join(dir, 'survival', 'units.json')),
+            waves: readJson(join(dir, 'survival', 'waves.json')),
+          },
+        }
+      : {}),
   };
 }
 

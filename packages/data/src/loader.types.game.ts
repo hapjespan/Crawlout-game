@@ -1,4 +1,5 @@
 import { AiSite, type EffectStat } from './schemas.js';
+import type { SurvivalData } from './loader.survival.js';
 import type {
   BuildingData,
   EffectData,
@@ -363,6 +364,8 @@ export interface GameData {
   aiScripts: AiScriptData[];
   /** Creep camps (data/creeps.json, data 0.25.0); empty without the file. */
   creeps: CreepsData;
+  /** Survival co-op (data 0.33.0; voorstel, ter bevestiging door de architect); null without data/survival. */
+  survival: SurvivalData | null;
   /**
    * Win route C, Bouwproject (data/project.json, data 0.31.0); no parts without the file. The part buildings are in
    * `buildings` after the faction buildings (factionId NEUTRAL_FACTION_ID).
