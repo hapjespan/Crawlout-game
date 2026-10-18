@@ -47,7 +47,7 @@ describe('Raiders: de factie laadt', () => {
     );
     expect(faction.robotRules).toBeNull();
     expect(faction.housingGrowthPerMin).toBe(0);
-    expect(data.dataVersion).toBe('0.26.0'); // data 0.25.0: the creep camps (0.24.0: Raider balance)
+    expect(data.dataVersion).toBe('0.27.0'); // data 0.27.0: the Raider garrison (0.26.0: the bouwrobot)
     // Dwellers ongewijzigd: nog altijd training en geen Raider-blokken
     expect(dwellers.specialChannel).toBe('training');
     expect(dwellers.slaves).toBeNull();
@@ -660,8 +660,11 @@ describe('Raiders: AI-script', () => {
   it('houdt een garnizoen thuis (anders opstand): minstens het benodigde minimum van de slavenregels', () => {
     const revolt = raiders.slaves!.revolt;
     expect(ai.raidPlan!.garrison.minFighters).toBeGreaterThanOrEqual(revolt.minGuards);
-    // de eerste golf is groter dan het garnizoen: er is iets om heen te sturen
-    expect(ai.waveMinArmy).toBeGreaterThan(ai.raidPlan!.garrison.minFighters);
+    // data 0.27.0 (sim 0.22.0, gemeten): het garnizoen is groter dan de eerste golf (14 thuis, de golven gaan met wat
+    // erboven staat); garnizoen plus golf passen samen binnen popCapMax, dus er is iets om heen te sturen
+    expect(ai.raidPlan!.garrison.minFighters + ai.waveMinArmy).toBeLessThanOrEqual(
+      data.sim.popCapMax,
+    );
     // de bouwvolgorde begint met twee tenten en een Kooi (bedden voor de vroege push, dan slavenopslag; data 0.23.0),
     // in tijdsvolgorde
     const keys = ai.buildOrder.map((o) => data.buildings[o.buildingId]!.key);

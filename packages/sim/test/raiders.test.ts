@@ -317,6 +317,10 @@ describe('Raiders: the work radius, SetRole at a cage, the Kooi placement rule',
     const nodes = sim.entityIds().filter((id) => sim.getUnit(id)!.kind === 'scrapNode');
     const far = nodes.find((id) => sim.getUnit(id)!.x > 40 * 256)!;
     const nearNode = nodes.find((id) => sim.getUnit(id)!.x < 40 * 256)!;
+    // a start slave of a human player gathers on its own at the node within reach (sim 0.21.0); stopped first here
+    play(sim, 1);
+    expect(sim.getUnit(s)!.orderTarget).toBe(nearNode);
+    now(sim, 0, 'Stop', { ids: [s] });
     now(sim, 0, 'Gather', { ids: [s], nodeId: far });
     expect(sim.getUnit(s)!.order).toBe(0);
     now(sim, 0, 'Gather', { ids: [s], nodeId: nearNode });
@@ -492,6 +496,11 @@ describe('Raiders: the Warlord, plunder and tribute', () => {
     sim.spawnBuilding(POST, 0, (p.x >> 8) + 2, p.y >> 8, true);
     play(sim, 2);
     expect(sim.getUnit(pt)!.owner).toBe(0);
+    // the start slaves gather on their own (sim 0.21.0): stopped, so only tribute pays
+    const slaves = sim
+      .entityIds()
+      .filter((id) => sim.world.slaveState[idx(sim, id)] === SLAVE_SLAVE);
+    now(sim, 0, 'Stop', { ids: slaves });
     sim.setScrap(0, 0);
     play(sim, CONFIG.ticksPerMinute);
     expect(sim.playerStatus(0).scrap).toBeGreaterThanOrEqual(tr.scrapPerMin - 1);

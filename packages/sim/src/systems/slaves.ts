@@ -592,7 +592,7 @@ function escapeFrom(ctx: SimContext, j: number, b: number, dist: number): void {
 
 /**
  * Start setup: the start units of a faction with slave rules that are slave loadouts are slaves of the headquarters
- * (a cage itself: the Raiderkamp), from nobody.
+ * (a cage itself: the Raiderkamp), from nobody, and (a gatherer of a human player) start gathering.
  */
 export function bindStartSlave(ctx: SimContext, i: number, hq: number): void {
   const w = ctx.world;
@@ -601,4 +601,7 @@ export function bindStartSlave(ctx: SimContext, i: number, hq: number): void {
   w.slaveFrom[i] = OWNER_NEUTRAL;
   const c = cageType(ctx, hq) !== null ? hq : freeCage(ctx, w.owner[i]!, w.x[i]!, w.y[i]!, true);
   w.slaveCage[i] = c < 0 ? NO_ENTITY : w.idOf(c);
+  // a start slave of a human player goes to work at once, like a new settler (sim 0.22.0, playtest M1): the nearest
+  // node within autoGatherRadius and the work radius of its cage; the scripted AI spreads its slaves itself
+  autoGather(ctx, i);
 }

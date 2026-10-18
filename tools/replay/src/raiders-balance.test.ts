@@ -24,12 +24,19 @@ import { formatRaiderSummary, raiderSummary } from './raiders.js';
 // rule of dwellers-basic the loot and hero xp gave the Dwellers all 66 matches). The Raiders win 31 of 66 (16 as player
 // 0, 15 as player 1), 26 on dominance; 23.5 to 41.7 minutes, 63 of 66 between 22 and 38, none decided before minute 22.
 // Seeds 200 to 232: the Raiders 30 of 66, 23.7 to 38.2 minutes. The pinned seeds are measured again.
+// Sim 0.22.0, data 0.27.0 (playtest H1; voorstel, ter bevestiging door de architect): a Move to a point inside a footprint
+// no longer leaves units walking on the spot at its edge. The Raider garrison sends its fighters with a Move to the middle
+// of the camp, so until now about 25 fighters stood frozen in the camp from the first call (mostly after minute 22),
+// with a Move order that does not fight back; the balance above rested on that. Fixed, the Raiders won 63 of 66. Data
+// 0.27.0 keeps 14 fighters home from the start instead (ai/raiders-basic.json garrison.minFighters, was 3): the Raiders
+// win 32 of 66 (as player 0 17, as player 1 15), 30 of them on dominance before minute 30; the Dwellers 34, 32 by
+// destruction; 22.7 to 36.3 minutes, all 66 between 22 and 38. Seeds 200 to 232: the Raiders 35 of 66, 22.7 to 38.5.
 // One seed of each group is pinned here (winner and reason).
 const EXPECTED = [
   { seed: 2, raider: 0, winner: 'raiders', reason: 'dominance' },
-  { seed: 4, raider: 1, winner: 'dwellers', reason: 'destruction' },
-  { seed: 9, raider: 0, winner: 'dwellers', reason: 'dominance' },
-  { seed: 7, raider: 1, winner: 'dwellers', reason: 'destruction' },
+  { seed: 9, raider: 1, winner: 'dwellers', reason: 'destruction' },
+  { seed: 20, raider: 0, winner: 'dwellers', reason: 'dominance' },
+  { seed: 4, raider: 1, winner: 'raiders', reason: 'dominance' },
 ] as const;
 
 describe.skipIf(process.env.REPLAY_FAST === '1')(

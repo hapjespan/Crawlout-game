@@ -141,6 +141,13 @@ export function movementSystem(ctx: SimContext, s: MovementScratch): void {
         ax = ((nb - ny * map.w) << 8) + 128;
         ay = (ny << 8) + 128;
         snap = false;
+      } else if (nb === cell && gr > 0 && goalInTarget(ctx, slot, gx, gy)) {
+        // Edge of the target rectangle reached and the goal lies inside it (a footprint: an AttackMove onto a building
+        // of somebody else, or a building raised on the point after the order): as close as walking gets, so the unit
+        // has arrived instead of walking on the spot at the edge for good (sim 0.22.0, playtest H1).
+        arrive(ctx, i);
+        s.moving[i] = 0;
+        continue;
       } else if (nb === cell) {
         // Rand van de doelrechthoek bereikt (bijvoorbeeld naast een gebouw): naar het midden van de eigen cel.
         ax = (cx << 8) + 128;

@@ -513,8 +513,9 @@ const FIXTURES_S7: FixtureDef[] = [
   {
     // Group-order spreading (visual review 15 October, item 5): every unit of a group Move or AttackMove gets its own
     // formation slot. Both players (humans): the whole start army walks toward the middle, a repeated Move to the same
-    // point (no reshuffle), an AttackMove onward, a Move onto their own headquarters (a point in a building: no
-    // formation, as before), and all workers to one node (ring spots, off in data 0.15.0: gatherRingM 0).
+    // point (no reshuffle), an AttackMove onward, a Move onto their own headquarters (a point in a building: since sim
+    // 0.22.0 a formation at the nearest free cells beside it, on the group's side; before, no formation and everybody
+    // walked at the point and stood at the edge), and all workers to one node (ring spots, off in data 0.15.0).
     name: 's7-rustbelt-formation',
     build() {
       const r = base('rustbelt', 715, [false, false]);
@@ -966,6 +967,42 @@ const FIXTURES_S12: FixtureDef[] = [
   },
 ];
 
+const FIXTURES_S13: FixtureDef[] = [
+  {
+    // Playtest H1 and M1 (sim 0.22.0, data 0.27.0; voorstel, ter bevestiging door de architect): a Move to a point inside
+    // a footprint resolves to the nearest reachable free point and the units go idle there (before, they stood at the
+    // edge in the walk animation for good). Player 1 (Dwellers, human) walks his militia and hero out, then into the
+    // edge of his own headquarters facing the centre, then onto its middle; player 0 (Raiders, human) walks his slave
+    // builder behind his camp and then into the camp from the far side, and retrains him into a slave at the camp
+    // (SetRole), who then gathers on his own like the start slaves (M1). Two minutes.
+    name: 's13-rustbelt-move-into-building',
+    build() {
+      const r = raidersVsDwellers(base('rustbelt', 1301, [false, false]));
+      const st = startOf(r);
+      const sim = st.sim;
+      const s = new Script();
+      const centre = centrePoint(sim);
+      const sp0 = sim.map.spawns[0]!;
+      const sp1 = sim.map.spawns[1]!;
+      const army = [...st.militia[1]!, ...st.hero[1]!];
+      const out = toward(sp1, centre, 30);
+      const edge = toward(sp1, centre, 10);
+      s.add(4, 1, 'Move', { ids: army, x: out.x, y: out.y });
+      s.add(600, 1, 'Move', { ids: army, x: edge.x, y: edge.y });
+      s.add(1400, 1, 'Move', { ids: army, x: sp1.x, y: sp1.y });
+      const builder = st.builder[0]!;
+      const behind = toward(sp0, centre, -25);
+      const into = toward(sp0, centre, 6);
+      s.add(4, 0, 'Move', { ids: builder, x: behind.x, y: behind.y });
+      s.add(600, 0, 'Move', { ids: builder, x: into.x, y: into.y });
+      s.add(1400, 0, 'SetRole', { ids: builder, role: 'scavenger' });
+      r.bundles = s.bundles();
+      r.hashes = [{ frame: 2399, hash: 0 }]; // length; record fills in the real hashes
+      return r;
+    },
+  },
+];
+
 export const FIXTURES: readonly FixtureDef[] = [
   ...FIXTURES_UP_TO_S3,
   ...FIXTURES_S4,
@@ -977,6 +1014,7 @@ export const FIXTURES: readonly FixtureDef[] = [
   ...FIXTURES_S10,
   ...FIXTURES_S11,
   ...FIXTURES_S12,
+  ...FIXTURES_S13,
 ];
 
 /** De sim na het uitvoeren van de frames 0 tot `frame` (exclusief) met de bundels die de replay tot dan heeft. */

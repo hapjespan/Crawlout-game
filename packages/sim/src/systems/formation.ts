@@ -82,7 +82,7 @@ export function resolvePendingSlots(ctx: SimContext): void {
         end++;
       }
       const group = moves.slice(start, end);
-      const slots = formationSlots(ctx, group, k0[2]!, k0[3]!);
+      const slots = formationSlots(ctx, group, k0[2]!, k0[3]!, k0[1] === ORDER_ATTACK_MOVE);
       for (let g = 0; g < group.length; g++) {
         const i = group[g]!;
         w.ordT[w.currentOrder(i)] = slots[g]!;
@@ -253,9 +253,13 @@ interface Member {
  * clicked point (without the lattice, the AI's single units at the off-centre middle claim point broke the mirror
  * as soon as the middle was taken).
  *
- * 0. A clicked point that is not walkable (in a building, in water) gets no formation: offset 0 for everybody.
+ * 0. An AttackMove onto a building of somebody else gets no formation: offset 0 for everybody, they walk at the
+ *    building and fight it. Any other point that is not walkable (Move or AttackMove into an own or neutral building,
+ *    water) resolves to the nearest reachable free point (sim 0.22.0, playtest H1: before, the group walked at a point
+ *    inside a footprint and stood at its edge in the walk animation for good).
  * 1. Anchor: the lattice point nearest to the clicked point (latticePoint); if that is not walkable (the edge of a
- *    building next to the point), the nearest walkable cell centre around it, ring by ring.
+ *    building next to the point, or the point lies inside a footprint), the nearest walkable cell centre around it in
+ *    the group's own piece of terrain, ring by ring.
  * 2. Direction: from the centre of the group to the anchor. A group that already stands on it (centre within one slot
  *    spacing) keeps a fixed orientation instead, facing the map centre, so a repeated order does not reshuffle it.
  * 3. Ranks across the direction, front rank first: about sqrt(n * width) columns, slots `spacing` apart (twice the
@@ -272,18 +276,23 @@ export function formationSlots(
   units: readonly number[],
   px: number,
   py: number,
+  attack = false,
 ): number[] {
   const w = ctx.world;
   const map = ctx.map;
   const f = ctx.config.formation;
   const n = units.length;
   const out: number[] = [];
-  // A point that is itself not walkable (a building, water): no formation, everybody walks at the point as before. An
-  // AttackMove onto an enemy headquarters keeps going (it never arrives while the building stands) instead of
-  // forming up beside it, arriving, and being called back by the AI as an idle army.
-  if (ctx.terrain.walk[(py >> 8) * map.w + (px >> 8)] !== 1) {
-    for (let k = 0; k < n; k++) out.push(0);
-    return out;
+  // An AttackMove onto a building of somebody else: no formation, everybody walks at the point as before. It keeps
+  // going (it never arrives while the building stands) instead of forming up beside it, arriving, and being called
+  // back by the AI as an idle army. Ownership only, not visibility: a building in the fog is still attacked.
+  const pc = (py >> 8) * map.w + (px >> 8);
+  if (attack && ctx.terrain.walk[pc] !== 1) {
+    const b = ctx.terrain.occ[pc]! - 1;
+    if (b >= 0 && w.owner[b] !== w.owner[units[0]!]) {
+      for (let k = 0; k < n; k++) out.push(0);
+      return out;
+    }
   }
   const q = latticePoint(ctx, px, py);
   let maxR = 0;
@@ -309,7 +318,10 @@ export function formationSlots(
   const uy = idiv(dy * DIR_ONE, len);
 
   // 1. anchor
-  const a = walkPoint(ctx, q.x, q.y) ? q : nearestWalkable(ctx, q.x, q.y, n, sumX, sumY, ux, uy);
+  const home = componentAt(ctx, w.x[units[0]!]!, w.y[units[0]!]!);
+  const a = walkPoint(ctx, q.x, q.y)
+    ? q
+    : nearestWalkable(ctx, q.x, q.y, n, sumX, sumY, ux, uy, home);
 
   // 3. shape
   const want = n * f.widthPermille;
@@ -432,9 +444,10 @@ const clampCell = (c: number, size: number): number => (c < 0 ? 0 : c >= size ? 
 
 /**
  * The anchor of a group whose lattice point (x, y) is not walkable (a building, water): ring by ring around its
- * cell(s) (both cells for a point on a border), and in the first ring with walkable cells the one nearest to the
- * centre of the group (sumX / n, sumY / n), so the group forms up on its own side of a building; equal distance: left
- * of the direction (ux, uy) first, then further along it. (x, y) itself if there is none within MAX_FREE_RING.
+ * cell(s) (both cells for a point on a border), and in the first ring with walkable cells of the group's own piece of
+ * terrain (`home`; NO_COMPONENT: any) the one nearest to the centre of the group (sumX / n, sumY / n), so the group
+ * forms up on its own side of a building; equal distance: left of the direction (ux, uy) first, then further along
+ * it. (x, y) itself if there is none within MAX_FREE_RING.
  */
 function nearestWalkable(
   ctx: SimContext,
@@ -445,6 +458,7 @@ function nearestWalkable(
   sumY: number,
   ux: number,
   uy: number,
+  home: number,
 ): { x: number; y: number } {
   const map = ctx.map;
   const cx = x >> 8;
@@ -457,7 +471,9 @@ function nearestWalkable(
     let bestL = 0;
     let bestF = 0;
     scanRing(map, fx, fy, cx - fx + 1, cy - fy + 1, d, (rx, ry) => {
-      if (ctx.terrain.walk[ry * map.w + rx] !== 1) return false;
+      const c = ry * map.w + rx;
+      if (ctx.terrain.walk[c] !== 1) return false;
+      if (home !== NO_COMPONENT && ctx.terrainDist.component(c) !== home) return false;
       const px = (rx << 8) + 128;
       const py = (ry << 8) + 128;
       // distance to the group centre, times n (no division)
