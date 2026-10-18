@@ -41,6 +41,8 @@ export const robotUnitSchema = variantSchema.omit({ footprint: true }).extend({
   depthM: range,
   /** Zweefhoogte in meters: de onderkant van het model staat zo hoog boven de grond (gebakken in het model). */
   hover: z.number().positive().optional(),
+  /** A creature of nobody (survival enemies): no team material; the manifest entry has an empty `teamMaterials` and `teamMask: 'none'`. */
+  teamless: z.boolean().optional(),
 });
 
 export const robotBuildingSchema = variantSchema.extend({
@@ -311,7 +313,11 @@ export async function buildRobots(
             );
         }
         report.errors.push(
-          ...validateBuildingDocument(lod.document, level, !attachment && !building?.teamless),
+          ...validateBuildingDocument(
+            lod.document,
+            level,
+            !attachment && !building?.teamless && !unit?.teamless,
+          ),
         );
         lods.push(lod);
       }
@@ -356,7 +362,7 @@ export async function buildRobots(
         ...(unit
           ? {
               rigid: true as const,
-              teamMask: 'materialName' as const,
+              teamMask: unit.teamless ? ('none' as const) : ('materialName' as const),
               ...(unit.hover !== undefined ? { hover: unit.hover } : {}),
             }
           : attachment

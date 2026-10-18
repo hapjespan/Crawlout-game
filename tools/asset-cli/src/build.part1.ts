@@ -36,6 +36,8 @@ export interface BuildOptions {
   dwellersGearPath?: string;
   /** Path to the site buildings config (same format, buildings only: ruin and restored pairs); default `<srcDir>/sites.json`. Optional. */
   sitesPath?: string;
+  /** Path to the survival enemies config (same format, rigid units without a team); default `<srcDir>/survival.json`. Optional. */
+  survivalPath?: string;
   /**
    * Config of the delivered models (src/delivered.ts, `assets/local/delivered.json`), only used when given or when
    * `<srcDir>/delivered.json` exists; its `file` paths are relative to `srcDir`.

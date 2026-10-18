@@ -78,3 +78,20 @@ Maten en ankers volgen het Raider-hoofdstuk: wapens en gereedschap hebben de oor
 | `lens_blue`                                                                  | lens           |
 
 **Controles** (`test/dwellers-gear.test.ts`, windrichting in `test/winding.test.ts`): de ids tegen `data/loadouts/*.json` (alle niet-body ids, negen), het anker bij het slot, maat-bereik per as, budgetten en dalend aantal driehoeken per LOD, `teamMask` `none`, geen Raider-materiaal of teammateriaal, oppervlaksoort per materiaal, byte-gelijke tweede bouw en `assets/dist` is de bouw van deze config.
+
+## Survival-vijanden (`assets/src/survival.json`, `derive` met `scale` in `assets/src/rigmap.json`)
+
+Zes procedurele placeholders voor de survival-vijanden, op echte schaal (poppetje 1,8 m), neutraal (geen teamkleur) en met drie LODs. Alle ids staan vast.
+
+| Id                      | Soort      | Maat (b x h x d, m) | LOD0 / 1 / 2  | Wat                                                                                            |
+| ----------------------- | ---------- | ------------------- | ------------- | ---------------------------------------------------------------------------------------------- |
+| `survival_ghoul`        | character  | 1,84 x 1,73 x 0,35  | 3598/1349/492 | afgeleid lichaam (schaal 0,95), ziekelijk grijsgroen                                           |
+| `survival_ghoul_runner` | character  | 1,75 x 1,64 x 0,33  | 3598/1348/492 | afgeleid lichaam (schaal 0,90), bleker grijsgroen                                              |
+| `survival_mutant`       | character  | 2,42 x 2,28 x 0,46  | 3598/1349/492 | afgeleid lichaam (schaal 1,25), groengeel                                                      |
+| `survival_mutant_brute` | character  | 2,75 x 2,59 x 0,52  | 3598/1349/493 | afgeleid lichaam (schaal 1,42), donkerder groengeel                                            |
+| `survival_klauwbeest`   | rigid-unit | 1,36 x 1,56 x 3,09  | 616/328/230   | viervoeter van 3 m lang: romp met schouderbult, kop met twee hoorns en tanden, klauwen, staart |
+| `survival_behemoth`     | rigid-unit | 5,78 x 6,65 x 2,23  | 801/384/188   | reus van 6,5 m met stekelknots van hout in de rechterhand, lendendoek, slagtanden, rode ogen   |
+
+**Humanoids (`derive` met `scale`).** De vier lichamen zijn afgeleide uitvoer van `dweller_body_human`, zoals `raider_body_human`, met een extra optioneel veld `scale` (0,5 tot 2) in de `derive`-entry: een uniforme schaal van het hele lichaam (`src/deriveScale.ts`: hoekpunten, node-translaties, de translatie van de inverse bind-matrices en de translatiekanalen van de animaties; rotaties blijven). Zelfde skelet (20 bones), skin, sockets en clips; de sockets schalen mee. Met `scale` deelt de variant de animatietexture van de bron niet (die staat op bronmaat): `<id>/<id>.anim.f32` wordt opnieuw gebakken, dus de variant kost drie LOD-GLB's en een texture van 600 KB. Zonder `scale` blijft alles als bij de Raider-lichamen. Het is een uniforme schaal: de ghouls zijn daardoor kleiner, niet magerder (een smaller lijf vraagt een eigen mesh of schaal in de render). Het palet heeft `teamZone: band` en `farTeam: 0` (geen spelerskleur op afstand), de GLB heeft geen teammateriaal.
+
+**Rigide units (`survival.json`).** Zelfde formaat en bouwer als `robots.json` (gesplitst in `assets/src/survival/*.json`), met `teamless: true` bij een unit: geen teammateriaal in de onderdelen (het schema weigert het), manifest `teamMaterials: []` en `teamMask: 'none'`, `rigid: true`, geen skelet. Het manifestschema eist een teammateriaal bij een rigid-unit alleen nog als `teamMask` niet `none` is. `buildAssets` leest het bestand naast de andere configs (optie `survivalPath`). Oppervlaksoort volgt de materiaalnaam: `hide_leather*` en `skin_leather*` leer, `bone_stone` krijt, `canvas_rag` doek, `club_wood` hout, `rust_*` roest. Test `test/survival.test.ts` (maat per as, budget per LOD, neutraal, schaal en eigen animatietexture van de humanoids, `assets/dist` byte-gelijk aan een nieuwe bouw) en de twee units in `test/winding.test.ts`.

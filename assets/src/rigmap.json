@@ -78,6 +78,70 @@
             "teamZone": "band",
             "farTeam": 0
           }
+        },
+        {
+          "id": "survival_ghoul",
+          "scale": 0.95,
+          "colors": { "M_Main": "#5d6652", "M_Joints": "#2f342a" },
+          "palette": {
+            "jacket": "#5d6652",
+            "patchTop": "#4b5342",
+            "patchLeg": "#3b4034",
+            "belt": "#292a23",
+            "trousers": "#434839",
+            "boots": "#2a2b24",
+            "skin": "#7f8c70",
+            "teamZone": "band",
+            "farTeam": 0
+          }
+        },
+        {
+          "id": "survival_ghoul_runner",
+          "scale": 0.9,
+          "colors": { "M_Main": "#6c7660", "M_Joints": "#363b2e" },
+          "palette": {
+            "jacket": "#6c7660",
+            "patchTop": "#59634d",
+            "patchLeg": "#444a3a",
+            "belt": "#2d2e26",
+            "trousers": "#4e5441",
+            "boots": "#2c2d26",
+            "skin": "#8c9a7c",
+            "teamZone": "band",
+            "farTeam": 0
+          }
+        },
+        {
+          "id": "survival_mutant",
+          "scale": 1.25,
+          "colors": { "M_Main": "#8a9a3c", "M_Joints": "#4a5320" },
+          "palette": {
+            "jacket": "#8a9a3c",
+            "patchTop": "#a3a444",
+            "patchLeg": "#5f6a2a",
+            "belt": "#3a3d1c",
+            "trousers": "#68732f",
+            "boots": "#383b1d",
+            "skin": "#a3ae4a",
+            "teamZone": "band",
+            "farTeam": 0
+          }
+        },
+        {
+          "id": "survival_mutant_brute",
+          "scale": 1.42,
+          "colors": { "M_Main": "#7c8a2e", "M_Joints": "#3f4719" },
+          "palette": {
+            "jacket": "#7c8a2e",
+            "patchTop": "#b0a63a",
+            "patchLeg": "#566024",
+            "belt": "#33361a",
+            "trousers": "#5f6a29",
+            "boots": "#323518",
+            "skin": "#9aa63f",
+            "teamZone": "band",
+            "farTeam": 0
+          }
         }
       ]
     },
