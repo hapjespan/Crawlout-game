@@ -2,7 +2,7 @@
 
 De acht Dweller-gebouwen zijn geen losse GLB's in `assets/src` maar varianten van een bron-huisje (`buildings/base_house.glb`, Low poly House van winwoods, CC-BY-4.0, de naamsvermelding staat in `assets/src/licenses` en in het veld `asset.copyright` van elke LOD-GLB). De bron zelf wordt geen asset: bestanden die in `variants.json` onder `sources` staan, slaat de buis over. Alle vormgetallen staan in `variants.json`, niet in code.
 
-De asset-id is de sleutel in `variants`, exact de `visuals.mesh` uit `data/buildings.json` (`dweller_building_hq` enzovoort). Per variant:
+De asset-id is de sleutel in `variants`, exact de `visuals.mesh` uit `data/buildings/*.json` (`dweller_building_hq` enzovoort). Per variant:
 
 - `footprint` `{ w, h }` in cellen van 1 m (zelfde als de data; een test vergelijkt ze). Het model staat binnen w x h in x en z (hooguit 5 procent erbuiten) en vult minstens 85 procent van w en van h (LOD2: 75 procent, de veranda valt weg); het midden van de bounds ligt binnen 8 procent van de oorsprong in x en z, de grond is y = 0. Zie 'Geen grondplaat' hieronder.
 - `lod0Triangles`: doel voor LOD0 (hooguit het plafond van `budgets.ts`); LOD1 en LOD2 volgen de verhoudingen `buildingLodRatios`.

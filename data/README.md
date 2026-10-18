@@ -4,7 +4,7 @@ Alle spelregels die getallen zijn. Eigenaar: werkstroom content. Schema's en loa
 
 Eenheden in deze bestanden zijn menselijk: meters, seconden, procenten. De loader rekent om naar sim-eenheden. `VERSION` is semver en zit in elke replay en in de hash-seed. Elk balanswaarde-veld hoort een `_comment` te hebben met de bedoeling van het getal.
 
-Een lijst die over een map verdeeld is (`loadouts/*.json`) bestaat uit JSON-arrays die de reader op bestandsnaam aan elkaar plakt; de volgorde telt, vandaar het nummer vooraan de naam.
+Een lijst die over een map verdeeld is (`loadouts/*.json`, `buildings/*.json`) bestaat uit JSON-arrays die de reader op bestandsnaam aan elkaar plakt; de volgorde telt, vandaar het nummer vooraan de naam.
 
 ## Bestanden
 
@@ -12,7 +12,7 @@ Een lijst die over een map verdeeld is (`loadouts/*.json`) bestaat uit JSON-arra
 | ------------------------------------ | ------------------------------------------------------------------------------------- |
 | `factions.json`                      | per factie: startunits, vangnet, robotregels, Raider-regels (slaven, plunder, chems)  |
 | `loadouts/*.json`                    | units: stats, kosten, `visuals.meshSlots`, en per rol de extra blokken hieronder      |
-| `buildings.json`                     | gebouwen: footprint, `provides`, turretstats, `cage`, `placement`, `sightM`           |
+| `buildings/*.json`                   | gebouwen: footprint, `provides`, turretstats, `cage`, `placement`, `sightM`           |
 | `tech.json`, `training.json`         | techboom en SPECIAL-training van de Dwellers                                          |
 | `heroes.json`, `perks.json`          | helden (xp, abilities, `aura`) en perks                                               |
 | `creeps.json`                        | neutrale bandietenkampen: units en tiers                                              |
@@ -48,7 +48,7 @@ Alle blokken zijn optioneel; een Dweller-record blijft geldig. Factie `raiders` 
 | `producedAt`                                           | gebouw-id waar de unit nieuw gebouwd wordt (tent, autosloperij); verplicht bij robots, nu ook toegestaan bij andere lichamen                           |
 | `bodyType: beast` / `vehicle`                          | honden en de Buggy: alleen een ander lichaam, geen eigen sim-regels                                                                                    |
 
-**`buildings.json`:** `cage` (`capacity`, `transitionS`, `workRadiusM`) is verplicht bij `provides: ["kooi"]` en anders verboden. `placement` (`minFromHqM`, `maxFromHqM`, midden tot midden) beperkt waar een gebouw mag staan, bijvoorbeeld de Kooi aan de rand van de basis. Nieuwe `provides`-waarden: `tent` (vechters-instroom en vangnet), `kooi`, `depot` (afleverpunt naast hq en werkplaats), `chemlab`. Het vangnet van de Raiders is `tenten_instroom` (`threshold` telt vechters).
+**`buildings/*.json`:** `cage` (`capacity`, `transitionS`, `workRadiusM`) is verplicht bij `provides: ["kooi"]` en anders verboden. `placement` (`minFromHqM`, `maxFromHqM`, midden tot midden) beperkt waar een gebouw mag staan, bijvoorbeeld de Kooi aan de rand van de basis. Nieuwe `provides`-waarden: `tent` (vechters-instroom en vangnet), `kooi`, `depot` (afleverpunt naast hq en werkplaats), `chemlab`. Het vangnet van de Raiders is `tenten_instroom` (`threshold` telt vechters).
 
 **`heroes.json`, held van de Raiders (Warlord):** `aura` (`radiusM`, `effects[]`) is een passieve intimidatie-aura, altijd aan zolang de held leeft; een effect is `{ stat, side: "enemy" | "ally", target: "units" | "turrets" | "alle", delta }` zoals bij een ability. Verder `xpPerCapture` (xp per geroofde gevangene) en `baseLoadoutId` (het basis-loadout van de held; afwezig = het goedkoopste militie-loadout zonder tech en zonder `producedAt`).
 

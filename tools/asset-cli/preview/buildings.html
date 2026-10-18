@@ -125,7 +125,17 @@
         const base = q.get('manifest') ?? '/assets/dist/manifest.json';
         const manifest = await (await fetch(base)).json();
         const dir = base.slice(0, base.lastIndexOf('/') + 1);
-        const footprints = await (await fetch('/data/buildings.json')).json();
+        // data/buildings/*.json in file-name order (a static server cannot list the directory: keep this list in sync).
+        const BUILDING_FILES = [
+          '01-dwellers-core.json',
+          '02-dwellers-defence-tech.json',
+          '03-raiders.json',
+        ];
+        const footprints = (
+          await Promise.all(
+            BUILDING_FILES.map(async (name) => (await fetch(`/data/buildings/${name}`)).json()),
+          )
+        ).flat();
         const bySlug = new Map(footprints.map((b) => [b.visuals.mesh, b.footprint]));
         for (const a of manifest.assets) {
           if (a.kind !== 'building') continue;

@@ -18,6 +18,10 @@ const loadoutFiles = import.meta.glob('../../../../data/loadouts/*.json', {
   eager: true,
   import: 'default',
 });
+const buildingFiles = import.meta.glob('../../../../data/buildings/*.json', {
+  eager: true,
+  import: 'default',
+});
 const mapFiles = import.meta.glob('../../../../data/maps/*.json', {
   eager: true,
   query: '?raw',
@@ -44,7 +48,7 @@ export function loadClientGameData(): GameData {
     version: dataVersion,
     factions: file('factions.json'),
     loadouts: concatSorted(loadoutFiles),
-    buildings: file('buildings.json'),
+    buildings: concatSorted(buildingFiles),
     tech: file('tech.json'),
     heroes: file('heroes.json'),
     perks: file('perks.json'),

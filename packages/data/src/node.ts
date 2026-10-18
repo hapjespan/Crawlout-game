@@ -14,14 +14,14 @@ const jsonFilesIn = (dir: string): string[] =>
     .sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
 
 /**
- * A list split over several files (data/loadouts/*.json): each file is a JSON array, concatenated in file-name order,
- * so the result equals the former single file record for record.
+ * A list split over several files (data/loadouts/*.json, data/buildings/*.json): each file is a JSON array,
+ * concatenated in file-name order, so the result equals the former single file record for record.
  */
 const readJsonArrays = (dir: string): unknown[] =>
   jsonFilesIn(dir).flatMap((name) => readJson(join(dir, name)));
 
 /**
- * Leest data/*.json, data/ai/*.json, data/loadouts/*.json en data/VERSION uit `dir`. Geen validatie; geef het
+ * Leest data/*.json en de mappen ai, loadouts en buildings plus data/VERSION uit `dir`. Geen validatie; geef het
  * resultaat aan loadGameData.
  */
 export function readDataDir(dir: string): RawGameData {
@@ -31,7 +31,7 @@ export function readDataDir(dir: string): RawGameData {
     version: readFileSync(join(dir, 'VERSION'), 'utf8'),
     factions: readJson(join(dir, 'factions.json')),
     loadouts: readJsonArrays(join(dir, 'loadouts')),
-    buildings: readJson(join(dir, 'buildings.json')),
+    buildings: readJsonArrays(join(dir, 'buildings')),
     tech: readJson(join(dir, 'tech.json')),
     heroes: readJson(join(dir, 'heroes.json')),
     perks: readJson(join(dir, 'perks.json')),

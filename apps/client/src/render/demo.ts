@@ -9,7 +9,7 @@
 // Decorative props come from Rustbelt's props file (200 trees, rocks, bushes, grass) on the demo terrain: manifest
 // first, then the source GLBs in assets/src/props, then a placeholder per kind. ?props=0 hides them, ?props=src skips
 // the manifest, ?props=ph shows the placeholders only.
-// Buildings are the asset-cli's building assets (visuals.mesh in data/buildings.json) when the manifest has them;
+// Buildings are the asset-cli's building assets (visuals.mesh in data/buildings/*.json) when the manifest has them;
 // ?buildings=ph keeps the placeholder blocks. Terrain: ?terrain=rock (default) is Rock Terrain 4 as the map agent's
 // greybox (rockTerrain.ts), ?terrain=map is the slice map's own greybox, ?terrain=wave the old synthetic hills; the
 // detail texture and tints come from assets/dist/terrain/terrain.json (?tex=0: tints only). ?detail=<n> sets the

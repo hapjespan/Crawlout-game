@@ -6,7 +6,7 @@ import type { Sim } from '../src/index.js';
 import { cellCenter, createOpenMap, testPlayers } from '../src/testing.js';
 import { BUILDER, DATA, REAL_CONFIG, SCAV, cmd } from './helpers.js';
 
-// Gebouwen op echte schaal (data 0.14.0): de footprints uit data/buildings.json zoals ze zijn (een hoofdgebouw van
+// Gebouwen op echte schaal (data 0.14.0): de footprints uit data/buildings/*.json zoals ze zijn (een hoofdgebouw van
 // 21 x 21, een woning van 13 x 19). De andere sim-tests draaien op compacte footprints (helpers.ts); deze tests laten
 // zien dat de sim een grote footprint net zo behandelt: de startopstelling, een bouwer die de rand haalt en eenheden
 // die eromheen lopen.

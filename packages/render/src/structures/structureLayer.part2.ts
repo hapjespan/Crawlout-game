@@ -89,7 +89,7 @@ export class StructureLayer {
   private readonly capacity: number;
   private readonly castShadows: boolean;
   private assetDraws: AssetDraw[] = [];
-  /** Building id (index in buildings.json) to its asset draw. */
+  /** Building id (index in data/buildings/*.json) to its asset draw. */
   private readonly assetByBuilding = new Map<number, AssetDraw>();
   private assetMaterial: MeshBasicNodeMaterial | null = null;
   /** Contact mask layer per building id (decals/contactMask.ts), baked on first sight; reset with the assets. */

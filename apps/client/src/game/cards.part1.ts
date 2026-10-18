@@ -14,7 +14,7 @@ import {
 import type { EntityRow } from './snapshot.js';
 import { chemLines } from './raiders.js';
 
-/** Display names per building key; buildings.json has no name field yet, so unknown keys are humanized. */
+/** Display names per building key; data/buildings/*.json has no name field yet, so unknown keys are humanized. */
 export const BUILDING_NAMES: Record<string, string> = {
   hoofdgebouw: 'Basis',
   woning: 'Woning',

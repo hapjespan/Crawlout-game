@@ -1,4 +1,4 @@
-// Schema van assets/src/buildings/variants.json: per gebouw-id uit data/buildings.json (visuals.mesh) hoe het uit het
+// Schema van assets/src/buildings/variants.json: per gebouw-id uit data/buildings/*.json (visuals.mesh) hoe het uit het
 // bron-huisje (en eenvoudige vormen) gebouwd wordt. Alle vormgetallen staan in dat bestand, niet in code. Alleen zod
 // als afhankelijkheid, dus ook los te valideren.
 import { z } from 'zod';

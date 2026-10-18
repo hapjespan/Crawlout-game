@@ -35,7 +35,7 @@ interface BuildingRecord {
 const loadouts = (readDataList('loadouts') as LoadoutRecord[]).filter(
   (l) => l.faction === 'raiders',
 );
-const dataBuildings = (json('data/buildings.json') as BuildingRecord[]).filter(
+const dataBuildings = (readDataList('buildings') as BuildingRecord[]).filter(
   (b) => b.faction === 'raiders',
 );
 /** Every manifest id the Raider data refers to, with the slot it is used in. */
@@ -139,7 +139,7 @@ describe('raiders.json against the Raider data', () => {
     }
   });
 
-  it('gives every building the footprint of data/buildings.json (never shrunk to fit)', () => {
+  it('gives every building the footprint of data/buildings/*.json (never shrunk to fit)', () => {
     for (const b of dataBuildings)
       expect(config.buildings[b.visuals.mesh]?.footprint, b.visuals.mesh).toEqual(b.footprint);
   });

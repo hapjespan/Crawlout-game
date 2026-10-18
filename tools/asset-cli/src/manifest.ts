@@ -139,7 +139,7 @@ export const assetEntrySchema = z
     /** Aantal bones van het skelet; 0 voor props. */
     boneCount: z.number().int().nonnegative(),
     /**
-     * Alleen gebouwen: footprint in cellen van 1 m (zoals data/buildings.json). Het model staat met het midden van de
+     * Alleen gebouwen: footprint in cellen van 1 m (zoals data/buildings/*.json). Het model staat met het midden van de
      * footprint op de oorsprong in x en z, de grond op y = 0, en de bounds vullen w x h binnen 5 procent.
      */
     footprint: z

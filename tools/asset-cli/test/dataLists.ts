@@ -1,4 +1,4 @@
-// Test helper: reads a record list of data/ that is split over a directory of JSON arrays (data/loadouts/*.json).
+// Test helper: reads a record list of data/ that is split over a directory of JSON arrays (data/loadouts/*.json, data/buildings/*.json).
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';

@@ -1,5 +1,5 @@
 // Building assets from the asset-cli manifest (kind 'building'): which asset a building type uses is data
-// (buildings.json visuals.mesh), the files come from the manifest, so another GLB costs no code. All building assets
+// (data/buildings/*.json visuals.mesh), the files come from the manifest, so another GLB costs no code. All building assets
 // of one load share one texture array (textureArray.ts) and so one material; every LOD becomes one geometry
 // (buildingGeometry.ts). Identical LODs (same file, or the same triangle count as the LOD before, as the asset-cli
 // emits for small buildings) share one geometry and so one draw. A building type without an asset keeps the
@@ -37,7 +37,7 @@ export interface BuildingVisual {
 
 export interface BuildingAssetStatus {
   assetId: string;
-  /** Building ids (index in buildings.json) drawn with this asset. */
+  /** Building ids (index in data/buildings/*.json) drawn with this asset. */
   buildingIds: number[];
   state: 'loading' | 'ready' | 'failed';
   reason?: string;
