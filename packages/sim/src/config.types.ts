@@ -1,3 +1,4 @@
+import type { SimSurvivalMap } from './config.survival.js';
 /** Punt in sim-eenheden (1 m = 256). */
 export interface SimPoint {
   readonly x: number;
@@ -35,6 +36,11 @@ export interface SimMap {
    * of the strip mall, in map order. Absent or empty = no Bouwproject (the game type Skirmish, the test maps).
    */
   readonly projectSites?: readonly SimProjectSite[];
+  /**
+   * Survival co-op (sim 0.27.0; voorstel, ter bevestiging door de architect): edges and build zones of the game type
+   * Survival (MatchSettings.mode 'survival'). Absent = no survival (Skirmish, Bouwproject, the test maps).
+   */
+  readonly survival?: SimSurvivalMap;
 }
 
 /** A part of the strip mall on the map: the centre of its footprint (units, a cell centre) and its kind. */

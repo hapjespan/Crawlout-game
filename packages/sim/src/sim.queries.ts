@@ -30,6 +30,7 @@ import { trainTicks, trainedOf } from './systems/training.js';
 import { ROLE_MILITIA, craftSiteMask } from './systems/orders.js';
 import { slaveGroupStatus } from './systems/slaves.js';
 import { projectStatus } from './systems/project.js';
+import { WIN_OVERRUN, WIN_SURVIVED } from './systems/survival.js';
 
 // The read-only query API of Sim (fog, HUD status, debug views). The Sim methods delegate here.
 
@@ -186,6 +187,8 @@ export function queueOf(sim: Sim, playerId: number): QueueItem[] {
 export function winnerOf(sim: Sim): SimWinner | null {
   const g = sim.globals;
   if (g.winner === NO_WINNER) return null;
+  // survival co-op (sim 0.27.0): the end of a run is no player's win; Sim.survivalStatus().result has it
+  if (g.reason === WIN_SURVIVED || g.reason === WIN_OVERRUN) return null;
   const reason: WinReason =
     g.reason === WIN_DOMINANCE
       ? 'dominance'

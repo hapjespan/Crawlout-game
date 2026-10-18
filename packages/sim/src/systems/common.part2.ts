@@ -1,6 +1,13 @@
 // Split from common.ts to stay under the 5,000-token file limit; common.ts re-exports the public surface.
 // Holds: isEnemy, dist2, nearestOwnBuilding, nodeAllowed, componentAt, nodeCovered, +11 more.
-import { type World, C, SLAVE_SLAVE, SLAVE_CAPTIVE, BSTATE_DONE } from '../ecs/world.js';
+import {
+  type World,
+  C,
+  SLAVE_SLAVE,
+  SLAVE_CAPTIVE,
+  BSTATE_DONE,
+  CREEP_SURVIVAL,
+} from '../ecs/world.js';
 import { OWNER_NEUTRAL, MAX_PLAYERS } from '@crawlout/protocol';
 import { NO_COMPONENT } from '../pathdist.js';
 import type { SimMap } from '../config.js';
@@ -18,11 +25,16 @@ export function isEnemy(w: World, i: number, t: number): boolean {
   const p = w.owner[i]!;
   // creep camps (sim 0.20.0): a bandit fights player units (systems/creeps.ts picks them), and is an enemy of every
   // player who sees it; any other neutral (a wanderer) is nobody's enemy
+  // survival co-op (sim 0.27.0): a wave unit (CREEP_SURVIVAL) also fights buildings, and the players are one team
   if (p === OWNER_NEUTRAL)
-    return w.creepCamp[i] !== 0 && o < MAX_PLAYERS && (w.mask[t]! & C.unit) !== 0;
+    return (
+      w.creepCamp[i] !== 0 &&
+      o < MAX_PLAYERS &&
+      ((w.mask[t]! & C.unit) !== 0 || w.creepCamp[i] === CREEP_SURVIVAL)
+    );
   if (o === OWNER_NEUTRAL) return w.creepCamp[t] !== 0 && visibleTo(w, t, p);
   // fog of war (sim 0.17.0): only an enemy that the owner of i sees now is a target (shooting, chasing, acquiring)
-  return o !== p && visibleTo(w, t, p);
+  return o !== p && !w.coop && visibleTo(w, t, p);
 }
 
 /** Kwadraat van de afstand tussen de middelpunten van twee entities. */

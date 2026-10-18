@@ -4,6 +4,7 @@
 export * from './config.types.js';
 export * from './config.faction.js';
 export * from './config.env.js';
+export * from './config.survival.js';
 export {
   MAX_MAP_CELLS_SIDE,
   MAX_SPEED,
@@ -21,6 +22,7 @@ export {
   MAX_CREEPS_PER_CAMP,
   MAX_PROJECT_SITES,
   MAX_PROJECT_KINDS,
+  MAX_SURVIVAL_WAVES,
 } from './config.limits.js';
 export { validateEnv } from './config.validate.js';
 export { envHash } from './config.hash.js';

@@ -7,7 +7,7 @@ import {
   footprintOrigin,
 } from './entities.js';
 import type { SimContext } from './systems/common.js';
-import { cellCenterOf, face, nthFreeCellAround } from './systems/common.js';
+import { MAX_FREE_RING, cellCenterOf, face, nthFreeCellAround } from './systems/common.js';
 import { spawnStartHero } from './systems/hero.js';
 import { bindStartSlave } from './systems/slaves.js';
 
@@ -20,6 +20,34 @@ import { bindStartSlave } from './systems/slaves.js';
 //     rij voor rij), kijkend naar het midden van de map; daarna zijn held (als de factie er een heeft) op de
 //     volgende vrije cel. Start units of a slave loadout (Raiders) are slaves bound to the headquarters (a cage).
 // Elke speler krijgt startScrap.
+
+/**
+ * Footprint origin of a headquarters centred on (x, y). Survival co-op (sim 0.27.0): the zone centre comes from map
+ * percentages, so when the footprint does not fit there, the free origin nearest to it (ring by ring around the cell,
+ * by centre distance, then scan order) within MAX_FREE_RING; elsewhere the spawn must fit as it is.
+ */
+function hqOrigin(ctx: SimContext, x: number, y: number, fw: number, fh: number) {
+  const o = footprintOrigin(x, y, fw, fh);
+  if (ctx.map.survival === undefined || footprintFree(ctx, o.fx, o.fy, fw, fh)) return o;
+  for (let d = 1; d <= MAX_FREE_RING; d++) {
+    let best: { fx: number; fy: number } | null = null;
+    let bestD = 0;
+    for (let oy = o.fy - d; oy <= o.fy + d; oy++)
+      for (let ox = o.fx - d; ox <= o.fx + d; ox++) {
+        if (ox !== o.fx - d && ox !== o.fx + d && oy !== o.fy - d && oy !== o.fy + d) continue;
+        if (!footprintFree(ctx, ox, oy, fw, fh)) continue;
+        const dx = (ox << 8) + (fw << 7) - x;
+        const dy = (oy << 8) + (fh << 7) - y;
+        const dd = dx * dx + dy * dy;
+        if (best === null || dd < bestD) {
+          best = { fx: ox, fy: oy };
+          bestD = dd;
+        }
+      }
+    if (best !== null) return best;
+  }
+  return o;
+}
 
 export function setupStart(ctx: SimContext): void {
   const map = ctx.map;
@@ -34,7 +62,7 @@ export function setupStart(ctx: SimContext): void {
     ctx.ps.scrap[p] = faction.startScrap;
     const spawn = map.spawns[p]!;
     const bt = ctx.buildingType(faction.hqTypeId)!;
-    const { fx, fy } = footprintOrigin(spawn.x, spawn.y, bt.footprintW, bt.footprintH);
+    const { fx, fy } = hqOrigin(ctx, spawn.x, spawn.y, bt.footprintW, bt.footprintH);
     if (!footprintFree(ctx, fx, fy, bt.footprintW, bt.footprintH))
       throw new Error(
         `start: hoofdgebouw van speler ${p} past niet op spawn ${spawn.x},${spawn.y}`,

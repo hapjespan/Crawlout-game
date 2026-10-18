@@ -18,7 +18,7 @@ import {
 } from './common.js';
 import { createUnit } from '../entities.js';
 import { OWNER_NEUTRAL, MAX_PLAYERS } from '@crawlout/protocol';
-import { C, SLAVE_SLAVE, SLAVE_CAPTIVE, NO_ENTITY } from '../ecs/world.js';
+import { C, SLAVE_SLAVE, SLAVE_CAPTIVE, NO_ENTITY, CREEP_SURVIVAL } from '../ecs/world.js';
 import { applyStats } from '../effects.js';
 import { heroIndex, grantXp } from './hero.js';
 import { imod } from '../math/int.js';
@@ -150,8 +150,10 @@ export function spawnCamp(ctx: SimContext, k: number, t: SimCreepTier): void {
 
 /** Whether bandit j's camp is fighting (then player units and turrets acquire it by themselves). */
 export function creepAwake(ctx: SimContext, j: number): boolean {
-  const k = ctx.world.creepCamp[j]! - 1;
-  return k >= 0 && ctx.creeps.state[k] === CAMP_FIGHT;
+  const c = ctx.world.creepCamp[j]!;
+  // survival co-op (sim 0.27.0): a wave unit is always awake
+  if (c === CREEP_SURVIVAL) return true;
+  return c > 0 && ctx.creeps.state[c - 1] === CAMP_FIGHT;
 }
 
 /** A player unit a bandit may fight or that wakes a camp: living, not a corpse, not a slave or captive. */

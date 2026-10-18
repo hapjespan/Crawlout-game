@@ -38,6 +38,9 @@ export type {
   SimSpecialTuning,
   SimTech,
   SimUnitType,
+  SimSurvival,
+  SimSurvivalMap,
+  SimSurvivalWave,
 } from './config.js';
 export {
   AURA_SIDE_ALLY,
@@ -120,6 +123,7 @@ export {
   PLACE_DEPOT,
   PLACE_FEATURE,
   PLACE_HQ_RANGE,
+  PLACE_ZONE,
   PLACE_OK,
   PLACE_TERRAIN,
   PLACE_TERRITORY,
@@ -138,3 +142,15 @@ export type {
   SimWorkerPort,
 } from './worker.js';
 export { CATCH_UP_BACKLOG, createSimWorkerCore } from './worker.js';
+// survival co-op (sim 0.27.0)
+export { RANK_BOSS, RANK_MINIBOSS, RANK_NORMAL } from './config.js';
+export {
+  HORDE_WINNER,
+  hqOf,
+  survivalOf,
+  threatScore,
+  waveAlive,
+  waveUnits,
+  weakestPlayer,
+} from './systems/survival.js';
+export type { SurvivalStatus } from './systems/survival.js';

@@ -18,6 +18,7 @@ import {
 import { validateCreeps, validateFactions, validateProject } from './config.validate.factions.js';
 import { validateHeroes, validateTechs } from './config.validate.progress.js';
 import { validateAiScripts } from './config.validate.ai.js';
+import { validateSurvival } from './config.survival.env.js';
 
 /** Valideert de invoer eenmalig voor de eerste tick. Gooit bij ongeldige invoer. */
 export function validateEnv(env: SimEnv): void {
@@ -33,6 +34,7 @@ export function validateEnv(env: SimEnv): void {
   validateTechs(config, unitIds, buildingIds);
   validateHeroes(config, unitIds, buildingIds);
   validateAiScripts(config, unitIds, buildingIds);
+  validateSurvival(env, unitIds);
   for (const p of players) {
     req(
       intIn(p.factionId, 0, config.factions.length - 1),

@@ -210,6 +210,7 @@ export function liberatable(ctx: SimContext, i: number, t: number): boolean {
     w.has(t, C.unit | C.health) &&
     o !== w.owner[i] &&
     o < ctx.playerCount &&
+    !w.coop && // survival co-op (sim 0.27.0): an ally's slaves stay his
     visibleTo(w, t, w.owner[i]!)
   );
 }
@@ -254,7 +255,9 @@ export function capturable(ctx: SimContext, i: number, t: number, cap: SimCaptur
   if (rules === null || !catchable(ctx, t)) return false;
   const o = w.owner[t]!;
   if (o === OWNER_NEUTRAL) return cap.wanderers && visibleTo(w, t, p);
-  if (!cap.residents || o === p || o >= ctx.playerCount || !visibleTo(w, t, p)) return false;
+  // survival co-op (sim 0.27.0): an ally's settlers are no prey
+  if (!cap.residents || o === p || o >= ctx.playerCount || w.coop || !visibleTo(w, t, p))
+    return false;
   if (w.hp[t]! * 1000 > w.maxHp[t]! * cap.maxHpPermille) return false;
   // outside the base radius of its owner: farther than minDistanceFromOwnerBase from each of his headquarters
   const r = rules.minDistanceFromOwnerBase;

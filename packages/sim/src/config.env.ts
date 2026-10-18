@@ -12,6 +12,7 @@ import type {
   SimTraining,
   SimUnitType,
 } from './config.types.js';
+import type { SimSurvival } from './config.survival.js';
 
 export interface SimConfig {
   /** data/VERSION; gaat de hash-seed in, zodat een replay nooit stil op andere data draait. */
@@ -27,6 +28,8 @@ export interface SimConfig {
   readonly creepTakeover?: readonly SimCreepTakeover[];
   /** Win route C (data/project.json, data 0.31.0); absent = no Bouwproject (a map with project sites then fails). */
   readonly project?: SimProject;
+  /** Survival co-op (data/survival, data 0.33.0, sim 0.27.0); only read with SimMap.survival (the game type Survival). */
+  readonly survival?: SimSurvival;
   /** Op techId; hoogstens MAX_TECHS (bitset per speler). */
   readonly techs: readonly SimTech[];
   /** Op heroId. */

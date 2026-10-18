@@ -3,6 +3,7 @@
 import type { SimMap, SimPlayer } from './config.js';
 import type { GameData } from '@crawlout/data';
 import { CLAIM_KINDS } from './fromData.part1.js';
+import { type SurvivalSource, survivalMapOf } from './fromData.part4.js';
 import type { ClaimKind } from './fromData.part1.js';
 
 /** Wat simMapFromGrid nodig heeft: MapGrid uit packages/map (structureel) plus de dominantie in ticks (convertDominance). */
@@ -43,6 +44,12 @@ export interface SimMapOptions {
    * map into the sim, with their kind from these parts (GameData.project.parts). Absent: no Bouwproject (Skirmish).
    */
   readonly project?: { readonly parts: readonly { readonly key: string }[] };
+  /**
+   * Survival co-op (sim 0.27.0, data 0.33.0): the game type Survival (MatchSettings.mode 'survival') with
+   * GameData.survival. Gives SimMap.survival (edges and build zones) and puts the spawns on the zone centres (slot =
+   * playerId). Absent: no survival.
+   */
+  readonly survival?: SurvivalSource | null;
 }
 
 /** MapGrid (plus dominantie in ticks) naar SimMap. */
@@ -56,12 +63,20 @@ export function simMapFromGrid(grid: SimMapSource, opts: SimMapOptions = {}): Si
           if (kind < 0) throw new Error(`onbekend projectdeel ${p.part}`);
           return { x: p.ux, y: p.uy, kind };
         });
+  const survival =
+    opts.survival === undefined || opts.survival === null
+      ? undefined
+      : survivalMapOf(grid, opts.survival);
   return {
     ...(sites.length === 0 ? {} : { projectSites: sites }),
+    ...(survival === undefined ? {} : { survival }),
     w: grid.w,
     h: grid.h,
     passable: grid.passable,
-    spawns: grid.spawns.map((s) => ({ x: s.ux, y: s.uy })),
+    spawns:
+      survival === undefined
+        ? grid.spawns.map((s) => ({ x: s.ux, y: s.uy }))
+        : survival.zones.map((z) => ({ x: z.x, y: z.y })),
     scrapNodes: grid.scrapNodes.map((n) => ({ x: n.ux, y: n.uy, amount: n.amount })),
     claimPoints: grid.claimPoints.map((c) => {
       const kind = CLAIM_KINDS.indexOf(c.kind as ClaimKind);

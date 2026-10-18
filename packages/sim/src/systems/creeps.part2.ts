@@ -1,8 +1,9 @@
 // Split from creeps.ts to stay under the 5,000-token file limit; creeps.ts re-exports the public surface.
 // Holds: creepSystem, creepDeath, campAt, campStatus, campAlive, aiCreepRun.
 import type { SimContext } from './common.js';
-import { C, NO_ENTITY } from '../ecs/world.js';
-import { MAX_CREEPS_PER_CAMP, type SimAiScript } from '../config.js';
+import { C, CREEP_SURVIVAL, NO_ENTITY } from '../ecs/world.js';
+import { survivalDeath } from './survival.js';
+import { MAX_CREEP_CAMPS, MAX_CREEPS_PER_CAMP, type SimAiScript } from '../config.js';
 import { type CreepCampStatus, OWNER_NEUTRAL, MAX_ENTITIES_PER_COMMAND } from '@crawlout/protocol';
 import { TERRAIN_UNREACHABLE } from '../pathdist.js';
 import { applyCommand } from './commands.js';
@@ -35,7 +36,14 @@ export function creepSystem(ctx: SimContext): void {
   cc.count.fill(0);
   for (let i = 0; i < w.highWater; i++) {
     const k = w.creepCamp[i]! - 1;
-    if (k < 0 || w.alive[i] !== 1 || !w.has(i, C.unit | C.health) || w.hp[i]! <= 0) continue;
+    if (
+      k < 0 ||
+      k >= MAX_CREEP_CAMPS ||
+      w.alive[i] !== 1 ||
+      !w.has(i, C.unit | C.health) ||
+      w.hp[i]! <= 0
+    )
+      continue;
     const n = cc.count[k]!;
     if (n >= MAX_CREEPS_PER_CAMP) continue;
     cc.members[k * MAX_CREEPS_PER_CAMP + n] = i;
@@ -106,6 +114,11 @@ export function creepSystem(ctx: SimContext): void {
  */
 export function creepDeath(ctx: SimContext, i: number): void {
   const w = ctx.world;
+  // survival co-op (sim 0.27.0): a wave unit gives its own reward
+  if (w.creepCamp[i] === CREEP_SURVIVAL) {
+    survivalDeath(ctx, i);
+    return;
+  }
   const k = w.creepCamp[i]! - 1;
   if (k < 0) return;
   const cc = ctx.creeps;
