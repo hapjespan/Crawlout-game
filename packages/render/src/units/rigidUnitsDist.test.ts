@@ -36,6 +36,7 @@ describe('the robots in assets/dist', () => {
     const rigidIds = allRigid.filter((id) => id.startsWith('dweller_'));
     expect(allRigid).toEqual(expect.arrayContaining(['raider_body_hound', 'raider_vehicle_buggy']));
     expect(rigidIds).toEqual([
+      'dweller_robot_builder', // the Bouwrobot (data 0.26.0, asset-cli robots.json)
       'dweller_robot_drone',
       'dweller_robot_guard',
       'dweller_robot_sentinel',

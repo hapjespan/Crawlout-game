@@ -77,8 +77,11 @@
     "researchS": 30,
     "building": "lab",
     "prereqTech": ["raffinage"],
-    "effects": [{ "stat": "buildTimePct", "target": "bouwer", "delta": -20 }],
-    "_comment": "Balans speltest 14 oktober voor scrapCost, de rest startwaarde. Bouwrobots: bouwen 20 procent sneller (negatieve delta = sneller). 140 scrap (was 110), 30 s."
+    "effects": [
+      { "stat": "buildTimePct", "target": "bouwer", "delta": -20 },
+      { "stat": "buildTimePct", "target": "bouwrobot", "delta": -20 }
+    ],
+    "_comment": "Balans speltest 14 oktober voor scrapCost, de rest startwaarde. Bouwrobots: bouwen 20 procent sneller (negatieve delta = sneller). 140 scrap (was 110), 30 s. Data 0.26.0 (voorstel, ter bevestiging door de architect): ook voor de bouwrobot, zodat hij even snel bouwt als een bouwer."
   },
   {
     "id": "robotica",

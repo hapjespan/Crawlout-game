@@ -111,6 +111,8 @@ export interface SelectionSummary {
   buildings: number;
   hero: boolean;
   builders: number;
+  /** Robots that build (the Bouwrobot, data 0.26.0): Bouw like a builder, never a role switch. */
+  robotBuilders: number;
   scavengers: number;
   militia: number;
   /** Units zonder een van de drie rollen en zonder held: robots, technici. */
@@ -146,6 +148,7 @@ export function summarize(selection: readonly SelectedEntity[]): SelectionSummar
     buildings: 0,
     hero: false,
     builders: 0,
+    robotBuilders: 0,
     scavengers: 0,
     militia: 0,
     other: 0,
@@ -167,6 +170,7 @@ export function summarize(selection: readonly SelectedEntity[]): SelectionSummar
         else sum.slaveScavengers++;
       } else if (s.raiderKind === 'slaver') sum.slavers++;
       else if (s.raiderKind) sum.raiderFighters++;
+      else if (s.robot && s.role === 'builder') sum.robotBuilders++;
       else if (s.role === 'builder') sum.builders++;
       else if (s.role === 'scavenger') sum.scavengers++;
       else if (s.role === 'militia') sum.militia++;
@@ -178,7 +182,7 @@ export function summarize(selection: readonly SelectedEntity[]): SelectionSummar
 
 /**
  * Past deze selectie-afhankelijke actie bij de selectie? Verplaats en Stop bij elke unit; Val aan bij wie vecht (niet bij
- * alleen plunderaars of bouwers); Verzamel bij plunderaars; Bouw bij bouwers; een rol alleen met een voltooide
+ * alleen plunderaars of bouwers); Verzamel bij plunderaars; Bouw bij bouwers (ook de Bouwrobot); een rol alleen met een voltooide
  * werkplaats (canSwitchRole) en als minstens een bewoner die rol nog niet heeft.
  */
 function appliesTo(
@@ -202,7 +206,7 @@ function appliesTo(
     case 'gather':
       return s.scavengers + s.slaveScavengers > 0;
     case 'build':
-      return s.builders + s.slaveBuilders > 0;
+      return s.builders + s.robotBuilders + s.slaveBuilders > 0;
     case 'roleScavenger':
       return canSwitchRole && (s.builders + s.militia > 0 || s.slaveBuilders > 0);
     case 'roleBuilder':
@@ -745,7 +749,7 @@ export class HudController implements HudHandle {
     } else if (role) {
       // Only settlers switch role: the hero and robots would be ignored by the sim anyway.
       const settlers = this.state.selection
-        .filter((s) => !s.enemy && s.role !== null && s.role !== role)
+        .filter((s) => !s.enemy && !s.robot && s.role !== null && s.role !== role)
         .slice(0, MAX_ENTITIES_PER_COMMAND)
         .map((s) => s.id);
       if (settlers.length === 0) return false;

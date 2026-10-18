@@ -248,6 +248,10 @@ describe('robot production and training cards', () => {
     const guard = open.find((c) => c.id === loadout('beveiligingsrobot').id)!;
     expect(guard).toMatchObject({ kind: 'produce', state: 'available', icon: 'robot' });
     expect(guard.effects[0]).toMatch(/leven/);
+    // data 0.26.0: the Bouwrobot, named in Dutch, builds instead of fighting
+    const bot = open.find((c) => c.id === loadout('bouwrobot').id)!;
+    expect(bot).toMatchObject({ kind: 'produce', state: 'available', naam: 'Bouwrobot' });
+    expect(bot.effects[0]).toBe('160 leven, bouwt als een bouwer');
   });
 
   it('runs one robot at a time per factory and shows its progress', () => {

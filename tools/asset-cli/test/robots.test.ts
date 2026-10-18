@@ -30,6 +30,7 @@ const EXPECTED: Record<string, { height: [number, number]; hover?: number }> = {
   dweller_robot_guard: { height: [2.1, 2.3] },
   dweller_robot_drone: { height: [0.7, 0.9], hover: 1.3 },
   dweller_robot_sentinel: { height: [3.3, 3.7] },
+  dweller_robot_builder: { height: [1.8, 2.0] },
   dweller_building_robotfactory: { height: [8.5, 10.5] },
   dweller_building_turret_laser: { height: [2.8, 3.2] },
 };
@@ -67,7 +68,7 @@ const size = (e: AssetEntry): [number, number, number] => [
 ];
 
 describe('robots.json', () => {
-  it('heeft de vijf verwachte ids', () => {
+  it('heeft de zes verwachte ids', () => {
     expect([...unitIds, ...buildingIds].sort()).toEqual(Object.keys(EXPECTED).sort());
   });
 
@@ -128,11 +129,23 @@ describe('manifest-velden in assets/dist', () => {
       expect(e.lods.map((l) => l.level)).toEqual([0, 1, 2]);
     });
 
-  it('guard en sentinel staan op de grond, zonder hover', () => {
-    for (const id of ['dweller_robot_guard', 'dweller_robot_sentinel']) {
+  it('guard, sentinel en bouwrobot staan op de grond, zonder hover', () => {
+    for (const id of ['dweller_robot_guard', 'dweller_robot_sentinel', 'dweller_robot_builder']) {
       expect(entry(id).bounds.min[1]).toBeCloseTo(0, 2);
       expect(entry(id).hover).toBeUndefined();
     }
+  });
+
+  it('de bouwrobot is ongeveer mensgroot: rond 1,8 m, lager dan de guard, compact (b en d onder 1,5 m)', () => {
+    const builder = entry('dweller_robot_builder');
+    const [w, h, d] = size(builder);
+    expect(h).toBeGreaterThan(CHARACTER_HEIGHT - 0.1);
+    expect(h).toBeLessThan(size(entry('dweller_robot_guard'))[1]);
+    expect(w).toBeLessThan(1.3);
+    expect(d).toBeLessThan(1.5);
+    expect(builder.bounds.min[1]).toBeCloseTo(0, 2);
+    expect(builder.hover).toBeUndefined();
+    expect(config.units.dweller_robot_builder!.hover).toBeUndefined();
   });
 
   it('de drone zweeft: hover 1,3 m is de onderkant van de bounds (gebakken in het model)', () => {
@@ -235,6 +248,7 @@ const REQUIRED_KINDS: Record<string, SurfaceKind[]> = {
   dweller_robot_guard: ['paintedMetal', 'rustMetal', 'lens', 'leather'],
   dweller_robot_drone: ['paintedMetal', 'rustMetal', 'lens', 'leather'],
   dweller_robot_sentinel: ['paintedMetal', 'rustMetal', 'lens', 'leather'],
+  dweller_robot_builder: ['paintedMetal', 'rustMetal', 'lens', 'leather'],
   dweller_building_robotfactory: ['paintedMetal', 'rustMetal', 'lens', 'concrete'],
   dweller_building_turret_laser: ['paintedMetal', 'rustMetal', 'lens', 'concrete'],
 };

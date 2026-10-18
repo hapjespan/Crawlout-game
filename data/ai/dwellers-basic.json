@@ -116,7 +116,8 @@
     "fromS": 840,
     "max": 8,
     "countAsArmy": true,
-    "reservePop": 12
+    "reservePop": 12,
+    "builders": { "loadoutId": "bouwrobot", "max": 1, "fromS": 960 }
   },
   "reserve": {
     "fromS": 660,

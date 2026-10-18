@@ -57,12 +57,19 @@ import { playMatchesParallel, summarize } from './fairness.js';
 // The hero walks with the army to the camps and is the first to arrive (he is faster): at the high camp he often falls
 // before the clear, so in 4 of 33 matches (seeds 5, 7, 9 and 30) the winner's hero ends at level 2 (29 at 3 or 4). Seeds
 // 5 and 7 are therefore replaced here by 3 and 11 (the same mix: player 0 wins on dominance and by destruction).
+// Bouwrobot (data 0.26.0, sim 0.21.0; voorstel, ter bevestiging door de architect): from minute 16 each AI keeps one
+// builder robot from its robot factory (ai/dwellers-basic.json robots.builders, max 1); it builds with the two human
+// builders and is replaced when it falls (1 or 2 per player per match). Speler 0 wint 18 en speler 1 wint 15, 16 keer
+// vernietiging en 17 keer dominantie, lengte 26,2 tot 36,1 minuten (31 van de 33 tussen 25 en 35; was 27,3 tot 37,5
+// met 31); 197 van 198 kampen geruimd. With max 2 a player built up to 8 of them in one match (replacing the fallen
+// ones) and seed 7 ran to 42,4 minutes (32 of 33 in the window), so the script keeps one. EXPECTED is opnieuw gemeten; seeds 3 and 11 (now both player 0
+// on dominance) are replaced by 7 and 13 so the five keep both routes and both winners.
 const EXPECTED = [
-  { seed: 1, winner: 1, reason: 'dominance', frame: 37193 },
-  { seed: 3, winner: 0, reason: 'dominance', frame: 35980 },
-  { seed: 11, winner: 0, reason: 'destruction', frame: 36907 },
-  { seed: 42, winner: 1, reason: 'dominance', frame: 34708 },
-  { seed: 99, winner: 1, reason: 'destruction', frame: 35461 },
+  { seed: 1, winner: 0, reason: 'dominance', frame: 34730 },
+  { seed: 7, winner: 0, reason: 'destruction', frame: 32996 },
+  { seed: 13, winner: 1, reason: 'destruction', frame: 33347 },
+  { seed: 42, winner: 0, reason: 'dominance', frame: 36879 },
+  { seed: 99, winner: 1, reason: 'dominance', frame: 36604 },
 ] as const;
 
 // REPLAY_FAST=1 slaat deze 33 potjes (ongeveer 25 s met parallelle processen, 2 minuten na elkaar) over in de snelle

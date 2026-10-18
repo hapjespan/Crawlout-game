@@ -1088,6 +1088,35 @@
       ]
     },
     {
+      "id": "dweller_robot_builder",
+      "source": "robots.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "rigid-unit",
+      "lodTriangles": [
+        1832,
+        732,
+        270
+      ],
+      "materials": [
+        "lens",
+        "lens_amber",
+        "metal",
+        "metal_dark",
+        "metal_hazard",
+        "metal_light",
+        "rubber",
+        "rust_dark",
+        "rust_metal",
+        "team_trim"
+      ],
+      "sizeM": [
+        1.09,
+        1.97,
+        1.22
+      ]
+    },
+    {
       "id": "dweller_robot_drone",
       "source": "robots.json",
       "errors": [],

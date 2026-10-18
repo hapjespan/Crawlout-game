@@ -124,6 +124,14 @@ describe('combat harness', () => {
     expect(s.humanWins, show('reparatiedrone vs 1', s)).toBe(s.runs);
   });
 
+  // data 0.26.0 (voorstel, ter bevestiging door de architect): the bouwrobot does not fight (damage 0) but is sturdier
+  // than a bouwer: one militie needs more than half a minute for it
+  it('the bouwrobot never fights: one militie kills it, but not quickly', () => {
+    const s = sweep('bouwrobot', HUMAN, 1);
+    expect(s.humanWins, show('bouwrobot vs 1', s)).toBe(s.runs);
+    expect(s.meanSeconds, show('bouwrobot vs 1', s)).toBeGreaterThan(30);
+  });
+
   // COMBAT_REPORT=1 npx vitest run test/combat-balance.test.ts: the full table, also against patrol and geweer_leer.
   it.runIf(process.env.COMBAT_REPORT === '1')(
     'report',

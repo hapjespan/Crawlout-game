@@ -1,6 +1,6 @@
 import { DELAY_FRAMES_DEFAULT, EVENT_TYPE } from '@crawlout/protocol';
 import type { CommandEnvelope, FrameBundle, LobbyPlayer, Replay } from '@crawlout/protocol';
-import { ROLES, buildingTypeId } from '@crawlout/data';
+import { ROLES, buildingTypeId, unitTypeId } from '@crawlout/data';
 import type { Sim } from '@crawlout/sim';
 import { gameData } from './env.js';
 import { createReplaySim } from './run.js';
@@ -895,6 +895,77 @@ const FIXTURES_S11: FixtureDef[] = [
   },
 ];
 
+/**
+ * Bouwrobot helper (data 0.26.0): every second, each idle builder robot of player p goes to help at the own unfinished
+ * site with the lowest id (Build with the type and centre of the site, the right click of the client).
+ */
+function bouwrobotHelper(p: number) {
+  const bot = unitTypeId(loadout('bouwrobot'));
+  return (
+    sim: Sim,
+    f: number,
+    add: (p: number, type: CommandEnvelope['type'], payload: unknown) => void,
+  ): void => {
+    if (f % 20 !== 7) return;
+    const mine = sim
+      .entityIds()
+      .map((id) => sim.getUnit(id)!)
+      .filter((u) => u.owner === p);
+    const site = mine.find((u) => u.kind === 'building' && u.buildState === 1);
+    const idle = mine.filter((u) => u.typeId === bot && u.order === 0).map((u) => u.id);
+    if (site !== undefined && idle.length > 0)
+      add(p, 'Build', { ids: idle, typeId: site.typeId, x: site.x, y: site.y });
+  };
+}
+
+const FIXTURES_S12: FixtureDef[] = [
+  {
+    // Bouwrobot (data 0.26.0, sim 0.21.0; voorstel, ter bevestiging door de architect): player 0 is a bot that builds
+    // a workshop, a lab and the robot factory, researches robotica and produces two builder robots; from then on every
+    // idle builder robot is sent (Build on the site) to the next unfinished building of his plan (houses and a radio
+    // beacon) and builds it with his human builder. Player 1 builds a few houses. Twenty minutes.
+    name: 's12-rustbelt-bouwrobot',
+    build() {
+      const r = base('rustbelt', 1201, [false, false]);
+      const p0: BotPlan = {
+        builds: [
+          { key: 'werkplaats', at: 'hq' },
+          HOUSE,
+          { key: 'lab', at: 'hq' },
+          { key: 'robotfabriek', at: 'hq' },
+          HOUSE,
+          HOUSE,
+          { key: 'radiobaken', at: 'hq' },
+          HOUSE,
+          HOUSE,
+          HOUSE,
+          HOUSE,
+        ],
+        research: ['raffinage', 'robotica', 'bouwrobots'],
+        builders: 1,
+        militiaAtSettlers: 99,
+        militiaCount: 0,
+        attackWithMilitia: 99,
+      };
+      const p1: BotPlan = {
+        builds: [{ key: 'werkplaats', at: 'hq' }, HOUSE, HOUSE],
+        research: [],
+        builders: 1,
+        militiaAtSettlers: 99,
+        militiaCount: 0,
+        attackWithMilitia: 99,
+      };
+      recordControlled(r, 24000, [
+        settlementBot(0, p0),
+        contentBot(0, ['bouwrobot'], 2, []),
+        bouwrobotHelper(0),
+        settlementBot(1, p1),
+      ]);
+      return r;
+    },
+  },
+];
+
 export const FIXTURES: readonly FixtureDef[] = [
   ...FIXTURES_UP_TO_S3,
   ...FIXTURES_S4,
@@ -905,6 +976,7 @@ export const FIXTURES: readonly FixtureDef[] = [
   ...FIXTURES_S9,
   ...FIXTURES_S10,
   ...FIXTURES_S11,
+  ...FIXTURES_S12,
 ];
 
 /** De sim na het uitvoeren van de frames 0 tot `frame` (exclusief) met de bundels die de replay tot dan heeft. */

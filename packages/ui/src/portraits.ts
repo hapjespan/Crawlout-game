@@ -35,6 +35,7 @@ const BY_LOADOUT: Record<string, PortraitId> = {
   beveiligingsrobot: 'robot',
   reparatiedrone: 'robot',
   sentinel: 'robot',
+  bouwrobot: 'robot',
 };
 
 const BY_ROLE: Record<string, PortraitId> = { scavenger: '4', builder: '3', militia: '5' };
@@ -71,6 +72,7 @@ export function portraitOfEntity(e: SelectedEntity): PortraitId {
   const raider = RAIDER_BY_NAME.find(([pattern]) => pattern.test(name));
   if (raider) return raider[1];
   if (name === 'plunderaar' && e.role === 'militia') return BY_LOADOUT.plunderaar!; // a Raider fighter, not the Dweller scavenger
+  if (e.robot) return 'robot'; // the Bouwrobot has role builder but no builder's face
   if (e.role && BY_ROLE[e.role]) return BY_ROLE[e.role]!;
   if (/robot|drone|sentinel/.test(name)) return 'robot';
   if (name.includes('technicus')) return BY_LOADOUT.technicus!;

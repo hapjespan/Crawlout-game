@@ -53,10 +53,13 @@ describe('spiegel: AI tegen AI op Rustbelt XL zonder toeval', () => {
       // above, now before minute 25). Seed 7 gives both ties to player 0, seed 9 both to player 1: exactly swapped until
       // that rebuild, and the winner swaps (player 0 destroys player 1 in frame 37.028; player 1 destroys player 0 in
       // frame 46.353 when the ties go to him). Whoever gets the centre wins (it was the other way round before).
+      // Bouwrobot (data 0.26.0, sim 0.21.0; voorstel, ter bevestiging door de architect): with one builder robot per AI
+      // from minute 16 the claim posts at the centre point are rebuilt earlier, at 28.343 (23:37; the same known
+      // asymmetry), and the swap is exact again in the outcome: player 0 wins in frame 34.658, player 1 in 34.759.
       const r = mirrorSwap(7, 9);
       expect(r.winners).toEqual([0, 1]);
       expect(r.breakFrame).not.toBeNull();
-      expect(r.breakFrame!).toBeGreaterThan(24 * 1200);
+      expect(r.breakFrame!).toBeGreaterThan(23 * 1200);
       expect(r.diffs[0]).toMatch(/gebouw t\d+ @192,191/); // the claim post
     },
   );

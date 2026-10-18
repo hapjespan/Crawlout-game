@@ -20,6 +20,7 @@ export const LOADOUT_NAMES: Record<string, string> = {
   beveiligingsrobot: 'Beveiligingsrobot',
   reparatiedrone: 'Reparatiedrone',
   sentinel: 'Sentinel',
+  bouwrobot: 'Bouwrobot',
   // Raiders (data 0.21.0)
   slaaf: 'Slaaf',
   slaaf_bouwer: 'Slaaf-bouwer',
@@ -44,6 +45,7 @@ export const LOADOUT_SHORT_NAMES: Record<string, string> = {
   molotovgooier: 'Molotov',
   chemdealer: 'Chem',
   slaaf_bouwer: 'Bouwer',
+  bouwrobot: 'Bouwbot',
 };
 
 /** animT is 0..65535 over the clip; a gathering unit's clip is its gather job. */

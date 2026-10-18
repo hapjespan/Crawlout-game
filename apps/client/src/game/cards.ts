@@ -299,7 +299,8 @@ export function buildingCards(ctx: CardContext): BuildingCard[] {
           scrapCost: l.scrapCost,
           seconds: Math.round(l.craftTicks / TICK_HZ),
           effects: [
-            `${l.hpI} leven, ${l.damage} schade${l.popCost > 1 ? `, telt voor ${l.popCost} pop` : ''}`,
+            // the Bouwrobot (data 0.26.0) builds instead of fighting
+            `${l.hpI} leven, ${l.canBuild ? 'bouwt als een bouwer' : `${l.damage} schade`}${l.popCost > 1 ? `, telt voor ${l.popCost} pop` : ''}`,
           ],
           unlocks: [],
           requires: missing(l.prereqTech),

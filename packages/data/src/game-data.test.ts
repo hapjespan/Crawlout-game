@@ -33,6 +33,7 @@ describe('data/ valideert', () => {
     expect(data.loadouts.filter(dwellers).map((l) => l.key)).toEqual([
       'beveiligingsrobot',
       'bouwer',
+      'bouwrobot',
       'geweer_leer',
       'militie',
       'patrol',
@@ -53,8 +54,8 @@ describe('data/ valideert', () => {
     expect(data.aiScripts.filter(dwellers)).toHaveLength(2);
     expect(data.aiScripts.filter(dwellers).filter((a) => a.versusFactionId < 0)).toHaveLength(1);
     // totalen met de Raiders; de sim kent hoogstens 32 techs en 32 perks
-    // 21 faction loadouts plus the 3 bandits of the creep camps (data 0.25.0), appended after them
-    expect(data.loadouts).toHaveLength(27);
+    // 25 faction loadouts (data 0.26.0: the bouwrobot) plus the 3 bandits of the creep camps (data 0.25.0)
+    expect(data.loadouts).toHaveLength(28);
     expect(data.loadouts.filter((l) => l.factionId === NEUTRAL_FACTION_ID)).toHaveLength(3);
     expect(data.buildings).toHaveLength(18);
     expect(data.tech).toHaveLength(28);
@@ -637,9 +638,10 @@ describe('content-x (data 0.16.0): robots, technicus, vangnet', () => {
   const dwellers = data.factions[0]!;
   const robots = data.loadouts.filter((l) => l.bodyType === BODY_TYPES.indexOf('robot'));
 
-  it('heeft drie robots met bodyType robot, rol robot en producedAt robotfabriek', () => {
+  it('heeft vier robots met bodyType robot, rol robot en producedAt robotfabriek (data 0.26.0: de bouwrobot)', () => {
     expect(robots.map((l) => l.key).sort()).toEqual([
       'beveiligingsrobot',
+      'bouwrobot',
       'reparatiedrone',
       'sentinel',
     ]);
@@ -658,6 +660,37 @@ describe('content-x (data 0.16.0): robots, technicus, vangnet', () => {
       'reparatiedrone',
       'sentinel',
     ]);
+  });
+
+  it('bouwrobot (data 0.26.0, voorstel): bouwt als een bouwer, steviger, vecht niet, achter robotica', () => {
+    const bot = loadout('bouwrobot');
+    const bouwer = loadout('bouwer');
+    expect(bot.canBuild).toBe(true);
+    expect(bot.role).toBe(ROLES.indexOf('robot'));
+    expect(bot.hpI).toBeGreaterThan(2 * bouwer.hpI);
+    expect(bot.speedUPT).toBeLessThanOrEqual(bouwer.speedUPT);
+    expect(bot.damage).toBe(0);
+    expect(bot.rangeU).toBe(0);
+    expect(bot.popCost).toBe(1);
+    expect(bot.prereqTech.map((t) => data.tech[t]!.key)).toEqual(['robotica']);
+    expect(bot.visuals.meshSlots.body).toBe('dweller_robot_builder');
+    // only the bouwrobot can build without role builder
+    expect(data.loadouts.filter((l) => l.canBuild).map((l) => l.key)).toEqual(['bouwrobot']);
+    // the tech bouwrobots speeds him up like the bouwer
+    expect(tech('bouwrobots').effects.map((e) => e.target)).toEqual(['bouwer', 'bouwrobot']);
+  });
+
+  it('canBuild alleen op een robot, robots.builders alleen naar een bouwrobot (data 0.26.0)', () => {
+    const r = raw();
+    const loadouts = clone(r.loadouts) as Array<Record<string, unknown>>;
+    loadouts.find((l) => l.id === 'bouwer')!.canBuild = true;
+    expect(() => loadGameData({ ...r, loadouts })).toThrow(/canBuild/);
+    const ai = clone(r.ai) as Array<Record<string, unknown>>;
+    const script = ai.find((a) => a.id === 'dwellers-basic')! as {
+      robots: { builders: { loadoutId: string } };
+    };
+    script.robots.builders.loadoutId = 'beveiligingsrobot';
+    expect(() => loadGameData({ ...r, ai })).toThrow(/bouwrobot/);
   });
 
   it('beveiligingsrobot: tank, traag en veel hp', () => {

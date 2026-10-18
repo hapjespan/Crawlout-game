@@ -38,6 +38,11 @@ export interface SelectedEntity {
    * (Attack is vangen), de Chem-dealer (doseert in gevecht) of een andere vechter. Ontbreekt bij de Dwellers.
    */
   raiderKind?: RaiderKind;
+  /**
+   * True for a robot (bodyType robot): never retrains, so the role buttons leave it out. A robot that builds (the
+   * Bouwrobot, data 0.26.0) has role builder and gets Verplaats, Stop and Bouw.
+   */
+  robot?: boolean;
   /** Extra regels in het selectiepaneel, kant-en-klaar Nederlands (bijvoorbeeld "Kooi: Raiderkamp, werkstraal 45 m"). */
   lines?: readonly string[];
   /** Positie in sim-eenheden: een klik op de kaart in het selectiepaneel zet de camera erop. Zonder positie blijft de camera staan. */

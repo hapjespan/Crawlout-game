@@ -78,6 +78,10 @@ Naast de gewone velden (bouwvolgorde, golven, onderzoek, claims) zijn er optione
 
 Elk `site` in `buildOrder` en `richBuilds` is `hq`, `claim` (eigen claimpunt het dichtst bij huis) of `front` (het dichtst bij de vijand).
 
+## Bouwrobot (data 0.26.0, voorstel, ter bevestiging door de architect)
+
+`loadouts.json` **`canBuild: true`** (alleen bij `role: "robot"`): de robot bouwt zoals een bouwer (Build, Claim, helpen bij een bouwplaats binnen `builderAutoHelpRadiusM`, hervatten) en telt voor het bouwer-vangnet. Hij blijft een robot: geen bed, wel pop, niet omschoolbaar, hij vraagt een technicus (`robotRules`) en is er zelf geen; ongedekt bouwt hij op het robottempo. Bouwtijd-effecten (`buildTimePct`) gaan per type, dus een tech die bouwers versnelt noemt hem apart (zie `bouwrobots`). In `ai/*.json` zet **`robots.builders`** (`loadoutId`, `max`, `fromS`) de bouwrobots van de AI: naast `sequence`, vanaf `fromS` tot `max` (levend plus in productie); ze werken met de bouwers en tellen niet voor `robots.max`, het leger of `builders`.
+
 ## Plaatsing en territorium (`sim.json` blok `placement`)
 
 `clearanceM` (minstens 1 m): vrije begaanbare grond rond elke footprint, ook van nodes en claimpunten. `depotClearanceM` (minstens `clearanceM`): gang rond een afleverpunt (hq, werkplaats). `buildRangeM` en `claimBuildRangeM`: een nieuwe footprint moet een cel raken die binnen deze afstand ligt van een eigen gebouw (of van een claimpost voor `claimBuildRangeM`), geteld in stappen over begaanbaar terrein (rots, klif en water stoppen het); 0 = geen territoriumregel. Verwante globale velden in `sim.json`: `exclusiveRadiusM` (een scrap-node binnen deze afstand van een gehouden claimpunt is exclusief van de eigenaar; minstens `claimRadiusM`), `heroClaimS` en `contestFlipS` (een held claimt een vrij punt door er `heroClaimS` te staan; een claim zonder toren gaat na `contestFlipS` naar een vijand die er staat zonder de houder), `autoGatherRadiusM`.

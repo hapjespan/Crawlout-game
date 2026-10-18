@@ -459,6 +459,41 @@ describe('scripted AI: budget rules for the tech tree (data 0.17.0)', () => {
     expect(run(true)).toBe(0);
   });
 
+  it('robots.builders (data 0.26.0): keeps max builder robots from the factory and builds with them', () => {
+    const BOT = typeByKey('bouwrobot');
+    const bot = CONFIG.unitTypes.find((u) => u.typeId === BOT)!;
+    const sim = aiSim({
+      buildOrder: [{ atTick: bot.craftTicks + 40, typeId: WONING, site: 0 }],
+      robots: {
+        typeIds: [SENTINEL],
+        fromTicks: 1 << 30,
+        max: 0,
+        countAsArmy: false,
+        reservePop: 0,
+        builders: { typeId: BOT, max: 1, fromTicks: 0 },
+      },
+    });
+    sim.ps.tech[0] = (1 << techId('raffinage')) | (1 << techId('robotica'));
+    sim.spawnBuilding(typeByKey('robotfabriek'), 0, 40, 30, true);
+    // no human builder: only the robot can follow the build order
+    for (const u of unitsOf(sim, 0).filter((u) => u.role === ROLES.indexOf('builder')))
+      sim.destroyEntity(u.id);
+    sim.setScrap(0, 2000);
+    play(sim, 2);
+    expect(sim.queue(0)).toMatchObject([{ kind: 'produce', id: bot.loadoutId }]);
+    play(sim, bot.craftTicks + 60);
+    const bots = unitsOf(sim, 0).filter((u) => u.typeId === BOT);
+    expect(bots).toHaveLength(1);
+    // max 1: no second one
+    expect(sim.queue(0).filter((q) => q.kind === 'produce')).toEqual([]);
+    // the build order goes to the builder robot
+    expect(sim.getUnit(bots[0]!.id)).toMatchObject({ order: ORDER_BUILD });
+    // a lost builder robot is replaced
+    sim.destroyEntity(bots[0]!.id);
+    play(sim, 2);
+    expect(sim.queue(0)).toMatchObject([{ kind: 'produce', id: bot.loadoutId }]);
+  });
+
   it('training: runs the sequence in order, a program listed n times up to n points, only with the reserve condition', () => {
     const E = program('E');
     const S = program('S');

@@ -1111,6 +1111,47 @@
       ]
     },
     {
+      "id": "dweller_robot_builder",
+      "kind": "rigid-unit",
+      "bounds": {
+        "min": [
+          -0.545,
+          0,
+          -0.55
+        ],
+        "max": [
+          0.545,
+          1.97,
+          0.67
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "dweller_robot_builder/lod0.glb",
+          "triangles": 1832
+        },
+        {
+          "level": 1,
+          "path": "dweller_robot_builder/lod1.glb",
+          "triangles": 732
+        },
+        {
+          "level": 2,
+          "path": "dweller_robot_builder/lod2.glb",
+          "triangles": 270
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMaterials": [
+        "team_trim"
+      ],
+      "teamMask": "materialName",
+      "rigid": true
+    },
+    {
       "id": "dweller_robot_drone",
       "kind": "rigid-unit",
       "bounds": {

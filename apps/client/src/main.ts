@@ -16,6 +16,7 @@ import {
   type StallNotice,
 } from '@crawlout/protocol';
 import {
+  BODY_TYPES,
   CLAIM_POINT_TYPE_ID,
   PROVIDES,
   ROLES,
@@ -479,6 +480,11 @@ async function main(): Promise<void> {
   const own = (): EntityRow[] =>
     (ownCache ??= [...entities.values()].filter((e) => e.owner === session.playerId));
   const roleIdx = (role: string): number => ROLES.indexOf(role as (typeof ROLES)[number]);
+  /** Builds like a builder (sim common.ts canBuild): role builder, or a robot with canBuild (the Bouwrobot, data 0.26.0). */
+  const canBuildId = (id: number): boolean => {
+    const l = loadoutOf(entities.get(id)!.typeId);
+    return l !== undefined && (l.role === roleIdx('builder') || l.canBuild);
+  };
 
   /** Commands carry at most 64 entity ids; larger selections are split. */
   function sendChunked<T extends CommandType>(
@@ -518,9 +524,7 @@ async function main(): Promise<void> {
       }
       if (kind === 'building' && target.owner === session.playerId && target.anim === ANIM.build) {
         // Unfinished own building: builders resume or help (Build on an own site of the same type helps).
-        const builders = ids.filter(
-          (id) => loadoutOf(entities.get(id)!.typeId)?.role === roleIdx('builder'),
-        );
+        const builders = ids.filter(canBuildId);
         if (builders.length > 0)
           return sendChunked('Build', builders, {
             typeId: target.typeId,
@@ -530,9 +534,7 @@ async function main(): Promise<void> {
       }
       if (kind === 'claimPoint') {
         // Claim builds the faction's claim post next to the point: only builders can (sim contract 2).
-        const builders = ids.filter(
-          (id) => loadoutOf(entities.get(id)!.typeId)?.role === roleIdx('builder'),
-        );
+        const builders = ids.filter(canBuildId);
         if (builders.length > 0) return sendChunked('Claim', builders, { pointId: target.id });
       }
     }
@@ -845,10 +847,13 @@ async function main(): Promise<void> {
           (b ? buildingName(b.key) : null);
         // The protocol Role has only the three SetRole roles; technician and robot (data 0.16.0) show as no role for now.
         const dataRole = l === undefined ? undefined : ROLES[l.role];
-        const role =
+        // a robot that builds (the Bouwrobot, data 0.26.0) is a builder for the HUD (Verplaats, Stop, Bouw)
+        const settlerRole =
           dataRole === 'scavenger' || dataRole === 'builder' || dataRole === 'militia'
             ? dataRole
             : null;
+        const role = l?.canBuild ? 'builder' : settlerRole;
+        const robot = l !== undefined && BODY_TYPES[l.bodyType] === 'robot';
         const raiderKind = raiderKindOf(data, l);
         const lines = raiderLines(
           data,
@@ -865,6 +870,7 @@ async function main(): Promise<void> {
           loadoutName: name,
           hpPct: e.hpPct,
           role,
+          ...(robot ? { robot } : {}),
           ...(raiderKind ? { raiderKind } : {}),
           ...(lines.length > 0 ? { lines } : {}),
           // For the camera when the player clicks a unit card in the selection panel (HUD selections only).
@@ -1089,9 +1095,7 @@ async function main(): Promise<void> {
           const at = placementAt(p.x, p.y);
           if (at?.valid && at.claimPointId !== undefined) {
             // a claim post at a claim point: Claim, so the sim places it next to the point (claimPlacement.ts)
-            const builders = mine(selection).filter(
-              (id) => loadoutOf(entities.get(id)!.typeId)?.role === roleIdx('builder'),
-            );
+            const builders = mine(selection).filter(canBuildId);
             const order = placementCommand(at, placing.typeId, builders);
             if (builders.length > 0 && order.type === 'Claim')
               sendChunked('Claim', builders, { pointId: order.payload.pointId });
