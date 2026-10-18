@@ -7,96 +7,42 @@
 // With `heroes` the first unit of every player is a hero (typeId 1000 + heroId) that casts an ability zone now and
 // then; with `turrets` the finished buildings of those typeIds shoot at enemy units in range.
 import { heroTypeId } from '@crawlout/data';
-import {
-  ANGLE_FULL,
-  ANIM,
-  ENTITY_FLAG,
-  EVENT_TYPE,
-  TICK_MS,
-  UNITS_PER_METER,
-} from '@crawlout/protocol';
+import { ANGLE_FULL, ANIM, EVENT_TYPE, UNITS_PER_METER } from '@crawlout/protocol';
 import type { Footprint } from '../entities/footprint.js';
-import { buildingTypeId, TYPE_ID_CLAIM, TYPE_ID_SCRAP_NODE } from '../entities/typeIds.js';
-import { CLIPS } from '../units/rig.js';
-import { allocSnapshot, type EventRecord } from './snapshotWriter.js';
+import { fakeNext } from './fakeSnapshots.next.js';
+import {
+  ARRIVAL_ACTIVITIES,
+  FAKE_BUILD_TICKS,
+  FAKE_UNIT_TYPE_ID,
+  SHOT_RANGE,
+  TICKS_PER_SECOND,
+  type FakeSnapshotOptions,
+  type FakeSourceInternals,
+  type FakeStructure,
+  type Mode,
+} from './fakeSnapshots.shared.js';
+import {
+  fakeAdvanceStructures,
+  fakeHeroZones,
+  fakePlaceStructures,
+  fakeTurretFire,
+  fakeWorldEvents,
+} from './fakeSnapshots.world.js';
+import type { EventRecord } from './snapshotWriter.js';
 
-export interface FakeSnapshotOptions {
-  /** Number of units. Default 200. */
-  count?: number;
-  /** Owners 0..players-1. Default 4. */
-  players?: number;
-  /** World edge length in meters. Default 128 (slice map Rustbelt). */
-  worldSize?: number;
-  seed?: number;
-  /** Buildings spread over the team quadrants. Default 0. */
-  buildings?: number;
-  /** Building ids to cycle through (typeId 1024 + id). Default 8. */
-  buildingTypes?: number;
-  /** Footprint per building typeId. Default 3x3. */
-  footprint?: (typeId: number) => Footprint | null;
-  /** Neutral scrap nodes. Default 0. */
-  scrapNodes?: number;
-  /** Claim points; some start neutral. Default 0. */
-  claims?: number;
-  /** Targeted shots with hits, deaths and respawns, building and claim events. Default false: only shotFired. */
-  combat?: boolean;
-  /** The first unit of each player is this hero (typeId 1000 + heroId); with combat it casts abilityZone (ability 0). */
-  heroId?: number;
-  /**
-   * Unit typeIds the regular units (not the heroes) cycle through, in index order, instead of all being
-   * FAKE_UNIT_TYPE_ID: a mix of robots for the rigid-unit demo, say.
-   */
-  unitTypes?: readonly number[];
-  /**
-   * Keeps every unit in this clip, walking or running between random points, or standing still in an action clip
-   * (screenshots and measurements of one animation). Default: the usual mix of walking, working and fighting.
-   */
-  hold?: 'walk' | 'run' | 'idle' | 'attack1' | 'attack2';
-  /** Building typeIds that shoot (turrets), with combat: shotFired a = building, b = target, then a hit. */
-  turrets?: readonly number[];
-}
+export {
+  FAKE_BUILD_TICKS,
+  FAKE_NEUTRAL_OWNER,
+  FAKE_TURRET_TICKS,
+  FAKE_UNIT_TYPE_ID,
+  FAKE_ZONE_TICKS,
+  type FakeSnapshotOptions,
+  type FakeStructure,
+} from './fakeSnapshots.shared.js';
 
-export const FAKE_UNIT_TYPE_ID = 1;
-/** Owner of unowned scrap nodes and claim points in the fake source (anything at or above MAX_PLAYERS is neutral). */
-export const FAKE_NEUTRAL_OWNER = 255;
-const WALK_UNITS_PER_TICK = Math.round((1.5 * UNITS_PER_METER * TICK_MS) / 1000);
-const RUN_UNITS_PER_TICK = Math.round((4.2 * UNITS_PER_METER * TICK_MS) / 1000);
-const TICKS_PER_SECOND = 1000 / TICK_MS;
-const SHOT_RANGE = 25 * UNITS_PER_METER;
-/** Fake turret range and rate: generous, so the demo shows turret fire across the team quadrants. */
-const TURRET_RANGE = 40 * UNITS_PER_METER;
-export const FAKE_TURRET_TICKS = 24;
-/** Ticks between two ability zones (the heroes take turns), and how far ahead of the hero the zone lands. */
-export const FAKE_ZONE_TICKS = 140;
-const ZONE_AHEAD = 6 * UNITS_PER_METER;
-
-type Mode = 'walk' | 'run' | 'idle' | 'gather' | 'build' | 'attack1' | 'attack2' | 'dead';
-
-/** What a unit does on arrival: cumulative probability thresholds, the remainder is attack2. */
-const ARRIVAL_ACTIVITIES: readonly { upTo: number; mode: Mode }[] = [
-  { upTo: 0.5, mode: 'walk' },
-  { upTo: 0.65, mode: 'idle' },
-  { upTo: 0.77, mode: 'gather' },
-  { upTo: 0.87, mode: 'build' },
-  { upTo: 0.94, mode: 'attack1' },
-];
-
-/** A static entity: building, scrap node or claim point. */
-export interface FakeStructure {
-  id: number;
-  typeId: number;
-  owner: number;
-  x: number;
-  y: number;
-  footprint: Footprint;
-  /** Building site: tick construction started and ticks it takes (anim build, animT = progress, contract 1). */
-  site?: { start: number; ticks: number } | undefined;
-  /** Scrap node: remaining stock in percent (hpPct, contract 1). */
-  stock?: number;
-}
-
-/** Ticks a fake building site takes, long enough to watch it grow. */
-export const FAKE_BUILD_TICKS = 8 * (1000 / TICK_MS);
+/** The sibling modules see the source through its internal view (fields and private helpers). */
+const internals = (src: FakeSnapshotSource): FakeSourceInternals =>
+  src as unknown as FakeSourceInternals;
 
 export class FakeSnapshotSource {
   tick = 0;
@@ -183,55 +129,7 @@ export class FakeSnapshotSource {
   }
 
   private placeStructures(opts: FakeSnapshotOptions): void {
-    const M = UNITS_PER_METER;
-    const half = this.size >> 1;
-    const fits = (x: number, y: number, f: Footprint): boolean => this.fits(x, y, f, 2);
-    const place = (
-      typeId: number,
-      owner: number,
-      f: Footprint,
-      x0: number,
-      y0: number,
-      span: number,
-    ): void => {
-      for (let attempt = 0; attempt < 80; attempt++) {
-        // Odd footprints center on a cell, even ones on a cell corner.
-        const cx = Math.floor((x0 + this.rand() * span) / M) * M + (f.w % 2) * (M / 2);
-        const cy = Math.floor((y0 + this.rand() * span) / M) * M + (f.h % 2) * (M / 2);
-        if (!fits(cx, cy, f)) continue;
-        const s: FakeStructure = {
-          id: this.nextStructureId++,
-          typeId,
-          owner,
-          x: cx,
-          y: cy,
-          footprint: f,
-        };
-        if (typeId === TYPE_ID_SCRAP_NODE) s.stock = 40 + this.randInt(0, 61);
-        this.structures.push(s);
-        return;
-      }
-    };
-    const types = Math.max(1, opts.buildingTypes ?? 8);
-    for (let k = 0; k < (opts.buildings ?? 0); k++) {
-      const typeId = buildingTypeId(k % types);
-      const found = opts.footprint?.(typeId);
-      const f = found && found.w > 0 && found.h > 0 ? found : { w: 3, h: 3 };
-      const team = k % this.players;
-      place(typeId, team, f, (team & 1) * half, ((team >> 1) & 1) * half, half);
-    }
-    for (let k = 0; k < (opts.scrapNodes ?? 0); k++)
-      place(TYPE_ID_SCRAP_NODE, FAKE_NEUTRAL_OWNER, { w: 3, h: 3 }, 0, 0, this.size);
-    for (let k = 0; k < (opts.claims ?? 0); k++) {
-      place(
-        TYPE_ID_CLAIM,
-        k % 2 === 0 ? FAKE_NEUTRAL_OWNER : k % this.players,
-        { w: 5, h: 5 },
-        0,
-        0,
-        this.size,
-      );
-    }
+    fakePlaceStructures(internals(this), opts);
   }
 
   /** True when footprint f centered at (x, y) stays inside the world and `gap` meters away from every structure. */
@@ -412,193 +310,26 @@ export class FakeSnapshotSource {
 
   /** Finished turrets fire at the nearest enemy unit in range; the hit follows a tick later. */
   private turretFire(events: EventRecord[]): void {
-    if (this.turrets.size === 0) return;
-    for (const s of this.structures) {
-      if (!this.turrets.has(s.typeId) || s.site || (this.tick + s.id) % FAKE_TURRET_TICKS !== 0)
-        continue;
-      const j = this.nearestEnemy(s.x, s.y, s.owner, TURRET_RANGE);
-      if (j < 0) continue;
-      const target = this.ids[j]!;
-      events.push({ type: EVENT_TYPE.shotFired, a: s.id, b: target, x: s.x, y: s.y });
-      if (this.rand() < 0.8)
-        this.pending.push({
-          atTick: this.tick + 1,
-          event: { type: EVENT_TYPE.hit, a: target, b: s.id, x: this.x[j]!, y: this.y[j]! },
-        });
-    }
+    fakeTurretFire(internals(this), events);
   }
 
   /** Every FAKE_ZONE_TICKS the next living hero casts ability 0 a few meters ahead of itself (x, y = zone center). */
   private heroZones(events: EventRecord[]): void {
-    if (this.tick % FAKE_ZONE_TICKS !== 0) return;
-    const heroes = Math.min(this.players, this.count);
-    for (let k = 0; k < heroes; k++) {
-      const i = (this.nextZoneHero + k) % heroes;
-      if (this.typeIds[i] === FAKE_UNIT_TYPE_ID || this.mode[i] === 'dead') continue;
-      this.nextZoneHero = i + 1;
-      const a = (this.yaw[i]! / ANGLE_FULL) * Math.PI * 2;
-      const margin = 2 * UNITS_PER_METER;
-      const clamp = (v: number): number =>
-        Math.min(this.size - margin, Math.max(margin, Math.round(v)));
-      const x = clamp(this.x[i]! + Math.cos(a) * ZONE_AHEAD);
-      const y = clamp(this.y[i]! + Math.sin(a) * ZONE_AHEAD);
-      events.push({ type: EVENT_TYPE.abilityZone, a: this.ids[i]!, b: 0, x, y });
-      return;
-    }
+    fakeHeroZones(internals(this), events);
   }
 
   /** Building and claim events at a slow cadence, so every effect shows up within a few seconds. */
   private worldEvents(events: EventRecord[]): void {
-    if (this.tick % 20 === 0 && this.count > 0) {
-      const i = this.randInt(0, this.count);
-      if (this.mode[i] !== 'dead') this.kill(i, events);
-    }
-    const buildings = this.structures.filter((s) => s.typeId < TYPE_ID_SCRAP_NODE);
-    if (this.tick % 50 === 0 && buildings.length > 0) {
-      // Every other time a building is demolished (death with b = typeId, gone from the snapshot) and rebuilt from
-      // scratch on the same spot two seconds later; otherwise it is rebuilt in place.
-      const s = buildings[this.randInt(0, buildings.length)]!;
-      if (s.site) {
-        // already a site: leave it be
-      } else if (this.rand() < 0.5) {
-        events.push({ type: EVENT_TYPE.death, a: s.id, b: s.typeId, x: s.x, y: s.y });
-        this.structures.splice(this.structures.indexOf(s), 1);
-        this.demolished.push({ atTick: this.tick + 40, structure: s });
-      } else {
-        this.startSite(s);
-      }
-    }
-    for (let k = this.demolished.length - 1; k >= 0; k--) {
-      const d = this.demolished[k]!;
-      if (d.atTick > this.tick) continue;
-      this.demolished.splice(k, 1);
-      if (!this.fits(d.structure.x, d.structure.y, d.structure.footprint)) continue;
-      // The sim hands out a fresh id for a new building.
-      const s = { ...d.structure, id: this.nextStructureId++ };
-      this.structures.push(s);
-      this.startSite(s);
-    }
-    const claims = this.structures.filter((s) => s.typeId === TYPE_ID_CLAIM);
-    if (this.tick % 200 === 0 && claims.length > 0) {
-      const s = claims[this.randInt(0, claims.length)]!;
-      s.owner = s.owner >= this.players ? this.randInt(0, this.players) : FAKE_NEUTRAL_OWNER;
-      events.push({ type: EVENT_TYPE.claimTaken, a: s.id, b: s.owner, x: s.x, y: s.y });
-    }
+    fakeWorldEvents(internals(this), events);
   }
 
   /** Finishes building sites and lets gatherers pick scrap nodes clean (they refill after resourceDepleted). */
   private advanceStructures(events: EventRecord[]): void {
-    for (const s of this.structures) {
-      if (s.site && this.tick >= s.site.start + s.site.ticks) {
-        s.site = undefined;
-        events.push({ type: EVENT_TYPE.buildingDone, a: s.id, b: s.typeId, x: s.x, y: s.y });
-      }
-      if (s.stock !== undefined && this.tick % 10 === s.id % 10) {
-        s.stock -= 1;
-        if (s.stock <= 0) {
-          events.push({ type: EVENT_TYPE.resourceDepleted, a: s.id, b: 0, x: s.x, y: s.y });
-          s.stock = 100;
-        }
-      }
-    }
+    fakeAdvanceStructures(internals(this), events);
   }
 
   /** Advances one tick and returns the snapshot for it. */
   next(): ArrayBuffer {
-    this.tick++;
-    const n = this.count;
-    const events: EventRecord[] = [];
-    for (let i = 0; i < n; i++) {
-      const mode = this.mode[i]!;
-      const clip = CLIPS[this.anim[i]!]!;
-      const before = this.animT[i]!;
-      let t = before + 1 / (clip.duration * TICKS_PER_SECOND);
-      if (t >= 1) t = clip.loop ? t - 1 : 1;
-      this.animT[i] = t;
-      if (mode === 'attack2' && t < before) this.shoot(i, events);
-
-      if (mode === 'walk' || mode === 'run') {
-        const dx = this.tx[i]! - this.x[i]!;
-        const dy = this.ty[i]! - this.y[i]!;
-        const dist = Math.hypot(dx, dy);
-        const speed = mode === 'run' ? RUN_UNITS_PER_TICK : WALK_UNITS_PER_TICK;
-        if (dist <= speed) {
-          this.x[i] = this.tx[i]!;
-          this.y[i] = this.ty[i]!;
-          this.arrive(i);
-        } else {
-          this.x[i] = this.x[i]! + Math.round((dx / dist) * speed);
-          this.y[i] = this.y[i]! + Math.round((dy / dist) * speed);
-          this.face(i, dx, dy);
-        }
-      } else {
-        this.timer[i] = this.timer[i]! - 1;
-        if (this.timer[i]! <= 0) {
-          if (mode === 'dead') this.respawn(i, events);
-          else this.startLeg(i);
-        }
-      }
-    }
-    if (this.combat) {
-      this.worldEvents(events);
-      this.turretFire(events);
-      this.heroZones(events);
-    }
-    this.advanceStructures(events);
-    for (let k = this.pending.length - 1; k >= 0; k--) {
-      if (this.pending[k]!.atTick > this.tick) continue;
-      events.push(this.pending[k]!.event);
-      this.pending.splice(k, 1);
-    }
-
-    const structures = this.structures;
-    const total = n + structures.length;
-    const snap = allocSnapshot(
-      this.tick,
-      Math.imul(this.tick, 2654435761) >>> 0,
-      total,
-      events.length,
-    );
-    const e = snap.entities;
-    for (let i = 0; i < n; i++) {
-      const id = this.ids[i]!;
-      e.id[i] = id;
-      e.x[i] = this.x[i]!;
-      e.y[i] = this.y[i]!;
-      e.typeId[i] = this.typeIdOf(i);
-      e.yaw[i] = this.yaw[i]!;
-      e.animT[i] = Math.min(ANGLE_FULL - 1, Math.floor(this.animT[i]! * ANGLE_FULL));
-      e.owner[i] = this.owner[i]!;
-      e.anim[i] = this.anim[i]!;
-      const dead = this.mode[i] === 'dead';
-      e.hpPct[i] = dead ? 0 : 100;
-      const isFighting = this.mode[i] === 'attack1' || this.mode[i] === 'attack2';
-      e.flags[i] =
-        (this.selected.has(id) ? ENTITY_FLAG.selected : 0) |
-        (isFighting ? ENTITY_FLAG.inCombat : 0) |
-        (dead ? ENTITY_FLAG.dead : 0);
-    }
-    structures.forEach((s, k) => {
-      const i = n + k;
-      e.id[i] = s.id;
-      e.x[i] = s.x;
-      e.y[i] = s.y;
-      e.typeId[i] = s.typeId;
-      e.owner[i] = s.owner;
-      const site = s.site;
-      const progress = site ? Math.max(0, this.tick - site.start) / site.ticks : 0;
-      e.anim[i] = site ? ANIM.build : ANIM.idle;
-      e.animT[i] = site ? Math.min(ANGLE_FULL - 1, Math.floor(progress * ANGLE_FULL)) : 0;
-      e.hpPct[i] = s.stock ?? 100;
-      e.flags[i] = this.selected.has(s.id) ? ENTITY_FLAG.selected : 0;
-    });
-    events.forEach((r, k) => {
-      snap.events.type[k] = r.type;
-      snap.events.a[k] = r.a ?? 0;
-      snap.events.b[k] = r.b ?? 0;
-      snap.events.x[k] = r.x ?? 0;
-      snap.events.y[k] = r.y ?? 0;
-    });
-    return snap.buffer;
+    return fakeNext(internals(this));
   }
 }
