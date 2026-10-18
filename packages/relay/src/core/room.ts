@@ -1,9 +1,5 @@
 import {
   DELAY_FRAMES_DEFAULT,
-  DELAY_FRAMES_MAX,
-  DELAY_FRAMES_MIN,
-  MAX_PLAYERS,
-  STALL_TIMEOUT_MS,
   type ClientMessage,
   type DesyncEvent,
   type FrameBundle,
@@ -13,51 +9,44 @@ import {
 import { DELAY_EVAL_INTERVAL_FRAMES, DelayController } from './delay.js';
 import { HashComparator } from './hashCompare.js';
 import { FrameScheduler } from './scheduler.js';
+import {
+  RESYNC_HISTORY_FRAMES,
+  clampDelay,
+  type PendingResync,
+  type Player,
+  type RoomInternals,
+  type RoomOptions,
+  type Settings,
+  type StartMessage,
+} from './room.shared.js';
+import { roomDisconnect, roomHandle } from './room.handle.js';
+import {
+  roomBroadcastLobby,
+  roomFreeSlot,
+  roomHostCheck,
+  roomHostId,
+  roomJoin,
+  roomMaybeStart,
+  roomRejoin,
+  roomSortedPlayers,
+  roomStartMessage,
+  roomUniqueName,
+  roomUnreadyHumans,
+} from './room.lobby.js';
+import {
+  roomAfterHash,
+  roomAssignPeer,
+  roomCheckResyncTimeouts,
+  roomCheckStall,
+  roomExpectedFor,
+  roomOnResyncResponse,
+  roomSampleLag,
+} from './room.sync.js';
 
-type StartMessage = Extract<ServerMessage, { kind: 'start' }>;
-type Settings = StartMessage['settings'];
-type Player = StartMessage['players'][number];
+export { RESYNC_HISTORY_FRAMES, RESYNC_TIMEOUT_MS, type RoomOptions } from './room.shared.js';
 
-/**
- * Zoveel recente bundels houdt de relay vast voor resync (60 s bij 20 Hz). De aangewezen peer serialiseert zijn
- * state op het moment van het verzoek, dus de state is hooguit enkele seconden oud; langer terug is nooit nodig.
- * Een volledige opname voor replays staat achter `recordReplay`.
- */
-export const RESYNC_HISTORY_FRAMES = 1200;
-/** Antwoordt de aangewezen peer niet binnen dit aantal ms, dan wijst de relay een volgende peer aan. */
-export const RESYNC_TIMEOUT_MS = 5000;
-/** Na een resync negeren we de latency-metingen van die speler zo lang (de client haalt dan versneld in). */
-const SAMPLE_GRACE_FRAMES = 100;
-/** Zelfde maximum als `name` in het protocol (lobby.ts). */
-const MAX_NAME_LENGTH = 32;
-
-export interface RoomOptions {
-  roomId: string;
-  /** Levert een bericht af bij een verbinding. De schil (ws, loopback) implementeert dit. */
-  send: (connId: string, msg: ServerMessage) => void;
-  /** Seed voor de sim; standaard Math.random. Injecteerbaar voor tests. */
-  chooseSeed?: () => number;
-  dataVersion?: string;
-  defaultMap?: string;
-  defaultFaction?: string;
-  /** Minimaal aantal spelers (mens plus AI) voordat alle-ready het potje start. */
-  minPlayers?: number;
-  /** Begininstellingen; de host overschrijft ze met setSettings. delayFrames is de startwaarde van de adaptieve DELAY. */
-  settings?: Partial<Settings>;
-  /** Klok in ms voor stall en resync-timeouts; injecteerbaar voor tests. Standaard Date.now. */
-  now?: () => number;
-  /** Adaptieve DELAY uit gemeten round-trip. Standaard aan; uit = DELAY blijft settings.delayFrames. */
-  adaptiveDelay?: boolean;
-  /** Bewaar álle bundels (voor replay-opname) in plaats van alleen de recente. Standaard uit. */
-  recordReplay?: boolean;
-}
-
-interface PendingResync {
-  peer: number;
-  requestedAt: number;
-  lastFrame: number;
-  tried: Set<number>;
-}
+/** The sibling modules see the room through its internal view (private fields and helpers). */
+const internals = (room: Room): RoomInternals => room as unknown as RoomInternals;
 
 /** Lobby plus lockstep-relay voor één room. Geen timers: de schil roept advance() aan per tick. */
 export class Room {
@@ -175,103 +164,12 @@ export class Room {
   }
 
   handle(connId: string, msg: ClientMessage): void {
-    if (msg.kind === 'join') return this.join(connId, msg.name, msg.clientId);
-    const playerId = this.conns.get(connId);
-    if (playerId === undefined) return this.error(connId, 'eerst joinen');
-    const player = this.players.get(playerId) as Player;
-    switch (msg.kind) {
-      case 'leave':
-        return this.disconnect(connId);
-      case 'ready':
-        if (this.started) return this.error(connId, 'potje is al gestart');
-        player.ready = msg.ready;
-        this.broadcastLobby();
-        return this.maybeStart();
-      case 'setFaction':
-        if (this.started) return this.error(connId, 'potje is al gestart');
-        player.faction = msg.faction;
-        player.ready = false;
-        return this.broadcastLobby();
-      case 'setMap':
-        if (this.started) return this.error(connId, 'potje is al gestart');
-        this.map = msg.map;
-        this.unreadyHumans();
-        return this.broadcastLobby();
-      case 'setSettings': {
-        if (!this.hostCheck(connId, playerId)) return;
-        const { mode, delayFrames, dominanceMinutes } = msg.settings;
-        this.settings = {
-          mode,
-          delayFrames: clampDelay(delayFrames),
-          ...(dominanceMinutes === undefined ? {} : { dominanceMinutes }),
-        };
-        this.unreadyHumans();
-        return this.broadcastLobby();
-      }
-      case 'addAi':
-        if (!this.hostCheck(connId, playerId)) return;
-        if (this.addAi(msg.faction) === null) this.error(connId, 'room is vol');
-        return;
-      case 'removeAi':
-        if (!this.hostCheck(connId, playerId)) return;
-        if (!this.removeAi(msg.playerId)) this.error(connId, 'geen AI-speler met dat playerId');
-        return;
-      case 'chat':
-        return this.broadcast({ kind: 'chat', playerId, text: msg.text });
-      case 'command': {
-        if (!this.scheduler || this.halted) return this.error(connId, 'geen lopend potje');
-        if (msg.command.playerId !== playerId)
-          return this.error(connId, 'playerId komt niet overeen met verbinding');
-        this.sampleLag(playerId, this.scheduler.nextFrame - msg.command.frame);
-        if (this.scheduler.submit(msg.command) === null)
-          this.error(connId, 'commando te ver vooruit');
-        return;
-      }
-      case 'hash': {
-        if (!this.started || this.halted) return;
-        if (msg.report.playerId !== playerId)
-          return this.error(connId, 'playerId komt niet overeen met verbinding');
-        // Een hash voor frame f is gemeld na uitvoering van f: de client staat dan op frame f + 1.
-        if (this.scheduler)
-          this.sampleLag(playerId, this.scheduler.nextFrame - (msg.report.frame + 1));
-        return this.afterHash(this.comparator.report(msg.report, this.expectedFor));
-      }
-      case 'resyncRequest':
-        if (!this.started) return this.error(connId, 'potje is nog niet gestart');
-        if (msg.request.playerId !== playerId)
-          return this.error(connId, 'playerId komt niet overeen met verbinding');
-        if (this.resyncs.has(playerId)) return; // loopt al (bijv. automatisch gestart bij reconnect)
-        this.hashFrom.set(playerId, Infinity);
-        return this.assignPeer(playerId, new Set(), msg.request.lastFrame);
-      case 'resyncResponse':
-        return this.onResyncResponse(connId, playerId, msg.response);
-    }
+    return roomHandle(internals(this), connId, msg);
   }
 
   /** Verbinding weg. In de lobby verdwijnt de speler; in een potje wordt hij offline. */
   disconnect(connId: string): void {
-    const playerId = this.conns.get(connId);
-    if (playerId === undefined) return;
-    this.conns.delete(connId);
-    this.connOf.delete(playerId);
-    this.hashExempt.delete(playerId);
-    if (this.started) {
-      const p = this.players.get(playerId);
-      if (p) p.online = false;
-      this.lastFrameOffline.set(playerId, Math.max(0, (this.scheduler?.nextFrame ?? 0) - 1));
-      this.delay.forget(playerId);
-      this.resyncs.delete(playerId);
-      for (const [target, r] of [...this.resyncs])
-        if (r.peer === playerId)
-          this.assignPeer(target, new Set([...r.tried, playerId]), r.lastFrame);
-      if (!this.halted) this.afterHash(this.comparator.recheck(this.expectedFor));
-      this.checkStall();
-    } else {
-      this.players.delete(playerId);
-      this.clientIds.delete(playerId);
-      if (![...this.players.values()].some((p) => !p.ai)) this.players.clear(); // geen mensen meer: AI's gaan mee
-      this.broadcastLobby();
-    }
+    return roomDisconnect(internals(this), connId);
   }
 
   /** Eén tick: geeft de volgende bundel uit aan alle verbonden spelers. Geen effect voor start of na desync. */
@@ -291,242 +189,83 @@ export class Room {
     return bundle;
   }
 
-  // --- lobby ---
+  // --- lobby (room.lobby.ts) ---
 
   private join(connId: string, name: string, clientId: string | undefined): void {
-    if (this.conns.has(connId)) return this.error(connId, 'al gejoind');
-    const known =
-      clientId === undefined
-        ? undefined
-        : [...this.clientIds].find(([, id]) => id === clientId)?.[0];
-    if (known !== undefined) return this.rejoin(connId, known);
-    if (this.started) return this.error(connId, 'potje is al gestart');
-    const playerId = this.freeSlot();
-    if (playerId < 0) return this.error(connId, 'room is vol');
-    this.conns.set(connId, playerId);
-    this.connOf.set(playerId, connId);
-    if (clientId !== undefined) this.clientIds.set(playerId, clientId);
-    this.players.set(playerId, {
-      playerId,
-      name: this.uniqueName(name),
-      faction: this.defaultFaction,
-      ready: false,
-      online: true,
-      ai: false,
-    });
-    this.unreadyHumans();
-    this.broadcastLobby();
+    return roomJoin(internals(this), connId, name, clientId);
   }
 
-  /**
-   * Menselijke namen zijn uniek in een room: een tweede "Speler" wordt "Speler 2", de volgende "Speler 3". De client
-   * herkent zijn eigen regel in de lobby aan de naam (de lobby-berichten dragen geen `you`), dus twee gelijke namen
-   * mogen niet naast elkaar bestaan. Hoofdletterongevoelig; past binnen de 32 tekens van het protocol.
-   */
   private uniqueName(name: string): string {
-    const taken = new Set<string>();
-    for (const p of this.players.values()) if (!p.ai) taken.add(p.name.toLowerCase());
-    if (!taken.has(name.toLowerCase())) return name;
-    for (let n = 2; ; n++) {
-      const suffix = ` ${n}`;
-      const candidate = `${name.slice(0, MAX_NAME_LENGTH - suffix.length)}${suffix}`;
-      if (!taken.has(candidate.toLowerCase())) return candidate;
-    }
+    return roomUniqueName(internals(this), name);
   }
 
-  /** Bekende clientId: zelfde playerId, online weer aan. Na start volgt de resync. */
   private rejoin(connId: string, playerId: number): void {
-    const old = this.connOf.get(playerId);
-    if (old !== undefined) {
-      this.conns.delete(old); // oude (halfdode) verbinding wordt vervangen
-      this.send(old, { kind: 'error', message: 'vervangen door een nieuwe verbinding' });
-    }
-    this.conns.set(connId, playerId);
-    this.connOf.set(playerId, connId);
-    const player = this.players.get(playerId) as Player;
-    player.online = true;
-    if (!this.started) return this.broadcastLobby();
-    this.send(connId, this.startMessage(playerId));
-    this.hashFrom.set(playerId, Infinity);
-    this.resyncs.delete(playerId);
-    this.assignPeer(playerId, new Set(), this.lastFrameOffline.get(playerId) ?? 0);
+    return roomRejoin(internals(this), connId, playerId);
   }
 
   private maybeStart(): void {
-    const list = this.sortedPlayers();
-    if (list.length < this.minPlayers || !list.every((p) => p.ready)) return;
-    this.started = true;
-    this.seed = this.chooseSeed() >>> 0;
-    this.scheduler = new FrameScheduler(this.settings.delayFrames);
-    for (const [connId, playerId] of this.conns) this.send(connId, this.startMessage(playerId));
+    return roomMaybeStart(internals(this));
   }
 
   private seed = 0;
 
   private startMessage(playerId: number): StartMessage {
-    return {
-      kind: 'start',
-      seed: this.seed,
-      map: this.map,
-      players: this.sortedPlayers(),
-      settings: { ...this.settings },
-      dataVersion: this.dataVersion,
-      you: playerId,
-    };
+    return roomStartMessage(internals(this), playerId);
   }
 
-  /** De host is de laagste playerId die geen AI is. */
   private hostId(): number {
-    let host = -1;
-    for (const p of this.players.values())
-      if (!p.ai && (host < 0 || p.playerId < host)) host = p.playerId;
-    return host;
+    return roomHostId(internals(this));
   }
 
   private hostCheck(connId: string, playerId: number): boolean {
-    if (this.started) {
-      this.error(connId, 'potje is al gestart');
-      return false;
-    }
-    if (playerId !== this.hostId()) {
-      this.error(connId, 'alleen de host mag dit');
-      return false;
-    }
-    return true;
+    return roomHostCheck(internals(this), connId, playerId);
   }
 
   private freeSlot(): number {
-    for (let i = 0; i < MAX_PLAYERS; i++) if (!this.players.has(i)) return i;
-    return -1;
+    return roomFreeSlot(internals(this));
   }
 
-  /** Een lobbywijziging die het potje raakt, vraagt om nieuwe bevestiging; AI-spelers blijven ready. */
   private unreadyHumans(): void {
-    for (const p of this.players.values()) if (!p.ai) p.ready = false;
+    return roomUnreadyHumans(internals(this));
   }
 
-  // --- hashes en stall ---
+  // --- hashes en stall (room.sync.ts) ---
 
   private afterHash(ev: DesyncEvent | null): void {
-    if (!ev) return;
-    this.halted = true; // slice: een desync stopt het potje
-    this.broadcast({ kind: 'desync', event: ev });
+    return roomAfterHash(internals(this), ev);
   }
 
-  /** Wie meldt voor frame f: online menselijke spelers, niet vrijgesteld, en met state van voor f. AI telt niet mee. */
   private readonly expectedFor = (frame: number): number[] =>
-    this.sortedPlayers()
-      .filter(
-        (p) =>
-          p.online &&
-          !p.ai &&
-          !this.hashExempt.has(p.playerId) &&
-          frame >= (this.hashFrom.get(p.playerId) ?? 0),
-      )
-      .map((p) => p.playerId);
+    roomExpectedFor(internals(this), frame);
 
-  /**
-   * StallNotice. Lockstep pauzeert op de client zelf (ontbrekende bundel); de relay blijft bundels uitgeven, dus
-   * een trage speler houdt de anderen niet tegen. Wat wel blokkeert is de hash-vergelijking en daarmee desync-
-   * detectie. Hashes zijn de hartslag (elke HASH_INTERVAL_FRAMES, 1 s): ontbreekt bij een online menselijke speler
-   * de hash van het oudste openstaande frame langer dan STALL_TIMEOUT_MS nadat een ander al meldde, dan loopt
-   * hij vast (bevroren tab, gepauzeerde sim) en sturen we `stall` met zijn playerId naar iedereen, zodat de UI
-   * kan tonen wie er wacht. Alleen bij wijziging; een lege waitingFor wist de melding. Een speler die wegvalt of
-   * alsnog meldt, valt weer uit de lijst.
-   */
   private checkStall(): void {
-    if (!this.started || this.halted) return;
-    const pending = this.comparator.oldestPending(this.expectedFor);
-    const waiting = pending && this.now() - pending.since > STALL_TIMEOUT_MS ? pending.missing : [];
-    const key = waiting.join(',');
-    if (key === this.stallKey) return;
-    this.stallKey = key;
-    this.broadcast({ kind: 'stall', notice: { waitingFor: waiting } });
+    return roomCheckStall(internals(this));
   }
 
   private sampleLag(playerId: number, lagFrames: number): void {
-    if (!this.adaptiveDelay || this.hashExempt.has(playerId)) return;
-    if (this.resyncs.has(playerId) || (this.hashFrom.get(playerId) ?? 0) === Infinity) return;
-    if ((this.scheduler?.nextFrame ?? 0) < (this.sampleAfter.get(playerId) ?? 0)) return;
-    this.delay.sample(playerId, lagFrames);
+    return roomSampleLag(internals(this), playerId, lagFrames);
   }
 
-  // --- resync ---
+  // --- resync (room.sync.ts) ---
 
-  /** Peer = laagste online menselijke playerId met state (niet het doel, niet eerder geprobeerd). */
   private assignPeer(target: number, tried: Set<number>, lastFrame: number): void {
-    const targetConn = this.connOf.get(target);
-    if (targetConn === undefined) return void this.resyncs.delete(target);
-    const peer = this.sortedPlayers().find(
-      (p) =>
-        p.online &&
-        !p.ai &&
-        p.playerId !== target &&
-        !tried.has(p.playerId) &&
-        (this.hashFrom.get(p.playerId) ?? 0) !== Infinity,
-    );
-    const peerConn = peer && this.connOf.get(peer.playerId);
-    if (!peer || peerConn === undefined) {
-      this.resyncs.delete(target);
-      return this.error(targetConn, 'geen peer beschikbaar voor resync');
-    }
-    this.resyncs.set(target, {
-      peer: peer.playerId,
-      requestedAt: this.now(),
-      lastFrame,
-      tried: new Set(tried).add(peer.playerId),
-    });
-    this.send(peerConn, { kind: 'resyncRequest', request: { playerId: target, lastFrame } });
+    return roomAssignPeer(internals(this), target, tried, lastFrame);
   }
 
   private onResyncResponse(connId: string, peerId: number, response: ResyncResponse): void {
-    const entry = [...this.resyncs].find(([, r]) => r.peer === peerId);
-    if (!entry || !this.scheduler) return this.error(connId, 'geen resync gevraagd');
-    const [target, pending] = entry;
-    const next = this.scheduler.nextFrame;
-    const first = this.history[0]?.frame ?? next;
-    // response.frame = Sim.frame van de state (eerstvolgende uit te voeren frame). Moet binnen de bewaarde bundels vallen.
-    if (response.frame > next || response.frame < first) {
-      this.error(connId, 'resync-state ligt buiten de bewaarde bundels');
-      return this.assignPeer(target, pending.tried, pending.lastFrame);
-    }
-    const targetConn = this.connOf.get(target);
-    this.resyncs.delete(target);
-    if (targetConn === undefined) return;
-    const bundles = this.history.filter((b) => b.frame >= response.frame);
-    this.send(targetConn, {
-      kind: 'resyncResponse',
-      response: { frame: response.frame, stateBase64: response.stateBase64, bundles },
-    });
-    this.hashFrom.set(target, response.frame);
-    this.sampleAfter.set(target, next + SAMPLE_GRACE_FRAMES);
-    this.delay.forget(target);
-    this.afterHash(this.comparator.recheck(this.expectedFor));
+    return roomOnResyncResponse(internals(this), connId, peerId, response);
   }
 
   private checkResyncTimeouts(): void {
-    const t = this.now();
-    for (const [target, r] of [...this.resyncs])
-      if (t - r.requestedAt > RESYNC_TIMEOUT_MS) this.assignPeer(target, r.tried, r.lastFrame);
+    return roomCheckResyncTimeouts(internals(this));
   }
 
   private sortedPlayers(): Player[] {
-    return [...this.players.values()]
-      .sort((a, b) => a.playerId - b.playerId)
-      .map((p) => ({ ...p }));
+    return roomSortedPlayers(internals(this));
   }
 
   private broadcastLobby(): void {
-    // Same content for everyone, but each connection gets its own playerId as `you` (fase-0 section 23 decision 7).
-    for (const [connId, playerId] of this.conns)
-      this.send(connId, {
-        kind: 'lobby',
-        roomId: this.roomId,
-        map: this.map,
-        players: this.sortedPlayers(),
-        settings: { ...this.settings },
-        you: playerId,
-      });
+    return roomBroadcastLobby(internals(this));
   }
 
   private broadcast(msg: ServerMessage): void {
@@ -536,8 +275,4 @@ export class Room {
   private error(connId: string, message: string): void {
     this.send(connId, { kind: 'error', message });
   }
-}
-
-function clampDelay(n: number): number {
-  return Math.min(DELAY_FRAMES_MAX, Math.max(DELAY_FRAMES_MIN, n));
 }
