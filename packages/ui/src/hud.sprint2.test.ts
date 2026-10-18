@@ -370,7 +370,7 @@ describe('minimap', () => {
   it('klik in gather-targeting (geen punt-doel) valt terug op de camera', () => {
     const t = setup();
     mounted = t.handle;
-    press('g');
+    press('t');
     clickAt(t, 0, 0);
     expect(t.calls.focus).toEqual([[0, 0]]);
     expect(t.sent).toEqual([]);

@@ -1,5 +1,5 @@
 // The Raiders' HUD in a real browser (`?faction=raiders`): roster without pseudo loadouts and without truncated names,
-// the top bar (slaves, fighters, guards), the commands of a slave, Bewaak (W) on the Raiderkamp and the guard lines of a
+// the top bar (slaves, fighters, guards), the commands of a slave, Bewaak (G) on the Raiderkamp and the guard lines of a
 // scrap node (data 0.29.0, protocol 0.15.0 Guard), the cards of a tent, the Kooi placement reason, and (after a Slaver is
 // made in the tent) Vang with its hint.
 //   HUD_URL=http://localhost:5211/ HUD_SHOTS=/some/dir node --import tsx src/hud-raiders.ts
@@ -117,7 +117,7 @@ async function run(width: number, height: number): Promise<void> {
     await clickSel('[data-group="slaaf_bouwer"]');
     check((await ev<string[]>(ACTIONS)).includes('build'), 'a slave builder gets Bouw');
 
-    // --- Fighters: Val aan and Bewaak (W) with its hint; Bewaak on the Raiderkamp (a Kooi) sends Guard.
+    // --- Fighters: Val aan and Bewaak (G) with its hint; Bewaak on the Raiderkamp (a Kooi) sends Guard.
     await clickSel('[data-group="knuppelaar"]');
     const fighterActions = await ev<string[]>(ACTIONS);
     check(fighterActions.includes('attackMove'), 'a fighter gets Val aan');
@@ -130,10 +130,10 @@ async function run(width: number, height: number): Promise<void> {
       'Bewaak explains itself',
       guardTitle,
     );
-    await page.keyboard.press('w');
+    await page.keyboard.press('g');
     await wait(300);
     const aim = await ev<string>(textOf('.co-targeting'));
-    check(/Kies een kooi of scrapbron om te bewaken/.test(aim), 'W aims Bewaak', aim);
+    check(/Kies een kooi of scrapbron om te bewaken/.test(aim), 'G aims Bewaak', aim);
     const camp = await ev<{ x: number; y: number } | null>(`(() => {
       const c = window.crawlout; const t = c.placement.typeId('raiderkamp');
       const e = [...c.entities().values()].find((e) => e.owner === c.session.playerId && e.typeId === t);

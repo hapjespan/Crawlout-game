@@ -11,7 +11,7 @@ Toetsen werken niet in een tekstveld en niet met Ctrl, Cmd of Alt.
 | M          | Verplaatsen (targeting)                                  | selectie                                                                               |
 | A          | Aanvallen-verplaatsen (targeting)                        | selectie                                                                               |
 | S          | Stop                                                     | selectie                                                                               |
-| G          | Verzamelen (targeting op een node)                       | selectie                                                                               |
+| T          | Verzamelen (targeting op een node)                       | selectie                                                                               |
 | 1, 2, 3    | Rol plunderaar, bouwer, militie                          | selectie                                                                               |
 | B          | Bouwmenu                                                 |                                                                                        |
 | 1 tot 9    | Gebouw kiezen                                            | bouwmenu open                                                                          |

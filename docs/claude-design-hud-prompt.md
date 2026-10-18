@@ -108,7 +108,7 @@ Ontwerp de complete in-game interface (HUD) van **Crawlout**, een realtime-strat
 ### 8. Commandopaneel (rechtsonder)
 
 - Toont alleen de commando's die bij de selectie passen, elk met sneltoets:
-  - Verplaats (M), Stop (S), Val aan (A), Verzamel (G), Bouw (B);
+  - Verplaats (M), Stop (S), Val aan (A), Verzamel (T), Bouw (B);
   - de held krijgt zijn vaardigheden;
   - rol wisselen (Plunderaar 1, Bouwer 2, Militie 3) verschijnt pas als je een afgebouwde werkplaats hebt.
 - **Zonder selectie:** alleen een korte hint.

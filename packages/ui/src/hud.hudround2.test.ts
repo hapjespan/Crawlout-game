@@ -314,7 +314,7 @@ describe('vijand aanklikken om te bekijken', () => {
     mounted = t.handle;
     expect(actions(t.el)).toEqual([]);
     expect(t.el.querySelector('.co-commands')?.textContent).toContain('kun je niet bevelen');
-    for (const k of ['m', 's', 'a', 'g', 'b', '1', '2', '3']) press(k);
+    for (const k of ['m', 's', 'a', 'g', 't', 'b', '1', '2', '3']) press(k);
     expect(t.sent).toEqual([]);
     expect(t.el.querySelector('.co-cards')).toBeNull();
   });

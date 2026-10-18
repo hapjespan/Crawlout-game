@@ -660,7 +660,7 @@ async function runIn(browser: Browser, width: number, height: number): Promise<v
         foeActions.join(','),
       );
       await shot('08-enemy-inspect');
-      for (const key of ['m', 's', 'a', 'g', 'b']) await page.keyboard.press(key);
+      for (const key of ['m', 's', 'a', 'g', 't', 'b']) await page.keyboard.press(key);
       const ground = await groundSpot();
       await click(ground, { button: 'right' });
       await wait(400);

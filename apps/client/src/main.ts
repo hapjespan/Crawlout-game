@@ -275,8 +275,7 @@ async function main(): Promise<void> {
       // The frame stats are the compact badge in the top right (createPerfBadge), not the renderer's own overlay.
       stats: false,
       // A and S are HUD hotkeys (attack-move, stop); W, D, arrows and Q/E keep moving the camera.
-      // A, S and W are HUD hotkeys (Val aan, Stop, Bewaak): the camera pans with the arrows and D
-      camera: { panKeys: { KeyA: null, KeyS: null, KeyW: null } },
+      camera: { panKeys: { KeyA: null, KeyS: null } },
       ...(assets ? { assets } : {}),
       ...(textures ? { terrainTextures: textures } : {}),
     });
