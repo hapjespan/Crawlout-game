@@ -12,6 +12,7 @@ import { type ConformInfo, autoRigFromConfig, conformDocument } from './conform.
 import { type BodyPalette, type AssetEntry, manifestSchema, MANIFEST_VERSION } from './manifest.js';
 import { maxBoneCount, findSockets, animationIndex } from './inspect.js';
 import { validateAsset } from './validate.js';
+import { scaleSkinnedDocument } from './deriveScale.js';
 import { type RobotsResult, buildRobots, loadRobotsConfig } from './robots.js';
 import { splitJsonExists } from './splitJson.js';
 import { buildDelivered, loadDeliveredConfig } from './delivered.js';
@@ -182,6 +183,7 @@ export async function buildAssets(options: BuildOptions): Promise<BuildResult> {
             if (material) material.setBaseColorFactor([...hexToLinear(color), 1]);
             else derivedReport.errors.push(`derive: geen materiaal "${name}" in ${source}.`);
           }
+          if (derived.scale !== undefined) scaleSkinnedDocument(recoloured, derived.scale);
           if (derivedReport.errors.length === 0)
             validated.push({
               id: derived.id,
@@ -190,7 +192,7 @@ export async function buildAssets(options: BuildOptions): Promise<BuildResult> {
               kind: result.kind,
               conform,
               sourceBones,
-              bakedFrom: id,
+              ...(derived.scale === undefined ? { bakedFrom: id } : {}),
               ...(derived.palette ? { palette: derived.palette } : {}),
             });
         }
@@ -219,6 +221,7 @@ export async function buildAssets(options: BuildOptions): Promise<BuildResult> {
     options.raidersPath ?? join(srcDir, 'raiders.json'),
     options.dwellersGearPath ?? join(srcDir, 'dwellers-gear.json'),
     options.sitesPath ?? join(srcDir, 'sites.json'),
+    options.survivalPath ?? join(srcDir, 'survival.json'),
   ].filter((path) => splitJsonExists(path));
   const robots: RobotsResult = { reports: [], entries: [], outputs: new Map() };
   for (const robotsSource of robotConfigs) {

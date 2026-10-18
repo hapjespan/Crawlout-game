@@ -191,7 +191,7 @@ export const assetEntrySchema = z
     if (entry.kind === 'rigid-unit') {
       if (entry.rigid !== true)
         ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'een rigid-unit heeft rigid: true' });
-      if (!entry.teamMaterials || entry.teamMaterials.length === 0)
+      if (entry.teamMask !== 'none' && (!entry.teamMaterials || entry.teamMaterials.length === 0))
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: 'een rigid-unit heeft een team-materiaal (teamMaterials)',

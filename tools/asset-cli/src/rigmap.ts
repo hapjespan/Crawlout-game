@@ -85,6 +85,11 @@ export const rigmapSchema = z.object({
                 .refine((c) => Object.keys(c).length > 0, 'minstens één kleur'),
               /** Kledingpalet voor render (manifest `palette`); de basiskleuren hierboven blijven de GLB-kleuren. */
               palette: bodyPaletteSchema.optional(),
+              /**
+               * Uniform scale of the whole body (a mutant of 2,3 m: 1.25; the source stands at 1,8 m). The scaled variant
+               * gets its own baked animation texture instead of sharing the one of the source.
+               */
+              scale: z.number().min(0.5).max(2).optional(),
             }),
           )
           .optional(),

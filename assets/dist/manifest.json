@@ -3857,6 +3857,728 @@
       "teamMaterials": []
     },
     {
+      "id": "survival_behemoth",
+      "kind": "rigid-unit",
+      "bounds": {
+        "min": [
+          -3.18,
+          0,
+          -0.957481
+        ],
+        "max": [
+          2.6,
+          6.65,
+          1.276846
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "survival_behemoth/lod0.glb",
+          "triangles": 801
+        },
+        {
+          "level": 1,
+          "path": "survival_behemoth/lod1.glb",
+          "triangles": 384
+        },
+        {
+          "level": 2,
+          "path": "survival_behemoth/lod2.glb",
+          "triangles": 188
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMaterials": [],
+      "teamMask": "none",
+      "rigid": true
+    },
+    {
+      "id": "survival_ghoul",
+      "kind": "character",
+      "bounds": {
+        "min": [
+          -0.921192,
+          0.002294,
+          -0.154001
+        ],
+        "max": [
+          0.921614,
+          1.736029,
+          0.192157
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "survival_ghoul/lod0.glb",
+          "triangles": 3598
+        },
+        {
+          "level": 1,
+          "path": "survival_ghoul/lod1.glb",
+          "triangles": 1349
+        },
+        {
+          "level": 2,
+          "path": "survival_ghoul/lod2.glb",
+          "triangles": 492
+        }
+      ],
+      "sockets": {
+        "hand": [
+          -0.701955,
+          1.36876,
+          -0.06213
+        ],
+        "back": [
+          0,
+          1.24906,
+          -0.004655
+        ],
+        "head": [
+          0,
+          1.490265,
+          0.004845
+        ]
+      },
+      "animations": [
+        {
+          "name": "death",
+          "durationSeconds": 2.4
+        },
+        {
+          "name": "build",
+          "durationSeconds": 5.2
+        },
+        {
+          "name": "idle",
+          "durationSeconds": 2.5
+        },
+        {
+          "name": "gather",
+          "durationSeconds": 2
+        },
+        {
+          "name": "run",
+          "durationSeconds": 0.933333
+        },
+        {
+          "name": "attack1",
+          "durationSeconds": 0.633333
+        },
+        {
+          "name": "attack2",
+          "durationSeconds": 1
+        },
+        {
+          "name": "walk",
+          "durationSeconds": 1.333333
+        }
+      ],
+      "boneCount": 20,
+      "teamMask": "materialName",
+      "baked": {
+        "path": "survival_ghoul/survival_ghoul.anim.f32",
+        "width": 80,
+        "height": 480,
+        "fps": 30,
+        "clips": [
+          {
+            "name": "idle",
+            "startRow": 0,
+            "frames": 75,
+            "loop": true,
+            "durationSeconds": 2.5
+          },
+          {
+            "name": "walk",
+            "startRow": 75,
+            "frames": 40,
+            "loop": true,
+            "durationSeconds": 1.333333
+          },
+          {
+            "name": "run",
+            "startRow": 115,
+            "frames": 28,
+            "loop": true,
+            "durationSeconds": 0.933333
+          },
+          {
+            "name": "attack1",
+            "startRow": 143,
+            "frames": 19,
+            "loop": true,
+            "durationSeconds": 0.633333
+          },
+          {
+            "name": "attack2",
+            "startRow": 162,
+            "frames": 30,
+            "loop": true,
+            "durationSeconds": 1
+          },
+          {
+            "name": "gather",
+            "startRow": 192,
+            "frames": 60,
+            "loop": true,
+            "durationSeconds": 2
+          },
+          {
+            "name": "build",
+            "startRow": 252,
+            "frames": 156,
+            "loop": true,
+            "durationSeconds": 5.2
+          },
+          {
+            "name": "death",
+            "startRow": 408,
+            "frames": 72,
+            "loop": false,
+            "durationSeconds": 2.4
+          }
+        ]
+      },
+      "palette": {
+        "jacket": "#5d6652",
+        "patchTop": "#4b5342",
+        "patchLeg": "#3b4034",
+        "belt": "#292a23",
+        "trousers": "#434839",
+        "boots": "#2a2b24",
+        "skin": "#7f8c70",
+        "teamZone": "band",
+        "farTeam": 0
+      }
+    },
+    {
+      "id": "survival_ghoul_runner",
+      "kind": "character",
+      "bounds": {
+        "min": [
+          -0.872708,
+          0.002174,
+          -0.145896
+        ],
+        "max": [
+          0.873108,
+          1.644659,
+          0.182043
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "survival_ghoul_runner/lod0.glb",
+          "triangles": 3598
+        },
+        {
+          "level": 1,
+          "path": "survival_ghoul_runner/lod1.glb",
+          "triangles": 1348
+        },
+        {
+          "level": 2,
+          "path": "survival_ghoul_runner/lod2.glb",
+          "triangles": 492
+        }
+      ],
+      "sockets": {
+        "hand": [
+          -0.66501,
+          1.29672,
+          -0.05886
+        ],
+        "back": [
+          0,
+          1.18332,
+          -0.00441
+        ],
+        "head": [
+          0,
+          1.41183,
+          0.00459
+        ]
+      },
+      "animations": [
+        {
+          "name": "death",
+          "durationSeconds": 2.4
+        },
+        {
+          "name": "build",
+          "durationSeconds": 5.2
+        },
+        {
+          "name": "idle",
+          "durationSeconds": 2.5
+        },
+        {
+          "name": "gather",
+          "durationSeconds": 2
+        },
+        {
+          "name": "run",
+          "durationSeconds": 0.933333
+        },
+        {
+          "name": "attack1",
+          "durationSeconds": 0.633333
+        },
+        {
+          "name": "attack2",
+          "durationSeconds": 1
+        },
+        {
+          "name": "walk",
+          "durationSeconds": 1.333333
+        }
+      ],
+      "boneCount": 20,
+      "teamMask": "materialName",
+      "baked": {
+        "path": "survival_ghoul_runner/survival_ghoul_runner.anim.f32",
+        "width": 80,
+        "height": 480,
+        "fps": 30,
+        "clips": [
+          {
+            "name": "idle",
+            "startRow": 0,
+            "frames": 75,
+            "loop": true,
+            "durationSeconds": 2.5
+          },
+          {
+            "name": "walk",
+            "startRow": 75,
+            "frames": 40,
+            "loop": true,
+            "durationSeconds": 1.333333
+          },
+          {
+            "name": "run",
+            "startRow": 115,
+            "frames": 28,
+            "loop": true,
+            "durationSeconds": 0.933333
+          },
+          {
+            "name": "attack1",
+            "startRow": 143,
+            "frames": 19,
+            "loop": true,
+            "durationSeconds": 0.633333
+          },
+          {
+            "name": "attack2",
+            "startRow": 162,
+            "frames": 30,
+            "loop": true,
+            "durationSeconds": 1
+          },
+          {
+            "name": "gather",
+            "startRow": 192,
+            "frames": 60,
+            "loop": true,
+            "durationSeconds": 2
+          },
+          {
+            "name": "build",
+            "startRow": 252,
+            "frames": 156,
+            "loop": true,
+            "durationSeconds": 5.2
+          },
+          {
+            "name": "death",
+            "startRow": 408,
+            "frames": 72,
+            "loop": false,
+            "durationSeconds": 2.4
+          }
+        ]
+      },
+      "palette": {
+        "jacket": "#6c7660",
+        "patchTop": "#59634d",
+        "patchLeg": "#444a3a",
+        "belt": "#2d2e26",
+        "trousers": "#4e5441",
+        "boots": "#2c2d26",
+        "skin": "#8c9a7c",
+        "teamZone": "band",
+        "farTeam": 0
+      }
+    },
+    {
+      "id": "survival_klauwbeest",
+      "kind": "rigid-unit",
+      "bounds": {
+        "min": [
+          -0.68,
+          0,
+          -1.52
+        ],
+        "max": [
+          0.68,
+          1.556618,
+          1.572302
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "survival_klauwbeest/lod0.glb",
+          "triangles": 616
+        },
+        {
+          "level": 1,
+          "path": "survival_klauwbeest/lod1.glb",
+          "triangles": 328
+        },
+        {
+          "level": 2,
+          "path": "survival_klauwbeest/lod2.glb",
+          "triangles": 230
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMaterials": [],
+      "teamMask": "none",
+      "rigid": true
+    },
+    {
+      "id": "survival_mutant",
+      "kind": "character",
+      "bounds": {
+        "min": [
+          -1.212095,
+          0.003019,
+          -0.202633
+        ],
+        "max": [
+          1.212651,
+          2.284248,
+          0.252838
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "survival_mutant/lod0.glb",
+          "triangles": 3598
+        },
+        {
+          "level": 1,
+          "path": "survival_mutant/lod1.glb",
+          "triangles": 1349
+        },
+        {
+          "level": 2,
+          "path": "survival_mutant/lod2.glb",
+          "triangles": 492
+        }
+      ],
+      "sockets": {
+        "hand": [
+          -0.923625,
+          1.801,
+          -0.08175
+        ],
+        "back": [
+          0,
+          1.6435,
+          -0.006125
+        ],
+        "head": [
+          0,
+          1.960875,
+          0.006375
+        ]
+      },
+      "animations": [
+        {
+          "name": "death",
+          "durationSeconds": 2.4
+        },
+        {
+          "name": "build",
+          "durationSeconds": 5.2
+        },
+        {
+          "name": "idle",
+          "durationSeconds": 2.5
+        },
+        {
+          "name": "gather",
+          "durationSeconds": 2
+        },
+        {
+          "name": "run",
+          "durationSeconds": 0.933333
+        },
+        {
+          "name": "attack1",
+          "durationSeconds": 0.633333
+        },
+        {
+          "name": "attack2",
+          "durationSeconds": 1
+        },
+        {
+          "name": "walk",
+          "durationSeconds": 1.333333
+        }
+      ],
+      "boneCount": 20,
+      "teamMask": "materialName",
+      "baked": {
+        "path": "survival_mutant/survival_mutant.anim.f32",
+        "width": 80,
+        "height": 480,
+        "fps": 30,
+        "clips": [
+          {
+            "name": "idle",
+            "startRow": 0,
+            "frames": 75,
+            "loop": true,
+            "durationSeconds": 2.5
+          },
+          {
+            "name": "walk",
+            "startRow": 75,
+            "frames": 40,
+            "loop": true,
+            "durationSeconds": 1.333333
+          },
+          {
+            "name": "run",
+            "startRow": 115,
+            "frames": 28,
+            "loop": true,
+            "durationSeconds": 0.933333
+          },
+          {
+            "name": "attack1",
+            "startRow": 143,
+            "frames": 19,
+            "loop": true,
+            "durationSeconds": 0.633333
+          },
+          {
+            "name": "attack2",
+            "startRow": 162,
+            "frames": 30,
+            "loop": true,
+            "durationSeconds": 1
+          },
+          {
+            "name": "gather",
+            "startRow": 192,
+            "frames": 60,
+            "loop": true,
+            "durationSeconds": 2
+          },
+          {
+            "name": "build",
+            "startRow": 252,
+            "frames": 156,
+            "loop": true,
+            "durationSeconds": 5.2
+          },
+          {
+            "name": "death",
+            "startRow": 408,
+            "frames": 72,
+            "loop": false,
+            "durationSeconds": 2.4
+          }
+        ]
+      },
+      "palette": {
+        "jacket": "#8a9a3c",
+        "patchTop": "#a3a444",
+        "patchLeg": "#5f6a2a",
+        "belt": "#3a3d1c",
+        "trousers": "#68732f",
+        "boots": "#383b1d",
+        "skin": "#a3ae4a",
+        "teamZone": "band",
+        "farTeam": 0
+      }
+    },
+    {
+      "id": "survival_mutant_brute",
+      "kind": "character",
+      "bounds": {
+        "min": [
+          -1.37694,
+          0.003429,
+          -0.230191
+        ],
+        "max": [
+          1.377571,
+          2.594906,
+          0.287224
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "survival_mutant_brute/lod0.glb",
+          "triangles": 3598
+        },
+        {
+          "level": 1,
+          "path": "survival_mutant_brute/lod1.glb",
+          "triangles": 1349
+        },
+        {
+          "level": 2,
+          "path": "survival_mutant_brute/lod2.glb",
+          "triangles": 493
+        }
+      ],
+      "sockets": {
+        "hand": [
+          -1.049238,
+          2.045936,
+          -0.092868
+        ],
+        "back": [
+          0,
+          1.867016,
+          -0.006958
+        ],
+        "head": [
+          0,
+          2.227554,
+          0.007242
+        ]
+      },
+      "animations": [
+        {
+          "name": "death",
+          "durationSeconds": 2.4
+        },
+        {
+          "name": "build",
+          "durationSeconds": 5.2
+        },
+        {
+          "name": "idle",
+          "durationSeconds": 2.5
+        },
+        {
+          "name": "gather",
+          "durationSeconds": 2
+        },
+        {
+          "name": "run",
+          "durationSeconds": 0.933333
+        },
+        {
+          "name": "attack1",
+          "durationSeconds": 0.633333
+        },
+        {
+          "name": "attack2",
+          "durationSeconds": 1
+        },
+        {
+          "name": "walk",
+          "durationSeconds": 1.333333
+        }
+      ],
+      "boneCount": 20,
+      "teamMask": "materialName",
+      "baked": {
+        "path": "survival_mutant_brute/survival_mutant_brute.anim.f32",
+        "width": 80,
+        "height": 480,
+        "fps": 30,
+        "clips": [
+          {
+            "name": "idle",
+            "startRow": 0,
+            "frames": 75,
+            "loop": true,
+            "durationSeconds": 2.5
+          },
+          {
+            "name": "walk",
+            "startRow": 75,
+            "frames": 40,
+            "loop": true,
+            "durationSeconds": 1.333333
+          },
+          {
+            "name": "run",
+            "startRow": 115,
+            "frames": 28,
+            "loop": true,
+            "durationSeconds": 0.933333
+          },
+          {
+            "name": "attack1",
+            "startRow": 143,
+            "frames": 19,
+            "loop": true,
+            "durationSeconds": 0.633333
+          },
+          {
+            "name": "attack2",
+            "startRow": 162,
+            "frames": 30,
+            "loop": true,
+            "durationSeconds": 1
+          },
+          {
+            "name": "gather",
+            "startRow": 192,
+            "frames": 60,
+            "loop": true,
+            "durationSeconds": 2
+          },
+          {
+            "name": "build",
+            "startRow": 252,
+            "frames": 156,
+            "loop": true,
+            "durationSeconds": 5.2
+          },
+          {
+            "name": "death",
+            "startRow": 408,
+            "frames": 72,
+            "loop": false,
+            "durationSeconds": 2.4
+          }
+        ]
+      },
+      "palette": {
+        "jacket": "#7c8a2e",
+        "patchTop": "#b0a63a",
+        "patchLeg": "#566024",
+        "belt": "#33361a",
+        "trousers": "#5f6a29",
+        "boots": "#323518",
+        "skin": "#9aa63f",
+        "teamZone": "band",
+        "farTeam": 0
+      }
+    },
+    {
       "id": "tree_bare_01",
       "kind": "prop",
       "bounds": {
