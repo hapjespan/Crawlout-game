@@ -106,7 +106,9 @@ export function ResourceBar(props: {
     ),
     h(Counter, { kind: 'pop', label: 'Populatie', value: s ? `${s.pop}/${s.popCap}` : '–', full }),
     // Robots count for pop but not for beds: the sim reports them next to the settlers' pop.
-    props.robots !== false && s && ((s.robotPop ?? 0) > 0 || s.queue.some((q) => q.kind === 'produce'))
+    props.robots !== false &&
+      s &&
+      ((s.robotPop ?? 0) > 0 || s.queue.some((q) => q.kind === 'produce'))
       ? h(Counter, { kind: 'robots', label: 'Robots', value: String(s.robotPop ?? 0) })
       : null,
     h(Counter, { kind: 'beds', label: 'Bedden', value: fmt(s?.beds) }),

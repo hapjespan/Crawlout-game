@@ -261,7 +261,7 @@ describe('Raider roster tile and portraits', () => {
 describe('Robots counter', () => {
   const producing: PlayerStatus = {
     ...status,
-    queue: [{ kind: 'produce', id: 10, buildingId: 1, progressPermille: 100 }],
+    queue: [{ kind: 'produce', id: 10, unitId: 5, buildingId: 1, progressPermille: 100 }],
   };
   it('does not show for the Raiders: a tent producing fighters is no robot production', () => {
     const t = setup({ getStatus: () => producing, getRaiderStats: () => stats() });

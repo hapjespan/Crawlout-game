@@ -1,8 +1,5 @@
 // Shared parts of the playtest bots (playtest.ts, playtest2.ts): the Bot (logging, reading the game, human-speed input,
 // camera) and the building placement through the real B menu. Not a script; importing it starts nothing.
-// real-time human speed. The perf badge is sampled in real-time stretches only (fast-forward frames say nothing).
-import { mkdirSync, writeFileSync } from 'node:fs';
-import { chromium } from '@playwright/test';
 import type { Page } from '@playwright/test';
 
 export const SHOTS = process.env.PLAYTEST_SHOTS;
@@ -189,7 +186,11 @@ export class Bot {
 
   /** One line with everything a player can read off the screen. */
   async observe(): Promise<string> {
-    if (!(await this.ev<boolean>(`!!(window.crawlout && window.crawlout.entities().size > 10)`).catch(() => false)))
+    if (
+      !(await this.ev<boolean>(`!!(window.crawlout && window.crawlout.entities().size > 10)`).catch(
+        () => false,
+      ))
+    )
       return `geen potje (menu of splash) | selectie "${(await this.selection()).slice(0, 40)}"`;
     const s = await this.status().catch(() => null);
     const sel = await this.selection();
@@ -600,7 +601,9 @@ export async function placeBuilding(
     optLabel,
   );
   if (!/Plaats/.test(await bot.text('.co-targeting'))) {
-    bot.say(`  geen plaatsbalk; hint "${(await bot.text('.co-hint')).replace(/\s+/g, ' ').trim().slice(0, 100)}"; selectie "${(await bot.selection()).slice(0, 60)}"; menu open: ${await bot.ev<boolean>(`!!document.querySelector('.co-menu')`)}`);
+    bot.say(
+      `  geen plaatsbalk; hint "${(await bot.text('.co-hint')).replace(/\s+/g, ' ').trim().slice(0, 100)}"; selectie "${(await bot.selection()).slice(0, 60)}"; menu open: ${await bot.ev<boolean>(`!!document.querySelector('.co-menu')`)}`,
+    );
     await bot.shot(`geen-plaatsbalk-${naam}`);
   }
   // The roster click centred the camera on the builder, who may be far away (at a claim post): look at the base.
@@ -643,7 +646,9 @@ export async function placeBuilding(
       return added[0] ?? null;
     }
     if (tried.length < 2) {
-      bot.say(`  geweigerd op ${Math.round(c.gx / 256)},${Math.round(c.gy / 256)}: "${(await bot.text('.co-targeting')).replace(/\s+/g, ' ').trim().slice(0, 140)}"`);
+      bot.say(
+        `  geweigerd op ${Math.round(c.gx / 256)},${Math.round(c.gy / 256)}: "${(await bot.text('.co-targeting')).replace(/\s+/g, ' ').trim().slice(0, 140)}"`,
+      );
       if (tried.length === 0) await bot.shot(`placement-refused-${naam}`);
     }
     tried.push(`${Math.round(c.gx / 256)},${Math.round(c.gy / 256)}`);
@@ -657,7 +662,12 @@ export async function placeBuilding(
 }
 
 /** Waits until a new building of this site is finished (anim not build). */
-export async function untilBuilt(bot: Bot, site: Ent | null, naam: string, maxS = 240): Promise<boolean> {
+export async function untilBuilt(
+  bot: Bot,
+  site: Ent | null,
+  naam: string,
+  maxS = 240,
+): Promise<boolean> {
   if (!site) return false;
   return bot.until(
     `${naam} klaar`,

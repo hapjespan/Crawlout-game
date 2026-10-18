@@ -19,7 +19,6 @@ import { chromium } from '@playwright/test';
 import type { Page } from '@playwright/test';
 import {
   ALL_FINDINGS,
-  ANIM_BUILD,
   BUILDING_MAX,
   BUILDING_MIN,
   Bot,
