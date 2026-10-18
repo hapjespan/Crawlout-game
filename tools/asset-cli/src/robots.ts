@@ -8,8 +8,9 @@
 // weapon, a tool, a pack, a helm, a plate set. Its origin is the point it is held or worn at (`anchor`), see README.
 // A rigid unit (kind 'rigid-unit') has no skeleton and no animations: movement is a transform of the whole model.
 // The surface kind of a part is its material name (render: surfaceKindOfMaterial), the team band is `team_trim`.
-// All shape numbers live in robots.json; this module validates and writes the LOD GLBs and the manifest entries.
-import { readFileSync } from 'node:fs';
+// All shape numbers live in the configs (split JSON, see src/splitJson.ts); this module validates and writes the LOD
+// GLBs and the manifest entries.
+import { readSplitJson } from './splitJson.js';
 import { getBounds } from '@gltf-transform/functions';
 import { BUDGETS } from './budgets.js';
 import {
@@ -135,8 +136,9 @@ export function parseRobots(json: unknown): RobotsConfig {
   );
 }
 
+/** Reads a config: the file at `path` or its split fragment directory (src/splitJson.ts). */
 export function loadRobotsConfig(path: string): RobotsConfig {
-  return parseRobots(JSON.parse(readFileSync(path, 'utf8')));
+  return parseRobots(readSplitJson(path));
 }
 
 /** De config als gebouwengenerator-config (zonder bronnen); units krijgen een nietszeggende footprint, die niet gebruikt wordt. */

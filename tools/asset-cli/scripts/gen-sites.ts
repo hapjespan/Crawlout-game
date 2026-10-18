@@ -1,15 +1,16 @@
-// Generates assets/src/sites.json: the eight placeholder buildings of winroute C, "Bouwproject" (an old ruined strip mall
+// Generates assets/src/sites.json, a split config written as the fragments in assets/src/sites/ (see src/splitJson.ts and
+// scripts/splitConfig.ts): the eight placeholder buildings of winroute C, "Bouwproject" (an old ruined strip mall
 // with four restorable parts). Every part has a ruin (`site_<part>_ruin`, rust colours, no team colour) and a restored
 // state (`site_<part>_restored`, clean, with the team band) on the same footprint and about the same silhouette. The shapes
 // live in scripts/sites/*.ts (a small part builder, so a canopy or a wall is a few lines instead of hundreds of JSON parts);
 // the build itself (`pnpm assets`) only reads the JSON, like raiders.json. Run: `pnpm --filter @crawlout/asset-cli sites`.
-import { writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import type { Part } from './sites/builder.js';
 import { garage } from './sites/garage.js';
 import { gasStation } from './sites/gasStation.js';
 import { supermarket } from './sites/supermarket.js';
 import { waterTower } from './sites/waterTower.js';
+import { writeSplitConfig } from './splitConfig.js';
 
 export const SITES_VERSION = 1 as const;
 
@@ -134,7 +135,7 @@ export function buildSites(): Record<string, unknown> {
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
-  const out = new URL('../../../assets/src/sites.json', import.meta.url);
-  writeFileSync(out, `${JSON.stringify(buildSites(), null, 2)}\n`);
-  console.log(`geschreven: ${fileURLToPath(out)}`);
+  const out = fileURLToPath(new URL('../../../assets/src/sites', import.meta.url));
+  const names = writeSplitConfig(out, buildSites());
+  console.log(`geschreven: ${out} (${names.length} fragmenten)`);
 }

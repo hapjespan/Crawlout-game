@@ -13,6 +13,7 @@ import { type BodyPalette, type AssetEntry, manifestSchema, MANIFEST_VERSION } f
 import { maxBoneCount, findSockets, animationIndex } from './inspect.js';
 import { validateAsset } from './validate.js';
 import { type RobotsResult, buildRobots, loadRobotsConfig } from './robots.js';
+import { splitJsonExists } from './splitJson.js';
 import { buildDelivered, loadDeliveredConfig } from './delivered.js';
 import { type PacksConfig, loadPacksConfig, buildPacks, findPacksDir } from './packs.js';
 import { BUDGETS } from './budgets.js';
@@ -218,7 +219,7 @@ export async function buildAssets(options: BuildOptions): Promise<BuildResult> {
     options.raidersPath ?? join(srcDir, 'raiders.json'),
     options.dwellersGearPath ?? join(srcDir, 'dwellers-gear.json'),
     options.sitesPath ?? join(srcDir, 'sites.json'),
-  ].filter((path) => existsSync(path));
+  ].filter((path) => splitJsonExists(path));
   const robots: RobotsResult = { reports: [], entries: [], outputs: new Map() };
   for (const robotsSource of robotConfigs) {
     const source = relative(srcDir, robotsSource).split(sep).join('/');

@@ -1,0 +1,577 @@
+{
+  "buildings": {
+    "site_water_tower_restored": {
+      "parts": [
+        {
+          "type": "tube",
+          "material": "metal_dark",
+          "points": [
+            [0, 0, 0],
+            [-0.242, 4, -4.842]
+          ],
+          "radius": 0.055,
+          "sides": 3,
+          "position": [2.542, 8.4, 2.542],
+          "maxLod": 1
+        },
+        {
+          "type": "tube",
+          "material": "metal_dark",
+          "points": [
+            [0, 0, 0],
+            [-4.842, 4, -0.242]
+          ],
+          "radius": 0.055,
+          "sides": 3,
+          "position": [2.542, 8.4, 2.542],
+          "maxLod": 1
+        },
+        {
+          "type": "tube",
+          "material": "metal_dark",
+          "points": [
+            [0, 0, 0],
+            [4.842, 4, -0.242]
+          ],
+          "radius": 0.055,
+          "sides": 3,
+          "position": [-2.542, 8.4, 2.542],
+          "maxLod": 1
+        },
+        {
+          "type": "tube",
+          "material": "metal_dark",
+          "points": [
+            [0, 0, 0],
+            [0.242, 4, -4.842]
+          ],
+          "radius": 0.055,
+          "sides": 3,
+          "position": [-2.542, 8.4, 2.542],
+          "maxLod": 1
+        },
+        {
+          "type": "tube",
+          "material": "metal_dark",
+          "points": [
+            [0, 0, 0],
+            [0.242, 4, 4.842]
+          ],
+          "radius": 0.055,
+          "sides": 3,
+          "position": [-2.542, 8.4, -2.542],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "material": "metal_dark",
+          "size": [5.5, 0.25, 5.5],
+          "position": [0, 12.4, 0]
+        },
+        {
+          "type": "tube",
+          "material": "metal",
+          "points": [
+            [0, 0, 0],
+            [0, 12.25, -0.741],
+            [0, 13.1, -0.196]
+          ],
+          "radius": 0.04,
+          "sides": 3,
+          "position": [-0.28, 0.4, 3.346],
+          "maxLod": 1
+        },
+        {
+          "type": "tube",
+          "material": "metal",
+          "points": [
+            [0, 0, 0],
+            [0, 12.25, -0.741],
+            [0, 13.1, -0.196]
+          ],
+          "radius": 0.04,
+          "sides": 3,
+          "position": [0.28, 0.4, 3.346],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "material": "metal_dark",
+          "size": [0.6, 0.04, 0.05],
+          "position": [0, 0.7, 3.328],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "metal_dark",
+          "size": [0.6, 0.04, 0.05],
+          "position": [0, 1.15, 3.3],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "metal_dark",
+          "size": [0.6, 0.04, 0.05],
+          "position": [0, 1.6, 3.273],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "metal_dark",
+          "size": [0.6, 0.04, 0.05],
+          "position": [0, 2.05, 3.246],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "metal_dark",
+          "size": [0.6, 0.04, 0.05],
+          "position": [0, 2.5, 3.219],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "metal_dark",
+          "size": [0.6, 0.04, 0.05],
+          "position": [0, 2.95, 3.192],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "metal_dark",
+          "size": [0.6, 0.04, 0.05],
+          "position": [0, 3.4, 3.164],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "metal_dark",
+          "size": [0.6, 0.04, 0.05],
+          "position": [0, 3.85, 3.137],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "metal_dark",
+          "size": [0.6, 0.04, 0.05],
+          "position": [0, 4.3, 3.11],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "metal_dark",
+          "size": [0.6, 0.04, 0.05],
+          "position": [0, 4.75, 3.083],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "metal_dark",
+          "size": [0.6, 0.04, 0.05],
+          "position": [0, 5.2, 3.055],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "metal_dark",
+          "size": [0.6, 0.04, 0.05],
+          "position": [0, 5.65, 3.028],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "metal_dark",
+          "size": [0.6, 0.04, 0.05],
+          "position": [0, 6.1, 3.001],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "metal_dark",
+          "size": [0.6, 0.04, 0.05],
+          "position": [0, 6.55, 2.974],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "metal_dark",
+          "size": [0.6, 0.04, 0.05],
+          "position": [0, 7, 2.947],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "metal_dark",
+          "size": [0.6, 0.04, 0.05],
+          "position": [0, 7.45, 2.919],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "metal_dark",
+          "size": [0.6, 0.04, 0.05],
+          "position": [0, 7.9, 2.892],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "metal_dark",
+          "size": [0.6, 0.04, 0.05],
+          "position": [0, 8.35, 2.865],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "metal_dark",
+          "size": [0.6, 0.04, 0.05],
+          "position": [0, 8.8, 2.838],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "metal_dark",
+          "size": [0.6, 0.04, 0.05],
+          "position": [0, 9.25, 2.811],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "metal_dark",
+          "size": [0.6, 0.04, 0.05],
+          "position": [0, 9.7, 2.783],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "metal_dark",
+          "size": [0.6, 0.04, 0.05],
+          "position": [0, 10.15, 2.756],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "metal_dark",
+          "size": [0.6, 0.04, 0.05],
+          "position": [0, 10.6, 2.729],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "metal_dark",
+          "size": [0.6, 0.04, 0.05],
+          "position": [0, 11.05, 2.702],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "metal_dark",
+          "size": [0.6, 0.04, 0.05],
+          "position": [0, 11.5, 2.674],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "metal_dark",
+          "size": [0.6, 0.04, 0.05],
+          "position": [0, 11.95, 2.647],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "metal_dark",
+          "size": [0.6, 0.04, 0.05],
+          "position": [0, 12.4, 2.62],
+          "maxLod": 0
+        },
+        {
+          "type": "cylinder",
+          "material": "metal_light",
+          "radius": 1.6,
+          "height": 0.95,
+          "segments": 16,
+          "radiusTop": 2.9,
+          "position": [0, 12.65, 0],
+          "maxLod": 0
+        },
+        {
+          "type": "cylinder",
+          "material": "metal_light",
+          "radius": 1.6,
+          "height": 0.95,
+          "segments": 12,
+          "radiusTop": 2.9,
+          "position": [0, 12.65, 0],
+          "maxLod": 1,
+          "minLod": 1
+        },
+        {
+          "type": "cylinder",
+          "material": "metal_light",
+          "radius": 1.6,
+          "height": 0.95,
+          "segments": 8,
+          "radiusTop": 2.9,
+          "position": [0, 12.65, 0],
+          "minLod": 2
+        },
+        {
+          "type": "cylinder",
+          "material": "metal_light",
+          "radius": 2.9,
+          "height": 3.45,
+          "segments": 16,
+          "position": [0, 13.6, 0],
+          "maxLod": 0
+        },
+        {
+          "type": "cylinder",
+          "material": "metal_light",
+          "radius": 2.9,
+          "height": 3.45,
+          "segments": 12,
+          "position": [0, 13.6, 0],
+          "maxLod": 1,
+          "minLod": 1
+        },
+        {
+          "type": "cylinder",
+          "material": "metal_light",
+          "radius": 2.9,
+          "height": 3.45,
+          "segments": 8,
+          "position": [0, 13.6, 0],
+          "minLod": 2
+        },
+        {
+          "type": "cylinder",
+          "material": "team_trim",
+          "radius": 2.95,
+          "height": 0.75,
+          "segments": 16,
+          "open": true,
+          "position": [0, 14.25, 0],
+          "maxLod": 0
+        },
+        {
+          "type": "cylinder",
+          "material": "team_trim",
+          "radius": 2.95,
+          "height": 0.75,
+          "segments": 12,
+          "open": true,
+          "position": [0, 14.25, 0],
+          "maxLod": 1,
+          "minLod": 1
+        },
+        {
+          "type": "cylinder",
+          "material": "team_trim",
+          "radius": 2.95,
+          "height": 0.75,
+          "segments": 8,
+          "open": true,
+          "position": [0, 14.25, 0],
+          "minLod": 2
+        },
+        {
+          "type": "cone",
+          "material": "metal",
+          "radius": 2.95,
+          "height": 1.1,
+          "segments": 16,
+          "position": [0, 17.05, 0],
+          "maxLod": 0
+        },
+        {
+          "type": "cone",
+          "material": "metal",
+          "radius": 2.95,
+          "height": 1.1,
+          "segments": 12,
+          "position": [0, 17.05, 0],
+          "maxLod": 1,
+          "minLod": 1
+        },
+        {
+          "type": "cone",
+          "material": "metal",
+          "radius": 2.95,
+          "height": 1.1,
+          "segments": 8,
+          "position": [0, 17.05, 0],
+          "minLod": 2
+        },
+        {
+          "type": "cylinder",
+          "material": "metal_dark",
+          "radius": 3.3,
+          "height": 0.1,
+          "segments": 12,
+          "position": [0, 13.45, 0],
+          "maxLod": 1
+        },
+        {
+          "type": "tube",
+          "material": "metal_dark",
+          "points": [
+            [0, 0, 0],
+            [-0.442, 0, 1.65],
+            [-1.65, 0, 2.858],
+            [-3.3, 0, 3.3],
+            [-4.95, 0, 2.858],
+            [-6.158, 0, 1.65],
+            [-6.6, 0, 0],
+            [-6.158, 0, -1.65],
+            [-4.95, 0, -2.858],
+            [-3.3, 0, -3.3],
+            [-1.65, 0, -2.858],
+            [-0.442, 0, -1.65],
+            [0, 0, 0]
+          ],
+          "radius": 0.035,
+          "sides": 3,
+          "position": [3.3, 14.4, 0],
+          "maxLod": 0
+        },
+        {
+          "type": "cylinder",
+          "material": "metal_dark",
+          "radius": 0.28,
+          "height": 0.5,
+          "segments": 6,
+          "position": [0, 18.05, 0],
+          "maxLod": 0
+        },
+        {
+          "type": "sphere",
+          "material": "lens_amber",
+          "radius": 0.18,
+          "segments": 6,
+          "rings": 2,
+          "half": "full",
+          "position": [0, 18.7, 0],
+          "maxLod": 1
+        }
+      ]
+    },
+    "site_water_tower_ruin": {
+      "footprint": {
+        "w": 7,
+        "h": 7
+      },
+      "lod0Triangles": 2400,
+      "heightM": [16, 20],
+      "teamless": true,
+      "note": "Watertoren, ruine: vier vakwerkpoten met kruisverbanden en een broze ladder; de tank is ingedeukt en staat 7 graden scheef, een diagonaal hangt los. Roest, geen teamkleur",
+      "parts": [
+        {
+          "type": "box",
+          "material": "concrete_ruin",
+          "size": [0.9, 0.5, 0.9],
+          "open": true,
+          "position": [-3.05, 0, -3.05]
+        },
+        {
+          "type": "box",
+          "material": "concrete_ruin",
+          "size": [0.9, 0.5, 0.9],
+          "open": true,
+          "position": [3.05, 0, -3.05]
+        },
+        {
+          "type": "box",
+          "material": "concrete_ruin",
+          "size": [0.9, 0.5, 0.9],
+          "position": [3.08, 0.055, 3.044],
+          "rotation": [0, 12, 7]
+        },
+        {
+          "type": "box",
+          "material": "concrete_dark",
+          "size": [0.45, 0.3, 0.4],
+          "position": [2.974, 0.111, 2.048],
+          "rotation": [10, 40, 20],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "material": "concrete_ruin",
+          "size": [0.9, 0.5, 0.9],
+          "open": true,
+          "position": [-3.05, 0, 3.05]
+        },
+        {
+          "type": "box",
+          "material": "concrete_dark",
+          "size": [1.014, 0.66, 0.664],
+          "position": [2.23, 0.286, 2.832],
+          "rotation": [17.789, 64.977, -22.345]
+        },
+        {
+          "type": "box",
+          "material": "rust_dark",
+          "size": [0.535, 0.327, 0.503],
+          "position": [3.242, 0.09, 1.796],
+          "rotation": [5.252, 139.935, 13.991],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "material": "concrete_dark",
+          "size": [0.454, 0.335, 0.284],
+          "position": [1.389, 0.065, 2.076],
+          "rotation": [12.457, 150.156, -7.094],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "material": "rust_dark",
+          "size": [0.498, 0.328, 0.292],
+          "position": [2.682, 0.13, 1.809],
+          "rotation": [-19.299, 111.887, 13.641],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "concrete_dark",
+          "size": [0.408, 0.365, 0.409],
+          "position": [1.569, 0.076, 1.332],
+          "rotation": [-9.362, 92.244, 10.584],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "rust_dark",
+          "size": [0.58, 0.306, 0.718],
+          "position": [2.783, 0.095, 2.624],
+          "rotation": [-0.772, 32.066, -12.315],
+          "maxLod": 0
+        },
+        {
+          "type": "tube",
+          "material": "rust_metal",
+          "points": [
+            [0, 0, 0],
+            [0.72, 11.9, 0.72]
+          ],
+          "radius": 0.09,
+          "sides": 3,
+          "position": [-2.865, 0.5, -3.175],
+          "maxLod": 1
+        },
+        {
+          "type": "tube",
+          "material": "rust_metal",
+          "points": [
+            [0, 0, 0],
+            [0.72, 11.9, 0.72]
+          ],
+          "radius": 0.09,
+          "sides": 3,
+          "position": [-3.175, 0.5, -2.865],
+          "maxLod": 1
+        }
+      ]
+    }
+  }
+}
