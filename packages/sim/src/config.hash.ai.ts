@@ -1,0 +1,174 @@
+import { fnv1aInt } from './math/fnv.js';
+import { AI_SITE_HQ } from './config.faction.js';
+import type { SimConfig } from './config.env.js';
+import { hashEffects, hashInts } from './config.hash.config.js';
+
+/** Scripted AI. */
+export function hashAiScripts(h: number, c: SimConfig): number {
+  h = fnv1aInt(h, c.aiScripts.length);
+  for (const s of c.aiScripts) {
+    h = fnv1aInt(h, s.buildOrder.length);
+    for (const o of s.buildOrder) h = hashInts(h, [o.atTick, o.typeId, o.site ?? AI_SITE_HQ]);
+    h = hashInts(h, s.attackTimersTicks);
+    h = hashInts(h, [
+      s.militiaPermille,
+      s.militiaPermilleMax,
+      s.militiaPermillePerMin,
+      s.threatMilitiaPermille,
+      s.builders,
+    ]);
+    h = hashInts(h, [
+      s.housingTypeId,
+      s.housingFreeBeds,
+      s.researchFromTicks,
+      s.richScrap,
+      s.scavengersPerNode,
+      s.claimFromTicks,
+    ]);
+    h = fnv1aInt(h, s.richBuilds.length);
+    for (const o of s.richBuilds) h = hashInts(h, [o.typeId, o.site]);
+    h = hashInts(h, s.research);
+    h = hashInts(h, s.armyTypeIds);
+    h = hashInts(h, [
+      s.claimSafeRadius,
+      s.claimFarFromTicks,
+      s.heroClaimRadius,
+      s.pushMinArmy,
+      s.pushFromTicks,
+      s.allInWithoutNodes ? 1 : 0,
+    ]);
+    h = hashInts(h, [
+      s.defendRadius,
+      s.rallySite,
+      s.rallyRadius,
+      s.waveIntervalTicks,
+      s.waveJitterTicks,
+      s.waveMinArmy,
+      s.waveArmyGrowth,
+      s.waveMaxWaitTicks,
+    ]);
+    h = hashInts(
+      h,
+      s.robots === null
+        ? [0]
+        : [1, s.robots.fromTicks, s.robots.max, s.robots.countAsArmy ? 1 : 0, s.robots.reservePop],
+    );
+    if (s.robots !== null) h = hashInts(h, s.robots.typeIds);
+    // data 0.26.0: only when set, so a script without builder robots keeps its hash
+    const hb = s.robots === null ? null : s.robots.builders;
+    if (hb !== null) h = hashInts(h, [hb.typeId, hb.max, hb.fromTicks]);
+    h = hashInts(
+      h,
+      s.reserve === null
+        ? [0]
+        : [1, s.reserve.fromTicks, s.reserve.minArmy, s.reserve.robotsFirstFromTicks],
+    );
+    h = hashInts(h, s.training === null ? [0] : [1, s.training.fromTicks]);
+    if (s.training !== null) h = hashInts(h, s.training.programIds);
+    const rp = s.raidPlan;
+    h = fnv1aInt(h, rp === null ? 0 : 1);
+    if (rp !== null) {
+      h = fnv1aInt(h, rp.fighterMix.length);
+      for (const m of rp.fighterMix) h = hashInts(h, [m.typeId, m.weight]);
+      h = hashInts(h, [
+        rp.harass.typeId,
+        rp.harass.fromTicks,
+        rp.harass.max,
+        rp.harass.retreatHpPermille,
+      ]);
+      const sr = rp.slaveRaids;
+      h = hashInts(h, [
+        sr.slaverTypeId,
+        sr.fromTicks,
+        sr.slavers,
+        sr.escort,
+        sr.maxRaidTicks,
+        sr.retryTicks,
+      ]);
+      h = hashInts(h, [
+        rp.garrisonMinFighters,
+        rp.dominancePush.fromTicks,
+        rp.dominancePush.minArmy,
+      ]);
+    }
+    const lb = s.liberate;
+    h = hashInts(h, lb === null ? [0] : [1, lb.minFree, lb.units, lb.radius]);
+    h = fnv1aInt(h, s.defendHqFirst ? 1 : 0);
+  }
+  return h;
+}
+
+/** Techs, perks, training programs, heroes, SPECIAL tuning and the damage matrix. */
+export function hashProgression(h: number, c: SimConfig): number {
+  h = fnv1aInt(h, c.techs.length);
+  for (const t of c.techs) {
+    h = hashInts(h, [t.techId, t.factionId, t.scrapCost, t.researchTicks, t.buildingTypeId]);
+    h = hashInts(h, t.prereqTech);
+    h = hashEffects(h, t.effects);
+  }
+  h = fnv1aInt(h, c.perks.length);
+  for (const pk of c.perks) {
+    h = hashInts(h, [pk.perkId, pk.requiresStat, pk.requiresMin]);
+    h = hashEffects(h, pk.effects);
+  }
+  h = fnv1aInt(h, c.training.length);
+  for (const tr of c.training) {
+    h = hashInts(h, [
+      tr.programId,
+      tr.factionId,
+      tr.special,
+      tr.buildingTypeId,
+      tr.scrapCost,
+      tr.scrapCostStep,
+      tr.trainTicks,
+      tr.trainTicksStep,
+      tr.pointsPerRun,
+      tr.maxPoints,
+    ]);
+    h = hashInts(h, tr.prereqTech);
+  }
+  h = fnv1aInt(h, c.heroes.length);
+  for (const hr of c.heroes) {
+    h = hashInts(h, [
+      hr.heroId,
+      hr.typeId,
+      hr.factionId,
+      hr.baseTypeId,
+      hr.xpPerKill,
+      hr.xpPerDiscovery,
+      hr.xpPerAssist,
+      hr.xpAssistRadius,
+    ]);
+    h = hashInts(h, [hr.reviveScrap, hr.reviveTicks, hr.revivePenaltyPermille, hr.maxRevives]);
+    h = hashInts(h, [hr.sight, hr.xpPerCapture]);
+    h = hashInts(h, hr.aura === null ? [0] : [1, hr.aura.radius]);
+    if (hr.aura !== null) {
+      h = fnv1aInt(h, hr.aura.effects.length);
+      for (const e of hr.aura.effects) h = hashInts(h, [e.stat, e.side, e.target, e.delta]);
+    }
+    h = hashInts(h, hr.special);
+    h = hashInts(h, hr.xpThresholds);
+    h = hashInts(h, hr.perkPool);
+    h = hashEffects(h, hr.passives);
+    h = fnv1aInt(h, hr.abilities.length);
+    for (const a of hr.abilities) {
+      h = hashInts(h, [a.cooldownTicks, a.rangeU, a.radiusU, a.durationTicks]);
+      h = fnv1aInt(h, a.effects.length);
+      for (const e of a.effects) h = hashInts(h, [e.stat, e.side, e.target, e.delta]);
+    }
+  }
+  const sp = c.special;
+  h = hashInts(h, [
+    sp.strengthDamagePermille,
+    sp.perceptionRangeU,
+    sp.enduranceHpPermille,
+    sp.charismaGrowthPermille,
+    sp.intelligenceResearchPermille,
+    sp.agilitySpeedPermille,
+    sp.luckCritPermille,
+    sp.critDamagePermille,
+  ]);
+  h = fnv1aInt(h, c.damageMatrix.length);
+  for (const row of c.damageMatrix) h = hashInts(h, row);
+  return h;
+}
