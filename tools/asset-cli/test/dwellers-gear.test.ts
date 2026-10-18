@@ -6,6 +6,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { BUDGETS } from '../src/budgets.js';
+import { readDataList } from './dataLists.js';
 import { assetEntrySchema, manifestSchema, type AssetEntry } from '../src/manifest.js';
 import { buildRobots, loadRobotsConfig, parseRobots, type RobotsResult } from '../src/robots.js';
 import {
@@ -23,7 +24,7 @@ interface LoadoutRecord {
   faction: string;
   visuals: { meshSlots: Record<string, string> };
 }
-const loadouts = (json('data/loadouts.json') as LoadoutRecord[]).filter(
+const loadouts = (readDataList('loadouts') as LoadoutRecord[]).filter(
   (l) => l.faction === 'dwellers',
 );
 /** Every non-body manifest id the Dweller loadouts refer to, with the slots it is used in. */

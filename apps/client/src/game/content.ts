@@ -14,6 +14,10 @@ import {
 
 const json = import.meta.glob('../../../../data/*.json', { eager: true, import: 'default' });
 const ai = import.meta.glob('../../../../data/ai/*.json', { eager: true, import: 'default' });
+const loadoutFiles = import.meta.glob('../../../../data/loadouts/*.json', {
+  eager: true,
+  import: 'default',
+});
 const mapFiles = import.meta.glob('../../../../data/maps/*.json', {
   eager: true,
   query: '?raw',
@@ -28,11 +32,18 @@ function file(name: string): unknown {
   return value;
 }
 
+/** A list split over data/<dir>/*.json: the arrays concatenated in file-name order (as readDataDir in Node). */
+function concatSorted(files: Record<string, unknown>): unknown[] {
+  return Object.keys(files)
+    .sort()
+    .flatMap((k) => files[k]);
+}
+
 export function loadClientGameData(): GameData {
   const raw: RawGameData = {
     version: dataVersion,
     factions: file('factions.json'),
-    loadouts: file('loadouts.json'),
+    loadouts: concatSorted(loadoutFiles),
     buildings: file('buildings.json'),
     tech: file('tech.json'),
     heroes: file('heroes.json'),

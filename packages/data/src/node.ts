@@ -7,16 +7,30 @@ import { loadGameData, type GameData, type RawGameData } from './loader.js';
 
 const readJson = (path: string): unknown => JSON.parse(readFileSync(path, 'utf8')) as unknown;
 
-/** Leest data/*.json, data/ai/*.json en data/VERSION uit `dir`. Geen validatie; geef het resultaat aan loadGameData. */
-export function readDataDir(dir: string): RawGameData {
-  const aiDir = join(dir, 'ai');
-  const aiFiles = readdirSync(aiDir)
+/** The *.json file names in `dir`, sorted by code unit (the file-name order is part of the data). */
+const jsonFilesIn = (dir: string): string[] =>
+  readdirSync(dir)
     .filter((name) => name.endsWith('.json'))
     .sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+
+/**
+ * A list split over several files (data/loadouts/*.json): each file is a JSON array, concatenated in file-name order,
+ * so the result equals the former single file record for record.
+ */
+const readJsonArrays = (dir: string): unknown[] =>
+  jsonFilesIn(dir).flatMap((name) => readJson(join(dir, name)));
+
+/**
+ * Leest data/*.json, data/ai/*.json, data/loadouts/*.json en data/VERSION uit `dir`. Geen validatie; geef het
+ * resultaat aan loadGameData.
+ */
+export function readDataDir(dir: string): RawGameData {
+  const aiDir = join(dir, 'ai');
+  const aiFiles = jsonFilesIn(aiDir);
   return {
     version: readFileSync(join(dir, 'VERSION'), 'utf8'),
     factions: readJson(join(dir, 'factions.json')),
-    loadouts: readJson(join(dir, 'loadouts.json')),
+    loadouts: readJsonArrays(join(dir, 'loadouts')),
     buildings: readJson(join(dir, 'buildings.json')),
     tech: readJson(join(dir, 'tech.json')),
     heroes: readJson(join(dir, 'heroes.json')),

@@ -4,12 +4,14 @@ Alle spelregels die getallen zijn. Eigenaar: werkstroom content. Schema's en loa
 
 Eenheden in deze bestanden zijn menselijk: meters, seconden, procenten. De loader rekent om naar sim-eenheden. `VERSION` is semver en zit in elke replay en in de hash-seed. Elk balanswaarde-veld hoort een `_comment` te hebben met de bedoeling van het getal.
 
+Een lijst die over een map verdeeld is (`loadouts/*.json`) bestaat uit JSON-arrays die de reader op bestandsnaam aan elkaar plakt; de volgorde telt, vandaar het nummer vooraan de naam.
+
 ## Bestanden
 
 | Bestand                              | Inhoud                                                                                |
 | ------------------------------------ | ------------------------------------------------------------------------------------- |
 | `factions.json`                      | per factie: startunits, vangnet, robotregels, Raider-regels (slaven, plunder, chems)  |
-| `loadouts.json`                      | units: stats, kosten, `visuals.meshSlots`, en per rol de extra blokken hieronder      |
+| `loadouts/*.json`                    | units: stats, kosten, `visuals.meshSlots`, en per rol de extra blokken hieronder      |
 | `buildings.json`                     | gebouwen: footprint, `provides`, turretstats, `cage`, `placement`, `sightM`           |
 | `tech.json`, `training.json`         | techboom en SPECIAL-training van de Dwellers                                          |
 | `heroes.json`, `perks.json`          | helden (xp, abilities, `aura`) en perks                                               |
@@ -36,7 +38,7 @@ Alle blokken zijn optioneel; een Dweller-record blijft geldig. Factie `raiders` 
 
 **Chem** (`id`, `naam`, `flavourText`, `requiresTech`, `doseScrap`, `activeS`, `crashS`, `cooldownS`, `effects`, `crash`, optioneel `refined`): een dosis kost `doseScrap`, werkt `activeS` seconden met `effects`, geeft daarna `crashS` seconden `crash`-effecten en daarna `cooldownS` rust op die unit. Geen verslaving. `refined` (`requiresTech`, `activePct`, `crashPct`) verandert de duren in procenten (negatief = korter). Effecten zijn `{ stat, target, delta }` zoals bij tech en perks.
 
-**`loadouts.json`, Raider-units:**
+**`loadouts/*.json`, Raider-units:**
 
 | Veld                                                   | Wat                                                                                                                                                    |
 | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -95,7 +97,7 @@ Elk `site` in `buildOrder` en `richBuilds` is `hq`, `claim` (eigen claimpunt het
 
 ## Bouwrobot (data 0.26.0, voorstel, ter bevestiging door de architect)
 
-`loadouts.json` **`canBuild: true`** (alleen bij `role: "robot"`): de robot bouwt zoals een bouwer (Build, Claim, helpen bij een bouwplaats binnen `builderAutoHelpRadiusM`, hervatten) en telt voor het bouwer-vangnet. Hij blijft een robot: geen bed, wel pop, niet omschoolbaar, hij vraagt een technicus (`robotRules`) en is er zelf geen; ongedekt bouwt hij op het robottempo. Bouwtijd-effecten (`buildTimePct`) gaan per type, dus een tech die bouwers versnelt noemt hem apart (zie `bouwrobots`). In `ai/*.json` zet **`robots.builders`** (`loadoutId`, `max`, `fromS`) de bouwrobots van de AI: naast `sequence`, vanaf `fromS` tot `max` (levend plus in productie); ze werken met de bouwers en tellen niet voor `robots.max`, het leger of `builders`.
+`loadouts/*.json` **`canBuild: true`** (alleen bij `role: "robot"`): de robot bouwt zoals een bouwer (Build, Claim, helpen bij een bouwplaats binnen `builderAutoHelpRadiusM`, hervatten) en telt voor het bouwer-vangnet. Hij blijft een robot: geen bed, wel pop, niet omschoolbaar, hij vraagt een technicus (`robotRules`) en is er zelf geen; ongedekt bouwt hij op het robottempo. Bouwtijd-effecten (`buildTimePct`) gaan per type, dus een tech die bouwers versnelt noemt hem apart (zie `bouwrobots`). In `ai/*.json` zet **`robots.builders`** (`loadoutId`, `max`, `fromS`) de bouwrobots van de AI: naast `sequence`, vanaf `fromS` tot `max` (levend plus in productie); ze werken met de bouwers en tellen niet voor `robots.max`, het leger of `builders`.
 
 ## Plaatsing en territorium (`sim.json` blok `placement`)
 
@@ -103,4 +105,4 @@ Elk `site` in `buildOrder` en `richBuilds` is `hq`, `claim` (eigen claimpunt het
 
 ## Visuals
 
-`loadouts.json` `visuals.meshSlots` koppelt een slot (`body`, `weapon`, `tool`, `armor`, `gear_back`, `gear_head`) aan een manifest-id uit `assets/dist/manifest.json`. Een id zonder asset wordt door render stil overgeslagen. Procedurele wapens, gereedschap en pantser: `assets/src/raiders.json` en `assets/src/dwellers-gear.json` (zie `tools/asset-cli/README.md`).
+`loadouts/*.json` `visuals.meshSlots` koppelt een slot (`body`, `weapon`, `tool`, `armor`, `gear_back`, `gear_head`) aan een manifest-id uit `assets/dist/manifest.json`. Een id zonder asset wordt door render stil overgeslagen. Procedurele wapens, gereedschap en pantser: `assets/src/raiders.json` en `assets/src/dwellers-gear.json` (zie `tools/asset-cli/README.md`).

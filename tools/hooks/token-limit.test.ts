@@ -24,7 +24,7 @@ describe('pre-commit token limit', () => {
   it('checks agent-authored sources, data and docs', () => {
     for (const p of [
       'packages/sim/src/systems/ai.ts',
-      'data/loadouts.json',
+      'data/loadouts/01-dwellers-core.json',
       'docs/CHANGELOG.md',
       'assets/src/raiders.json',
     ])

@@ -1,0 +1,54 @@
+[
+  {
+    "id": "slaaf",
+    "faction": "raiders",
+    "bodyType": "human",
+    "role": "scavenger",
+    "weapon": "schep",
+    "armorType": "none",
+    "hp": 45,
+    "damage": 0,
+    "damageType": "melee",
+    "rangeM": 0,
+    "speedMps": 3,
+    "cooldownS": 0,
+    "scrapCost": 0,
+    "craftS": 0,
+    "gatherAmount": 5,
+    "gatherS": 12,
+    "popCost": 1,
+    "prereqTech": [],
+    "visuals": {
+      "meshSlots": { "body": "raider_body_slave", "tool": "raider_tool_shovel" }
+    },
+    "slave": true,
+    "sightM": 9,
+    "_comment": "startwaarde, geen balans. Slaaf (Spelfundament 6): de arbeider van de Raiders, role scavenger zodat de sim zijn verzamel- en aflevergedrag hergebruikt. Wordt nooit gekocht of gebouwd maar geroofd (Slaver) of begint er een paar van (startUnits). Vecht nooit: damage 0, rangeM 0 (zodat de sim hem geen doel laat kiezen), 45 hp en geen pantser. Haalt 5 scrap per rit van 12 s (0,42 per s; de Dweller-scavenger haalt 6 per 13 s, 0,46 per s): de economie van de Raiders hangt aan het aantal slaven, niet aan de snelheid per slaaf. Kost niets en geen craft (hij komt uit de Kooi). popCost 1. Zichtstraal 9 m (sightM): een slaaf kijkt naar zijn werk, niet naar de horizon. Veld slave true: zie de regels in factions.json (werkt alleen binnen de werkstraal van een Kooi, bevrijdbaar, doel van opstand)."
+  },
+  {
+    "id": "slaaf_bouwer",
+    "faction": "raiders",
+    "bodyType": "human",
+    "role": "builder",
+    "weapon": "hamer",
+    "armorType": "none",
+    "hp": 45,
+    "damage": 0,
+    "damageType": "melee",
+    "rangeM": 0,
+    "speedMps": 3,
+    "cooldownS": 0,
+    "scrapCost": 0,
+    "craftS": 0,
+    "gatherAmount": 0,
+    "gatherS": 0,
+    "popCost": 1,
+    "prereqTech": [],
+    "visuals": {
+      "meshSlots": { "body": "raider_body_slave", "tool": "raider_tool_hammer" }
+    },
+    "slave": true,
+    "sightM": 9,
+    "_comment": "startwaarde, geen balans. Slaaf-bouwer: dezelfde slaaf maar met de rol builder, zodat de bestaande bouw- en hulpregels (Build, helpen bij een bouwplaats binnen builderAutoHelpRadiusM) werken voor de Raiders. De Raiders werken nooit zelf: de vechters bouwen niets. Geen wapen (damage 0), 45 hp, 3 m/s. Wisselen tussen slaaf en slaaf_bouwer gebeurt bij een Kooi (de sim laat SetRole daar toe in plaats van in een werkplaats). Zelfde veld slave true en zelfde regels als de slaaf."
+  }
+]

@@ -1,5 +1,5 @@
 // Which unit is drawn with which asset. The choice is data, never code: a loadout's `visuals.meshSlots.body` names a
-// manifest id (data/loadouts.json), and one config value (`defaultUnit`) can name the asset for every unit without
+// manifest id (data/loadouts/*.json), and one config value (`defaultUnit`) can name the asset for every unit without
 // one of its own. Anything that fails to load leaves the procedural placeholder rig in place.
 import { unitTypeId } from '@crawlout/data';
 import type { RigAttachInfo } from './attachmentAssets.js';
@@ -7,7 +7,7 @@ import type { TeamMaskSource } from './gltfUnitGeometry.js';
 import type { UnitAssetLoader } from './unitAssetLoader.js';
 import type { UnitLayer } from './unitLayer.js';
 
-/** The mesh slot of a loadout that holds the character body (data/loadouts.json visuals.meshSlots). */
+/** The mesh slot of a loadout that holds the character body (data/loadouts/*.json visuals.meshSlots). */
 export const BODY_SLOT = 'body';
 
 export interface UnitAssetConfig {

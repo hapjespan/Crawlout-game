@@ -5,7 +5,7 @@
 // every player is the hero from data/heroes.json (cap, collar and pauldrons in the team color) and casts its ability
 // zone now and then; the buildings that provide 'turret' shoot from their roof.
 // Character assets come from assets/dist (the asset-cli's output, bundled by Vite): the fake units are loadout 0, so
-// the body asset of that loadout in data/loadouts.json is used when the manifest has it; ?unit=<id> picks any other.
+// the body asset of that loadout in data/loadouts/*.json is used when the manifest has it; ?unit=<id> picks any other.
 // Decorative props come from Rustbelt's props file (200 trees, rocks, bushes, grass) on the demo terrain: manifest
 // first, then the source GLBs in assets/src/props, then a placeholder per kind. ?props=0 hides them, ?props=src skips
 // the manifest, ?props=ph shows the placeholders only.

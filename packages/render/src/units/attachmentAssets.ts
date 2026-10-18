@@ -1,5 +1,5 @@
 // Which attachments (weapon, tool, back gear, head gear, armor) a loadout shows is data, never code: the slots of
-// `visuals.meshSlots` in data/loadouts.json other than `body` name manifest ids of kind 'prop'. This registry loads
+// `visuals.meshSlots` in data/loadouts/*.json other than `body` name manifest ids of kind 'prop'. This registry loads
 // those props once they have a body to sit on: when the body asset of a loadout is loaded as a skinned rig
 // (UnitAssetRegistry, onRigLoaded), each of the loadout's props becomes an attachment of that rig (unitLayer.ts
 // addAttachment): its vertices moved into the body's bind space by the slot's socket matrix and skinned to the slot's

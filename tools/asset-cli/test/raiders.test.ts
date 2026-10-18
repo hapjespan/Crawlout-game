@@ -9,6 +9,7 @@ import { EXTMeshoptCompression } from '@gltf-transform/extensions';
 import { MeshoptDecoder } from 'meshoptimizer';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { BUDGETS } from '../src/budgets.js';
+import { readDataList } from './dataLists.js';
 import { assetEntrySchema, manifestSchema, type AssetEntry } from '../src/manifest.js';
 import { parseRigmap } from '../src/rigmap.js';
 import { buildRobots, loadRobotsConfig, parseRobots, type RobotsResult } from '../src/robots.js';
@@ -31,7 +32,7 @@ interface BuildingRecord {
   footprint: { w: number; h: number };
   visuals: { mesh: string };
 }
-const loadouts = (json('data/loadouts.json') as LoadoutRecord[]).filter(
+const loadouts = (readDataList('loadouts') as LoadoutRecord[]).filter(
   (l) => l.faction === 'raiders',
 );
 const dataBuildings = (json('data/buildings.json') as BuildingRecord[]).filter(
