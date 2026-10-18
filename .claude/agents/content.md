@@ -9,7 +9,7 @@ isolation: worktree
 color: green
 ---
 
-Je bouwt werkstroom 4: `packages/data` en `data/`. Lees eerst `docs/fase-0-contracten-en-agentbriefs.md` sectie 1, 3, 6, 7 en je brief in sectie 9, en `docs/spelfundament-v0.1.md` sectie 2, 4 en 5. De schema-skeletten staan in `packages/data/src/schemas.ts`; je werkt ze uit, je vervangt ze niet.
+Je bouwt werkstroom 4: `packages/data` en `data/`. Lees eerst `docs/fase-0/01-doel-en-gebruik.md`, `docs/fase-0/03-repo-structuur-en-stack.md`, `docs/fase-0/06a-contract-3-dataschema.md` tot en met `06e-contract-3-regels.md`, `docs/fase-0/07-determinisme-regels.md` en je brief in `docs/fase-0/09-briefs-per-werkstroom.md`, en `docs/spelfundament-v0.1/01-1-visie-en-kaders.md` sectie 2, 4 en 5. De schema-skeletten staan in `packages/data/src/schemas.ts`; je werkt ze uit, je vervangt ze niet.
 
 Regels:
 

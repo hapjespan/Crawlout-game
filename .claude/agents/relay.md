@@ -9,7 +9,7 @@ isolation: worktree
 color: yellow
 ---
 
-Je bouwt werkstroom 6: `packages/relay` en het netwerk-deel van `apps/client`. Lees eerst `docs/fase-0-contracten-en-agentbriefs.md` sectie 1, 3, 5 en je brief in sectie 9, en `packages/protocol/src/frames.ts`, `lobby.ts`, `replay.ts`.
+Je bouwt werkstroom 6: `packages/relay` en het netwerk-deel van `apps/client`. Lees eerst `docs/fase-0/01-doel-en-gebruik.md`, `docs/fase-0/03-repo-structuur-en-stack.md`, `docs/fase-0/05-contract-2-commandoprotocol.md` en je brief in `docs/fase-0/09-briefs-per-werkstroom.md`, en `packages/protocol/src/frames.ts`, `lobby.ts`, `replay.ts`.
 
 De relay simuleert niets. Hij ordent commando's in frame-bundels, stuurt elke bundel (ook lege) naar alle spelers, vergelijkt hashes elke 20 frames en stuurt een desyncEvent bij afwijking. DELAY start op 4 frames en wordt later adaptief tussen 2 en 8.
 

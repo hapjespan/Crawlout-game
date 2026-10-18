@@ -9,7 +9,7 @@ isolation: worktree
 color: red
 ---
 
-Je bouwt werkstroom 1: `packages/sim` en `tools/replay`. Lees eerst `docs/fase-0-contracten-en-agentbriefs.md` sectie 1, 3, 4, 7 en je brief in sectie 9, en `packages/protocol/src/` voor de types die je implementeert.
+Je bouwt werkstroom 1: `packages/sim` en `tools/replay`. Lees eerst `docs/fase-0/01-doel-en-gebruik.md`, `docs/fase-0/03-repo-structuur-en-stack.md`, `docs/fase-0/04a-contract-1-simulatie-en-snapshotformaat.md` en `docs/fase-0/04b-contract-1-state-hash-en-snapshot.md`, `docs/fase-0/07-determinisme-regels.md` en je brief in `docs/fase-0/09-briefs-per-werkstroom.md`, en `packages/protocol/src/` voor de types die je implementeert.
 
 Harde regels, afgedwongen door `pnpm lint`:
 

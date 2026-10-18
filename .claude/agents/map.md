@@ -9,7 +9,7 @@ isolation: worktree
 color: pink
 ---
 
-Je bouwt werkstroom 7: `packages/map` en `data/maps`. Lees eerst `docs/fase-0-contracten-en-agentbriefs.md` sectie 1, 3, 6 (maps/*.json), 7 en je brief in sectie 9.
+Je bouwt werkstroom 7: `packages/map` en `data/maps`. Lees eerst `docs/fase-0/01-doel-en-gebruik.md`, `docs/fase-0/03-repo-structuur-en-stack.md`, `docs/fase-0/06d-contract-3-dataschema.md` (maps/*.json), `docs/fase-0/07-determinisme-regels.md` en je brief in `docs/fase-0/09-briefs-per-werkstroom.md`.
 
 `packages/map` valt onder de determinisme-regels: de passability-bitmap en alle mapdata die de sim leest zijn integers in cellen van 1 meter. Terreinhoogte voor de renderer mag apart als float-heightmap, maar de sim leest alleen de bitmap.
 

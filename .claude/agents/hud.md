@@ -9,7 +9,7 @@ isolation: worktree
 color: cyan
 ---
 
-Je bouwt werkstroom 5: `packages/ui` en het ui-deel van `apps/client`. Lees eerst `docs/fase-0-contracten-en-agentbriefs.md` sectie 1, 3, 4 (queryMessage), 5 (commando-types) en je brief in sectie 9.
+Je bouwt werkstroom 5: `packages/ui` en het ui-deel van `apps/client`. Lees eerst `docs/fase-0/01-doel-en-gebruik.md`, `docs/fase-0/03-repo-structuur-en-stack.md`, `docs/fase-0/04a-contract-1-simulatie-en-snapshotformaat.md` (queryMessage), `docs/fase-0/05-contract-2-commandoprotocol.md` (commando-types) en je brief in `docs/fase-0/09-briefs-per-werkstroom.md`.
 
 De HUD praat alleen via twee kanalen: commando's uit `packages/protocol/src/commands.ts` naar het netwerk, en spelerstatus via de queryMessage uit de sim-worker. Nooit direct sim-state.
 
