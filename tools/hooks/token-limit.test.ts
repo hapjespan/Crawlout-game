@@ -26,7 +26,7 @@ describe('pre-commit token limit', () => {
       'packages/sim/src/systems/ai.ts',
       'data/loadouts/01-dwellers-core.json',
       'docs/CHANGELOG.md',
-      'assets/src/raiders.json',
+      'assets/src/raiders/01-header.json',
     ])
       expect(isIgnored(p)).toBe(false);
   });

@@ -1,0 +1,31 @@
+{
+  "attachments": {
+    "raider_armor_steel": {
+      "anchor": "body",
+      "heightM": [0.55,0.85],
+      "widthM": [0.6,0.9],
+      "depthM": [0.3,0.45],
+      "note": "staalplaten van de plunderaar in staal: borstplaat van autodeur met rode band, schouderkappen met spijkers, riem met schedelgesp en rugplaat; in LICHAAMSRUIMTE gemodelleerd (oorsprong = lichaam, voeten y = 0, borst op 1,1 tot 1,5 m), geen socket",
+      "lod0Triangles": 300,
+      "parts": [
+        {"type":"box","material":"scrap_metal","size":[0.36,0.36,0.3],"chamfer":0.02,"position":[0,1.12,0],"maxLod":0},
+        {"type":"box","material":"scrap_metal_red","size":[0.372,0.05,0.302],"position":[0,1.26,0],"maxLod":1},
+        {"type":"sphere","material":"rust_metal","radius":0.12,"segments":8,"rings":3,"half":"top","position":[0.26,1.43,0],"mirror":true,"maxLod":0},
+        {"type":"cone","material":"scrap_metal_dark","radius":0.035,"height":0.12,"segments":6,"position":[0.26,1.55,0],"mirror":true,"maxLod":0},
+        {"type":"box","material":"scrap_metal_dark","size":[0.36,0.07,0.28],"position":[0,0.97,0]},
+        {"type":"box","material":"bone_stone","size":[0.032,0.008,0.0288],"position":[0,0.935,0.1416],"maxLod":0},
+        {"type":"box","material":"bone_stone","size":[0.0416,0.0288,0.0368],"position":[0,0.943,0.14],"maxLod":0},
+        {"type":"sphere","material":"bone_stone","radius":0.0232,"segments":8,"rings":2,"half":"top","position":[0,0.9718,0.1384],"maxLod":0},
+        {"type":"box","material":"opening","size":[0.0112,0.0096,0.0032],"position":[-0.0096,0.9526,0.1576],"maxLod":0},
+        {"type":"box","material":"opening","size":[0.0112,0.0096,0.0032],"position":[0.0096,0.9526,0.1576],"maxLod":0},
+        {"type":"box","material":"rust_metal","size":[0.34,0.3,0.03],"position":[0,1.14,-0.17]},
+        {"type":"box","material":"leather_dark","size":[0.05,0.04,0.34],"position":[0.1,1.47,0],"mirror":true,"maxLod":0},
+        {"type":"box","material":"scrap_metal","size":[0.36,0.36,0.3],"position":[0,1.12,0],"minLod":1},
+        {"type":"sphere","material":"rust_metal","radius":0.12,"segments":6,"rings":2,"half":"top","position":[0.26,1.43,0],"mirror":true,"minLod":1,"maxLod":1},
+        {"type":"box","material":"bone_stone","size":[0.0416,0.04,0.0368],"position":[0,0.935,0.14],"minLod":1,"maxLod":1},
+        {"type":"box","material":"opening","size":[0.032,0.0104,0.0032],"position":[0,0.951,0.1576],"minLod":1,"maxLod":1},
+        {"type":"sphere","material":"rust_metal","radius":0.12,"segments":5,"rings":2,"half":"top","position":[0.26,1.43,0],"mirror":true,"minLod":2}
+      ]
+    }
+  }
+}

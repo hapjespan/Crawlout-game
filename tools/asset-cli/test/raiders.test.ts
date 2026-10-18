@@ -1,5 +1,5 @@
-// Raiders (assets/src/raiders.json plus the derived body in rigmap.json): every manifest id the Raider data refers to has a
-// procedural placeholder on the real scale, footprints equal the data, budgets per LOD, `team_trim` is the only team
+// Raiders (assets/src/raiders.json, split in assets/src/raiders/*.json, plus the derived body in rigmap.json): every
+// manifest id the Raider data refers to has a procedural placeholder on the real scale, footprints equal the data, budgets per LOD, `team_trim` is the only team
 // material, surface kinds follow the material names (the render look recipe), and assets/dist is the build of this config.
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -13,6 +13,7 @@ import { readDataList } from './dataLists.js';
 import { assetEntrySchema, manifestSchema, type AssetEntry } from '../src/manifest.js';
 import { parseRigmap } from '../src/rigmap.js';
 import { buildRobots, loadRobotsConfig, parseRobots, type RobotsResult } from '../src/robots.js';
+import { readSplitJson } from '../src/splitJson.js';
 import {
   surfaceKindOfMaterial,
   type SurfaceKind,
@@ -149,18 +150,19 @@ describe('raiders.json against the Raider data', () => {
   });
 
   it('rejects a team material in an attachment, a missing one in a building, and an unknown material', () => {
-    const raw = JSON.parse(readFileSync(configPath, 'utf8'));
+    type Group = Record<string, { parts: { material: string }[] }>;
+    const raw = readSplitJson(configPath) as { units: Group; buildings: Group; attachments: Group };
     const withTeam = structuredClone(raw);
-    withTeam.attachments.raider_tool_shovel.parts[0].material = 'team_trim';
+    withTeam.attachments.raider_tool_shovel!.parts[0]!.material = 'team_trim';
     expect(() => parseRobots(withTeam)).toThrow(/aanhangsel/);
     const noTeam = structuredClone(raw);
-    noTeam.buildings.raider_building_tent.parts =
-      noTeam.buildings.raider_building_tent.parts.filter(
+    noTeam.buildings.raider_building_tent!.parts =
+      noTeam.buildings.raider_building_tent!.parts.filter(
         (p: { material: string }) => !/team/.test(p.material),
       );
     expect(() => parseRobots(noTeam)).toThrow(/team-materiaal/);
     const unknown = structuredClone(raw);
-    unknown.units.raider_vehicle_buggy.parts[0].material = 'goud';
+    unknown.units.raider_vehicle_buggy!.parts[0]!.material = 'goud';
     expect(() => parseRobots(unknown)).toThrow(/onbekend effen materiaal/);
   });
 });
