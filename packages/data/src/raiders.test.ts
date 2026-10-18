@@ -47,9 +47,9 @@ describe('Raiders: de factie laadt', () => {
     );
     expect(faction.robotRules).toBeNull();
     expect(faction.housingGrowthPerMin).toBe(0);
-    // data 0.29.0: the guard rule, the Raider fighters back to strength, the weak low camp (0.28.0: the Raider garrison,
-    // 0.27.0: camp takeover)
-    expect(data.dataVersion).toBe('0.29.0');
+    // data 0.30.0: the Kooi 5x5 (0.29.0: the guard rule, the Raider fighters back to strength, the weak low camp;
+    // 0.28.0: the Raider garrison, 0.27.0: camp takeover)
+    expect(data.dataVersion).toBe('0.30.0');
     // Dwellers ongewijzigd: nog altijd training en geen Raider-blokken
     expect(dwellers.specialChannel).toBe('training');
     expect(dwellers.slaves).toBeNull();
@@ -151,9 +151,9 @@ describe('Raiders: de factie laadt', () => {
     expect(building('mitrailleursnest').footprint.w).toBeGreaterThan(
       building('turret').footprint.w,
     );
-    // een Kooi met 8 slaven biedt minstens 8 m2 per slaaf
+    // een Kooi met 8 slaven biedt minstens 3 m2 per slaaf (data 0.30.0: 5x5, ontwerp Martien; was 9x9 en 8 m2)
     const kooi = building('kooi');
-    expect((kooi.footprint.w * kooi.footprint.h) / kooi.cage!.capacity).toBeGreaterThanOrEqual(8);
+    expect((kooi.footprint.w * kooi.footprint.h) / kooi.cage!.capacity).toBeGreaterThanOrEqual(3);
   });
 
   it('elk Raider-record heeft een _comment, een zichtstraal en manifest-ids raider_*', () => {

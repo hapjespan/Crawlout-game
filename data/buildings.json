@@ -199,7 +199,7 @@
     "armorType": "medium",
     "scrapCost": 65,
     "buildS": 18,
-    "footprint": { "w": 9, "h": 9 },
+    "footprint": { "w": 5, "h": 5 },
     "beds": 0,
     "provides": ["kooi"],
     "prereqTech": [],
@@ -207,7 +207,7 @@
     "cage": { "capacity": 8, "transitionS": 20, "workRadiusM": 45 },
     "placement": { "minFromHqM": 18, "maxFromHqM": 34 },
     "sightM": 11,
-    "_comment": "startwaarde, geen balans. Kooi (provides kooi, unieke bouw, Spelfundament 6): hier gaat een gevangene eerst in, daarna is hij werker. Veld cage: capacity 8 slaven kunnen aan deze Kooi gebonden zijn (in transitie of werkend), transitionS 20 s van aankomst tot werker, workRadiusM 45 m: een gebonden slaaf verzamelt en bouwt alleen binnen 45 m van zijn Kooi. Veld placement: de Kooi moet 18 tot 34 m (midden tot midden) van het eigen hoofdgebouw staan, dus aan de rand van de basis (het hoofdgebouw is 17 breed: minstens 18 laat een gang van 9,5 m vrij): zo staan de slaven voorop als de vijand aanvalt en is een bevrijdingsactie een echte keuze van de aanvaller. 65 scrap, 18 s, 400 hp medium. Footprint 9x9 (een omheind veld). Zichtstraal 11 m."
+    "_comment": "startwaarde, geen balans. Kooi (provides kooi, unieke bouw, Spelfundament 6): hier gaat een gevangene eerst in, daarna is hij werker. Veld cage: capacity 8 slaven kunnen aan deze Kooi gebonden zijn (in transitie of werkend), transitionS 20 s van aankomst tot werker, workRadiusM 45 m: een gebonden slaaf verzamelt en bouwt alleen binnen 45 m van zijn Kooi. Veld placement: de Kooi moet 18 tot 34 m (midden tot midden) van het eigen hoofdgebouw staan, dus aan de rand van de basis (het hoofdgebouw is 17 breed en de Kooi 5: minstens 18 laat een gang van 7 m vrij): zo staan de slaven voorop als de vijand aanvalt en is een bevrijdingsactie een echte keuze van de aanvaller. 65 scrap, 18 s, 400 hp medium. Footprint 5x5 (data 0.30.0, was 9x9: een compact kooiblok naar het ontwerp van Martien, oneven cellen; de werkstraal en de plaatsingsafstand blijven staan). Zichtstraal 11 m."
   },
   {
     "id": "plundermarkt",

@@ -2167,26 +2167,26 @@
       "kind": "building",
       "bounds": {
         "min": [
-          -4.590451,
+          -2.540451,
           0,
-          -4.321244
+          -2.421244
         ],
         "max": [
-          4.6,
-          5.75,
-          4.597553
+          2.55,
+          5.35,
+          2.547553
         ]
       },
       "lods": [
         {
           "level": 0,
           "path": "raider_building_cage/lod0.glb",
-          "triangles": 1710
+          "triangles": 1470
         },
         {
           "level": 1,
           "path": "raider_building_cage/lod1.glb",
-          "triangles": 740
+          "triangles": 690
         },
         {
           "level": 2,
@@ -2198,8 +2198,8 @@
       "animations": [],
       "boneCount": 0,
       "footprint": {
-        "w": 9,
-        "h": 9
+        "w": 5,
+        "h": 5
       },
       "teamMaterials": [
         "team_trim"

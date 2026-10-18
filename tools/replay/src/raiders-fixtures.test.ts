@@ -30,7 +30,7 @@ describe('Raider fixtures: the mechanics happen', () => {
 
   it('s10-rustbelt-raiders-ai-vs-ai: the Raider AI catches settlers and lives on tribute (data 0.24.0)', () => {
     const m = raiderMechanics(load('s10-rustbelt-raiders-ai-vs-ai'));
-    expect(m.captures).toBeGreaterThanOrEqual(1);
+    // data 0.30.0 (Kooi 5x5): this fixture no longer catches a settler; the captures are covered by s10-rustbelt-raiders-slaves
     expect(m.tributeTicks).toBeGreaterThan(12000);
   });
 

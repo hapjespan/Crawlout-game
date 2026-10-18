@@ -2,6 +2,7 @@
 
 Elke wijziging aan een contract (fase-0 sectie 4 tot 6) komt hier, samen met de bijbehorende wijziging in packages/protocol.
 
+- 2026-10-18 (data 0.30.0): Kooi 5x5, ontwerp Martien (was 9x9). Raider-balans verschuift (seeds 200 tot 232: Raiders 13 van 66 tegen 35 van 66), niet bijgesteld; details in packages/data/CHANGELOG.md 0.30.0.
 - 2026-10-13: fase 0 vastgelegd. Contract 1, 2 en 3 als doc en als code in packages/protocol en packages/data.
 - 2026-10-13 (architect-review sprint 1), contract 1:
   - Yaw-conventie vastgelegd: 0 = sim +x, 16384 = sim +y, yaw = atan2(dy, dx) (`YAW_PLUS_X`, `YAW_PLUS_Y`). Waarom: sim en render namen elk een andere conventie aan; de sim is de bron van waarheid en een wijziging daar zou alle fixtures ongeldig maken. Render rekent om (interpolate.ts), hashes ongewijzigd.
