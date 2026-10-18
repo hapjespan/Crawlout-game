@@ -76,6 +76,12 @@ export const QUICK_HINT: Record<QuickId, string> = {
 /** De gebouwknop van de trainingsfaciliteit (data-key), voor de CHR-knop. */
 export const TRAINING_BUILDING_KEY = 'trainingsfaciliteit';
 
+/**
+ * A toast the alarm button (Alarm) jumps to: something happening at a place. Not the dominance counter (no place) and
+ * not the no-free-beds hint (advice, playtest M5: at the start of a match it would put the alarm button up).
+ */
+const isAlarm = (t: HudAlert): boolean => t.kind !== 'dominance' && t.kind !== 'noBeds';
+
 /** Zo lang blijft een toast staan en zoveel staan er maximaal tegelijk. */
 export const TOAST_MS = 6000;
 export const MAX_TOASTS = 4;
@@ -535,7 +541,7 @@ export class HudController implements HudHandle {
       case 'revive':
         return this.canRevive();
       case 'alert':
-        return this.state.toasts.some((t) => t.kind !== 'dominance');
+        return this.state.toasts.some(isAlarm);
       case 'lobby':
         return this.deps.getLobby !== undefined;
       default:
@@ -925,7 +931,7 @@ export class HudController implements HudHandle {
   }
 
   private focusLastAlert(): void {
-    const last = this.state.toasts.filter((t) => t.kind !== 'dominance').pop();
+    const last = this.state.toasts.filter(isAlarm).pop();
     if (last) this.focusAlert(last);
   }
 
@@ -1177,7 +1183,7 @@ export class HudController implements HudHandle {
           !!this.deps.selectUnits
         );
       case 'alert':
-        return s.toasts.some((t) => t.kind !== 'dominance');
+        return s.toasts.some(isAlarm);
       case 'menu':
         return true;
     }

@@ -236,6 +236,10 @@ describe('Raider top bar', () => {
     expect(toast.getAttribute('aria-label')).toBe(
       'Geen vrije bedden: bouw een tent, ga naar de locatie',
     );
+    // advice, not an alarm: the Alarm button does not come up for it
+    expect(actions(t.el)).not.toContain('lastAlert');
+    act(() => alert!({ kind: 'attack', x: 1, y: 2 }));
+    expect(actions(t.el)).toContain('lastAlert');
   });
 });
 
