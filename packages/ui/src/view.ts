@@ -1009,7 +1009,7 @@ export function Hud(props: { ctl: HudController }): ComponentChild {
         e.preventDefault();
       },
     },
-    h(ResourceBar, { status: state.status }),
+    h(ResourceBar, { status: state.status, robots: state.raider === null }),
     h(RaiderBar, { stats: state.raider }),
     h(
       'div',
