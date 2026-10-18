@@ -11,7 +11,7 @@
   },
   "scripts": {
     "test": "vitest run",
-    "gen": "UPDATE_MAPS=1 vitest run test/maps.test.ts"
+    "gen": "UPDATE_MAPS=1 vitest run test/maps.test.ts && vitest run test/maps"
   },
   "dependencies": {
     "@crawlout/protocol": "workspace:*",
