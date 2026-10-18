@@ -1,8 +1,9 @@
 // What a left click on the world does. The rule that keeps the player in control: a click on an own unit or building
 // always selects it, whatever is selected and whatever mode is active, and a click on empty ground always clears the
 // selection. Modes (placement, targeting) only keep the click for ground, and for the scrap node of a gather target.
-// One exception: in attack-move and ability targeting a click on an ENEMY unit or building is the target (attack that
-// entity, cast at its spot), so aiming at an enemy does not throw the order away.
+// Exceptions: in attack-move and ability targeting a click on an ENEMY unit or building is the target (attack that
+// entity, cast at its spot), so aiming at an enemy does not throw the order away; and in Bewaak (guard) targeting a
+// click on an OWN building is the post (a Kooi; protocol 0.15.0 Guard).
 import type { TargetingKind } from '@crawlout/ui';
 
 export type HitKind = 'unit' | 'building' | 'scrapNode' | 'claimPoint' | 'none';
@@ -27,6 +28,8 @@ export function leftClickIs(
   hostile = false,
 ): 'select' | 'complete' {
   if (state.mode === 'idle') return 'select';
+  if (hit === 'building' && !hostile && state.mode === 'targeting' && state.kind === 'guard')
+    return 'complete';
   if (hit === 'unit' || hit === 'building')
     return hostile && takesEnemyTarget(state) ? 'complete' : 'select';
   return 'complete';

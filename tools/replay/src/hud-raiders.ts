@@ -1,11 +1,13 @@
 // The Raiders' HUD in a real browser (`?faction=raiders`): roster without pseudo loadouts and without truncated names,
-// the top bar (slaves, fighters, Kooi), the commands of a slave, the cards of a tent, the Kooi placement reason, and (after
-// a Slaver is made in the tent) Vang with its hint.
+// the top bar (slaves, fighters, guards), the commands of a slave, Bewaak (W) on the Raiderkamp and the guard lines of a
+// scrap node (data 0.29.0, protocol 0.15.0 Guard), the cards of a tent, the Kooi placement reason, and (after a Slaver is
+// made in the tent) Vang with its hint.
 //   HUD_URL=http://localhost:5211/ HUD_SHOTS=/some/dir node --import tsx src/hud-raiders.ts
 // Exit 1 when a check fails. Not part of `pnpm test`.
 import { mkdirSync } from 'node:fs';
 import { chromium } from '@playwright/test';
 import type { Page } from '@playwright/test';
+import { SCRAP_NODE_TYPE_ID } from '@crawlout/data';
 
 const URL = process.env.HUD_URL ?? 'http://localhost:5173/';
 const SHOTS = process.env.HUD_SHOTS;
@@ -23,6 +25,16 @@ const wait = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms)
 const textOf = (sel: string): string =>
   `(() => document.querySelector(${JSON.stringify(sel)})?.textContent ?? '')()`;
 const ACTIONS = `[...document.querySelectorAll('.co-buttons [data-action]')].map((b) => b.getAttribute('data-action'))`;
+/** Screen position of a world point (meters x, height above the camera target's ground, meters z), as hud-clicks.ts. */
+const project = (x: number, y: number, z: number): string => `(() => {
+  const ctl = window.crawlout.renderer.cameraControls; const cam = ctl.camera; cam.updateMatrixWorld();
+  const v = cam.matrixWorldInverse.elements, p = cam.projectionMatrix.elements;
+  const wy = ctl.target.y + ${y};
+  const vx = v[0]*${x}+v[4]*wy+v[8]*${z}+v[12], vy = v[1]*${x}+v[5]*wy+v[9]*${z}+v[13], vz = v[2]*${x}+v[6]*wy+v[10]*${z}+v[14];
+  const cx = p[0]*vx+p[4]*vy+p[8]*vz+p[12], cy = p[1]*vx+p[5]*vy+p[9]*vz+p[13], cw = p[3]*vx+p[7]*vy+p[11]*vz+p[15];
+  const c = document.getElementById('view');
+  return cw <= 0 ? null : { x: (cx / cw + 1) / 2 * c.clientWidth, y: (1 - cy / cw) / 2 * c.clientHeight };
+})()`;
 const OWN = `(() => { const c = window.crawlout; return [...c.entities().values()].filter((e) => e.owner === c.session.playerId).map((e) => ({ id: e.id, t: e.typeId, x: e.x, y: e.y, anim: e.anim })); })()`;
 
 async function run(width: number, height: number): Promise<void> {
@@ -105,9 +117,75 @@ async function run(width: number, height: number): Promise<void> {
     await clickSel('[data-group="slaaf_bouwer"]');
     check((await ev<string[]>(ACTIONS)).includes('build'), 'a slave builder gets Bouw');
 
-    // --- Fighters: Val aan.
+    // --- Fighters: Val aan and Bewaak (W) with its hint; Bewaak on the Raiderkamp (a Kooi) sends Guard.
     await clickSel('[data-group="knuppelaar"]');
-    check((await ev<string[]>(ACTIONS)).includes('attackMove'), 'a fighter gets Val aan');
+    const fighterActions = await ev<string[]>(ACTIONS);
+    check(fighterActions.includes('attackMove'), 'a fighter gets Val aan');
+    check(fighterActions.includes('guard'), 'a fighter gets Bewaak', fighterActions.join(','));
+    const guardTitle = await ev<string>(
+      `document.querySelector('[data-action="guard"]')?.getAttribute('title') ?? ''`,
+    );
+    check(
+      guardTitle === 'Bewaak een kooi of scrapbron: houdt slaven aan het werk',
+      'Bewaak explains itself',
+      guardTitle,
+    );
+    await page.keyboard.press('w');
+    await wait(300);
+    const aim = await ev<string>(textOf('.co-targeting'));
+    check(/Kies een kooi of scrapbron om te bewaken/.test(aim), 'W aims Bewaak', aim);
+    const camp = await ev<{ x: number; y: number } | null>(`(() => {
+      const c = window.crawlout; const t = c.placement.typeId('raiderkamp');
+      const e = [...c.entities().values()].find((e) => e.owner === c.session.playerId && e.typeId === t);
+      return e ? { x: e.x, y: e.y } : null;
+    })()`);
+    const campPt = camp
+      ? await ev<{ x: number; y: number } | null>(project(camp.x / 256, 1.5, camp.y / 256))
+      : null;
+    check(campPt !== null, 'the Raiderkamp is on screen');
+    if (campPt) {
+      await page.mouse.click(campPt.x, campPt.y, { delay: 80 });
+      for (let i = 0; i < 6; i++) {
+        await page.clock.runFor(2000);
+        await wait(300);
+      }
+      const groups = await ev<
+        { kind: string; guardMode: number; guards: number; guardsNeeded: number }[]
+      >(
+        `(window.crawlout.status()?.slaveGroups ?? []).map((g) => ({ kind: g.kind, guardMode: g.guardMode, guards: g.guards, guardsNeeded: g.guardsNeeded }))`,
+      );
+      check(
+        groups.some((g) => g.kind === 'kooi' && g.guardMode >= 1 && g.guards >= g.guardsNeeded),
+        'the knuppelaar guards the Raiderkamp: its slave group is guarded',
+        JSON.stringify(groups),
+      );
+      const guardBar = await ev<string>(textOf('[data-raider="guards"]'));
+      check(/Bewakers/.test(guardBar), 'the top bar counts the guards', guardBar);
+      await shot('02b-bewaak');
+    }
+    // --- A scrap node: its guard lines in the selection panel.
+    const node = await ev<{ x: number; y: number } | null>(`(() => {
+      const c = window.crawlout;
+      const hq = [...c.entities().values()].find((e) => e.owner === c.session.playerId && e.typeId === c.placement.typeId('raiderkamp'));
+      const nodes = [...c.entities().values()].filter((e) => e.typeId === ${SCRAP_NODE_TYPE_ID});
+      nodes.sort((a, b) => Math.hypot(a.x - hq.x, a.y - hq.y) - Math.hypot(b.x - hq.x, b.y - hq.y));
+      return nodes[0] ? { x: nodes[0].x, y: nodes[0].y } : null;
+    })()`);
+    const nodePt = node
+      ? await ev<{ x: number; y: number } | null>(project(node.x / 256, 0.6, node.y / 256))
+      : null;
+    if (nodePt) {
+      await page.keyboard.press('Escape');
+      await page.mouse.click(nodePt.x, nodePt.y, { delay: 80 });
+      await wait(400);
+      const nodeText = await ev<string>(textOf('.co-selection'));
+      check(
+        /Scrapbron/.test(nodeText) && /Bewakers|Kooi/.test(nodeText),
+        'a scrap node shows its guard lines',
+        nodeText.slice(0, 200),
+      );
+      await shot('02c-scrapbron');
+    } else check(false, 'a scrap node is on screen');
 
     // --- Kooi placement reason: too close to the camp.
     const reason = await ev<string>(`(() => {

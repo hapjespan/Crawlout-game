@@ -23,6 +23,8 @@ export interface RaiderMechanics {
   takeovers: number;
   recruits: number;
   yields: number;
+  /** Guard mode (sim 0.24.0): units of player 0 seen on a Guard order (order 6), counted once each. */
+  guards: number;
   frames: number;
 }
 
@@ -43,6 +45,7 @@ export function raiderMechanics(r: Replay): RaiderMechanics {
     takeovers: 0,
     recruits: 0,
     yields: 0,
+    guards: 0,
     frames: last + 1,
   };
   const seen = new Set<string>();
@@ -66,11 +69,20 @@ export function raiderMechanics(r: Replay): RaiderMechanics {
         m.captures++;
       if (st === 2 && w.slaveFrom[i]! < 2 && mark(id, 'transition')) m.transitions++;
       if (st === 3 && mark(id, 'freed')) m.freed++;
-      if (w.owner[i] === 255 && (w.mask[i]! & 16) !== 0 && mark(id, 'escaped')) m.escaped++;
+      // a neutral unit that is no bandit of a creep camp: an escaped slave (a wanderer)
+      if (
+        w.owner[i] === 255 &&
+        (w.mask[i]! & 16) !== 0 &&
+        w.creepCamp[i] === 0 &&
+        mark(id, 'escaped')
+      )
+        m.escaped++;
       if (w.chemPhase[i] === 1 && mark(id, 'dosed')) m.dosed++;
       if (w.chemPhase[i] === 2 && mark(id, 'crash')) m.crashed++;
       if (w.owner[i] === 255 && w.creepCamp[i] !== 0) mark(id, 'bandit');
       if (w.owner[i] === 0 && seen.has(`${id}:bandit`) && mark(id, 'recruit')) m.recruits++;
+      // ORDER_GUARD (6) at the head of the order ring
+      if (w.owner[i] === 0 && w.orderType(i) === 6 && mark(id, 'guard')) m.guards++;
     }
     let held = false;
     sim.claimPoints.forEach((pt, k) => {

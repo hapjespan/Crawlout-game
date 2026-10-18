@@ -34,6 +34,7 @@ export type ActionId =
   | 'attackMove'
   | 'capture'
   | 'liberate'
+  | 'guard'
   | 'gather'
   | 'roleScavenger'
   | 'roleBuilder'
@@ -137,6 +138,7 @@ export const ACTIONS: readonly ActionDef[] = [
   { id: 'attackMove', label: 'Val aan', key: 'a', needsSelection: true },
   { id: 'capture', label: 'Vang', key: 'f', needsSelection: true },
   { id: 'liberate', label: 'Bevrijd', key: 'r', needsSelection: true },
+  { id: 'guard', label: 'Bewaak', key: 'w', needsSelection: true },
   { id: 'gather', label: 'Verzamel', key: 'g', needsSelection: true },
   { id: 'build', label: 'Bouw', key: 'b', needsSelection: true },
   { id: 'roleScavenger', label: 'Plunderaar', key: '1', needsSelection: true },
@@ -209,6 +211,10 @@ function appliesTo(
       return s.units > 0;
     case 'attackMove':
       return s.militia + s.other + s.raiderFighters > 0 || s.hero;
+    case 'guard':
+      // Bewaak (protocol 0.15.0 Guard): fighters (militia, robots, Raider fighters); the sim leaves the hero and
+      // workers out, so a selection of only those has no Bewaak
+      return s.militia + s.other + s.raiderFighters + s.slavers > 0;
     case 'gather':
       return s.scavengers + s.slaveScavengers > 0;
     case 'build':
@@ -342,6 +348,7 @@ const ACTION_TARGETING: Partial<Record<ActionId, TargetingKind>> = {
   attackMove: 'attackMove',
   capture: 'capture',
   liberate: 'liberate',
+  guard: 'guard',
   gather: 'gather',
 };
 
@@ -982,6 +989,13 @@ export class HudController implements HudHandle {
     if (kind === 'gather') {
       if (!('nodeId' in target)) return false;
       this.deps.sendCommand('Gather', { ids, nodeId: target.nodeId });
+    } else if (kind === 'guard') {
+      // Bewaak: an own Kooi or a scrap node (the sim checks which); a click on the ground is no target
+      if ('nodeId' in target) this.deps.sendCommand('Guard', { ids, targetId: target.nodeId });
+      else if ('ownId' in target) this.deps.sendCommand('Guard', { ids, targetId: target.ownId });
+      else return false;
+    } else if ('ownId' in target) {
+      return false;
     } else if ('enemyId' in target) {
       // Attack-move onto an enemy unit or building: attack that entity.
       if (kind !== 'attackMove' && kind !== 'capture' && kind !== 'liberate') return false;

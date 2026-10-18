@@ -23,7 +23,12 @@ export const ORDER_ATTACK_MOVE = 2;
 export const ORDER_ATTACK = 3;
 export const ORDER_GATHER = 4;
 export const ORDER_BUILD = 5;
-// 6 was ORDER_CLAIM (sprint-2-interim); claimen is sinds sprint 3 een Build van het claimgebouw.
+/**
+ * Guard mode (sim 0.24.0, protocol 0.15.0 Guard; voorstel, ter bevestiging door de architect): ordT the guarded Kooi or
+ * scrap node; the order stays until another command or until the target is gone (systems/orders.ts guard). The value
+ * 6 was ORDER_CLAIM in the sprint-2 interim (claiming is a Build of the claim building since sprint 3).
+ */
+export const ORDER_GUARD = 6;
 export const ORDER_CRAFT = 7;
 /**
  * HeroAbility cast out of range (data 0.18.0): the hero walks into range and then casts. One type per ability slot,
@@ -232,7 +237,10 @@ export class World {
   readonly touchTicks = new Int32Array(MAX_ENTITIES);
   /** Slaver: ticks it has held its current target within capture range. */
   readonly capWork = new Int32Array(MAX_ENTITIES);
-  /** Kooi: ticks of the current garrison deficit (revolt; negative after an escape, see systems/slaves.ts). */
+  /**
+   * Slave (sim 0.24.0): ticks of the current guard deficit of its group (revolt; negative after an escape, see
+   * systems/slaves.ts revolts); the same for every slave of the group. Was per Kooi until sim 0.23.0.
+   */
   readonly revolt = new Int32Array(MAX_ENTITIES);
   /** Chem on this unit: faction-local chem index + 1 (0 = none), its phase (CHEM_*) and the ticks left in it. */
   readonly chem = new Uint8Array(MAX_ENTITIES);

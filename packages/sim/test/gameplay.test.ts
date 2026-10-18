@@ -908,6 +908,7 @@ describe('state', () => {
           })),
         // protocol 0.14.0 (voorstel): the creep camps of the map (none on the test map)
         camps: [],
+        slaveGroups: [], // protocol 0.15.0 (voorstel): the Dwellers have no slaves
       },
       winner: null,
     });

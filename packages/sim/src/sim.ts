@@ -74,7 +74,8 @@ import { Auras, auraSystem, heroStatus } from './systems/hero.js';
 import { RobotRates, robotRulesSystem } from './systems/robots.js';
 import { trainTicks, trainedOf } from './systems/training.js';
 import { MovementScratch, movementSystem } from './systems/movement.js';
-import { OrdersScratch, craftSiteMask, ordersSystem } from './systems/orders.js';
+import { OrdersScratch, ROLE_MILITIA, craftSiteMask, ordersSystem } from './systems/orders.js';
+import { slaveGroupStatus } from './systems/slaves.js';
 import { Vision } from './vision.js';
 
 export interface SpawnUnitSpec {
@@ -421,6 +422,7 @@ export class Sim implements SimContext {
       chems: this.chems(playerId), // protocol 0.13.0 (voorstel): chem-dosis per eenheid voor de Chem-dealer in de HUD
       claimPoints: claimPointStatus(this), // protocol 0.10.0 (bevestigd in fase-0 sectie 22 besluit 3): claimstand voor de ring in de HUD
       camps: campStatus(this, playerId), // protocol 0.14.0 (voorstel): creep-kampen, overgenomen in de kleur van de eigenaar
+      slaveGroups: slaveGroupStatus(this, playerId, ROLE_MILITIA), // protocol 0.15.0 (voorstel): slavengroepen en bewakers
     };
   }
 

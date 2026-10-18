@@ -487,13 +487,20 @@ describe("context-gevoelige commando's", () => {
   it('militie: Verplaats, Stop, Val aan', () => {
     const t = setup({ units: [unit(1, 'militia')] });
     mounted = t.handle;
-    expect(actionsOf(t.el)).toEqual(['move', 'stop', 'attackMove', 'roleScavenger', 'roleBuilder']);
+    expect(actionsOf(t.el)).toEqual([
+      'move',
+      'stop',
+      'attackMove',
+      'guard',
+      'roleScavenger',
+      'roleBuilder',
+    ]);
   });
 
   it('een robot (geen rol): Verplaats, Stop, Val aan en geen rolknoppen', () => {
     const t = setup({ units: [unit(1, null)] });
     mounted = t.handle;
-    expect(actionsOf(t.el)).toEqual(['move', 'stop', 'attackMove']);
+    expect(actionsOf(t.el)).toEqual(['move', 'stop', 'attackMove', 'guard']);
   });
 
   it('een geselecteerd gebouw heeft geen commando-knoppen maar een hint', () => {

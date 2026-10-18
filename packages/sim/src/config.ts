@@ -416,9 +416,20 @@ export interface SimSlaveRules {
   readonly touchRange: number;
   readonly guardRadius: number;
   readonly freedSpeedPermille: number;
-  readonly garrisonRadius: number;
-  readonly slavesPerGuard: number;
-  readonly minGuards: number;
+  /**
+   * The guard rule (data 0.29.0, sim 0.24.0; voorstel, ter bevestiging door content en de architect; systems/slaves.ts
+   * revolts): a Kooi within cageNear of a node (node centre to footprint edge) guards the slaves there with cageGuards;
+   * a node without one needs ceil(n * noCageGuards / noCageSlaves), or ceil(n / guardModeSlavesPerGuard) with a guard
+   * in guard mode on it. Own fighters within guardRadius of the Kooi footprint or a node of the group count as guards.
+   */
+  readonly cageNear: number;
+  readonly revoltGuardRadius: number;
+  readonly cageGuards: number;
+  readonly guardModeSlavesPerGuard: number;
+  readonly noCageGuards: number;
+  readonly noCageSlaves: number;
+  /** An escaped slave walks this far away from its Kooi or node. */
+  readonly escapeDist: number;
   readonly graceTicks: number;
   readonly emptyGraceTicks: number;
   readonly escapePermille: number;
@@ -671,6 +682,11 @@ export interface SimConfig {
   readonly contestFlipTicks: number;
   /** Fog of war (data 0.22.0): side of a vision cell in units, 256, 512 or 1024 (1, 2 or 4 m; vision.ts). */
   readonly visionCell: number;
+  /**
+   * Guard mode (sim.json `guard`, data 0.29.0, sim 0.24.0; voorstel, ter bevestiging door de architect): a unit on a
+   * Guard order walks back to within `stand` of its target and fights only while it stays within `leash` of it.
+   */
+  readonly guard: { readonly stand: number; readonly leash: number };
 }
 
 /** Building placement margins (sim.json `placement`), in sim units; the rule works in whole cells, rounded up. */
@@ -848,6 +864,11 @@ export function validateEnv(env: SimEnv): void {
   req(intIn(config.heroClaimTicks, 0, I31), 'heroClaimTicks');
   req(intIn(config.contestFlipTicks, 0, I31), 'contestFlipTicks');
   req(
+    intIn(config.guard.stand, 0, MAX_MAP_CELLS_SIDE << 8) &&
+      intIn(config.guard.leash, config.guard.stand, MAX_MAP_CELLS_SIDE << 8),
+    'guard (stand, leash >= stand)',
+  );
+  req(
     config.visionCell === 256 || config.visionCell === 512 || config.visionCell === 1024,
     'visionCell (256, 512 of 1024)',
   );
@@ -1024,15 +1045,19 @@ export function validateEnv(env: SimEnv): void {
         sl.minDistanceFromOwnerBase,
         sl.touchRange,
         sl.guardRadius,
-        sl.garrisonRadius,
+        sl.cageNear,
+        sl.revoltGuardRadius,
+        sl.escapeDist,
       ])
         req(intIn(v, 0, MAX_MAP_CELLS_SIDE << 8), `${at}: slaves afstand`);
       for (const v of [sl.touchTicks, sl.graceTicks, sl.emptyGraceTicks, sl.repeatTicks])
         req(intIn(v, 0, I31), `${at}: slaves tijd`);
       req(
         intIn(sl.freedSpeedPermille, 0, 10000) &&
-          intIn(sl.slavesPerGuard, 1, 4096) &&
-          intIn(sl.minGuards, 0, 4096) &&
+          intIn(sl.cageGuards, 0, 4096) &&
+          intIn(sl.guardModeSlavesPerGuard, 1, 4096) &&
+          intIn(sl.noCageGuards, 1, 4096) &&
+          intIn(sl.noCageSlaves, 1, 4096) &&
           intIn(sl.escapePermille, 0, 1000),
         `${at}: slaves`,
       );
@@ -1498,6 +1523,8 @@ export function envHash(env: SimEnv): number {
     c.heroClaimTicks,
     c.contestFlipTicks,
     c.visionCell,
+    c.guard.stand,
+    c.guard.leash,
   ]);
   h = fnv1aInt(h, c.unitTypes.length);
   for (const u of c.unitTypes) {
@@ -1627,9 +1654,13 @@ export function envHash(env: SimEnv): number {
             sl.touchRange,
             sl.guardRadius,
             sl.freedSpeedPermille,
-            sl.garrisonRadius,
-            sl.slavesPerGuard,
-            sl.minGuards,
+            sl.cageNear,
+            sl.revoltGuardRadius,
+            sl.cageGuards,
+            sl.guardModeSlavesPerGuard,
+            sl.noCageGuards,
+            sl.noCageSlaves,
+            sl.escapeDist,
             sl.graceTicks,
             sl.emptyGraceTicks,
             sl.escapePermille,

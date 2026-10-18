@@ -737,7 +737,9 @@ const FIXTURES_S10: FixtureDef[] = [
     // point and answers what it sees; the Dwellers win by destruction in frame 34.526 (28:47; data 0.23.0: on
     // dominance in frame 30.962). Sim 0.22.0, data 0.27.0 (camp takeover, weaker Raider fighters; voorstel): seed 6
     // (was 5, where the Raider AI now catches nobody): the Raider AI takes its two low camps over in minute 2 and the
-    // high camp later, catches settlers from minute 6, and wins on dominance in frame 30.021 (25:01).
+    // high camp later, catches settlers from minute 6, and wins on dominance in frame 30.021 (25:01). Sim 0.24.0, data
+    // 0.29.0 (the guard rule, Raider fighters back to strength, the weak low camp; voorstel): the Raider AI guards its
+    // slave groups with Bewaak and raids from 7:45; the Dwellers win by destruction in frame 43.326 (36:06).
     name: 's10-rustbelt-raiders-ai-vs-ai',
     build() {
       const r = raidersVsDwellers(base('rustbelt', 6, [true, true]));
@@ -890,7 +892,8 @@ const FIXTURES_S11: FixtureDef[] = [
     // captureTick; with seed 2 player 1), where entity order gave it to player 0 every time. Sim 0.22.0, data 0.27.0
     // (voorstel): thirteen minutes (was nine). Both AIs take their camps over from minute 1 and send their Slavers
     // only from minute 6, so the mirror now ends at 7:20, where their armies with the recruits meet; the first catch
-    // comes after that.
+    // comes after that. Sim 0.24.0, data 0.29.0: the slave raids start at 7:45 and the mirror holds until 11:28; the
+    // first catch still falls within the thirteen minutes.
     name: 's11-rustbelt-raiders-mirror',
     build() {
       const r = base('rustbelt', 2, [true, true]);
@@ -1053,6 +1056,47 @@ const FIXTURES_S14: FixtureDef[] = [
   },
 ];
 
+const FIXTURES_S15: FixtureDef[] = [
+  {
+    // The guard rule and Bewaak (sim 0.24.0, data 0.29.0, protocol 0.15.0 Guard; voorstel, ter bevestiging door de
+    // architect). Player 0 plays the Raiders by hand, player 1 is the Dweller AI. The start slaves gather at the node
+    // next to the Raiderkamp (a Kooi within 15 m: one guard keeps them). In the first second one start fighter takes
+    // Bewaak on the Raiderkamp and another on that node; the Warlord and the rest take the near camp. At minute 2:30 both
+    // guards walk away (Move): the group has no guard and after 15 s half the slaves run off as wanderers, again 25 s
+    // later; at minute 3:30 one fighter takes Bewaak on the Raiderkamp again and the rest keep working. Six minutes.
+    name: 's15-rustbelt-raiders-guard',
+    build() {
+      const r = raidersVsDwellers(base('rustbelt', 1501, [false, true]));
+      const st = startOf(r);
+      const sim = st.sim;
+      const s = new Script();
+      const spawn = sim.map.spawns[0]!;
+      const camp = st.hq.find((id) => sim.getUnit(id)!.owner === 0)!;
+      const node = nearest(sim, st.nodes, spawn.x, spawn.y);
+      const fighters = [...st.militia[0]!].sort((a, b) => a - b);
+      const [g1, g2, ...rest] = fighters;
+      const camps = sim.map.creepCamps!;
+      let near = camps[0]!;
+      for (const c of camps)
+        if (
+          (c.x - spawn.x) ** 2 + (c.y - spawn.y) ** 2 <
+          (near.x - spawn.x) ** 2 + (near.y - spawn.y) ** 2
+        )
+          near = c;
+      s.add(6, 0, 'Gather', { ids: st.scav[0]!, nodeId: node });
+      s.add(20, 0, 'Guard', { ids: [g1!], targetId: camp });
+      s.add(20, 0, 'Guard', { ids: [g2!], targetId: node });
+      s.add(24, 0, 'AttackMove', { ids: [...st.hero[0]!, ...rest], x: near.x, y: near.y });
+      const away = toward(spawn, near, 60);
+      s.add(3000, 0, 'Move', { ids: [g1!, g2!], x: away.x, y: away.y });
+      s.add(4200, 0, 'Guard', { ids: [g1!], targetId: camp });
+      r.bundles = s.bundles();
+      r.hashes = [{ frame: 7199, hash: 0 }]; // length; record fills in the real hashes
+      return r;
+    },
+  },
+];
+
 export const FIXTURES: readonly FixtureDef[] = [
   ...FIXTURES_UP_TO_S3,
   ...FIXTURES_S4,
@@ -1066,6 +1110,7 @@ export const FIXTURES: readonly FixtureDef[] = [
   ...FIXTURES_S12,
   ...FIXTURES_S13,
   ...FIXTURES_S14,
+  ...FIXTURES_S15,
 ];
 
 /** De sim na het uitvoeren van de frames 0 tot `frame` (exclusief) met de bundels die de replay tot dan heeft. */

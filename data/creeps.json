@@ -2,6 +2,46 @@
   "_comment": "Data 0.25.0 (creep camps, phase 2 round 2; bevestigd in fase-0 sectie 23 besluit 5; startwaarde, gemeten in packages/sim/test/creeps.test.ts en met AI tegen AI, zie packages/sim/CHANGELOG.md 0.20.0). Bandit nests of the map (MapDef.creepCamps, Spelfundament 3.2: bandietennesten als creeps met loot en held-XP, Warcraft 3). units: the neutral loadouts of the camps (no faction, never trained; owner OWNER_NEUTRAL in the sim; the loader appends them after the faction loadouts). tiers: what a camp of that map tier holds and gives. A camp wakes on a player unit within aggroRadiusM of its centre or when a bandit is hit; its bandits fight player units within leashRadiusM of the centre (never buildings), and the whole camp walks home and heals to full when a bandit strays beyond leashRadiusM or no player unit is left in that circle (hits on the way home are ignored). The killing blow on the last bandit gives lootScrap to that player and heroXp to his living hero within heroXpRadiusM of the centre (on top of the normal kill and assist xp per bandit). respawnS 0: a cleared camp stays empty.",
   "units": [
     {
+      "id": "bandiet_dief",
+      "naam": "Kruimeldief",
+      "bodyType": "human",
+      "weapon": "pipe_gun",
+      "armorType": "none",
+      "hp": 45,
+      "damage": 4,
+      "damageType": "ballistic",
+      "rangeM": 6,
+      "speedMps": 3,
+      "cooldownS": 1.5,
+      "visuals": {
+        "meshSlots": {
+          "body": "raider_body_human",
+          "weapon": "raider_weapon_pipe_gun"
+        }
+      },
+      "_comment": "Data 0.29.0 (the low camp is weak; voorstel, ter bevestiging door content en de architect). Martien, 18 oktober: \"die zijn zwakker dan bouwers\" (die: the camps). The gunner of the low camp: weaker than a Dweller bouwer one on one (45 hp without armour against 60 light, 4 per 1.5 s against the bouwer's 4 per 1.5 s, which does 100 percent on none), so a bouwer beats him (packages/sim/test/creeps.test.ts)."
+    },
+    {
+      "id": "bandiet_vechtjas",
+      "naam": "Vechtjas",
+      "bodyType": "human",
+      "weapon": "spiked_club",
+      "armorType": "none",
+      "hp": 50,
+      "damage": 3,
+      "damageType": "melee",
+      "rangeM": 1.5,
+      "speedMps": 3,
+      "cooldownS": 1.5,
+      "visuals": {
+        "meshSlots": {
+          "body": "raider_body_human",
+          "weapon": "raider_weapon_spiked_club"
+        }
+      },
+      "_comment": "Data 0.29.0 (voorstel): the brawler of the low camp, weaker than a bouwer one on one (50 hp without armour, 3 melee per 1.5 s; melee does 110 percent on the bouwer's light armour)."
+    },
+    {
       "id": "bandiet_schutter",
       "naam": "Schutter",
       "bodyType": "human",
@@ -69,21 +109,21 @@
       "naam": "Bandietennest",
       "units": [
         {
-          "unitId": "bandiet_schutter",
+          "unitId": "bandiet_dief",
           "count": 3
         },
         {
-          "unitId": "bandiet_knokker",
+          "unitId": "bandiet_vechtjas",
           "count": 1
         }
       ],
       "aggroRadiusM": 6,
       "leashRadiusM": 14,
       "respawnS": 0,
-      "lootScrap": 120,
-      "heroXp": 100,
+      "lootScrap": 60,
+      "heroXp": 50,
       "heroXpRadiusM": 25,
-      "_comment": "Low camp: a hero with 4 militia clears it and loses two, with 5 one, with 6 none; with 2 or 3 he loses (creeps.test.ts). aggroRadiusM 6 m: the escorts and builders of the AI walk 6 to 8 m past the camps next to the settlement roads; with 9 m every one of them was fought from minute 2 on and AI matches ran up to 45 minutes. leashRadiusM 14 m: the scrap nodes of Rustbelt lie at least 21 m from a camp, so gatherers are never pulled in. 120 scrap is about two militia; 100 xp is a level for a fresh hero."
+      "_comment": "Low camp (data 0.29.0: weak; voorstel, ter bevestiging door content en de architect). Martien, 18 oktober: \"raiders moeten wel vanaf het begin een camp over kunnen nemen, die moeten niet direct sterker zijn, die zijn zwakker dan bouwers\": the camp, not the Raiders. Three Kruimeldieven and a Vechtjas, each weaker than a Dweller bouwer one on one: the Raider start army (Warlord with 3 plunderaar and a knuppelaar) takes it in the first minute, and a small Dweller group (the hero with the start militie and bouwer) clears it from the start (creeps.test.ts, takeover.test.ts). Was 3 schutter and 1 knokker (data 0.25.0 to 0.28.0: a hero with 4 militia cleared it and lost two). aggroRadiusM 6 m: the escorts and builders of the AI walk 6 to 8 m past the camps next to the settlement roads; with 9 m every one of them was fought from minute 2 on and AI matches ran up to 45 minutes. leashRadiusM 14 m: the scrap nodes of Rustbelt lie at least 21 m from a camp, so gatherers are never pulled in. Data 0.29.0: a weak camp gives less, 60 scrap (was 120, two militia) and 50 hero xp (was 100). Measured AI against AI (aggroRadiusM 6 kept): with the full loot the passing escorts of the Dweller AI cleared the weak camps around minute 4 and the Dwellers against Dwellers were decided on dominance 27 of 33 times (the test asks a quarter for each route) and Raiders against Raiders 10 against 23; with 60 and 50 Dwellers 12 against 21 (15 destruction, 18 dominance), Raiders 15 against 18. With aggroRadiusM 4 or 5 the Raider AI won 6 to 14 percent against the Dweller AI, or swung between 15 and 65 percent with every 10 s of its slave raid."
     },
     {
       "tier": 2,
@@ -121,7 +161,7 @@
           "minUnits": 3,
           "yieldS": 240,
           "yieldMax": 2,
-          "_comment": "Low camp (data 0.27.0; voorstel, ter bevestiging door content en de architect): it surrenders at 30 percent of its hp to at least 3 Raider units. The Warlord with the four start fighters (3 plunderaar, 1 knuppelaar) takes it in the first minute and keeps one or two bandits; the Warlord with 3 plunderaar fails (packages/sim/test/takeover.test.ts). The outpost yields a bandit every 240 s, two in all. Measured AI against AI (tools/replay raiders-report, 66 matches per seed set): at 25 percent the Raiders won 18 percent, at 30 44 and 42; with one yield instead of two 35 and 32, with two every 120 s 53 and 61."
+          "_comment": "Low camp (data 0.27.0; voorstel, ter bevestiging door content en de architect): it surrenders at 30 percent of its hp to at least 3 Raider units. The Warlord with the four start fighters (3 plunderaar, 1 knuppelaar) takes it in the first minute and keeps one or two bandits; the Warlord with 3 plunderaar fails (packages/sim/test/takeover.test.ts). Data 0.29.0: the low camp is weak (three Kruimeldieven and a Vechtjas) and the Raider fighters are back to strength: the start army takes it in 9 s with one recruit, the Warlord with two plunderaar or three plunderaar alone take it too (takeover.test.ts); the rule itself is unchanged. The outpost yields a bandit every 240 s, two in all. Measured AI against AI (tools/replay raiders-report, 66 matches per seed set): at 25 percent the Raiders won 18 percent, at 30 44 and 42; with one yield instead of two 35 and 32, with two every 120 s 53 and 61."
         },
         {
           "tier": 2,

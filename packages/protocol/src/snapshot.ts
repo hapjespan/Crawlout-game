@@ -284,6 +284,41 @@ export interface PlayerStatus {
    * hem dragen.
    */
   camps?: CreepCampStatus[];
+  /**
+   * De slavengroepen van de speler met hun bewakers (protocol 0.15.0, data 0.29.0; voorstel van sim-core, ter
+   * bevestiging door de architect): per groep de slaven, de bewakers en wat de bewaakregel eist, zodat de HUD
+   * "Bewakers 1/2 nodig" en de opstandwaarschuwing uit state toont in plaats van het uit de snapshot te benaderen (de
+   * bewaakmodus staat niet in de snapshot). Oplopend op kind (kooi voor node), dan targetId. Eigen kennis; leeg voor een
+   * factie zonder slaven. De sim levert hem altijd (Sim.status, slaves.ts guardStatus; leest alleen state, geen
+   * hashwijziging). Optioneel tot alle PlayerStatus-literals hem dragen.
+   */
+  slaveGroups?: SlaveGroupStatus[];
+}
+
+/**
+ * Een slavengroep (PlayerStatus.slaveGroups, protocol 0.15.0, voorstel). kind kooi: de slaven die bij een node met deze
+ * Kooi dichtbij verzamelen plus de slaven van de Kooi die niet verzamelen (de dreiging van de Kooi: cageGuards
+ * bewakers); kind node: de slaven bij een node zonder Kooi dichtbij (2 op 5, of 1 op 5 met een bewaker in bewaakmodus
+ * op de node). Zie data/factions.json slaves.revolt.
+ */
+export interface SlaveGroupStatus {
+  kind: 'kooi' | 'node';
+  /** Entity-id van de Kooi of de node. */
+  targetId: number;
+  /** Midden van de Kooi of de node in sim-eenheden. */
+  x: number;
+  y: number;
+  slaves: number;
+  /** Eigen vechters die nu als bewaker tellen (bewaakmodus op het doel, of binnen de bewaakstraal). */
+  guards: number;
+  /** Wat de bewaakregel nu eist (0 zonder slaven). */
+  guardsNeeded: number;
+  /** Bewakers in bewaakmodus op dit doel of een node van de groep (een deel van guards). */
+  guardMode: number;
+  /** Entity-ids van de nodes waar slaven van de groep verzamelen (bij een Kooi-groep de nodes met de Kooi dichtbij). */
+  nodeIds: number[];
+  /** Ticks tot de volgende ontsnapping zolang guards < guardsNeeded, anders 0. */
+  escapeInTicks: number;
 }
 
 /** Stand van een creep-kamp (CreepCampStatus.state): nog bandieten, geruimd, of overgenomen (een buitenpost). */

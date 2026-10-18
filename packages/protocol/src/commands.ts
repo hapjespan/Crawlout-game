@@ -42,6 +42,13 @@ export type Role = z.infer<typeof Role>;
 //   letter; kosten scrapCost + scrapCostStep maal de al getrainde punten op die letter, meteen afgerekend. Cancel met
 //   het gebouw stopt het met teruggave. De punten horen bij de speler (PlayerStatus.trained), niet bij de held.
 // - SetRole blijft de drie bewonersrollen; technician en robot (data 0.16.0) zijn unitrollen, geen doel van SetRole.
+// Voorstel, ter bevestiging door de architect (protocol 0.15.0, data 0.29.0, sim 0.24.0; fase-0 sectie 5):
+// - Guard (ids, targetId): bewaakmodus. targetId is een eigen voltooide Kooi (provides kooi, ook het Raiderkamp) of een
+//   scrap-node met scrap. Alleen vechters (rol militia of robot, niet de held, geen slaaf). Ze lopen tot binnen
+//   sim.json guard.standM van het doel (rand van de footprint, midden van de node), vechten met een vijand die ze zelf
+//   kiezen zolang ze binnen guard.leashM van het doel blijven, en keren terug. De order blijft tot een ander commando
+//   of tot het doel weg is (gesloopt, leeg). Voor de Raiders telt zo'n eenheid als bewaker van de slaven daar
+//   (data/factions.json slaves.revolt); voor de Dwellers bewaakt hij gewoon de node.
 export const COMMAND_PAYLOADS = {
   Move: z.object({ ids: EntityIds, ...Pos }).strict(),
   AttackMove: z.object({ ids: EntityIds, ...Pos }).strict(),
@@ -68,6 +75,7 @@ export const COMMAND_PAYLOADS = {
   Surrender: z.object({}).strict(),
   Produce: z.object({ buildingId: uint, loadoutId: uint }).strict(),
   Train: z.object({ buildingId: uint, programId: uint }).strict(),
+  Guard: z.object({ ids: EntityIds, targetId: uint }).strict(),
 } as const;
 
 const COMMAND_TYPE_NAMES = Object.keys(COMMAND_PAYLOADS) as [

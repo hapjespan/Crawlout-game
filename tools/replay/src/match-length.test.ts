@@ -64,12 +64,18 @@ import { playMatchesParallel, summarize } from './fairness.js';
 // met 31); 197 van 198 kampen geruimd. With max 2 a player built up to 8 of them in one match (replacing the fallen
 // ones) and seed 7 ran to 42,4 minutes (32 of 33 in the window), so the script keeps one. EXPECTED is opnieuw gemeten; seeds 3 and 11 (now both player 0
 // on dominance) are replaced by 7 and 13 so the five keep both routes and both winners.
+// The weak low camp (data 0.29.0; voorstel, ter bevestiging door content en de architect): three Kruimeldieven and a
+// Vechtjas with half the loot (60 scrap, 50 hero xp). The escorts and builders that pass a camp next to the settlement
+// roads now clear it on the way (minute 3.8 instead of 10.3); with the full loot that early scrap and xp tipped the
+// matches to dominance (27 of 33). Speler 0 wint 12 en speler 1 wint 21, 15 keer vernietiging en 18 keer dominantie,
+// lengte 25,7 tot 32,1 minuten (33 van de 33 tussen 25 en 35; was 26,2 tot 36,1 met 31). EXPECTED is opnieuw gemeten
+// (seeds 1, 2, 7, 11 and 99: both winners and both routes).
 const EXPECTED = [
-  { seed: 1, winner: 0, reason: 'dominance', frame: 34730 },
-  { seed: 7, winner: 0, reason: 'destruction', frame: 32996 },
-  { seed: 13, winner: 1, reason: 'destruction', frame: 33347 },
-  { seed: 42, winner: 0, reason: 'dominance', frame: 36879 },
-  { seed: 99, winner: 1, reason: 'dominance', frame: 36604 },
+  { seed: 1, winner: 0, reason: 'dominance', frame: 32021 },
+  { seed: 2, winner: 1, reason: 'dominance', frame: 32109 },
+  { seed: 7, winner: 1, reason: 'destruction', frame: 32318 },
+  { seed: 11, winner: 0, reason: 'destruction', frame: 32716 },
+  { seed: 99, winner: 1, reason: 'destruction', frame: 32584 },
 ] as const;
 
 // REPLAY_FAST=1 slaat deze 33 potjes (ongeveer 25 s met parallelle processen, 2 minuten na elkaar) over in de snelle

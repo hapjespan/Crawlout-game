@@ -47,7 +47,9 @@ describe('Raiders: de factie laadt', () => {
     );
     expect(faction.robotRules).toBeNull();
     expect(faction.housingGrowthPerMin).toBe(0);
-    expect(data.dataVersion).toBe('0.28.0'); // data 0.28.0: the Raider garrison (0.27.0: camp takeover)
+    // data 0.29.0: the guard rule, the Raider fighters back to strength, the weak low camp (0.28.0: the Raider garrison,
+    // 0.27.0: camp takeover)
+    expect(data.dataVersion).toBe('0.29.0');
     // Dwellers ongewijzigd: nog altijd training en geen Raider-blokken
     expect(dwellers.specialChannel).toBe('training');
     expect(dwellers.slaves).toBeNull();
@@ -456,7 +458,7 @@ describe('Raiders: slavenregels, buit, tribute en chems', () => {
   const faction = data.factions.find((f) => f.key === 'raiders')!;
   const techKey = (id: number): string => data.tech[id]!.key;
 
-  it('slavenregels: roven buiten de basisradius, bevrijding na 3 s, opstand bij te weinig garnizoen', () => {
+  it('slavenregels: roven buiten de basisradius, bevrijding na 3 s, opstand bij te weinig bewakers (data 0.29.0)', () => {
     const s = faction.slaves!;
     expect(s.minDistanceFromOwnerBaseU).toBe(metersToUnits(36));
     // de basisradius is groter dan een bouwrange (sim.json placement.buildRangeM 10) plus de turret van de Dwellers
@@ -467,23 +469,35 @@ describe('Raiders: slavenregels, buit, tribute en chems', () => {
       guardRadiusU: metersToUnits(12),
       freedSpeedPermille: 250,
     });
+    // Martien, 18 oktober: een Kooi naast de scrap: 1 bewaker; geen Kooi dichtbij: 2 op 5; bewaakmodus op de scrap: 1 op 5 ("een bewaker op een scrapbron dekt 3 slaven. = 5 efficiënter dan 2 los")
     expect(s.revolt).toEqual({
-      garrisonRadiusU: metersToUnits(30),
-      slavesPerGuard: 3,
-      minGuards: 1,
+      cageNearU: metersToUnits(15),
+      guardRadiusU: metersToUnits(12),
+      cageGuards: 1,
+      guardModeSlavesPerGuard: 5,
+      noCageGuards: 2,
+      noCageSlaves: 5,
+      escapeU: metersToUnits(30),
       graceTicks: secondsToTicks(40),
       emptyGraceTicks: secondsToTicks(15),
       escapePermille: 500,
       repeatTicks: secondsToTicks(25),
     });
     expect(s.revolt.emptyGraceTicks).toBeLessThan(s.revolt.graceTicks);
-    // het garnizoen staat binnen de werkstraal van een Kooi: wie slaven beschermt, beschermt hun werk
-    const kooi = data.buildings.find((b) => b.key === 'kooi')!;
-    expect(s.revolt.garrisonRadiusU).toBeLessThanOrEqual(kooi.cage!.workRadiusU);
-    // genoeg slaven op een Kooi om het garnizoen te laten tellen: capaciteit gedeeld door slavesPerGuard
-    expect(Math.ceil(kooi.cage!.capacity / s.revolt.slavesPerGuard)).toBeGreaterThanOrEqual(
-      s.revolt.minGuards,
+    // bewaakmodus op de node is efficiënter dan losse vechters (1 op 5 tegen 2 op 5): nooit meer, en vanaf 3 slaven minder
+    for (let n = 1; n <= 8; n++)
+      expect(Math.ceil(n / s.revolt.guardModeSlavesPerGuard)).toBeLessThanOrEqual(
+        Math.ceil((n * s.revolt.noCageGuards) / s.revolt.noCageSlaves),
+      );
+    expect(Math.ceil(3 / s.revolt.guardModeSlavesPerGuard)).toBeLessThan(
+      Math.ceil((3 * s.revolt.noCageGuards) / s.revolt.noCageSlaves),
     );
+    // een Kooi dichtbij ligt binnen de werkstraal van de Kooi, en een bewaker in bewaakmodus (sim.json guard.standM)
+    // staat binnen de bewaakstraal
+    const kooi = data.buildings.find((b) => b.key === 'kooi')!;
+    expect(s.revolt.cageNearU).toBeLessThanOrEqual(kooi.cage!.workRadiusU);
+    expect(data.sim.guard.standU).toBeLessThanOrEqual(s.revolt.guardRadiusU);
+    expect(data.sim.guard.leashU).toBeGreaterThanOrEqual(data.sim.guard.standU);
   });
 
   it('buit en tribute: bonus via afpersing, depots dubbel', () => {
@@ -662,9 +676,9 @@ describe('Raiders: AI-script', () => {
     expect(ai.raidPlan!.dominancePush.fromTicks).toBeLessThan(ai.pushFromTicks);
   });
 
-  it('houdt een garnizoen thuis (anders opstand): minstens het benodigde minimum van de slavenregels', () => {
+  it('houdt bewakers thuis (anders opstand): minstens wat een Kooi-groep vraagt', () => {
     const revolt = raiders.slaves!.revolt;
-    expect(ai.raidPlan!.garrison.minFighters).toBeGreaterThanOrEqual(revolt.minGuards);
+    expect(ai.raidPlan!.garrison.minFighters).toBeGreaterThanOrEqual(revolt.cageGuards);
     // de eerste golf is groter dan het garnizoen: er is iets om heen te sturen
     expect(ai.waveMinArmy).toBeGreaterThan(ai.raidPlan!.garrison.minFighters);
     // de bouwvolgorde begint met twee tenten en een Kooi (bedden voor de vroege push, dan slavenopslag; data 0.23.0),

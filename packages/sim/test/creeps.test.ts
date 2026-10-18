@@ -15,7 +15,8 @@ import {
 import { raidOver } from '../src/systems/ai.js';
 import { cellCenter, testPlayers } from '../src/testing.js';
 import { CAMP_CELL, armyAt, bandits, campMap, fightCamp, heroOf } from './creepHarness.js';
-import { CONFIG, MILITIA, bundle, cmd, envOf, typeByKey } from './helpers.js';
+import { formatSweep, sweep } from './combat.js';
+import { CONFIG, DATA, MILITIA, bundle, cmd, envOf, typeByKey } from './helpers.js';
 
 // Creep camps (sim 0.20.0, data 0.25.0; voorstel, ter bevestiging door de architect): the bandits of a camp spawn at
 // the start, wake on a player unit in the aggro radius or a hit, fight player units within the leash circle and never
@@ -25,6 +26,8 @@ import { CONFIG, MILITIA, bundle, cmd, envOf, typeByKey } from './helpers.js';
 // (119, 119).
 
 const LOW = CONFIG.creepTiers!.find((t) => t.tier === 1)!;
+const keyOf = (typeId: number): string =>
+  DATA.loadouts[CONFIG.unitTypes.find((u) => u.typeId === typeId)!.loadoutId]!.key;
 const HIGH = CONFIG.creepTiers!.find((t) => t.tier === 2)!;
 const PATROL = typeByKey('patrol');
 const TURRET = typeByKey('turret');
@@ -289,18 +292,30 @@ describe('creep camps: loot and xp', () => {
 });
 
 describe('creep camps: balance (data/creeps.json)', () => {
-  it('low camp: a hero with 4 to 6 militia clears it with losses, with 2 he loses', () => {
-    expect(fightCamp(1, 2).cleared).toBe(false);
-    for (const n of [4, 5]) {
-      const r = fightCamp(1, n);
-      expect(r.cleared, JSON.stringify(r)).toBe(true);
-      expect(r.losses, JSON.stringify(r)).toBeGreaterThanOrEqual(1);
-      expect(r.scrapGain).toBe(LOW.lootScrap);
+  // data 0.29.0 (voorstel, ter bevestiging door content en de architect). Martien, 18 oktober: "raiders moeten wel vanaf
+  // het begin een camp over kunnen nemen, die moeten niet direct sterker zijn, die zijn zwakker dan bouwers": the camps.
+  // Measured: Kruimeldief against a bouwer margin -0.13 (the bouwer wins all 24 layouts), Vechtjas -0.35; the hero alone
+  // clears the low camp in 21 s, with 1 to 4 militie in 15 to 10 s, never a loss; a militie and a bouwer without the
+  // hero lose (four against two).
+  it('low camp (weak, data 0.29.0): each bandit loses one on one to a Dweller bouwer', () => {
+    for (const b of ['bandiet_dief', 'bandiet_vechtjas']) {
+      const s = sweep(b, 'bouwer', 1, { robots: 1 });
+      expect(s.humanWins, formatSweep(`${b} vs bouwer`, s)).toBe(s.runs);
     }
-    expect(fightCamp(1, 6).cleared).toBe(true);
+    for (const id of LOW.typeIds) expect(['bandiet_dief', 'bandiet_vechtjas']).toContain(keyOf(id));
   });
 
-  it('high camp: about ten units; nine fail, ten clear it barely, eleven with losses', () => {
+  it('low camp: a small Dweller group clears it from the start without losses (the hero alone, or 3 militie)', () => {
+    for (const r of [fightCamp(1, 0), fightCamp(1, 1), fightCamp(1, 3, false)]) {
+      expect(r.cleared, JSON.stringify(r)).toBe(true);
+      expect(r.losses, JSON.stringify(r)).toBe(0);
+      expect(r.scrapGain).toBe(LOW.lootScrap);
+    }
+    // but it is a camp: two units without the hero do not
+    expect(fightCamp(1, 0, false, 1, { army: [MILITIA, typeByKey('bouwer')] }).cleared).toBe(false);
+  });
+
+  it('high camp (unchanged, a real fight): about ten units; nine fail, ten clear it barely, eleven with losses', () => {
     expect(fightCamp(2, 8).cleared).toBe(false);
     for (const seed of [1, 2, 3, 4]) {
       const ten = fightCamp(2, 9, true, seed);

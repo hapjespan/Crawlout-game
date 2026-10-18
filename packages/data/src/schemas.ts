@@ -110,15 +110,21 @@ export const SlaveLiberation = z
     freedSpeedPct: z.number(), // bonus op de loopsnelheid van de bevrijde slaaf op weg naar huis (tempo voor de bevrijder)
   })
   .strict();
-// Opstand bij te weinig garnizoen: zie het _comment in data/factions.json voor de precieze regel.
+// Opstand bij te weinig bewakers (data 0.29.0, de bewaakregel; voorstel, ter bevestiging door content en de architect):
+// zie het _comment in data/factions.json en data/README.md voor de precieze regel.
+const perGuard = z.number().int().positive();
 export const SlaveRevolt = z
   .object({
-    garrisonRadiusM: nonneg, // een eigen vechter binnen deze straal van de Kooi telt als garnizoen
-    slavesPerGuard: z.number().int().positive(), // benodigd garnizoen = max(minGuards, ceil(slaven / slavesPerGuard))
-    minGuards: z.number().int().nonnegative(),
+    cageNearM: nonneg, // een eigen Kooi binnen deze afstand van een node (midden node tot rand Kooi): de slaven daar horen bij de Kooi
+    guardRadiusM: nonneg, // een eigen vechter binnen deze straal van de Kooi of een node van de groep telt als bewaker
+    cageGuards: z.number().int().nonnegative(), // bewakers voor een Kooi-groep (de dreiging van de Kooi)
+    guardModeSlavesPerGuard: perGuard, // node zonder Kooi, met een bewaker in bewaakmodus op de node: ceil(n / dit)
+    noCageGuards: perGuard, // node zonder Kooi, zonder bewaakmodus: ceil(n * noCageGuards / noCageSlaves)
+    noCageSlaves: perGuard,
+    escapeM: nonneg, // een ontsnapte slaaf loopt zo ver weg van de Kooi of node
     graceS: nonneg, // zoveel seconden tekort voordat de opstand begint
-    emptyGraceS: nonneg, // idem bij nul vechters (korter)
-    escapePct: pct, // deel van de slaven bij die Kooi dat per opstand ontsnapt
+    emptyGraceS: nonneg, // idem bij nul bewakers (korter)
+    escapePct: pct, // deel van de slaven van die groep dat per opstand ontsnapt
     repeatS: nonneg, // zolang het tekort blijft: elke zoveel seconden opnieuw
   })
   .strict();
@@ -794,6 +800,20 @@ export const VisionTuning = z
   })
   .strict();
 
+// Guard mode (data/sim.json `guard`, data 0.29.0; voorstel, ter bevestiging door de architect): the Guard command
+// (protocol 0.15.0) keeps a fighter at an own Kooi or a scrap node.
+export const GuardTuning = z
+  .object({
+    standM: nonneg, // a guard walks back until it is within this of its target (Kooi footprint edge, node centre)
+    leashM: nonneg, // a guard fights an enemy only while it stays within this of its target, at least standM
+    _comment: comment,
+  })
+  .strict()
+  .refine((t) => t.leashM >= t.standM, {
+    message: 'leashM is minstens standM',
+    path: ['leashM'],
+  });
+
 // Sim-tuning (data/sim.json): globale getallen die de sim nodig heeft maar die bij geen loadout horen.
 export const SimTuning = z
   .object({
@@ -847,6 +867,8 @@ export const SimTuning = z
     contestFlipS: nonneg,
     // Data 0.22.0 (fog of war; bevestigd in fase-0 sectie 23 besluit 1): the vision grid and default sight radii
     vision: VisionTuning,
+    // Data 0.29.0 (the Guard command; voorstel, ter bevestiging door de architect)
+    guard: GuardTuning,
   })
   .strict()
   .refine((t) => t.pathEntranceMaxCells <= t.pathSectorCells, {

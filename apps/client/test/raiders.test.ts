@@ -4,7 +4,14 @@ import { ANIM, type PlayerStatus } from '@crawlout/protocol';
 import { buildingTypeId, heroTypeId, unitTypeId } from '@crawlout/data';
 import { loadGameDataFromDir } from '@crawlout/data/node';
 import { buildingCards, raiderTechEffects } from '../src/game/cards.js';
-import { raiderKindOf, raiderLines, raiderStats, seesEnemySlaves } from '../src/game/raiders.js';
+import {
+  guardLine,
+  nodeGuardLines,
+  raiderKindOf,
+  raiderLines,
+  raiderStats,
+  seesEnemySlaves,
+} from '../src/game/raiders.js';
 import { buildRoster, LOADOUT_NAMES } from '../src/game/roster.js';
 import type { EntityRow } from '../src/game/snapshot.js';
 
@@ -103,12 +110,54 @@ describe('Raider kinds and selection lines', () => {
     );
   });
 
-  it('gives a finished Kooi capacity, transition time and guard count', () => {
+  it('gives a finished Kooi capacity, transition time and its guards from the status (protocol 0.15.0)', () => {
     const own = [camp, slave, row(4, unit('plunderaar'), { x: 256 * 3 })];
-    const out = lines(camp, own);
+    const group = {
+      kind: 'kooi' as const,
+      targetId: 100,
+      x: 0,
+      y: 0,
+      slaves: 1,
+      guards: 0,
+      guardsNeeded: 1,
+      guardMode: 0,
+      nodeIds: [7],
+      escapeInTicks: 300,
+    };
+    const out = raiderLines(data, raiders.id, 0, camp, own, 20, [], [group]);
     expect(out[0]).toBe('Kooi: 1 van 8 slaven, werkstraal 45 m');
     expect(out[1]).toContain('na 20 s slaaf');
-    expect(out[2]).toBe('Bewakers: 1 van 1');
+    expect(out[2]).toBe('Bewakers 0/1 nodig (te weinig: slaven lopen weg)');
+    expect(out[3]).toBe('Scrap binnen 15 m: 1 bewaker op Bewaak (W) houdt de slaven aan het werk');
+    expect(lines(camp, own)[2]).toBe('Bewakers 0/0 nodig: geen slaven aan het werk');
+    expect(guardLine({ guards: 2, guardsNeeded: 2 })).toBe('Bewakers 2/2 nodig');
+  });
+
+  it('a scrap node tells its guard rule: its own group, the Kooi next to it, or how to guard it', () => {
+    const node = {
+      kind: 'node' as const,
+      targetId: 7,
+      x: 0,
+      y: 0,
+      slaves: 5,
+      guards: 1,
+      guardsNeeded: 2,
+      guardMode: 0,
+      nodeIds: [7],
+      escapeInTicks: 0,
+    };
+    expect(nodeGuardLines(data, raiders.id, 7, [node])).toEqual([
+      '5 slaven aan het werk',
+      'Bewakers 1/2 nodig (te weinig: slaven lopen weg)',
+      'Bewaak (W) op de bron: 1 bewaker per 5 slaven; losse vechters 2 per 5',
+    ]);
+    const kooi = { ...node, kind: 'kooi' as const, targetId: 100, guardsNeeded: 1 };
+    expect(nodeGuardLines(data, raiders.id, 7, [kooi])[1]).toBe(
+      'Bewakers 1/1 nodig (de Kooi dreigt)',
+    );
+    expect(nodeGuardLines(data, raiders.id, 8, [])[0]).toContain('Met een Kooi binnen 15 m');
+    const dwellers = data.factions.find((f) => f.slaves === null)!;
+    expect(nodeGuardLines(data, dwellers.id, 7, [node])).toEqual([]);
   });
 });
 
@@ -124,7 +173,21 @@ describe('raiderStats', () => {
       row(5, unit('scavenger')), // a captured Dweller on the way to the cage
       row(6, unit('knuppelaar'), { x: 256 * 200 }), // far from the Kooi: no guard
     ];
-    const stats = raiderStats(data, raiders.id, 0, own)!;
+    const groups = [
+      {
+        kind: 'kooi' as const,
+        targetId: 100,
+        x: 0,
+        y: 0,
+        slaves: 4,
+        guards: 0,
+        guardsNeeded: 1,
+        guardMode: 0,
+        nodeIds: [],
+        escapeInTicks: 200,
+      },
+    ];
+    const stats = raiderStats(data, raiders.id, 0, own, groups)!;
     expect(stats).toMatchObject({
       slaves: 4,
       slavesWorking: 1,
@@ -133,8 +196,20 @@ describe('raiderStats', () => {
       safetyThreshold: 5,
       tentReady: false,
     });
-    // 4 slaves need ceil(4 / 3) = 2 guards, the only fighter is out of range
-    expect(stats.cages[0]).toMatchObject({ slaves: 4, capacity: 8, guards: 0, guardsNeeded: 2 });
+    // the guards come from the status (the guard rule, data 0.29.0): the Kooi group needs 1, the fighter is away
+    expect(stats.cages[0]).toMatchObject({ slaves: 4, capacity: 8, guards: 0, guardsNeeded: 1 });
+    expect(stats.guardGroups).toEqual([
+      {
+        kind: 'kooi',
+        id: 100,
+        x: 0,
+        y: 0,
+        naam: 'Raiderkamp',
+        slaves: 4,
+        guards: 0,
+        guardsNeeded: 1,
+      },
+    ]);
   });
 
   it('is null for the Dwellers', () => {

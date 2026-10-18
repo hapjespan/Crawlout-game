@@ -60,54 +60,39 @@ describe('combat balance: beveiligingsrobot against militie (1 robot is 3 humans
   });
 });
 
-// Raider lines (data 0.27.0; voorstel, ter bevestiging door de architect en content). Martien, 18 oktober: "raiders
-// moeten wel vanaf het begin een camp over kunnen nemen, die moeten niet direct sterker zijn, die zijn zwakker dan
-// bouwers. nu is de raider faction dus de moeilijk om te spelen." Read as: a Raider fighter is weaker than his Dweller
-// counterpart one on one ("bouwers" = the Dwellers, the faction that builds), and the Raiders make up for it with
-// numbers, the creep camps they take over (data/creeps.json takeover) and slaves; the harder faction to play. Not read
-// as "weaker than the Dweller worker": a plunderaar still beats a bouwer, a fighter that loses to a hammer is no fighter.
-// The Raider group is the first side of the harness (`robots` is its size). Costs: plunderaar 25, knuppelaar 35,
-// molotovgooier 42, hond 28, buggy 90; militie 30, slagwapen_leer 40, scavenger and bouwer 0 and 10,
-// beveiligingsrobot 150. Measured with data 0.27.0 (plunderaar 46 hp and 6 damage, was 55 and 7; plunderaar_staal 51
-// hp and 6, was 60 and 7; knuppelaar 61 hp, 10 damage and light armour, was 70, 14 and medium; molotovgooier 45 hp and
-// 11, was 50 and 13), mean margin of the Raider side: 1 plunderaar vs 1 militie -0.40 (was -0.18), vs 1 bouwer +0.61;
-// 2 vs 1 militie +0.57; 5 vs 5 -0.61 (was -0.39); 6 vs 5 -0.35 (was +0.24); 7 vs 5 +0.24; 1 knuppelaar vs 1
-// slagwapen_leer -0.25 and 4 vs 4 -0.44 (was +0.36); 4 knuppelaar vs 4 militie -0.38 (was +0.56) and 5 vs 4 +0.26;
-// 4 molotovgooier vs 4 militie -0.19 (was +0.49) and 5 vs 4 +0.49; 3 plunderaar vs 2 patrol -0.63; 3 hond vs 4
-// scavenger +0.62 and vs 3 militie -0.77; 1 buggy vs 2 militie +0.30 and vs 3 -0.45; 3 plunderaar vs 1
-// beveiligingsrobot +0.38 in 73 s.
+// Raider lines (data 0.24.0): the faction identity of Spelfundament 4, "cheap, fragile, hard-hitting early", against
+// the Dwellers' early militie, their workers and a robot. The Raider group is the first side of the harness (`robots`
+// is its size). Costs: plunderaar 25, knuppelaar 35, molotovgooier 42, hond 28, buggy 90; militie 30, scavenger 0,
+// beveiligingsrobot 150. Measured with data 0.24.0 (unchanged loadouts since 0.21.0), mean margin of the Raider side:
+// 6 plunderaar vs 5 militie +0.24 and 5 vs 5 -0.39; 4 knuppelaar vs 4 militie +0.56 and 3 vs 4 +0.15; 4 molotovgooier
+// vs 4 militie +0.49; 3 hond vs 4 scavenger +0.62 and vs 3 militie -0.77; 1 buggy vs 2 militie +0.30 and vs 3 -0.45;
+// 3 plunderaar vs 1 beveiligingsrobot +0.67 in 49 s. A plain plunderaar loses to the patrol rifle at equal cost (3 vs 2
+// patrol -0.53): early pipe guns, not a late army.
+// Data 0.29.0 (voorstel, ter bevestiging door content en de architect): these lines hold again. Data 0.27.0 made the
+// Raider fighters weaker than the Dwellers one on one and rewrote them; that read Martien's "die zijn zwakker dan
+// bouwers" as the Raiders, but he meant the creep camps ("raiders moeten helemaal niet zwakker zijn"): the loadouts are
+// back to their values of data 0.26.0 and the low camp is weak instead (creeps.test.ts).
 const raiders = (unit: string, n: number, dweller: string, m: number): SweepResult =>
   sweep(unit, dweller, m, { robots: n });
 
-describe('combat balance: a Raider is weaker than a Dweller, the Raiders win on numbers', () => {
-  it('one on one: a plunderaar loses to a militie, a knuppelaar to a slagwapen_leer', () => {
-    expectHumansWin('1 plunderaar vs 1 militie', raiders('plunderaar', 1, HUMAN, 1));
-    const s = raiders('knuppelaar', 1, 'slagwapen_leer', 1);
-    expect(s.robotWins, show('1 knuppelaar vs 1 slagwapen_leer', s)).toBe(0);
-    expect(s.meanMargin, show('1 knuppelaar vs 1 slagwapen_leer', s)).toBeLessThanOrEqual(-0.2);
+describe('combat balance: Raiders are cheap, fragile and hit hard early', () => {
+  it('cheap: 6 plunderaar beat 5 militie (equal cost) in every layout, by a smaller margin', () => {
+    const s = raiders('plunderaar', 6, HUMAN, 5);
+    expect(s.robotWins, show('6 plunderaar vs 5 militie', s)).toBe(s.runs);
+    expect(s.meanMargin, show('6 plunderaar vs 5 militie', s)).toBeGreaterThanOrEqual(0.1);
   });
-  it('but a fighter is a fighter: a plunderaar beats a Dweller bouwer', () => {
-    expectRobotWins('1 plunderaar vs 1 bouwer', raiders('plunderaar', 1, 'bouwer', 1));
-  });
-  it('equal numbers: 5 plunderaar, 4 knuppelaar and 4 molotovgooier lose to as many militie', () => {
+  it('fragile: 5 plunderaar lose to 5 militie (equal numbers)', () => {
     expectHumansWin('5 plunderaar vs 5 militie', raiders('plunderaar', 5, HUMAN, 5));
-    expectHumansWin('4 knuppelaar vs 4 militie', raiders('knuppelaar', 4, HUMAN, 4));
-    const s = raiders('molotovgooier', 4, HUMAN, 4);
-    expect(s.humanWins, show('4 molotovgooier vs 4 militie', s)).toBe(s.runs);
-  });
-  it('equal cost is not enough either: 6 plunderaar lose to 5 militie', () => {
-    expectHumansWin('6 plunderaar vs 5 militie', raiders('plunderaar', 6, HUMAN, 5));
-  });
-  it('numbers win: 2 plunderaar beat 1 militie, 7 beat 5, 5 knuppelaar or molotovgooier beat 4', () => {
-    expectRobotWins('2 plunderaar vs 1 militie', raiders('plunderaar', 2, HUMAN, 1));
-    const seven = raiders('plunderaar', 7, HUMAN, 5);
-    expect(seven.robotWins, show('7 plunderaar vs 5 militie', seven)).toBe(seven.runs);
-    expect(seven.meanMargin, show('7 plunderaar vs 5 militie', seven)).toBeGreaterThanOrEqual(0.1);
-    expectRobotWins('5 knuppelaar vs 4 militie', raiders('knuppelaar', 5, HUMAN, 4));
-    expectRobotWins('5 molotovgooier vs 4 militie', raiders('molotovgooier', 5, HUMAN, 4));
   });
   it('early only: 3 plunderaar lose to 2 patrol (equal cost, the Dwellers after geweerrek)', () => {
     expectHumansWin('3 plunderaar vs 2 patrol', raiders('plunderaar', 3, 'patrol', 2));
+  });
+  it('hard-hitting: 4 knuppelaar beat 4 militie clearly, 3 against 4 is even (equal cost)', () => {
+    expectRobotWins('4 knuppelaar vs 4 militie', raiders('knuppelaar', 4, HUMAN, 4));
+    expectEven('3 knuppelaar vs 4 militie', raiders('knuppelaar', 3, HUMAN, 4));
+  });
+  it('the molotovgooier outranges militie: 4 against 4 win clearly', () => {
+    expectRobotWins('4 molotovgooier vs 4 militie', raiders('molotovgooier', 4, HUMAN, 4));
   });
   it('the hond hunts workers and dies to soldiers', () => {
     expectRobotWins('3 hond vs 4 scavenger', raiders('hond', 3, 'scavenger', 4));

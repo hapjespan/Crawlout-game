@@ -41,6 +41,7 @@ const ACTION_HINT: Partial<Record<string, string>> = {
     'Sla een vijandelijke bewoner neer buiten zijn basis; blijf bij hem staan om hem te vangen (rechtsklik werkt ook)',
   liberate:
     'Raak een vijandelijke slaaf of gevangene aan om hem te bevrijden (rechtsklik werkt ook)',
+  guard: 'Bewaak een kooi of scrapbron: houdt slaven aan het werk',
 };
 
 const TARGETING_TEXT: Record<TargetingKind, string> = {
@@ -50,6 +51,7 @@ const TARGETING_TEXT: Record<TargetingKind, string> = {
   heroAbility: 'Kies een doelpositie voor de ability (Esc om te annuleren)',
   capture: 'Sla een vijandelijke bewoner neer buiten zijn basis (Esc om te annuleren)',
   liberate: 'Kies een slaaf of gevangene om te bevrijden (Esc om te annuleren)',
+  guard: 'Kies een kooi of scrapbron om te bewaken (Esc om te annuleren)',
 };
 
 function mmss(totalSeconds: number): string {
@@ -173,20 +175,26 @@ function SelectionPanel(props: {
     body = h('p', { class: 'co-empty' }, 'Niets geselecteerd');
   } else if (foe) {
     // An enemy to inspect: what it is, whose it is and how hurt; no commands for it.
-    const isBuilding = kindOfTypeId(foe.typeId).kind === 'building';
+    const kind = kindOfTypeId(foe.typeId).kind;
+    const isBuilding = kind === 'building';
+    // a scrap node (data 0.29.0): what it is and the guard lines of its slaves, no hp
+    const node = kind === 'scrapNode';
     body = [
       h('p', { class: 'co-unit-name' }, foe.loadoutName ?? `Type ${foe.typeId}`),
       h(
         'p',
         { class: 'co-unit-meta' },
-        `${foe.ownerLabel ?? 'Vijand'} · ${isBuilding ? 'Gebouw' : 'Eenheid'} · ${foe.hpPct}%`,
+        node
+          ? (foe.ownerLabel ?? 'Grondstof')
+          : `${foe.ownerLabel ?? 'Vijand'} · ${isBuilding ? 'Gebouw' : 'Eenheid'} · ${foe.hpPct}%`,
       ),
       // A ghost (fog of war): what the player last saw of it, not what it is now.
       foe.lastSeen ? h('p', { class: 'co-unit-note co-last-seen' }, 'Laatst gezien') : null,
       foe.detail ? h('p', { class: 'co-unit-detail' }, foe.detail) : null,
       // a bandit whose camp the player's faction takes over (data 0.27.0): how ("Overnemen: ...")
       foe.note ? h('p', { class: 'co-unit-note co-takeover' }, foe.note) : null,
-      h(HpBar, { pct: foe.hpPct }),
+      (foe.lines ?? []).map((l) => h('p', { class: 'co-unit-note co-unit-line', key: l }, l)),
+      node ? null : h(HpBar, { pct: foe.hpPct }),
     ];
   } else if (sel.length === 1 && sel[0]) {
     const u = sel[0];
@@ -251,7 +259,13 @@ function SelectionPanel(props: {
       h(
         'h2',
         null,
-        foe ? 'Selectie · vijand' : sel.length > 1 ? `Selectie (${sel.length})` : 'Selectie',
+        foe
+          ? kindOfTypeId(foe.typeId).kind === 'scrapNode'
+            ? 'Selectie · grondstof'
+            : 'Selectie · vijand'
+          : sel.length > 1
+            ? `Selectie (${sel.length})`
+            : 'Selectie',
       ),
       body,
       line ? h(Typed, { text: line }) : null,
@@ -468,6 +482,8 @@ function RosterBar(props: { ctl: HudController; state: HudState }): ComponentChi
 /** Wat de commandokaart zegt als er geen knoppen zijn: niets geselecteerd, of een gebouw. */
 function commandHint(ctl: HudController, state: HudState): string {
   const sel = ctl.selectionSummary();
+  if (state.selection.some((s) => kindOfTypeId(s.typeId).kind === 'scrapNode'))
+    return 'Een scrapbron: kies eenheden om te verzamelen of te bewaken (W).';
   if (ctl.enemySelected()) return 'Je bekijkt een vijand: die kun je niet bevelen.';
   if (sel.units === 0 && sel.buildings === 0) return 'Selecteer een eenheid of gebouw.';
   if (sel.units === 0) {
@@ -847,7 +863,7 @@ const ALERT_TEXT: Record<AlertKind, string> = {
   settlerLost: 'Bewoner verloren',
   claimLost: 'Claim verloren',
   dominance: 'Tegenstander telt mee voor dominantie!',
-  revolt: 'Kooi onbewaakt: slaven ontsnappen!',
+  revolt: 'Te weinig bewakers: slaven lopen weg! Zet vechters op Bewaak (W)',
   noBeds: 'Geen vrije bedden',
 };
 

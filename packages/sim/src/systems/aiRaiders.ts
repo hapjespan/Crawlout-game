@@ -10,6 +10,7 @@ import {
   ORDER_ATTACK_MOVE,
   ORDER_CRAFT,
   ORDER_GATHER,
+  ORDER_GUARD,
   ORDER_NONE,
   SLAVE_NONE,
   SLAVE_SLAVE,
@@ -45,7 +46,7 @@ import {
   waveReady,
 } from './ai.js';
 import type { WorkReach } from './slaves.js';
-import { cageIndex, workReach } from './slaves.js';
+import { guardGroups, isOwnKooi, workReach } from './slaves.js';
 import { aiCreepRun, campAlive, campAt } from './creeps.js';
 import { pointsOf } from './claims.js';
 
@@ -54,9 +55,10 @@ import { pointsOf } from './claims.js';
 // every number from the script. Raiders never work: slaves gather and build within the work radius of their cage,
 // fighters come new from the tents (Produce) and never retrain. Per tick, in this order:
 //  1. the hero (revive, perk, Raid) and the threat at the own buildings (as the Dwellers);
-//  2. the garrison: per cage with slaves max(minGuards, ceil(slaves / slavesPerGuard)) fighters within the garrison
-//     radius, at the headquarters at least raidPlan.garrison.minFighters; idle fighters nearest the cage walk there.
-//     A garrison fighter goes on no wave, raid or escort (the revolt rule, systems/slaves.ts);
+//  2. the guards (sim 0.24.0, guardPosts): every post a slave group needs under the guard rule (systems/slaves.ts) gets
+//     fighters in guard mode (the Guard command): a Kooi its cageGuards, a node without a Kooi near 1 per 5 slaves;
+//     the headquarters at least raidPlan.garrison.minFighters. A guard goes on no wave, raid or escort; one that no
+//     post needs any more is released;
 //  3. tents when free beds run low (housingBuildingId, housingFreeBeds), then the build order (a slave builder builds
 //     within its work radius: a site of the script outside it moves to the headquarters), then richBuilds;
 //  4. research from researchFromTicks (the list in order), what is affordable now; with `reserve` (from fromTicks, with
@@ -266,8 +268,8 @@ export function raiderThink(
     (nodes > 0 || ps.scrap[p]! >= h.reviveScrap);
   const threat = hq >= 0 ? findThreat(ctx, scratch, p, hq, script.defendRadius) : -1;
 
-  // 2 the garrison
-  const guards = fields === null || rules === null ? [] : garrison(ctx, p, hq, plan, rules, t);
+  // 2 the guards
+  const guards = fields === null || rules === null ? [] : guardPosts(ctx, p, hq, plan, rules, t);
   const free = t.idleArmy.filter((id) => !guards.includes(id));
 
   let saving = heroWaits;
@@ -503,11 +505,14 @@ function richBuild(ctx: SimContext, p: number, script: SimAiScript): number {
 }
 
 /**
- * The garrison (see the top of this file): per own cage with slaves the fighters needed within the garrison radius,
- * the headquarters at least garrisonMinFighters. Fighters already there count first (lowest index); the rest come from
- * the idle army (and idle buggies), nearest first. Returns the ids held back.
+ * The guards (sim 0.24.0; the guard rule of systems/slaves.ts, instead of the old garrison per Kooi): every post that a
+ * slave group needs gets fighters in guard mode (the Guard command): the Kooi of a Kooi group cageGuards, the node of a
+ * node group ceil(slaves / guardModeSlavesPerGuard) (guard mode on the node asks the least); the headquarters (the
+ * Raiderkamp is a Kooi) at least raidPlan.garrison.minFighters, its home guard. Idle fighters (then idle buggies)
+ * nearest the post go; a guard that no post needs any more is released with Stop (the last ones first). Returns the ids
+ * sent this tick (they are still in the tally's idle lists).
  */
-function garrison(
+function guardPosts(
   ctx: SimContext,
   p: number,
   hq: number,
@@ -516,69 +521,73 @@ function garrison(
   t: Tally,
 ): number[] {
   const w = ctx.world;
-  const out: number[] = [];
-  const pool = [...t.army, ...t.buggies];
+  const posts: number[] = [];
+  const need: number[] = [];
+  const want = (post: number, n: number): void => {
+    const k = posts.indexOf(post);
+    if (k < 0) {
+      posts.push(post);
+      need.push(n);
+    } else if (need[k]! < n) need[k] = n;
+  };
+  for (const g of guardGroups(ctx, p, ROLE_MILITIA)) {
+    const n = g.members.length;
+    want(
+      g.target,
+      g.kooi
+        ? rules.cageGuards
+        : idiv(n + rules.guardModeSlavesPerGuard - 1, rules.guardModeSlavesPerGuard),
+    );
+  }
+  if (hq >= 0 && isOwnKooi(ctx, p, hq)) want(hq, plan.garrisonMinFighters);
+  // the guards there now, ascending index
+  const on: number[][] = posts.map(() => []);
+  const release: number[] = [];
+  for (let i = 0; i < w.highWater; i++) {
+    if (w.alive[i] !== 1 || w.owner[i] !== p || w.orderType(i) !== ORDER_GUARD) continue;
+    if (!w.has(i, C.unit | C.health) || w.has(i, C.hero)) continue;
+    const post = w.resolve(w.ordT[w.currentOrder(i)]!);
+    const k = post < 0 ? -1 : posts.indexOf(post);
+    if (k < 0) release.push(w.idOf(i));
+    else on[k]!.push(w.idOf(i));
+  }
   const idle = [...t.idleArmy, ...t.idleBuggies];
-  const r = rules.garrisonRadius;
-  const idx = ctx.index;
-  idx.refresh(w);
-  for (let k = 0; k < idx.buildingCount; k++) {
-    const b = idx.buildings[k]!;
-    if (cageIndex(ctx, p, w.idOf(b)) !== b) continue;
-    const id = w.idOf(b);
-    let slaves = 0;
-    for (let i = 0; i < w.highWater; i++)
-      if (
-        w.alive[i] === 1 &&
-        w.owner[i] === p &&
-        w.slaveState[i] === SLAVE_SLAVE &&
-        w.slaveCage[i] === id
-      )
-        slaves++;
-    let need =
-      slaves === 0
-        ? 0
-        : Math.max(rules.minGuards, idiv(slaves + rules.slavesPerGuard - 1, rules.slavesPerGuard));
-    if (b === hq && need < plan.garrisonMinFighters) need = plan.garrisonMinFighters;
-    if (need === 0) continue;
-    const near = (gid: number): boolean => {
-      const i = w.resolve(gid);
-      return distToRect2(w.x[i]!, w.y[i]!, w.fx[b]!, w.fy[b]!, w.fw[b]!, w.fh[b]!) <= r * r;
-    };
-    let have = 0;
-    for (const gid of pool) {
-      if (have >= need) break;
-      if (out.includes(gid) || !near(gid)) continue;
-      out.push(gid);
-      have++;
-    }
+  const sent: number[] = [];
+  for (let k = 0; k < posts.length; k++) {
+    const b = posts[k]!;
+    const have = on[k]!;
+    // too many: the last ones go
+    while (have.length > need[k]!) release.push(have.pop()!);
     const call: number[] = [];
-    while (have < need) {
+    for (let n = have.length; n < need[k]!; n++) {
       let best = -1;
       let bestD = 0;
       for (const gid of idle) {
-        if (out.includes(gid)) continue;
+        if (sent.includes(gid)) continue;
         const i = w.resolve(gid);
-        const d = distToRect2(w.x[i]!, w.y[i]!, w.fx[b]!, w.fy[b]!, w.fw[b]!, w.fh[b]!);
+        const dx = w.x[i]! - w.x[b]!;
+        const dy = w.y[i]! - w.y[b]!;
+        const d = dx * dx + dy * dy;
         if (best < 0 || d < bestD) {
           best = gid;
           bestD = d;
         }
       }
       if (best < 0) break;
-      out.push(best);
+      sent.push(best);
       call.push(best);
-      have++;
     }
     if (call.length > 0)
       applyCommand(ctx, {
         playerId: p,
         seq: 0,
-        type: 'Move',
-        payload: { ids: call, x: w.x[b]!, y: w.y[b]! },
+        type: 'Guard',
+        payload: { ids: call, targetId: w.idOf(b) },
       });
   }
-  return out;
+  for (const part of chunks(release))
+    applyCommand(ctx, { playerId: p, seq: 0, type: 'Stop', payload: { ids: part } });
+  return sent;
 }
 
 /** The weighted fighter mix as a flat cycle of type ids. */

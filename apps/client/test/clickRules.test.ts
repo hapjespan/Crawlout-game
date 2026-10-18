@@ -73,6 +73,15 @@ describe('leftClickIs', () => {
     }
   });
 
+  it('Bewaak (guard, protocol 0.15.0): an own building or a scrap node is the post; an own unit or an enemy selects', () => {
+    const guard = { mode: 'targeting', kind: 'guard' } as const;
+    expect(leftClickIs(guard, 'building', false)).toBe('complete');
+    expect(leftClickIs(guard, 'scrapNode')).toBe('complete');
+    expect(leftClickIs(guard, 'unit', false)).toBe('select');
+    expect(leftClickIs(guard, 'building', true)).toBe('select');
+    expect(leftClickIs(guard, 'unit', true)).toBe('select');
+  });
+
   it('ground, nodes and claim points answer the mode', () => {
     expect(leftClickIs({ mode: 'placement' }, 'none')).toBe('complete');
     expect(leftClickIs({ mode: 'targeting', kind: 'move' }, 'none')).toBe('complete');

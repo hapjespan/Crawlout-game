@@ -51,9 +51,22 @@ describe('Raider fixtures: the mechanics happen', () => {
     for (const name of ['s10-rustbelt-raiders-ai-vs-ai', 's11-rustbelt-raiders-mirror']) {
       const m = raiderMechanics(load(name));
       expect(m.takeovers, name).toBeGreaterThanOrEqual(2);
-      expect(m.recruits, name).toBeGreaterThanOrEqual(2);
+      // data 0.29.0: the weak low camp falls fast, so fewer bandits are left to join
+      expect(m.recruits, name).toBeGreaterThanOrEqual(1);
       expect(m.yields, name).toBeGreaterThanOrEqual(2);
     }
+  });
+
+  it('s15-rustbelt-raiders-guard: Bewaak on the Raiderkamp and a node; without guards the slaves run (sim 0.24.0)', () => {
+    const m = raiderMechanics(load('s15-rustbelt-raiders-guard'));
+    expect(m.guards).toBe(2);
+    // 7 start slaves, unguarded at 2:30: 3 run after 15 s, 2 more 25 s later, then Bewaak again holds the rest
+    expect(m.escaped).toBe(5);
+  });
+
+  it('s10-rustbelt-raiders-ai-vs-ai: the Raider AI guards its slave groups with Bewaak (sim 0.24.0)', () => {
+    const m = raiderMechanics(load('s10-rustbelt-raiders-ai-vs-ai'));
+    expect(m.guards).toBeGreaterThanOrEqual(3);
   });
 
   it('s10-rustbelt-raiders-net: the tent safety net brings fighters under the threshold', () => {

@@ -221,9 +221,13 @@ export function simConfigFromGameData(data: GameData): SimConfig {
               touchRange: f.slaves.liberation.touchRangeU,
               guardRadius: f.slaves.liberation.guardRadiusU,
               freedSpeedPermille: f.slaves.liberation.freedSpeedPermille,
-              garrisonRadius: f.slaves.revolt.garrisonRadiusU,
-              slavesPerGuard: f.slaves.revolt.slavesPerGuard,
-              minGuards: f.slaves.revolt.minGuards,
+              cageNear: f.slaves.revolt.cageNearU,
+              revoltGuardRadius: f.slaves.revolt.guardRadiusU,
+              cageGuards: f.slaves.revolt.cageGuards,
+              guardModeSlavesPerGuard: f.slaves.revolt.guardModeSlavesPerGuard,
+              noCageGuards: f.slaves.revolt.noCageGuards,
+              noCageSlaves: f.slaves.revolt.noCageSlaves,
+              escapeDist: f.slaves.revolt.escapeU,
               graceTicks: f.slaves.revolt.graceTicks,
               emptyGraceTicks: f.slaves.revolt.emptyGraceTicks,
               escapePermille: f.slaves.revolt.escapePermille,
@@ -570,6 +574,7 @@ export function simConfigFromGameData(data: GameData): SimConfig {
     heroClaimTicks: t.heroClaimTicks,
     contestFlipTicks: t.contestFlipTicks,
     visionCell: t.vision.cellU,
+    guard: { stand: t.guard.standU, leash: t.guard.leashU },
   };
 }
 

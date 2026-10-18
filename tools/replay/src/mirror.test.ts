@@ -26,7 +26,7 @@ describe('spiegel: AI tegen AI op Rustbelt XL zonder toeval', () => {
 
   // Twee volledige potjes (ongeveer 15 s): in de snelle lus overgeslagen.
   it.skipIf(process.env.REPLAY_FAST === '1')(
-    'verwisselproef: exact verwisseld tot de herbouw van de palen bij het midden, de winnaar verwisselt',
+    'verwisselproef: exact gespiegeld tot het claimpunt in het midden (data 0.29.0: dat gaat nu altijd naar speler 0)',
     { timeout: 120_000 },
     () => {
       // seed 7: speler 0 krijgt het midden bij de gelijke stand, seed 2: speler 1. Het claimpunt in het midden ligt een
@@ -56,11 +56,16 @@ describe('spiegel: AI tegen AI op Rustbelt XL zonder toeval', () => {
       // Bouwrobot (data 0.26.0, sim 0.21.0; voorstel, ter bevestiging door de architect): with one builder robot per AI
       // from minute 16 the claim posts at the centre point are rebuilt earlier, at 28.343 (23:37; the same known
       // asymmetry), and the swap is exact again in the outcome: player 0 wins in frame 34.658, player 1 in 34.759.
+      // The weak low camp (data 0.29.0): the passing escorts clear the camps next to the roads from minute 4, and the
+      // centre point now goes to player 0 in every seed tried (1 to 5, 7 and 9: the two posts at the eccentric point are
+      // no longer finished in the same tick, the known asymmetry), so there is no swapped pair to show; the two games
+      // break at the centre point (frame 26.321 for seed 7, 23.975 for seed 9) and both end with player 0 winning in
+      // frame 49.387. Fairness over the 33 seeds with chance is 12 against 21 (match-length.test.ts).
       const r = mirrorSwap(7, 9);
-      expect(r.winners).toEqual([0, 1]);
+      expect(r.winners).toEqual([0, 0]);
       expect(r.breakFrame).not.toBeNull();
-      expect(r.breakFrame!).toBeGreaterThan(23 * 1200);
-      expect(r.diffs[0]).toMatch(/gebouw t\d+ @192,191/); // the claim post
+      expect(r.breakFrame!).toBeGreaterThan(18 * 1200);
+      expect(r.diffs[0]).toMatch(/claimpunt @191,191/);
     },
   );
 });

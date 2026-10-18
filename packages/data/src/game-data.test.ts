@@ -54,9 +54,10 @@ describe('data/ valideert', () => {
     expect(data.aiScripts.filter(dwellers)).toHaveLength(2);
     expect(data.aiScripts.filter(dwellers).filter((a) => a.versusFactionId < 0)).toHaveLength(1);
     // totalen met de Raiders; de sim kent hoogstens 32 techs en 32 perks
-    // 25 faction loadouts (data 0.26.0: the bouwrobot) plus the 3 bandits of the creep camps (data 0.25.0)
-    expect(data.loadouts).toHaveLength(28);
-    expect(data.loadouts.filter((l) => l.factionId === NEUTRAL_FACTION_ID)).toHaveLength(3);
+    // 25 faction loadouts (data 0.26.0: the bouwrobot) plus the 5 bandits of the creep camps (data 0.25.0; 0.29.0: the
+    // two weak ones of the low camp)
+    expect(data.loadouts).toHaveLength(30);
+    expect(data.loadouts.filter((l) => l.factionId === NEUTRAL_FACTION_ID)).toHaveLength(5);
     expect(data.buildings).toHaveLength(18);
     expect(data.tech).toHaveLength(28);
     expect(data.heroes).toHaveLength(2);
@@ -250,6 +251,7 @@ describe('sim-tuning', () => {
       heroClaimTicks: 3600,
       contestFlipTicks: 240,
       vision: { cellU: 512 },
+      guard: { standU: 1280, leashU: 3584 },
     });
   });
 
@@ -1069,6 +1071,8 @@ describe('data/creeps.json', () => {
   it('appends the bandits after the faction loadouts, neutral, as militia without cost', () => {
     const bandits = data.loadouts.filter((l) => l.factionId === NEUTRAL_FACTION_ID);
     expect(bandits.map((l) => l.key)).toEqual([
+      'bandiet_dief',
+      'bandiet_vechtjas',
       'bandiet_schutter',
       'bandiet_knokker',
       'bandiet_baas',
@@ -1081,7 +1085,13 @@ describe('data/creeps.json', () => {
       expect(l.producedAt).toBe(-1);
     });
     expect(data.creeps.units).toEqual(bandits.map((l) => l.id));
-    expect(data.creeps.names).toEqual(['Schutter', 'Knokker', 'Bandietenbaas']);
+    expect(data.creeps.names).toEqual([
+      'Kruimeldief',
+      'Vechtjas',
+      'Schutter',
+      'Knokker',
+      'Bandietenbaas',
+    ]);
   });
 
   it('converts the tiers to sim units, one entry per bandit, ascending tier', () => {

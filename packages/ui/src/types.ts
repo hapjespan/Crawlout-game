@@ -58,7 +58,7 @@ export interface NetworkState {
 
 /** Soorten doel die de HUD van de volgende wereldklik verwacht. */
 export type TargetingKind =
-  'move' | 'attackMove' | 'gather' | 'heroAbility' | 'capture' | 'liberate';
+  'move' | 'attackMove' | 'gather' | 'heroAbility' | 'capture' | 'liberate' | 'guard';
 /** Soort Raider-unit in de selectie, zie SelectedEntity.raiderKind. */
 export type RaiderKind = 'slave' | 'slaver' | 'chemDealer' | 'fighter';
 export interface TargetPoint {
@@ -74,7 +74,11 @@ export interface TargetEnemy {
   x: number;
   y: number;
 }
-export type TargetResult = TargetPoint | TargetNode | TargetEnemy;
+/** An own building that was clicked as the target of Bewaak (a Kooi, protocol 0.15.0 Guard). */
+export interface TargetOwn {
+  ownId: number;
+}
+export type TargetResult = TargetPoint | TargetNode | TargetEnemy | TargetOwn;
 
 /** Eén punt op de minimap, in sim-eenheden. */
 export interface MinimapBlip {
@@ -454,19 +458,39 @@ export interface HudDeps {
   hasEnemySlaves?(): boolean;
 }
 
-/** Eén Kooi met zijn slaven en garnizoen (Raiders). */
+/** Eén Kooi met zijn slaven en bewakers (Raiders). */
 export interface RaiderCage {
   id: number;
   x: number;
   y: number;
   naam: string;
+  /** Slaven van de Kooi-groep (protocol 0.15.0 slaveGroups): bij nodes met deze Kooi dichtbij, en die hier wachten. */
   slaves: number;
   capacity: number;
-  /** Eigen vechters binnen de garnizoensstraal, en hoeveel de opstandregel eist. */
+  /** Bewakers van de groep en hoeveel de bewaakregel eist (0 zonder slaven). */
   guards: number;
   guardsNeeded: number;
 }
-/** Raider-tellers voor de bovenbalk; de client leidt ze af uit de eigen units die hij ziet (de status levert ze niet). */
+/**
+ * Eén slavengroep onder de bewaakregel (data 0.29.0, protocol 0.15.0 PlayerStatus.slaveGroups): een Kooi met de slaven
+ * bij nodes in de buurt, of een scrapbron zonder Kooi dichtbij.
+ */
+export interface RaiderGuardGroup {
+  kind: 'kooi' | 'node';
+  /** Entity-id van de Kooi of de scrapbron. */
+  id: number;
+  x: number;
+  y: number;
+  /** "Raiderkamp", "Kooi" of "Scrapbron". */
+  naam: string;
+  slaves: number;
+  guards: number;
+  guardsNeeded: number;
+}
+/**
+ * Raider-tellers voor de bovenbalk; de client leidt ze af uit de eigen units die hij ziet, en de bewakers uit
+ * PlayerStatus.slaveGroups (protocol 0.15.0: de bewaakmodus staat niet in de snapshot).
+ */
 export interface RaiderStats {
   /** Slaven (werkers) en hoeveel daarvan nu verzamelen, bouwen of afleveren. */
   slaves: number;
@@ -479,6 +503,8 @@ export interface RaiderStats {
   /** Staat er een voltooide tent? Dan komt er onder de drempel een Rover bij. */
   tentReady: boolean;
   cages: readonly RaiderCage[];
+  /** Alle slavengroepen met hun bewakers (bewaakregel, data 0.29.0); de bovenbalk telt ze op. */
+  guardGroups: readonly RaiderGuardGroup[];
 }
 
 export interface HudHandle {

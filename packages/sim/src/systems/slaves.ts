@@ -1,10 +1,13 @@
 import { OWNER_NEUTRAL } from '@crawlout/protocol';
+import type { SlaveGroupStatus } from '@crawlout/protocol';
 import type { SimCage, SimCapture, SimSlaveRules } from '../config.js';
 import {
   BSTATE_DONE,
   C,
   CHEM_NONE,
   NO_ENTITY,
+  ORDER_GATHER,
+  ORDER_GUARD,
   ORDER_MOVE,
   SLAVE_CAPTIVE,
   SLAVE_FREED,
@@ -55,11 +58,21 @@ import { autoGather } from './orders.js';
 //    to the player it was taken from (to the liberator for a wanderer or when that player is out) as that faction's
 //    settler type, and walks home to his nearest headquarters with freedSpeedPermille more speed. A faction with slaves
 //    of its own (a Raider liberating) takes it as a captive instead.
-//  - Revolt: per cage with slaves, the garrison is the own fighters (role militia, not the hero, not a slave) within
-//    revolt.garrisonRadius of its footprint; needed max(minGuards, ceil(slaves / slavesPerGuard)). While the garrison is
-//    short a counter runs; at graceTicks (emptyGraceTicks without any fighter) escapePermille of the slaves of that cage
-//    (at least one, the lowest ids first) escape: they become neutral wanderers and walk away from the cage. While the
-//    deficit lasts, the next round follows repeatTicks later.
+//  - Revolt, the guard rule (data 0.29.0, sim 0.24.0; voorstel, ter bevestiging door content en de architect; Martien,
+//    18 oktober): the slaves of a player form groups (guardGroups). A slave gathering at a node with an own completed
+//    Kooi (provides kooi, the Raiderkamp too) within cageNear of it (node centre to footprint edge; the nearest, then
+//    the lowest index) belongs to that Kooi; a slave that does not gather (it builds, waits, retrains) to its own Kooi;
+//    a slave at a node without a Kooi near forms the group of that node. A Kooi group needs cageGuards guards (the
+//    threat of the cage); a node group of n slaves ceil(n * noCageGuards / noCageSlaves), or ceil(n /
+//    guardModeSlavesPerGuard) once a guard is in guard mode on that node (then every guard counts; data 0.29.0: 1 per 5,
+//    Martien: "een bewaker op een scrapbron dekt 3 slaven. = 5 efficienter dan 2 los in de buurt zonder taak"). A guard is an own fighter (role militia, not
+//    the hero, not a slave) on a Guard order (ORDER_GUARD, systems/orders.ts guard) on the Kooi or node of the group or
+//    on a node of the group, or standing within revoltGuardRadius of the Kooi's footprint or of a node of the group.
+//    While a group is short a counter runs (World.revolt on each of its slaves, the same value); at graceTicks
+//    (emptyGraceTicks without any guard) escapePermille of the slaves of the group (at least one, the lowest ids first)
+//    escape: they become neutral wanderers and walk escapeDist away from the Kooi or node. While the deficit lasts,
+//    the next round follows repeatTicks later. (Until sim 0.23.0: per Kooi max(minGuards, ceil(slaves / 3)) fighters
+//    within 30 m of it.)
 // Wandering neutral settlers of the map (zwervers) do not exist yet: a wanderer is an escaped slave.
 
 /** The slave rules of player p's faction, or null. */
@@ -506,59 +519,211 @@ function free(ctx: SimContext, i: number, by: number, rules: SimSlaveRules): voi
   w.slaveTicks[i] = rules.freedSpeedPermille;
 }
 
-/** Revolt at every cage with slaves (see the top of this file). */
-function revolts(ctx: SimContext, roleMilitia: number): void {
+/** Whether building b is player p's completed Kooi (provides kooi, with cage data; the Raiderkamp too). */
+export function isOwnKooi(ctx: SimContext, p: number, b: number): boolean {
+  const w = ctx.world;
+  if (b < 0 || w.alive[b] !== 1 || !w.has(b, C.building) || w.owner[b] !== p) return false;
+  if (w.bstate[b] !== BSTATE_DONE || w.hp[b]! <= 0) return false;
+  const bt = ctx.buildingType(w.typeId[b]!);
+  return bt !== undefined && bt.cage !== null && (bt.provides & PROVIDES_KOOI) !== 0;
+}
+
+/** The node of unit i's current Gather order (an entity with scrap), or -1. */
+function gatherNode(ctx: SimContext, i: number): number {
+  const w = ctx.world;
+  if (w.orderType(i) !== ORDER_GATHER) return -1;
+  const n = w.resolve(w.ordT[w.currentOrder(i)]!);
+  return n >= 0 && w.has(n, C.resource) ? n : -1;
+}
+
+/** Distance squared from (x, y) to the footprint of building b. */
+const toFootprint2 = (ctx: SimContext, x: number, y: number, b: number): number => {
+  const w = ctx.world;
+  return distToRect2(x, y, w.fx[b]!, w.fy[b]!, w.fw[b]!, w.fh[b]!);
+};
+
+/** The Kooi of `kooien` nearest node j within r (node centre to footprint edge; tiebreak lowest index), or -1. */
+function kooiNear(ctx: SimContext, kooien: readonly number[], j: number, r: number): number {
+  const w = ctx.world;
+  let best = -1;
+  let bestD = 0;
+  for (const b of kooien) {
+    const d = toFootprint2(ctx, w.x[j]!, w.y[j]!, b);
+    if (d > r * r || (best >= 0 && d >= bestD)) continue;
+    best = b;
+    bestD = d;
+  }
+  return best;
+}
+
+/** A group of slaves under the guard rule (see the top of this file). Derived per call, never state. */
+export interface GuardGroup {
+  /** True: the group of a Kooi (`target` is its index); false: of a node without a Kooi near. */
+  readonly kooi: boolean;
+  readonly target: number;
+  /** The slaves of the group, ascending index. */
+  readonly members: number[];
+  /** The nodes where slaves of the group gather, in the order of their first slave. */
+  readonly nodes: number[];
+  /** Own fighters that count as guards, and how many of them are in guard mode on the group. */
+  guards: number;
+  guardMode: number;
+  /** Guards the rule asks for now. */
+  need: number;
+}
+
+/**
+ * The slave groups of player p with their guards and what the guard rule asks (see the top of this file): Kooi groups
+ * first, then node groups, each ascending on the index of its Kooi or node. Empty without slave rules or slaves.
+ */
+export function guardGroups(ctx: SimContext, p: number, roleMilitia: number): GuardGroup[] {
+  const rules = slaveRulesOf(ctx, p);
+  const groups: GuardGroup[] = [];
+  if (rules === null) return groups;
   const w = ctx.world;
   const idx = ctx.index;
   idx.refresh(w);
+  const kooien: number[] = [];
   for (let k = 0; k < idx.buildingCount; k++) {
     const b = idx.buildings[k]!;
-    if (w.alive[b] !== 1 || w.bstate[b] !== BSTATE_DONE || w.hp[b]! <= 0) continue;
-    const bt = ctx.buildingType(w.typeId[b]!);
-    if (bt === undefined || bt.cage === null || (bt.provides & PROVIDES_KOOI) === 0) continue;
-    const p = w.owner[b]!;
+    if (isOwnKooi(ctx, p, b)) kooien.push(b);
+  }
+  const find = (kooi: boolean, target: number): GuardGroup => {
+    for (const g of groups) if (g.kooi === kooi && g.target === target) return g;
+    const g: GuardGroup = {
+      kooi,
+      target,
+      members: [],
+      nodes: [],
+      guards: 0,
+      guardMode: 0,
+      need: 0,
+    };
+    groups.push(g);
+    return g;
+  };
+  for (let i = 0; i < w.highWater; i++) {
+    if (w.alive[i] !== 1 || w.owner[i] !== p || w.slaveState[i] !== SLAVE_SLAVE) continue;
+    if (!w.has(i, C.unit | C.health)) continue;
+    const n = gatherNode(ctx, i);
+    let g: GuardGroup;
+    if (n >= 0) {
+      const k = kooiNear(ctx, kooien, n, rules.cageNear);
+      g = k >= 0 ? find(true, k) : find(false, n);
+      if (!g.nodes.includes(n)) g.nodes.push(n);
+    } else {
+      const c = cageIndex(ctx, p, w.slaveCage[i]!);
+      if (c < 0 || !kooien.includes(c)) continue; // without a Kooi: nobody to run from
+      g = find(true, c);
+    }
+    g.members.push(i);
+  }
+  if (groups.length === 0) return groups;
+  // own fighters: guard mode on the Kooi or a node of the group, or within the guard radius of either
+  const r2 = rules.revoltGuardRadius * rules.revoltGuardRadius;
+  for (let j = 0; j < w.highWater; j++) {
+    if (w.alive[j] !== 1 || w.owner[j] !== p || !isFighter(ctx, j, roleMilitia)) continue;
+    const post = w.orderType(j) === ORDER_GUARD ? w.resolve(w.ordT[w.currentOrder(j)]!) : -1;
+    const x = w.x[j]!;
+    const y = w.y[j]!;
+    for (const g of groups) {
+      const mode = post >= 0 && (post === g.target || g.nodes.includes(post));
+      let near = mode || (g.kooi && toFootprint2(ctx, x, y, g.target) <= r2);
+      for (let k = 0; k < g.nodes.length && !near; k++) {
+        const n = g.nodes[k]!;
+        const dx = w.x[n]! - x;
+        const dy = w.y[n]! - y;
+        if (dx * dx + dy * dy <= r2) near = true;
+      }
+      if (!near) continue;
+      g.guards++;
+      if (mode) g.guardMode++;
+    }
+  }
+  for (const g of groups) {
+    const n = g.members.length;
+    if (g.kooi) g.need = rules.cageGuards;
+    else if (g.guardMode > 0)
+      g.need = idiv(n + rules.guardModeSlavesPerGuard - 1, rules.guardModeSlavesPerGuard);
+    else g.need = idiv(n * rules.noCageGuards + rules.noCageSlaves - 1, rules.noCageSlaves);
+  }
+  // Kooi groups first, then node groups, each on index
+  groups.sort((a, b) => (a.kooi === b.kooi ? a.target - b.target : a.kooi ? -1 : 1));
+  return groups;
+}
+
+/** The revolt counter of a group: the highest of its slaves (they share it; a newcomer brings its own). */
+function groupCounter(ctx: SimContext, g: GuardGroup): number {
+  const w = ctx.world;
+  let t = w.revolt[g.members[0]!]!;
+  for (const m of g.members) if (w.revolt[m]! > t) t = w.revolt[m]!;
+  return t;
+}
+
+/** Revolt of every slave group (see the top of this file). */
+function revolts(ctx: SimContext, roleMilitia: number): void {
+  const w = ctx.world;
+  for (let p = 0; p < ctx.playerCount; p++) {
     const rules = slaveRulesOf(ctx, p);
     if (rules === null) continue;
-    const id = w.idOf(b);
-    const gr = rules.garrisonRadius;
-    let slaves = 0;
-    let guards = 0;
-    for (let j = 0; j < w.highWater; j++) {
-      if (w.alive[j] !== 1 || w.owner[j] !== p) continue;
-      if (w.slaveState[j] === SLAVE_SLAVE && w.slaveCage[j] === id && w.has(j, C.unit | C.health))
-        slaves++;
-      else if (
-        isFighter(ctx, j, roleMilitia) &&
-        distToRect2(w.x[j]!, w.y[j]!, w.fx[b]!, w.fy[b]!, w.fw[b]!, w.fh[b]!) <= gr * gr
-      )
-        guards++;
+    for (const g of guardGroups(ctx, p, roleMilitia)) {
+      if (g.guards >= g.need) {
+        for (const m of g.members) w.revolt[m] = 0;
+        continue;
+      }
+      const t = groupCounter(ctx, g) + 1;
+      const at = g.guards === 0 ? rules.emptyGraceTicks : rules.graceTicks;
+      if (t < at) {
+        for (const m of g.members) w.revolt[m] = t;
+        continue;
+      }
+      let escape = idiv(g.members.length * rules.escapePermille, 1000);
+      if (escape < 1) escape = 1;
+      const ax = w.x[g.target]!;
+      const ay = w.y[g.target]!;
+      for (let k = 0; k < g.members.length; k++) {
+        const m = g.members[k]!;
+        if (k < escape) escapeFrom(ctx, m, ax, ay, rules.escapeDist);
+        // the next round repeatTicks later while the deficit lasts
+        else w.revolt[m] = at - rules.repeatTicks;
+      }
     }
-    const need = Math.max(
-      rules.minGuards,
-      idiv(slaves + rules.slavesPerGuard - 1, rules.slavesPerGuard),
-    );
-    if (slaves === 0 || guards >= need) {
-      w.revolt[b] = 0;
-      continue;
-    }
-    w.revolt[b] = w.revolt[b]! + 1;
-    const at = guards === 0 ? rules.emptyGraceTicks : rules.graceTicks;
-    if (w.revolt[b]! < at) continue;
-    let escape = idiv(slaves * rules.escapePermille, 1000);
-    if (escape < 1) escape = 1;
-    for (let j = 0; j < w.highWater && escape > 0; j++) {
-      if (w.alive[j] !== 1 || w.owner[j] !== p || w.slaveState[j] !== SLAVE_SLAVE) continue;
-      if (w.slaveCage[j] !== id || !w.has(j, C.unit | C.health)) continue;
-      escapeFrom(ctx, j, b, gr);
-      escape--;
-    }
-    // the next round repeatTicks later while the deficit lasts
-    w.revolt[b] = at - rules.repeatTicks;
   }
 }
 
-/** Slave j escapes cage b: a neutral wanderer walking `dist` away from the cage. */
-function escapeFrom(ctx: SimContext, j: number, b: number, dist: number): void {
+/**
+ * The slave groups of player p for his HUD (PlayerStatus.slaveGroups, protocol 0.15.0; voorstel, ter bevestiging door
+ * de architect). Reads state only.
+ */
+export function slaveGroupStatus(
+  ctx: SimContext,
+  p: number,
+  roleMilitia: number,
+): SlaveGroupStatus[] {
+  const rules = slaveRulesOf(ctx, p);
+  if (rules === null) return [];
+  const w = ctx.world;
+  return guardGroups(ctx, p, roleMilitia).map((g): SlaveGroupStatus => {
+    const short = g.guards < g.need;
+    const at = g.guards === 0 ? rules.emptyGraceTicks : rules.graceTicks;
+    const left = at - groupCounter(ctx, g);
+    return {
+      kind: g.kooi ? 'kooi' : 'node',
+      targetId: w.idOf(g.target),
+      x: w.x[g.target]!,
+      y: w.y[g.target]!,
+      slaves: g.members.length,
+      guards: g.guards,
+      guardsNeeded: g.need,
+      guardMode: g.guardMode,
+      nodeIds: g.nodes.map((n) => w.idOf(n)),
+      escapeInTicks: short ? (left > 0 ? left : 0) : 0,
+    };
+  });
+}
+
+/** Slave j escapes: a neutral wanderer walking `dist` away from (ax, ay), its Kooi or node. */
+function escapeFrom(ctx: SimContext, j: number, ax: number, ay: number, dist: number): void {
   const w = ctx.world;
   release(ctx, j);
   w.owner[j] = OWNER_NEUTRAL;
@@ -566,8 +731,9 @@ function escapeFrom(ctx: SimContext, j: number, b: number, dist: number): void {
   w.slaveCage[j] = NO_ENTITY;
   w.slaveFrom[j] = OWNER_NEUTRAL;
   w.slaveTicks[j] = 0;
-  let dx = w.x[j]! - w.x[b]!;
-  let dy = w.y[j]! - w.y[b]!;
+  w.revolt[j] = 0;
+  let dx = w.x[j]! - ax;
+  let dy = w.y[j]! - ay;
   const len = isqrt(dx * dx + dy * dy);
   if (len === 0) {
     dx = 256;

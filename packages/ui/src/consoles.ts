@@ -240,6 +240,8 @@ export function UnitConsole(props: { ctl: HudController; state: HudState }): Com
   const own = sel.filter((s) => !s.enemy);
   const lead = foe ?? own[0];
   const isBuilding = !!lead && kindOfTypeId(lead.typeId).kind === 'building';
+  // a scrap node shown for its guard lines (data 0.29.0): no enemy, no weapon
+  const isNode = !!lead && kindOfTypeId(lead.typeId).kind === 'scrapNode';
   const hero = !foe && ctl.heroSelected();
   const hp = lead ? clampPct(lead.hpPct) : 0;
   const heroName =
@@ -270,14 +272,23 @@ export function UnitConsole(props: { ctl: HudController; state: HudState }): Com
   const gauge = hero && abilities.length > 0 ? 100 - clampPct(cooling) : hp;
   const bigValue =
     hero && abilities.length > 0 ? `${ready}/${abilities.length}` : lead ? String(shown) : '';
-  const bigLabel = hero && abilities.length > 0 ? 'klaar' : foe ? 'vijand' : lead ? 'gekozen' : '';
-  const weapon = lead && !isBuilding ? weaponName(lead) : '';
+  const bigLabel =
+    hero && abilities.length > 0
+      ? 'klaar'
+      : isNode
+        ? 'bron'
+        : foe
+          ? 'vijand'
+          : lead
+            ? 'gekozen'
+            : '';
+  const weapon = lead && !isBuilding && !isNode ? weaponName(lead) : '';
   const melee = /knuppel|slag|mes|blade/i.test(weapon);
   const role = lead && !foe ? roleLabelOf(lead) : undefined;
   return h(
     'section',
     {
-      class: foe ? 'co-console co-console-enemy' : 'co-console',
+      class: foe && !isNode ? 'co-console co-console-enemy' : 'co-console',
       'aria-label': 'Eenheid en snelknoppen',
     },
     h(

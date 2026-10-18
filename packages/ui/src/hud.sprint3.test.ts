@@ -369,10 +369,10 @@ describe('verouderde deps: craft wordt kaarten', () => {
 });
 
 describe('sneltoetsen', () => {
-  it('alleen A en S vallen samen met de camera-toetsen (bewust), verder geen dubbelen', () => {
+  it('alleen A, S en W vallen samen met de camera-toetsen (bewust: de client haalt ze uit de camera), verder geen dubbelen', () => {
     const cameraKeys = new Set(['w', 'a', 's', 'd', 'q', 'e']);
     const hudKeys = [...ACTIONS.map((a) => a.key), 'h', 'k', 'f1', 'f2', 'f3', 'z', 'x', 'c'];
-    expect(hudKeys.filter((k) => cameraKeys.has(k)).sort()).toEqual(['a', 's']);
+    expect(hudKeys.filter((k) => cameraKeys.has(k)).sort()).toEqual(['a', 's', 'w']);
     expect(new Set(hudKeys).size).toBe(hudKeys.length);
   });
 });

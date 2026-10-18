@@ -244,8 +244,11 @@ describe('camp takeover: the outpost', () => {
   });
 });
 
-describe('camp takeover: from the start (balance, data 0.27.0)', () => {
-  it('the Raider start army (Warlord, 3 plunderaar, 1 knuppelaar) takes a low camp and keeps recruits', () => {
+// Data 0.29.0: the low camp is weak (Martien: "die zijn zwakker dan bouwers", the camps), the Raider fighters are back to
+// their strength of data 0.26.0. Measured: the start army takes it in 9 s with one recruit, the Warlord with two
+// plunderaar in 12 s (the killing blow, no recruits), three plunderaar without him with one loss.
+describe('camp takeover: from the start (balance, data 0.29.0)', () => {
+  it('the Raider start army (Warlord, 3 plunderaar, 1 knuppelaar) takes a low camp and keeps a recruit', () => {
     const r = fightCamp(1, 0, true, 1, {
       players: PLAYERS,
       army: [PLUNDERAAR, PLUNDERAAR, PLUNDERAAR, KNUPPELAAR],
@@ -255,8 +258,19 @@ describe('camp takeover: from the start (balance, data 0.27.0)', () => {
     expect(r.scrapGain).toBe(LOW.lootScrap);
   });
 
-  it('a Dweller hero with as many militie (stronger one on one) clears it without recruits, or not at all', () => {
+  it('even a smaller Raider force takes it from the start: the Warlord with 2 plunderaar, or 3 plunderaar alone', () => {
+    for (const r of [
+      fightCamp(1, 0, true, 1, { players: PLAYERS, army: [PLUNDERAAR, PLUNDERAAR] }),
+      fightCamp(1, 3, false, 1, { players: PLAYERS, typeId: PLUNDERAAR }),
+    ]) {
+      expect(r.taken, JSON.stringify(r)).toBe(true);
+      expect(r.losses, JSON.stringify(r)).toBeLessThanOrEqual(1);
+    }
+  });
+
+  it('a Dweller hero with militie clears it without recruits (the Dwellers have no takeover rule)', () => {
     const r = fightCamp(1, 4);
+    expect(r.cleared).toBe(true);
     expect(r.taken).toBe(false);
     expect(r.recruits).toBe(0);
   });

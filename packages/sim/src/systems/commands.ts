@@ -14,10 +14,12 @@ import {
   ORDER_BUILD,
   ORDER_CRAFT,
   ORDER_GATHER,
+  ORDER_GUARD,
   ORDER_MOVE,
   PHASE_CRAFT,
   SLAVE_CAPTIVE,
   SLAVE_FREED,
+  SLAVE_NONE,
   SLAVE_SLAVE,
 } from '../ecs/world.js';
 import { hasTechs, researchCost } from '../effects.js';
@@ -33,6 +35,7 @@ import type { SimContext } from './common.js';
 import { WIN_SURRENDER, canBuild, inMap, isEnemy, stopMoving } from './common.js';
 import { SLOT_PENDING, SPOT_PENDING } from './formation.js';
 import {
+  isOwnKooi,
   liberatable,
   mayBuildAt,
   reachesPoint,
@@ -132,6 +135,8 @@ export function applyCommand(ctx: SimContext, cmd: SimCommand): boolean {
       return applyProduce(ctx, p, cmd.payload);
     case 'Train':
       return applyTrain(ctx, p, cmd.payload);
+    case 'Guard':
+      return applyGuard(ctx, p, cmd.payload);
     case 'Surrender':
       ctx.ps.defeated[p] = WIN_SURRENDER;
       ctx.ps.domTicks[p] = 0;
@@ -241,6 +246,31 @@ function applyAttack(ctx: SimContext, p: number, pl: CommandPayload<'Attack'>): 
       continue;
     replaceOrder(ctx, i, ORDER_ATTACK, 0, 0, pl.target);
     w.target[i] = pl.target;
+    any = true;
+  }
+  return any;
+}
+
+const ROLE_MILITIA = ROLES.indexOf('militia');
+const ROLE_ROBOT = ROLES.indexOf('robot');
+
+/**
+ * Guard (protocol 0.15.0, sim 0.24.0; voorstel, ter bevestiging door de architect, fase-0 sectie 5): bewaakmodus op een
+ * eigen voltooide Kooi (provides kooi, ook het Raiderkamp) of een node met scrap. Alleen vechters: rol militia of robot,
+ * met een wapen, niet de held en geen slaaf. De order (ORDER_GUARD, ordT het doel) loopt in systems/orders.ts guard.
+ */
+function applyGuard(ctx: SimContext, p: number, pl: CommandPayload<'Guard'>): boolean {
+  const w = ctx.world;
+  const t = isInt(pl.targetId) ? w.resolve(pl.targetId) : -1;
+  if (t < 0) return false;
+  const node = w.has(t, C.resource);
+  if (node ? w.amount[t]! <= 0 : !isOwnKooi(ctx, p, t)) return false;
+  let any = false;
+  for (const i of ownedWith(ctx, pl.ids, p, UNIT | C.combat)) {
+    if (w.has(i, C.hero) || w.slaveState[i] !== SLAVE_NONE || w.damage[i]! <= 0) continue;
+    if (w.role[i] !== ROLE_MILITIA && w.role[i] !== ROLE_ROBOT) continue;
+    stopMoving(ctx, i);
+    replaceOrder(ctx, i, ORDER_GUARD, 0, 0, pl.targetId);
     any = true;
   }
   return any;

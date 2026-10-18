@@ -101,10 +101,15 @@ export interface SlaveRulesData {
     /** Bonus op de loopsnelheid van de bevrijde slaaf in promille. */
     freedSpeedPermille: number;
   };
+  /** The guard rule (data 0.29.0; voorstel, ter bevestiging door content en de architect; data/README.md). */
   revolt: {
-    garrisonRadiusU: number;
-    slavesPerGuard: number;
-    minGuards: number;
+    cageNearU: number;
+    guardRadiusU: number;
+    cageGuards: number;
+    guardModeSlavesPerGuard: number;
+    noCageGuards: number;
+    noCageSlaves: number;
+    escapeU: number;
     graceTicks: number;
     emptyGraceTicks: number;
     escapePermille: number;
@@ -595,6 +600,14 @@ export interface SimTuningData {
   contestFlipTicks: number;
   /** Fog of war (data 0.22.0; bevestigd in fase-0 sectie 23 besluit 1): the vision grid. Default sight radii are resolved onto each record (sightU). */
   vision: VisionTuningData;
+  /** Guard mode (data 0.29.0; voorstel, ter bevestiging door de architect): the Guard command. */
+  guard: GuardTuningData;
+}
+
+/** sim.json `guard` in sim units (data 0.29.0). */
+export interface GuardTuningData {
+  standU: number;
+  leashU: number;
 }
 
 /** sim.json `vision` in sim units (data 0.22.0). */
@@ -817,9 +830,13 @@ export function loadGameData(raw: RawGameData): GameData {
                 freedSpeedPermille: pctToPermille(f.slaves.liberation.freedSpeedPct),
               },
               revolt: {
-                garrisonRadiusU: metersToUnits(f.slaves.revolt.garrisonRadiusM),
-                slavesPerGuard: f.slaves.revolt.slavesPerGuard,
-                minGuards: f.slaves.revolt.minGuards,
+                cageNearU: metersToUnits(f.slaves.revolt.cageNearM),
+                guardRadiusU: metersToUnits(f.slaves.revolt.guardRadiusM),
+                cageGuards: f.slaves.revolt.cageGuards,
+                guardModeSlavesPerGuard: f.slaves.revolt.guardModeSlavesPerGuard,
+                noCageGuards: f.slaves.revolt.noCageGuards,
+                noCageSlaves: f.slaves.revolt.noCageSlaves,
+                escapeU: metersToUnits(f.slaves.revolt.escapeM),
                 graceTicks: secondsToTicks(f.slaves.revolt.graceS),
                 emptyGraceTicks: secondsToTicks(f.slaves.revolt.emptyGraceS),
                 escapePermille: pctToPermille(f.slaves.revolt.escapePct),
@@ -1428,6 +1445,10 @@ export function loadGameData(raw: RawGameData): GameData {
       heroClaimTicks: secondsToTicks(simRaw.heroClaimS),
       contestFlipTicks: secondsToTicks(simRaw.contestFlipS),
       vision: { cellU: metersToUnits(simRaw.vision.cellM) },
+      guard: {
+        standU: metersToUnits(simRaw.guard.standM),
+        leashU: metersToUnits(simRaw.guard.leashM),
+      },
     },
   };
 }

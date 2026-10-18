@@ -111,7 +111,13 @@ import { FOG_POLL_MS, fogEnabled, minimapFogOf, sameMinimapFog } from './game/fo
 import { minimapLayers } from './game/minimapLayers.js';
 import { LOADOUT_NAMES, buildRoster } from './game/roster.js';
 import { BedHintThrottle, bedHintText, cappedByBeds } from './game/beds.js';
-import { raiderKindOf, raiderLines, raiderStats, seesEnemySlaves } from './game/raiders.js';
+import {
+  nodeGuardLines,
+  raiderKindOf,
+  raiderLines,
+  raiderStats,
+  seesEnemySlaves,
+} from './game/raiders.js';
 import { EVENT_TYPE, readSnapshot, type EntityRow } from './game/snapshot.js';
 
 const SLICE_MAP = 'rustbelt';
@@ -269,7 +275,8 @@ async function main(): Promise<void> {
       // The frame stats are the compact badge in the top right (createPerfBadge), not the renderer's own overlay.
       stats: false,
       // A and S are HUD hotkeys (attack-move, stop); W, D, arrows and Q/E keep moving the camera.
-      camera: { panKeys: { KeyA: null, KeyS: null } },
+      // A, S and W are HUD hotkeys (Val aan, Stop, Bewaak): the camera pans with the arrows and D
+      camera: { panKeys: { KeyA: null, KeyS: null, KeyW: null } },
       ...(assets ? { assets } : {}),
       ...(textures ? { terrainTextures: textures } : {}),
     });
@@ -367,13 +374,15 @@ async function main(): Promise<void> {
     );
 
   const raiderStatsNow = (): ReturnType<typeof raiderStats> =>
-    raiderStats(data, myFaction()?.id, session.playerId, own());
-  /** Toast when a Kooi's garrison is below the revolt rule (computed from the visible own units; the status has no census). */
+    raiderStats(data, myFaction()?.id, session.playerId, own(), status?.slaveGroups);
+  /** Toast when a slave group has fewer guards than the guard rule asks (PlayerStatus.slaveGroups, protocol 0.15.0). */
   let lastRevoltAlert = -Infinity;
   function checkRevolt(): void {
     const now = performance.now();
     if (now - lastRevoltAlert < REVOLT_ALERT_COOLDOWN_MS) return;
-    const short = raiderStatsNow()?.cages.find((c) => c.slaves > 0 && c.guards < c.guardsNeeded);
+    const short = raiderStatsNow()?.guardGroups.find(
+      (g) => g.slaves > 0 && g.guards < g.guardsNeeded,
+    );
     if (!short) return;
     lastRevoltAlert = now;
     alert({ kind: 'revolt', x: short.x, y: short.y });
@@ -834,7 +843,26 @@ async function main(): Promise<void> {
       if (ownIds.length === 0) {
         // No own unit selected: a clicked enemy is shown for inspection (type, owner, hp, weapon and armour), no commands.
         const foe = [...selection].map((id) => entities.get(id)).find((e) => e && isEnemyId(e.id));
-        if (!foe) return [];
+        if (!foe) {
+          // a scrap node (data 0.29.0, the guard rule): what guards its slaves need
+          const node = [...selection]
+            .map((id) => entities.get(id))
+            .find((e) => e && kindOfTypeId(e.typeId).kind === 'scrapNode');
+          if (!node) return [];
+          const lines = nodeGuardLines(data, myFaction()?.id, node.id, status?.slaveGroups ?? []);
+          return [
+            {
+              id: node.id,
+              typeId: node.typeId,
+              loadoutName: 'Scrapbron',
+              hpPct: node.hpPct,
+              role: null,
+              enemy: true,
+              ownerLabel: 'Grondstof',
+              ...(lines.length > 0 ? { lines } : {}),
+            },
+          ];
+        }
         const info = inspect(data, foe.typeId);
         // a bandit of a camp the player's faction takes over (data 0.27.0; PlayerStatus.camps, protocol 0.14.0)
         const hint =
@@ -883,6 +911,7 @@ async function main(): Promise<void> {
           entities.values(),
           TICK_HZ,
           status?.techs ?? [],
+          status?.slaveGroups,
         );
         return {
           id,
@@ -1136,8 +1165,15 @@ async function main(): Promise<void> {
           }
         } else if (picked && hostile && !ghost && (hitKind === 'unit' || hitKind === 'building')) {
           hud.completeTargeting({ enemyId: picked.id, x: picked.x, y: picked.y });
-        } else if (targeting === 'gather' && picked && hitKind === 'scrapNode') {
+        } else if (
+          (targeting === 'gather' || targeting === 'guard') &&
+          picked &&
+          hitKind === 'scrapNode'
+        ) {
           hud.completeTargeting({ nodeId: picked.id });
+        } else if (targeting === 'guard' && picked && hitKind === 'building' && !hostile) {
+          // Bewaak on an own building: the sim takes a Kooi (or the Raiderkamp) and refuses anything else
+          hud.completeTargeting({ ownId: picked.id });
         } else if (hit.ground) {
           hud.completeTargeting({ x: Math.round(hit.ground.x), y: Math.round(hit.ground.y) });
         }

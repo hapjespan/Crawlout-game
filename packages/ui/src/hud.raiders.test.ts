@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { act } from 'preact/test-utils';
 import type { CommandType, PlayerStatus } from '@crawlout/protocol';
-import { unitTypeId } from '@crawlout/data';
+import { COMMAND_PAYLOADS } from '@crawlout/protocol';
+import { SCRAP_NODE_TYPE_ID, unitTypeId } from '@crawlout/data';
 import { mountHud } from './index.js';
 import { portraitOfEntity, portraitOfGroup } from './portraits.js';
 import type {
@@ -46,7 +47,10 @@ const stats = (over: Partial<RaiderStats> = {}): RaiderStats => ({
   safetyThreshold: 5,
   tentReady: true,
   cages: [
-    { id: 9, x: 0, y: 0, naam: 'Raiderkamp', slaves: 6, capacity: 8, guards: 2, guardsNeeded: 2 },
+    { id: 9, x: 0, y: 0, naam: 'Raiderkamp', slaves: 6, capacity: 8, guards: 1, guardsNeeded: 1 },
+  ],
+  guardGroups: [
+    { kind: 'kooi', id: 9, x: 0, y: 0, naam: 'Raiderkamp', slaves: 6, guards: 1, guardsNeeded: 1 },
   ],
   ...over,
 });
@@ -125,7 +129,7 @@ describe('Raider commands', () => {
     const t = setup();
     mounted = t.handle;
     t.select([unit({ raiderKind: 'slaver', role: 'militia', loadoutName: 'Slaver' })]);
-    expect(actions(t.el)).toEqual(['move', 'stop', 'capture']);
+    expect(actions(t.el)).toEqual(['move', 'stop', 'capture', 'guard']);
     expect(t.el.querySelector('[data-action="capture"]')!.getAttribute('title')).toContain(
       'Sla een vijandelijke bewoner neer buiten zijn basis',
     );
@@ -169,7 +173,69 @@ describe('Raider commands', () => {
     const t = setup({ canSwitchRole: () => true });
     mounted = t.handle;
     t.select([unit({ raiderKind: 'fighter', role: 'militia', loadoutName: 'Knuppelaar' })]);
-    expect(actions(t.el)).toEqual(['move', 'stop', 'attackMove']);
+    expect(actions(t.el)).toEqual(['move', 'stop', 'attackMove', 'guard']);
+  });
+});
+
+describe('Bewaak (protocol 0.15.0 Guard, data 0.29.0)', () => {
+  it('fighters get Bewaak (W) with its hint; it aims at a Kooi or a scrap node and sends Guard', () => {
+    const t = setup();
+    mounted = t.handle;
+    t.select([unit({ id: 4, raiderKind: 'fighter', role: 'militia', loadoutName: 'Rover' })]);
+    const button = t.el.querySelector('[data-action="guard"]')!;
+    expect(button.textContent).toContain('Bewaak');
+    expect(button.getAttribute('title')).toBe(
+      'Bewaak een kooi of scrapbron: houdt slaven aan het werk',
+    );
+    press('w');
+    expect(t.targets).toEqual(['guard']);
+    expect(t.el.querySelector('.co-targeting')!.textContent).toContain(
+      'Kies een kooi of scrapbron om te bewaken',
+    );
+    // the ground is no post: the mode stays
+    let done = true;
+    act(() => void (done = t.handle.completeTargeting({ x: 5, y: 6 })));
+    expect(done).toBe(false);
+    expect(t.sent).toEqual([]);
+    act(() => void t.handle.completeTargeting({ nodeId: 21 }));
+    expect(t.sent).toEqual([{ type: 'Guard', payload: { ids: [4], targetId: 21 } }]);
+    expect(COMMAND_PAYLOADS.Guard.safeParse(t.sent[0]!.payload).success).toBe(true);
+    press('w');
+    act(() => void t.handle.completeTargeting({ ownId: 9 }));
+    expect(t.sent[1]).toEqual({ type: 'Guard', payload: { ids: [4], targetId: 9 } });
+  });
+
+  it('a selected scrap node shows its guard lines and a hint, no hp bar', () => {
+    const t = setup();
+    mounted = t.handle;
+    t.select([
+      {
+        id: 7,
+        typeId: SCRAP_NODE_TYPE_ID,
+        loadoutName: 'Scrapbron',
+        hpPct: 100,
+        role: null,
+        enemy: true,
+        ownerLabel: 'Grondstof',
+        lines: ['5 slaven aan het werk', 'Bewakers 1/2 nodig (te weinig: slaven lopen weg)'],
+      },
+    ]);
+    const panel = t.el.querySelector('.co-selection')!;
+    expect(panel.textContent).toContain('Scrapbron');
+    expect(panel.textContent).toContain('Selectie · grondstof');
+    expect(panel.textContent).not.toContain('vijand');
+    expect(panel.textContent).toContain('Bewakers 1/2 nodig');
+    expect(panel.querySelector('.co-hp')).toBeNull();
+    expect(t.el.textContent).toContain('kies eenheden om te verzamelen of te bewaken (W)');
+  });
+
+  it('a Dweller militie can guard a node too; slaves and the hero alone get no Bewaak', () => {
+    const t = setup();
+    mounted = t.handle;
+    t.select([unit({ role: 'militia', loadoutName: 'Militie' })]);
+    expect(actions(t.el)).toContain('guard');
+    t.select([unit({ raiderKind: 'slave' })]);
+    expect(actions(t.el)).not.toContain('guard');
   });
 });
 
@@ -188,22 +254,36 @@ describe('Raider top bar', () => {
     expect(fighters.textContent).toContain('3/5');
     expect(fighters.className).toContain('co-raider-warn');
     expect(fighters.getAttribute('title')).toContain('komt er een Rover bij de tent');
-    expect(bar.querySelector('[data-raider="cages"]')!.className).not.toContain('warn');
+    const guards = bar.querySelector('[data-raider="guards"]')!;
+    expect(guards.textContent).toContain('Bewakers1/1');
+    expect(guards.className).not.toContain('warn');
   });
 
-  it('warns on a Kooi with too few guards and on fighters under the safety net', () => {
+  it('warns on a slave group with too few guards (the guard rule, data 0.29.0) and on fighters under the safety net', () => {
     const short = stats({
       fighters: 7,
-      cages: [
-        { id: 9, x: 0, y: 0, naam: 'Kooi', slaves: 6, capacity: 8, guards: 1, guardsNeeded: 2 },
+      guardGroups: [
+        { kind: 'kooi', id: 9, x: 0, y: 0, naam: 'Kooi', slaves: 2, guards: 1, guardsNeeded: 1 },
+        {
+          kind: 'node',
+          id: 12,
+          x: 0,
+          y: 0,
+          naam: 'Scrapbron',
+          slaves: 5,
+          guards: 1,
+          guardsNeeded: 2,
+        },
       ],
     });
     const t = setup({ getRaiderStats: () => short });
     mounted = t.handle;
     expect(t.el.querySelector('[data-raider="fighters"]')!.className).not.toContain('warn');
-    const cage = t.el.querySelector('[data-raider="cages"]')!;
-    expect(cage.className).toContain('co-raider-warn');
-    expect(cage.getAttribute('title')).toContain('1/2 bewakers');
+    const guards = t.el.querySelector('[data-raider="guards"]')!;
+    expect(guards.className).toContain('co-raider-warn');
+    expect(guards.textContent).toContain('2/3');
+    expect(guards.getAttribute('title')).toContain('Scrapbron: 5 slaven, bewakers 1/2 nodig');
+    expect(guards.getAttribute('title')).toContain('Bewaak (W)');
   });
 
   it('shows the revolt alert as a toast', () => {
@@ -217,7 +297,7 @@ describe('Raider top bar', () => {
     mounted = t.handle;
     act(() => alert!({ kind: 'revolt', x: 1, y: 2 }));
     expect(t.el.querySelector('[data-alert="revolt"]')!.textContent).toBe(
-      'Kooi onbewaakt: slaven ontsnappen!',
+      'Te weinig bewakers: slaven lopen weg! Zet vechters op Bewaak (W)',
     );
   });
 

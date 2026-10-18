@@ -1,10 +1,10 @@
 // What the HUD shows for the Raiders (sim 0.18.0): slave binding to a Kooi, the Slaver's and the Chem-dealer's lines, the
-// top-bar counters and the revolt check. The status does not expose the sim's census, so everything is derived from the
-// own entities the snapshot shows (the player sees all of them): a slave is a unit of a slave loadout, a prisoner an own
+// top-bar counters and the revolt check. The guards come from PlayerStatus.slaveGroups (protocol 0.15.0, the guard rule
+// of data 0.29.0: guard mode is not in the snapshot). The rest is derived from the own entities the snapshot shows (the player sees all of them): a slave is a unit of a slave loadout, a prisoner an own
 // unit of ANOTHER faction's loadout (it keeps its old type until the Kooi transition has run), a fighter an own unit with
 // role militia that is no hero, slave or prisoner. The binding of a slave to a Kooi is approximated by the nearest own
 // finished Kooi; the sim binds the same way but also counts capacity, so the numbers can differ by a slave at a full Kooi.
-import { ANIM, ENTITY_FLAG, UNITS_PER_METER } from '@crawlout/protocol';
+import { ANIM, ENTITY_FLAG, UNITS_PER_METER, type SlaveGroupStatus } from '@crawlout/protocol';
 import {
   PROVIDES,
   ROLES,
@@ -15,7 +15,7 @@ import {
   type GameData,
   type LoadoutData,
 } from '@crawlout/data';
-import type { RaiderCage, RaiderKind, RaiderStats } from '@crawlout/ui';
+import type { RaiderCage, RaiderGuardGroup, RaiderKind, RaiderStats } from '@crawlout/ui';
 import { buildingName, humanize } from './cards.js';
 import type { EntityRow } from './snapshot.js';
 
@@ -118,12 +118,22 @@ function nearestCage(
 
 const WORKING = new Set<number>([ANIM.gather, ANIM.build]);
 
-/** Counters for the top bar, or null for a faction without slaves. */
+/** "Bewakers 1/2 nodig", with a warning when the group is short. */
+export function guardLine(g: Pick<SlaveGroupStatus, 'guards' | 'guardsNeeded'>): string {
+  const short = g.guards < g.guardsNeeded;
+  return `Bewakers ${g.guards}/${g.guardsNeeded} nodig${short ? ' (te weinig: slaven lopen weg)' : ''}`;
+}
+
+/**
+ * Counters for the top bar, or null for a faction without slaves. `groups` is PlayerStatus.slaveGroups (protocol
+ * 0.15.0): the guards per slave group as the sim counts them.
+ */
 export function raiderStats(
   data: GameData,
   factionId: number | undefined,
   playerId: number,
   entities: Iterable<EntityRow>,
+  groups: readonly SlaveGroupStatus[] = [],
 ): RaiderStats | null {
   const faction = factionId === undefined ? undefined : data.factions[factionId];
   const rules = faction?.slaves;
@@ -134,28 +144,32 @@ export function raiderStats(
     const cage = nearestCage(c, s);
     if (cage) perCage.set(cage.e.id, (perCage.get(cage.e.id) ?? 0) + 1);
   }
-  const reach = rules.revolt.garrisonRadiusU;
+  const groupOf = (id: number): SlaveGroupStatus | undefined =>
+    groups.find((g) => g.kind === 'kooi' && g.targetId === id);
   const cages: RaiderCage[] = c.cages.map(({ e, b }) => {
-    const slaves = perCage.get(e.id) ?? 0;
-    // The sim measures from the footprint; add half of it so the centre distance is comparable.
-    const half = (Math.max(b.footprint.w, b.footprint.h) * UNITS_PER_METER) / 2;
-    const guards = c.fighters.filter(
-      (f) => Math.hypot(f.x - e.x, f.y - e.y) <= reach + half,
-    ).length;
+    const g = groupOf(e.id);
     return {
       id: e.id,
       x: e.x,
       y: e.y,
       naam: buildingName(b.key),
-      slaves,
+      slaves: perCage.get(e.id) ?? 0,
       capacity: b.cage?.capacity ?? 0,
-      guards,
-      guardsNeeded: Math.max(
-        rules.revolt.minGuards,
-        Math.ceil(slaves / Math.max(1, rules.revolt.slavesPerGuard)),
-      ),
+      guards: g?.guards ?? 0,
+      guardsNeeded: g?.guardsNeeded ?? 0,
     };
   });
+  const guardGroups: RaiderGuardGroup[] = groups.map((g) => ({
+    kind: g.kind,
+    id: g.targetId,
+    x: g.x,
+    y: g.y,
+    naam:
+      g.kind === 'node' ? 'Scrapbron' : (cages.find((k) => k.id === g.targetId)?.naam ?? 'Kooi'),
+    slaves: g.slaves,
+    guards: g.guards,
+    guardsNeeded: g.guardsNeeded,
+  }));
   return {
     slaves: c.slaves.length,
     slavesWorking: c.slaves.filter(
@@ -166,7 +180,33 @@ export function raiderStats(
     safetyThreshold: faction.safetyNet.threshold,
     tentReady: c.tentReady,
     cages,
+    guardGroups,
   };
+}
+
+/**
+ * Selection-panel lines for a scrap node (the guard rule, data 0.29.0): its slave group and what it needs, or how it
+ * would be guarded. Empty for a faction without slaves (a Dweller militie may guard a node, nothing more to say).
+ */
+export function nodeGuardLines(
+  data: GameData,
+  factionId: number | undefined,
+  nodeId: number,
+  groups: readonly SlaveGroupStatus[],
+): string[] {
+  const rules = factionId === undefined ? undefined : data.factions[factionId]?.slaves;
+  if (!rules) return [];
+  const r = rules.revolt;
+  const howTo = `Bewaak (W) op de bron: 1 bewaker per ${r.guardModeSlavesPerGuard} slaven; losse vechters ${r.noCageGuards} per ${r.noCageSlaves}`;
+  const own = groups.find((g) => g.kind === 'node' && g.targetId === nodeId);
+  if (own) return [`${own.slaves} slaven aan het werk`, guardLine(own), howTo];
+  const kooi = groups.find((g) => g.kind === 'kooi' && g.nodeIds.includes(nodeId));
+  if (kooi)
+    return [`${kooi.slaves} slaven bij de Kooi hiernaast`, `${guardLine(kooi)} (de Kooi dreigt)`];
+  return [
+    `Geen slaven hier. Met een Kooi binnen ${Math.round(r.cageNearU / UNITS_PER_METER)} m is ${r.cageGuards} bewaker genoeg`,
+    howTo,
+  ];
 }
 
 /** Does the player see an enemy slave or prisoner (a unit of a slave loadout of someone else, or a captured unit)? */
@@ -193,6 +233,7 @@ export function raiderLines(
   entities: Iterable<EntityRow>,
   tickHz: number,
   researched: readonly number[],
+  groups: readonly SlaveGroupStatus[] = [],
 ): string[] {
   const faction = factionId === undefined ? undefined : data.factions[factionId];
   if (!faction?.slaves) return [];
@@ -200,16 +241,15 @@ export function raiderLines(
   if (k.kind === 'building') {
     const b = data.buildings[k.index];
     if (!b?.cage || entity.anim === ANIM.build) return [];
-    const stats = raiderStats(data, faction.id, playerId, entities);
+    const stats = raiderStats(data, faction.id, playerId, entities, groups);
     const cage = stats?.cages.find((x) => x.id === entity.id);
+    const group = groups.find((g) => g.kind === 'kooi' && g.targetId === entity.id);
+    const r = faction.slaves.revolt;
     return [
       `Kooi: ${cage?.slaves ?? 0} van ${b.cage.capacity} slaven, werkstraal ${Math.round(b.cage.workRadiusU / UNITS_PER_METER)} m`,
       `Gevangenen worden hier na ${Math.round(b.cage.transitionTicks / tickHz)} s slaaf`,
-      ...(cage
-        ? [
-            `Bewakers: ${cage.guards} van ${cage.guardsNeeded}${cage.guards < cage.guardsNeeded ? ' (te weinig: slaven kunnen ontsnappen)' : ''}`,
-          ]
-        : []),
+      group ? guardLine(group) : 'Bewakers 0/0 nodig: geen slaven aan het werk',
+      `Scrap binnen ${Math.round(r.cageNearU / UNITS_PER_METER)} m: ${r.cageGuards} bewaker op Bewaak (W) houdt de slaven aan het werk`,
     ];
   }
   const l = data.loadouts[k.index];

@@ -150,6 +150,8 @@ describe('Raiders: capture, the cage and the transition', () => {
     sim.spawnBuilding(HQ, 1, 48, 48, true);
     const settler = spawn(sim, SCAV, 1, 20, 20);
     const slaver = spawn(sim, SLAVER, 0, 22, 20);
+    // the guard of the camp (sim 0.24.0, the guard rule): without one the new slave would run off after emptyGrace
+    spawn(sim, PLUNDERAAR, 0, 8, 3);
     return { sim, camp, settler, slaver };
   }
   const cap = unitType(SLAVER).capture!;
@@ -181,7 +183,7 @@ describe('Raiders: capture, the cage and the transition', () => {
     // the Dwellers grow at their hq meanwhile; the caught settler is no longer theirs
     expect(owned(sim, 1, SCAV).includes(settler)).toBe(false);
     expect(sim.playerStatus(1).settlers).toBeGreaterThanOrEqual(dwellers0 - 1);
-    expect(sim.playerStatus(0).settlers).toBe(2); // the Slaver and his slave (the hero is no settler)
+    expect(sim.playerStatus(0).settlers).toBe(3); // the Slaver, the guard and his slave (the hero is no settler)
   });
 
   it('holds the target still for captureTicks and starts over when it gets out of reach', () => {
@@ -287,21 +289,7 @@ describe('Raiders: revolt', () => {
     play(sim, RULES.repeatTicks + 1);
     expect(free()).toBe(3);
   });
-
-  it('enough fighters within the garrison radius keep the slaves; too few revolt after graceTicks', () => {
-    const sim = open();
-    const camp = sim.spawnBuilding(CAMP, 0, 2, 2, true);
-    const ids = [0, 1, 2, 3].map((k) => slave(sim, 10 + k, 10, camp));
-    const need = Math.max(RULES.minGuards, Math.ceil(4 / RULES.slavesPerGuard));
-    const guards = Array.from({ length: need }, (_, k) => spawn(sim, PLUNDERAAR, 0, 12 + k, 14));
-    play(sim, RULES.graceTicks + 10);
-    expect(ids.every((id) => sim.world.owner[idx(sim, id)] === 0)).toBe(true);
-    sim.destroyEntity(guards[0]!);
-    play(sim, RULES.emptyGraceTicks + 5);
-    expect(ids.every((id) => sim.world.owner[idx(sim, id)] === 0)).toBe(true); // short, not empty
-    play(sim, RULES.graceTicks);
-    expect(ids.some((id) => sim.world.owner[idx(sim, id)] === OWNER_NEUTRAL)).toBe(true);
-  });
+  // the guard rule itself (data 0.29.0, sim 0.24.0): test/guard.test.ts
 });
 
 describe('Raiders: the work radius, SetRole at a cage, the Kooi placement rule', () => {

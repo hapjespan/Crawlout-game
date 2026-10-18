@@ -10,6 +10,7 @@ import {
   ORDER_CAST,
   ORDER_CRAFT,
   ORDER_GATHER,
+  ORDER_GUARD,
   ORDER_MOVE,
   ORDER_NONE,
   PHASE_GO,
@@ -22,6 +23,7 @@ import { gatherAmountOf } from '../effects.js';
 import { PROVIDES_DEPOT, PROVIDES_HQ, PROVIDES_KOOI, PROVIDES_WORKSHOP } from '../fromData.js';
 import {
   boundOrders,
+  isOwnKooi,
   liberatable,
   mayBuild,
   reachesPoint,
@@ -305,6 +307,64 @@ function attack(ctx: SimContext, i: number, o: number): void {
   engage(ctx, i, t);
 }
 
+/**
+ * The target of a Guard order of unit i (ordT `id`) while it can still be guarded: an own completed Kooi or a node with
+ * scrap; else -1 (sim 0.24.0).
+ */
+export function guardPost(ctx: SimContext, i: number, id: number): number {
+  const w = ctx.world;
+  const t = id === NO_ENTITY ? -1 : w.resolve(id);
+  if (t < 0) return -1;
+  if (w.has(t, C.resource)) return w.amount[t]! > 0 ? t : -1;
+  return isOwnKooi(ctx, w.owner[i]!, t) ? t : -1;
+}
+
+/** Distance squared from (x, y) to post t: to the footprint edge of a building, to the centre of a node. */
+function postDist2(ctx: SimContext, t: number, x: number, y: number): number {
+  const w = ctx.world;
+  if ((w.mask[t]! & C.building) !== 0)
+    return distToRect2(x, y, w.fx[t]!, w.fy[t]!, w.fw[t]!, w.fh[t]!);
+  const dx = w.x[t]! - x;
+  const dy = w.y[t]! - y;
+  return dx * dx + dy * dy;
+}
+
+/**
+ * Guard mode (sim 0.24.0, protocol 0.15.0 Guard; voorstel, ter bevestiging door de architect): the unit holds its post
+ * (an own Kooi or a scrap node, ordT). Within sim.json guard.leash of the post it fights an enemy it acquires as long as
+ * that enemy stays within leash plus its weapon range of the post; else it walks back until it is within guard.stand
+ * and waits there. A post that is gone (razed, empty) ends the order. For the Raiders the unit counts as a guard of the
+ * slaves there (systems/slaves.ts guardGroups).
+ */
+function guard(ctx: SimContext, s: OrdersScratch, i: number, o: number): void {
+  const w = ctx.world;
+  const t = guardPost(ctx, i, w.ordT[o]!);
+  if (t < 0) {
+    w.target[i] = NO_ENTITY;
+    w.popOrder(i);
+    stopMoving(ctx, i);
+    return;
+  }
+  const { stand, leash } = ctx.config.guard;
+  const d2 = postDist2(ctx, t, w.x[i]!, w.y[i]!);
+  if (d2 <= leash * leash && autoEngage(ctx, s, i)) {
+    const e = w.resolve(w.target[i]!);
+    const r = leash + w.range[i]!;
+    if (e >= 0 && postDist2(ctx, t, w.x[e]!, w.y[e]!) <= r * r) {
+      w.phase[i] = PHASE_GO;
+      return;
+    }
+  }
+  w.target[i] = NO_ENTITY;
+  if (d2 <= stand * stand) {
+    if (w.mvOn[i] === 1) stopMoving(ctx, i);
+    w.phase[i] = PHASE_WORK;
+    return;
+  }
+  w.phase[i] = PHASE_GO;
+  steerToEntity(ctx, i, t);
+}
+
 function gather(ctx: SimContext, i: number, o: number): void {
   const w = ctx.world;
   const type = ctx.unitType(w.typeId[i]!);
@@ -502,6 +562,9 @@ export function ordersSystem(ctx: SimContext, s: OrdersScratch): void {
       case ORDER_CRAFT:
         w.target[i] = NO_ENTITY;
         craft(ctx, i);
+        break;
+      case ORDER_GUARD:
+        guard(ctx, s, i, o);
         break;
       default:
         if (type >= ORDER_CAST && type < ORDER_CAST + MAX_ABILITIES) castOrder(ctx, i, o);
