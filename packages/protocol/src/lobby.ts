@@ -8,7 +8,7 @@ import {
   StallNotice,
 } from './frames.js';
 import { CommandEnvelope } from './commands.js';
-import { SEED_MAX } from './constants.js';
+import { MAX_PLAYERS, SEED_MAX } from './constants.js';
 
 // Contract 2: lobby en transport. JSON over WebSocket in fase 1.
 const uint = z.number().int().nonnegative();
@@ -70,6 +70,11 @@ export const ClientMessage = z.discriminatedUnion('kind', [
 export type ClientMessage = z.infer<typeof ClientMessage>;
 
 export const ServerMessage = z.discriminatedUnion('kind', [
+  // Besluit fase-0 sectie 23 (protocol 0.12.0, verplicht in 0.13.0; voorstel, ter bevestiging door de architect): `you` is
+  // de playerId van de verbinding die dit lobby-bericht ontvangt, zoals in `start`. De relay stuurt het lobby-bericht
+  // daarom per verbinding (dezelfde inhoud, een ander `you`; Room.broadcastLobby, relay 0.3.0); een AI-speler ontvangt
+  // niets. De client leest het (session.ts, de menu-flow); de naam is geen identiteit meer, de unieke namen van de
+  // relay zijn alleen nog een weergaveregel.
   z
     .object({
       kind: z.literal('lobby'),
@@ -77,6 +82,7 @@ export const ServerMessage = z.discriminatedUnion('kind', [
       map: z.string(),
       players: z.array(LobbyPlayer),
       settings: MatchSettings.optional(),
+      you: uint.max(MAX_PLAYERS - 1),
     })
     .strict(),
   z

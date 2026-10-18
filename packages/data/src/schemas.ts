@@ -11,8 +11,8 @@ const pct = z.number().min(0).max(100);
 
 export const ArmorType = z.enum(['none', 'light', 'medium', 'heavy', 'robot']);
 export const DamageType = z.enum(['ballistic', 'energy', 'melee', 'fire']);
-// Nieuwe lichaamstypen staan achteraan zodat bestaande indices gelijk blijven. beast en vehicle (data 0.21.0; voorstel, ter
-// bevestiging door de architect): honden en de Buggy van de Raiders; geen rol- of rig-regel in de sim, alleen een ander lichaam.
+// Nieuwe lichaamstypen staan achteraan zodat bestaande indices gelijk blijven. beast en vehicle (data 0.21.0; bevestigd in
+// fase-0 sectie 23 besluit 2): honden en de Buggy van de Raiders; geen rol- of rig-regel in de sim, alleen een ander lichaam.
 export const BodyType = z.enum(['human', 'robot', 'beast', 'vehicle']);
 // Volgorde = index in ROLES (GameData). Nieuwe rollen staan achteraan zodat bestaande indices gelijk blijven.
 // technician en robot (data 0.16.0): de technicus-regel en de Robotfabriek van de Dwellers.
@@ -27,7 +27,7 @@ export const Provides = z.enum([
   'lab',
   'hq',
   'training',
-  // Data 0.21.0 (Raiders; voorstel, ter bevestiging door de architect), achteraan: tent (vechters-instroom, vangnet),
+  // Data 0.21.0 (Raiders; bevestigd in fase-0 sectie 23 besluit 2), achteraan: tent (vechters-instroom, vangnet),
   // kooi (slaven: transitie en werkgebied), depot (afleverpunt naast hq en werkplaats), chemlab (chems, SPECIAL-kanaal)
   'tent',
   'kooi',
@@ -61,7 +61,7 @@ export const Effect = z
   .strict();
 
 // Vangnet (Spelfundament 4, data 0.16.0). Per factie een eigen actie; nu bekend: radiobaken_instroom (Dwellers) en
-// tenten_instroom (Raiders, data 0.21.0; voorstel, ter bevestiging door de architect: threshold telt vechters, de
+// tenten_instroom (Raiders, data 0.21.0; bevestigd in fase-0 sectie 23 besluit 2: threshold telt vechters, de
 // instroom komt uit een voltooide tent). De arrival-velden (intervalS, maxArrivals, loadoutId) zijn verplicht bij
 // elke actie van deze enum en verboden bij een toekomstige actie zonder aankomst.
 export const SafetyNetAction = z.enum(['radiobaken_instroom', 'tenten_instroom']);
@@ -96,7 +96,7 @@ export const RobotRules = z
   .strict();
 
 // ---------------------------------------------------------------------------------------------------------------------
-// Raiders (data 0.21.0; voorstel, ter bevestiging door de architect). Alleen data: de sim leest deze velden nog niet
+// Raiders (data 0.21.0; bevestigd in fase-0 sectie 23 besluit 2). Alleen data: de sim leest deze velden nog niet
 // (zie packages/data/CHANGELOG.md 0.21.0 voor wat de sim moet bouwen). Alle blokken zijn optioneel, een Dweller-record
 // blijft ongewijzigd geldig. Eenheden menselijk (m, s, %), de loader rekent om.
 // ---------------------------------------------------------------------------------------------------------------------
@@ -227,7 +227,7 @@ export const Faction = z
     uniqueUnits: z.array(id),
     uniqueBuildings: z.array(id),
     specialChannel: z.enum(['training', 'chems', 'tech']),
-    // Data 0.21.0 (Raiders; voorstel, ter bevestiging door de architect), alle optioneel en alleen de sim-regels van de Raiders
+    // Data 0.21.0 (Raiders; bevestigd in fase-0 sectie 23 besluit 2), alle optioneel en alleen de sim-regels van de Raiders
     slaves: SlaveRules.optional(),
     plunder: PlunderRules.optional(),
     tribute: Tribute.optional(),
@@ -291,16 +291,16 @@ export const Loadout = z
     visuals: z.object({ meshSlots: z.record(z.string(), z.string()) }).strict(), // slot -> manifest-id
     // Data 0.16.0: waar een unit gemaakt wordt. Afwezig = omscholen van een bewoner in de werkplaats (alle bewoners).
     // Aanwezig = gebouw-id waar de unit nieuw gebouwd wordt (robots); verplicht bij bodyType robot.
-    // Data 0.21.0 (voorstel, ter bevestiging door de architect): ook toegestaan voor een ander lichaam (de vechters,
+    // Data 0.21.0 (bevestigd in fase-0 sectie 23 besluit 2): ook toegestaan voor een ander lichaam (de vechters,
     // honden en de Buggy van de Raiders worden nieuw gebouwd in een tent of de autosloperij); een slaaf heeft het nooit.
     producedAt: id.optional(),
     repair: Repair.optional(), // alleen role robot
     siege: Siege.optional(), // alleen role robot
-    // Data 0.21.0 (Raiders; voorstel, ter bevestiging door de architect), alle optioneel
+    // Data 0.21.0 (Raiders; bevestigd in fase-0 sectie 23 besluit 2), alle optioneel
     slave: z.boolean().optional(), // true = slaaf: arbeider (role scavenger of builder), vecht nooit, werkt binnen de Kooi-straal, bevrijdbaar
     capture: Capture.optional(), // Slaver
     aura: UnitAura.optional(), // Chem-dealer
-    // Data 0.22.0 (fog of war; voorstel, ter bevestiging door de architect): sight radius from the unit's centre;
+    // Data 0.22.0 (fog of war; bevestigd in fase-0 sectie 23 besluit 1): sight radius from the unit's centre;
     // absent = sim.json vision.unitSightM
     sightM: sight.optional(),
     _comment: comment,
@@ -368,10 +368,10 @@ export const Building = z
     rangeM: nonneg.optional(),
     cooldownS: nonneg.optional(),
     network: TurretNetwork.optional(), // data 0.16.0, alleen bij provides turret
-    // Data 0.21.0 (Raiders; voorstel, ter bevestiging door de architect), optioneel
+    // Data 0.21.0 (Raiders; bevestigd in fase-0 sectie 23 besluit 2), optioneel
     cage: Cage.optional(), // verplicht bij provides kooi en anders niet toegestaan
     placement: BuildingPlacement.optional(), // de Kooi staat aan de rand van de basis
-    // Data 0.22.0 (fog of war; voorstel, ter bevestiging door de architect): sight radius beyond the footprint edge
+    // Data 0.22.0 (fog of war; bevestigd in fase-0 sectie 23 besluit 1): sight radius beyond the footprint edge
     // (the sim adds half the larger footprint side); absent = rangeM + vision.turretSightExtraM for a turret, else
     // vision.buildingSightM
     sightM: sight.optional(),
@@ -479,7 +479,7 @@ export const Hero = z
     // Data 0.16.0: passieve effecten van de held voor zijn speler, zolang hij leeft; zelfde semantiek als perk-effecten
     // (optelbaar, geschaald met revivePenaltyPct per oplap, weg als de held dood of leeg is).
     passives: z.array(Effect),
-    // Data 0.21.0 (Raiders; voorstel, ter bevestiging door de architect), alle optioneel: de intimidatie-aura van de Warlord
+    // Data 0.21.0 (Raiders; bevestigd in fase-0 sectie 23 besluit 2), alle optioneel: de intimidatie-aura van de Warlord
     // (altijd aan, zolang de held leeft; zelfde effect-vorm als een ability), xp per geroofde gevangene, en het basis-loadout
     // van de held (afwezig = het goedkoopste loadout met role militia zonder prereqTech en zonder producedAt van de factie).
     aura: HeroAura.optional(),
@@ -490,7 +490,7 @@ export const Hero = z
     reviveS: nonneg,
     revivePenaltyPct: nonneg, // 20 volgens het Spelfundament
     maxRevives: z.number().int().nonnegative(), // aantal keer oplappen voordat de held leeg is
-    // Data 0.22.0 (fog of war; voorstel, ter bevestiging door de architect): sight radius of the hero; absent =
+    // Data 0.22.0 (fog of war; bevestigd in fase-0 sectie 23 besluit 1): sight radius of the hero; absent =
     // sim.json vision.heroSightM
     sightM: sight.optional(),
     _comment: comment,
@@ -635,7 +635,7 @@ export const AiScript = z
     claimFromS: nonneg, // vanaf dan neemt een vrije bouwer neutrale claimpunten (dichtstbij eerst)
     claimSafeRadiusM: nonneg, // een claimpunt verder dan dit van het hoofdgebouw neemt hij pas vanaf claimFarFromS, met zijn vrije militie als escorte
     claimFarFromS: nonneg,
-    // Data 0.20.0 (voorstel): an idle hero walks to a neutral claim point within this distance and claims it by
+    // Data 0.20.0 (bevestigd in fase-0 sectie 22 besluit 4 tot 6): an idle hero walks to a neutral claim point within this distance and claims it by
     // standing there (sim.json heroClaimS); absent or 0 = off
     heroClaimRadiusM: nonneg.optional(),
     defendRadiusM: nonneg, // vijandelijke units binnen deze afstand van een eigen gebouw zijn een dreiging
@@ -685,10 +685,10 @@ export const AiScript = z
       })
       .strict()
       .optional(),
-    // Data 0.21.0 (Raiders; voorstel, ter bevestiging door de architect): het roof- en harassplan van het Raider-script
+    // Data 0.21.0 (Raiders; bevestigd in fase-0 sectie 23 besluit 2): het roof- en harassplan van het Raider-script
     // (optioneel; Dwellers hebben het niet). De rest van het script (bouwvolgorde, golven, claims) gebruikt de gewone velden.
     raidPlan: RaidPlan.optional(),
-    // Data 0.25.0 (creep camps; voorstel, ter bevestiging door de architect): when the AI clears the bandit camps of the
+    // Data 0.25.0 (creep camps; bevestigd in fase-0 sectie 23 besluit 5): when the AI clears the bandit camps of the
     // map (data/creeps.json). From fromS on, with no enemy at its buildings, an idle army of at least minArmy (the
     // entry for the camp's tier; a tier without an entry is never attacked) walks to the nearest living camp within
     // maxPathM over land of its headquarters, with the hero. Absent = the AI leaves the camps alone.
@@ -743,12 +743,12 @@ export const FormationTuning = z
   })
   .strict();
 
-// Building placement margins (data/sim.json `placement`, data 0.18.0; voorstel, ter bevestiging door de architect).
+// Building placement margins (data/sim.json `placement`, data 0.18.0; bevestigd in fase-0 sectie 22 besluit 4 tot 6).
 export const PlacementTuning = z
   .object({
     clearanceM: z.number().min(1), // free walkable ground around every footprint, also from nodes and claim points; at least 1 m (one cell), then placing a building never cuts a walkable connection
     depotClearanceM: nonneg, // aisle around a drop-off building (provides hq or werkplaats): no other building this close
-    // Data 0.20.0 (Martien 16 October; voorstel, ter bevestiging door de architect): territory. A new footprint must
+    // Data 0.20.0 (Martien 16 October; bevestigd in fase-0 sectie 22 besluit 4 tot 6): territory. A new footprint must
     // touch a cell within buildRangeM of an own building (claimBuildRangeM of a claim post), counted in steps over
     // walkable terrain (a cliff, rock or water stops it); 0 = no territory rule
     buildRangeM: z.number().min(0).max(100),
@@ -761,7 +761,7 @@ export const PlacementTuning = z
     path: ['depotClearanceM'],
   });
 
-// Fog of war (data/sim.json `vision`, data 0.22.0; voorstel, ter bevestiging door de architect). Every own unit and
+// Fog of war (data/sim.json `vision`, data 0.22.0; bevestigd in fase-0 sectie 23 besluit 1). Every own unit and
 // building reveals a disc on the vision grid of cellM x cellM metres; the defaults hold for records without sightM.
 export const VisionTuning = z
   .object({
@@ -811,21 +811,21 @@ export const SimTuning = z
     _comment: comment,
     // Data 0.16.0 (sim-core, visual review item 5): group-order spreading (see _comment in data/sim.json)
     formation: FormationTuning,
-    // Data 0.18.0 (sim-core, playtest 16 October; voorstel, ter bevestiging door de architect): building placement
+    // Data 0.18.0 (sim-core, playtest 16 October; bevestigd in fase-0 sectie 22 besluit 4 tot 6): building placement
     // margins, and new scavenger settlers of a human player start gathering at the nearest reachable node within this
     // radius of where they arrive (0 = off; the scripted AI assigns its own settlers)
     placement: PlacementTuning,
     autoGatherRadiusM: nonneg,
-    // Data 0.20.0 (claim round, Martien 16 October; voorstel, ter bevestiging door de architect): a scrap node within
+    // Data 0.20.0 (claim round, Martien 16 October; bevestigd in fase-0 sectie 22 besluit 4 tot 6): a scrap node within
     // this distance of a held claim point is exclusive to its owner. Was claimRadiusM; separate so a map can keep its
     // scrap outside the claim circle (room for the claim post) and the node still belongs to the claimed point.
     exclusiveRadiusM: nonneg,
-    // Data 0.20.0 (claim round, Martien 16 October; voorstel, ter bevestiging door de architect): the hero claims a
+    // Data 0.20.0 (claim round, Martien 16 October; bevestigd in fase-0 sectie 22 besluit 4 tot 6): the hero claims a
     // free claim point by standing in its circle for heroClaimS (0 = off), without a post; such a tower-less claim
     // goes over to an enemy after contestFlipS with enemy units and none of the holder in the circle
     heroClaimS: nonneg,
     contestFlipS: nonneg,
-    // Data 0.22.0 (fog of war; voorstel, ter bevestiging door de architect): the vision grid and default sight radii
+    // Data 0.22.0 (fog of war; bevestigd in fase-0 sectie 23 besluit 1): the vision grid and default sight radii
     vision: VisionTuning,
   })
   .strict()
@@ -838,7 +838,7 @@ export const SimTuning = z
     path: ['exclusiveRadiusM'],
   });
 
-// Creep camps (data 0.25.0, phase 2 round 2; voorstel, ter bevestiging door de architect): data/creeps.json. Bandit
+// Creep camps (data 0.25.0, phase 2 round 2; bevestigd in fase-0 sectie 23 besluit 5): data/creeps.json. Bandit
 // nests of the map (MapDef.creepCamps, Spelfundament 3.2: "bandietennesten als creeps met loot en held-XP"). `units`
 // are the neutral loadouts of the camps (no faction: they are never trained or built; the loader appends them after
 // the loadouts of the factions, so their typeIds follow the faction loadouts); `tiers` is what a camp of a map tier

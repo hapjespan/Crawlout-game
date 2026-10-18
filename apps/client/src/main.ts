@@ -431,7 +431,7 @@ async function main(): Promise<void> {
     // While the menu is up it shows the connection itself; the overlay is for the match (reconnects, waiting).
     onConnection: (text) => netStatus.set(menu?.isVisible() ? null : text),
     // The menu's lobby shows the relay's side of the story (the link, the lobby, its error messages).
-    onLobby: (lobby) => menu?.setLobby(lobby.roomId, lobby.map, lobby.players),
+    onLobby: (lobby) => menu?.setLobby(lobby.roomId, lobby.map, lobby.players, lobby.you),
     onLink: (link) => menu?.setLink(link),
     onError: (message) => {
       console.error(`sim: ${message}`);

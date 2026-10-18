@@ -221,8 +221,8 @@ function applyMove(
 }
 
 /**
- * Attack: an enemy (visible) for every unit with a weapon. Data 0.21.0 (Raiders, sim 0.18.0; contract 2, voorstel, ter
- * bevestiging door de architect): an enemy slave or captive is freed by touch, so every unit walks up to it (orders.ts
+ * Attack: an enemy (visible) for every unit with a weapon. Data 0.21.0 (Raiders, sim 0.18.0; contract 2, bevestigd in
+ * fase-0 sectie 23 besluit 3): an enemy slave or captive is freed by touch, so every unit walks up to it (orders.ts
  * attack); a Slaver may also go for a neutral wanderer it can catch.
  */
 function applyAttack(ctx: SimContext, p: number, pl: CommandPayload<'Attack'>): boolean {

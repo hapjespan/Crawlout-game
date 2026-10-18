@@ -494,6 +494,43 @@
       "category": "debris"
     },
     {
+      "id": "dweller_armor_composite",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.37,
+          0.98,
+          -0.225
+        ],
+        "max": [
+          0.37,
+          1.555,
+          0.15
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "dweller_armor_composite/lod0.glb",
+          "triangles": 244
+        },
+        {
+          "level": 1,
+          "path": "dweller_armor_composite/lod1.glb",
+          "triangles": 84
+        },
+        {
+          "level": 2,
+          "path": "dweller_armor_composite/lod2.glb",
+          "triangles": 54
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none"
+    },
+    {
       "id": "dweller_body_human",
       "kind": "character",
       "bounds": {
@@ -1196,6 +1233,302 @@
       ],
       "teamMask": "materialName",
       "rigid": true
+    },
+    {
+      "id": "dweller_tool_hammer",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.145,
+          -0.045,
+          -0.14
+        ],
+        "max": [
+          0.145,
+          0.045,
+          0.385
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "dweller_tool_hammer/lod0.glb",
+          "triangles": 156
+        },
+        {
+          "level": 1,
+          "path": "dweller_tool_hammer/lod1.glb",
+          "triangles": 128
+        },
+        {
+          "level": 2,
+          "path": "dweller_tool_hammer/lod2.glb",
+          "triangles": 68
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none"
+    },
+    {
+      "id": "dweller_tool_multitool",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.07,
+          -0.035,
+          -0.14
+        ],
+        "max": [
+          0.07,
+          0.055,
+          0.285
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "dweller_tool_multitool/lod0.glb",
+          "triangles": 184
+        },
+        {
+          "level": 1,
+          "path": "dweller_tool_multitool/lod1.glb",
+          "triangles": 144
+        },
+        {
+          "level": 2,
+          "path": "dweller_tool_multitool/lod2.glb",
+          "triangles": 72
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none"
+    },
+    {
+      "id": "dweller_tool_scrapbag",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.155,
+          -0.45,
+          -0.076
+        ],
+        "max": [
+          0.155,
+          0.224667,
+          0.13
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "dweller_tool_scrapbag/lod0.glb",
+          "triangles": 204
+        },
+        {
+          "level": 1,
+          "path": "dweller_tool_scrapbag/lod1.glb",
+          "triangles": 132
+        },
+        {
+          "level": 2,
+          "path": "dweller_tool_scrapbag/lod2.glb",
+          "triangles": 72
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none"
+    },
+    {
+      "id": "dweller_weapon_club",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.054,
+          -0.051357,
+          -0.2
+        ],
+        "max": [
+          0.054,
+          0.051357,
+          0.825
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "dweller_weapon_club/lod0.glb",
+          "triangles": 304
+        },
+        {
+          "level": 1,
+          "path": "dweller_weapon_club/lod1.glb",
+          "triangles": 192
+        },
+        {
+          "level": 2,
+          "path": "dweller_weapon_club/lod2.glb",
+          "triangles": 52
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none"
+    },
+    {
+      "id": "dweller_weapon_patrol_rifle",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.03,
+          -0.16,
+          -0.36
+        ],
+        "max": [
+          0.03,
+          0.143,
+          0.82
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "dweller_weapon_patrol_rifle/lod0.glb",
+          "triangles": 344
+        },
+        {
+          "level": 1,
+          "path": "dweller_weapon_patrol_rifle/lod1.glb",
+          "triangles": 268
+        },
+        {
+          "level": 2,
+          "path": "dweller_weapon_patrol_rifle/lod2.glb",
+          "triangles": 84
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none"
+    },
+    {
+      "id": "dweller_weapon_pipe_pistol",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.023,
+          -0.115,
+          -0.05
+        ],
+        "max": [
+          0.023,
+          0.07,
+          0.32
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "dweller_weapon_pipe_pistol/lod0.glb",
+          "triangles": 180
+        },
+        {
+          "level": 1,
+          "path": "dweller_weapon_pipe_pistol/lod1.glb",
+          "triangles": 104
+        },
+        {
+          "level": 2,
+          "path": "dweller_weapon_pipe_pistol/lod2.glb",
+          "triangles": 72
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none"
+    },
+    {
+      "id": "dweller_weapon_rifle",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.026,
+          -0.15,
+          -0.355
+        ],
+        "max": [
+          0.026,
+          0.127,
+          0.75
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "dweller_weapon_rifle/lod0.glb",
+          "triangles": 280
+        },
+        {
+          "level": 1,
+          "path": "dweller_weapon_rifle/lod1.glb",
+          "triangles": 200
+        },
+        {
+          "level": 2,
+          "path": "dweller_weapon_rifle/lod2.glb",
+          "triangles": 84
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none"
+    },
+    {
+      "id": "dweller_weapon_shotgun",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.037,
+          -0.115,
+          -0.4
+        ],
+        "max": [
+          0.037,
+          0.067,
+          0.7
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "dweller_weapon_shotgun/lod0.glb",
+          "triangles": 256
+        },
+        {
+          "level": 1,
+          "path": "dweller_weapon_shotgun/lod1.glb",
+          "triangles": 184
+        },
+        {
+          "level": 2,
+          "path": "dweller_weapon_shotgun/lod2.glb",
+          "triangles": 84
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none"
     },
     {
       "id": "grass_patch_01",

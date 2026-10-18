@@ -19,8 +19,8 @@ if (new Uint8Array(new Uint16Array([1]).buffer)[0] !== 1)
 
 export const STATE_MAGIC = 0x4c575243; // 'CRWL' als little-endian bytes
 /**
- * 12: the Raiders (sim 0.18.0; voorstel, ter bevestiging door de architect): see World and PlayerState.
- * 13: creep camps (sim 0.20.0; voorstel, ter bevestiging door de architect): World.creepCamp and creepHome, and the
+ * 12: the Raiders (sim 0.18.0; bevestigd in fase-0 sectie 23 besluit 3): see World and PlayerState.
+ * 13: creep camps (sim 0.20.0; bevestigd in fase-0 sectie 23 besluit 5): World.creepCamp and creepHome, and the
  * camp state (systems/creeps.ts CreepCamps) after the explored bitsets.
  */
 export const STATE_FORMAT_VERSION = 13;

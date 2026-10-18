@@ -716,6 +716,31 @@
       ]
     },
     {
+      "id": "dweller_armor_composite",
+      "source": "dwellers-gear.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "lodTriangles": [
+        244,
+        84,
+        54
+      ],
+      "materials": [
+        "composite_metal",
+        "lens_blue",
+        "metal_vault",
+        "metal_vault_dark",
+        "metal_vault_yellow",
+        "rubber_grip"
+      ],
+      "sizeM": [
+        0.74,
+        0.575,
+        0.375
+      ]
+    },
+    {
       "id": "dweller_body_human",
       "source": "characters/dweller_body_human.glb",
       "errors": [],
@@ -1147,6 +1172,204 @@
         4.08,
         3.5,
         6.408198
+      ]
+    },
+    {
+      "id": "dweller_tool_hammer",
+      "source": "dwellers-gear.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "lodTriangles": [
+        156,
+        128,
+        68
+      ],
+      "materials": [
+        "metal_vault",
+        "metal_vault_dark",
+        "metal_vault_yellow",
+        "rubber_grip",
+        "steel_bare"
+      ],
+      "sizeM": [
+        0.29,
+        0.09,
+        0.525
+      ]
+    },
+    {
+      "id": "dweller_tool_multitool",
+      "source": "dwellers-gear.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "lodTriangles": [
+        184,
+        144,
+        72
+      ],
+      "materials": [
+        "lens_blue",
+        "metal_vault",
+        "metal_vault_dark",
+        "metal_vault_yellow",
+        "rubber_grip",
+        "steel_bare"
+      ],
+      "sizeM": [
+        0.14,
+        0.09,
+        0.425
+      ]
+    },
+    {
+      "id": "dweller_tool_scrapbag",
+      "source": "dwellers-gear.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "lodTriangles": [
+        204,
+        132,
+        72
+      ],
+      "materials": [
+        "canvas_grey",
+        "metal_vault",
+        "metal_vault_dark",
+        "metal_vault_yellow",
+        "rubber_grip",
+        "steel_bare"
+      ],
+      "sizeM": [
+        0.31,
+        0.674667,
+        0.206
+      ]
+    },
+    {
+      "id": "dweller_weapon_club",
+      "source": "dwellers-gear.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "lodTriangles": [
+        304,
+        192,
+        52
+      ],
+      "materials": [
+        "lens_blue",
+        "metal_vault",
+        "metal_vault_dark",
+        "metal_vault_light",
+        "metal_vault_yellow",
+        "rubber_grip"
+      ],
+      "sizeM": [
+        0.108,
+        0.102714,
+        1.025
+      ]
+    },
+    {
+      "id": "dweller_weapon_patrol_rifle",
+      "source": "dwellers-gear.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "lodTriangles": [
+        344,
+        268,
+        84
+      ],
+      "materials": [
+        "composite_metal",
+        "lens_blue",
+        "metal_vault",
+        "metal_vault_dark",
+        "metal_vault_light",
+        "metal_vault_yellow",
+        "rubber_grip"
+      ],
+      "sizeM": [
+        0.06,
+        0.303,
+        1.18
+      ]
+    },
+    {
+      "id": "dweller_weapon_pipe_pistol",
+      "source": "dwellers-gear.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "lodTriangles": [
+        180,
+        104,
+        72
+      ],
+      "materials": [
+        "lens_blue",
+        "metal_vault",
+        "metal_vault_dark",
+        "metal_vault_yellow",
+        "rubber_grip"
+      ],
+      "sizeM": [
+        0.046,
+        0.185,
+        0.37
+      ]
+    },
+    {
+      "id": "dweller_weapon_rifle",
+      "source": "dwellers-gear.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "lodTriangles": [
+        280,
+        200,
+        84
+      ],
+      "materials": [
+        "lens_blue",
+        "metal_vault",
+        "metal_vault_dark",
+        "metal_vault_light",
+        "metal_vault_yellow",
+        "rubber_grip"
+      ],
+      "sizeM": [
+        0.052,
+        0.277,
+        1.105
+      ]
+    },
+    {
+      "id": "dweller_weapon_shotgun",
+      "source": "dwellers-gear.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "lodTriangles": [
+        256,
+        184,
+        84
+      ],
+      "materials": [
+        "metal_vault",
+        "metal_vault_dark",
+        "metal_vault_light",
+        "metal_vault_yellow",
+        "rubber_grip"
+      ],
+      "sizeM": [
+        0.074,
+        0.182,
+        1.1
       ]
     },
     {

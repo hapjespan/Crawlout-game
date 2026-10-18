@@ -17,7 +17,7 @@ import { PlayerView } from './view.js';
 // gaan als één `hashes`-bericht mee, zodat de client ze aan de relay kan melden. Events van overgeslagen snapshots
 // vervallen (alleen VFX, audio en meldingen). Anders tikt hij hoogstens maxTicks keer met een snapshot per tick.
 //
-// Fog of war (protocol 0.11.0; voorstel): with `viewer` in init or load (the local player) every snapshot is the one of
+// Fog of war (protocol 0.11.0; bevestigd in fase-0 sectie 23 besluit 1): with `viewer` in init or load (the local player) every snapshot is the one of
 // that player (view.ts: own entities, map features, what he sees now, ghosts of enemy buildings); the hash in the header
 // stays the hash of the whole shared state. Without `viewer` (replay tools, a spectator) the snapshot holds everything.
 // `fog` asks the fog mask of a player (the HUD and render overlay), like `query` asks his status.

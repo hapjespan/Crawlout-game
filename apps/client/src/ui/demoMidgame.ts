@@ -49,6 +49,7 @@ const STATUS: PlayerStatus = {
   queue: [],
   dominance: { pointsHeld: 2, pointsRequired: 3, ticksHeld: 0, ticksRequired: 6000, leader: null },
   trained: [0, 0, 2, 2, 0, 1, 1],
+  claimPoints: [],
 };
 
 const DOMINANCE: DominanceView = {

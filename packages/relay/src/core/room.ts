@@ -517,13 +517,16 @@ export class Room {
   }
 
   private broadcastLobby(): void {
-    this.broadcast({
-      kind: 'lobby',
-      roomId: this.roomId,
-      map: this.map,
-      players: this.sortedPlayers(),
-      settings: { ...this.settings },
-    });
+    // Same content for everyone, but each connection gets its own playerId as `you` (fase-0 section 23 decision 7).
+    for (const [connId, playerId] of this.conns)
+      this.send(connId, {
+        kind: 'lobby',
+        roomId: this.roomId,
+        map: this.map,
+        players: this.sortedPlayers(),
+        settings: { ...this.settings },
+        you: playerId,
+      });
   }
 
   private broadcast(msg: ServerMessage): void {

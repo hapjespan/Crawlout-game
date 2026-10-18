@@ -69,6 +69,8 @@ export interface SessionLobby {
   roomId: string;
   map: string;
   players: readonly LobbyPlayer[];
+  /** This connection's playerId, as the relay says it (null only for a relay without `you`). */
+  you: number | null;
 }
 
 /** The lobby messages a player can send from the menu. */
@@ -241,7 +243,12 @@ export function startSession(
   const onLobby = (msg: Extract<ServerMessage, { kind: 'lobby' }>): void => {
     if (!net) return;
     roster = msg.players;
-    events.onLobby?.({ roomId: msg.roomId, map: msg.map, players: msg.players });
+    events.onLobby?.({
+      roomId: msg.roomId,
+      map: msg.map,
+      players: msg.players,
+      you: msg.you ?? null,
+    });
     if (manualLobby) {
       // The player drives the lobby; only the map is ours to set (one map, the one this client loaded).
       if (msg.map !== map.grid.id) link.send({ kind: 'setMap', map: map.grid.id });
@@ -269,8 +276,8 @@ export function startSession(
       return;
     }
     // this player's faction (`?faction=`): set it once the lobby shows another
-    // (the relay renames a duplicate name to "Naam 2", so match with identifyYou)
-    youId = identifyYou(msg.players, net.name, youId);
+    // (`you` from the relay; only without it match the name, which the relay may have renamed to "Naam 2")
+    youId = msg.you ?? identifyYou(msg.players, net.name, youId);
     const mine = msg.players.find((p) => p.playerId === youId);
     if (mine !== undefined && mine.faction !== ownFaction) {
       link.send({ kind: 'setFaction', faction: ownFaction });

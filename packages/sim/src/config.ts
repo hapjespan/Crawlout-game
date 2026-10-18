@@ -33,7 +33,7 @@ export interface SimMap {
   /** Winroute B: pointsRequired claimpunten gedurende ticks vasthouden. */
   readonly dominance: { readonly pointsRequired: number; readonly ticks: number };
   /**
-   * Creep camps (sim 0.20.0, data 0.25.0; voorstel, ter bevestiging door de architect): the centre of each bandit camp
+   * Creep camps (sim 0.20.0, data 0.25.0; bevestigd in fase-0 sectie 23 besluit 5): the centre of each bandit camp
    * and its tier (SimConfig.creepTiers). Absent or empty = no camps (the programmatic test maps).
    */
   readonly creepCamps?: readonly SimCreepCamp[];

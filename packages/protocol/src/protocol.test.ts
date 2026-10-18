@@ -90,6 +90,29 @@ describe('besluiten sprint 1', () => {
   });
 });
 
+describe('lobby you (protocol 0.12.0, verplicht in 0.13.0, fase-0 sectie 23 besluit 7)', () => {
+  const lobby = {
+    kind: 'lobby',
+    roomId: 'r',
+    map: 'rustbelt',
+    players: [
+      { playerId: 0, name: 'Speler', faction: 'dwellers', ready: false, online: true, ai: false },
+      { playerId: 1, name: 'Speler', faction: 'raiders', ready: true, online: false, ai: true },
+    ],
+  };
+  it('het lobby-bericht draagt de eigen playerId, zoals start, en zonder you is het ongeldig', () => {
+    expect(ServerMessage.safeParse(lobby).success).toBe(false);
+    expect(ServerMessage.safeParse({ ...lobby, you: 0 }).success).toBe(true);
+    const parsed = ServerMessage.parse({ ...lobby, you: 1 });
+    expect(parsed.kind === 'lobby' && parsed.you).toBe(1);
+  });
+  it('you is een playerId binnen MAX_PLAYERS, geen naam', () => {
+    expect(ServerMessage.safeParse({ ...lobby, you: MAX_PLAYERS }).success).toBe(false);
+    expect(ServerMessage.safeParse({ ...lobby, you: -1 }).success).toBe(false);
+    expect(ServerMessage.safeParse({ ...lobby, you: 'Speler' }).success).toBe(false);
+  });
+});
+
 describe('besluiten sprint 2', () => {
   it('de neutrale eigenaar past in het owner-byte en botst niet met een speler', () => {
     expect(OWNER_NEUTRAL).toBe(255);
@@ -156,6 +179,7 @@ describe('besluiten sprint 3', () => {
       },
       robotPop: 0,
       trained: [0, 0, 0, 0, 0, 0, 0],
+      claimPoints: [],
     };
     expect(status.hero?.state).toBe('reviving');
   });
@@ -178,6 +202,7 @@ describe('besluiten sprint 3', () => {
       },
       robotPop: 0,
       trained: [0, 0, 0, 0, 0, 0, 0],
+      claimPoints: [],
     };
     const d = status.dominance!;
     expect(d.leader!.ticksHeld * TICK_MS).toBe(240_000);
@@ -245,6 +270,7 @@ describe('voorstel content-x (protocol 0.8.0, ter bevestiging door de architect)
       },
       robotPop: 2,
       trained: [1, 0, 0, 0, 0, 0, 0],
+      claimPoints: [],
     };
     expect(status.queue.map((q) => q.kind)).toEqual(['produce', 'train']);
   });
@@ -305,7 +331,7 @@ describe('snapshotLayout', () => {
   });
 });
 
-describe('fog of war (protocol 0.11.0, voorstel)', () => {
+describe('fog of war (protocol 0.11.0, fase-0 sectie 23 besluit 1)', () => {
   it('ENTITY_FLAG.ghost is its own bit', () => {
     const bits = Object.values(ENTITY_FLAG);
     expect(ENTITY_FLAG.ghost).toBe(1 << 4);

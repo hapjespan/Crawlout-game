@@ -1,4 +1,5 @@
 import type {
+  ChemStatus,
   DominanceStatus,
   FogMask,
   FrameBundle,
@@ -18,6 +19,9 @@ import type {
 import { envHash, validateEnv } from './config.js';
 import {
   C,
+  CHEM_ACTIVE,
+  CHEM_CRASH,
+  CHEM_NONE,
   JOB_PRODUCE,
   JOB_TRAIN,
   NO_ENTITY,
@@ -373,7 +377,7 @@ export class Sim implements SimContext {
   }
 
   /**
-   * The fog of a player on the vision grid (protocol FogMask, 0.11.0; voorstel): explored and visible as bitsets, copies.
+   * The fog of a player on the vision grid (protocol FogMask, 0.11.0; bevestigd in fase-0 sectie 23 besluit 1): explored and visible as bitsets, copies.
    * For the HUD and the render (minimap, fog overlay), on request like the player status.
    */
   fogMask(playerId: number): FogMask {
@@ -414,8 +418,29 @@ export class Sim implements SimContext {
       dominance: this.dominance(playerId), // protocol 0.6.0: winroute B voor de HUD
       robotPop: this.census.robotPop[playerId]!, // protocol 0.8.0: robots tellen niet voor bedden
       trained: trainedOf(this, playerId) as NonNullable<PlayerStatus['trained']>, // protocol 0.8.0
+      chems: this.chems(playerId), // protocol 0.13.0 (voorstel): chem-dosis per eenheid voor de Chem-dealer in de HUD
       claimPoints: claimPointStatus(this), // protocol 0.10.0 (bevestigd in fase-0 sectie 22 besluit 3): claimstand voor de ring in de HUD
     };
+  }
+
+  /**
+   * Chem per eenheid van een speler (PlayerStatus.chems, protocol 0.13.0, voorstel): elke eigen eenheid met een chem in
+   * een fase, oplopend op entity-id (= op index). Leest alleen state; geen wijziging in de hash.
+   */
+  chems(playerId: number): ChemStatus[] {
+    const w = this.world;
+    const out: ChemStatus[] = [];
+    for (let i = 0; i < w.highWater; i++) {
+      if (w.alive[i] !== 1 || w.owner[i] !== playerId || w.chemPhase[i] === CHEM_NONE) continue;
+      const ph = w.chemPhase[i]!;
+      out.push({
+        unitId: w.idOf(i),
+        chem: w.chem[i]! - 1,
+        phase: ph === CHEM_ACTIVE ? 'active' : ph === CHEM_CRASH ? 'crash' : 'cooldown',
+        ticksLeft: w.chemTicks[i]!,
+      });
+    }
+    return out;
   }
 
   /**

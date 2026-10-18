@@ -30,7 +30,7 @@ export type EntityField = keyof typeof ENTITY_FIELDS;
 // selected zet de client (selectie is geen sim-state; de client stempelt hem in de buffer voor de renderer die
 // leest); dead, carrying en inCombat zet de sim. inCombat staat ook op een turret met doel (een voltooid gebouw
 // met Combat, besluit 8 in fase-0 sectie 14); dead en carrying komen alleen op units voor.
-// Fog of war (protocol 0.11.0; voorstel, ter bevestiging door de architect): a snapshot is written for one player (the
+// Fog of war (protocol 0.11.0; bevestigd in fase-0 sectie 23 besluit 1): a snapshot is written for one player (the
 // viewer, the local player of the client). It holds his own entities, the map features (scrap nodes and claim points:
 // map knowledge, always), and the entities of others that he sees now. An enemy building he saw before but does not see
 // now stays in as a ghost: its row as he last saw it (hp, build progress), with the flag `ghost` and no other sim flag;
@@ -153,7 +153,7 @@ export function writeSnapshotHeader(buf: ArrayBuffer, h: SnapshotHeader): void {
 }
 
 /**
- * Fog of war (protocol 0.11.0; voorstel, ter bevestiging door de architect): the fog of one player on the vision grid,
+ * Fog of war (protocol 0.11.0; bevestigd in fase-0 sectie 23 besluit 1): the fog of one player on the vision grid,
  * on request of the HUD and the render (a `fog` query to the sim worker, like the player status; not in every snapshot).
  * The grid has cellsW x cellsH cells of cellUnits x cellUnits sim units (sim.json vision.cellM; 2 m = 512 units); cell
  * (cx, cy) covers x in [cx * cellUnits, (cx + 1) * cellUnits). Two bitsets of ceil(cellsW * cellsH / 8) bytes, cell
@@ -263,10 +263,32 @@ export interface PlayerStatus {
    * architect in fase-0 sectie 22), zodat de HUD een ring met voortgang rond het claimpunt kan tonen: een paal in
    * aanbouw, de held die het punt claimt door erin te staan, of de overname van een punt zonder paal. pointId is het
    * entity-id van het claimpunt in de snapshot. Oplopend op pointId. De sim levert hem altijd (Sim.status,
-   * claims.ts claimPointStatus) en de client leest hem (render: de ring; minimap); optioneel tot de PlayerStatus-literals
-   * van hud en client hem dragen, dan verplicht in de volgende protocolversie (sectie 22 besluit 3).
+   * claims.ts claimPointStatus) en de client leest hem (render: de ring; minimap). Verplicht sinds protocol 0.13.0
+   * (voorstel, ter bevestiging door de architect; sectie 22 besluit 3): alle PlayerStatus-literals dragen hem.
    */
-  claimPoints?: ClaimPointStatus[];
+  claimPoints: ClaimPointStatus[];
+  /**
+   * Chem-dosis per eenheid (protocol 0.13.0; voorstel van hud, ter bevestiging door de architect, fase-0 sectie 23
+   * besluit 8): elke eigen eenheid met een chem in een fase (active, crash of cooldown), zodat de HUD de dosis en de
+   * cooldown van een Chem-dealer uit state leest en niet uit de snapshot benadert. Oplopend op unitId. De sim houdt
+   * ze al bij (w.chem, w.chemPhase, w.chemTicks), dus geen state en geen hashwijziging; Sim.chems. Optioneel tot de
+   * HUD hem leest (de sim levert hem altijd); leeg zonder doses.
+   */
+  chems?: ChemStatus[];
+}
+
+/** Fase van een chem op een eenheid (ChemStatus.phase). */
+export type ChemPhase = 'active' | 'crash' | 'cooldown';
+
+/** De chem van één eenheid (PlayerStatus.chems, protocol 0.13.0, voorstel). */
+export interface ChemStatus {
+  /** Entity-id van de gedoseerde eenheid. */
+  unitId: number;
+  /** Index in `factions[].chems` van de eigen factie (0-based). */
+  chem: number;
+  phase: ChemPhase;
+  /** Ticks tot het einde van deze fase. */
+  ticksLeft: number;
 }
 
 /** Wat een claimpunt nu verandert (ClaimPointStatus.activity). */

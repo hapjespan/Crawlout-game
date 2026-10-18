@@ -71,7 +71,7 @@ export interface SourceOptions {
 }
 
 /** Transform uit een column-major 4x4 matrix (node-wereldmatrix van het bronmodel). */
-function transformFromMatrix4(matrix: ArrayLike<number>): Transform {
+export function transformFromMatrix4(matrix: ArrayLike<number>): Transform {
   const m = [
     matrix[0]!,
     matrix[4]!,
