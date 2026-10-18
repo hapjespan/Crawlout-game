@@ -1,4 +1,4 @@
-// Robots (assets/src/robots.json): maten per id op echte schaal (poppetje 1,8 m), team-materiaal, de manifest-velden voor
+// Robots (assets/src/robots.json, gesplitst in assets/src/robots/*.json): maten per id op echte schaal (poppetje 1,8 m), team-materiaal, de manifest-velden voor
 // rigide units (kind, rigid, teamMaterials, hover) en de gecommitte uitvoer in assets/dist.
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -11,6 +11,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import { BUDGETS } from '../src/budgets.js';
 import { assetEntrySchema, manifestSchema, type AssetEntry } from '../src/manifest.js';
 import { buildRobots, loadRobotsConfig, parseRobots, type RobotsResult } from '../src/robots.js';
+import { readSplitJson } from '../src/splitJson.js';
 // The render look reads the surface kind of a flat part from its glTF material name; the same table, so a robot can
 // not end up on the unknown-name fallback (wood) by accident.
 import {
@@ -73,14 +74,16 @@ describe('robots.json', () => {
   });
 
   it('weigert een config zonder team-materiaal, met een bronhuis of een onbekend materiaal', () => {
-    const raw = JSON.parse(readFileSync(configPath, 'utf8'));
+    const raw = readSplitJson(configPath) as {
+      units: Record<string, { parts: { material: string }[] }>;
+    };
     const noTeam = structuredClone(raw);
-    noTeam.units.dweller_robot_guard.parts = noTeam.units.dweller_robot_guard.parts.filter(
+    noTeam.units.dweller_robot_guard!.parts = noTeam.units.dweller_robot_guard!.parts.filter(
       (p: { material: string }) => !/team/.test(p.material),
     );
     expect(() => parseRobots(noTeam)).toThrow(/team-materiaal/);
     const unknown = structuredClone(raw);
-    unknown.units.dweller_robot_guard.parts[0].material = 'goud';
+    unknown.units.dweller_robot_guard!.parts[0]!.material = 'goud';
     expect(() => parseRobots(unknown)).toThrow(/onbekend effen materiaal/);
   });
 

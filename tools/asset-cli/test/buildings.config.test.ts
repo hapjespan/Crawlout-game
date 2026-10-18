@@ -14,6 +14,7 @@ import {
 } from '../src/geometry.js';
 import { makeCylinderClean } from '../src/shapes.js';
 import { assetEntrySchema } from '../src/manifest.js';
+import { readSplitJson } from '../src/splitJson.js';
 import { parseVariants } from '../src/variants.js';
 import { buildingsJson, config, deepCopy, ids, srcDir, variantsPath } from './buildings.helpers.js';
 
@@ -21,7 +22,7 @@ describe('variants.json', () => {
   it('valideert en dekt alle Dweller-gebouwen uit data/buildings/*.json (acht hier, de robotgebouwen in robots.json)', () => {
     const dwellers = buildingsJson.filter((b) => b.visuals.mesh.startsWith('dweller_building_'));
     // data 0.15.0: tien gebouwen; robotfabriek en laserturret komen uit assets/src/robots.json (src/robots.ts)
-    const robots = JSON.parse(readFileSync(join(srcDir, 'robots.json'), 'utf8')) as {
+    const robots = readSplitJson(join(srcDir, 'robots.json')) as {
       buildings: Record<string, { footprint: { w: number; h: number } }>;
     };
     expect(dwellers).toHaveLength(10);
