@@ -10,7 +10,7 @@ const args = process.argv.slice(2);
 // --factions a,b: the faction of each player (sim 0.18.0; default both dwellers)
 const fi = args.indexOf('--factions');
 const factions = fi >= 0 ? args[fi + 1]!.split(',') : undefined;
-// --mode project: the game type Bouwproject (data 0.30.0, win route C); default skirmish
+// --mode project: the game type Bouwproject (data 0.31.0, win route C); default skirmish
 const mi = args.indexOf('--mode');
 const mode = mi >= 0 ? (args[mi + 1] as 'skirmish' | 'project') : undefined;
 const seeds = args
@@ -31,7 +31,7 @@ if (args.includes('--json')) {
     console.log(
       `seed ${r.seed}: winnaar ${r.winner ?? '-'} (${r.reason ?? 'geen'}) op frame ${r.frame} = ${r.minutes.toFixed(1)} min`,
     );
-    // win route C (data 0.30.0): per player restored and lost parts, when he held every kind, his longest countdown
+    // win route C (data 0.31.0): per player restored and lost parts, when he held every kind, his longest countdown
     if (r.project !== null && args.includes('--project'))
       r.project.forEach((t, p) =>
         console.log(

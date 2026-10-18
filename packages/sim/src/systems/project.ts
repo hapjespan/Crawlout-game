@@ -8,7 +8,7 @@ import { applyStats, refreshPlayer } from '../effects.js';
 import { clampI, idiv } from '../math/int.js';
 import type { SimContext } from './common.js';
 
-// Win route C, Bouwproject (sim 0.25.0, data 0.30.0; voorstel, ter bevestiging door de architect; ontwerp in
+// Win route C, Bouwproject (sim 0.25.0, data 0.31.0; voorstel, ter bevestiging door de architect; ontwerp in
 // docs/winroute-c-winkelcentrum.md). An old strip mall: its parts (data/project.json parts, the kinds) stand as
 // neutral ruins on the map (SimMap.projectSites, only in the game type Bouwproject).
 //

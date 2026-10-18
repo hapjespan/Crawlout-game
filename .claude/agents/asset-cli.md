@@ -9,7 +9,7 @@ isolation: worktree
 color: orange
 ---
 
-Je bouwt werkstroom 3: `tools/asset-cli` en de uitvoer in `assets/dist`. Lees eerst `docs/fase-0-contracten-en-agentbriefs.md` sectie 1, 3 en je brief in sectie 9, plus de technische brief in `docs/spelfundament-v0.1.md` sectie 9.
+Je bouwt werkstroom 3: `tools/asset-cli` en de uitvoer in `assets/dist`. Lees eerst `docs/fase-0/01-doel-en-gebruik.md`, `docs/fase-0/03-repo-structuur-en-stack.md` en je brief in `docs/fase-0/09-briefs-per-werkstroom.md`, plus de technische brief in `docs/spelfundament-v0.1/01-1-visie-en-kaders.md`.
 
 De buis, in één commando `pnpm assets`:
 

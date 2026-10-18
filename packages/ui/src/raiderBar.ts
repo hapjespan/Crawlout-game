@@ -56,7 +56,7 @@ export function RaiderBar(props: { stats: RaiderStats | null }): ComponentChild 
           {
             class: short.length > 0 ? 'co-raider-item co-raider-warn' : 'co-raider-item',
             'data-raider': 'guards',
-            title: `${guardText}. Bewaak (W) op een Kooi of scrapbron houdt slaven aan het werk.`,
+            title: `${guardText}. Bewaak (G) op een Kooi of scrapbron houdt slaven aan het werk.`,
           },
           h('span', { class: 'co-raider-label' }, 'Bewakers'),
           h(

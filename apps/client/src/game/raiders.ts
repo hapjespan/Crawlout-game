@@ -197,7 +197,7 @@ export function nodeGuardLines(
   const rules = factionId === undefined ? undefined : data.factions[factionId]?.slaves;
   if (!rules) return [];
   const r = rules.revolt;
-  const howTo = `Bewaak (W) op de bron: 1 bewaker per ${r.guardModeSlavesPerGuard} slaven; losse vechters ${r.noCageGuards} per ${r.noCageSlaves}`;
+  const howTo = `Bewaak (G) op de bron: 1 bewaker per ${r.guardModeSlavesPerGuard} slaven; losse vechters ${r.noCageGuards} per ${r.noCageSlaves}`;
   const own = groups.find((g) => g.kind === 'node' && g.targetId === nodeId);
   if (own) return [`${own.slaves} slaven aan het werk`, guardLine(own), howTo];
   const kooi = groups.find((g) => g.kind === 'kooi' && g.nodeIds.includes(nodeId));
@@ -249,7 +249,7 @@ export function raiderLines(
       `Kooi: ${cage?.slaves ?? 0} van ${b.cage.capacity} slaven, werkstraal ${Math.round(b.cage.workRadiusU / UNITS_PER_METER)} m`,
       `Gevangenen worden hier na ${Math.round(b.cage.transitionTicks / tickHz)} s slaaf`,
       group ? guardLine(group) : 'Bewakers 0/0 nodig: geen slaven aan het werk',
-      `Scrap binnen ${Math.round(r.cageNearU / UNITS_PER_METER)} m: ${r.cageGuards} bewaker op Bewaak (W) houdt de slaven aan het werk`,
+      `Scrap binnen ${Math.round(r.cageNearU / UNITS_PER_METER)} m: ${r.cageGuards} bewaker op Bewaak (G) houdt de slaven aan het werk`,
     ];
   }
   const l = data.loadouts[k.index];

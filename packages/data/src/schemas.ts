@@ -582,7 +582,7 @@ export const MapDef = z
     dominance: z
       .object({ pointsRequired: z.number().int().positive(), minutes: z.number().positive() })
       .strict(),
-    // Win route C (data 0.30.0; voorstel, ter bevestiging door de architect): the ruined parts of the strip mall, the
+    // Win route C (data 0.31.0; voorstel, ter bevestiging door de architect): the ruined parts of the strip mall, the
     // centre cell of each footprint (odd footprints, data/project.json) and the part id. Optional: a map without them
     // has no Bouwproject. Only in the game type Bouwproject do they reach the sim (MatchSettings.mode 'project').
     projectSites: z
@@ -739,7 +739,7 @@ export const AiScript = z
       })
       .strict()
       .optional(),
-    // Data 0.30.0 (win route C; voorstel, ter bevestiging door content en de architect): how the AI treats the
+    // Data 0.31.0 (win route C; voorstel, ter bevestiging door content en de architect): how the AI treats the
     // Bouwproject (only in the game type Bouwproject). restoreFromS (absent = never restore): from then on, with an army of
     // at least restoreMinArmy and no enemy at its buildings, it sends `builders` idle builders to restore the nearest ruin
     // of a kind it lacks (one restore at a time). sabotageKinds: once an opponent holds a restored part of this many kinds
@@ -984,7 +984,7 @@ export const Creeps = z
   })
   .strict();
 
-// Win route C, Bouwproject (data 0.30.0; voorstel, ter bevestiging door content en de architect;
+// Win route C, Bouwproject (data 0.31.0; voorstel, ter bevestiging door content en de architect;
 // docs/winroute-c-winkelcentrum.md): an old strip mall whose parts stand as neutral ruins on the map
 // (MapDef.projectSites). Builders restore a ruin (Build on it): restoreScrap at once, restoreS of building work. A
 // restored part belongs to its restorer, gives his effects (tech semantics), beds and sight, and can be attacked; at 0

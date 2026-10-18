@@ -128,7 +128,7 @@ describe('Raider kinds and selection lines', () => {
     expect(out[0]).toBe('Kooi: 1 van 8 slaven, werkstraal 45 m');
     expect(out[1]).toContain('na 20 s slaaf');
     expect(out[2]).toBe('Bewakers 0/1 nodig (te weinig: slaven lopen weg)');
-    expect(out[3]).toBe('Scrap binnen 15 m: 1 bewaker op Bewaak (W) houdt de slaven aan het werk');
+    expect(out[3]).toBe('Scrap binnen 15 m: 1 bewaker op Bewaak (G) houdt de slaven aan het werk');
     expect(lines(camp, own)[2]).toBe('Bewakers 0/0 nodig: geen slaven aan het werk');
     expect(guardLine({ guards: 2, guardsNeeded: 2 })).toBe('Bewakers 2/2 nodig');
   });
@@ -149,7 +149,7 @@ describe('Raider kinds and selection lines', () => {
     expect(nodeGuardLines(data, raiders.id, 7, [node])).toEqual([
       '5 slaven aan het werk',
       'Bewakers 1/2 nodig (te weinig: slaven lopen weg)',
-      'Bewaak (W) op de bron: 1 bewaker per 5 slaven; losse vechters 2 per 5',
+      'Bewaak (G) op de bron: 1 bewaker per 5 slaven; losse vechters 2 per 5',
     ]);
     const kooi = { ...node, kind: 'kooi' as const, targetId: 100, guardsNeeded: 1 };
     expect(nodeGuardLines(data, raiders.id, 7, [kooi])[1]).toBe(

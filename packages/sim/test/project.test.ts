@@ -8,7 +8,7 @@ import { PlayerView } from '../src/view.js';
 import { cellCenter, createOpenMap, testPlayers } from '../src/testing.js';
 import { BUILDER, CONFIG, DATA, MILITIA, bundle, cmd, envOf, runFrames } from './helpers.js';
 
-// Win route C, the Bouwproject (sim 0.25.0, data 0.30.0): ruins on the map, restoring with Build, the effects of a
+// Win route C, the Bouwproject (sim 0.25.0, data 0.31.0): ruins on the map, restoring with Build, the effects of a
 // restored part, the countdown with its sabotage pause, falling back to a ruin, Cancel, fog and serialization.
 
 const KIND = (key: string): number => DATA.project.parts.findIndex((p) => p.key === key);

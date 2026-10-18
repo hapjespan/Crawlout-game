@@ -38,7 +38,7 @@ export interface SimMap {
    */
   readonly creepCamps?: readonly SimCreepCamp[];
   /**
-   * Win route C, Bouwproject (sim 0.25.0, data 0.30.0; voorstel, ter bevestiging door de architect): the ruined parts
+   * Win route C, Bouwproject (sim 0.25.0, data 0.31.0; voorstel, ter bevestiging door de architect): the ruined parts
    * of the strip mall, in map order. Absent or empty = no Bouwproject (the game type Skirmish, the test maps).
    */
   readonly projectSites?: readonly SimProjectSite[];
@@ -598,7 +598,7 @@ export interface SimAiScript {
     readonly tiers: readonly { readonly tier: number; readonly minArmy: number }[];
   } | null;
   /**
-   * Win route C (data 0.30.0, systems/aiProject.ts; voorstel, ter bevestiging door de architect): restore from
+   * Win route C (data 0.31.0, systems/aiProject.ts; voorstel, ter bevestiging door de architect): restore from
    * restoreFromTicks (-1 = never) with an army of restoreMinArmy and no threat, `builders` builders per restore; sabotage
    * an opponent who holds sabotageKinds kinds (or runs his countdown) with an idle army of sabotageMinArmy; rally at the
    * own parts. Absent or null = the AI ignores the Bouwproject.
@@ -662,7 +662,7 @@ export interface SimConfig {
   readonly creepTiers?: readonly SimCreepTier[];
   /** Camp takeover per faction (data 0.27.0), ascending factionId; absent or empty = every faction clears camps. */
   readonly creepTakeover?: readonly SimCreepTakeover[];
-  /** Win route C (data/project.json, data 0.30.0); absent = no Bouwproject (a map with project sites then fails). */
+  /** Win route C (data/project.json, data 0.31.0); absent = no Bouwproject (a map with project sites then fails). */
   readonly project?: SimProject;
   /** Op techId; hoogstens MAX_TECHS (bitset per speler). */
   readonly techs: readonly SimTech[];
@@ -831,7 +831,7 @@ function checkPoint(map: SimMap, p: SimPoint, what: string): void {
 }
 
 /**
- * Win route C (data 0.30.0): with project sites on the map, every kind of part is a pair of neutral building types with
+ * Win route C (data 0.31.0): with project sites on the map, every kind of part is a pair of neutral building types with
  * the same odd footprint, every site has a kind and lies with its whole footprint inside the map, and sites do not
  * overlap.
  */
@@ -1093,7 +1093,7 @@ export function validateEnv(env: SimEnv): void {
       intIn(b.footprintW, 1, MAX_FOOTPRINT) && intIn(b.footprintH, 1, MAX_FOOTPRINT),
       `${at}: footprint`,
     );
-    // the parts of the Bouwproject (data 0.30.0) have no faction, like the bandits
+    // the parts of the Bouwproject (data 0.31.0) have no faction, like the bandits
     req(
       intIn(b.provides, 0, 0xffff) &&
         (b.factionId === NEUTRAL_FACTION || intIn(b.factionId, 0, config.factions.length - 1)),
@@ -2005,7 +2005,7 @@ export function envHash(env: SimEnv): number {
   h = fnv1aInt(h, map.claimPoints.length);
   for (const p of map.claimPoints) h = hashInts(h, [p.x, p.y, p.kind]);
   h = hashInts(h, [map.dominance.pointsRequired, map.dominance.ticks]);
-  // win route C (data 0.30.0): only when the map has project sites (the game type Bouwproject), so an env without them
+  // win route C (data 0.31.0): only when the map has project sites (the game type Bouwproject), so an env without them
   // keeps its hash
   const sites = map.projectSites ?? [];
   if (sites.length > 0) {

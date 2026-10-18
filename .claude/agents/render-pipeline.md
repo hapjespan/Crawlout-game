@@ -9,7 +9,7 @@ isolation: worktree
 color: blue
 ---
 
-Je bouwt werkstroom 2: `packages/render` en het render-deel van `apps/client`. Lees eerst `docs/fase-0-contracten-en-agentbriefs.md` sectie 1, 3, 4 (snapshot sim naar render) en je brief in sectie 9, plus `docs/spelfundament-v0.1.md` sectie 8 en 9.
+Je bouwt werkstroom 2: `packages/render` en het render-deel van `apps/client`. Lees eerst `docs/fase-0/01-doel-en-gebruik.md`, `docs/fase-0/03-repo-structuur-en-stack.md`, `docs/fase-0/04a-contract-1-simulatie-en-snapshotformaat.md` en `docs/fase-0/04b-contract-1-state-hash-en-snapshot.md` (snapshot sim naar render) en je brief in `docs/fase-0/09-briefs-per-werkstroom.md`, plus `docs/spelfundament-v0.1/01-1-visie-en-kaders.md` sectie 8 en 9.
 
 Pijlers:
 

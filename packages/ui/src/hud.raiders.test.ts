@@ -178,7 +178,7 @@ describe('Raider commands', () => {
 });
 
 describe('Bewaak (protocol 0.15.0 Guard, data 0.29.0)', () => {
-  it('fighters get Bewaak (W) with its hint; it aims at a Kooi or a scrap node and sends Guard', () => {
+  it('fighters get Bewaak (G) with its hint; it aims at a Kooi or a scrap node and sends Guard', () => {
     const t = setup();
     mounted = t.handle;
     t.select([unit({ id: 4, raiderKind: 'fighter', role: 'militia', loadoutName: 'Rover' })]);
@@ -187,7 +187,7 @@ describe('Bewaak (protocol 0.15.0 Guard, data 0.29.0)', () => {
     expect(button.getAttribute('title')).toBe(
       'Bewaak een kooi of scrapbron: houdt slaven aan het werk',
     );
-    press('w');
+    press('g');
     expect(t.targets).toEqual(['guard']);
     expect(t.el.querySelector('.co-targeting')!.textContent).toContain(
       'Kies een kooi of scrapbron om te bewaken',
@@ -200,7 +200,7 @@ describe('Bewaak (protocol 0.15.0 Guard, data 0.29.0)', () => {
     act(() => void t.handle.completeTargeting({ nodeId: 21 }));
     expect(t.sent).toEqual([{ type: 'Guard', payload: { ids: [4], targetId: 21 } }]);
     expect(COMMAND_PAYLOADS.Guard.safeParse(t.sent[0]!.payload).success).toBe(true);
-    press('w');
+    press('g');
     act(() => void t.handle.completeTargeting({ ownId: 9 }));
     expect(t.sent[1]).toEqual({ type: 'Guard', payload: { ids: [4], targetId: 9 } });
   });
@@ -283,7 +283,7 @@ describe('Raider top bar', () => {
     expect(guards.className).toContain('co-raider-warn');
     expect(guards.textContent).toContain('2/3');
     expect(guards.getAttribute('title')).toContain('Scrapbron: 5 slaven, bewakers 1/2 nodig');
-    expect(guards.getAttribute('title')).toContain('Bewaak (W)');
+    expect(guards.getAttribute('title')).toContain('Bewaak (G)');
   });
 
   it('shows the revolt alert as a toast', () => {
@@ -297,7 +297,7 @@ describe('Raider top bar', () => {
     mounted = t.handle;
     act(() => alert!({ kind: 'revolt', x: 1, y: 2 }));
     expect(t.el.querySelector('[data-alert="revolt"]')!.textContent).toBe(
-      'Te weinig bewakers: slaven lopen weg! Zet vechters op Bewaak (W)',
+      'Te weinig bewakers: slaven lopen weg! Zet vechters op Bewaak (G)',
     );
   });
 

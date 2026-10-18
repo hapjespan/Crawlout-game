@@ -294,7 +294,7 @@ export interface PlayerStatus {
    */
   slaveGroups?: SlaveGroupStatus[];
   /**
-   * Winroute C, Bouwproject (protocol 0.16.0, sim 0.25.0, data 0.30.0; voorstel, ter bevestiging door de architect):
+   * Winroute C, Bouwproject (protocol 0.16.0, sim 0.25.0, data 0.31.0; voorstel, ter bevestiging door de architect):
    * de delen van het winkelcentrum met hun stand en de countdown van elke speler, zodat de HUD het projectpaneel, de
    * markers op de minimap en de meldingen (deel hersteld, deel verloren, countdown loopt, sabotage) uit state toont.
    * Kaartkennis zoals claimPoints: de ruines staan op de map en wie een deel houdt is openbaar. null zonder Bouwproject

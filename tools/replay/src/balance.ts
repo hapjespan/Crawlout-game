@@ -69,7 +69,7 @@ export interface MatchResult {
   /** Creep camps of the map (sim 0.20.0), in map order: who cleared each and in which minute (null = not cleared). */
   camps: CampTrace[];
   /**
-   * Win route C (data 0.30.0, only in the game type Bouwproject): per player the minute he first held a restored part of
+   * Win route C (data 0.31.0, only in the game type Bouwproject): per player the minute he first held a restored part of
    * every kind (null = never), how many parts he restored and lost, and his longest countdown in minutes.
    */
   project: ProjectTrace[] | null;
@@ -107,7 +107,7 @@ export interface MatchOptions {
   maxFrames?: number;
   /** Factie per speler (standaard dwellers; sim 0.18.0: raiders). */
   factions?: readonly string[] | undefined;
-  /** Speltype (data 0.30.0): 'project' is Skirmish met winroute C, het Bouwproject; standaard 'skirmish'. */
+  /** Speltype (data 0.31.0): 'project' is Skirmish met winroute C, het Bouwproject; standaard 'skirmish'. */
   mode?: 'skirmish' | 'project' | undefined;
 }
 

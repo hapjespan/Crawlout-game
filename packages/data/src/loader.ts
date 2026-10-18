@@ -55,7 +55,7 @@ export interface RawGameData {
   ai: unknown[];
   /** Contents of data/creeps.json (data 0.25.0); absent = no creep camps. */
   creeps?: unknown;
-  /** Contents of data/project.json (data 0.30.0, win route C); absent = no Bouwproject. */
+  /** Contents of data/project.json (data 0.31.0, win route C); absent = no Bouwproject. */
   project?: unknown;
 }
 
@@ -496,7 +496,7 @@ export interface AiScriptData {
   raidPlan: RaidPlanData | null;
   /** When the AI clears creep camps (data 0.25.0); null = never. */
   creeps: AiCreepsData | null;
-  /** How the AI treats the Bouwproject (data 0.30.0, win route C); null = it ignores it. */
+  /** How the AI treats the Bouwproject (data 0.31.0, win route C); null = it ignores it. */
   project: AiProjectData | null;
   /** Data 0.24.0 (proposal): the opponent faction this script is for; -1 = the faction's default script. */
   versusFactionId: number;
@@ -507,7 +507,7 @@ export interface AiScriptData {
   allInWithoutNodes: boolean;
 }
 
-/** ai/*.json `project` in sim units (data 0.30.0, win route C; voorstel, ter bevestiging door content en de architect). */
+/** ai/*.json `project` in sim units (data 0.31.0, win route C; voorstel, ter bevestiging door content en de architect). */
 export interface AiProjectData {
   /** -1 = never restore. */
   restoreFromTicks: number;
@@ -563,7 +563,7 @@ export interface CreepTakeoverData {
 }
 
 /**
- * One part of the Bouwproject (data/project.json parts, data 0.30.0; voorstel, ter bevestiging door content en de
+ * One part of the Bouwproject (data/project.json parts, data 0.31.0; voorstel, ter bevestiging door content en de
  * architect), in file order (the index is the part kind in MapDef.projectSites and PlayerStatus.project).
  */
 export interface ProjectPartData {
@@ -577,7 +577,7 @@ export interface ProjectPartData {
   effects: EffectData[];
 }
 
-/** data/project.json (data 0.30.0) in sim units; parts empty without the file. */
+/** data/project.json (data 0.31.0) in sim units; parts empty without the file. */
 export interface ProjectData {
   countdownTicks: number;
   pauseTicks: number;
@@ -690,7 +690,7 @@ export interface GameData {
   /** Creep camps (data/creeps.json, data 0.25.0); empty without the file. */
   creeps: CreepsData;
   /**
-   * Win route C, Bouwproject (data/project.json, data 0.30.0); no parts without the file. The part buildings are in
+   * Win route C, Bouwproject (data/project.json, data 0.31.0); no parts without the file. The part buildings are in
    * `buildings` after the faction buildings (factionId NEUTRAL_FACTION_ID).
    */
   project: ProjectData;
@@ -1162,7 +1162,7 @@ export function loadGameData(raw: RawGameData): GameData {
     };
   });
 
-  // Win route C (data 0.30.0): two neutral building types per part after the faction buildings (restored, then ruin),
+  // Win route C (data 0.31.0): two neutral building types per part after the faction buildings (restored, then ruin),
   // so no faction building changes id.
   const projectRaw: Project | null =
     raw.project === undefined ? null : parseWith('project.json', Project, raw.project);

@@ -151,7 +151,7 @@ export const RUSTBELT_SPEC: MapSpec = {
   // Geen scrap binnen claimRadiusM (6 m) + 3 m van een claimpunt (claimronde, data 0.20.0).
   claimNodeMinM: 9,
   centerClaims: [{ x: 191, y: 191, kind: 'powerArmor' }],
-  // Win route C (map 0.11.0, data 0.30.0; docs/winroute-c-winkelcentrum.md): the old strip mall, one wing on each
+  // Win route C (map 0.11.0, data 0.31.0; docs/winroute-c-winkelcentrum.md): the old strip mall, one wing on each
   // side of the land bridge, on the table mountain. This is the east wing (player 0's side of the river); the builder
   // mirrors it to the west wing. The supermarket is the anchor, the water tower stands in the car park towards the
   // bridge, the garage and the gas station face the lowland road. Corridors of at least 3 m between the parts and

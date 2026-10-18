@@ -79,7 +79,7 @@ export interface MapSpec {
   /** Claimpunten in het midden (zonder spiegelpartner). */
   centerClaims: Array<Feature & { kind: 'scrap' | 'settlement' | 'powerArmor' }>;
   /**
-   * Win route C (map 0.11.0, data 0.30.0): the ruined parts of the strip mall, A half only (the B half is mirrored),
+   * Win route C (map 0.11.0, data 0.31.0): the ruined parts of the strip mall, A half only (the B half is mirrored),
    * as the centre cell of the footprint and the part id of data/project.json. `clearM` is the radius around the centre
    * that the prop scatter keeps clear (the footprint plus a margin). Optional: a map without them has no Bouwproject.
    */

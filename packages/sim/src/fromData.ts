@@ -622,7 +622,7 @@ export interface SimMapSource {
 /** Options of simMapFromGrid. */
 export interface SimMapOptions {
   /**
-   * Win route C (data 0.30.0): the game type Bouwproject (MatchSettings.mode 'project') puts the project sites of the
+   * Win route C (data 0.31.0): the game type Bouwproject (MatchSettings.mode 'project') puts the project sites of the
    * map into the sim, with their kind from these parts (GameData.project.parts). Absent: no Bouwproject (Skirmish).
    */
   readonly project?: { readonly parts: readonly { readonly key: string }[] };

@@ -23,7 +23,7 @@ export function envFrom(
   });
   return {
     players: simPlayersFromLobby(data, players),
-    // win route C (data 0.30.0): the project sites only in the game type Bouwproject
+    // win route C (data 0.31.0): the project sites only in the game type Bouwproject
     map: simMapFromGrid(
       { ...grid, dominance },
       settings.mode === 'project' ? { project: data.project } : {},

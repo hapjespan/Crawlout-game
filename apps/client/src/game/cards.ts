@@ -49,7 +49,7 @@ export const BUILDING_NAMES: Record<string, string> = {
   autosloperij: 'Autosloperij',
   mitrailleursnest: 'Mitrailleursnest',
   plunderpost: 'Plunderpost',
-  // win route C (data 0.30.0): the parts of the strip mall, restored and as a ruin
+  // win route C (data 0.31.0): the parts of the strip mall, restored and as a ruin
   site_supermarket: 'Supermarkt',
   site_supermarket_ruin: 'Supermarkt (ruïne)',
   site_gas_station: 'Benzinestation',

@@ -4,7 +4,7 @@ import { gameData } from './env.js';
 import { createReplaySim } from './run.js';
 import type { FixtureDef } from './fixtures-def.js';
 
-// Win route C (sim 0.25.0, data 0.30.0): the fixture of the game type Bouwproject (MatchSettings.mode 'project').
+// Win route C (sim 0.25.0, data 0.31.0): the fixture of the game type Bouwproject (MatchSettings.mode 'project').
 // s16-rustbelt-project: the scripted Dweller AI against itself on Rustbelt XL with the strip mall; on seed 6 player 0
 // restores his wing from minute 13, holds all four kinds from minute 25 and wins on the countdown (minute 30). The
 // recording ends 20 frames after the win.

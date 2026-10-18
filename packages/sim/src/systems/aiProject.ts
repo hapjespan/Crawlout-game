@@ -5,7 +5,7 @@ import { applyCommand } from './commands.js';
 import type { SimContext } from './common.js';
 import { kindsHeld, projectKindOf } from './project.js';
 
-// The scripted AI and the Bouwproject (win route C, sim 0.25.0, data 0.30.0 ai/*.json `project`; voorstel, ter
+// The scripted AI and the Bouwproject (win route C, sim 0.25.0, data 0.31.0 ai/*.json `project`; voorstel, ter
 // bevestiging door de architect). Three plain rules, all from the script, no numbers in code:
 //  - restore (aiRestore): from restoreFromTicks, with an army of at least restoreMinArmy and no enemy at its buildings,
 //    the AI sends `builders` idle builders to the nearest ruin (to its headquarters, as the crow flies; tiebreak the

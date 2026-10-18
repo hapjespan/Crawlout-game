@@ -864,7 +864,7 @@ const ALERT_TEXT: Record<AlertKind, string> = {
   settlerLost: 'Bewoner verloren',
   claimLost: 'Claim verloren',
   dominance: 'Tegenstander telt mee voor dominantie!',
-  revolt: 'Te weinig bewakers: slaven lopen weg! Zet vechters op Bewaak (W)',
+  revolt: 'Te weinig bewakers: slaven lopen weg! Zet vechters op Bewaak (G)',
   noBeds: 'Geen vrije bedden',
   project: 'Bouwproject',
 };

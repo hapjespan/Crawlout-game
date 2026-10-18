@@ -166,7 +166,7 @@ describe('sneltoetsen', () => {
   it('G start gather-targeting en een node-klik stuurt Gather', () => {
     const t = setup();
     mounted = t.handle;
-    press('g');
+    press('t');
     expect(t.targeting).toEqual(['gather']);
     act(() => void t.handle.completeTargeting({ x: 1, y: 1 })); // verkeerd soort doel
     expect(t.sent).toEqual([]);
