@@ -15,6 +15,7 @@ export async function playMatchesParallel(
   seeds: readonly number[],
   procs = Math.max(1, Math.min(8, availableParallelism() - 1)),
   factions?: readonly string[],
+  mode?: 'skirmish' | 'project',
 ): Promise<MatchResult[]> {
   const parts: number[][] = Array.from({ length: Math.min(procs, seeds.length) }, () => []);
   seeds.forEach((s, k) => parts[k % parts.length]!.push(s));
@@ -29,6 +30,7 @@ export async function playMatchesParallel(
             SCRIPT,
             '--json',
             ...(factions === undefined ? [] : ['--factions', factions.join(',')]),
+            ...(mode === undefined ? [] : ['--mode', mode]),
             ...part.map(String),
           ],
           { cwd: REPLAY_DIR, maxBuffer: 64 * 1024 * 1024 },
@@ -57,7 +59,13 @@ export async function playMatchesParallel(
 
 export interface FairnessSummary {
   wins: [number, number];
-  reasons: { destruction: number; dominance: number; surrender: number; none: number };
+  reasons: {
+    destruction: number;
+    dominance: number;
+    surrender: number;
+    project: number;
+    none: number;
+  };
   minMinutes: number;
   maxMinutes: number;
   /** Potjes die tussen 25 en 35 minuten eindigen. */
@@ -67,7 +75,7 @@ export interface FairnessSummary {
 export function summarize(results: readonly MatchResult[]): FairnessSummary {
   const s: FairnessSummary = {
     wins: [0, 0],
-    reasons: { destruction: 0, dominance: 0, surrender: 0, none: 0 },
+    reasons: { destruction: 0, dominance: 0, surrender: 0, project: 0, none: 0 },
     minMinutes: Infinity,
     maxMinutes: 0,
     inWindow: 0,

@@ -7,6 +7,7 @@ import type {
   MapAssets,
   MapGrid,
   MapPoint,
+  ProjectSite,
   ScrapNode,
 } from './types.js';
 
@@ -36,7 +37,11 @@ export function loadMap(def: MapDef, assets: MapAssets): MapGrid {
     ...point(def, c.x, c.y, 'creepCamp'),
     tier: c.tier,
   }));
-  return { id: def.id, w, h, passable, scrapNodes, claimPoints, spawns, creepCamps };
+  const projectSites: ProjectSite[] = (def.projectSites ?? []).map((p) => ({
+    ...point(def, p.x, p.y, 'projectSite'),
+    part: p.part,
+  }));
+  return { id: def.id, w, h, passable, scrapNodes, claimPoints, spawns, creepCamps, projectSites };
 }
 
 /** Alleen voor de renderer; de sim leest nooit hoogtes. */

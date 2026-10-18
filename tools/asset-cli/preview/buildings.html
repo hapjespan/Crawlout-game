@@ -34,7 +34,10 @@
     <script type="module">
       // Preview voor eigen controle (geen onderdeel van de buis): laadt gebouwen uit assets/dist (of een los GLB),
       // tekent de footprint met een raster van 1 m en kleurt team-materialen in een spelerskleur.
-      // Query: manifest=<pad> lod=0|1|2 only=<id> glb=<pad> debug=materials az=<graden> el=<graden> team=<hex>
+      // Query: manifest=<pad> lod=0|1|2 only=<id,id,...> prefix=<begin van de id, bijvoorbeeld site_> glb=<pad>
+      //        debug=materials az=<graden> el=<graden> team=<hex> spacing=<m> cols=<aantal>
+      // De site-gebouwen (site_*_ruin zonder teamkleur, site_*_restored met) staan in dezelfde lijst; footprint uit de data
+      // of anders uit het manifest. `?prefix=site_&spacing=30` toont ze naast elkaar, ruine en hersteld per kolom.
       import * as THREE from 'three';
       import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
       import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
@@ -126,8 +129,9 @@
         const bySlug = new Map(footprints.map((b) => [b.visuals.mesh, b.footprint]));
         for (const a of manifest.assets) {
           if (a.kind !== 'building') continue;
-          if (q.get('only') && q.get('only') !== a.id) continue;
-          const f = bySlug.get(a.id) ?? { w: 0, h: 0 };
+          if (q.get('only') && !q.get('only').split(',').includes(a.id)) continue;
+          if (q.get('prefix') && !a.id.startsWith(q.get('prefix'))) continue;
+          const f = bySlug.get(a.id) ?? a.footprint ?? { w: 0, h: 0 };
           items.push({
             id: a.id,
             url: dir + a.lods[lod].path,
@@ -139,8 +143,9 @@
         }
       }
 
-      const cols = items.length === 1 ? 1 : Math.min(4, items.length);
-      const spacing = Number(q.get('spacing') ?? 9);
+      const cols = Number(q.get('cols') ?? (items.length === 1 ? 1 : Math.min(4, items.length)));
+      const widest = Math.max(0, ...items.map((i) => Math.max(i.w, i.h)));
+      const spacing = Number(q.get('spacing') ?? Math.max(9, widest + 2));
       const rows = Math.ceil(items.length / cols);
       const info = [];
       let idx = 0;

@@ -151,6 +151,17 @@ export const RUSTBELT_SPEC: MapSpec = {
   // Geen scrap binnen claimRadiusM (6 m) + 3 m van een claimpunt (claimronde, data 0.20.0).
   claimNodeMinM: 9,
   centerClaims: [{ x: 191, y: 191, kind: 'powerArmor' }],
+  // Win route C (map 0.11.0, data 0.30.0; docs/winroute-c-winkelcentrum.md): the old strip mall, one wing on each
+  // side of the land bridge, on the table mountain. This is the east wing (player 0's side of the river); the builder
+  // mirrors it to the west wing. The supermarket is the anchor, the water tower stands in the car park towards the
+  // bridge, the garage and the gas station face the lowland road. Corridors of at least 3 m between the parts and
+  // between a part and the cliffs; the ruin (236-237, 196-201) stays as cover between the supermarket and the garage.
+  projectSites: [
+    { x: 241, y: 188, part: 'site_supermarket', clearM: 17 },
+    { x: 222, y: 190, part: 'site_water_tower', clearM: 7 },
+    { x: 238, y: 208, part: 'site_garage', clearM: 11 },
+    { x: 258, y: 208, part: 'site_gas_station', clearM: 12 },
+  ],
   creepCamps: [
     { x: 176, y: 56, tier: 1 }, // bij de noordelijke voorde
     { x: 236, y: 132, tier: 2 }, // op de weg naar de landbrug (creep round, data 0.25.0: the high camp)

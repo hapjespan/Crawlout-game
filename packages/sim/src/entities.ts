@@ -7,6 +7,7 @@ import { PROVIDES_HQ, PROVIDES_TURRET } from './fromData.js';
 import { idiv } from './math/int.js';
 import type { SimContext } from './systems/common.js';
 import { nearestFreeCellAround, placeOnCell, setFlowField } from './systems/common.js';
+import { partRestored } from './systems/project.js';
 
 // Aanmaken, ombouwen en opruimen van entities. Alle paden lopen hierlangs, ook de startopstelling en de commando's.
 
@@ -134,6 +135,8 @@ export function completeBuilding(ctx: SimContext, i: number, bt: SimBuildingType
   ctx.events.push(EVENT_TYPE.buildingDone, w.idOf(i), bt.typeId, w.x[i]!, w.y[i]!);
   // turret-netwerk (data 0.16.0): een nieuwe turret versterkt zijn buren en zichzelf
   if ((bt.provides & PROVIDES_TURRET) !== 0) refreshTurrets(ctx, w.owner[i]!);
+  // win route C (sim 0.25.0): a restored part gives its owner the effects of its kind
+  partRestored(ctx, i);
 }
 
 /** Zet units die in een (nu geblokkeerde) rechthoek staan op de dichtstbijzijnde vrije cel ernaast. */

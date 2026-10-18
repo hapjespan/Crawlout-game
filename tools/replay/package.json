@@ -9,6 +9,7 @@
     "replay:browsers": "node --import tsx src/browsers.ts fixtures",
     "hud-clicks": "node --import tsx src/hud-clicks.ts",
     "hud-raiders": "node --import tsx src/hud-raiders.ts",
+    "hud-project": "node --import tsx src/hud-project.ts",
     "hud-shots": "node --import tsx src/hud-shots.ts",
     "menu-shots": "node --import tsx src/menu-shots.ts",
     "menu-smoke": "node --import tsx src/menu-smoke.ts",

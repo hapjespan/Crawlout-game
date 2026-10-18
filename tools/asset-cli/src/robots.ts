@@ -45,6 +45,11 @@ export const robotUnitSchema = variantSchema.omit({ footprint: true }).extend({
 export const robotBuildingSchema = variantSchema.extend({
   /** Redelijke hoogte van het gebouw in meters (min, max). */
   heightM: range,
+  /**
+   * A ruin or wreck that belongs to nobody yet (the site ruins of assets/src/sites.json): no team material, so no owner
+   * colour; the manifest entry gets an empty `teamMaterials`. The restored variant of the same site has the team band.
+   */
+  teamless: z.boolean().optional(),
 });
 
 /** Where the origin of an attachment sits: the grip of a weapon or tool, the back or head socket, or the body origin. */
@@ -73,7 +78,10 @@ export const robotsSchema = z
   .superRefine((config, ctx) => {
     const issue = (message: string, path: (string | number)[]): void =>
       ctx.addIssue({ code: z.ZodIssueCode.custom, message, path });
-    const groups: [string, Record<string, Pick<VariantDef, 'parts' | 'colors'>>][] = [
+    const groups: [
+      string,
+      Record<string, Pick<VariantDef, 'parts' | 'colors'> & { teamless?: boolean | undefined }>,
+    ][] = [
       ['units', config.units],
       ['buildings', config.buildings],
       ['attachments', config.attachments],
@@ -89,15 +97,18 @@ export const robotsSchema = z
         for (const name of Object.keys(variant.colors ?? {}))
           if (!(name in config.flatMaterials))
             issue(`kleur voor onbekend effen materiaal "${name}"`, [group, id, 'colors', name]);
-        const needsTeam = group !== 'attachments';
-        if (needsTeam && !variant.parts.some((p) => 'material' in p && /team/i.test(p.material)))
+        const teamless = 'teamless' in variant && variant.teamless === true;
+        const needsTeam = group !== 'attachments' && !teamless;
+        const hasTeam = variant.parts.some((p) => 'material' in p && /team/i.test(p.material));
+        if (needsTeam && !hasTeam)
           issue('geen team-materiaal in de onderdelen (naam bevat "team")', [group, id, 'parts']);
-        if (!needsTeam && variant.parts.some((p) => 'material' in p && /team/i.test(p.material)))
-          issue('een aanhangsel heeft geen team-materiaal (het team zit in het lichaam)', [
-            group,
-            id,
-            'parts',
-          ]);
+        if (!needsTeam && hasTeam)
+          issue(
+            teamless
+              ? 'een ruine zonder eigenaar (teamless) heeft geen team-materiaal'
+              : 'een aanhangsel heeft geen team-materiaal (het team zit in het lichaam)',
+            [group, id, 'parts'],
+          );
       }
     const groupOf = (id: string): string[] =>
       [
@@ -297,7 +308,9 @@ export async function buildRobots(
               `LOD${level} heeft ${lod.triangles} driehoeken, budget ${BUDGETS.buildingMaxTris[level]}.`,
             );
         }
-        report.errors.push(...validateBuildingDocument(lod.document, level, !attachment));
+        report.errors.push(
+          ...validateBuildingDocument(lod.document, level, !attachment && !building?.teamless),
+        );
         lods.push(lod);
       }
       if (building) {

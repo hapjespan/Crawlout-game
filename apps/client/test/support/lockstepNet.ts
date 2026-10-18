@@ -44,7 +44,10 @@ export function envFromStart(start: Extract<ServerMessage, { kind: 'start' }>): 
   }));
   return {
     players: simPlayersFromLobby(data, players),
-    map: simMapFromGrid({ ...grid, dominance }),
+    map: simMapFromGrid(
+      { ...grid, dominance },
+      start.settings.mode === 'project' ? { project: data.project } : {},
+    ),
     config: simConfigFromGameData(data),
   };
 }

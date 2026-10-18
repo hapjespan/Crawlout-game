@@ -29,6 +29,7 @@ import { applyTrain, trainCost } from './training.js';
 import { createBuilding, footprintOrigin, removeBuilding } from '../entities.js';
 import { PROVIDES_CLAIM, PROVIDES_HQ } from '../fromData.js';
 import { inClaimRadius } from './claims.js';
+import { isProjectPart, projectKindOf, restoreRuinAt, revertToRuin } from './project.js';
 import { applyHeroAbility, applyPickPerk, applyRecruit, cancelRevive } from './hero.js';
 import { idiv, isInt } from '../math/int.js';
 import type { SimContext } from './common.js';
@@ -336,17 +337,27 @@ function applyBuild(ctx: SimContext, p: number, pl: CommandPayload<'Build'>, cla
   const w = ctx.world;
   if (!isInt(pl.typeId) || !isInt(pl.x) || !isInt(pl.y) || !inMap(ctx.map, pl.x, pl.y))
     return false;
-  const bt = ctx.buildingType(pl.typeId);
-  if (bt === undefined) return false;
+  const asked = ctx.buildingType(pl.typeId);
+  if (asked === undefined) return false;
+  // win route C (sim 0.25.0): Build with a project type (ruin or restored) on a part restores the ruin there, or helps
+  // at the own restoring part; the site is always of the restored type
+  const kind = projectKindOf(ctx, asked.typeId);
+  const bt = kind < 0 ? asked : ctx.buildingType(ctx.config.project!.parts[kind]!.restoredTypeId)!;
   const { fx, fy } = footprintOrigin(pl.x, pl.y, bt.footprintW, bt.footprintH);
-  // a slave builder only within the work radius of its cage, a claim building excepted (data 0.21.0, slaves.ts)
+  // a slave builder only within the work radius of its cage, a claim building (data 0.21.0, slaves.ts) and a project
+  // part excepted
+  const provides = bt.provides;
   const builders = ownedWith(ctx, pl.ids, p, UNIT).filter(
     (i) =>
-      canBuild(ctx, i) && mayBuildAt(ctx, i, bt.provides, fx, fy, bt.footprintW, bt.footprintH),
+      canBuild(ctx, i) &&
+      (kind >= 0 || mayBuildAt(ctx, i, provides, fx, fy, bt.footprintW, bt.footprintH)),
   );
   if (builders.length === 0) return false;
   let site = ownSiteAt(ctx, p, bt.typeId, fx, fy);
-  if (site < 0) {
+  if (site < 0 && kind >= 0) {
+    site = restoreRuinAt(ctx, p, bt, fx, fy);
+    if (site < 0) return false;
+  } else if (site < 0) {
     if (!canPlaceType(ctx, p, bt.typeId) || ctx.ps.scrap[p]! < bt.scrapCost) return false;
     // the placement rule (systems/placement.ts): free margin, depot aisle, no node or claim point
     if (placementReasonAt(ctx, bt, fx, fy, claim, p) !== PLACE_OK) return false;
@@ -390,7 +401,9 @@ function applyCancel(ctx: SimContext, p: number, ids: readonly number[]): boolea
     if (w.bstate[i] === BSTATE_SITE) {
       const bt = ctx.buildingType(w.typeId[i]!);
       if (bt !== undefined) ctx.ps.scrap[p] = ctx.ps.scrap[p]! + refundOf(ctx, bt.scrapCost);
-      removeBuilding(ctx, i);
+      // win route C (sim 0.25.0): an own restoring part goes back to a ruin, with the refund of the restore
+      if (isProjectPart(ctx, i)) revertToRuin(ctx, i);
+      else removeBuilding(ctx, i);
       any = true;
       continue;
     }

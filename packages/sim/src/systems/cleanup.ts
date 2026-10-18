@@ -16,6 +16,7 @@ import { isEnemy } from './common.js';
 import { heroDied } from './hero.js';
 import { plunderOnDeath } from './plunder.js';
 import { creepDeath } from './creeps.js';
+import { isProjectPart, revertToRuin } from './project.js';
 
 // Systeem 8: dood en opruimen, daarna de presentatie (anim, animT, flags) die de snapshot in gaat.
 // Een unit met hp <= 0 wordt een lijk (anim death, flag dead) tot corpseTicks op is; een gebouw verdwijnt meteen en
@@ -41,6 +42,11 @@ export function cleanupSystem(ctx: SimContext): void {
     }
     if ((m & C.health) === 0 || w.hp[i]! > 0) continue;
     ctx.events.push(EVENT_TYPE.death, w.idOf(i), w.typeId[i]!, w.x[i]!, w.y[i]!);
+    // win route C (sim 0.25.0): a part of the strip mall is never removed; it falls back to a ruin (no plunder)
+    if ((m & C.building) !== 0 && isProjectPart(ctx, i)) {
+      revertToRuin(ctx, i);
+      continue;
+    }
     creepDeath(ctx, i); // sim 0.20.0: the last bandit of a camp gives its loot
     plunderOnDeath(ctx, i); // data 0.21.0: the killer's owner may plunder it (before its cargo is gone)
     const owner = w.owner[i]!;

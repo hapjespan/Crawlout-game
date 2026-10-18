@@ -78,6 +78,12 @@ export interface MapSpec {
   spawns: Feature[];
   /** Claimpunten in het midden (zonder spiegelpartner). */
   centerClaims: Array<Feature & { kind: 'scrap' | 'settlement' | 'powerArmor' }>;
+  /**
+   * Win route C (map 0.11.0, data 0.30.0): the ruined parts of the strip mall, A half only (the B half is mirrored),
+   * as the centre cell of the footprint and the part id of data/project.json. `clearM` is the radius around the centre
+   * that the prop scatter keeps clear (the footprint plus a margin). Optional: a map without them has no Bouwproject.
+   */
+  projectSites?: Array<Feature & { part: string; clearM: number }>;
   /** Hoogtes in sim-eenheden (1 m = 256). */
   ruinHeight: number;
   cliffHeight: number;
@@ -182,6 +188,14 @@ export function padClearings(spec: MapSpec): { x: number; y: number; radius: num
   return (spec.pads ?? []).flatMap((p) => [
     { x: p.x, y: p.y, radius: p.radius + p.blend },
     { x: spec.w - 1 - p.x, y: spec.h - 1 - p.y, radius: p.radius + p.blend },
+  ]);
+}
+
+/** The prop-free circles around the strip-mall parts (win route C), both halves. */
+export function siteClearings(spec: MapSpec): { x: number; y: number; radius: number }[] {
+  return (spec.projectSites ?? []).flatMap((p) => [
+    { x: p.x, y: p.y, radius: p.clearM },
+    { x: spec.w - 1 - p.x, y: spec.h - 1 - p.y, radius: p.clearM },
   ]);
 }
 
@@ -312,6 +326,11 @@ export function generateMap(spec: MapSpec, io?: GenIo): GeneratedMap {
     spawns: both(spec.spawns),
     creepCamps: both(spec.creepCamps),
     dominance: spec.dominance,
+    ...(spec.projectSites === undefined
+      ? {}
+      : {
+          projectSites: both(spec.projectSites).map((f) => ({ part: f.part, x: f.x, y: f.y })),
+        }),
     _comment: spec.comment,
   };
 
@@ -320,6 +339,7 @@ export function generateMap(spec: MapSpec, io?: GenIo): GeneratedMap {
     ['claimPoint', def.claimPoints],
     ['spawn', def.spawns],
     ['creepCamp', def.creepCamps],
+    ['projectSite', def.projectSites ?? []],
   ] as const) {
     for (const f of list) {
       if (passable[f.y * w + f.x] !== OPEN)
@@ -351,7 +371,7 @@ export function generateMap(spec: MapSpec, io?: GenIo): GeneratedMap {
             scatterProps(def, passable, spec.props, {
               ...(forest === undefined ? {} : { forest }),
               ...(water === undefined ? {} : { water }),
-              clearings: padClearings(spec),
+              clearings: [...padClearings(spec), ...siteClearings(spec)],
               heights,
               ruins: [...spec.ruins, ...spec.ruins.map((r) => mirrorRect(r, w, h))],
               ...(crossings === undefined ? {} : { crossings }),

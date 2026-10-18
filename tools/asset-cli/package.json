@@ -1,6 +1,6 @@
 {
   "name": "@crawlout/asset-cli",
-  "version": "0.0.1",
+  "version": "0.11.0",
   "private": true,
   "exports": {
     ".": "./src/index.ts",
@@ -11,6 +11,7 @@
   "scripts": {
     "build-assets": "node --import tsx src/cli.ts",
     "terrain": "node --import tsx src/terrain-cli.ts",
+    "sites": "node --import tsx scripts/gen-sites.ts && prettier --write ../../assets/src/sites.json",
     "test": "vitest run"
   },
   "devDependencies": {

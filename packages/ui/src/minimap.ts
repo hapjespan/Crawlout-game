@@ -1,4 +1,5 @@
 import { OWNER_NEUTRAL } from '@crawlout/protocol';
+import { drawProjectParts } from './project.js';
 import type { MinimapCamp, MinimapData, MinimapFog } from './types.js';
 
 const OWN = [102, 187, 106];
@@ -192,6 +193,8 @@ export function drawMinimap(canvas: HTMLCanvasElement, m: MinimapData, me: numbe
     ctx.closePath();
     ctx.fill();
   }
+  // win route C (ui 0.19.0): the parts of the strip mall, map knowledge like the claim points
+  drawProjectParts(ctx, m.project ?? [], sx, sy, me, rgb(OWN), rgb(ENEMY));
   for (const b of m.blips) {
     // A ghost is remembered, not seen: it stays on the map, dimmed. Anything else of the enemy shows only in sight.
     if (!b.ghost && b.owner !== me && b.kind !== 'node' && !seen(b.x, b.y)) continue;

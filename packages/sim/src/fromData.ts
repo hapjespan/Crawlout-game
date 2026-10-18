@@ -487,6 +487,7 @@ export function simConfigFromGameData(data: GameData): SimConfig {
               maxPath: a.creeps.maxPathU,
               tiers: a.creeps.tiers.map((t) => ({ tier: t.tier, minArmy: t.minArmy })),
             },
+      project: a.project === null ? null : { ...a.project },
     })),
     creepTiers: data.creeps.tiers.map((t) => ({
       tier: t.tier,
@@ -498,6 +499,15 @@ export function simConfigFromGameData(data: GameData): SimConfig {
       heroXp: t.heroXp,
       heroXpRadius: t.heroXpRadiusU,
     })),
+    project: {
+      countdownTicks: data.project.countdownTicks,
+      pauseTicks: data.project.pauseTicks,
+      parts: data.project.parts.map((k) => ({
+        restoredTypeId: buildingTypeId(k.buildingId),
+        ruinTypeId: buildingTypeId(k.ruinBuildingId),
+        effects: k.effects.map((e) => simEffect(data, e, `projectdeel ${k.key}`)),
+      })),
+    },
     creepTakeover: data.creeps.takeover.map((r) => ({
       factionId: r.factionId,
       tiers: r.tiers.map((t) => ({ ...t })),
@@ -601,11 +611,36 @@ export interface SimMapSource {
     readonly uy: number;
     readonly tier: number;
   }[];
+  /** Win route C (map 0.11.0): the parts of the strip mall; only used with SimMapOptions.project. */
+  readonly projectSites?: readonly {
+    readonly ux: number;
+    readonly uy: number;
+    readonly part: string;
+  }[];
+}
+
+/** Options of simMapFromGrid. */
+export interface SimMapOptions {
+  /**
+   * Win route C (data 0.30.0): the game type Bouwproject (MatchSettings.mode 'project') puts the project sites of the
+   * map into the sim, with their kind from these parts (GameData.project.parts). Absent: no Bouwproject (Skirmish).
+   */
+  readonly project?: { readonly parts: readonly { readonly key: string }[] };
 }
 
 /** MapGrid (plus dominantie in ticks) naar SimMap. */
-export function simMapFromGrid(grid: SimMapSource): SimMap {
+export function simMapFromGrid(grid: SimMapSource, opts: SimMapOptions = {}): SimMap {
+  const parts = opts.project?.parts;
+  const sites =
+    parts === undefined
+      ? []
+      : (grid.projectSites ?? []).map((p) => {
+          const kind = parts.findIndex((k) => k.key === p.part);
+          if (kind < 0) throw new Error(`onbekend projectdeel ${p.part}`);
+          return { x: p.ux, y: p.uy, kind };
+        });
   return {
+    ...(sites.length === 0 ? {} : { projectSites: sites }),
     w: grid.w,
     h: grid.h,
     passable: grid.passable,

@@ -22,6 +22,7 @@ import {
   Provides,
   Archetype,
   Creeps,
+  Project,
 } from './schemas.js';
 import {
   metersToUnits,
@@ -54,6 +55,8 @@ export interface RawGameData {
   ai: unknown[];
   /** Contents of data/creeps.json (data 0.25.0); absent = no creep camps. */
   creeps?: unknown;
+  /** Contents of data/project.json (data 0.30.0, win route C); absent = no Bouwproject. */
+  project?: unknown;
 }
 
 // Vaste volgorde van de enums: de index is de numerieke waarde in GameData.
@@ -493,6 +496,8 @@ export interface AiScriptData {
   raidPlan: RaidPlanData | null;
   /** When the AI clears creep camps (data 0.25.0); null = never. */
   creeps: AiCreepsData | null;
+  /** How the AI treats the Bouwproject (data 0.30.0, win route C); null = it ignores it. */
+  project: AiProjectData | null;
   /** Data 0.24.0 (proposal): the opponent faction this script is for; -1 = the faction's default script. */
   versusFactionId: number;
   /** Data 0.24.0 (proposal): liberation of enemy-held slaves; null without. */
@@ -500,6 +505,17 @@ export interface AiScriptData {
   /** Data 0.24.0 (proposal): an enemy at the headquarters draws every militia and robot not on a push. */
   defendHqFirst: boolean;
   allInWithoutNodes: boolean;
+}
+
+/** ai/*.json `project` in sim units (data 0.30.0, win route C; voorstel, ter bevestiging door content en de architect). */
+export interface AiProjectData {
+  /** -1 = never restore. */
+  restoreFromTicks: number;
+  restoreMinArmy: number;
+  builders: number;
+  sabotageKinds: number;
+  sabotageMinArmy: number;
+  rallyAtParts: boolean;
 }
 
 /** ai/*.json `creeps` in sim units (data 0.25.0). */
@@ -544,6 +560,28 @@ export interface CreepTakeoverData {
     yieldTicks: number;
     yieldMax: number;
   }[];
+}
+
+/**
+ * One part of the Bouwproject (data/project.json parts, data 0.30.0; voorstel, ter bevestiging door content en de
+ * architect), in file order (the index is the part kind in MapDef.projectSites and PlayerStatus.project).
+ */
+export interface ProjectPartData {
+  key: string;
+  naam: string;
+  /** Building id (index in GameData.buildings) of the restored part; its key is the part id. */
+  buildingId: number;
+  /** Building id of the ruin (key `<id>_ruin`): same footprint, no beds, never attacked. */
+  ruinBuildingId: number;
+  /** For the holder of the restored part, with the semantics of a researched tech. */
+  effects: EffectData[];
+}
+
+/** data/project.json (data 0.30.0) in sim units; parts empty without the file. */
+export interface ProjectData {
+  countdownTicks: number;
+  pauseTicks: number;
+  parts: ProjectPartData[];
 }
 
 /** data/creeps.json (data 0.25.0). The bandit loadouts themselves are in GameData.loadouts (factionId NEUTRAL_FACTION_ID). */
@@ -651,6 +689,11 @@ export interface GameData {
   aiScripts: AiScriptData[];
   /** Creep camps (data/creeps.json, data 0.25.0); empty without the file. */
   creeps: CreepsData;
+  /**
+   * Win route C, Bouwproject (data/project.json, data 0.30.0); no parts without the file. The part buildings are in
+   * `buildings` after the faction buildings (factionId NEUTRAL_FACTION_ID).
+   */
+  project: ProjectData;
   /** damageMatrix[damageTypeIndex][armorTypeIndex] = multiplier in promille (1000 = 100 procent). */
   damageMatrix: number[][];
   sim: SimTuningData;
@@ -1119,6 +1162,56 @@ export function loadGameData(raw: RawGameData): GameData {
     };
   });
 
+  // Win route C (data 0.30.0): two neutral building types per part after the faction buildings (restored, then ruin),
+  // so no faction building changes id.
+  const projectRaw: Project | null =
+    raw.project === undefined ? null : parseWith('project.json', Project, raw.project);
+  const projectParts: ProjectPartData[] = [];
+  for (const part of projectRaw?.parts ?? []) {
+    const where = `data/project.json '${part.id}'`;
+    for (const key of [part.id, `${part.id}_ruin`])
+      if (buildingIx.has(key) || buildings.some((b) => b.key === key))
+        throw new Error(`${where}: dubbele gebouw-id '${key}'`);
+    const restoredId = buildings.length;
+    for (const ruin of [false, true])
+      buildings.push({
+        id: buildings.length,
+        key: ruin ? `${part.id}_ruin` : part.id,
+        factionId: NEUTRAL_FACTION_ID,
+        hpI: Math.trunc(part.hp),
+        armorType: idx(ARMOR_TYPES, part.armorType),
+        scrapCost: Math.trunc(part.restoreScrap),
+        buildTicks: secondsToTicks(part.restoreS),
+        footprint: { w: part.footprint.w, h: part.footprint.h },
+        beds: ruin ? 0 : part.beds,
+        provides: [],
+        prereqTech: [],
+        visuals: { mesh: ruin ? part.visuals.ruin : part.visuals.restored },
+        damage: 0,
+        damageType: 0,
+        rangeU: 0,
+        cooldownTicks: 0,
+        network: null,
+        cage: null,
+        placement: null,
+        sightU: metersToUnits(ruin ? 0 : (part.sightM ?? simRaw.vision.buildingSightM)),
+      });
+    if ((part.footprint.w & 1) === 0 || (part.footprint.h & 1) === 0)
+      throw new Error(`${where}: footprint moet oneven zijn (het midden is een cel)`);
+    projectParts.push({
+      key: part.id,
+      naam: part.naam,
+      buildingId: restoredId,
+      ruinBuildingId: restoredId + 1,
+      effects: convertEffects(part.effects),
+    });
+  }
+  const project: ProjectData = {
+    countdownTicks: projectRaw === null ? 0 : secondsToTicks(projectRaw.countdownS),
+    pauseTicks: projectRaw === null ? 0 : secondsToTicks(projectRaw.pauseAfterHitS),
+    parts: projectParts,
+  };
+
   const tech: TechData[] = techRaw.map((t, id) => {
     const where = `data/tech.json '${t.id}'`;
     return {
@@ -1362,6 +1455,18 @@ export function loadGameData(raw: RawGameData): GameData {
               maxPathU: metersToUnits(a.creeps.maxPathM),
               tiers: a.creeps.tiers.map((t) => ({ tier: t.tier, minArmy: t.minArmy })),
             },
+      project:
+        a.project === undefined
+          ? null
+          : {
+              restoreFromTicks:
+                a.project.restoreFromS === undefined ? -1 : secondsToTicks(a.project.restoreFromS),
+              restoreMinArmy: a.project.restoreMinArmy,
+              builders: a.project.builders,
+              sabotageKinds: a.project.sabotageKinds,
+              sabotageMinArmy: a.project.sabotageMinArmy,
+              rallyAtParts: a.project.rallyAtParts,
+            },
       versusFactionId: a.versus === undefined ? -1 : ref(factionIx, 'factie', where, a.versus),
       liberate:
         a.liberate === undefined
@@ -1403,6 +1508,7 @@ export function loadGameData(raw: RawGameData): GameData {
     training,
     aiScripts,
     creeps,
+    project,
     damageMatrix,
     sim: {
       unitRadiusU: metersToUnits(simRaw.unitRadiusM),

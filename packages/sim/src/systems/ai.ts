@@ -28,6 +28,7 @@ import {
   cellCenterOf,
   distToRect2,
   isEnemy,
+  nearestFreeCellAround,
   nodeAllowed,
   playerInTurn,
   visibleTo,
@@ -39,6 +40,7 @@ import { DEPOT_MASK, ROLE_MILITIA } from './orders.js';
 import type { WorkReach } from './slaves.js';
 import { raiderThink } from './aiRaiders.js';
 import { aiCreepRun, campAlive, campAt } from './creeps.js';
+import { aiRestore, rallyPart, sabotageOver, sabotageTarget } from './aiProject.js';
 import {
   PLACE_OK,
   hqCentres,
@@ -996,6 +998,27 @@ function think(
     }
   }
 
+  // 3c win route C (sim 0.25.0, ai/*.json project): restore the nearest ruin of a kind it lacks; while it cannot pay
+  // the restore it saves for it, before research, robots, training and the army (like the build order)
+  const restore = aiRestore(
+    ctx,
+    p,
+    script,
+    hq,
+    militia.length + robotWeight,
+    threat,
+    idleBuilders,
+    saving,
+  );
+  for (const id of restore.ids) {
+    const k = idleBuilders.indexOf(id);
+    if (k >= 0) idleBuilders.splice(k, 1);
+  }
+  if (restore.wait > 0) {
+    saving = true;
+    reserve = restore.wait;
+  }
+
   // 4 onderzoek, 4b robots en 4c training (data 0.17.0): elk geeft alleen uit wat boven de reserve zit; met reserveOn
   // spaart hij voor het eerste doel in de volgorde dat alleen op scrap wacht. Volgorde: onderzoek, robots, training;
   // vanaf reserve.robotsFirstFromTicks robots vóór onderzoek.
@@ -1161,6 +1184,32 @@ function think(
     }
   }
 
+  // 8b win route C (sim 0.25.0, ai/*.json project): an opponent close to the Bouwproject (or running his countdown)
+  // draws the idle army to his part nearest to the headquarters, unless the headquarters itself is under attack
+  const sabotage = sabotageTarget(ctx, p, script, hq);
+  if (
+    sabotage >= 0 &&
+    !(
+      threat >= 0 &&
+      hq >= 0 &&
+      distToRect2(w.x[threat]!, w.y[threat]!, w.fx[hq]!, w.fy[hq]!, w.fw[hq]!, w.fh[hq]!) <=
+        script.defendRadius * script.defendRadius
+    )
+  ) {
+    const send = [...idleMilitia, ...idleRobots];
+    if (send.length >= script.project!.sabotageMinArmy && send.length > 0) {
+      if (heroId >= 0 && w.orderType(hero) === ORDER_NONE) send.push(heroId);
+      for (const ids of chunks(send))
+        applyCommand(ctx, {
+          playerId: p,
+          seq: 0,
+          type: 'AttackMove',
+          payload: { ids, x: w.x[sabotage]!, y: w.y[sabotage]! },
+        });
+      return;
+    }
+  }
+
   // 9 golven (de held loopt mee)
   if (wave !== null && !raidWaits) {
     const k = ps.aiAttack[p]!;
@@ -1248,7 +1297,23 @@ function think(
     const f =
       script.rallySite === AI_SITE_FRONT && fields.enemy !== null ? fields.enemy : fields.home;
     const pt = script.rallySite === AI_SITE_HQ ? -1 : ownClaimNear(ctx, p, f);
-    if (pt >= 0) to = { x: w.x[pt]!, y: w.y[pt]! };
+    // win route C (sim 0.25.0, project.rallyAtParts): while it holds or restores a part, the army stands there
+    // (on the free cell beside it nearest to the enemy spawn: the centre of a building cannot be reached)
+    const part = enemySpawn === null ? -1 : rallyPart(ctx, p, script, enemySpawn.x, enemySpawn.y);
+    const beside =
+      part < 0 || enemySpawn === null
+        ? -1
+        : nearestFreeCellAround(
+            ctx,
+            w.fx[part]!,
+            w.fy[part]!,
+            w.fw[part]!,
+            w.fh[part]!,
+            enemySpawn.x,
+            enemySpawn.y,
+          );
+    if (beside >= 0) to = cellCenterOf(ctx.map, beside);
+    else if (pt >= 0) to = { x: w.x[pt]!, y: w.y[pt]! };
     else if (fields.enemy !== null) {
       // voor het hoofdgebouw, op de weg naar de vijand: het midden van het gebouw zelf is niet te bereiken, dus een
       // groep die daarheen loopt komt nooit aan (en is dan nooit vrij voor verdediging of escorte)
@@ -1576,6 +1641,9 @@ export function raidOver(ctx: SimContext, p: number, i: number): boolean {
   // a creep run (sim 0.20.0) is over once its camp is cleared
   const camp = campAt(ctx, x, y);
   if (camp >= 0) return !campAlive(ctx, camp);
+  // a sabotage run (win route C, sim 0.25.0) is over once the part is no opponent's any more
+  const part = sabotageOver(ctx, p, x, y);
+  if (part !== null) return part;
   for (const pt of ctx.claimPoints) {
     if (w.x[pt] !== x || w.y[pt] !== y) continue;
     const owner = w.owner[pt]!;

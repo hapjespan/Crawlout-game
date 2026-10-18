@@ -81,8 +81,8 @@ async function run(browser: Browser, relayPort: number): Promise<void> {
   await a.getByRole('radiogroup', { name: 'Speltype' }).waitFor();
   check(
     (await a.getByRole('radio', { name: /Survival/ }).getAttribute('aria-disabled')) === 'true' &&
-      (await a.locator('.co-m-soon').count()) === 2,
-    'Survival co-op and Bouwproject are marked "binnenkort" and cannot be chosen',
+      (await a.locator('.co-m-soon').count()) === 1,
+    'Survival co-op is marked "binnenkort" and cannot be chosen (Bouwproject is playable)',
   );
   await a.getByRole('radio', { name: /Survival/ }).click({ force: true });
   check(

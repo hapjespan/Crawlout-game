@@ -4,6 +4,7 @@ import { ROLES, buildingTypeId, unitTypeId } from '@crawlout/data';
 import type { Sim } from '@crawlout/sim';
 import { gameData } from './env.js';
 import { createReplaySim } from './run.js';
+import { PROJECT_FIXTURES } from './fixtures-project.js';
 import type { BotPlan, PlannedBuilding } from './bot.js';
 import { dwellerBaitBot, raiderBot } from './raiders-bot.js';
 import {
@@ -1111,6 +1112,7 @@ export const FIXTURES: readonly FixtureDef[] = [
   ...FIXTURES_S13,
   ...FIXTURES_S14,
   ...FIXTURES_S15,
+  ...PROJECT_FIXTURES,
 ];
 
 /** De sim na het uitvoeren van de frames 0 tot `frame` (exclusief) met de bundels die de replay tot dan heeft. */

@@ -26,6 +26,7 @@ import {
 import { RaiderBar } from './raiderBar.js';
 import { portraitOfGroup } from './portraits.js';
 import { drawMinimap } from './minimap.js';
+import { ProjectPanel } from './project.js';
 import type {
   AlertKind,
   BuildingButton,
@@ -865,6 +866,7 @@ const ALERT_TEXT: Record<AlertKind, string> = {
   dominance: 'Tegenstander telt mee voor dominantie!',
   revolt: 'Te weinig bewakers: slaven lopen weg! Zet vechters op Bewaak (W)',
   noBeds: 'Geen vrije bedden',
+  project: 'Bouwproject',
 };
 
 function Toasts(props: { ctl: HudController; state: HudState }): ComponentChild {
@@ -1068,6 +1070,7 @@ export function Hud(props: { ctl: HudController }): ComponentChild {
     h(PlacementBar, { ctl, state }),
     state.hint ? h('div', { class: 'co-panel co-hint', role: 'status' }, state.hint) : null,
     h(Dominance, { state }),
+    h(ProjectPanel, { ctl, state }),
     h(Minimap, { ctl, state }),
     h(HeroPanel, { ctl, state }),
     h(Toasts, { ctl, state }),

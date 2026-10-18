@@ -10,22 +10,34 @@ const args = process.argv.slice(2);
 // --factions a,b: the faction of each player (sim 0.18.0; default both dwellers)
 const fi = args.indexOf('--factions');
 const factions = fi >= 0 ? args[fi + 1]!.split(',') : undefined;
+// --mode project: the game type Bouwproject (data 0.30.0, win route C); default skirmish
+const mi = args.indexOf('--mode');
+const mode = mi >= 0 ? (args[mi + 1] as 'skirmish' | 'project') : undefined;
 const seeds = args
-  .filter((_, k) => fi < 0 || k !== fi + 1)
+  .filter((_, k) => (fi < 0 || k !== fi + 1) && (mi < 0 || k !== mi + 1))
   .map(Number)
   .filter((n) => Number.isInteger(n));
 const list = seeds.length > 0 ? seeds : FAIRNESS_SEEDS;
 
 if (args.includes('--json')) {
   for (const seed of list)
-    console.log(JSON.stringify(playMatch(seed, { maxFrames: 45 * TICKS_PER_MINUTE, factions })));
+    console.log(
+      JSON.stringify(playMatch(seed, { maxFrames: 45 * TICKS_PER_MINUTE, factions, mode })),
+    );
 } else {
   const t0 = Date.now();
-  const results = await playMatchesParallel(list, undefined, factions);
+  const results = await playMatchesParallel(list, undefined, factions, mode);
   for (const r of results) {
     console.log(
       `seed ${r.seed}: winnaar ${r.winner ?? '-'} (${r.reason ?? 'geen'}) op frame ${r.frame} = ${r.minutes.toFixed(1)} min`,
     );
+    // win route C (data 0.30.0): per player restored and lost parts, when he held every kind, his longest countdown
+    if (r.project !== null && args.includes('--project'))
+      r.project.forEach((t, p) =>
+        console.log(
+          `  p${p}${p === r.winner ? '*' : ' '} hersteld ${t.restored} verloren ${t.lost} alle soorten ${t.allKindsAt ?? '-'} langste countdown ${t.longestMinutes} min`,
+        ),
+      );
     // per speler wat hij uit de techboom haalde (data 0.17.0): techs, sentinels, laserturrets, getrainde punten, piek-scrap
     if (args.includes('--detail'))
       r.players.forEach((t, p) => {
@@ -54,6 +66,6 @@ if (args.includes('--json')) {
   }
   const s = summarize(results);
   console.log(
-    `speler 0 wint ${s.wins[0]}, speler 1 wint ${s.wins[1]} van ${list.length}; vernietiging ${s.reasons.destruction}, dominantie ${s.reasons.dominance}; lengte ${s.minMinutes.toFixed(1)} tot ${s.maxMinutes.toFixed(1)} min, ${s.inWindow} tussen 25 en 35  [${((Date.now() - t0) / 1000).toFixed(1)} s]`,
+    `speler 0 wint ${s.wins[0]}, speler 1 wint ${s.wins[1]} van ${list.length}; vernietiging ${s.reasons.destruction}, dominantie ${s.reasons.dominance}, bouwproject ${s.reasons.project}; lengte ${s.minMinutes.toFixed(1)} tot ${s.maxMinutes.toFixed(1)} min, ${s.inWindow} tussen 25 en 35  [${((Date.now() - t0) / 1000).toFixed(1)} s]`,
   );
 }

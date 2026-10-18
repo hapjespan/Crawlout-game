@@ -105,20 +105,20 @@ describe('Tegen AI', () => {
     });
   });
 
-  it('lists Skirmish as playable and the others as not yet available', () => {
+  it('lists Skirmish and Bouwproject as playable, Survival as not yet available', () => {
     expect(GAME_TYPES.map((g) => [g.id, g.available])).toEqual([
       ['skirmish', true],
       ['survival', false],
-      ['build', false],
+      ['build', true],
     ]);
   });
 
-  it('refuses a game type that is not available yet', () => {
+  it('refuses a game type that is not available yet, and starts a Bouwproject (win route C)', () => {
     const s = ai({ type: 'ai/gameType', id: 'survival' }).state;
     expect(s.ai.gameType).toBe('skirmish');
-    expect(ai({ type: 'ai/gameType', id: 'build' }, { type: 'ai/start' }).effect?.kind).toBe(
-      'startAi',
-    );
+    const e = ai({ type: 'ai/gameType', id: 'build' }, { type: 'ai/start' }).effect;
+    expect(e?.kind).toBe('startAi');
+    expect(e?.kind === 'startAi' && e.config.gameType).toBe('build');
   });
 
   it('takes only known factions', () => {

@@ -582,6 +582,12 @@ export const MapDef = z
     dominance: z
       .object({ pointsRequired: z.number().int().positive(), minutes: z.number().positive() })
       .strict(),
+    // Win route C (data 0.30.0; voorstel, ter bevestiging door de architect): the ruined parts of the strip mall, the
+    // centre cell of each footprint (odd footprints, data/project.json) and the part id. Optional: a map without them
+    // has no Bouwproject. Only in the game type Bouwproject do they reach the sim (MatchSettings.mode 'project').
+    projectSites: z
+      .array(z.object({ part: id, x: z.number().int(), y: z.number().int() }).strict())
+      .optional(),
     _comment: comment,
   })
   .strict();
@@ -729,6 +735,24 @@ export const AiScript = z
               .strict(),
           )
           .min(1),
+        _comment: comment,
+      })
+      .strict()
+      .optional(),
+    // Data 0.30.0 (win route C; voorstel, ter bevestiging door content en de architect): how the AI treats the
+    // Bouwproject (only in the game type Bouwproject). restoreFromS (absent = never restore): from then on, with an army of
+    // at least restoreMinArmy and no enemy at its buildings, it sends `builders` idle builders to restore the nearest ruin
+    // of a kind it lacks (one restore at a time). sabotageKinds: once an opponent holds a restored part of this many kinds
+    // (or runs his countdown), an idle army of at least sabotageMinArmy attacks his part nearest to the own headquarters.
+    // rallyAtParts: an idle army rallies at the own parts while it holds one (the defence of the turtle).
+    project: z
+      .object({
+        restoreFromS: nonneg.optional(),
+        restoreMinArmy: z.number().int().nonnegative(),
+        builders: z.number().int().positive(),
+        sabotageKinds: z.number().int().positive(),
+        sabotageMinArmy: z.number().int().nonnegative(),
+        rallyAtParts: z.boolean(),
         _comment: comment,
       })
       .strict()
@@ -960,6 +984,43 @@ export const Creeps = z
   })
   .strict();
 
+// Win route C, Bouwproject (data 0.30.0; voorstel, ter bevestiging door content en de architect;
+// docs/winroute-c-winkelcentrum.md): an old strip mall whose parts stand as neutral ruins on the map
+// (MapDef.projectSites). Builders restore a ruin (Build on it): restoreScrap at once, restoreS of building work. A
+// restored part belongs to its restorer, gives his effects (tech semantics), beds and sight, and can be attacked; at 0
+// hp it falls back to a ruin. Who holds a restored part of every kind runs the public countdown (countdownS); a hit on
+// one of his parts pauses it for pauseAfterHitS, losing his last part of a kind resets it. The loader appends two
+// building types per part after the faction buildings (the restored part with the part id as key, the ruin with
+// `<id>_ruin`), faction NEUTRAL_FACTION_ID, so no faction building changes id.
+export const ProjectPart = z
+  .object({
+    id,
+    naam: z.string().min(1),
+    hp: z.number().positive(),
+    armorType: ArmorType,
+    restoreScrap: nonneg,
+    restoreS: nonneg,
+    footprint: z
+      .object({ w: z.number().int().positive(), h: z.number().int().positive() })
+      .strict(), // cellen van 1 m
+    beds: z.number().int().nonnegative(),
+    sightM: sight.optional(), // the restored part, beyond the footprint edge; absent = vision.buildingSightM
+    effects: z.array(Effect), // for the holder of the restored part, like a researched tech
+    visuals: z.object({ ruin: z.string().min(1), restored: z.string().min(1) }).strict(),
+    _comment: comment,
+  })
+  .strict();
+export const Project = z
+  .object({
+    countdownS: z.number().positive(),
+    pauseAfterHitS: nonneg,
+    parts: z.array(ProjectPart).min(1),
+    _comment: comment,
+  })
+  .strict();
+
+export type ProjectPart = z.infer<typeof ProjectPart>;
+export type Project = z.infer<typeof Project>;
 export type CreepUnit = z.infer<typeof CreepUnit>;
 export type CreepTier = z.infer<typeof CreepTier>;
 export type Creeps = z.infer<typeof Creeps>;

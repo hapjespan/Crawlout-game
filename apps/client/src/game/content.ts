@@ -41,6 +41,7 @@ export function loadClientGameData(): GameData {
     damageMatrix: file('damage-matrix.json'),
     sim: file('sim.json'),
     creeps: file('creeps.json'),
+    project: file('project.json'),
     ai: Object.keys(ai)
       .sort()
       .map((k) => ai[k]),

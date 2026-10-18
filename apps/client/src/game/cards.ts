@@ -49,6 +49,15 @@ export const BUILDING_NAMES: Record<string, string> = {
   autosloperij: 'Autosloperij',
   mitrailleursnest: 'Mitrailleursnest',
   plunderpost: 'Plunderpost',
+  // win route C (data 0.30.0): the parts of the strip mall, restored and as a ruin
+  site_supermarket: 'Supermarkt',
+  site_supermarket_ruin: 'Supermarkt (ruïne)',
+  site_gas_station: 'Benzinestation',
+  site_gas_station_ruin: 'Benzinestation (ruïne)',
+  site_garage: 'Garage',
+  site_garage_ruin: 'Garage (ruïne)',
+  site_water_tower: 'Watertoren',
+  site_water_tower_ruin: 'Watertoren (ruïne)',
 };
 
 /** Order of the building buttons: what the player works with first, then the rest in data order. */

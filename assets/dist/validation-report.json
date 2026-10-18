@@ -3243,6 +3243,227 @@
       "scale": 0.01
     },
     {
+      "id": "site_garage_restored",
+      "source": "sites.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "building",
+      "lodTriangles": [
+        1052,
+        400,
+        196
+      ],
+      "materials": [
+        "concrete",
+        "lens_amber",
+        "lens_glass",
+        "metal",
+        "metal_blue",
+        "metal_dark",
+        "metal_hazard",
+        "metal_light",
+        "metal_red",
+        "opening",
+        "roof_tar",
+        "rubber",
+        "team_trim"
+      ],
+      "sizeM": [
+        13.3,
+        6.62,
+        11.4
+      ]
+    },
+    {
+      "id": "site_garage_ruin",
+      "source": "sites.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "building",
+      "lodTriangles": [
+        1020,
+        560,
+        236
+      ],
+      "materials": [
+        "concrete_dark",
+        "concrete_ruin",
+        "opening",
+        "roof_tar",
+        "rubber",
+        "rust_dark",
+        "rust_metal",
+        "rust_roof"
+      ],
+      "sizeM": [
+        13.3,
+        6.283001,
+        11.4
+      ]
+    },
+    {
+      "id": "site_gas_station_restored",
+      "source": "sites.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "building",
+      "lodTriangles": [
+        626,
+        410,
+        226
+      ],
+      "materials": [
+        "concrete",
+        "lens_amber",
+        "lens_glass",
+        "metal_dark",
+        "metal_hazard",
+        "metal_light",
+        "metal_red",
+        "opening",
+        "rubber",
+        "team_trim"
+      ],
+      "sizeM": [
+        14.84,
+        5.35,
+        10.62
+      ]
+    },
+    {
+      "id": "site_gas_station_ruin",
+      "source": "sites.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "building",
+      "lodTriangles": [
+        984,
+        612,
+        284
+      ],
+      "materials": [
+        "concrete_dark",
+        "concrete_ruin",
+        "opening",
+        "rubber",
+        "rust_dark",
+        "rust_metal",
+        "rust_roof"
+      ],
+      "sizeM": [
+        14.797524,
+        5.38773,
+        10.819139
+      ]
+    },
+    {
+      "id": "site_supermarket_restored",
+      "source": "sites.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "building",
+      "lodTriangles": [
+        964,
+        628,
+        178
+      ],
+      "materials": [
+        "concrete",
+        "concrete_dark",
+        "lens_glass",
+        "metal_dark",
+        "metal_hazard",
+        "metal_light",
+        "opening",
+        "roof_tar",
+        "rubber",
+        "team_trim"
+      ],
+      "sizeM": [
+        25,
+        7.52,
+        15.12
+      ]
+    },
+    {
+      "id": "site_supermarket_ruin",
+      "source": "sites.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "building",
+      "lodTriangles": [
+        1502,
+        998,
+        290
+      ],
+      "materials": [
+        "concrete_dark",
+        "concrete_ruin",
+        "lens_glass",
+        "opening",
+        "rubber",
+        "rust_dark",
+        "rust_metal",
+        "rust_roof"
+      ],
+      "sizeM": [
+        25.34325,
+        7.510313,
+        15.217253
+      ]
+    },
+    {
+      "id": "site_water_tower_restored",
+      "source": "sites.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "building",
+      "lodTriangles": [
+        1718,
+        904,
+        204
+      ],
+      "materials": [
+        "concrete",
+        "lens_amber",
+        "metal",
+        "metal_dark",
+        "metal_hazard",
+        "metal_light",
+        "team_trim"
+      ],
+      "sizeM": [
+        7,
+        18.879999,
+        7
+      ]
+    },
+    {
+      "id": "site_water_tower_ruin",
+      "source": "sites.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "building",
+      "lodTriangles": [
+        1602,
+        890,
+        202
+      ],
+      "materials": [
+        "concrete_dark",
+        "concrete_ruin",
+        "opening",
+        "rust_dark",
+        "rust_metal",
+        "rust_roof"
+      ],
+      "sizeM": [
+        7.199917,
+        18.540396,
+        7.089698
+      ]
+    },
+    {
       "id": "tree_bare_01",
       "source": "packs/trees.glb#tree1",
       "errors": [],

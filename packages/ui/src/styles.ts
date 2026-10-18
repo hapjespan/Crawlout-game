@@ -1,4 +1,5 @@
 import { HUD_LOOK_CSS, HUD_TOKENS_CSS } from './look.js';
+import { PROJECT_CSS } from './project.js';
 import { BAR_UNIT_CSS, UNIT_CSS, font, fpx, px, u } from './units.js';
 
 /** Indeling en basisstijl van de HUD. Alles onder .co-hud zodat er niets lekt; het uiterlijk (kleur, vorm) staat in look.ts. */
@@ -299,4 +300,4 @@ const HUD_LAYOUT_CSS = `
 `;
 
 /** Indeling plus het bitmap-vrije "Roest en Fosfor"-uiterlijk (tokens en fallback). */
-export const HUD_CSS = HUD_LAYOUT_CSS + HUD_TOKENS_CSS + HUD_LOOK_CSS;
+export const HUD_CSS = HUD_LAYOUT_CSS + HUD_TOKENS_CSS + HUD_LOOK_CSS + PROJECT_CSS;

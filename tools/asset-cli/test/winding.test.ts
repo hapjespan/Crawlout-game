@@ -1,4 +1,5 @@
-// Outward-facing triangles for every generated building and robot mesh: the shape parts of variants.json and robots.json
+// Outward-facing triangles for every generated building and robot mesh: the shape parts of variants.json, robots.json, raiders.json,
+// dwellers-gear.json and sites.json
 // (signed volume > 0 per closed part, geometric normal agrees with the vertex normal per triangle) and the committed
 // LOD GLBs in assets/dist (back-face culling must show the outside, not the inside).
 import { readFileSync } from 'node:fs';
@@ -22,6 +23,7 @@ const variants = parseVariants(
 const robots = loadRobotsConfig(join(repo, 'assets/src/robots.json'));
 const raiders = loadRobotsConfig(join(repo, 'assets/src/raiders.json'));
 const dwellerGear = loadRobotsConfig(join(repo, 'assets/src/dwellers-gear.json'));
+const sites = loadRobotsConfig(join(repo, 'assets/src/sites.json'));
 
 type Shape = Exclude<VariantPart, HousePart>;
 const allVariants = [
@@ -32,6 +34,7 @@ const allVariants = [
   ...Object.entries(raiders.buildings),
   ...Object.entries(raiders.attachments),
   ...Object.entries(dwellerGear.attachments),
+  ...Object.entries(sites.buildings),
 ];
 
 /** Triangles whose geometric normal opposes the normals stored on their vertices. */

@@ -28,9 +28,11 @@ const clientId = z.string().min(8).max(64);
 // - Reconnect: een join met bekend clientId na start krijgt opnieuw `start` (zelfde seed, map en spelers) en de
 //   relay start de resync zelf (resyncRequest naar de laagste online menselijke peer). Een resyncRequest van de
 //   client blijft toegestaan en is dan een no-op zolang er een resync loopt.
+// mode 'project' (protocol 0.16.0; voorstel, ter bevestiging door de architect): het speltype Bouwproject, Skirmish plus
+// winroute C; alleen dan zet de sim de projectdelen van de map neer (envHash). 'skirmish' heeft de winroutes A en B.
 export const MatchSettings = z
   .object({
-    mode: z.enum(['skirmish', 'survival']),
+    mode: z.enum(['skirmish', 'survival', 'project']),
     delayFrames: uint,
     dominanceMinutes: uint.optional(),
   })

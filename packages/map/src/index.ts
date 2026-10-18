@@ -4,6 +4,7 @@ export type {
   ScrapNode,
   ClaimPoint,
   CreepCamp,
+  ProjectSite,
   MapGrid,
   Heightmap,
   MapAssets,
@@ -25,7 +26,7 @@ export {
 } from './greybox.js';
 export type { GreyboxMesh, TerrainTile } from './greybox.js';
 // Generatoren (build-tijd, voor data/maps/*): zie src/gen en test/gen.test.ts voor regenereren.
-export { generateMap, padClearings } from './gen/builder.js';
+export { generateMap, padClearings, siteClearings } from './gen/builder.js';
 export type {
   MapSpec,
   GeneratedMap,

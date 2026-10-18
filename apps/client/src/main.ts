@@ -107,6 +107,13 @@ import {
 import { placementIssue, type CellRect } from './game/placementRules.js';
 import { createPerfBadge } from './net/perfBadge.js';
 import { dominanceView } from './game/dominance.js';
+import {
+  isProjectRuin,
+  nearestRuin,
+  projectAlerts,
+  projectMinimap,
+  projectView,
+} from './game/project.js';
 import { FOG_POLL_MS, fogEnabled, minimapFogOf, sameMinimapFog } from './game/fogView.js';
 import { minimapLayers } from './game/minimapLayers.js';
 import { LOADOUT_NAMES, buildRoster } from './game/roster.js';
@@ -220,7 +227,11 @@ async function main(): Promise<void> {
         skipSplash: mode === 'menu',
         stillBackground: params.has('still'),
         startAi: (config) =>
-          launchMatch(null, { faction: config.faction, aiFaction: config.aiFaction }),
+          launchMatch(null, {
+            faction: config.faction,
+            aiFaction: config.aiFaction,
+            mode: config.gameType === 'build' ? 'project' : 'skirmish',
+          }),
         connect: (config) => {
           try {
             storage?.setItem(
@@ -438,6 +449,7 @@ async function main(): Promise<void> {
       if (fogOn) applyFog(mask);
     },
     onStatus(next, winner) {
+      for (const a of projectAlerts(data, status, next, session.playerId)) alert(a);
       status = next;
       renderer.setClaimStates(next.claimPoints);
       if (winner) showEnd(winner);
@@ -472,9 +484,12 @@ async function main(): Promise<void> {
     if (ended) return;
     ended = true;
     const won = winner.playerId === session.playerId;
-    const how = { destruction: 'vernietiging', dominance: 'dominantie', surrender: 'opgave' }[
-      winner.reason
-    ];
+    const how = {
+      destruction: 'vernietiging',
+      dominance: 'dominantie',
+      surrender: 'opgave',
+      project: 'het Bouwproject',
+    }[winner.reason];
     mountMatchEnd(endEl!, {
       won,
       how,
@@ -544,6 +559,20 @@ async function main(): Promise<void> {
           (id) => loadoutOf(entities.get(id)!.typeId)?.role === roleIdx('scavenger'),
         );
         if (scavengers.length > 0) return sendChunked('Gather', scavengers, { nodeId: target.id });
+      }
+      // win route C: builders on a ruin of the strip mall restore it (Build with its type and centre)
+      if (
+        kind === 'building' &&
+        target.owner === OWNER_NEUTRAL &&
+        isProjectRuin(data, target.typeId)
+      ) {
+        const builders = ids.filter(canBuildId);
+        if (builders.length > 0)
+          return sendChunked('Build', builders, {
+            typeId: target.typeId,
+            x: target.x,
+            y: target.y,
+          });
       }
       if (kind === 'building' && target.owner === session.playerId && target.anim === ANIM.build) {
         // Unfinished own building: builders resume or help (Build on an own site of the same type helps).
@@ -982,6 +1011,7 @@ async function main(): Promise<void> {
         blips,
         claims,
         camps,
+        project: projectMinimap(status),
         ...(minimapFog ? { fog: minimapFog } : {}),
       };
     },
@@ -1051,6 +1081,25 @@ async function main(): Promise<void> {
       if (ids.length > 0) sendChunked('Cancel', ids, {});
     },
     getDominance: () => dominanceView(status, (id) => session.playerName(id), session.playerId),
+    // win route C (client 0.11.0): the project panel and its restore cards
+    getProject: () =>
+      projectView(
+        data,
+        status,
+        (id) => session.playerName(id),
+        session.playerId,
+        mine(selection).some(canBuildId),
+      ),
+    restoreProject: (kind) => {
+      const builders = mine(selection).filter(canBuildId);
+      const at = nearestRuin(
+        data,
+        status,
+        kind,
+        builders.map((id) => entities.get(id)!),
+      );
+      if (at) sendChunked('Build', builders, at);
+    },
     getRaiderStats: raiderStatsNow,
     hasEnemySlaves: () => seesEnemySlaves(data, session.playerId, OWNER_NEUTRAL, entities.values()),
     getRoster: () => buildRoster(data, myFaction()?.id, session.playerId, entities.values()),

@@ -63,6 +63,7 @@ import {
   PlayerState,
   Terrain,
   WIN_DOMINANCE,
+  WIN_PROJECT,
   WIN_SURRENDER,
   inMap,
   nearestOwnBuilding,
@@ -76,6 +77,12 @@ import { trainTicks, trainedOf } from './systems/training.js';
 import { MovementScratch, movementSystem } from './systems/movement.js';
 import { OrdersScratch, ROLE_MILITIA, craftSiteMask, ordersSystem } from './systems/orders.js';
 import { slaveGroupStatus } from './systems/slaves.js';
+import {
+  ProjectState,
+  indexProjectParts,
+  projectStatus,
+  spawnProjectSites,
+} from './systems/project.js';
 import { Vision } from './vision.js';
 
 export interface SpawnUnitSpec {
@@ -123,7 +130,7 @@ export interface UnitView {
   readonly claimProgress: number;
 }
 
-export type WinReason = 'destruction' | 'dominance' | 'surrender';
+export type WinReason = 'destruction' | 'dominance' | 'surrender' | 'project';
 
 export interface SimWinner {
   readonly playerId: number;
@@ -187,6 +194,9 @@ export class Sim implements SimContext {
   readonly vision: Vision;
   /** Creep camps (sim 0.20.0): state per camp (systems/creeps.ts). */
   readonly creeps = new CreepCamps();
+  /** Win route C (sim 0.25.0): the parts of the strip mall (derived indices, map order) and their state. */
+  readonly projectParts: number[] = [];
+  readonly project = new ProjectState();
 
   private tickNo = 0;
   private readonly envHashValue: number;
@@ -231,6 +241,7 @@ export class Sim implements SimContext {
       globals: this.globals,
       vision: this.vision,
       creeps: this.creeps,
+      project: this.project,
     };
   }
 
@@ -257,6 +268,8 @@ export class Sim implements SimContext {
     setupStart(this);
     // creep camps (sim 0.20.0): the bandits after the players' start setup
     spawnCreepCamps(this);
+    // win route C (sim 0.25.0): the ruins of the strip mall after the camps (only in the game type Bouwproject)
+    spawnProjectSites(this, this.projectParts);
     this.indexClaimPoints();
     // Punten binnen de straal van een hoofdgebouw zijn meteen van die speler (besluit sprint 2), zonder events.
     updateClaimPoints(this, this.claimScratch, true);
@@ -423,6 +436,7 @@ export class Sim implements SimContext {
       claimPoints: claimPointStatus(this), // protocol 0.10.0 (bevestigd in fase-0 sectie 22 besluit 3): claimstand voor de ring in de HUD
       camps: campStatus(this, playerId), // protocol 0.14.0 (voorstel): creep-kampen, overgenomen in de kleur van de eigenaar
       slaveGroups: slaveGroupStatus(this, playerId, ROLE_MILITIA), // protocol 0.15.0 (voorstel): slavengroepen en bewakers
+      project: projectStatus(this), // protocol 0.16.0 (voorstel): winroute C, de delen en de countdowns
     };
   }
 
@@ -549,7 +563,9 @@ export class Sim implements SimContext {
         ? 'dominance'
         : g.reason === WIN_SURRENDER
           ? 'surrender'
-          : 'destruction';
+          : g.reason === WIN_PROJECT
+            ? 'project'
+            : 'destruction';
     return { playerId: g.winner, reason, frame: g.frame };
   }
 
@@ -707,6 +723,7 @@ export class Sim implements SimContext {
     }
     this.flow.rebuild();
     this.indexClaimPoints();
+    indexProjectParts(this, this.projectParts);
     this.vision.rebuild(w);
     this.hashDirty = true;
   }

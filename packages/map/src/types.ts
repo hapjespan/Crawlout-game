@@ -16,6 +16,10 @@ export interface ClaimPoint extends MapPoint {
 export interface CreepCamp extends MapPoint {
   tier: number;
 }
+/** A ruined part of the strip mall (win route C, map 0.11.0): the centre cell of its footprint and its part id. */
+export interface ProjectSite extends MapPoint {
+  part: string;
+}
 export interface MapGrid {
   id: string;
   /** Breedte en hoogte in cellen. */
@@ -33,6 +37,8 @@ export interface MapGrid {
    */
   spawns: MapPoint[];
   creepCamps: CreepCamp[];
+  /** Win route C (map 0.11.0): the parts of the strip mall in map order; empty on a map without them. */
+  projectSites: ProjectSite[];
 }
 /** Alleen voor de renderer. w*h waarden in sim-eenheden (1/256 m), index y*w+x. */
 export interface Heightmap {

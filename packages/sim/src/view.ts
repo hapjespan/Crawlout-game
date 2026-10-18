@@ -9,6 +9,7 @@ import type { FogMask } from '@crawlout/protocol';
 import { C, indexOf } from './ecs/world.js';
 import type { Sim } from './sim.js';
 import { hpPctOf } from './snapshot.js';
+import { isProjectPart } from './systems/project.js';
 
 // The snapshot of one player (fog of war, protocol 0.11.0; bevestigd in fase-0 sectie 23 besluit 1). Every client
 // still simulates everything and reports the hash of the whole shared state; only what it SHOWS is filtered here, for
@@ -16,8 +17,9 @@ import { hpPctOf } from './snapshot.js';
 //
 // Rows, in ascending id:
 //  - own entities, always;
-//  - map features (scrap nodes, claim points), always: their place is map knowledge, like the terrain, and who holds a
-//    claim point is public through the dominance on the HUD (PlayerStatus.claimPoints);
+//  - map features (scrap nodes, claim points, and since sim 0.25.0 the parts of the strip mall of win route C), always:
+//    their place is map knowledge, like the terrain, and who holds a claim point or a part is public through the HUD
+//    (PlayerStatus.claimPoints, PlayerStatus.project);
 //  - entities of others (units, buildings, corpses, later creeps) that the viewer sees now (World.visTo);
 //  - ghosts: an enemy building the viewer saw before but does not see now, as he last saw it, with ENTITY_FLAG.ghost.
 //    The memory is per viewer and lives here, not in the sim: it is presentation, not lockstep state. A ghost goes when
@@ -195,13 +197,20 @@ export class PlayerView {
     const w = sim.world;
     const m = w.mask[i]!;
     if ((m & (C.resource | C.claim)) !== 0) return true;
+    // win route C (sim 0.25.0): the parts of the strip mall are map knowledge, their state public (like claim points)
+    if ((m & C.building) !== 0 && isProjectPart(sim, i)) return true;
     return ((w.visTo[i]! >>> this.viewer) & 1) !== 0;
   }
 
   /** A building of another player (a ghost when out of sight). */
   private ghostable(sim: Sim, i: number): boolean {
     const w = sim.world;
-    return w.alive[i] === 1 && (w.mask[i]! & C.building) !== 0 && w.owner[i] !== this.viewer;
+    return (
+      w.alive[i] === 1 &&
+      (w.mask[i]! & C.building) !== 0 &&
+      w.owner[i] !== this.viewer &&
+      !isProjectPart(sim, i)
+    );
   }
 
   private remember(sim: Sim, i: number): void {

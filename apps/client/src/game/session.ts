@@ -12,6 +12,7 @@
 // loads the peer's state into the worker (`load`), replays the bundles and continues live (net/resync.ts).
 import { convertDominance, type GameData } from '@crawlout/data';
 import {
+  DELAY_FRAMES_DEFAULT,
   HASH_INTERVAL_FRAMES,
   TICK_MS,
   readSnapshotHeader,
@@ -62,6 +63,11 @@ export interface SessionOptions {
   aiFaction?: string;
   /** Over ws: `auto` (default) readies itself from the URL options, `manual` leaves the lobby to the player (the menu). */
   lobby?: 'auto' | 'manual';
+  /**
+   * Game type of a local match (client 0.11.0): 'project' is Bouwproject, Skirmish plus win route C (MatchSettings.mode,
+   * protocol 0.16.0); default `?mode=`, else 'skirmish'.
+   */
+  mode?: 'skirmish' | 'project';
 }
 
 /** What the relay's lobby message says, for the menu's lobby screen. */
@@ -137,6 +143,9 @@ export function startSession(
     ? knownFaction(data, options.aiFaction)
     : factionParam(data, 'aifaction');
   const manualLobby = options.lobby === 'manual';
+  const gameMode =
+    options.mode ??
+    (new URLSearchParams(location.search).get('mode') === 'project' ? 'project' : 'skirmish');
   const worker = new SimWorker();
   const post = (msg: SimWorkerInbound, transfer: Transferable[] = []): void =>
     worker.postMessage(msg, transfer);
@@ -226,7 +235,11 @@ export function startSession(
     return {
       seed: msg.seed,
       players: simPlayersFromLobby(data, players),
-      map: simMapFromGrid({ ...map.grid, dominance }),
+      // win route C (data 0.30.0): the project sites only in the game type Bouwproject
+      map: simMapFromGrid(
+        { ...map.grid, dominance },
+        msg.settings.mode === 'project' ? { project: data.project } : {},
+      ),
       config: simConfigFromGameData(data),
     };
   };
@@ -387,6 +400,12 @@ export function startSession(
     // The AI is a lobby player without a connection; it runs in the sim on every client and reports no hashes.
     link.send({ kind: 'join', roomId: 'skirmish', name: 'Jij' });
     link.send({ kind: 'setFaction', faction: ownFaction });
+    // win route C: the game type Bouwproject puts the strip mall into the sim (the host's settings)
+    if (gameMode === 'project')
+      link.send({
+        kind: 'setSettings',
+        settings: { mode: 'project', delayFrames: DELAY_FRAMES_DEFAULT },
+      });
     loopback.addAi(aiFaction);
     link.send({ kind: 'ready', ready: true });
     const relay = loopback;

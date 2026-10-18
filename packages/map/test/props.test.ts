@@ -11,6 +11,7 @@ import {
   loadMap,
   loadProps,
   padClearings,
+  siteClearings,
   parseProps,
   pathCorridor,
   PROP_ASSETS,
@@ -437,7 +438,15 @@ describe('rustbelt props', () => {
       })),
     ];
     let withWall = 0;
-    for (const r of ruins) {
+    // win route C (map 0.11.0): a ruin within the clearing of a strip-mall part keeps no kit (the part stands there)
+    const sites = siteClearings(RUSTBELT_SPEC);
+    const kept = ruins.filter((r) => {
+      const cx = (r.x0 + r.x1) / 2;
+      const cy = (r.y0 + r.y1) / 2;
+      return !sites.some((c) => (c.x - cx) ** 2 + (c.y - cy) ** 2 <= c.radius ** 2);
+    });
+    expect(kept.length).toBeGreaterThanOrEqual(ruins.length - 2);
+    for (const r of kept) {
       const centre = { x: (r.x0 + r.x1) / 2, y: (r.y0 + r.y1) / 2 };
       const around = near(centre, 9, file.props);
       const stuff = around.filter((p) =>
@@ -446,7 +455,7 @@ describe('rustbelt props', () => {
       expect(stuff.length, `ruine ${r.x0},${r.y0}`).toBeGreaterThanOrEqual(2);
       if (around.some((p) => WALLS.includes(p.asset))) withWall++;
     }
-    expect(withWall).toBeGreaterThanOrEqual(ruins.length / 2);
+    expect(withWall).toBeGreaterThanOrEqual(kept.length / 2);
     // Claimpunten (zonder het midden): een paar spullen erbij.
     for (const claim of map.claimPoints)
       expect(
@@ -498,7 +507,7 @@ describe('rustbelt props', () => {
     const layers = {
       forest: g.forest!,
       water: g.water!,
-      clearings: padClearings(RUSTBELT_SPEC),
+      clearings: [...padClearings(RUSTBELT_SPEC), ...siteClearings(RUSTBELT_SPEC)],
       heights: g.heights,
       ruins: [
         ...RUSTBELT_SPEC.ruins,

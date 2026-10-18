@@ -16,7 +16,7 @@ export interface GameTypeInfo {
   id: GameTypeId;
   name: string;
   blurb: string;
-  /** Only Skirmish is playable; the others are shown as "binnenkort". */
+  /** Skirmish and (ui 0.19.0) Bouwproject are playable; Survival is shown as "binnenkort". */
   available: boolean;
 }
 
@@ -36,8 +36,9 @@ export const GAME_TYPES: readonly GameTypeInfo[] = [
   {
     id: 'build',
     name: 'Bouwproject',
-    blurb: 'Bouw als eerste een groot project af.',
-    available: false,
+    blurb:
+      'Skirmish met het oude winkelcentrum: herstel alle vier de delen en houd ze vijf minuten.',
+    available: true,
   },
 ];
 
@@ -52,7 +53,8 @@ export interface AiSetup {
 }
 
 export interface AiMatchConfig {
-  gameType: 'skirmish';
+  /** build: Bouwproject, Skirmish plus win route C (MatchSettings.mode 'project'). */
+  gameType: 'skirmish' | 'build';
   faction: string;
   /** Always a real faction key here: "willekeurig" is resolved when the match starts. */
   aiFaction: string;
@@ -276,14 +278,16 @@ export function reduceMenu(state: MenuState, action: MenuAction, env: MenuEnv): 
         ? done({ ...state, ai: { ...state.ai, aiFaction: action.key } })
         : done(state);
     case 'ai/start': {
-      if (state.screen !== 'ai' || state.ai.gameType !== 'skirmish') return done(state);
+      const gameType = state.ai.gameType;
+      if (state.screen !== 'ai' || (gameType !== 'skirmish' && gameType !== 'build'))
+        return done(state);
       const aiFaction =
         state.ai.aiFaction === RANDOM_FACTION
           ? (env.factionKeys[Math.floor(env.random() * env.factionKeys.length)] ?? state.ai.faction)
           : state.ai.aiFaction;
       return done(state, {
         kind: 'startAi',
-        config: { gameType: 'skirmish', faction: state.ai.faction, aiFaction },
+        config: { gameType, faction: state.ai.faction, aiFaction },
       });
     }
     case 'pvp/form':

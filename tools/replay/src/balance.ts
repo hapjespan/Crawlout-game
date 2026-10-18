@@ -68,6 +68,18 @@ export interface MatchResult {
   players: PlayerTrace[];
   /** Creep camps of the map (sim 0.20.0), in map order: who cleared each and in which minute (null = not cleared). */
   camps: CampTrace[];
+  /**
+   * Win route C (data 0.30.0, only in the game type Bouwproject): per player the minute he first held a restored part of
+   * every kind (null = never), how many parts he restored and lost, and his longest countdown in minutes.
+   */
+  project: ProjectTrace[] | null;
+}
+
+export interface ProjectTrace {
+  allKindsAt: number | null;
+  restored: number;
+  lost: number;
+  longestMinutes: number;
 }
 
 export interface CampTrace {
@@ -95,6 +107,8 @@ export interface MatchOptions {
   maxFrames?: number;
   /** Factie per speler (standaard dwellers; sim 0.18.0: raiders). */
   factions?: readonly string[] | undefined;
+  /** Speltype (data 0.30.0): 'project' is Skirmish met winroute C, het Bouwproject; standaard 'skirmish'. */
+  mode?: 'skirmish' | 'project' | undefined;
 }
 
 const militiaRole = ROLES.indexOf('militia');
@@ -127,7 +141,10 @@ function newTrace(): PlayerTrace {
 /** Speelt één potje op Rustbelt tot er een winnaar is (of maxFrames) en geeft de meting. */
 export function playMatch(seed: number, opts: MatchOptions = {}): MatchResult {
   const ai = opts.ai ?? [true, true];
-  const env = buildEnv('rustbelt', lobby(ai, opts.factions), { mode: 'skirmish', delayFrames: 4 });
+  const env = buildEnv('rustbelt', lobby(ai, opts.factions), {
+    mode: opts.mode ?? 'skirmish',
+    delayFrames: 4,
+  });
   const sim = createSim({ seed, ...env });
   const maxFrames = opts.maxFrames ?? 60 * TICKS_PER_MINUTE;
   const n = ai.length;
@@ -139,6 +156,12 @@ export function playMatch(seed: number, opts: MatchOptions = {}): MatchResult {
   const last = ai.map((_, p) => sim.playerStatus(p).scrap);
   const seq: number[] = [];
   const slaveSeen = new Uint8Array(sim.world.slaveState.length);
+  const project: ProjectTrace[] | null =
+    sim.projectParts.length === 0
+      ? null
+      : ai.map(() => ({ allKindsAt: null, restored: 0, lost: 0, longestMinutes: 0 }));
+  const partOwner = sim.projectParts.map(() => -1);
+  const partDone = sim.projectParts.map(() => false);
   let f = 0;
   for (; f < maxFrames && sim.winner() === null; f++) {
     const commands: {
@@ -199,6 +222,26 @@ export function playMatch(seed: number, opts: MatchOptions = {}): MatchResult {
       }
     }
     if ((f + 1) % 20 === 0) countSlaveChanges(sim, traces, slaveSeen);
+    if (project !== null && (f + 1) % 20 === 0) {
+      sim.projectParts.forEach((i, k) => {
+        const w = sim.world;
+        const owner = w.owner[i]!;
+        const done = owner < n && w.bstate[i] === 2;
+        if (done && !partDone[k]) project[owner]!.restored++;
+        if (!done && partDone[k] && partOwner[k]! >= 0) project[partOwner[k]!]!.lost++;
+        partDone[k] = done;
+        partOwner[k] = done ? owner : -1;
+      });
+      for (let p = 0; p < n; p++) {
+        const t = sim.ps.projTicks[p]!;
+        const pt = project[p]!;
+        if (t > 0) pt.allKindsAt ??= Math.floor(((f + 1) / TICKS_PER_MINUTE) * 10) / 10;
+        pt.longestMinutes = Math.max(
+          pt.longestMinutes,
+          Math.floor((t / TICKS_PER_MINUTE) * 10) / 10,
+        );
+      }
+    }
     if ((f + 1) % 20 === 0)
       for (let p = 0; p < n; p++) {
         const bits = sim.ps.tech[p]!;
@@ -236,6 +279,7 @@ export function playMatch(seed: number, opts: MatchOptions = {}): MatchResult {
     minutes: (frame + 1) / TICKS_PER_MINUTE,
     players: traces,
     camps,
+    project,
   };
 }
 

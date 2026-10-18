@@ -19,6 +19,7 @@ import { applyUnitType } from '../entities.js';
 import { BODY_HUMAN, PROVIDES_CLAIM, PROVIDES_HQ, PROVIDES_KOOI } from '../fromData.js';
 import { idiv } from '../math/int.js';
 import { isqrt } from '../math/sqrt.js';
+import { isProjectPart } from './project.js';
 import type { SimContext } from './common.js';
 import {
   distToRect2,
@@ -180,6 +181,8 @@ export function reachesPoint(reach: WorkReach | null, x: number, y: number): boo
  */
 export function mayBuild(ctx: SimContext, i: number, b: number): boolean {
   const w = ctx.world;
+  // win route C (sim 0.25.0): restoring a part of the strip mall is allowed anywhere, like a claim building
+  if (isProjectPart(ctx, b)) return true;
   const bt = ctx.buildingType(w.typeId[b]!);
   return mayBuildAt(ctx, i, bt?.provides ?? 0, w.fx[b]!, w.fy[b]!, w.fw[b]!, w.fh[b]!);
 }

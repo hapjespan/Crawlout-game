@@ -54,6 +54,8 @@ export const CONFIG: typeof REAL_CONFIG = {
   buildingTypes: REAL_CONFIG.buildingTypes.map((t) => {
     const key = DATA.buildings.find((b) => b.id === t.buildingId)!.key;
     const fp = COMPACT_FOOTPRINTS[key];
+    // win route C (data 0.30.0): the parts of the strip mall keep their real size (project.test.ts places them)
+    if (fp === undefined && t.factionId === -1) return t;
     if (fp === undefined) throw new Error(`geen compacte footprint voor ${key}`);
     return { ...t, footprintW: fp[0], footprintH: fp[1] };
   }),

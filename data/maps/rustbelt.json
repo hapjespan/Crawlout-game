@@ -173,5 +173,47 @@
     "pointsRequired": 3,
     "minutes": 8
   },
+  "projectSites": [
+    {
+      "part": "site_supermarket",
+      "x": 241,
+      "y": 188
+    },
+    {
+      "part": "site_supermarket",
+      "x": 142,
+      "y": 195
+    },
+    {
+      "part": "site_water_tower",
+      "x": 222,
+      "y": 190
+    },
+    {
+      "part": "site_water_tower",
+      "x": 161,
+      "y": 193
+    },
+    {
+      "part": "site_garage",
+      "x": 238,
+      "y": 208
+    },
+    {
+      "part": "site_garage",
+      "x": 145,
+      "y": 175
+    },
+    {
+      "part": "site_gas_station",
+      "x": 258,
+      "y": 208
+    },
+    {
+      "part": "site_gas_station",
+      "x": 125,
+      "y": 175
+    }
+  ],
   "_comment": "Slice-map Rustbelt (384 x 384 m, 3 x 3 tegels van 128 m) op Rock Terrain 4. Gegenereerd door packages/map/src/gen/rustbelt.ts uit assets/dist/terrain (pnpm --filter @crawlout/map gen); niet met de hand bewerken. Puntsymmetrisch (180 graden) voor eerlijk spel. Rivier met drie oversteken (twee voordes en een landbrug in het midden); watermasker in maps/rustbelt.water.json, het wateroppervlak ligt op hoogte 0. dominance: 3 van de 5 claimpunten gedurende 8 minuten (was 2 van 3; 3 van 5 vraagt naast de eigen twee settlements het midden of een punt van de tegenstander)."
 }

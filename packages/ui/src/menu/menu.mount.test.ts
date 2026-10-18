@@ -177,8 +177,8 @@ describe('Tegen AI', () => {
     expect(host.textContent).toContain('Rustbelt XL');
     expect(host.textContent).toContain('3 punten, 8 min');
     const soon = host.querySelectorAll('.co-m-soon');
-    expect(soon).toHaveLength(2);
-    expect([...soon].map((s) => s.textContent)).toEqual(['Binnenkort', 'Binnenkort']);
+    expect(soon).toHaveLength(1);
+    expect([...soon].map((s) => s.textContent)).toEqual(['Binnenkort']);
     click(byText('[role=radio]', 'Raiders'));
     click(byText('.co-btn', 'Start'));
     expect(calls).toEqual(['ai:raiders:raiders']);
@@ -194,8 +194,8 @@ describe('Tegen AI', () => {
     act(() => {
       radios[0]!.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
     });
-    // survival and build are disabled: the choice stays on skirmish
-    expect(radios[0]!.getAttribute('aria-checked')).toBe('true');
+    // survival is disabled: the arrow skips it to Bouwproject (win route C)
+    expect(radios[2]!.getAttribute('aria-checked')).toBe('true');
     expect(radios[1]!.getAttribute('aria-disabled')).toBe('true');
     const factions = host.querySelector('[role=radiogroup][aria-label="Jouw factie"]')!;
     const f = [...factions.querySelectorAll<HTMLElement>('[role=radio]')];

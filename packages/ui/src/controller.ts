@@ -1,5 +1,6 @@
 import { MAX_ENTITIES_PER_COMMAND } from '@crawlout/protocol';
 import type { PlayerStatus, Role } from '@crawlout/protocol';
+import type { ProjectView } from './project.js';
 import { heroIdOfTypeId, kindOfTypeId } from '@crawlout/data';
 import type {
   BuildOption,
@@ -361,6 +362,8 @@ export interface HudState {
   confirmSurrender: boolean;
   minimap: MinimapData | null;
   dominance: DominanceView | null;
+  /** Win route C (ui 0.19.0): the project panel, null without a Bouwproject. */
+  project: ProjectView | null;
   buildOptions: readonly BuildOption[];
   /** Gekozen bouwoptie in plaatsingsmodus. */
   placement: BuildOption | null;
@@ -454,6 +457,7 @@ export class HudController implements HudHandle {
       confirmSurrender: false,
       minimap: null,
       dominance: null,
+      project: null,
       buildOptions: [],
       placement: null,
       perkOptions: [],
@@ -925,6 +929,11 @@ export class HudController implements HudHandle {
     this.deps.focusCamera?.(x, y);
   }
 
+  /** Win route C: the restore card of a kind in the project panel. */
+  restoreProject(kind: number): void {
+    this.deps.restoreProject?.(kind);
+  }
+
   focusAlert(alert: HudAlert): void {
     if (alert.kind === 'dominance') return; // geen locatie
     this.deps.focusCamera?.(alert.x, alert.y);
@@ -1301,6 +1310,7 @@ export class HudController implements HudHandle {
       selection,
       minimap: d.getMinimap?.() ?? null,
       dominance: d.getDominance?.() ?? null,
+      project: d.getProject?.() ?? null,
       buildOptions: this.state.buildMenuOpen ? (d.getBuildOptions?.() ?? []) : [],
       placement,
       perkOptions: pendingPerks

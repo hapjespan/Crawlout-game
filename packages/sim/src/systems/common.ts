@@ -15,6 +15,7 @@ import type { Auras } from './hero.js';
 import type { RobotRates } from './robots.js';
 import type { Vision } from '../vision.js';
 import type { CreepCamps } from './creeps.js';
+import type { ProjectState } from './project.js';
 
 /** Per-speler state (SoA op MAX_PLAYERS). Gaat de hash en de serialisatie in. */
 export class PlayerState {
@@ -72,6 +73,13 @@ export class PlayerState {
   readonly aiMix = new Int32Array(MAX_PLAYERS);
   readonly aiRaidAt = new Int32Array(MAX_PLAYERS);
   readonly aiRaidOut = new Uint8Array(MAX_PLAYERS);
+  /**
+   * Win route C (sim 0.25.0; voorstel, ter bevestiging door de architect): ticks of the player's Bouwproject countdown
+   * (systems/project.ts); 0 while he lacks a restored part of some kind.
+   */
+  readonly projTicks = new Int32Array(MAX_PLAYERS);
+  /** Dweller AI (win route C): frame + 1 from which it restores project parts (0 = not yet decided). */
+  readonly aiProjectAt = new Int32Array(MAX_PLAYERS);
 }
 
 export const NO_WINNER = OWNER_NEUTRAL;
@@ -79,6 +87,8 @@ export const WIN_NONE = 0;
 export const WIN_DESTRUCTION = 1;
 export const WIN_DOMINANCE = 2;
 export const WIN_SURRENDER = 3;
+/** Win route C, Bouwproject (sim 0.25.0): the countdown of systems/project.ts completed. */
+export const WIN_PROJECT = 4;
 
 /** Globale state: winnaar, reden en frame. */
 export class GlobalState {
@@ -194,6 +204,12 @@ export interface SimContext {
   readonly vision: Vision;
   /** Creep camps (sim 0.20.0, systems/creeps.ts): state per camp. */
   readonly creeps: CreepCamps;
+  /**
+   * Win route C (sim 0.25.0, systems/project.ts): entity indices of the parts of the strip mall in map order (derived:
+   * created in start() and never freed; empty without a Bouwproject), and their state.
+   */
+  readonly projectParts: readonly number[];
+  readonly project: ProjectState;
   unitType(typeId: number): SimUnitType | undefined;
   buildingType(typeId: number): SimBuildingType | undefined;
 }

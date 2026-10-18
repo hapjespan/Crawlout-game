@@ -6,6 +6,7 @@ import type {
   Role,
   StallNotice,
 } from '@crawlout/protocol';
+import type { MinimapProjectPart, ProjectView } from './project.js';
 
 /** Eén geselecteerde entity, zoals de client die uit snapshot en queryMessage samenstelt. */
 export interface SelectedEntity {
@@ -137,6 +138,8 @@ export interface MinimapData {
   claims: readonly MinimapClaim[];
   /** Creep-kampen (kaartkennis): neutraal grijsbruin, een overgenomen kamp in de kleur van zijn eigenaar. */
   camps?: readonly MinimapCamp[];
+  /** Win route C (ui 0.19.0): the parts of the strip mall (map knowledge), ruins outlined, held ones in the owner's colour. */
+  project?: readonly MinimapProjectPart[];
   /** w*h cellen, 1 = zichtbaar. Ontbreekt: geen fog. Vijandelijke blips buiten het zicht worden verborgen. */
   visible?: Uint8Array;
   /**
@@ -296,7 +299,9 @@ export interface BuildingButton {
   progressPct?: number;
 }
 
-export type AlertKind = 'attack' | 'settlerLost' | 'claimLost' | 'dominance' | 'revolt' | 'noBeds';
+// project (ui 0.19.0, win route C): a part restored, lost or sabotaged, or an opponent's countdown; with its own text
+export type AlertKind =
+  'attack' | 'settlerLost' | 'claimLost' | 'dominance' | 'revolt' | 'noBeds' | 'project';
 export interface HudAlert {
   kind: AlertKind;
   /** Locatie in sim-eenheden. Bij 'dominance' zonder betekenis (0): die toast heeft geen locatie en verplaatst de camera niet. */
@@ -435,6 +440,10 @@ export interface HudDeps {
    * zodra een tegenstander genoeg punten heeft en begint te tellen. Houd het object stabiel als niets verandert.
    */
   getDominance?(): DominanceView | null;
+  /** Win route C (ui 0.19.0): the project panel; null or absent without a Bouwproject. Keep the object stable. */
+  getProject?(): ProjectView | null;
+  /** Win route C: send the selected builders to restore the nearest ruin of this kind (index in GameData.project.parts). */
+  restoreProject?(kind: number): void;
   /** Waarschuwingen; geeft de afmelder terug. */
   subscribeAlerts?(cb: (alert: HudAlert) => void): () => void;
   /** Lobby-paneel (multiplayer). */

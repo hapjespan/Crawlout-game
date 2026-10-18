@@ -58,7 +58,9 @@ describe('data/ valideert', () => {
     // two weak ones of the low camp)
     expect(data.loadouts).toHaveLength(30);
     expect(data.loadouts.filter((l) => l.factionId === NEUTRAL_FACTION_ID)).toHaveLength(5);
-    expect(data.buildings).toHaveLength(18);
+    // 18 faction buildings plus (data 0.30.0, win route C) a restored and a ruin type per part of the strip mall
+    expect(data.buildings).toHaveLength(18 + 2 * 4);
+    expect(data.buildings.filter((b) => b.factionId === NEUTRAL_FACTION_ID)).toHaveLength(8);
     expect(data.tech).toHaveLength(28);
     expect(data.heroes).toHaveLength(2);
     expect(data.perks).toHaveLength(13);

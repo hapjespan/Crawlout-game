@@ -48,6 +48,7 @@ import {
 import type { WorkReach } from './slaves.js';
 import { guardGroups, isOwnKooi, workReach } from './slaves.js';
 import { aiCreepRun, campAlive, campAt } from './creeps.js';
+import { aiRestore, sabotageOver, sabotageTarget } from './aiProject.js';
 import { pointsOf } from './claims.js';
 
 // System 2 (AI part) for a script with a raid plan (ai/raiders-basic.json, data 0.21.0; sim 0.18.0): the scripted
@@ -123,6 +124,9 @@ function onMission(ctx: SimContext, p: number, i: number): boolean {
     if (q !== p && sp.x === x && sp.y === y) return true;
   }
   for (const pt of ctx.claimPoints) if (w.x[pt] === x && w.y[pt] === y) return !raidOver(ctx, p, i);
+  // a sabotage run (win route C, sim 0.25.0) until the part is no opponent's any more
+  const part = sabotageOver(ctx, p, x, y);
+  if (part !== null) return !part;
   // a creep run (sim 0.20.0) until its camp is cleared
   const camp = campAt(ctx, x, y);
   return camp >= 0 && campAlive(ctx, camp);
@@ -378,6 +382,12 @@ export function raiderThink(
   if (!saving && fields !== null && tick >= script.claimFromTicks && t.idleBuilders.length > 0) {
     if (claimNext(ctx, p, t.idleBuilders[0]!, script, free, fields)) t.idleBuilders.shift();
   }
+  // win route C (sim 0.25.0, ai/*.json project): restore a ruin of a kind it lacks (the Raider script may leave it out)
+  const restore = aiRestore(ctx, p, script, hq, t.army.length, threat, t.idleBuilders, saving);
+  for (const id of restore.ids) {
+    const k = t.idleBuilders.indexOf(id);
+    if (k >= 0) t.idleBuilders.splice(k, 1);
+  }
   if (t.site >= 0 && t.idleBuilders.length > 0)
     applyCommand(ctx, {
       playerId: p,
@@ -411,6 +421,16 @@ export function raiderThink(
   const spot = rules === null ? -1 : raidSpot(ctx, enemy, rules, fields);
   slaveRaid(ctx, p, plan, t, free, spot, hq, fields);
   harass(ctx, p, plan, t, spot, hq, fields);
+
+  // 8b win route C (sim 0.25.0, ai/*.json project): sabotage, as the Dwellers (ai.ts): an opponent close to the
+  // Bouwproject draws the free army to his part nearest to the headquarters, unless the headquarters is under attack
+  const sabotage = homeThreat ? -1 : sabotageTarget(ctx, p, script, hq);
+  if (sabotage >= 0 && free.length > 0 && free.length >= script.project!.sabotageMinArmy) {
+    const send = [...free];
+    if (heroId >= 0 && w.orderType(hero) === ORDER_NONE) send.push(heroId);
+    attackMove(ctx, p, send, w.x[sabotage]!, w.y[sabotage]!);
+    return;
+  }
 
   // 9 waves and the dominance push (the hero goes along)
   const wave = waveReady(ctx, p, script, enemy, free.length, nodes, hq);

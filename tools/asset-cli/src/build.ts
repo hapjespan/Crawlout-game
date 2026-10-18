@@ -58,6 +58,8 @@ export interface BuildOptions {
   raidersPath?: string;
   /** Path to the Dweller gear config (same format, attachments only); default `<srcDir>/dwellers-gear.json`. Optional. */
   dwellersGearPath?: string;
+  /** Path to the site buildings config (same format, buildings only: ruin and restored pairs); default `<srcDir>/sites.json`. Optional. */
+  sitesPath?: string;
   /**
    * Config of the delivered models (src/delivered.ts, `assets/local/delivered.json`), only used when given or when
    * `<srcDir>/delivered.json` exists; its `file` paths are relative to `srcDir`.
@@ -325,12 +327,13 @@ export async function buildAssets(options: BuildOptions): Promise<BuildResult> {
     reports.push(report);
   }
 
-  // Procedural models (src/robots.ts): the Dweller robots (robots.json), the Raiders (raiders.json) and the Dweller gear (dwellers-gear.json), each config
+  // Procedural models (src/robots.ts): the Dweller robots (robots.json), the Raiders (raiders.json), the Dweller gear (dwellers-gear.json) and the site ruins and restored sites (sites.json), each config
   // with rigid units, buildings and attachments from basic shapes.
   const robotConfigs = [
     options.robotsPath ?? join(srcDir, 'robots.json'),
     options.raidersPath ?? join(srcDir, 'raiders.json'),
     options.dwellersGearPath ?? join(srcDir, 'dwellers-gear.json'),
+    options.sitesPath ?? join(srcDir, 'sites.json'),
   ].filter((path) => existsSync(path));
   const robots: RobotsResult = { reports: [], entries: [], outputs: new Map() };
   for (const robotsSource of robotConfigs) {

@@ -145,7 +145,7 @@ export const assetEntrySchema = z
     footprint: z
       .object({ w: z.number().int().positive(), h: z.number().int().positive() })
       .optional(),
-    /** Gebouwen en rigide units: namen van de materialen die de spelerskleur krijgen (naam bevat "team"); altijd minstens een. */
+    /** Gebouwen en rigide units: namen van de materialen die de spelerskleur krijgen (naam bevat "team"); minstens een, behalve bij een ruine zonder eigenaar (`site_*_ruin`): dan een lege lijst. */
     teamMaterials: z.array(z.string().min(1)).optional(),
     /**
      * Waar het teammasker (de delen die de spelerskleur krijgen) vandaan komt, zoals render's `TeamMaskSource`:
@@ -221,10 +221,11 @@ export const assetEntrySchema = z
     if (entry.kind === 'building') {
       if (!entry.footprint)
         ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'een gebouw heeft een footprint' });
-      if (!entry.teamMaterials || entry.teamMaterials.length === 0)
+      // An empty list is allowed: a ruin or wreck without an owner (the site ruins) has no team colour.
+      if (!entry.teamMaterials)
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: 'een gebouw heeft een team-materiaal',
+          message: 'een gebouw heeft teamMaterials (leeg voor een ruine zonder teamkleur)',
         });
     } else if (entry.footprint || entry.teamMaterials) {
       ctx.addIssue({

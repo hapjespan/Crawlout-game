@@ -26,6 +26,7 @@ export function readDataDir(dir: string): RawGameData {
     sim: readJson(join(dir, 'sim.json')),
     ai: aiFiles.map((name) => readJson(join(aiDir, name))),
     creeps: readJson(join(dir, 'creeps.json')),
+    project: readJson(join(dir, 'project.json')),
   };
 }
 

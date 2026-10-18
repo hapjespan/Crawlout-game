@@ -293,6 +293,66 @@ export interface PlayerStatus {
    * hashwijziging). Optioneel tot alle PlayerStatus-literals hem dragen.
    */
   slaveGroups?: SlaveGroupStatus[];
+  /**
+   * Winroute C, Bouwproject (protocol 0.16.0, sim 0.25.0, data 0.30.0; voorstel, ter bevestiging door de architect):
+   * de delen van het winkelcentrum met hun stand en de countdown van elke speler, zodat de HUD het projectpaneel, de
+   * markers op de minimap en de meldingen (deel hersteld, deel verloren, countdown loopt, sabotage) uit state toont.
+   * Kaartkennis zoals claimPoints: de ruines staan op de map en wie een deel houdt is openbaar. null zonder Bouwproject
+   * (het speltype Skirmish). De sim levert hem altijd (Sim.status, project.ts projectStatus; leest alleen state, geen
+   * hashwijziging). Optioneel tot alle PlayerStatus-literals hem dragen.
+   */
+  project?: ProjectStatus | null;
+}
+
+/** Stand van een deel van het Bouwproject (ProjectPartStatus.state). */
+export type ProjectPartState = 'ruin' | 'restoring' | 'restored';
+
+/**
+ * Eén deel van het winkelcentrum (PlayerStatus.project, protocol 0.16.0, voorstel). kind is de index in
+ * GameData.project.parts (data/project.json, file-volgorde: de HUD haalt er naam en kosten uit). Een ruine is van
+ * niemand (owner OWNER_NEUTRAL); herstellen (restoring) en hersteld (restored) zijn van de speler die het herstelt.
+ */
+export interface ProjectPartStatus {
+  /** Entity-id van het deel in de snapshot (een gebouw; het typeId wisselt tussen ruine en hersteld). */
+  partId: number;
+  kind: number;
+  /** Midden van de footprint in sim-eenheden. */
+  x: number;
+  y: number;
+  state: ProjectPartState;
+  owner: number;
+  /** 0..1000: de voortgang van het herstel; 1000 als het hersteld is, 0 voor een ruine. */
+  progressPermille: number;
+  /** 0..1000 van de hp (een ruine 1000). */
+  hpPermille: number;
+  /** Het deel werd de laatste pauseAfterHitS geraakt (sabotage): de countdown van de eigenaar staat stil. */
+  underAttack: boolean;
+}
+
+/** De countdown van één speler (PlayerStatus.project.players). */
+export interface ProjectPlayerStatus {
+  playerId: number;
+  /** Soorten waarvan hij een hersteld deel houdt (0..kinds). */
+  kindsHeld: number;
+  /** Ticks van zijn countdown: loopt alleen zolang hij van elke soort een hersteld deel houdt, anders 0. */
+  ticksHeld: number;
+  /** Hij houdt alle soorten maar een van zijn delen werd net geraakt: de countdown staat stil. */
+  paused: boolean;
+}
+
+/**
+ * Het Bouwproject (winroute C, protocol 0.16.0, voorstel): wie van elke soort deel een hersteld deel houdt, wint na
+ * ticksRequired ticks aaneengesloten (een treffer pauzeert, het verlies van een soort zet de klok op nul). Resterende
+ * tijd = (ticksRequired - ticksHeld) * TICK_MS.
+ */
+export interface ProjectStatus {
+  /** Aantal soorten deel (data/project.json parts). */
+  kinds: number;
+  ticksRequired: number;
+  /** Op map-volgorde (MapDef.projectSites). */
+  parts: ProjectPartStatus[];
+  /** Elke speler die nog meedoet, op playerId. */
+  players: ProjectPlayerStatus[];
 }
 
 /**

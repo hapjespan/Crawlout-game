@@ -27,7 +27,13 @@ export interface RaiderSummary {
   none: number;
   /** Raider wins with the Raiders as player 0 and as player 1 (the side check). */
   raiderWinsAs: [number, number];
-  reasons: { destruction: number; dominance: number; surrender: number; none: number };
+  reasons: {
+    destruction: number;
+    dominance: number;
+    surrender: number;
+    project: number;
+    none: number;
+  };
   /** Decided before minute 12, and of those won by the Raiders. */
   early: number;
   earlyRaiders: number;
@@ -65,7 +71,7 @@ export function raiderSummary(rows: readonly { raider: number; r: MatchResult }[
     dwellerWins: 0,
     none: 0,
     raiderWinsAs: [0, 0],
-    reasons: { destruction: 0, dominance: 0, surrender: 0, none: 0 },
+    reasons: { destruction: 0, dominance: 0, surrender: 0, project: 0, none: 0 },
     early: 0,
     earlyRaiders: 0,
     inWindow: 0,

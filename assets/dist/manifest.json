@@ -3521,6 +3521,342 @@
       "teamMask": "materialName"
     },
     {
+      "id": "site_garage_restored",
+      "kind": "building",
+      "bounds": {
+        "min": [
+          -6.7,
+          0,
+          -5.7
+        ],
+        "max": [
+          6.6,
+          6.62,
+          5.7
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "site_garage_restored/lod0.glb",
+          "triangles": 1052
+        },
+        {
+          "level": 1,
+          "path": "site_garage_restored/lod1.glb",
+          "triangles": 400
+        },
+        {
+          "level": 2,
+          "path": "site_garage_restored/lod2.glb",
+          "triangles": 196
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "footprint": {
+        "w": 13,
+        "h": 11
+      },
+      "teamMaterials": [
+        "team_trim"
+      ]
+    },
+    {
+      "id": "site_garage_ruin",
+      "kind": "building",
+      "bounds": {
+        "min": [
+          -6.7,
+          -0.000311,
+          -5.7
+        ],
+        "max": [
+          6.6,
+          6.28269,
+          5.7
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "site_garage_ruin/lod0.glb",
+          "triangles": 1020
+        },
+        {
+          "level": 1,
+          "path": "site_garage_ruin/lod1.glb",
+          "triangles": 560
+        },
+        {
+          "level": 2,
+          "path": "site_garage_ruin/lod2.glb",
+          "triangles": 236
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "footprint": {
+        "w": 13,
+        "h": 11
+      },
+      "teamMaterials": []
+    },
+    {
+      "id": "site_gas_station_restored",
+      "kind": "building",
+      "bounds": {
+        "min": [
+          -7.42,
+          0,
+          -5.5
+        ],
+        "max": [
+          7.42,
+          5.35,
+          5.12
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "site_gas_station_restored/lod0.glb",
+          "triangles": 626
+        },
+        {
+          "level": 1,
+          "path": "site_gas_station_restored/lod1.glb",
+          "triangles": 410
+        },
+        {
+          "level": 2,
+          "path": "site_gas_station_restored/lod2.glb",
+          "triangles": 226
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "footprint": {
+        "w": 15,
+        "h": 11
+      },
+      "teamMaterials": [
+        "team_trim"
+      ]
+    },
+    {
+      "id": "site_gas_station_ruin",
+      "kind": "building",
+      "bounds": {
+        "min": [
+          -7.3,
+          -0.000392,
+          -5.5
+        ],
+        "max": [
+          7.497524,
+          5.387338,
+          5.319139
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "site_gas_station_ruin/lod0.glb",
+          "triangles": 984
+        },
+        {
+          "level": 1,
+          "path": "site_gas_station_ruin/lod1.glb",
+          "triangles": 612
+        },
+        {
+          "level": 2,
+          "path": "site_gas_station_ruin/lod2.glb",
+          "triangles": 284
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "footprint": {
+        "w": 15,
+        "h": 11
+      },
+      "teamMaterials": []
+    },
+    {
+      "id": "site_supermarket_restored",
+      "kind": "building",
+      "bounds": {
+        "min": [
+          -12.5,
+          0,
+          -7.58
+        ],
+        "max": [
+          12.5,
+          7.52,
+          7.54
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "site_supermarket_restored/lod0.glb",
+          "triangles": 964
+        },
+        {
+          "level": 1,
+          "path": "site_supermarket_restored/lod1.glb",
+          "triangles": 628
+        },
+        {
+          "level": 2,
+          "path": "site_supermarket_restored/lod2.glb",
+          "triangles": 178
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "footprint": {
+        "w": 25,
+        "h": 15
+      },
+      "teamMaterials": [
+        "team_trim"
+      ]
+    },
+    {
+      "id": "site_supermarket_ruin",
+      "kind": "building",
+      "bounds": {
+        "min": [
+          -12.74325,
+          -0.000313,
+          -7.58
+        ],
+        "max": [
+          12.6,
+          7.51,
+          7.637253
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "site_supermarket_ruin/lod0.glb",
+          "triangles": 1502
+        },
+        {
+          "level": 1,
+          "path": "site_supermarket_ruin/lod1.glb",
+          "triangles": 998
+        },
+        {
+          "level": 2,
+          "path": "site_supermarket_ruin/lod2.glb",
+          "triangles": 290
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "footprint": {
+        "w": 25,
+        "h": 15
+      },
+      "teamMaterials": []
+    },
+    {
+      "id": "site_water_tower_restored",
+      "kind": "building",
+      "bounds": {
+        "min": [
+          -3.5,
+          0,
+          -3.5
+        ],
+        "max": [
+          3.5,
+          18.879999,
+          3.5
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "site_water_tower_restored/lod0.glb",
+          "triangles": 1718
+        },
+        {
+          "level": 1,
+          "path": "site_water_tower_restored/lod1.glb",
+          "triangles": 904
+        },
+        {
+          "level": 2,
+          "path": "site_water_tower_restored/lod2.glb",
+          "triangles": 204
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "footprint": {
+        "w": 7,
+        "h": 7
+      },
+      "teamMaterials": [
+        "team_trim"
+      ]
+    },
+    {
+      "id": "site_water_tower_ruin",
+      "kind": "building",
+      "bounds": {
+        "min": [
+          -3.52268,
+          0,
+          -3.5
+        ],
+        "max": [
+          3.677237,
+          18.540396,
+          3.589698
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "site_water_tower_ruin/lod0.glb",
+          "triangles": 1602
+        },
+        {
+          "level": 1,
+          "path": "site_water_tower_ruin/lod1.glb",
+          "triangles": 890
+        },
+        {
+          "level": 2,
+          "path": "site_water_tower_ruin/lod2.glb",
+          "triangles": 202
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "footprint": {
+        "w": 7,
+        "h": 7
+      },
+      "teamMaterials": []
+    },
+    {
       "id": "tree_bare_01",
       "kind": "prop",
       "bounds": {

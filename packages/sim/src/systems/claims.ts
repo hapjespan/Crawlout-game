@@ -9,7 +9,15 @@ import { takeCensus } from './census.js';
 import { heroOf } from '../effects.js';
 import { grantXp } from './hero.js';
 import type { SimContext } from './common.js';
-import { NO_WINNER, WIN_DESTRUCTION, WIN_DOMINANCE, WIN_SURRENDER, distToRect2 } from './common.js';
+import {
+  NO_WINNER,
+  WIN_DESTRUCTION,
+  WIN_DOMINANCE,
+  WIN_PROJECT,
+  WIN_SURRENDER,
+  distToRect2,
+} from './common.js';
+import { projectSystem } from './project.js';
 
 // Systeem 7: claims en winroutes.
 // Claim (besluit sprint 2, fase-0 sectie 13; Spelfundament 3.1): een claimpunt is van speler p zolang een voltooid
@@ -33,7 +41,8 @@ import { NO_WINNER, WIN_DESTRUCTION, WIN_DOMINANCE, WIN_SURRENDER, distToRect2 }
 //    tegen een paal; bouwt de eigenaar zelf een paal, dan is het geen beacon meer).
 // claimBy/claimProgress tonen ook de held die claimt en de aanvaller van een beacon.
 // Winroutes: A, vernietiging (een speler die een hoofdgebouw had en er geen meer heeft, is af); B, dominantie
-// (pointsRequired claimpunten gedurende dominance.ticks aaneengesloten); opgeven (Surrender). Is er nog één speler
+// (pointsRequired claimpunten gedurende dominance.ticks aaneengesloten); C, Bouwproject (sim 0.25.0, systems/project.ts:
+// de countdown van wie van elke soort deel een hersteld deel houdt; na dominantie in dezelfde tick); opgeven (Surrender). Is er nog één speler
 // over, dan wint die. De winnaar staat vast; de sim tikt daarna gewoon door.
 
 const ANIM_FULL = 0xffff;
@@ -292,6 +301,8 @@ function winRoutes(ctx: SimContext, s: ClaimScratch, census: Census): void {
     if (ps.defeated[p] === 0 && ps.hadHq[p] === 1 && census.hqCount[p] === 0)
       ps.defeated[p] = WIN_DESTRUCTION;
   }
+  // win route C (sim 0.25.0): the sabotage pause and the countdowns run also after a winner is known (state, like domTicks)
+  const project = projectSystem(ctx);
   if (g.winner !== NO_WINNER) return;
   const dom = ctx.map.dominance;
   for (let p = 0; p < ctx.playerCount; p++) {
@@ -302,6 +313,7 @@ function winRoutes(ctx: SimContext, s: ClaimScratch, census: Census): void {
     ps.domTicks[p] = ps.domTicks[p]! + 1;
     if (ps.domTicks[p]! >= dom.ticks && g.winner === NO_WINNER) declare(ctx, p, WIN_DOMINANCE);
   }
+  if (g.winner === NO_WINNER && project >= 0) declare(ctx, project, WIN_PROJECT);
   if (g.winner !== NO_WINNER || ctx.playerCount < 2) return;
   let alive = -1;
   let aliveCount = 0;
