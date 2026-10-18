@@ -58,6 +58,25 @@ export interface SimCreepTier {
   readonly heroXpRadius: number;
 }
 
+/**
+ * Camp takeover of one faction (data/creeps.json takeover, data 0.27.0, sim 0.22.0; voorstel, ter bevestiging door de
+ * architect): per camp tier the surrender rule and the outpost yield (systems/creeps.ts).
+ */
+export interface SimCreepTakeover {
+  readonly factionId: number;
+  /** Ascending tier, each a tier of SimConfig.creepTiers. */
+  readonly tiers: readonly {
+    readonly tier: number;
+    /** The camp surrenders at this share (0..1000) of the summed max hp of its living bandits. */
+    readonly surrenderPermille: number;
+    /** Units of the taker within the leash circle needed. */
+    readonly minUnits: number;
+    /** A bandit for the owner of the outpost every this many ticks; 0 = none. */
+    readonly yieldTicks: number;
+    readonly yieldMax: number;
+  }[];
+}
+
 /** The faction of a neutral unit type (the bandits of the creep camps, data 0.25.0). */
 export const NEUTRAL_FACTION = -1;
 
@@ -588,6 +607,8 @@ export interface SimConfig {
   readonly aiScripts: readonly SimAiScript[];
   /** Creep camp tiers (data/creeps.json, data 0.25.0), ascending tier; absent = none. */
   readonly creepTiers?: readonly SimCreepTier[];
+  /** Camp takeover per faction (data 0.27.0), ascending factionId; absent or empty = every faction clears camps. */
+  readonly creepTakeover?: readonly SimCreepTakeover[];
   /** Op techId; hoogstens MAX_TECHS (bitset per speler). */
   readonly techs: readonly SimTech[];
   /** Op heroId. */
@@ -1081,6 +1102,28 @@ export function validateEnv(env: SimEnv): void {
         intIn(t.heroXpRadius, 0, MAX_MAP_CELLS_SIDE << 8),
       `${at}: stralen, respawn of buit`,
     );
+  }
+  let prevFaction = -1;
+  for (const r of config.creepTakeover ?? []) {
+    const at = `creep-takeover factie ${r.factionId}`;
+    req(intIn(r.factionId, prevFaction + 1, config.factions.length - 1), `${at}: factie`);
+    prevFaction = r.factionId;
+    let prev = 0;
+    for (const t of r.tiers) {
+      req(intIn(t.tier, prev + 1, 0xff), `${at}: tier oplopend en uniek`);
+      prev = t.tier;
+      req(
+        (config.creepTiers ?? []).some((c) => c.tier === t.tier),
+        `${at}: tier ${t.tier} staat niet in de data`,
+      );
+      req(
+        intIn(t.surrenderPermille, 0, 1000) &&
+          intIn(t.minUnits, 1, 0xffff) &&
+          intIn(t.yieldTicks, 0, I31) &&
+          intIn(t.yieldMax, 0, 0xff),
+        `${at}: tier ${t.tier}`,
+      );
+    }
   }
   for (const s of config.aiScripts) {
     const cr = s.creeps;
@@ -1817,6 +1860,16 @@ export function envHash(env: SimEnv): number {
     ]);
     h = fnv1aInt(h, t.typeIds.length);
     h = hashInts(h, t.typeIds);
+  }
+  // camp takeover (data 0.27.0): only when there is any, so an env without it keeps its hash
+  const takeover = c.creepTakeover ?? [];
+  if (takeover.length > 0) {
+    h = fnv1aInt(h, takeover.length);
+    for (const r of takeover) {
+      h = hashInts(h, [r.factionId, r.tiers.length]);
+      for (const t of r.tiers)
+        h = hashInts(h, [t.tier, t.surrenderPermille, t.minUnits, t.yieldTicks, t.yieldMax]);
+    }
   }
   for (const s of c.aiScripts) {
     const cr = s.creeps;

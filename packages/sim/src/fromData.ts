@@ -494,6 +494,10 @@ export function simConfigFromGameData(data: GameData): SimConfig {
       heroXp: t.heroXp,
       heroXpRadius: t.heroXpRadiusU,
     })),
+    creepTakeover: data.creeps.takeover.map((r) => ({
+      factionId: r.factionId,
+      tiers: r.tiers.map((t) => ({ ...t })),
+    })),
     techs: data.tech.map((t) => ({
       techId: t.id,
       factionId: t.factionId,

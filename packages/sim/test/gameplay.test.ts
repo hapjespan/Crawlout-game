@@ -906,6 +906,8 @@ describe('state', () => {
             progressPermille: 0,
             frozen: false,
           })),
+        // protocol 0.14.0 (voorstel): the creep camps of the map (none on the test map)
+        camps: [],
       },
       winner: null,
     });

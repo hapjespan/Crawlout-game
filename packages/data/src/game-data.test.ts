@@ -1063,6 +1063,7 @@ describe('data/creeps.json', () => {
         aggroRadiusM: number;
         leashRadiusM: number;
       }[];
+      takeover?: unknown[];
     };
 
   it('appends the bandits after the faction loadouts, neutral, as militia without cost', () => {
@@ -1097,7 +1098,8 @@ describe('data/creeps.json', () => {
       for (const id of t.units) expect(data.loadouts[id]!.factionId).toBe(NEUTRAL_FACTION_ID);
   });
 
-  it('the default AI scripts of both factions clear camps from the same time on; the Dwellers against Raiders do not', () => {
+  it('the Dwellers clear camps from minute 10, the Raiders take them over from minute 1; the Dwellers against Raiders do not', () => {
+    const raiders = data.factions.findIndex((f) => f.key === 'raiders');
     for (const a of data.aiScripts) {
       if (a.versusFactionId >= 0) {
         // ai/dwellers-vs-raiders.json: no camp runs (measured: with them the Raiders won none of 66)
@@ -1105,16 +1107,59 @@ describe('data/creeps.json', () => {
         continue;
       }
       expect(a.creeps).not.toBeNull();
-      expect(a.creeps!.fromTicks).toBe(secondsToTicks(600));
+      // data 0.27.0 (voorstel): the Raider AI takes its camps over from the start (data/creeps.json takeover)
+      expect(a.creeps!.fromTicks).toBe(secondsToTicks(a.factionId === raiders ? 60 : 600));
       expect(a.creeps!.tiers.map((t) => t.tier)).toEqual([1, 2]);
     }
+  });
+
+  it('takeover (data 0.27.0): the Raiders take both tiers over, in sim units; a bad rule fails to load', () => {
+    const raiders = data.factions.findIndex((f) => f.key === 'raiders');
+    expect(data.creeps.takeover.map((r) => r.factionId)).toEqual([raiders]);
+    const t = data.creeps.takeover[0]!.tiers;
+    expect(t.map((x) => x.tier)).toEqual([1, 2]);
+    for (const x of t) {
+      expect(x.surrenderPermille).toBeGreaterThan(0);
+      expect(x.surrenderPermille).toBeLessThan(1000);
+      expect(x.minUnits).toBeGreaterThanOrEqual(1);
+    }
+    expect(t[0]!.yieldTicks).toBe(secondsToTicks(240));
+    expect(t[0]!.surrenderPermille).toBe(300);
+    const unknownTier = raw();
+    creepsOf(unknownTier).takeover = [
+      {
+        faction: 'raiders',
+        tiers: [{ tier: 9, surrenderHpPct: 30, minUnits: 3, yieldS: 0, yieldMax: 0 }],
+      },
+    ];
+    expect(() => loadGameData(unknownTier)).toThrow(/onbekende tier 9/);
+    const unknownFaction = raw();
+    creepsOf(unknownFaction).takeover = [
+      {
+        faction: 'garde',
+        tiers: [{ tier: 1, surrenderHpPct: 30, minUnits: 3, yieldS: 0, yieldMax: 0 }],
+      },
+    ];
+    expect(() => loadGameData(unknownFaction)).toThrow(/onbekende factie 'garde'/);
+    const twice = raw();
+    creepsOf(twice).takeover = [
+      {
+        faction: 'raiders',
+        tiers: [{ tier: 1, surrenderHpPct: 30, minUnits: 3, yieldS: 0, yieldMax: 0 }],
+      },
+      {
+        faction: 'raiders',
+        tiers: [{ tier: 2, surrenderHpPct: 30, minUnits: 3, yieldS: 0, yieldMax: 0 }],
+      },
+    ];
+    expect(() => loadGameData(twice)).toThrow(/dubbele factie/);
   });
 
   it('without the file there are no camps and no bandits', () => {
     const r = raw();
     delete r.creeps;
     const d = loadGameData(r);
-    expect(d.creeps).toEqual({ units: [], names: [], tiers: [] });
+    expect(d.creeps).toEqual({ units: [], names: [], tiers: [], takeover: [] });
     expect(d.loadouts.some((l) => l.factionId === NEUTRAL_FACTION_ID)).toBe(false);
   });
 

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { fileURLToPath } from 'node:url';
 import { buildingTypeId, heroTypeId, unitTypeId } from '@crawlout/data';
 import { loadGameDataFromDir } from '@crawlout/data/node';
-import { inspect } from '../src/game/inspect.js';
+import { inspect, takeoverHint } from '../src/game/inspect.js';
 
 const data = loadGameDataFromDir(fileURLToPath(new URL('../../../data', import.meta.url)));
 const loadout = (key: string) => data.loadouts.find((l) => l.key === key)!;
@@ -46,5 +46,37 @@ describe('inspect (enemy selection)', () => {
       expect(info.name).not.toBe('');
       expect(info.name).not.toBe(l.key);
     }
+  });
+});
+
+describe('takeoverHint (camp takeover, data 0.27.0; PlayerStatus.camps, protocol 0.14.0)', () => {
+  const raiders = data.factions.findIndex((f) => f.key === 'raiders');
+  const dwellers = data.factions.findIndex((f) => f.key === 'dwellers');
+  const camp = (over: object = {}) => ({
+    camp: 0,
+    x: 10_000,
+    y: 10_000,
+    tier: 1,
+    state: 'bandits' as const,
+    owner: 255,
+    takeover: true,
+    ...over,
+  });
+  const far = camp({ camp: 1, x: 90_000, y: 90_000, takeover: true, state: 'taken' as const });
+
+  it('tells a Raider how to take the nearest camp over, from the data', () => {
+    const rule = data.creeps.takeover.find((r) => r.factionId === raiders)!.tiers[0]!;
+    const hint = takeoverHint(data, raiders, [camp(), far], 10_200, 9_900);
+    expect(hint).toMatch(/^Overnemen: /);
+    expect(hint).toContain(`minstens ${rule.minUnits} eigen eenheden`);
+    expect(hint).toContain(`tot ${rule.surrenderPermille / 10}%`);
+  });
+
+  it('says nothing to the Dwellers, for a taken or cleared camp, or without camp status', () => {
+    expect(takeoverHint(data, dwellers, [camp({ takeover: false })], 10_000, 10_000)).toBeNull();
+    expect(takeoverHint(data, raiders, [camp(), far], 89_000, 89_000)).toBeNull();
+    expect(takeoverHint(data, raiders, [camp({ state: 'cleared' })], 10_000, 10_000)).toBeNull();
+    expect(takeoverHint(data, raiders, undefined, 10_000, 10_000)).toBeNull();
+    expect(takeoverHint(data, undefined, [camp()], 10_000, 10_000)).toBeNull();
   });
 });

@@ -47,7 +47,7 @@ describe('Raiders: de factie laadt', () => {
     );
     expect(faction.robotRules).toBeNull();
     expect(faction.housingGrowthPerMin).toBe(0);
-    expect(data.dataVersion).toBe('0.26.0'); // data 0.25.0: the creep camps (0.24.0: Raider balance)
+    expect(data.dataVersion).toBe('0.27.0'); // data 0.25.0: the creep camps (0.24.0: Raider balance)
     // Dwellers ongewijzigd: nog altijd training en geen Raider-blokken
     expect(dwellers.specialChannel).toBe('training');
     expect(dwellers.slaves).toBeNull();
@@ -650,8 +650,11 @@ describe('Raiders: AI-script', () => {
     const garage = data.buildings.find((b) => b.key === 'autosloperij')!.id;
     const garageAt = ai.buildOrder.find((o) => o.buildingId === garage)!.atTick;
     expect(garageAt).toBeLessThanOrEqual(ai.raidPlan!.harass.fromTicks);
-    // slavenroof vóór de eerste golf, dominantie-push na de eerste golf
-    expect(ai.raidPlan!.slaveRaids.fromTicks).toBeLessThan(ai.attackTimersTicks[0]!);
+    // data 0.27.0 (gemeten, voorstel): eerst de kampen overnemen (vanaf minuut 1), dan de slavenroof (minuut 6, na de
+    // eerste golf: een vroege roof zonder de kampen langs de weg ving tot 578 slaven in 66 potjes en won 80 procent);
+    // dominantie-push na de eerste golf
+    expect(ai.creeps!.fromTicks).toBeLessThan(ai.attackTimersTicks[0]!);
+    expect(ai.raidPlan!.slaveRaids.fromTicks).toBeGreaterThan(ai.creeps!.fromTicks);
     expect(ai.raidPlan!.dominancePush.fromTicks).toBeGreaterThan(ai.attackTimersTicks[0]!);
     // data 0.24.0 (sim 0.19.0, gemeten): dominantie is de route, het kamp bij de claimpunten komt ruim voor de push
     expect(ai.raidPlan!.dominancePush.fromTicks).toBeLessThan(ai.pushFromTicks);

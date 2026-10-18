@@ -1,5 +1,5 @@
 import { OWNER_NEUTRAL } from '@crawlout/protocol';
-import type { MinimapData, MinimapFog } from './types.js';
+import type { MinimapCamp, MinimapData, MinimapFog } from './types.js';
 
 const OWN = [102, 187, 106];
 const ENEMY = [239, 83, 80];
@@ -177,6 +177,21 @@ export function drawMinimap(canvas: HTMLCanvasElement, m: MinimapData, me: numbe
       ctx.stroke();
     }
   }
+  for (const c of m.camps ?? []) {
+    const color = campMarkerColor(c, me);
+    if (color === null) continue;
+    // a diamond: the camp, in the colour of who holds it (a taken camp is an outpost, data 0.27.0)
+    const x = c.x * sx;
+    const y = c.y * sy;
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(x, y - 4);
+    ctx.lineTo(x + 4, y);
+    ctx.lineTo(x, y + 4);
+    ctx.lineTo(x - 4, y);
+    ctx.closePath();
+    ctx.fill();
+  }
   for (const b of m.blips) {
     // A ghost is remembered, not seen: it stays on the map, dimmed. Anything else of the enemy shows only in sight.
     if (!b.ghost && b.owner !== me && b.kind !== 'node' && !seen(b.x, b.y)) continue;
@@ -192,6 +207,15 @@ export function drawMinimap(canvas: HTMLCanvasElement, m: MinimapData, me: numbe
     const size = b.kind === 'building' ? 4 : b.kind === 'hero' ? 5 : 2;
     ctx.fillRect(b.x * sx - size / 2, b.y * sy - size / 2, size, size);
   }
+}
+
+/**
+ * Colour of a creep camp marker (PlayerStatus.camps, protocol 0.14.0; voorstel): a camp with bandits neutral, a taken
+ * camp (an outpost, data 0.27.0) own or enemy like the blips, a cleared camp none.
+ */
+export function campMarkerColor(c: MinimapCamp, me: number): string | null {
+  if (c.cleared) return null;
+  return rgb(c.owner === null ? NEUTRAL : c.owner === me ? OWN : ENEMY);
 }
 
 /** Whether the point (u, v), 0..1 over the whole map, lies in a cell visible now. */

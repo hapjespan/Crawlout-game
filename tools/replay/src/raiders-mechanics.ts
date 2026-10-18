@@ -19,6 +19,10 @@ export interface RaiderMechanics {
   crashed: number;
   /** Ticks in which player 0 held a settlement claim point (tribute). */
   tributeTicks: number;
+  /** Camp takeover (sim 0.22.0): camps player 0 holds as an outpost at the end, bandits that joined him, and yields. */
+  takeovers: number;
+  recruits: number;
+  yields: number;
   frames: number;
 }
 
@@ -36,6 +40,9 @@ export function raiderMechanics(r: Replay): RaiderMechanics {
     dosed: 0,
     crashed: 0,
     tributeTicks: 0,
+    takeovers: 0,
+    recruits: 0,
+    yields: 0,
     frames: last + 1,
   };
   const seen = new Set<string>();
@@ -62,6 +69,8 @@ export function raiderMechanics(r: Replay): RaiderMechanics {
       if (w.owner[i] === 255 && (w.mask[i]! & 16) !== 0 && mark(id, 'escaped')) m.escaped++;
       if (w.chemPhase[i] === 1 && mark(id, 'dosed')) m.dosed++;
       if (w.chemPhase[i] === 2 && mark(id, 'crash')) m.crashed++;
+      if (w.owner[i] === 255 && w.creepCamp[i] !== 0) mark(id, 'bandit');
+      if (w.owner[i] === 0 && seen.has(`${id}:bandit`) && mark(id, 'recruit')) m.recruits++;
     }
     let held = false;
     sim.claimPoints.forEach((pt, k) => {
@@ -70,5 +79,12 @@ export function raiderMechanics(r: Replay): RaiderMechanics {
     if (held) m.tributeTicks++;
   }
   m.netArrivals = sim.ps.netArrivals[0]!;
+  (sim.map.creepCamps ?? []).forEach((_, k) => {
+    // CAMP_TAKEN (4) by player 0 (clearedBy = player + 1)
+    if (sim.creeps.state[k] === 4 && sim.creeps.clearedBy[k] === 1) {
+      m.takeovers++;
+      m.yields += sim.creeps.yields[k]!;
+    }
+  });
   return m;
 }

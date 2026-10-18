@@ -96,7 +96,7 @@ import {
   type CardContext,
 } from './game/cards.js';
 import { perkOptions } from './game/perks.js';
-import { inspect } from './game/inspect.js';
+import { inspect, takeoverHint } from './game/inspect.js';
 import { leftClickIs, nextSelection, type ClickMode } from './game/clickRules.js';
 import {
   ABILITY_HINT_DELAY_MS,
@@ -822,6 +822,11 @@ async function main(): Promise<void> {
         const foe = [...selection].map((id) => entities.get(id)).find((e) => e && isEnemyId(e.id));
         if (!foe) return [];
         const info = inspect(data, foe.typeId);
+        // a bandit of a camp the player's faction takes over (data 0.27.0; PlayerStatus.camps, protocol 0.14.0)
+        const hint =
+          foe.owner === OWNER_NEUTRAL
+            ? takeoverHint(data, myFaction()?.id, status?.camps, foe.x, foe.y)
+            : null;
         return [
           {
             id: foe.id,
@@ -832,6 +837,7 @@ async function main(): Promise<void> {
             enemy: true,
             ownerLabel: info.ownerLabel,
             ...(info.detail ? { detail: info.detail } : {}),
+            ...(hint ? { note: hint } : {}),
             // A ghost (fog of war): an enemy building as the player last saw it.
             ...((foe.flags & ENTITY_FLAG.ghost) !== 0 ? { lastSeen: true } : {}),
           },
@@ -918,6 +924,13 @@ async function main(): Promise<void> {
             ...((e.flags & ENTITY_FLAG.ghost) !== 0 ? { ghost: true } : {}),
           });
       }
+      // creep camps (protocol 0.14.0, voorstel): neutral, or in the colour of whoever took it over (data 0.27.0)
+      const camps = (status?.camps ?? []).map((c) => ({
+        x: c.x,
+        y: c.y,
+        owner: c.state === 'taken' ? c.owner : null,
+        ...(c.state === 'cleared' ? { cleared: true } : {}),
+      }));
       return {
         w: map.grid.w,
         h: map.grid.h,
@@ -925,6 +938,7 @@ async function main(): Promise<void> {
         ...minimapStatic,
         blips,
         claims,
+        camps,
         ...(minimapFog ? { fog: minimapFog } : {}),
       };
     },

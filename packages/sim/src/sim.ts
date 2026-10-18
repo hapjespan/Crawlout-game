@@ -51,7 +51,7 @@ import {
   updateClaimPoints,
 } from './systems/claims.js';
 import { cleanupSystem } from './systems/cleanup.js';
-import { CreepCamps, creepSystem, spawnCreepCamps } from './systems/creeps.js';
+import { CreepCamps, campStatus, creepSystem, spawnCreepCamps } from './systems/creeps.js';
 import { combatSystem } from './systems/combat.js';
 import type { SimCommand } from './systems/commands.js';
 import { applyCommands, normalizeCommand } from './systems/commands.js';
@@ -420,6 +420,7 @@ export class Sim implements SimContext {
       trained: trainedOf(this, playerId) as NonNullable<PlayerStatus['trained']>, // protocol 0.8.0
       chems: this.chems(playerId), // protocol 0.13.0 (voorstel): chem-dosis per eenheid voor de Chem-dealer in de HUD
       claimPoints: claimPointStatus(this), // protocol 0.10.0 (bevestigd in fase-0 sectie 22 besluit 3): claimstand voor de ring in de HUD
+      camps: campStatus(this, playerId), // protocol 0.14.0 (voorstel): creep-kampen, overgenomen in de kleur van de eigenaar
     };
   }
 

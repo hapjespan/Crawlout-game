@@ -8,6 +8,7 @@ import {
   NEUTRAL_FACTION_ID,
   type GameData,
 } from '@crawlout/data';
+import type { CreepCampStatus } from '@crawlout/protocol';
 import { buildingName, humanize } from './cards.js';
 import { LOADOUT_NAMES } from './roster.js';
 
@@ -79,4 +80,34 @@ export function inspect(data: GameData, typeId: number): Inspection {
     };
   }
   return { name: 'Onbekend', ownerLabel: 'Vijand', detail: null };
+}
+
+/**
+ * The "Overnemen" hint for a bandit (camp takeover, data 0.27.0; voorstel): when the viewer's faction takes the bandit's
+ * camp over (PlayerStatus.camps, protocol 0.14.0: the camp nearest the bandit that still has bandits, takeover true),
+ * how: beat it down to its surrender share with at least minUnits units of your own and nobody else's in the circle.
+ * Null for a faction that clears camps (the Dwellers), without camp status, or for anything else.
+ */
+export function takeoverHint(
+  data: GameData,
+  factionId: number | undefined,
+  camps: readonly CreepCampStatus[] | undefined,
+  x: number,
+  y: number,
+): string | null {
+  if (factionId === undefined || camps === undefined || camps.length === 0) return null;
+  let near: CreepCampStatus | undefined;
+  for (const c of camps)
+    if (
+      near === undefined ||
+      (c.x - x) ** 2 + (c.y - y) ** 2 < (near.x - x) ** 2 + (near.y - y) ** 2
+    )
+      near = c;
+  if (near === undefined || near.state !== 'bandits' || !near.takeover) return null;
+  const rule = data.creeps.takeover
+    .find((r) => r.factionId === factionId)
+    ?.tiers.find((t) => t.tier === near.tier);
+  if (rule === undefined) return null;
+  const pct = Math.round(rule.surrenderPermille / 10);
+  return `Overnemen: versla dit kamp met minstens ${rule.minUnits} eigen eenheden tot ${pct}% en het geeft zich over; de overlevers sluiten zich bij je aan.`;
 }

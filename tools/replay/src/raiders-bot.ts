@@ -240,7 +240,7 @@ function detour(
   ahead = 25,
 ): { x: number; y: number } {
   const { w, h, passable } = sim.map;
-  const camps = (sim.map.creepCamps ?? []).filter((_, k) => sim.creeps.state[k] !== 3);
+  const camps = (sim.map.creepCamps ?? []).filter((_, k) => sim.creeps.state[k]! < 3);
   if (camps.length === 0) return { x: tx, y: ty };
   const avoid = (cx: number, cy: number): boolean =>
     camps.some((c) => Math.hypot(cx + 0.5 - c.x / 256, cy + 0.5 - c.y / 256) < 10);

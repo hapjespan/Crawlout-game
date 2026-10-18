@@ -734,10 +734,12 @@ const FIXTURES_S10: FixtureDef[] = [
     // claims and the dominance camp, plunder and tribute, the Warlord's aura and Raid. Sim 0.19.0, data 0.24.0: the
     // Dweller AI plays ai/dwellers-vs-raiders.json (versus: defendHqFirst, liberate), the Raider camp holds its own
     // point and answers what it sees; the Dwellers win by destruction in frame 34.526 (28:47; data 0.23.0: on
-    // dominance in frame 30.962).
+    // dominance in frame 30.962). Sim 0.22.0, data 0.27.0 (camp takeover, weaker Raider fighters; voorstel): seed 6
+    // (was 5, where the Raider AI now catches nobody): the Raider AI takes its two low camps over in minute 2 and the
+    // high camp later, catches settlers from minute 6, and wins on dominance in frame 30.021 (25:01).
     name: 's10-rustbelt-raiders-ai-vs-ai',
     build() {
-      const r = raidersVsDwellers(base('rustbelt', 5, [true, true]));
+      const r = raidersVsDwellers(base('rustbelt', 6, [true, true]));
       const sim = createReplaySim(r);
       let end = 47999;
       for (let f = 0; f < 48000; f++) {
@@ -884,12 +886,15 @@ const FIXTURES_S11: FixtureDef[] = [
   {
     // Raiders against Raiders (sim 0.19.0, data 0.24.0): two Raider AIs on Rustbelt XL, seed 2, for nine minutes. At
     // 5:52 their two Slavers catch each other in the same tick; sim.rng picks who catches whom (systems/slaves.ts
-    // captureTick; with seed 2 player 1), where entity order gave it to player 0 every time.
+    // captureTick; with seed 2 player 1), where entity order gave it to player 0 every time. Sim 0.22.0, data 0.27.0
+    // (voorstel): thirteen minutes (was nine). Both AIs take their camps over from minute 1 and send their Slavers
+    // only from minute 6, so the mirror now ends at 7:20, where their armies with the recruits meet; the first catch
+    // comes after that.
     name: 's11-rustbelt-raiders-mirror',
     build() {
       const r = base('rustbelt', 2, [true, true]);
       r.players = r.players.map((pl) => ({ ...pl, faction: 'raiders' }));
-      r.hashes = [{ frame: 10799, hash: 0 }];
+      r.hashes = [{ frame: 15599, hash: 0 }];
       return r;
     },
   },
@@ -966,6 +971,51 @@ const FIXTURES_S12: FixtureDef[] = [
   },
 ];
 
+const FIXTURES_S13: FixtureDef[] = [
+  {
+    // Camp takeover (sim 0.22.0, data 0.27.0; voorstel, ter bevestiging door de architect): player 0 plays the Raiders
+    // by hand, player 1 is the Dweller AI. In the first second the Warlord and the four start fighters (3 plunderaar,
+    // 1 knuppelaar) go at the near camp of player 0 with one AttackMove; the camp surrenders at 30 percent of its hp
+    // and its survivors join the Raiders (loot and hero xp as for a clear). At minute 3 the army and the recruits walk
+    // home; the camp is an outpost and yields a bandit for player 0 every 4 minutes (twice). Ten minutes.
+    name: 's13-rustbelt-raiders-takeover',
+    build() {
+      const r = raidersVsDwellers(base('rustbelt', 1301, [false, true]));
+      const st = startOf(r);
+      const sim = st.sim;
+      const s = new Script();
+      const camps = sim.map.creepCamps!;
+      const spawn = sim.map.spawns[0]!;
+      let near = camps[0]!;
+      for (const c of camps)
+        if (
+          (c.x - spawn.x) ** 2 + (c.y - spawn.y) ** 2 <
+          (near.x - spawn.x) ** 2 + (near.y - spawn.y) ** 2
+        )
+          near = c;
+      const bandits = sim
+        .entityIds()
+        .filter((id) => {
+          const u = sim.getUnit(id)!;
+          return (
+            u.owner === 255 &&
+            u.kind === 'unit' &&
+            (u.x - near.x) ** 2 + (u.y - near.y) ** 2 < (4 * 256) ** 2
+          );
+        })
+        .sort((a, b) => a - b);
+      const army = [...st.hero[0]!, ...st.militia[0]!];
+      const node = nearest(sim, st.nodes, spawn.x, spawn.y);
+      s.add(6, 0, 'Gather', { ids: st.scav[0]!, nodeId: node });
+      s.add(20, 0, 'AttackMove', { ids: army, x: near.x, y: near.y });
+      s.add(3600, 0, 'Move', { ids: [...army, ...bandits], ...toward(spawn, near, 12) });
+      r.bundles = s.bundles();
+      r.hashes = [{ frame: 11999, hash: 0 }];
+      return r;
+    },
+  },
+];
+
 export const FIXTURES: readonly FixtureDef[] = [
   ...FIXTURES_UP_TO_S3,
   ...FIXTURES_S4,
@@ -977,6 +1027,7 @@ export const FIXTURES: readonly FixtureDef[] = [
   ...FIXTURES_S10,
   ...FIXTURES_S11,
   ...FIXTURES_S12,
+  ...FIXTURES_S13,
 ];
 
 /** De sim na het uitvoeren van de frames 0 tot `frame` (exclusief) met de bundels die de replay tot dan heeft. */
