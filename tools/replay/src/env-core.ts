@@ -23,10 +23,15 @@ export function envFrom(
   });
   return {
     players: simPlayersFromLobby(data, players),
-    // win route C (data 0.31.0): the project sites only in the game type Bouwproject
+    // win route C (data 0.31.0): the project sites only in the game type Bouwproject; survival co-op (sim 0.27.0):
+    // edges and build zones (the spawns on the zones) only in the game type Survival
     map: simMapFromGrid(
       { ...grid, dominance },
-      settings.mode === 'project' ? { project: data.project } : {},
+      settings.mode === 'project'
+        ? { project: data.project }
+        : settings.mode === 'survival'
+          ? { survival: data.survival }
+          : {},
     ),
     config,
   };

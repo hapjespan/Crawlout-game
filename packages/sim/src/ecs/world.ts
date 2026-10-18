@@ -68,6 +68,9 @@ export const BSTATE_NONE = 0;
 export const BSTATE_SITE = 1; // in aanbouw
 export const BSTATE_DONE = 2;
 
+/** Survival (sim 0.27.0): creepCamp of a wave unit (no camp index + 1); its creepHome is its wave index. */
+export const CREEP_SURVIVAL = 255;
+
 export const NO_FIELD = 255;
 /** goalX/goalY zonder doel. */
 export const NO_GOAL = -1;
@@ -109,6 +112,8 @@ export class World {
   freeCount = 0;
   /** Aantal indices dat ooit is uitgegeven; alles daarboven is nul. */
   highWater = 0;
+  /** Survival (sim 0.27.0): the players are one team (derived from the map; not state). */
+  coop = false;
   /**
    * Telt elke alloc en free (geen state, niet gehasht): afgeleide lijsten (EntityIndex in systems/common.ts) bouwen
    * zich opnieuw op als hij verandert. Na deserialize zet de sim hem ook omhoog.

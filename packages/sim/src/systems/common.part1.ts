@@ -20,6 +20,7 @@ import type { TerrainDistances } from '../pathdist.js';
 import type { Vision } from '../vision.js';
 import type { CreepCamps } from './creeps.js';
 import type { ProjectState } from './project.js';
+import type { SurvivalState } from './survival.part1.js';
 import { imod } from '../math/int.js';
 import { ROLES } from '@crawlout/data';
 import { atan2A } from '../math/trig.js';
@@ -222,6 +223,8 @@ export interface SimContext {
    */
   readonly projectParts: readonly number[];
   readonly project: ProjectState;
+  /** Survival co-op (sim 0.27.0, systems/survival.ts): wave targets and batches (state only in the game type Survival). */
+  readonly survival: SurvivalState;
   unitType(typeId: number): SimUnitType | undefined;
   buildingType(typeId: number): SimBuildingType | undefined;
 }

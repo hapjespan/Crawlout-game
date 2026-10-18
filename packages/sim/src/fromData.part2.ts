@@ -27,6 +27,7 @@ import {
   simChemEffect,
   simEffect,
 } from './fromData.part1.js';
+import { simSurvivalFromData } from './fromData.part4.js';
 
 /** GameData naar SimConfig. Gooit als een factie geen hoofdgebouw (provides hq) heeft. */
 export function simConfigFromGameData(data: GameData): SimConfig {
@@ -176,7 +177,9 @@ export function simConfigFromGameData(data: GameData): SimConfig {
       xpPerCapture: h.xpPerCapture,
     };
   });
+  const survival = simSurvivalFromData(data.survival);
   return {
+    ...(survival === undefined ? {} : { survival }),
     dataVersion: data.dataVersion,
     unitTypes: data.loadouts.map((l) => ({
       typeId: unitTypeId(l.id),

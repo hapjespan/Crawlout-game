@@ -8,6 +8,7 @@ import {
   hashUnitTypes,
 } from './config.hash.config.js';
 import { hashAiScripts, hashProgression } from './config.hash.ai.js';
+import { hashSurvival } from './config.survival.env.js';
 
 /**
  * Hash van de omgeving (dataVersion, config, map, spelers) in vaste veldvolgorde. Gaat de state-header in,
@@ -23,7 +24,9 @@ export function envHash(env: SimEnv): number {
   h = hashAiScripts(h, c);
   h = hashProgression(h, c);
   h = hashMapEnv(h, env);
-  return hashCreeps(h, env);
+  h = hashCreeps(h, env);
+  // survival co-op (sim 0.27.0): only with SimMap.survival, so every other env keeps its hash
+  return hashSurvival(h, env);
 }
 
 /** Players, the map and (only with project sites) win route C. */

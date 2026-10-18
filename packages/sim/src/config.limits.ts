@@ -37,6 +37,8 @@ export const MAX_CREEPS_PER_CAMP = 16;
 /** Win route C: parts of the strip mall per map (the bound of ProjectState) and kinds of part. */
 export const MAX_PROJECT_SITES = 16;
 export const MAX_PROJECT_KINDS = 8;
+/** Survival co-op (sim 0.27.0): waves per run, the bound of SurvivalState. */
+export const MAX_SURVIVAL_WAVES = 32;
 export const U16 = 0xffff;
 export const I31 = 0x7fffffff;
 

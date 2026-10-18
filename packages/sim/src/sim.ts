@@ -48,6 +48,8 @@ import { RobotRates, robotRulesSystem } from './systems/robots.js';
 import { MovementScratch, movementSystem } from './systems/movement.js';
 import { OrdersScratch, ordersSystem } from './systems/orders.js';
 import { ProjectState, spawnProjectSites } from './systems/project.js';
+import { SurvivalState, survivalStatusOf, survivalSystem } from './systems/survival.js';
+import type { SurvivalStatus } from './systems/survival.js';
 import { Vision } from './vision.js';
 import {
   chemsOf,
@@ -115,6 +117,8 @@ export class Sim implements SimContext {
   /** Win route C (sim 0.25.0): the parts of the strip mall (derived indices, map order) and their state. */
   readonly projectParts: number[] = [];
   readonly project = new ProjectState();
+  /** Survival co-op (sim 0.27.0): wave state; `active` (derived) only with SimMap.survival. */
+  readonly survival = new SurvivalState();
 
   private tickNo = 0;
   private readonly envHashValue: number;
@@ -152,6 +156,9 @@ export class Sim implements SimContext {
     this.rng = new Rng(seed);
     this.globals.winner = NO_WINNER;
     this.vision = new Vision(env.map, env.config, this.playerCount);
+    // survival co-op (sim 0.27.0): the game type comes from the map; the players are one team
+    this.survival.active = env.map.survival !== undefined;
+    this.world.coop = this.survival.active;
     this.parts = {
       world: this.world,
       flow: this.flow,
@@ -160,6 +167,7 @@ export class Sim implements SimContext {
       vision: this.vision,
       creeps: this.creeps,
       project: this.project,
+      survival: this.survival,
     };
   }
 
@@ -244,6 +252,7 @@ export class Sim implements SimContext {
     probe?.(1);
     ordersSystem(this, this.ordersScratch);
     creepSystem(this); // sim 0.20.0: the bandits of the creep camps (no orders of their own)
+    survivalSystem(this); // sim 0.27.0: the waves of the game type Survival (no orders of their own)
     probe?.(2);
     // 3 flow fields: de padgraaf bijwerken na gewijzigde begaanbaarheid; velden zelf lui en exact (flowfield.ts)
     this.flow.step();
@@ -347,6 +356,11 @@ export class Sim implements SimContext {
    */
   queue(playerId: number): QueueItem[] {
     return queueOf(this, playerId);
+  }
+
+  /** Survival co-op (sim 0.27.0): waves, next wave and targets for the HUD; null outside the game type Survival. */
+  survivalStatus(): SurvivalStatus | null {
+    return survivalStatusOf(this);
   }
 
   /** De winnaar, of null zolang het potje loopt. */

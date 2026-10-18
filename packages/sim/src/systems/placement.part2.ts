@@ -21,6 +21,7 @@ import {
   territoryOf,
 } from './placement.part1.js';
 import type { PlacementInput } from './placement.part1.js';
+import { survivalZoneReason } from './survival.js';
 
 /**
  * The placement input from the sim's world: every building (sites too), every scrap node and every claim point; with
@@ -78,7 +79,7 @@ export function placementReasonAt(
 ): number {
   const inp = placementInput(ctx, p);
   const hr = bt.hqRange;
-  return placementReason(
+  const r = placementReason(
     hr === null || p < 0 ? inp : { ...inp, hqRange: { hqs: hqCentres(ctx, p), ...hr } },
     fx,
     fy,
@@ -86,6 +87,8 @@ export function placementReasonAt(
     bt.footprintH,
     placeAs(bt) | claim,
   );
+  // survival co-op (sim 0.27.0): only within the own build zone (claim buildings anywhere)
+  return r !== PLACE_OK ? r : survivalZoneReason(ctx, bt, fx, fy, p);
 }
 
 /**

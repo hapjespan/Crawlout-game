@@ -18,6 +18,7 @@ import {
   distToRect2,
 } from './common.js';
 import { projectSystem } from './project.js';
+import { survivalOutcome } from './survival.js';
 
 // Systeem 7: claims en winroutes.
 // Claim (besluit sprint 2, fase-0 sectie 13; Spelfundament 3.1): een claimpunt is van speler p zolang een voltooid
@@ -239,7 +240,8 @@ const fraction = (a: number, b: number): number =>
  */
 function contestBeacon(ctx: SimContext, s: ClaimScratch, pt: number, holder: number): number {
   const w = ctx.world;
-  const attackers = s.present[pt]! & ~(1 << holder);
+  // survival co-op (sim 0.27.0): an ally in the circle contests nothing
+  const attackers = w.coop ? 0 : s.present[pt]! & ~(1 << holder);
   if (attackers === 0) w.contestTicks[pt] = 0;
   else if ((s.present[pt]! & (1 << holder)) === 0) w.contestTicks[pt] = w.contestTicks[pt]! + 1;
   return attackers;
@@ -302,6 +304,8 @@ function winRoutes(ctx: SimContext, s: ClaimScratch, census: Census): void {
       ps.defeated[p] = WIN_DESTRUCTION;
   }
   // win route C (sim 0.25.0): the sabotage pause and the countdowns run also after a winner is known (state, like domTicks)
+  // survival co-op (sim 0.27.0): its own win and loss instead of the win routes A, B and C
+  if (survivalOutcome(ctx, (p, reason) => declare(ctx, p, reason))) return;
   const project = projectSystem(ctx);
   if (g.winner !== NO_WINNER) return;
   const dom = ctx.map.dominance;

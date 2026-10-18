@@ -54,6 +54,9 @@ export const PLACE_TERRITORY = 6;
  */
 export const PLACE_HQ_RANGE = 7;
 
+/** Survival co-op (sim 0.27.0): outside the player's own build zone (systems/survival.ts survivalZoneReason). */
+export const PLACE_ZONE = 8;
+
 /** Name of each reason code, by code: for the client and its preview text. */
 export const PLACEMENT_REASONS = [
   'ok',
@@ -64,6 +67,8 @@ export const PLACEMENT_REASONS = [
   'feature',
   'territory',
   'hqRange',
+  // survival co-op (sim 0.27.0): outside the player's own build zone (systems/survival.ts PLACE_ZONE)
+  'zone',
 ] as const;
 
 export type PlacementReason = (typeof PLACEMENT_REASONS)[number];
