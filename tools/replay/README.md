@@ -69,3 +69,5 @@ De versie van de browsers hoort bij de versie van `@playwright/test` in `package
 ## In CI
 
 `.github/workflows/browsers.yml` draait `replay:browsers` wekelijks. Zonder installatiestap meldt het script dat er geen browsers zijn en eindigt het groen. Om de matrix echt te draaien hoort er voor het script een stap `pnpm --filter @crawlout/replay exec playwright install --with-deps chromium firefox webkit` bij, en dan `REPLAY_BROWSERS_STRICT=1`, zodat een browser die toch ontbreekt opvalt.
+
+`playtest2` (src/playtest2.ts) is the playtest bot through the real front end: splash, menu, Tegen AI, faction and AI faction, Start, then about 15 game minutes at human speed (fog, creep camp, perk panel, claim posts, Raiders and Dwellers specifics, Opgeven and Terug naar menu). `PLAYTEST2_PLAN=dw-ra@1600x900,ra-dw@1600x900,dw-dw@1600x900,dw-ra@1280x720 PLAYTEST_SHOTS=/some/dir PLAYTEST_URL=http://localhost:5215/ node --import tsx src/playtest2.ts`. The shared bot lives in src/playtest-core.ts (also used by playtest.ts).

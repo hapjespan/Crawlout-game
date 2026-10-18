@@ -222,7 +222,9 @@ function panelTitle(cards: readonly BuildingCard[], selection: readonly Selected
 /** Gebouwpaneel met kaarten per onderzoek, craft, oplappen, robotproductie of training. Zichtbaar zodra de dep kaarten levert voor de selectie. */
 export function CardPanel(props: { ctl: HudController; state: HudState }): ComponentChild {
   const { ctl, state } = props;
-  if (state.cards.length === 0) return null;
+  // The build menu lives in the commands panel below; with the card window open as well the commands shrink to a sliver
+  // and the options sit out of sight (1600x900, a builder with a workshop around). One of the two at a time.
+  if (state.cards.length === 0 || state.buildMenuOpen) return null;
   const keyActive = ctl.cardKeysActive();
   const title = panelTitle(state.cards, state.selection);
   return h(

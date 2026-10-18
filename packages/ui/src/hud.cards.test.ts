@@ -319,3 +319,18 @@ describe('prestaties', () => {
     expect(runs[3] ?? Infinity).toBeLessThan(2);
   });
 });
+
+describe('gebouwpaneel en bouwmenu', () => {
+  it('maakt plaats voor het bouwmenu: met B open verdwijnt het kaartvenster, met Esc komt het terug', () => {
+    const builder: SelectedEntity = { ...unit(1), role: 'builder' };
+    const t = setup([card('available', 1, { kind: 'craft' })], [builder]);
+    mounted = t.handle;
+    expect(t.el.querySelector('.co-cards')).not.toBeNull();
+    press('b');
+    expect(t.el.querySelector('.co-menu')).not.toBeNull();
+    expect(t.el.querySelector('.co-cards')).toBeNull();
+    press('Escape');
+    expect(t.el.querySelector('.co-menu')).toBeNull();
+    expect(t.el.querySelector('.co-cards')).not.toBeNull();
+  });
+});

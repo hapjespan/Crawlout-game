@@ -257,3 +257,20 @@ describe('Raider roster tile and portraits', () => {
     expect(portraitOfEntity(sel('Plunderaar', 'scavenger'))).toBe(portraitOfGroup('scavenger'));
   });
 });
+
+describe('Robots counter', () => {
+  const producing: PlayerStatus = {
+    ...status,
+    queue: [{ kind: 'produce', id: 10, unitId: 5, buildingId: 1, progressPermille: 100 }],
+  };
+  it('does not show for the Raiders: a tent producing fighters is no robot production', () => {
+    const t = setup({ getStatus: () => producing, getRaiderStats: () => stats() });
+    mounted = t.handle;
+    expect(t.el.querySelector('.co-counters')!.textContent).not.toContain('Robots');
+  });
+  it('shows for a faction with robots once something is produced', () => {
+    const t = setup({ getStatus: () => producing });
+    mounted = t.handle;
+    expect(t.el.querySelector('.co-counters')!.textContent).toContain('Robots');
+  });
+});
