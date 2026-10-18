@@ -1,4 +1,4 @@
-// Dweller gear (assets/src/dwellers-gear.json): every weapon, tool and armour id the Dweller loadouts refer to has a
+// Dweller gear (assets/src/dwellers-gear.json, split in assets/src/dwellers-gear/*.json): every weapon, tool and armour id the Dweller loadouts refer to has a
 // procedural vault-tech prop (anchor, kind 'prop', teamMask 'none'), budgets per LOD, surface kinds follow the material
 // names, no Raider material leaks in, and assets/dist is the build of this config.
 import { readFileSync } from 'node:fs';
@@ -9,6 +9,7 @@ import { BUDGETS } from '../src/budgets.js';
 import { readDataList } from './dataLists.js';
 import { assetEntrySchema, manifestSchema, type AssetEntry } from '../src/manifest.js';
 import { buildRobots, loadRobotsConfig, parseRobots, type RobotsResult } from '../src/robots.js';
+import { readSplitJson } from '../src/splitJson.js';
 import {
   surfaceKindOfMaterial,
   type SurfaceKind,
@@ -113,13 +114,16 @@ describe('dwellers-gear.json against the Dweller data', () => {
   });
 
   it('rejects a team material in an attachment and an unknown material', () => {
-    const raw = JSON.parse(readFileSync(configPath, 'utf8'));
+    const raw = readSplitJson(configPath) as {
+      flatMaterials: Record<string, { color: string }>;
+      attachments: Record<string, { parts: { material: string }[] }>;
+    };
     const withTeam = structuredClone(raw);
     withTeam.flatMaterials.team_trim = { color: '#e7e7e7' };
-    withTeam.attachments.dweller_weapon_rifle.parts[0].material = 'team_trim';
+    withTeam.attachments.dweller_weapon_rifle!.parts[0]!.material = 'team_trim';
     expect(() => parseRobots(withTeam)).toThrow(/aanhangsel/);
     const unknown = structuredClone(raw);
-    unknown.attachments.dweller_weapon_rifle.parts[0].material = 'goud';
+    unknown.attachments.dweller_weapon_rifle!.parts[0]!.material = 'goud';
     expect(() => parseRobots(unknown)).toThrow(/onbekend effen materiaal/);
   });
 });

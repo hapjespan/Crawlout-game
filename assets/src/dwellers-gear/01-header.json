@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "flatMaterials": {
+    "metal_vault": {
+      "color": "#6b7f93",
+      "note": "vault blue-grey painted plate (name contains metal: painted metal)"
+    },
+    "metal_vault_dark": {
+      "color": "#3d4a58",
+      "note": "dark blue-grey plate: barrels, receivers, shafts, joints"
+    },
+    "metal_vault_light": {
+      "color": "#9db0c2",
+      "note": "light blue-grey plate: handguards, casings"
+    },
+    "metal_vault_yellow": {
+      "color": "#d8ae2a",
+      "note": "safety yellow accent bands and stripes, no logos"
+    },
+    "composite_metal": {
+      "color": "#566a7e",
+      "note": "composite armour plate, blue-grey, slightly lighter than the frame"
+    },
+    "steel_bare": {
+      "color": "#a7afb6",
+      "note": "bare ground steel: hammer head, crowbar, tool jaws (name contains steel)"
+    },
+    "rubber_grip": {
+      "color": "#2a2d33",
+      "note": "rubber grips and straps (name contains rubber: dark matte)"
+    },
+    "canvas_grey": {
+      "color": "#6c727b",
+      "note": "grey vault canvas: the scavenger bag"
+    },
+    "lens_blue": {
+      "color": "#4fc3e8",
+      "note": "blue lens: optics, stun cap, status lights (name contains lens)"
+    }
+  },
+  "units": {},
+  "buildings": {}
+}
