@@ -195,7 +195,7 @@ Alle 24 manifest-ids die de Raider-data gebruikt (`data/buildings.json` `visuals
 | ------------------------------------- | ---------- | -------------------------- | ------------- | ------------------------------------------------------------------------------------------ |
 | `raider_building_camp` (17 x 17)      | building   | 17,3 x 9,3 x 16,7          | 2423/990/260  | palissade van schroot, poort 5 x 4 m met schedel, uitkijktoren, hal, kleine kooi, tenten   |
 | `raider_building_tent` (7 x 5)        | building   | 7,2 x 4,5 x 5,1            | 469/312/104   | legertent, deur 1,8 x 2,2 m, voorluifel, nokpaal met schedel                               |
-| `raider_building_cage` (9 x 9)        | building   | 9,2 x 5,8 x 8,9            | 1710/740/232  | kooi met spijlen om de 0,4 m, poort 1,6 x 2,3 m, hoekpalen met schedels, roestdak          |
+| `raider_building_cage` (5 x 5)        | building   | 5,1 x 5,4 x 5,0            | 1470/690/232  | kooi met spijlen om de 0,3 m, poort 1,5 x 2,3 m, hoekpalen met schedels, roestdak          |
 | `raider_building_market` (13 x 11)    | building   | 13,4 x 6,5 x 11,0          | 1752/580/276  | depotloods met kratten en balie, twee kramen met luifels, bordpaal met schedels            |
 | `raider_building_chemlab` (11 x 9)    | building   | 10,8 x 8,5 x 8,3           | 920/426/132   | geblakerde bunker, deur 1,3 x 2,3 m met schedel en gekruiste botten, schoorsteen, tanks    |
 | `raider_building_garage` (17 x 13)    | building   | 17,1 x 8,2 x 13,1          | 1618/470/152  | loods met deur 4,6 x 3,8 m, schroothoop van geplette auto's met kraan, wrak, bandenstapels |

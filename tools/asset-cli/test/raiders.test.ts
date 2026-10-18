@@ -56,7 +56,7 @@ const EXPECTED: Record<string, { h: [number, number]; w: [number, number]; d: [n
   {
     raider_building_camp: { h: [7.5, 9.5], w: [14.45, 17.85], d: [14.45, 17.85] },
     raider_building_tent: { h: [3.8, 4.8], w: [5.95, 7.35], d: [4.25, 5.25] },
-    raider_building_cage: { h: [4.5, 6.5], w: [7.65, 9.45], d: [7.65, 9.45] },
+    raider_building_cage: { h: [4.5, 6.5], w: [4.25, 5.25], d: [4.25, 5.25] },
     raider_building_market: { h: [5.5, 8.0], w: [11.05, 13.65], d: [9.35, 11.55] },
     raider_building_chemlab: { h: [7.0, 9.0], w: [9.35, 11.55], d: [7.65, 9.45] },
     raider_building_garage: { h: [7.0, 9.5], w: [14.45, 17.85], d: [11.05, 13.65] },
