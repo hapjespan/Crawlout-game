@@ -17,13 +17,9 @@ import {
   TICK_MS,
   readSnapshotHeader,
   type CommandPayload,
-  type ClientMessage,
   type CommandType,
-  type DesyncEvent,
-  type FogMask,
   type FrameBundle,
   type LobbyPlayer,
-  type PlayerStatus,
   type ServerMessage,
   type StallNotice,
 } from '@crawlout/protocol';
@@ -34,10 +30,11 @@ import {
   simPlayersFromLobby,
   type SimEnv,
   type SimInit,
-  type SimWinner,
 } from '@crawlout/sim';
-import type { SimWorkerInbound, SimWorkerOutbound } from '@crawlout/sim';
-import SimWorker from '@crawlout/sim/worker?worker';
+import type { SimWorkerInbound } from '@crawlout/sim';
+import { modeParam, type SessionEvents, type SessionLobbyRequest } from './sessionLobby.js';
+import SimWorker from './simWorker.ts?worker';
+import type { SurvivalWorkerOutbound } from './survivalStatus.js';
 import { identifyYou } from '@crawlout/ui';
 import type { ClientMap } from './content.js';
 import { buildDesyncDump, saveDesyncDump } from '../net/desyncDump.js';
@@ -67,44 +64,16 @@ export interface SessionOptions {
    * Game type of a local match (client 0.11.0): 'project' is Bouwproject, Skirmish plus win route C (MatchSettings.mode,
    * protocol 0.16.0); default `?mode=`, else 'skirmish'.
    */
-  mode?: 'skirmish' | 'project';
+  mode?: 'skirmish' | 'project' | 'survival';
 }
 
-/** What the relay's lobby message says, for the menu's lobby screen. */
-export interface SessionLobby {
-  roomId: string;
-  map: string;
-  players: readonly LobbyPlayer[];
-  /** This connection's playerId, as the relay says it (null only for a relay without `you`). */
-  you: number | null;
-}
-
-/** The lobby messages a player can send from the menu. */
-export type SessionLobbyRequest = Extract<
-  ClientMessage,
-  { kind: 'ready' | 'setFaction' | 'addAi' | 'removeAi' }
->;
+export type { SessionLobby, SessionLobbyRequest } from './sessionLobby.js';
 
 /** No bundle for this long while a match runs = the lockstep is waiting; shown through onStall. */
 const LOCAL_STALL_MS = 2000;
 const STALL_CHECK_MS = 500;
 
-export interface SessionEvents {
-  onSnapshot(buf: ArrayBuffer): void;
-  onDesync(event: DesyncEvent): void;
-  onStall(notice: StallNotice | null): void;
-  onError(message: string): void;
-  /** Answer to requestStatus(): player status for the HUD plus the winner (null while the match runs). */
-  onStatus?(status: PlayerStatus, winner: SimWinner | null): void;
-  /** Answer to requestFog(): this player's fog of war on the vision grid (for a later fog overlay and minimap). */
-  onFog?(mask: FogMask): void;
-  /** Connection or lobby text for an overlay (Dutch, user-facing); null clears it. */
-  onConnection?(text: string | null): void;
-  /** Over ws: the lobby changed (every lobby message of the relay). */
-  onLobby?(lobby: SessionLobby): void;
-  /** Over ws: the socket is up (a join was sent) or went down; a down before the first connect means it never worked. */
-  onLink?(status: 'up' | 'down'): void;
-}
+export type { SessionEvents } from './sessionLobby.js';
 
 export interface Session {
   /** This client's playerId from the relay's start message (`you`); -1 before the match starts. */
@@ -120,6 +89,8 @@ export interface Session {
   sendCommand<T extends CommandType>(type: T, payload: CommandPayload<T>): void;
   /** Lobby (ws, before the match): faction, AI, ready. Ignored without a relay connection. */
   lobbyRequest(request: SessionLobbyRequest): void;
+  /** Survival co-op: the build zones per slot (sim units) of this match, undefined outside the game type Survival. */
+  survivalZones(): readonly { x: number; y: number; radius: number }[] | undefined;
   /** Asks the sim worker for this player's status (queryMessage, contract 1); the answer arrives in onStatus. */
   requestStatus(): void;
   /** Asks the sim worker for this player's fog mask (protocol 0.11.0); the answer arrives in onFog. */
@@ -143,9 +114,7 @@ export function startSession(
     ? knownFaction(data, options.aiFaction)
     : factionParam(data, 'aifaction');
   const manualLobby = options.lobby === 'manual';
-  const gameMode =
-    options.mode ??
-    (new URLSearchParams(location.search).get('mode') === 'project' ? 'project' : 'skirmish');
+  const gameMode = options.mode ?? modeParam(new URLSearchParams(location.search).get('mode'));
   const worker = new SimWorker();
   const post = (msg: SimWorkerInbound, transfer: Transferable[] = []): void =>
     worker.postMessage(msg, transfer);
@@ -192,7 +161,7 @@ export function startSession(
     events.onStall(notice);
   };
 
-  worker.onmessage = (ev: MessageEvent<SimWorkerOutbound>) => {
+  worker.onmessage = (ev: MessageEvent<SurvivalWorkerOutbound>) => {
     const msg = ev.data;
     if (msg.kind === 'snapshot') {
       const header = readSnapshotHeader(msg.buffer);
@@ -213,7 +182,7 @@ export function startSession(
     } else if (msg.kind === 'state') {
       dumpWaiters.shift()?.(msg);
     } else if (msg.kind === 'status') {
-      events.onStatus?.(msg.status, msg.winner);
+      events.onStatus?.(msg.status, msg.winner, { status: msg.survival, frame: msg.frame });
     } else if (msg.kind === 'fog') {
       events.onFog?.(msg.mask);
     } else if (msg.kind === 'error') {
@@ -235,10 +204,15 @@ export function startSession(
     return {
       seed: msg.seed,
       players: simPlayersFromLobby(data, players),
-      // win route C (data 0.31.0): the project sites only in the game type Bouwproject
+      // win route C (data 0.31.0): the project sites only in the game type Bouwproject; survival co-op (sim 0.27.0):
+      // edges and build zones only in the game type Survival (same as tools/replay env-core)
       map: simMapFromGrid(
         { ...map.grid, dominance },
-        msg.settings.mode === 'project' ? { project: data.project } : {},
+        msg.settings.mode === 'project'
+          ? { project: data.project }
+          : msg.settings.mode === 'survival'
+            ? { survival: data.survival }
+            : {},
       ),
       config: simConfigFromGameData(data),
     };
@@ -261,6 +235,7 @@ export function startSession(
       map: msg.map,
       players: msg.players,
       you: msg.you ?? null,
+      ...(msg.settings ? { mode: msg.settings.mode } : {}),
     });
     if (manualLobby) {
       // The player drives the lobby; only the map is ours to set (one map, the one this client loaded).
@@ -394,19 +369,24 @@ export function startSession(
 
   let pump: number | null = null;
   if (net === null) {
-    loopback = new LoopbackRelay({ dataVersion: data.dataVersion, defaultMap: map.grid.id });
+    loopback = new LoopbackRelay({
+      dataVersion: data.dataVersion,
+      defaultMap: map.grid.id,
+      ...(gameMode === 'survival' ? { minPlayers: 1 } : {}),
+    });
     link = loopback.connect();
     link.onMessage(onServerMessage);
     // The AI is a lobby player without a connection; it runs in the sim on every client and reports no hashes.
     link.send({ kind: 'join', roomId: 'skirmish', name: 'Jij' });
     link.send({ kind: 'setFaction', faction: ownFaction });
-    // win route C: the game type Bouwproject puts the strip mall into the sim (the host's settings)
-    if (gameMode === 'project')
+    // win route C: the game type Bouwproject puts the strip mall into the sim (the host's settings); Survival co-op
+    // too, but without the AI (the scripted AI does not know survival) and solo (the relay's minimum is 1 here)
+    if (gameMode !== 'skirmish')
       link.send({
         kind: 'setSettings',
-        settings: { mode: 'project', delayFrames: DELAY_FRAMES_DEFAULT },
+        settings: { mode: gameMode, delayFrames: DELAY_FRAMES_DEFAULT },
       });
-    loopback.addAi(aiFaction);
+    if (gameMode !== 'survival') loopback.addAi(aiFaction);
     link.send({ kind: 'ready', ready: true });
     const relay = loopback;
     pump = window.setInterval(() => {
@@ -453,8 +433,15 @@ export function startSession(
       return playerId === you ? 'Jij' : p.name;
     },
     lobbyRequest(request) {
-      if (net && !disposed && !started) link.send(request);
+      if (!net || disposed || started) return;
+      if (request.kind === 'setMode')
+        link.send({
+          kind: 'setSettings',
+          settings: { mode: request.mode, delayFrames: DELAY_FRAMES_DEFAULT },
+        });
+      else link.send(request);
     },
+    survivalZones: () => env?.map.survival?.zones,
     sendCommand(type, payload) {
       if (disposed || you < 0 || awaitingResync) return;
       link.send({

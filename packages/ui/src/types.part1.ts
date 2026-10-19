@@ -2,6 +2,7 @@
 // Holds: SelectedEntity, NetworkState, TargetingKind, RaiderKind, TargetPoint, TargetNode, +35 more.
 import type { DesyncEvent, StallNotice, Role } from '@crawlout/protocol';
 import type { MinimapProjectPart } from './project.js';
+import type { MinimapZone } from './survival.js';
 
 /** Eén geselecteerde entity, zoals de client die uit snapshot en queryMessage samenstelt. */
 export interface SelectedEntity {
@@ -145,6 +146,8 @@ export interface MinimapData {
   camps?: readonly MinimapCamp[];
   /** Win route C (ui 0.19.0): the parts of the strip mall (map knowledge), ruins outlined, held ones in the owner's colour. */
   project?: readonly MinimapProjectPart[];
+  /** Survival co-op (ui 0.20.0): the build zones in sim units; the own one is drawn brighter. Absent outside Survival. */
+  zones?: readonly MinimapZone[];
   /** w*h cellen, 1 = zichtbaar. Ontbreekt: geen fog. Vijandelijke blips buiten het zicht worden verborgen. */
   visible?: Uint8Array;
   /**

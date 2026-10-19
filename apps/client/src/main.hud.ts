@@ -36,6 +36,7 @@ import {
 } from './game/abilityHint.js';
 import { dominanceView } from './game/dominance.js';
 import { nearestRuin, projectMinimap, projectView } from './game/project.js';
+import { survivalView, survivalZones } from './game/survivalStatus.js';
 import { LOADOUT_NAMES, buildRoster } from './game/roster.js';
 import { nodeGuardLines, raiderKindOf, raiderLines, seesEnemySlaves } from './game/raiders.js';
 import type { ClientContext } from './main.context.js';
@@ -243,6 +244,8 @@ export function wireHud(ctx: ClientContext): void {
             ...((e.flags & ENTITY_FLAG.ghost) !== 0 ? { ghost: true } : {}),
           });
       }
+      // survival co-op: the build zones (the own one brighter), empty in other game types
+      const zones = survivalZones(session.survivalZones(), session.playerId);
       // creep camps (protocol 0.14.0, voorstel): neutral, or in the colour of whoever took it over (data 0.27.0)
       const camps = (ctx.status?.camps ?? []).map((c) => ({
         x: c.x,
@@ -259,6 +262,7 @@ export function wireHud(ctx: ClientContext): void {
         claims,
         camps,
         project: projectMinimap(ctx.status),
+        ...(zones.length > 0 ? { zones } : {}),
         ...(ctx.minimapFog ? { fog: ctx.minimapFog } : {}),
       };
     },
@@ -331,6 +335,15 @@ export function wireHud(ctx: ClientContext): void {
       if (ids.length > 0) sendChunked('Cancel', ids, {});
     },
     getDominance: () => dominanceView(ctx.status, (id) => session.playerName(id), session.playerId),
+    // survival co-op (client 0.12.0): the wave panel (counter, countdown, boss warning, target)
+    getSurvival: () =>
+      survivalView(
+        ctx.survival?.status ?? null,
+        ctx.survival?.frame ?? 0,
+        data.survival?.waves.map((w) => w.naam) ?? [],
+        (id) => session.playerName(id),
+        session.playerId,
+      ),
     // win route C (client 0.11.0): the project panel and its restore cards
     getProject: () =>
       projectView(

@@ -112,7 +112,12 @@ export async function bootClient(ctx: ClientContext): Promise<void> {
           ctx.launchMatch(null, {
             faction: config.faction,
             aiFaction: config.aiFaction,
-            mode: config.gameType === 'build' ? 'project' : 'skirmish',
+            mode:
+              config.gameType === 'build'
+                ? 'project'
+                : config.gameType === 'survival'
+                  ? 'survival'
+                  : 'skirmish',
           }),
         connect: (config) => {
           try {

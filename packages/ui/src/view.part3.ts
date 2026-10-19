@@ -8,6 +8,7 @@ import type { AlertKind } from './types.js';
 import { ResourceBar, SideConsole, UnitConsole } from './consoles.js';
 import { RaiderBar } from './raiderBar.js';
 import { ProjectPanel } from './project.js';
+import { SurvivalPanel } from './survival.js';
 import { CardPanel } from './cards.js';
 import {
   CommandCard,
@@ -341,6 +342,7 @@ export function Hud(props: { ctl: HudController }): ComponentChild {
     state.hint ? h('div', { class: 'co-panel co-hint', role: 'status' }, state.hint) : null,
     h(Dominance, { state }),
     h(ProjectPanel, { ctl, state }),
+    h(SurvivalPanel, { state }),
     h(Minimap, { ctl, state }),
     h(HeroPanel, { ctl, state }),
     h(Toasts, { ctl, state }),

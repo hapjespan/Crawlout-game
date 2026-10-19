@@ -207,7 +207,7 @@ function PvpLobby(props: {
 }): ComponentChild {
   const { ctl, pvp, content } = props;
   const rows = lobbyRows(pvp.lobby?.players ?? [], pvp.lobby?.youId ?? null);
-  const controls = lobbyControls(rows, content.map.maxPlayers, pvp.link);
+  const controls = lobbyControls(rows, content.map.maxPlayers, pvp.link, pvp.lobby?.mode ?? null);
   const status = linkStatus(pvp);
   const otherFaction =
     content.factions.find((f) => f.key !== controls.me?.faction)?.key ??
@@ -241,6 +241,29 @@ function PvpLobby(props: {
           h('span', { class: 'co-m-pfaction' }, `${content.map.name} (${content.map.sizeLabel})`),
         ),
       ),
+      pvp.lobby && pvp.lobby.mode !== 'project'
+        ? h(
+            'div',
+            { class: 'co-m-section' },
+            h('h2', null, 'Speltype'),
+            controls.isHost
+              ? h(RadioGroup<'skirmish' | 'survival'>, {
+                  label: 'Speltype',
+                  value: pvp.lobby.mode === 'survival' ? 'survival' : 'skirmish',
+                  variant: 'seg',
+                  onChange: (mode) => ctl.deps.lobbyRequest({ kind: 'setMode', mode }),
+                  options: [
+                    { value: 'skirmish', label: 'Skirmish' },
+                    { value: 'survival', label: 'Survival co\u2011op (1 tot 4 spelers)' },
+                  ],
+                })
+              : h(
+                  'span',
+                  { class: 'co-m-pfaction' },
+                  pvp.lobby.mode === 'survival' ? 'Survival co\u2011op' : 'Skirmish',
+                ),
+          )
+        : null,
       h(
         'ul',
         { class: 'co-m-players', 'aria-label': 'Spelers in de kamer' },

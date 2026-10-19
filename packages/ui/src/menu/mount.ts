@@ -74,8 +74,8 @@ export function mountMenu(
       ctl.dispatch({ type: 'progress', value, ...(label ? { label } : {}) }),
     setLoaded: () => ctl.dispatch({ type: 'loaded' }),
     setLink: (status) => ctl.dispatch({ type: 'pvp/link', status }),
-    setLobby: (roomId, map, players, you) =>
-      ctl.dispatch({ type: 'pvp/lobby', roomId, map, players, you }),
+    setLobby: (roomId, map, players, you, mode) =>
+      ctl.dispatch({ type: 'pvp/lobby', roomId, map, players, you, mode }),
     setError: (message) => ctl.dispatch({ type: 'pvp/error', message }),
     hide: () => ctl.setVisible(false),
     show: (screen?: MenuScreen) => (screen ? ctl.showScreen(screen) : ctl.setVisible(true)),

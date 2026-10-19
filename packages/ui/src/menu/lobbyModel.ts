@@ -80,6 +80,7 @@ export function lobbyControls(
   rows: readonly LobbyRow[],
   maxPlayers: number,
   link: LobbyLink,
+  mode: string | null = null,
 ): LobbyControls {
   const me = rows.find((r) => r.you) ?? null;
   const isHost = me?.host === true;
@@ -102,7 +103,8 @@ export function lobbyControls(
   const count = rows.length;
   const base = {
     ...off,
-    canAddAi: isHost && count < maxPlayers,
+    // Survival co-op has no AI yet (the scripted AI does not know it): no AI slots
+    canAddAi: isHost && count < maxPlayers && mode !== 'survival',
     canRemoveAi: isHost && hasAi,
   };
   if (count > maxPlayers)
@@ -110,11 +112,15 @@ export function lobbyControls(
       ...base,
       hint: `Deze kaart is voor ${maxPlayers} spelers: er zijn er te veel in de kamer.`,
     };
+  if (mode === 'survival' && hasAi)
+    return { ...base, hint: 'Survival kent nog geen AI: verwijder de AI uit de kamer.' };
   if (count < 2)
     return {
       ...base,
       hint: isHost
-        ? 'Wacht op een tweede speler, of voeg een AI toe.'
+        ? mode === 'survival'
+          ? 'Survival co-op: wacht op een tweede speler (alleen spelen kan via Tegen AI).'
+          : 'Wacht op een tweede speler, of voeg een AI toe.'
         : 'Wacht op de andere spelers…',
     };
   if (me.ready)

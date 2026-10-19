@@ -31,6 +31,7 @@ export function wireMatchState(ctx: ClientContext): void {
   ctx.entities = new Map<number, EntityRow>();
   ctx.ownCache = null;
   ctx.status = null;
+  ctx.survival = null;
   ctx.network = { desync: null, stall: null };
   const listeners = new Set<() => void>();
   const notify = (): void => listeners.forEach((l) => l());
@@ -151,11 +152,15 @@ export function wireMatchState(ctx: ClientContext): void {
     onFog(mask) {
       if (ctx.fogOn) applyFog(mask);
     },
-    onStatus(next, winner) {
+    onStatus(next, winner, survival) {
       for (const a of projectAlerts(data, ctx.status, next, session.playerId)) alert(a);
       ctx.status = next;
+      ctx.survival = survival?.status ? { status: survival.status, frame: survival.frame } : null;
       renderer.setClaimStates(next.claimPoints);
-      if (winner) showEnd(winner);
+      // survival: Sim.winner() stays null, the end is in survivalStatus().result
+      const outcome = ctx.survival?.status.result?.outcome;
+      if (outcome) showEnd(null, outcome);
+      else if (winner) showEnd(winner);
       else checkBeds(next);
       notify();
     },
@@ -170,7 +175,8 @@ export function wireMatchState(ctx: ClientContext): void {
     // While the menu is up it shows the connection itself; the overlay is for the match (reconnects, waiting).
     onConnection: (text) => netStatus.set(menu?.isVisible() ? null : text),
     // The menu's lobby shows the relay's side of the story (the link, the lobby, its error messages).
-    onLobby: (lobby) => menu?.setLobby(lobby.roomId, lobby.map, lobby.players, lobby.you),
+    onLobby: (lobby) =>
+      menu?.setLobby(lobby.roomId, lobby.map, lobby.players, lobby.you, lobby.mode),
     onLink: (link) => menu?.setLink(link),
     onError: (message) => {
       console.error(`sim: ${message}`);
@@ -183,19 +189,22 @@ export function wireMatchState(ctx: ClientContext): void {
   }, FOG_POLL_MS);
 
   let ended = false;
-  function showEnd(winner: SimWinner): void {
+  function showEnd(winner: SimWinner | null, survival?: 'survived' | 'overrun'): void {
     if (ended) return;
     ended = true;
-    const won = winner.playerId === session.playerId;
-    const how = {
-      destruction: 'vernietiging',
-      dominance: 'dominantie',
-      surrender: 'opgave',
-      project: 'het Bouwproject',
-    }[winner.reason];
+    const won = survival ? survival === 'survived' : winner?.playerId === session.playerId;
+    const how = winner
+      ? {
+          destruction: 'vernietiging',
+          dominance: 'dominantie',
+          surrender: 'opgave',
+          project: 'het Bouwproject',
+        }[winner.reason]
+      : '';
     mountMatchEnd(endEl, {
       won,
       how,
+      ...(survival ? { survival } : {}),
       onMenu: () => location.assign(menuUrl(location)),
       ...(hudSkin ? { skin: hudSkin } : {}),
       skinOn: skinOn && ctx.settings.hudSkin,

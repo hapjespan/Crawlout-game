@@ -380,18 +380,28 @@ export function AiScreen(props: {
               options: factions,
             }),
           ),
-          h(
-            'div',
-            { class: 'co-m-section' },
-            h('h2', null, 'Factie van de AI'),
-            h(RadioGroup, {
-              label: 'Factie van de AI',
-              value: ai.aiFaction,
-              variant: 'seg',
-              onChange: (key) => ctl.dispatch({ type: 'ai/aiFaction', key }),
-              options: aiFactions,
-            }),
-          ),
+          ai.gameType === 'survival'
+            ? h(
+                'div',
+                { class: 'co-m-section' },
+                h(
+                  'p',
+                  { class: 'co-m-sub', style: 'margin:0' },
+                  'Alleen tegen de golven, zonder AI. Samen met 1 tot 3 anderen? Kies Speler tegen speler en zet het speltype op Survival co\u2011op.',
+                ),
+              )
+            : h(
+                'div',
+                { class: 'co-m-section' },
+                h('h2', null, 'Factie van de AI'),
+                h(RadioGroup, {
+                  label: 'Factie van de AI',
+                  value: ai.aiFaction,
+                  variant: 'seg',
+                  onChange: (key) => ctl.dispatch({ type: 'ai/aiFaction', key }),
+                  options: aiFactions,
+                }),
+              ),
           h(
             'div',
             { class: 'co-m-section' },

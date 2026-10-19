@@ -176,15 +176,14 @@ describe('Tegen AI', () => {
     expect(q('#co-m-ai-title')?.textContent).toBe('Nieuw potje');
     expect(host.textContent).toContain('Rustbelt XL');
     expect(host.textContent).toContain('3 punten, 8 min');
-    const soon = host.querySelectorAll('.co-m-soon');
-    expect(soon).toHaveLength(1);
-    expect([...soon].map((s) => s.textContent)).toEqual(['Binnenkort']);
+    // all three game types are playable now (Survival co-op since ui 0.20.0)
+    expect(host.querySelectorAll('.co-m-soon')).toHaveLength(0);
     click(byText('[role=radio]', 'Raiders'));
     click(byText('.co-btn', 'Start'));
     expect(calls).toEqual(['ai:raiders:raiders']);
   });
 
-  it('arrow keys inside a group choose, and skip what is not available', () => {
+  it('arrow keys inside a group choose', () => {
     setup();
     toAi();
     document.body.appendChild(host);
@@ -194,9 +193,7 @@ describe('Tegen AI', () => {
     act(() => {
       radios[0]!.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
     });
-    // survival is disabled: the arrow skips it to Bouwproject (win route C)
-    expect(radios[2]!.getAttribute('aria-checked')).toBe('true');
-    expect(radios[1]!.getAttribute('aria-disabled')).toBe('true');
+    expect(radios[1]!.getAttribute('aria-checked')).toBe('true');
     const factions = host.querySelector('[role=radiogroup][aria-label="Jouw factie"]')!;
     const f = [...factions.querySelectorAll<HTMLElement>('[role=radio]')];
     f[0]!.focus();
@@ -336,6 +333,16 @@ describe('end of a match', () => {
     expect(end.querySelector('[role=alertdialog]')).not.toBeNull();
     click(end.querySelector('.co-btn'));
     expect(back).toBe(1);
+    act(() =>
+      mountMatchEnd(end, { won: false, how: '', survival: 'overrun', onMenu: () => back++ }),
+    );
+    expect(end.textContent).toContain('Overrompeld');
+    expect(end.textContent).toContain('Alle hoofdkwartieren zijn gevallen');
+    act(() =>
+      mountMatchEnd(end, { won: true, how: '', survival: 'survived', onMenu: () => back++ }),
+    );
+    expect(end.textContent).toContain('Gewonnen');
+    expect(end.textContent).toContain('laatste golf');
     act(() => mountMatchEnd(end, { won: true, how: 'dominantie', onMenu: () => back++ }));
     expect(end.textContent).toContain('Gewonnen');
   });

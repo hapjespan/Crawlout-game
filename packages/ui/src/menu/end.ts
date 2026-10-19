@@ -8,6 +8,11 @@ export interface MatchEndOptions {
   won: boolean;
   /** "vernietiging", "dominantie" or "opgave". */
   how: string;
+  /**
+   * Survival co-op (ui 0.20.0, Sim.survivalStatus().result): 'survived' (the last wave is beaten) or 'overrun' (every
+   * headquarters is gone). Replaces the "door ..." line with its own text and "Verloren" with "Overrompeld".
+   */
+  survival?: 'survived' | 'overrun';
   /** "Terug naar menu". */
   onMenu(): void;
   skin?: HudSkin;
@@ -17,7 +22,13 @@ export interface MatchEndOptions {
 function MatchEnd(props: MatchEndOptions): ComponentChild {
   const button = useRef<HTMLButtonElement>(null);
   useEffect(() => button.current?.focus({ preventScroll: true }), []);
-  const title = props.won ? 'Gewonnen' : 'Verloren';
+  const title = props.survival === 'overrun' ? 'Overrompeld' : props.won ? 'Gewonnen' : 'Verloren';
+  const sub =
+    props.survival === 'survived'
+      ? 'De laatste golf is verslagen: jullie hebben het overleefd.'
+      : props.survival === 'overrun'
+        ? 'Alle hoofdkwartieren zijn gevallen.'
+        : `door ${props.how}.`;
   return h(
     'div',
     { class: 'co-hud co-m-endroot', lang: 'nl' },
@@ -35,7 +46,7 @@ function MatchEnd(props: MatchEndOptions): ComponentChild {
         { class: 'co-m-title', id: 'co-m-end-title', ...(props.won ? {} : { 'data-lost': '' }) },
         title,
       ),
-      h('p', { class: 'co-m-sub', id: 'co-m-end-how' }, `door ${props.how}.`),
+      h('p', { class: 'co-m-sub', id: 'co-m-end-how' }, sub),
       h(
         'div',
         { class: 'co-m-end-actions' },

@@ -16,7 +16,7 @@ export interface GameTypeInfo {
   id: GameTypeId;
   name: string;
   blurb: string;
-  /** Skirmish and (ui 0.19.0) Bouwproject are playable; Survival is shown as "binnenkort". */
+  /** All three are playable (Survival co-op since ui 0.20.0). */
   available: boolean;
 }
 
@@ -30,8 +30,8 @@ export const GAME_TYPES: readonly GameTypeInfo[] = [
   {
     id: 'survival',
     name: 'Survival co\u2011op',
-    blurb: 'Samen golven ghouls en mutanten verslaan.',
-    available: false,
+    blurb: 'Samen golven ghouls en mutanten verslaan: 1 tot 4 spelers, zonder AI.',
+    available: true,
   },
   {
     id: 'build',
@@ -54,9 +54,9 @@ export interface AiSetup {
 
 export interface AiMatchConfig {
   /** build: Bouwproject, Skirmish plus win route C (MatchSettings.mode 'project'). */
-  gameType: 'skirmish' | 'build';
+  gameType: 'skirmish' | 'build' | 'survival';
   faction: string;
-  /** Always a real faction key here: "willekeurig" is resolved when the match starts. */
+  /** Always a real faction key here: "willekeurig" is resolved when the match starts. Unused in survival (no AI). */
   aiFaction: string;
 }
 
@@ -76,10 +76,14 @@ export interface PvpConnectConfig {
 
 export type LinkStatus = 'connecting' | 'up' | 'down';
 
+export type LobbyMode = 'skirmish' | 'survival' | 'project';
+
 export interface LobbySnapshot {
   roomId: string;
   map: string;
   players: readonly LobbyPlayer[];
+  /** The game type the host set (MatchSettings.mode), null while the relay does not say. */
+  mode: LobbyMode | null;
   /** This client's player id, or null when it cannot be told yet. */
   youId: number | null;
 }
@@ -129,6 +133,8 @@ export type MenuAction =
       roomId: string;
       map: string;
       players: readonly LobbyPlayer[];
+      /** MatchSettings.mode of the lobby message. */
+      mode?: LobbyMode | undefined;
       /** The relay's `you`; the name match (identifyYou) is only the fallback without it. */
       you?: number | null | undefined;
     }
@@ -279,7 +285,10 @@ export function reduceMenu(state: MenuState, action: MenuAction, env: MenuEnv): 
         : done(state);
     case 'ai/start': {
       const gameType = state.ai.gameType;
-      if (state.screen !== 'ai' || (gameType !== 'skirmish' && gameType !== 'build'))
+      if (
+        state.screen !== 'ai' ||
+        (gameType !== 'skirmish' && gameType !== 'build' && gameType !== 'survival')
+      )
         return done(state);
       const aiFaction =
         state.ai.aiFaction === RANDOM_FACTION
@@ -346,7 +355,13 @@ export function reduceMenu(state: MenuState, action: MenuAction, env: MenuEnv): 
         identifyYou(action.players, state.pvp.sentName, state.pvp.lobby?.youId ?? null);
       return done(
         withPvp(state, {
-          lobby: { roomId: action.roomId, map: action.map, players: action.players, youId },
+          lobby: {
+            roomId: action.roomId,
+            map: action.map,
+            players: action.players,
+            mode: action.mode ?? null,
+            youId,
+          },
           link: 'up',
           everUp: true,
           notice: null,

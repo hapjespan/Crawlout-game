@@ -4,6 +4,7 @@ import { kindOfTypeId } from '@crawlout/data';
 import type { HudController } from './controller.js';
 import { CARD_NOTICE_MS, MAX_TOASTS, TOAST_MS, isAlarm } from './controller.actions.js';
 import type { ProjectView } from './project.js';
+import type { SurvivalView } from './survival.js';
 import type {
   BuildOption,
   BuildingButton,
@@ -78,6 +79,8 @@ export interface HudState {
   dominance: DominanceView | null;
   /** Win route C (ui 0.19.0): the project panel, null without a Bouwproject. */
   project: ProjectView | null;
+  /** Survival co-op (ui 0.20.0): the wave panel, null outside the game type Survival. */
+  survival: SurvivalView | null;
   buildOptions: readonly BuildOption[];
   /** Gekozen bouwoptie in plaatsingsmodus. */
   placement: BuildOption | null;
@@ -185,6 +188,7 @@ export function createControllerCore(
       minimap: null,
       dominance: null,
       project: null,
+      survival: null,
       buildOptions: [],
       placement: null,
       perkOptions: [],
@@ -303,6 +307,7 @@ export function readState(core: HudControllerCore): void {
     minimap: d.getMinimap?.() ?? null,
     dominance: d.getDominance?.() ?? null,
     project: d.getProject?.() ?? null,
+    survival: d.getSurvival?.() ?? null,
     buildOptions: core.state.buildMenuOpen ? (d.getBuildOptions?.() ?? []) : [],
     placement,
     perkOptions: pendingPerks

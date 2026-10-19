@@ -2,6 +2,7 @@
 // Holds: HudDeps, HudHandle.
 import type { CommandType, CommandPayload, PlayerStatus } from '@crawlout/protocol';
 import type { ProjectView } from './project.js';
+import type { SurvivalView } from './survival.js';
 import type {
   BuildOption,
   BuildingButton,
@@ -90,6 +91,8 @@ export interface HudDeps {
   getDominance?(): DominanceView | null;
   /** Win route C (ui 0.19.0): the project panel; null or absent without a Bouwproject. Keep the object stable. */
   getProject?(): ProjectView | null;
+  /** Survival co-op (ui 0.20.0): the wave panel; null or absent outside Survival. Keep the object stable. */
+  getSurvival?(): SurvivalView | null;
   /** Win route C: send the selected builders to restore the nearest ruin of this kind (index in GameData.project.parts). */
   restoreProject?(kind: number): void;
   /** Waarschuwingen; geeft de afmelder terug. */
