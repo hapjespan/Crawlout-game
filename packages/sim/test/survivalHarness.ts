@@ -2,7 +2,7 @@ import { OWNER_NEUTRAL } from '@crawlout/protocol';
 import { createSim, hqOf } from '../src/index.js';
 import type { Sim, SimInit, SimPlayer, SimSurvival, SimSurvivalWave } from '../src/index.js';
 import { CREEP_SURVIVAL } from '../src/ecs/world.js';
-import { survivalMapOf } from '../src/fromData.part4.js';
+import { survivalMapOf, survivalScrapNodes } from '../src/fromData.part4.js';
 import { createOpenMap, testPlayers } from '../src/testing.js';
 import { CONFIG, DATA, bundle } from './helpers.js';
 
@@ -26,7 +26,12 @@ export function survivalInit(
   return {
     seed,
     players,
-    map: { ...base, survival: sm, spawns: sm.zones.map((z) => ({ x: z.x, y: z.y })) },
+    map: {
+      ...base,
+      survival: sm,
+      spawns: sm.zones.map((z) => ({ x: z.x, y: z.y })),
+      scrapNodes: survivalScrapNodes(base, DATA.survival!, sm.zones, base.scrapNodes),
+    },
     config: { ...CONFIG, survival },
   };
 }

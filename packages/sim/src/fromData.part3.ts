@@ -3,7 +3,7 @@
 import type { SimMap, SimPlayer } from './config.js';
 import type { GameData } from '@crawlout/data';
 import { CLAIM_KINDS } from './fromData.part1.js';
-import { type SurvivalSource, survivalMapOf } from './fromData.part4.js';
+import { type SurvivalSource, survivalMapOf, survivalScrapNodes } from './fromData.part4.js';
 import type { ClaimKind } from './fromData.part1.js';
 
 /** Wat simMapFromGrid nodig heeft: MapGrid uit packages/map (structureel) plus de dominantie in ticks (convertDominance). */
@@ -47,7 +47,8 @@ export interface SimMapOptions {
   /**
    * Survival co-op (sim 0.27.0, data 0.33.0): the game type Survival (MatchSettings.mode 'survival') with
    * GameData.survival. Gives SimMap.survival (edges and build zones) and puts the spawns on the zone centres (slot =
-   * playerId). Absent: no survival.
+   * playerId); sim 0.28.0 (data 0.34.0): the scrap nodes inside the zones become the fixed zone nodes of the data
+   * (survivalScrapNodes). Absent: no survival.
    */
   readonly survival?: SurvivalSource | null;
 }
@@ -67,6 +68,7 @@ export function simMapFromGrid(grid: SimMapSource, opts: SimMapOptions = {}): Si
     opts.survival === undefined || opts.survival === null
       ? undefined
       : survivalMapOf(grid, opts.survival);
+  const mapNodes = grid.scrapNodes.map((n) => ({ x: n.ux, y: n.uy, amount: n.amount }));
   return {
     ...(sites.length === 0 ? {} : { projectSites: sites }),
     ...(survival === undefined ? {} : { survival }),
@@ -77,7 +79,10 @@ export function simMapFromGrid(grid: SimMapSource, opts: SimMapOptions = {}): Si
       survival === undefined
         ? grid.spawns.map((s) => ({ x: s.ux, y: s.uy }))
         : survival.zones.map((z) => ({ x: z.x, y: z.y })),
-    scrapNodes: grid.scrapNodes.map((n) => ({ x: n.ux, y: n.uy, amount: n.amount })),
+    scrapNodes:
+      survival === undefined
+        ? mapNodes
+        : survivalScrapNodes(grid, opts.survival!, survival.zones, mapNodes),
     claimPoints: grid.claimPoints.map((c) => {
       const kind = CLAIM_KINDS.indexOf(c.kind as ClaimKind);
       if (kind < 0) throw new Error(`onbekend claimpunt-soort ${c.kind}`);

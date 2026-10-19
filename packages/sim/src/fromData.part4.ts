@@ -1,9 +1,11 @@
 // Survival co-op (sim 0.27.0, data 0.33.0; voorstel, ter bevestiging door de architect): GameData.survival to
 // SimConfig.survival, and the survival geometry of a map (SimMap.survival) from its percentages.
-// Holds: simSurvivalFromData, survivalMapOf.
+// Holds: simSurvivalFromData, survivalMapOf, survivalScrapNodes.
 import { type GameData, unitTypeId } from '@crawlout/data';
+import type { SimScrapNode } from './config.types.js';
 import type { SimSurvival, SimSurvivalMap } from './config.survival.js';
 import { idiv } from './math/int.js';
+import { TRIG_ONE, cosA, sinA } from './math/trig.js';
 
 export type SurvivalSource = NonNullable<GameData['survival']>;
 
@@ -118,4 +120,31 @@ export function survivalMapOf(g: SurvivalGrid, s: SurvivalSource): SimSurvivalMa
       nearEdge: z.nearEdge,
     })),
   };
+}
+
+/**
+ * Survival co-op (sim 0.28.0, data 0.34.0; voorstel, ter bevestiging door de architect): the scrap nodes of a survival
+ * map. The map nodes inside a build zone (centre distance at most its radius) go, the ones outside every zone stay (in
+ * map order); then every zone (slot order) gets the fixed nodes of the data (GameData.survival.zoneScrap, in file
+ * order) at their distance and angle from the zone centre, each snapped to the nearest cell of the main walkable
+ * component. So every slot has the same scrap, whatever the map has around the zone.
+ */
+export function survivalScrapNodes(
+  g: SurvivalGrid,
+  s: SurvivalSource,
+  zones: SimSurvivalMap['zones'],
+  mapNodes: readonly SimScrapNode[],
+): SimScrapNode[] {
+  const inZone = (n: { x: number; y: number }): boolean =>
+    zones.some((z) => (n.x - z.x) * (n.x - z.x) + (n.y - z.y) * (n.y - z.y) <= z.radius * z.radius);
+  const out = mapNodes.filter((n) => !inZone(n)).map((n) => ({ ...n }));
+  if (s.zoneScrap.length === 0) return out;
+  const mask = mainComponent(g);
+  for (const z of zones)
+    for (const n of s.zoneScrap) {
+      const x = z.x + idiv(n.distU * cosA(n.angle), TRIG_ONE);
+      const y = z.y + idiv(n.distU * sinA(n.angle), TRIG_ONE);
+      out.push({ ...snap(g, mask, x, y), amount: n.amount });
+    }
+  return out;
 }
