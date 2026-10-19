@@ -2,6 +2,7 @@
 // (main.boot.ts, main.state.ts, main.orders.ts, main.placement.ts, main.hud.ts, main.input.ts, main.devApi.ts). What
 // used to be closure variables of main() and is used across stages lives here; a callback reads it at call time, so a
 // value one stage reassigns (selection, entities, status, placing, ...) is seen by every other stage.
+import type { SurvivalStatus } from '@crawlout/sim';
 import type { CommandPayload, CommandType, FogMask, PlayerStatus } from '@crawlout/protocol';
 import type { BuildingData, GameData } from '@crawlout/data';
 import type { CrawloutRenderer } from '@crawlout/render';
@@ -66,6 +67,8 @@ export interface ClientContext {
   entities: Map<number, EntityRow>;
   ownCache: EntityRow[] | null;
   status: PlayerStatus | null;
+  /** Survival co-op (client 0.12.0): the latest Sim.survivalStatus() with its sim frame; null outside Survival. */
+  survival: { status: SurvivalStatus; frame: number } | null;
   network: NetworkState;
   listeners: Set<() => void>;
   notify: () => void;

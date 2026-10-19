@@ -28,6 +28,7 @@ import {
   type OwnClaimSite,
 } from './game/claimPlacement.js';
 import { buildingName } from './game/cards.js';
+import { zoneReason } from './game/survivalStatus.js';
 import { placementIssue, type CellRect } from './game/placementRules.js';
 import type { ClientContext, PlacementSpot } from './main.context.js';
 
@@ -239,6 +240,17 @@ export function wirePlacement(ctx: ClientContext): void {
   function placementReason(option: BuildOption, cx: number, cy: number): string | null {
     const hud = hudPlacementReason(option, cx, cy);
     if (hud) return hud;
+    // survival co-op: outside the own build zone (the sim's PLACE_ZONE; its rule is not in the sim placement module)
+    const { w, h } = option.footprint;
+    const zone = zoneReason(
+      session.survivalZones()?.[session.playerId] ?? null,
+      (cx >> 8) - (w >> 1),
+      (cy >> 8) - (h >> 1),
+      w,
+      h,
+      buildingOf(option.typeId)?.provides.includes(CLAIM_PROVIDES) === true,
+    );
+    if (zone !== null) return zone;
     const code = placementReasonFor(option, cx, cy);
     if (code === PLACE_HQ_RANGE) {
       // the Kooi's rule, in meters from the data: "Kooi moet aan de rand van je basis staan (18–34 m van het kamp)"

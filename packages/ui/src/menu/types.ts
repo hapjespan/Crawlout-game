@@ -1,6 +1,6 @@
 import type { LobbyPlayer } from '@crawlout/protocol';
 import type { MinimapData } from '../types.js';
-import type { AiMatchConfig, MenuScreen, PvpConnectConfig, PvpForm } from './flow.js';
+import type { AiMatchConfig, LobbyMode, MenuScreen, PvpConnectConfig, PvpForm } from './flow.js';
 import type { MenuSettings } from './settings.js';
 
 /** A playable faction as the menu shows it. Names and numbers come from the data; the blurb is menu text. */
@@ -40,6 +40,7 @@ export interface MenuContent {
 export type LobbyRequest =
   | { kind: 'ready'; ready: boolean }
   | { kind: 'setFaction'; faction: string }
+  | { kind: 'setMode'; mode: 'skirmish' | 'survival' }
   | { kind: 'addAi'; faction: string }
   | { kind: 'removeAi'; playerId: number };
 
@@ -74,7 +75,13 @@ export interface MenuHandle {
   setLoaded(): void;
   setLink(status: 'up' | 'down'): void;
   /** `you`: the playerId the relay gave this connection; omit (or null) only for a relay without it. */
-  setLobby(roomId: string, map: string, players: readonly LobbyPlayer[], you?: number | null): void;
+  setLobby(
+    roomId: string,
+    map: string,
+    players: readonly LobbyPlayer[],
+    you?: number | null,
+    mode?: LobbyMode,
+  ): void;
   setError(message: string): void;
   /** Hides the menu (the match starts); `show()` brings it back. */
   hide(): void;

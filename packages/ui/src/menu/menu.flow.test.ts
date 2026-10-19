@@ -105,17 +105,17 @@ describe('Tegen AI', () => {
     });
   });
 
-  it('lists Skirmish and Bouwproject as playable, Survival as not yet available', () => {
+  it('lists all three game types as playable', () => {
     expect(GAME_TYPES.map((g) => [g.id, g.available])).toEqual([
       ['skirmish', true],
-      ['survival', false],
+      ['survival', true],
       ['build', true],
     ]);
   });
 
-  it('refuses a game type that is not available yet, and starts a Bouwproject (win route C)', () => {
-    const s = ai({ type: 'ai/gameType', id: 'survival' }).state;
-    expect(s.ai.gameType).toBe('skirmish');
+  it('starts a Survival co-op run and a Bouwproject (win route C)', () => {
+    const sv = ai({ type: 'ai/gameType', id: 'survival' }, { type: 'ai/start' }).effect;
+    expect(sv?.kind === 'startAi' && sv.config.gameType).toBe('survival');
     const e = ai({ type: 'ai/gameType', id: 'build' }, { type: 'ai/start' }).effect;
     expect(e?.kind).toBe('startAi');
     expect(e?.kind === 'startAi' && e.config.gameType).toBe('build');
@@ -332,6 +332,27 @@ describe('lobby model', () => {
     you: number,
     link: 'connecting' | 'up' | 'down' = 'up',
   ) => lobbyControls(lobbyRows(players, you), 2, link);
+
+  it('Survival co-op offers no AI slot and refuses to start with an AI in the room', () => {
+    const solo = lobbyControls(lobbyRows([p(0, 'Rik')], 0), 4, 'up', 'survival');
+    expect(solo.canAddAi).toBe(false);
+    expect(solo.hint).toContain('Survival');
+    const withAi = lobbyControls(
+      lobbyRows([p(0, 'Rik'), p(1, 'AI 2', { ai: true })], 0),
+      4,
+      'up',
+      'survival',
+    );
+    expect(withAi.actionEnabled).toBe(false);
+    expect(withAi.canRemoveAi).toBe(true);
+    const duo = lobbyControls(
+      lobbyRows([p(0, 'Rik'), p(1, 'Els', { ready: true })], 0),
+      4,
+      'up',
+      'survival',
+    );
+    expect(duo.actionEnabled).toBe(true);
+  });
 
   it('waits for a second player, or offers an AI to the host', () => {
     const c = controls([p(0, 'Rik')], 0);

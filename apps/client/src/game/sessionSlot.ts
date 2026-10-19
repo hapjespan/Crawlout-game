@@ -37,6 +37,7 @@ export function createSessionSlot(): SessionSlot {
     playerName: (id) => real?.playerName(id) ?? `Speler ${id + 1}`,
     sendCommand: (type, payload) => real?.sendCommand(type, payload),
     lobbyRequest: (request) => real?.lobbyRequest(request),
+    survivalZones: () => real?.survivalZones(),
     requestStatus: () => real?.requestStatus(),
     requestFog: () => real?.requestFog(),
     revealAll: (on) => real?.revealAll(on),

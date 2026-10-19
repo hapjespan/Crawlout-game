@@ -47,6 +47,7 @@ export type {
   UnitState,
 } from './types.js';
 export { CARD_ICON_IDS } from './types.js';
+export type { MinimapZone, SurvivalRank, SurvivalView } from './survival.js';
 export type { MinimapProjectPart, ProjectHold, ProjectKindView, ProjectView } from './project.js';
 export { ACTIONS, HudController, unitStateOf } from './controller.js';
 export { hudSkinCss, menuSkinCss, skinComplete } from './skin.js';
