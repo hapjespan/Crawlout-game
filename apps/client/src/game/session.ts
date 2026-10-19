@@ -82,6 +82,8 @@ export interface Session {
   readonly faction: string | null;
   /** Last executed frame seen in a snapshot (-1 before the first); for tests and debugging. */
   readonly frame: number;
+  /** The state hash this client computed at a hash frame (every HASH_INTERVAL_FRAMES; the last 64 are kept), for the sync tests. */
+  hashAt(frame: number): number | undefined;
   /** Resolves when the first `start` arrived (immediately for the loopback); playerId and faction are valid then. */
   readonly started: Promise<void>;
   /** Display name of a player from the start message (AI players included). */
@@ -161,6 +163,8 @@ export function startSession(
     events.onStall(notice);
   };
 
+  const hashLog = new Map<number, number>();
+
   worker.onmessage = (ev: MessageEvent<SurvivalWorkerOutbound>) => {
     const msg = ev.data;
     if (msg.kind === 'snapshot') {
@@ -168,6 +172,8 @@ export function startSession(
       lastFrame = header.tick;
       lastProgress = performance.now();
       if (header.tick % HASH_INTERVAL_FRAMES === 0) {
+        hashLog.set(header.tick, header.hash);
+        hashLog.delete(header.tick - 64 * HASH_INTERVAL_FRAMES);
         link.send({
           kind: 'hash',
           report: { frame: header.tick, playerId: you, hash: header.hash },
@@ -177,6 +183,10 @@ export function startSession(
     } else if (msg.kind === 'hashes') {
       // Catch-up (resync, stall): the worker posts only the last snapshot of a beat and reports the hashes of the
       // frames in between here; the relay expects one per HASH_INTERVAL_FRAMES frames.
+      for (const r of msg.reports) {
+        hashLog.set(r.frame, r.hash);
+        hashLog.delete(r.frame - 64 * HASH_INTERVAL_FRAMES);
+      }
       for (const r of msg.reports)
         link.send({ kind: 'hash', report: { frame: r.frame, playerId: you, hash: r.hash } });
     } else if (msg.kind === 'state') {
@@ -426,6 +436,7 @@ export function startSession(
     get frame() {
       return lastFrame;
     },
+    hashAt: (frame) => hashLog.get(frame),
     started: startedPromise,
     playerName(playerId) {
       const p = roster.find((r) => r.playerId === playerId);

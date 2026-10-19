@@ -23,6 +23,10 @@ MENU_URL=http://localhost:5212/ MENU_SHOTS=/some/dir pnpm --filter @crawlout/rep
 
 De andere browserscripts (hud-clicks, hud-raiders, playtest) sturen `?skip=1`: dat slaat splash en menu over.
 
+## Survival co-op playtest
+
+`SURVIVAL_URL=http://localhost:5230/ pnpm --filter @crawlout/replay survival-playtest` (src/survival-playtest.ts, own vite on a free port as above; relay on a free port started by the script). Solo: menu, Tegen AI, Survival co-op, HUD wave counter and countdown, "Buiten je bouwzone" (a woning chain to the zone edge, then a hover outside), wave 1 on the Playwright fake clock. Relay: host and guest in two browsers, Survival in the lobby, both reach wave 1 with equal state hashes (`session.hashAt`) and no desync banner. `SURVIVAL_PART=solo|relay`, `SURVIVAL_RELAY_TICK_MS` (default 12; 50 is real time), `SURVIVAL_RELAY_WAVES`. About 1 minute in total.
+
 ## Balansmeting
 
 `pnpm --filter @crawlout/replay run balance [-- seed ...]` (src/balance-report.ts, meting in src/balance.ts) speelt de scripted AI tegen zichzelf op Rustbelt, standaard over de seeds 1, 5, 7, 42 en 99 (dezelfde als match-length.test.ts), en daarna een bot-speler (src/bot.ts) tegen de AI: passief (geeft na zijn plan niets meer uit) en actief (schoolt boven een drempel om tot patrol). Per potje: winnaar, reden en lengte in minuten, en per speler het scrap-verloop (bank per drie minuten, piek, inkomen en uitgaven), bewoners en pop-cap, militie, claimpunten, gebouwen, techs, verliezen en het level van de held. Alleen lezen wat de sim publiek laat zien; de meting zelf mag floats gebruiken. `src/match-length.test.ts` legt de uitkomst van de vijf seeds vast (25 tot 35 minuten, scrap die niet oploopt, de held die levelt) en eist dat beide winroutes voorkomen (vernietiging en dominantie, Spelfundament 12).
