@@ -1,5 +1,5 @@
 // Split from schemas.ts to stay under the 5,000-token file limit; schemas.ts re-exports the public surface.
-// Holds: AiScript, FormationTuning, PlacementTuning, VisionTuning, GuardTuning, AiScript, +3 more.
+// Holds: AiScript, FormationTuning, PlacementTuning, VisionTuning, GuardTuning, BaseDefenseTuning, AiScript, +3 more.
 import { z } from 'zod';
 import { comment, id, nonneg, pct, sight } from './schemas.part1.js';
 import { AiSite, RaidPlan } from './schemas.part2.js';
@@ -211,6 +211,19 @@ export const GuardTuning = z
     message: 'leashM is minstens standM',
     path: ['leashM'],
   });
+
+// Base defence (data/sim.json `baseDefense`, data 0.35.0; voorstel, ter bevestiging door de architect): fighters in an
+// attacked base engage the threat, workers take shelter, everyone resumes after calmS without a threat.
+export const BaseDefenseTuning = z
+  .object({
+    survival: z.boolean(), // on in the game type Survival (radius: the build zone)
+    skirmish: z.boolean(), // on in every other game type (radius: radiusM around the HQ)
+    radiusM: z.number().positive(),
+    calmS: nonneg, // the alarm ends this long after the last threat in the radius
+    retargetM: nonneg, // defenders get a new AttackMove point once the threat is this far from the old one
+    _comment: comment,
+  })
+  .strict();
 
 export type AiScript = z.infer<typeof AiScript>;
 

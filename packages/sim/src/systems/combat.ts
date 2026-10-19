@@ -8,6 +8,7 @@ import { robotRate } from './robots.js';
 import { SPECIAL_L, heroOf, heroSpecial, scalePermille } from '../effects.js';
 import { captureOf, captureTick } from './slaves.js';
 import { creepAwake } from './creeps.js';
+import { noteBaseHit } from './defense.js';
 
 // Systeem 5: gevecht. Elke unit met een doel in bereik en een lege cooldown schiet: schade (plus ability-zones) maal
 // de damage-matrix (promille) op het pantser van het doel. Hitscan, geen projectielen. Dood en opruimen gebeuren pas in
@@ -57,6 +58,7 @@ export function combatSystem(ctx: SimContext): void {
     w.hp[t] = before - idiv(dmg * mult, 1000);
     // who razes or kills it plunders it (data 0.21.0, systems/plunder.ts)
     w.lastHit[t] = w.owner[i]! + 1;
+    noteBaseHit(ctx, i, t); // base defence (sim 0.29.0)
     if (before > 0 && w.hp[t]! <= 0 && (w.mask[t]! & C.unit) !== 0 && w.owner[i]! < ctx.playerCount)
       killXp(ctx, i, t, hero);
     w.cooldown[i] = rate >= 1000 ? w.cooldownMax[i]! : idiv(w.cooldownMax[i]! * 1000, rate);

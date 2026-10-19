@@ -12,7 +12,13 @@ import {
   pct,
   sight,
 } from './schemas.part1.js';
-import { FormationTuning, GuardTuning, PlacementTuning, VisionTuning } from './schemas.part3.js';
+import {
+  BaseDefenseTuning,
+  FormationTuning,
+  GuardTuning,
+  PlacementTuning,
+  VisionTuning,
+} from './schemas.part3.js';
 
 // Sim-tuning (data/sim.json): globale getallen die de sim nodig heeft maar die bij geen loadout horen.
 export const SimTuning = z
@@ -69,6 +75,7 @@ export const SimTuning = z
     vision: VisionTuning,
     // Data 0.29.0 (the Guard command; voorstel, ter bevestiging door de architect)
     guard: GuardTuning,
+    baseDefense: BaseDefenseTuning,
   })
   .strict()
   .refine((t) => t.pathEntranceMaxCells <= t.pathSectorCells, {

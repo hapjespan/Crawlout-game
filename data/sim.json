@@ -53,5 +53,13 @@
     "standM": 5,
     "leashM": 14,
     "_comment": "Data 0.29.0 (sim-core, the Guard command; voorstel, ter bevestiging door de architect, fase-0 sectie 5 en 6). Bewaakmodus (Guard { ids, targetId }, protocol 0.15.0): a fighter (role militia or robot, not the hero) guards an own Kooi or a scrap node. It walks to within standM of it (to the edge of the Kooi footprint, to the centre of the node), engages an enemy it acquires (aggroRangeM) as long as it stays within leashM of the target, and comes back; it keeps the order until another command or until the target is gone (a razed Kooi, an empty node). For the Raiders it counts as a guard of the slaves there (factions.json slaves.revolt); for the Dwellers it simply guards the node. startwaarde, geen balans: standM 5 keeps the guard out of the gatherers' ring (formation gatherRingM) and within the 12 m guardRadiusM of the revolt rule; leashM 14 is the leash of a creep camp."
+  },
+  "baseDefense": {
+    "survival": true,
+    "skirmish": false,
+    "radiusM": 40,
+    "calmS": 8,
+    "retargetM": 6,
+    "_comment": "Data 0.35.0 (sim-core, Martien 19 oktober: \"als de basis wordt aangevallen dan gaan ze automatisch in de verdedig modus; het is niet logisch dat ze doorwerken\"; voorstel, ter bevestiging door de architect). Basisverdediging: raakt een vijand (golfeenheid, vijandelijke speler of creep) een gebouw van speler p of een unit van p binnen de basisstraal, dan is de basis van p aangevallen. Basisstraal: in Survival de straal van de bouwzone (het midden van de zone), anders radiusM rond het hoofdgebouw. Zolang er een vijandelijke unit binnen de straal staat (en tot calmS s daarna) gaan de vechters van p binnen de straal zonder taak of met werk (verzamelen, bouwen) in aanvalsgerichte mars naar de dreiging, zonder de aggroRangeM-grens, en zoeken units zonder wapen (slaven, verzamelaars, bouwers) beschutting bij het dichtstbijzijnde eigen hoofdgebouw of de Kooi. Loopt de dreiging meer dan retargetM van het marspunt weg, dan krijgen de vechters een nieuw marspunt. Daarna gaat iedereen terug naar zijn vorige order. Units met een expliciet bevel (Move, Guard, Attack en dergelijke) blijven ongemoeid. Aan in Survival; skirmish is een schakelaar, voorlopig uit (de skirmish-fixtures houden hun hashes). radiusM 40, calmS 8 en retargetM 6: startwaarde, niet gemeten."
   }
 }

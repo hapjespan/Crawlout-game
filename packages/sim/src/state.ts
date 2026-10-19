@@ -8,6 +8,7 @@ import type { Vision } from './vision.js';
 import type { CreepCamps } from './systems/creeps.js';
 import type { ProjectState } from './systems/project.js';
 import type { SurvivalState } from './systems/survival.js';
+import type { DefenseState } from './systems/defense.js';
 
 // Volledige state als één reeks byte-chunks in vaste volgorde. serialize() plakt ze achter elkaar in één
 // ArrayBuffer; hash() is FNV-1a 32-bit over precies dezelfde bytes. Daardoor geldt per constructie:
@@ -88,6 +89,8 @@ export interface StateParts {
   readonly project: ProjectState;
   /** Survival co-op (sim 0.27.0): wave targets and batches, only in the game type Survival (survival.active). */
   readonly survival: SurvivalState;
+  /** Base defence (sim 0.29.0): alarms and defence marks, only where it is on (defense.active). */
+  readonly defense: DefenseState;
 }
 
 /** De chunks na de header, gemaakt op basis van de huidige highWater en freeCount. */
@@ -133,6 +136,12 @@ function bodyChunks(p: StateParts): Uint8Array[] {
   // survival co-op (sim 0.27.0): only in the game type Survival, so every other state keeps its format and hash
   if (p.survival.active)
     for (const a of [p.survival.target, p.survival.batches]) out.push(bytesOf(a, a.length));
+  // base defence (sim 0.29.0): only where it is on, the same
+  const d = p.defense;
+  if (d.active) {
+    for (const a of [d.alarm, d.tx, d.ty]) out.push(bytesOf(a, a.length));
+    out.push(bytesOf(d.mark, w.highWater));
+  }
   return out;
 }
 

@@ -49,6 +49,7 @@ import { MovementScratch, movementSystem } from './systems/movement.js';
 import { OrdersScratch, ordersSystem } from './systems/orders.js';
 import { ProjectState, spawnProjectSites } from './systems/project.js';
 import { SurvivalState, survivalStatusOf, survivalSystem } from './systems/survival.js';
+import { DefenseState, defenseActive, defenseSystem } from './systems/defense.js';
 import type { SurvivalStatus } from './systems/survival.js';
 import { Vision } from './vision.js';
 import {
@@ -119,6 +120,8 @@ export class Sim implements SimContext {
   readonly project = new ProjectState();
   /** Survival co-op (sim 0.27.0): wave state; `active` (derived) only with SimMap.survival. */
   readonly survival = new SurvivalState();
+  /** Base defence (sim 0.29.0): `active` (derived) per game type, sim.json baseDefense. */
+  readonly defense = new DefenseState();
 
   private tickNo = 0;
   private readonly envHashValue: number;
@@ -159,6 +162,7 @@ export class Sim implements SimContext {
     // survival co-op (sim 0.27.0): the game type comes from the map; the players are one team
     this.survival.active = env.map.survival !== undefined;
     this.world.coop = this.survival.active;
+    this.defense.active = defenseActive(this);
     this.parts = {
       world: this.world,
       flow: this.flow,
@@ -168,6 +172,7 @@ export class Sim implements SimContext {
       creeps: this.creeps,
       project: this.project,
       survival: this.survival,
+      defense: this.defense,
     };
   }
 
@@ -250,6 +255,7 @@ export class Sim implements SimContext {
     // 2 orders en AI
     aiSystem(this, this.census, this.aiScratch);
     probe?.(1);
+    defenseSystem(this); // sim 0.29.0: base defence, front orders before the orders run
     ordersSystem(this, this.ordersScratch);
     creepSystem(this); // sim 0.20.0: the bandits of the creep camps (no orders of their own)
     survivalSystem(this); // sim 0.27.0: the waves of the game type Survival (no orders of their own)

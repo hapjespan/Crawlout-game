@@ -130,6 +130,7 @@ function replaceOrder(
 ): void {
   const w = ctx.world;
   refundCraft(ctx, i);
+  ctx.defense.mark[i] = 0; // a command ends a base-defence order (sim 0.29.0)
   w.clearOrders(i);
   w.target[i] = NO_ENTITY;
   w.buildHold[i] = 0;

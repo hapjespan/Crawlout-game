@@ -50,6 +50,7 @@ export {
   PlacementTuning,
   VisionTuning,
   GuardTuning,
+  BaseDefenseTuning,
 } from './schemas.part3.js';
 export {
   SimTuning,

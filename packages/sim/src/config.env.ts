@@ -97,6 +97,18 @@ export interface SimConfig {
    * Guard order walks back to within `stand` of its target and fights only while it stays within `leash` of it.
    */
   readonly guard: { readonly stand: number; readonly leash: number };
+  /**
+   * Base defence (sim.json `baseDefense`, data 0.35.0, sim 0.29.0; voorstel, ter bevestiging door de architect;
+   * systems/defense.ts): on per game type; `radius` around the HQ outside Survival (in Survival the build zone),
+   * `calmTicks` without a threat before everyone resumes.
+   */
+  readonly baseDefense: {
+    readonly survival: boolean;
+    readonly skirmish: boolean;
+    readonly radius: number;
+    readonly calmTicks: number;
+    readonly retarget: number;
+  };
 }
 
 /** Building placement margins (sim.json `placement`), in sim units; the rule works in whole cells, rounded up. */
@@ -144,3 +156,9 @@ export interface SimInit {
 
 /** Alles wat geen state is maar wel nodig is om een geserialiseerde state te laden. */
 export type SimEnv = Omit<SimInit, 'seed'>;
+
+/** Base defence (sim 0.29.0): whether it is on for this env (Survival by the map, else the skirmish toggle). */
+export const defenseOn = (env: Pick<SimEnv, 'map' | 'config'>): boolean =>
+  env.map.survival !== undefined
+    ? env.config.baseDefense.survival
+    : env.config.baseDefense.skirmish;

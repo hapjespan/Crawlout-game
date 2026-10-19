@@ -467,5 +467,12 @@ export function simConfigFromGameData(data: GameData): SimConfig {
     contestFlipTicks: t.contestFlipTicks,
     visionCell: t.vision.cellU,
     guard: { stand: t.guard.standU, leash: t.guard.leashU },
+    baseDefense: {
+      survival: t.baseDefense.survival,
+      skirmish: t.baseDefense.skirmish,
+      radius: t.baseDefense.radiusU,
+      calmTicks: t.baseDefense.calmTicks,
+      retarget: t.baseDefense.retargetU,
+    },
   };
 }

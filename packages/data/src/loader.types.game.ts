@@ -315,6 +315,17 @@ export interface SimTuningData {
   vision: VisionTuningData;
   /** Guard mode (data 0.29.0; voorstel, ter bevestiging door de architect): the Guard command. */
   guard: GuardTuningData;
+  /** Base defence (data 0.35.0; voorstel, ter bevestiging door de architect). */
+  baseDefense: BaseDefenseTuningData;
+}
+
+/** sim.json `baseDefense` in sim units (data 0.35.0). */
+export interface BaseDefenseTuningData {
+  survival: boolean;
+  skirmish: boolean;
+  radiusU: number;
+  calmTicks: number;
+  retargetU: number;
 }
 
 /** sim.json `guard` in sim units (data 0.29.0). */
