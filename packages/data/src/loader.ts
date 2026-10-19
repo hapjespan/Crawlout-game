@@ -66,6 +66,7 @@ export type {
   CreepsData,
   SimTuningData,
   GuardTuningData,
+  BaseDefenseTuningData,
   VisionTuningData,
   PlacementTuningData,
   FormationTuningData,
@@ -162,6 +163,13 @@ function convertSimTuning(simRaw: SimTuning): GameData['sim'] {
     heroClaimTicks: secondsToTicks(simRaw.heroClaimS),
     contestFlipTicks: secondsToTicks(simRaw.contestFlipS),
     vision: { cellU: metersToUnits(simRaw.vision.cellM) },
+    baseDefense: {
+      survival: simRaw.baseDefense.survival,
+      skirmish: simRaw.baseDefense.skirmish,
+      radiusU: metersToUnits(simRaw.baseDefense.radiusM),
+      calmTicks: secondsToTicks(simRaw.baseDefense.calmS),
+      retargetU: metersToUnits(simRaw.baseDefense.retargetM),
+    },
     guard: {
       standU: metersToUnits(simRaw.guard.standM),
       leashU: metersToUnits(simRaw.guard.leashM),

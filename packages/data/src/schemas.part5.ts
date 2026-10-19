@@ -1,5 +1,5 @@
 // Survival co-op (data 0.33.0; voorstel, ter bevestiging door de architect; docs/survival-coop.md): data/survival/.
-// Data only: the sim reads none of this yet. Holds: SurvivalUnit, SurvivalUnits, Survival (waves, edges, zones).
+// Data only: the sim reads none of this yet. Holds: SurvivalUnit, SurvivalUnits, Survival (waves, edges, zones, zone scrap).
 import { z } from 'zod';
 import { comment, id, nonneg, pct } from './schemas.part1.js';
 import { CreepUnit } from './schemas.part4.js';
@@ -30,6 +30,27 @@ export const SurvivalBuildZone = z
     hqYPct: percentOfMap,
     radiusM: z.number().positive(),
     nearEdge: id,
+  })
+  .strict();
+
+/**
+ * Data 0.34.0 (voorstel, ter bevestiging door de architect): the fixed scrap nodes of every build zone, relative to the
+ * zone centre (same for each zone). angleDeg: 0 = +x (east), 90 = +y (south), clockwise.
+ */
+export const SurvivalZoneScrap = z
+  .object({
+    nodes: z
+      .array(
+        z
+          .object({
+            distM: z.number().positive(),
+            angleDeg: z.number().int().min(0).max(359),
+            amount: z.number().int().positive(),
+          })
+          .strict(),
+      )
+      .min(1),
+    _comment: comment,
   })
   .strict();
 
@@ -71,6 +92,7 @@ export const Survival = z
     edges: z.array(SurvivalEdge).length(4),
     buildZones: z.array(SurvivalBuildZone).length(4),
     buildZoneRule: z.string().min(1),
+    zoneScrap: SurvivalZoneScrap,
     scaling: z.array(SurvivalScaling).length(4),
     scalingRule: z.string().min(1),
     targetRule: SurvivalTargetRule,

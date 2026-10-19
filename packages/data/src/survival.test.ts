@@ -10,6 +10,7 @@ type RawWaves = {
   buildZones: { nearEdge: string }[];
   scaling: { players: number }[];
   win: { surviveWave: number };
+  zoneScrap: { nodes: { distM: number }[] };
 };
 type RawSurvivalShape = { units: { units: unknown[] }; waves: RawWaves };
 const withEdit = (edit: (s: RawSurvivalShape) => void): RawGameData => {
@@ -77,6 +78,19 @@ describe('data/survival', () => {
     expect(survival.edges.map((e) => e.key)).toEqual(['noord', 'oost', 'zuid', 'west']);
   });
 
+  it('has fixed scrap nodes per build zone inside the zone, in sim units (data 0.34.0)', () => {
+    expect(survival.zoneScrap.length).toBeGreaterThanOrEqual(2);
+    for (const n of survival.zoneScrap) {
+      expect(n.distU).toBeGreaterThan(0);
+      expect(n.distU).toBeLessThan(survival.buildZones[0]!.radiusU);
+      expect(n.angle).toBeGreaterThanOrEqual(0);
+      expect(n.angle).toBeLessThan(65536);
+      expect(n.amount).toBeGreaterThan(0);
+    }
+    // 45 degrees is an eighth of a turn
+    expect(survival.zoneScrap[0]!.angle).toBe(8192);
+  });
+
   it('leaves the rest of the data unchanged when survival is absent', () => {
     const r = clone(raw());
     delete r.survival;
@@ -94,6 +108,7 @@ describe('data/survival', () => {
     rejects((s) => (s.waves.buildZones[0]!.nearEdge = 'x'), /onbekende rand/);
     rejects((s) => (s.waves.scaling[1]!.players = 3), /spelers 2/);
     rejects((s) => (s.waves.waves[14]!.atS = 5000), /buiten/);
+    rejects((s) => (s.waves.zoneScrap.nodes[0]!.distM = 45), /niet binnen de zone/);
     rejects((s) => ((s.waves as unknown as { extra: number }).extra = 1), /extra/);
   });
 });

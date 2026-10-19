@@ -1,5 +1,5 @@
 import { FNV_OFFSET, fnv1a, fnv1aInt, fnv1aString } from './math/fnv.js';
-import type { SimEnv } from './config.env.js';
+import { type SimEnv, defenseOn } from './config.env.js';
 import {
   hashBuildingTypes,
   hashFactions,
@@ -26,7 +26,13 @@ export function envHash(env: SimEnv): number {
   h = hashMapEnv(h, env);
   h = hashCreeps(h, env);
   // survival co-op (sim 0.27.0): only with SimMap.survival, so every other env keeps its hash
-  return hashSurvival(h, env);
+  h = hashSurvival(h, env);
+  // base defence (sim 0.29.0): only where it is on, so every other env keeps its hash
+  if (defenseOn(env)) {
+    const d = c.baseDefense;
+    h = hashInts(h, [d.survival ? 1 : 0, d.skirmish ? 1 : 0, d.radius, d.calmTicks, d.retarget]);
+  }
+  return h;
 }
 
 /** Players, the map and (only with project sites) win route C. */
