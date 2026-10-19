@@ -29,6 +29,7 @@ export function createSessionSlot(): SessionSlot {
     get frame() {
       return real?.frame ?? -1;
     },
+    hashAt: (frame) => real?.hashAt(frame),
     started,
     attach(session) {
       real = session;

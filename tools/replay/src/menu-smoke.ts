@@ -80,15 +80,11 @@ async function run(browser: Browser, relayPort: number): Promise<void> {
   await a.getByRole('button', { name: /^Tegen AI/ }).click();
   await a.getByRole('radiogroup', { name: 'Speltype' }).waitFor();
   check(
-    (await a.getByRole('radio', { name: /Survival/ }).getAttribute('aria-disabled')) === 'true' &&
-      (await a.locator('.co-m-soon').count()) === 1,
-    'Survival co-op is marked "binnenkort" and cannot be chosen (Bouwproject is playable)',
+    (await a.getByRole('radio', { name: /Survival/ }).getAttribute('aria-disabled')) !== 'true' &&
+      (await a.locator('.co-m-soon').count()) === 0,
+    'Survival co-op can be chosen (all three game types are playable)',
   );
-  await a.getByRole('radio', { name: /Survival/ }).click({ force: true });
-  check(
-    (await a.getByRole('radio', { name: /^Skirmish/ }).getAttribute('aria-checked')) === 'true',
-    'clicking a game type that is not there yet changes nothing',
-  );
+  await a.getByRole('radio', { name: /^Skirmish/ }).click();
   await a
     .getByRole('radio', { name: /^Raiders/ })
     .first()

@@ -22,6 +22,10 @@ const buildingFiles = import.meta.glob('../../../../data/buildings/*.json', {
   eager: true,
   import: 'default',
 });
+const survivalFiles = import.meta.glob('../../../../data/survival/*.json', {
+  eager: true,
+  import: 'default',
+});
 const mapFiles = import.meta.glob('../../../../data/maps/*.json', {
   eager: true,
   query: '?raw',
@@ -57,6 +61,11 @@ export function loadClientGameData(): GameData {
     sim: file('sim.json'),
     creeps: file('creeps.json'),
     project: file('project.json'),
+    // Survival co-op (data 0.33.0): without it the client has no build zones, waves or hostile loadouts (data.survival null)
+    survival: {
+      units: survivalFiles[`${DATA_PREFIX}survival/units.json`],
+      waves: survivalFiles[`${DATA_PREFIX}survival/waves.json`],
+    },
     ai: Object.keys(ai)
       .sort()
       .map((k) => ai[k]),
