@@ -61,6 +61,26 @@
     }
   ],
   "buildZoneRule": "Een speler mag (behalve claimposten) alleen bouwen binnen radiusM van het middelpunt van zijn eigen zone (HQ-plek); kaart en claimpunten zijn gedeeld. Bij n spelers bestaan de zones met slot 0 tot n-1.",
+  "zoneScrap": {
+    "nodes": [
+      {
+        "distM": 22,
+        "angleDeg": 45,
+        "amount": 1500
+      },
+      {
+        "distM": 26,
+        "angleDeg": 165,
+        "amount": 1500
+      },
+      {
+        "distM": 32,
+        "angleDeg": 285,
+        "amount": 1500
+      }
+    ],
+    "_comment": "Data 0.34.0 (bug Martien 19 oktober: solo had geen schroot in zijn zone, dus niets bouwen of trainen; voorstel, ter bevestiging door de architect). Vaste schrootplekken per bouwzone, voor elke zone gelijk: afstand distM van het zonemidden, hoek angleDeg (0 = +x/oost, 90 = +y/zuid, met de klok mee), amount scrap. In Survival vervangen ze de map-nodes binnen de zones (map-nodes buiten alle zones blijven als extra); de sim snapt elke plek naar de dichtstbijzijnde begaanbare cel. Startwaarden naar Rustbelt XL skirmish: rond elke start twee nodes van 1500 op 21 en 25 m en een derde op 51 m; hier 22 en 26 m (buiten de footprint van het hoofdgebouw, 21x21) en 32 m. Gemeten vanaf het zonemidden; past het hoofdgebouw daar niet, dan schuift het op (Rustbelt XL slot 0 en 2: 11 tot 14 m), dus 32 m en niet verder: zo ligt elke plek op elke slot binnen 45 m van het Raiderkamp (de werkstraal van de Kooi; Rustbelt XL hoogstens 41 m) en buiten zijn footprint."
+  },
   "scaling": [
     {
       "players": 1,

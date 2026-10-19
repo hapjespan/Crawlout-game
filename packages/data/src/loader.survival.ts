@@ -2,7 +2,7 @@ import type { LoadoutData, RawGameData } from './loader.types.js';
 import { neutralLoadout } from './loader.loadouts.js';
 import type { LoadContext } from './loader.parse.js';
 import { parseWith } from './loader.util.js';
-import { metersToUnits, pctToPermille, secondsToTicks } from './units.js';
+import { degreesToAngle, metersToUnits, pctToPermille, secondsToTicks } from './units.js';
 import { SURVIVAL_RANKS, Survival, SurvivalUnits } from './schemas.js';
 
 // Part of the pure loader (see loader.ts): no IO, no clock; falls under the determinism lint.
@@ -46,6 +46,11 @@ export interface SurvivalData {
     radiusU: number;
     nearEdge: number;
   }[];
+  /**
+   * Data 0.34.0: the fixed scrap nodes of every build zone, relative to its centre (distance in sim units, sim angle
+   * uint16 with 0 = +x and 16384 = +y), in file order. In Survival they replace the map nodes inside the zones.
+   */
+  zoneScrap: { distU: number; angle: number; amount: number }[];
   /** Per player count 1 to 4 (index = players - 1), in permille. */
   scaling: { countPermille: number; hpPermille: number; damagePermille: number }[];
   targetRule: {
@@ -89,6 +94,13 @@ export function convertSurvival(
       throw new Error(`${where}/waves.json buildZones: slot ${k} verwacht, ${z.slot} gevonden`);
     if (!edgeIx.has(z.nearEdge))
       throw new Error(`${where}/waves.json buildZones[${k}]: onbekende rand '${z.nearEdge}'`);
+  });
+  const minRadius = Math.min(...s.buildZones.map((z) => z.radiusM));
+  s.zoneScrap.nodes.forEach((n, k) => {
+    if (n.distM >= minRadius)
+      throw new Error(
+        `${where}/waves.json zoneScrap.nodes[${k}]: distM ${n.distM} ligt niet binnen de zone (${minRadius} m)`,
+      );
   });
   s.scaling.forEach((c, k) => {
     if (c.players !== k + 1)
@@ -157,6 +169,11 @@ export function convertSurvival(
       hqYPermille: pctToPermille(z.hqYPct),
       radiusU: metersToUnits(z.radiusM),
       nearEdge: edgeIx.get(z.nearEdge)!,
+    })),
+    zoneScrap: s.zoneScrap.nodes.map((n) => ({
+      distU: metersToUnits(n.distM),
+      angle: degreesToAngle(n.angleDeg),
+      amount: n.amount,
     })),
     scaling: s.scaling.map((c) => ({
       countPermille: pctToPermille(c.countPct),

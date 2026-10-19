@@ -10,3 +10,5 @@ export const pctToPermille = (pct: number): number => Math.trunc(pct * 10);
 // integer blijft: 12 hp/s is 600 duizendsten per tick (0,6 hp per tick). De sim telt ze op en trekt per 1000 een hele eenheid af.
 export const perSecondToMilliPerTick = (perS: number): number =>
   Math.trunc((perS * 1000) / TICK_HZ);
+/** Whole degrees (0 to 359, 0 = +x, 90 = +y) to the sim angle (uint16, 65536 per turn). */
+export const degreesToAngle = (deg: number): number => Math.trunc((deg * 65536) / 360);
