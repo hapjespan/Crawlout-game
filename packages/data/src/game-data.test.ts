@@ -8,7 +8,7 @@ describe('data/ valideert', () => {
   const data = loadGameData(raw());
 
   it('bevat de Dwellers-slice in de verwachte aantallen (en de Raiders erbij, data 0.21.0)', () => {
-    expect(data.factions.map((f) => f.key)).toEqual(['dwellers', 'raiders']);
+    expect(data.factions.map((f) => f.key)).toEqual(['dwellers', 'garde', 'raiders']);
     const dwellers = (r: { factionId: number }): boolean => r.factionId === 0;
     expect(data.loadouts.filter(dwellers).map((l) => l.key)).toEqual([
       'beveiligingsrobot',
@@ -37,12 +37,12 @@ describe('data/ valideert', () => {
     // 25 faction loadouts (data 0.26.0: the bouwrobot) plus the 5 bandits of the creep camps (data 0.25.0; 0.29.0: the
     // two weak ones of the low camp)
     // data 0.33.0: plus the 6 hostile units of survival (data/survival/units.json)
-    expect(data.loadouts).toHaveLength(36);
+    expect(data.loadouts).toHaveLength(43);
     expect(data.loadouts.filter((l) => l.factionId === NEUTRAL_FACTION_ID)).toHaveLength(11);
-    // 18 faction buildings plus (data 0.31.0, win route C) a restored and a ruin type per part of the strip mall
-    expect(data.buildings).toHaveLength(18 + 2 * 4);
+    // 18 faction buildings plus the 7 of the Garde (data 0.37.0) plus (data 0.31.0, win route C) a restored and a ruin type per part of the strip mall
+    expect(data.buildings).toHaveLength(18 + 7 + 2 * 4);
     expect(data.buildings.filter((b) => b.factionId === NEUTRAL_FACTION_ID)).toHaveLength(8);
-    expect(data.tech).toHaveLength(28);
+    expect(data.tech).toHaveLength(32);
     expect(data.heroes).toHaveLength(2);
     expect(data.perks).toHaveLength(13);
     expect(data.aiScripts).toHaveLength(3);

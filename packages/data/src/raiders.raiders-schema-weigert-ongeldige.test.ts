@@ -17,8 +17,8 @@ describe('Raiders: schema weigert ongeldige data', () => {
     twice.ai.push({ ...vs(twice), id: 'dwellers-vs-raiders-2' });
     expect(() => loadGameData(twice)).toThrow(/one script per faction and versus/);
     const unknown = clone(raw());
-    vs(unknown).versus = 'garde';
-    expect(() => loadGameData(unknown)).toThrow(/onbekende factie 'garde'/);
+    vs(unknown).versus = 'nomaden';
+    expect(() => loadGameData(unknown)).toThrow(/onbekende factie 'nomaden'/);
     const bad = clone(raw());
     vs(bad).liberate = { minFree: 0, units: 3, radiusM: 70 };
     expect(() => loadGameData(bad)).toThrow(/minFree/);

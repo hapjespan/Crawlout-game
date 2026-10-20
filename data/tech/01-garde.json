@@ -1,0 +1,84 @@
+[
+  {
+    "id": "fusiekernen",
+    "faction": "garde",
+    "scrapCost": 200,
+    "researchS": 40,
+    "building": "archief",
+    "prereqTech": [],
+    "effects": [
+      {
+        "stat": "damagePct",
+        "target": "initiate_wacht",
+        "delta": 10
+      }
+    ],
+    "_comment": "startwaarde, geen balans. Fusiekernen: ontgrendelt de krachtpantser en de geschutstoren (prereqTech) en geeft de Initiate-wacht +10 procent schade (laserkalibratie). Een frame kost straks ook een fusion core (nog niet in de sim, zie docs/garde.md). Slechts 4 Garde-techs: de sim heeft MAX_TECHS 32 en de andere facties vullen er al 28; zie docs/garde.md voor de uitbreidingslijst."
+  },
+  {
+    "id": "pantserplaten_zwaar",
+    "faction": "garde",
+    "scrapCost": 180,
+    "researchS": 35,
+    "building": "smederij",
+    "prereqTech": [
+      "fusiekernen"
+    ],
+    "effects": [
+      {
+        "stat": "hpPct",
+        "target": "krachtpantser",
+        "delta": 15
+      },
+      {
+        "stat": "hpPct",
+        "target": "plasmaridder",
+        "delta": 15
+      },
+      {
+        "stat": "damagePct",
+        "target": "krachtpantser",
+        "delta": 8
+      }
+    ],
+    "_comment": "startwaarde, geen balans. Zware pantserplaten en drilboek in een: +15 procent hp en +8 procent schade voor de krachtpantser, +15 procent hp voor de plasmaridder."
+  },
+  {
+    "id": "plasmakern",
+    "faction": "garde",
+    "scrapCost": 260,
+    "researchS": 45,
+    "building": "archief",
+    "prereqTech": [
+      "fusiekernen"
+    ],
+    "effects": [],
+    "_comment": "startwaarde, geen balans. Plasmakern: ontgrendelt de plasmaridder, de Vertibird en het landingsplatform (laat)."
+  },
+  {
+    "id": "holobanden",
+    "faction": "garde",
+    "scrapCost": 120,
+    "researchS": 25,
+    "building": "archief",
+    "prereqTech": [],
+    "effects": [
+      {
+        "stat": "I",
+        "target": "held",
+        "delta": 1
+      },
+      {
+        "stat": "P",
+        "target": "held",
+        "delta": 1
+      },
+      {
+        "stat": "S",
+        "target": "held",
+        "delta": 1
+      }
+    ],
+    "_comment": "startwaarde, geen balans. SPECIAL-kanaal tech (Spelfundament 5): +1 Intelligence, Perception en Strength voor de held. Of de sim tech-effecten op target held toepast is open (zie docs/garde.md)."
+  }
+]
