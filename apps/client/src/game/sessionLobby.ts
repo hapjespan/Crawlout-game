@@ -7,7 +7,7 @@ import type {
   PlayerStatus,
   StallNotice,
 } from '@crawlout/protocol';
-import type { SimWinner, SurvivalStatus } from '@crawlout/sim';
+import type { SimWinner } from '@crawlout/sim';
 
 /** What the relay's lobby message says, for the menu's lobby screen. */
 export interface SessionLobby {
@@ -40,8 +40,8 @@ export interface SessionEvents {
   onStatus?(
     status: PlayerStatus,
     winner: SimWinner | null,
-    /** Survival co-op (client 0.12.0): Sim.survivalStatus() at `frame`; null outside the game type Survival. */
-    survival?: { status: SurvivalStatus | null; frame: number },
+    /** Sim frame of the status (the survival countdown runs against it). */
+    frame: number,
   ): void;
   /** Answer to requestFog(): this player's fog of war on the vision grid (for a later fog overlay and minimap). */
   onFog?(mask: FogMask): void;

@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { RANK_BOSS, RANK_MINIBOSS, RANK_NORMAL, type SurvivalStatus } from '@crawlout/sim';
+import type { SurvivalStatus } from '@crawlout/protocol';
 import { survivalView, survivalZones, zoneReason } from '../src/game/survivalStatus.js';
 
 const names = ['Eén', 'Twee', 'Drie'];
 const status = (over: Partial<SurvivalStatus> = {}): SurvivalStatus => ({
   wavesStarted: 1,
   waves: 15,
-  next: { wave: 2, atFrame: 3000, rank: RANK_NORMAL },
+  next: { wave: 2, atFrame: 3000, rank: 'normal' },
   active: [{ target: 1, alive: 7 }],
   result: null,
   ...over,
@@ -32,7 +32,7 @@ describe('survivalView', () => {
   it('maps the ranks and flags yourself as the target', () => {
     const boss = survivalView(
       status({
-        next: { wave: 3, atFrame: 100, rank: RANK_BOSS },
+        next: { wave: 3, atFrame: 100, rank: 'boss' },
         active: [{ target: 0, alive: 1 }],
       }),
       0,
@@ -43,7 +43,7 @@ describe('survivalView', () => {
     expect(boss?.next?.rank).toBe('boss');
     expect(boss?.target?.isYou).toBe(true);
     const mini = survivalView(
-      status({ next: { wave: 2, atFrame: 1, rank: RANK_MINIBOSS } }),
+      status({ next: { wave: 2, atFrame: 1, rank: 'miniboss' } }),
       5,
       names,
       name,

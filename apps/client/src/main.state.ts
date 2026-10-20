@@ -152,12 +152,12 @@ export function wireMatchState(ctx: ClientContext): void {
     onFog(mask) {
       if (ctx.fogOn) applyFog(mask);
     },
-    onStatus(next, winner, survival) {
+    onStatus(next, winner, frame) {
       for (const a of projectAlerts(data, ctx.status, next, session.playerId)) alert(a);
       ctx.status = next;
-      ctx.survival = survival?.status ? { status: survival.status, frame: survival.frame } : null;
+      ctx.survival = next.survival ? { status: next.survival, frame } : null;
       renderer.setClaimStates(next.claimPoints);
-      // survival: Sim.winner() stays null, the end is in survivalStatus().result
+      // survival: Sim.winner() stays null, the end is in PlayerStatus.survival.result
       const outcome = ctx.survival?.status.result?.outcome;
       if (outcome) showEnd(null, outcome);
       else if (winner) showEnd(winner);

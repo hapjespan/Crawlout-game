@@ -1,17 +1,8 @@
-// Survival co-op (client 0.12.0, sim 0.27.0): Sim.survivalStatus() to the HUD's survival view, the build zones for the
+// Survival co-op (client 0.13.0): PlayerStatus.survival to the HUD's survival view, the build zones for the
 // minimap, and the placement reason outside the own zone. Wave names come from GameData.survival, seconds from ticks.
 import { TICK_HZ } from '@crawlout/protocol';
-import { RANK_BOSS, RANK_MINIBOSS } from '@crawlout/sim';
-import type { SimWorkerOutbound, SurvivalStatus } from '@crawlout/sim';
-import type { MinimapZone, SurvivalRank, SurvivalView } from '@crawlout/ui';
-
-/** The sim worker's `status` answer with the survival status the client's worker entry adds (game/simWorker.ts). */
-export type SurvivalWorkerOutbound =
-  | Exclude<SimWorkerOutbound, { kind: 'status' }>
-  | (Extract<SimWorkerOutbound, { kind: 'status' }> & { readonly survival: SurvivalStatus | null });
-
-const rankOf = (rank: number): SurvivalRank =>
-  rank === RANK_BOSS ? 'boss' : rank === RANK_MINIBOSS ? 'miniboss' : 'normal';
+import type { SurvivalStatus } from '@crawlout/protocol';
+import type { MinimapZone, SurvivalView } from '@crawlout/ui';
 
 let last: { key: string; view: SurvivalView | null } = { key: '', view: null };
 
@@ -35,7 +26,7 @@ export function survivalView(
       next: s.next && {
         wave: s.next.wave,
         naam: waveNames[s.next.wave - 1] ?? `Golf ${s.next.wave}`,
-        rank: rankOf(s.next.rank),
+        rank: s.next.rank,
         inSeconds: Math.max(0, Math.ceil((s.next.atFrame - frame) / TICK_HZ)),
       },
       target:
