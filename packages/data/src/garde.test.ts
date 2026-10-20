@@ -27,10 +27,10 @@ describe('Garde: data laadt', () => {
     }
   });
 
-  it('krachtpantser: heavy, 3 pop, vehicle, traag; frames kosten meer dan de Raider-plunderaar', () => {
+  it('krachtpantser: power (data 0.40.0), 3 pop, vehicle, traag; frames kosten meer dan de Raider-plunderaar', () => {
     const frame = loadout('krachtpantser');
     const plunderaar = loadout('plunderaar');
-    expect(frame.armorType).toBe(ARMOR_TYPES.indexOf('heavy'));
+    expect(frame.armorType).toBe(ARMOR_TYPES.indexOf('power'));
     expect(frame.bodyType).toBe(BODY_TYPES.indexOf('vehicle'));
     expect(frame.popCost).toBe(3);
     expect(frame.speedUPT).toBeLessThan(plunderaar.speedUPT);

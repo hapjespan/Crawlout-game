@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { loadGameData, NEUTRAL_FACTION_ID, convertDelta, convertDominance } from './loader.js';
+import { ARMOR_TYPES } from './loader.types.js';
 import { metersToUnits, secondsToTicks } from './units.js';
 import { MapDef } from './schemas.js';
 import { clone, raw } from './game-data.helpers.js';
@@ -77,10 +78,23 @@ describe('data/ valideert', () => {
   it('heeft een volledige damage-matrix in promille', () => {
     expect(data.damageMatrix).toHaveLength(4);
     for (const row of data.damageMatrix) {
-      expect(row).toHaveLength(5);
+      expect(row).toHaveLength(6); // data 0.40.0: power appended
       for (const cell of row) expect(Number.isInteger(cell)).toBe(true);
     }
     expect(data.damageMatrix[0]![2]).toBe(750); // ballistic tegen medium: 75 procent
+  });
+
+  it('data 0.40.0: power armour only on Garde units, so its column never touches a building or another faction', () => {
+    const power = ARMOR_TYPES.indexOf('power');
+    expect(power).toBe(5); // appended: the older armour indices stay
+    const garde = data.factions.find((f) => f.key === 'garde')!.id;
+    const users = data.loadouts.filter((l) => l.armorType === power);
+    expect(users.map((l) => l.key).sort()).toEqual(['krachtpantser', 'plasmaridder']);
+    for (const l of users) expect(l.factionId).toBe(garde);
+    for (const b of data.buildings) expect(b.armorType).not.toBe(power);
+    // the Dweller HQ and turrets keep heavy at the values from before data 0.39.0
+    const heavy = ARMOR_TYPES.indexOf('heavy');
+    expect(data.damageMatrix.map((row) => row[heavy])).toEqual([500, 1250, 400, 600]);
   });
 
   it('heeft elke loadout-waarde als integer in sim-eenheden', () => {

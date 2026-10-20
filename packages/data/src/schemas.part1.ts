@@ -15,7 +15,9 @@ export const comment = z.string().optional(); // _comment: bedoeling van de waar
 
 export const pct = z.number().min(0).max(100);
 
-export const ArmorType = z.enum(['none', 'light', 'medium', 'heavy', 'robot']);
+// 'power' (data 0.40.0, proposal for the architect): the Garde power armour; appended so the older indices stay, and
+// apart from 'heavy' because the Dweller HQ and turrets and the Garde buildings carry heavy too.
+export const ArmorType = z.enum(['none', 'light', 'medium', 'heavy', 'robot', 'power']);
 
 export const DamageType = z.enum(['ballistic', 'energy', 'melee', 'fire']);
 

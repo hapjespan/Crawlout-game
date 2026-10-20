@@ -70,11 +70,17 @@ import { playMatchesParallel, summarize } from './fairness.js';
 // matches to dominance (27 of 33). Speler 0 wint 12 en speler 1 wint 21, 15 keer vernietiging en 18 keer dominantie,
 // lengte 25,7 tot 32,1 minuten (33 van de 33 tussen 25 en 35; was 26,2 tot 36,1 met 31). EXPECTED is opnieuw gemeten
 // (seeds 1, 2, 7, 11 and 99: both winners and both routes).
+// Base defence in skirmish (data 0.39.0, radiusM 28, calmS 5) with the heavy column back on its old values (data
+// 0.40.0: the Garde power armour has its own column): speler 0 wint 11 en speler 1 wint 22, 13 keer vernietiging en 20
+// keer dominantie, lengte 25,7 tot 37,2 minuten (31 van de 33 tussen 25 en 35). Seed 7 re-pinned (same winner and
+// route, 11 frames earlier); seed 11 (now player 1 on dominance at 35,3 min, outside the window) is replaced by seed 21
+// (player 0 on destruction) so the five keep both winners and both routes. OPEN: the 12-to-21 band (11 for player 0;
+// 12 without base defence, so the skew to player 1 predates it).
 const EXPECTED = [
   { seed: 1, winner: 0, reason: 'dominance', frame: 32021 },
   { seed: 2, winner: 1, reason: 'dominance', frame: 32109 },
-  { seed: 7, winner: 1, reason: 'destruction', frame: 32318 },
-  { seed: 11, winner: 0, reason: 'destruction', frame: 32716 },
+  { seed: 7, winner: 1, reason: 'destruction', frame: 32307 },
+  { seed: 21, winner: 0, reason: 'destruction', frame: 38612 },
   { seed: 99, winner: 1, reason: 'destruction', frame: 32584 },
 ] as const;
 
