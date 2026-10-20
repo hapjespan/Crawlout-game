@@ -38,6 +38,8 @@ export interface BuildOptions {
   sitesPath?: string;
   /** Path to the survival enemies config (same format, rigid units without a team); default `<srcDir>/survival.json`. Optional. */
   survivalPath?: string;
+  /** Path to the Garde config (same format: the Garde bodies, weapons, Vertibird and buildings); default `<srcDir>/garde.json`. Optional. */
+  gardePath?: string;
   /**
    * Config of the delivered models (src/delivered.ts, `assets/local/delivered.json`), only used when given or when
    * `<srcDir>/delivered.json` exists; its `file` paths are relative to `srcDir`.

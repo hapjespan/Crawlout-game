@@ -1,0 +1,9 @@
+{"buildings":{"garde_building_outpost":{"footprint":{"w":1,"h":1},"lod0Triangles":400,"heightM":[2.5,3.3],"note":"Wachtpost: claim marker, a steel signal post of 3 m on a 1 m plate with a red base, a team banner and a red beacon","parts":[{"type":"box","material":"steel_metal","size":[0.94,0.12,0.94],"position":[0,0,0]},
+{"type":"box","material":"steel_metal_dark","size":[0.16,2.6,0.16],"maxLod":1,"position":[0,0.12,0]},
+{"type":"box","material":"steel_metal_dark","size":[0.16,2.6,0.16],"minLod":2,"position":[0,0.12,0]},
+{"type":"box","material":"steel_metal_red","size":[0.6,0.5,0.6],"position":[0,0.12,0]},
+{"type":"box","material":"team_trim","size":[0.04,0.8,0.6],"position":[0.14,1.6,0.0]},
+{"type":"box","material":"leather_brown","size":[0.04,0.06,0.6],"maxLod":1,"position":[0.14,2.4,0.0]},
+{"type":"box","material":"lens_red","size":[0.22,0.2,0.22],"position":[0,2.72,0]},
+{"type":"box","material":"steel_metal_dark","size":[0.3,0.06,0.3],"maxLod":1,"position":[0,2.92,0]},
+{"type":"box","material":"steel_metal","size":[0.22,0.12,0.4],"maxLod":0,"position":[0,1.1,0.1]}]}}}

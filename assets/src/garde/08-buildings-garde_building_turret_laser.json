@@ -1,0 +1,13 @@
+{"buildings":{"garde_building_turret_laser":{"footprint":{"w":3,"h":3},"lod0Triangles":700,"heightM":[2.2,3.4],"note":"Laser turret: octagonal steel base of 3 m with a red ring, a swivel head with two gunmetal barrels (+Z) with red lenses, team strips on the head sides","parts":[{"type":"cylinder","material":"steel_metal","radius":1.5,"height":0.9,"segments":8,"maxLod":1,"position":[0,0,0]},
+{"type":"cylinder","material":"steel_metal","radius":1.5,"height":0.9,"segments":6,"minLod":2,"position":[0,0,0]},
+{"type":"cylinder","material":"steel_metal_red","radius":1.55,"height":0.2,"segments":8,"maxLod":1,"position":[0,0.9,0]},
+{"type":"cylinder","material":"steel_metal_dark","radius":0.8,"height":0.3,"segments":8,"position":[0,1.1,0]},
+{"type":"box","material":"steel_metal","size":[1.6,0.9,1.5],"chamfer":0.1,"maxLod":0,"position":[0,1.4,-0.4]},
+{"type":"box","material":"steel_metal","size":[1.6,0.9,1.5],"minLod":1,"position":[0,1.4,-0.4]},
+{"type":"box","material":"steel_metal_red","size":[1.7,0.2,1.0],"maxLod":1,"position":[0,2.1,-0.5]},
+{"type":"box","material":"team_trim","size":[0.04,0.5,0.7],"mirror":true,"position":[0.82,1.55,-0.4]},
+{"type":"box","material":"steel_metal_dark","size":[0.28,0.28,1.1],"mirror":true,"position":[0.3,1.55,0.35]},
+{"type":"cylinder","material":"steel_metal_dark","radius":0.2,"height":0.3,"segments":8,"rotation":[90,0,0],"mirror":true,"maxLod":1,"position":[0.3,1.69,1.15]},
+{"type":"cylinder","material":"lens_red","radius":0.1,"height":0.05,"segments":6,"rotation":[90,0,0],"mirror":true,"maxLod":0,"position":[0.3,1.69,1.45]},
+{"type":"box","material":"lens_red","size":[0.35,0.12,0.05],"maxLod":1,"position":[0,1.6,0.36]},
+{"type":"box","material":"steel_metal_dark","size":[0.4,0.3,0.5],"maxLod":1,"position":[0,2.2,-0.8]}]}}}

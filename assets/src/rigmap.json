@@ -142,6 +142,61 @@
             "teamZone": "band",
             "farTeam": 0
           }
+        },
+        {
+          "id": "garde_body_initiate",
+          "colors": { "M_Main": "#6f767c", "M_Joints": "#3a2a24" },
+          "palette": {
+            "jacket": "#6f767c",
+            "patchTop": "#7a2d26",
+            "patchLeg": "#4b5158",
+            "belt": "#3a2a22",
+            "trousers": "#4b5158",
+            "boots": "#2b2523",
+            "skin": "#b08a6e"
+          }
+        },
+        {
+          "id": "garde_body_clerk",
+          "scale": 0.97,
+          "colors": { "M_Main": "#5a3f2c", "M_Joints": "#2b2018" },
+          "palette": {
+            "jacket": "#5a3f2c",
+            "patchTop": "#7a2d26",
+            "patchLeg": "#46362a",
+            "belt": "#2b2018",
+            "trousers": "#46362a",
+            "boots": "#2b2523",
+            "skin": "#b08a6e"
+          }
+        },
+        {
+          "id": "garde_body_power_armor",
+          "scale": 1.2,
+          "colors": { "M_Main": "#8a9096", "M_Joints": "#3a2a24" },
+          "palette": {
+            "jacket": "#8a9096",
+            "patchTop": "#7a2d26",
+            "patchLeg": "#6b7278",
+            "belt": "#3a2a22",
+            "trousers": "#6b7278",
+            "boots": "#4b5158",
+            "skin": "#8a9096"
+          }
+        },
+        {
+          "id": "garde_body_power_armor_heavy",
+          "scale": 1.26,
+          "colors": { "M_Main": "#7c838a", "M_Joints": "#2f2420" },
+          "palette": {
+            "jacket": "#7c838a",
+            "patchTop": "#7a2d26",
+            "patchLeg": "#5d646a",
+            "belt": "#3a2a22",
+            "trousers": "#5d646a",
+            "boots": "#3f444a",
+            "skin": "#7c838a"
+          }
         }
       ]
     },
