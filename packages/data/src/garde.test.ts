@@ -85,7 +85,7 @@ describe('Garde: sim fields (data 0.38.0, proposal)', () => {
   });
 
   it('the Paladin-Commander sorts after the Warlord, with the armour aura (damageTakenPct)', () => {
-    expect(data.heroes.map((h) => h.key)).toEqual(['opziener', 'warlord', 'zwaardridder']);
+    expect(data.heroes.slice(0, 3).map((h) => h.key)).toEqual(['opziener', 'warlord', 'zwaardridder']);
     const h = data.heroes[2]!;
     expect(h.factionId).toBe(faction.id);
     expect(h.naam).toBe('Paladin-Commander');

@@ -45,9 +45,17 @@ export function parseList<S extends ZodTypeAny>(
 
 const compareIds = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
 
-/** Sorteert op string-id (tiebreak is de id zelf; dubbele ids zijn een fout) en geeft record plus numerieke id. */
-export function sortById<T extends { id: string }>(file: string, records: T[]): T[] {
-  const sorted = [...records].sort((a, b) => compareIds(a.id, b.id));
+/**
+ * Sorteert op (idGroup, string-id) (idGroup afwezig = 0; dubbele ids zijn een fout) en geeft record plus numerieke id.
+ * Een nieuwe idGroup komt achter de oude ids, zodat geen bestaand id verschuift (data 0.39.0: helden en perks).
+ */
+export function sortById<T extends { id: string; idGroup?: number | undefined }>(
+  file: string,
+  records: T[],
+): T[] {
+  const sorted = [...records].sort(
+    (a, b) => (a.idGroup ?? 0) - (b.idGroup ?? 0) || compareIds(a.id, b.id),
+  );
   for (let i = 1; i < sorted.length; i++) {
     if (sorted[i]!.id === sorted[i - 1]!.id)
       throw new Error(`data/${file}: dubbele id '${sorted[i]!.id}'`);

@@ -229,6 +229,9 @@ export const HeroAura = z
 export const Hero = z
   .object({
     id,
+    // Data 0.39.0 (hero choice, proposal for the architect): sort group of the numeric id, absent = 0. The loader sorts
+    // heroes and perks on (idGroup, id), so a new group appends after the old ids and no existing hero or perk id shifts.
+    idGroup: z.number().int().nonnegative().optional(),
     faction: id,
     archetype: Archetype,
     special: Special,
@@ -268,6 +271,9 @@ export const Hero = z
 export const Perk = z
   .object({
     id,
+    // Data 0.39.0 (hero choice, proposal for the architect): sort group of the numeric id, absent = 0. The loader sorts
+    // heroes and perks on (idGroup, id), so a new group appends after the old ids and no existing hero or perk id shifts.
+    idGroup: z.number().int().nonnegative().optional(),
     naam: z.string(),
     flavourText: z.string(),
     requires: z.object({ stat: Stat, min: z.number().int() }).strict(),

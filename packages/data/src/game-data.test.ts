@@ -29,7 +29,7 @@ describe('data/ valideert', () => {
     expect(data.buildings.filter(dwellers)).toHaveLength(10);
     expect(data.tech.filter(dwellers)).toHaveLength(14);
     expect(data.training).toHaveLength(7);
-    expect(data.heroes.filter(dwellers)).toHaveLength(1);
+    expect(data.heroes.filter(dwellers)).toHaveLength(3);
     // data 0.24.0: the default script and the one against the Raiders (versus)
     expect(data.aiScripts.filter(dwellers)).toHaveLength(2);
     expect(data.aiScripts.filter(dwellers).filter((a) => a.versusFactionId < 0)).toHaveLength(1);
@@ -44,8 +44,9 @@ describe('data/ valideert', () => {
     expect(data.buildings.filter((b) => b.factionId === NEUTRAL_FACTION_ID)).toHaveLength(8);
     expect(data.tech).toHaveLength(32);
     // data 0.38.0: the Paladin-Commander of the Garde (id zwaardridder, after warlord)
-    expect(data.heroes).toHaveLength(3);
-    expect(data.perks).toHaveLength(13);
+    // data 0.39.0: plus a Bouwer and a Tacticus per faction (idGroup 1) and 18 perks
+    expect(data.heroes).toHaveLength(9);
+    expect(data.perks).toHaveLength(31);
     expect(data.aiScripts).toHaveLength(4); // data 0.38.0: garde-basic
     expect(data.dataVersion).toMatch(/^\d+\.\d+\.\d+$/);
   });
@@ -66,7 +67,10 @@ describe('data/ valideert', () => {
       const keys = list
         .filter((r) => !('factionId' in r) || r.factionId !== NEUTRAL_FACTION_ID)
         .map((r) => r.key);
-      expect(keys).toEqual([...keys].sort());
+      // heroes and perks (data 0.39.0): the old ids sort first, the idGroup 1 ids follow, see held-keuze.test.ts
+      if (list === data.heroes)
+        expect(keys.slice(0, 3)).toEqual(['opziener', 'warlord', 'zwaardridder']);
+      else if (list !== data.perks) expect(keys).toEqual([...keys].sort());
     }
   });
 
