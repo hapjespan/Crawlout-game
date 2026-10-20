@@ -7,6 +7,8 @@ import { grantXp, heroIndex } from './hero.js';
 import { robotRate } from './robots.js';
 import { SPECIAL_L, heroOf, heroSpecial, scalePermille } from '../effects.js';
 import { veteranKill } from './garde.js';
+import { isStunned } from './garde.flags.js';
+import { overloadHit } from './garde.klerk.js';
 import { captureOf, captureTick } from './slaves.js';
 import { creepAwake } from './creeps.js';
 import { noteBaseHit } from './defense.js';
@@ -38,6 +40,7 @@ export function combatSystem(ctx: SimContext): void {
     if (tid === NO_ENTITY || w.cooldown[i]! > 0 || w.damage[i]! <= 0) continue;
     const t = w.resolve(tid);
     if (t < 0 || !isEnemy(w, i, t) || !withinReach(w, i, t, w.range[i]!)) continue;
+    if (ctx.garde.active && isStunned(ctx, i)) continue; // sim 0.33.0: overloaded power armour
     // technicus-regel (data 0.16.0): een ongedekte robot schiet trager (langere cooldown), bij 0 promille niet
     const rate = robotRate(ctx, i);
     if (rate <= 0) continue;
@@ -63,6 +66,7 @@ export function combatSystem(ctx: SimContext): void {
     // who razes or kills it plunders it (data 0.21.0, systems/plunder.ts)
     w.lastHit[t] = w.owner[i]! + 1;
     noteBaseHit(ctx, i, t); // base defence (sim 0.29.0)
+    overloadHit(ctx, i, t); // sim 0.33.0: the Klerk overloads enemy power armour
     if (
       before > 0 &&
       w.hp[t]! <= 0 &&

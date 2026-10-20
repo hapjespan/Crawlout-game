@@ -1,8 +1,52 @@
 // The Garde, round A (data 0.38.0, sim 0.32.0; proposal for the architect, docs/garde.md items 1, 2 and 7): the
 // GameData-to-SimConfig adapters of veteran promotion, fusion cores and the raid plan with optional harass, slave
 // raids and free workers.
-import { type FactionData, type AiScriptData, unitTypeId, buildingTypeId } from '@crawlout/data';
-import type { SimFusionCores, SimRaidPlan, SimVeterancy } from './config.js';
+import {
+  type FactionData,
+  type AiScriptData,
+  type LoadoutData,
+  unitTypeId,
+  buildingTypeId,
+} from '@crawlout/data';
+import type {
+  SimFusionCores,
+  SimMapPowerArmor,
+  SimRaidPlan,
+  SimUnitType,
+  SimVeterancy,
+} from './config.js';
+
+/** Round B (data 0.39.0, sim 0.33.0; proposal): the power armour of the map. */
+export function simMapPowerArmor(f: FactionData): SimMapPowerArmor | null {
+  const m = f.mapPowerArmor;
+  if (m === null) return null;
+  return {
+    typeId: unitTypeId(m.loadoutId),
+    respawnTicks: m.respawnTicks,
+    otherQualityPermille: m.otherQualityPermille,
+  };
+}
+
+/** Round B (data 0.39.0, sim 0.33.0; proposal): overload, transport and flying of a loadout. */
+export function simGardeUnit(
+  l: LoadoutData,
+): Pick<SimUnitType, 'overload' | 'transport' | 'flying'> {
+  return {
+    overload:
+      l.overload === null
+        ? null
+        : {
+            typeIds: l.overload.targets.map(unitTypeId),
+            stunTicks: l.overload.stunTicks,
+            cooldownTicks: l.overload.cooldownTicks,
+          },
+    transport:
+      l.transport === null
+        ? null
+        : { capacity: l.transport.capacity, loadRange: l.transport.loadRangeU },
+    flying: l.flying,
+  };
+}
 
 export function simVeterancy(f: FactionData): SimVeterancy | null {
   const v = f.veterancy;

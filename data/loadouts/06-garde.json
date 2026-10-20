@@ -173,7 +173,18 @@
       }
     },
     "producedAt": "kazerne",
-    "_comment": "startwaarde, geen balans. Klerk: de technicus van de Garde. Repareert frames en gebouwen, onderzoekt sneller en kan vijandelijke krachtpantser overloaden (Spelfundament 4 en 6). In deze data alleen het loadout (role technician, 50 hp, 60 scrap); de repareer-, onderzoeks- en sabotagerol zijn nog niet in de sim (zie docs/garde.md)."
+    "repair": {
+      "repairRateHpPerS": 8,
+      "rangeM": 1.5,
+      "seekRangeM": 10,
+      "targets": ["vehicle", "building"]
+    },
+    "overload": {
+      "targets": ["krachtpantser", "plasmaridder"],
+      "stunS": 3,
+      "cooldownS": 12
+    },
+    "_comment": "startwaarde, geen balans (data 0.39.0, voorstel sim-core voor de architect; docs/garde.md punt 3): zonder order repareert de Klerk het meest beschadigde eigen frame, de Vertibird of gebouw binnen 10 m met 8 hp/s; zijn treffer op een vijandelijk krachtpantser (ook een van de map) legt het 3 s stil, daarna 12 s cooldown. Eerder: Klerk: de technicus van de Garde. Repareert frames en gebouwen, onderzoekt sneller en kan vijandelijke krachtpantser overloaden (Spelfundament 4 en 6). Role technician, 50 hp, 60 scrap; de onderzoeksrol is nog niet in de sim (zie docs/garde.md)."
   },
   {
     "id": "vertibird",
@@ -204,6 +215,11 @@
     },
     "producedAt": "landingsplatform",
     "sightM": 26,
-    "_comment": "startwaarde, geen balans. Vertibird: transport en strafe, laat in het potje. Medium pantser, 320 hp, 9 energy per 0,6 s op 9 m (15 per s), 6 m/s (de snelste unit van het spel), 320 scrap, 40 s, 4 pop. Transportcapaciteit en vliegen (negeert terrein) zijn nog niet in de sim."
+    "flying": true,
+    "transport": {
+      "capacity": 4,
+      "loadRangeM": 3
+    },
+    "_comment": "startwaarde, geen balans. Vertibird: transport en strafe, laat in het potje. Medium pantser, 320 hp, 9 energy per 0,6 s op 9 m (15 per s), 6 m/s (de snelste unit van het spel), 320 scrap, 40 s, 4 pop. Data 0.39.0 (voorstel sim-core voor de architect; docs/garde.md punt 5): vliegt (recht over elk terrein) en neemt tot 4 eigen mensen mee (Load binnen 3 m, Unload); strafe is zijn gewone aanval."
   }
 ]

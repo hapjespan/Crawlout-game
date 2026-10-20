@@ -1,5 +1,6 @@
 // Split from common.ts to stay under the 5,000-token file limit; common.ts re-exports the public surface.
 // Holds: PlayerState, NO_WINNER, WIN_NONE, WIN_DESTRUCTION, WIN_DOMINANCE, WIN_SURRENDER, +23 more.
+import { isFlying } from './garde.flags.js';
 import { MAX_PLAYERS, OWNER_NEUTRAL, MAX_ENTITIES } from '@crawlout/protocol';
 import {
   MAX_ABILITIES,
@@ -289,6 +290,11 @@ export function steerTo(
   w.goalY[i] = y;
   w.goalR[i] = arriveR;
   w.groupR[i] = groupR;
+  // sim 0.33.0: a flying unit (the Vertibird) needs no flow field; it flies straight to its goal
+  if (isFlying(ctx, i)) {
+    setFlowField(ctx, i, NO_FIELD);
+    return;
+  }
   if (ctx.flow.hasTarget(w.flowField[i]!, rx, ry, rw, rh)) return;
   setFlowField(ctx, i, NO_FIELD);
   setFlowField(ctx, i, ctx.flow.acquire(rx, ry, rw, rh));

@@ -186,6 +186,12 @@
       "prereqTech": ["fusiekernen"],
       "_comment": "startwaarde, geen balans (data 0.38.0, voorstel sim-core voor de architect; docs/garde.md punt 2): na fusiekernen smeedt de Garde met een voltooide smederij om de 20 s een fusion core voor 40 scrap (betaald bij de start) tot er 2 op voorraad zijn; elk frame (krachtpantser, plasmaridder: fusionCores 1) neemt er een bij de start van zijn productie, Cancel geeft hem terug. Repareren van cores volgt met de Klerk (punt 3)."
     },
+    "mapPowerArmor": {
+      "loadout": "krachtpantser",
+      "respawnS": 120,
+      "otherQualityPct": 67,
+      "_comment": "startwaarde, geen balans (data 0.39.0, voorstel sim-core voor de architect; docs/garde.md punt 4): wie een claimpunt van soort powerArmor houdt, krijgt er een krachtpantser naast, 120 s na het nemen of na de dood van zijn vorige frame van dat punt. Dwellers en Raiders krijgen hem op 2/3 kwaliteit (67 procent hp en schade), de Garde op volle kwaliteit. Alleen in een potje met de Garde (de frames zijn Garde-tech)."
+    },
     "_comment": "startwaarde, geen balans. De Garde (Spelfundament 4, docs/garde.md): traag, zwaar, alles duurder. 320 scrap (Dwellers 300) voor 3 zoekers, 1 bouwer en 2 wachten. housingGrowthPerMin 1 (Dwellers 2): matige groei, Initiates worden geworven in de kazerne. VANGNET hergebruikt tenten_instroom: de Bastion heeft provides tent, zolang er minder dan 3 vechters zijn komt er elke 90 s een gratis Initiate-wacht (max 6). bodyTypes human en vehicle: krachtpantsers en Vertibirds zijn vehicle (3 en 4 pop, geen bedden). specialChannel tech: SPECIAL via onderzoek in het Archief (holobanden, servo_kalibratie). Natuurlijke winroute: vernietiging. Driehoek: zie docs/garde.md."
   }
 ]

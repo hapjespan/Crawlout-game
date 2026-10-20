@@ -8,6 +8,7 @@ import { SIN_TABLE, TRIG_BITS, atan2A } from '../math/trig.js';
 import type { SimContext } from './common.js';
 import { cellAt, setFlowField, walkableAt } from './common.js';
 import { lineClear } from './formation.js';
+import { isFlying, isStunned } from './garde.flags.js';
 
 // Systeem 4: beweging plus separatie.
 //  a) gewenste snelheid per unit met mvOn: flow field naar de volgende cel, vlak bij het doel recht erop af;
@@ -88,8 +89,10 @@ export function movementSystem(ctx: SimContext, s: MovementScratch): void {
 
   // Ruimtelijke buckets; aflopend invoegen geeft oplopende lijsten.
   s.head.fill(-1);
+  const garde = ctx.garde.active; // sim 0.33.0: flying units (no separation) and stunned ones (no walking)
   for (let i = n - 1; i >= 0; i--) {
     if (w.alive[i] !== 1 || (w.mask[i]! & need) !== need) continue;
+    if (garde && isFlying(ctx, i)) continue;
     const b = (w.y[i]! >> BUCKET_SHIFT) * s.gridW + (w.x[i]! >> BUCKET_SHIFT);
     s.next[i] = s.head[b]!;
     s.head[b] = i;
@@ -103,6 +106,7 @@ export function movementSystem(ctx: SimContext, s: MovementScratch): void {
     s.moving[i] = 0;
     s.contact[i] = 0;
     if (w.alive[i] !== 1 || (w.mask[i]! & need) !== need || w.mvOn[i] !== 1) continue;
+    if (garde && isStunned(ctx, i)) continue;
     const x = w.x[i]!;
     const y = w.y[i]!;
     const gx = w.goalX[i]!;
@@ -181,7 +185,7 @@ export function movementSystem(ctx: SimContext, s: MovementScratch): void {
     s.sy[i] = 0;
     if (w.alive[i] !== 1 || (w.mask[i]! & need) !== need) continue;
     const ri = w.radius[i]!;
-    if (ri === 0) continue;
+    if (ri === 0 || (garde && isFlying(ctx, i))) continue;
     const x = w.x[i]!;
     const y = w.y[i]!;
     const bx = x >> BUCKET_SHIFT;
@@ -283,7 +287,7 @@ export function movementSystem(ctx: SimContext, s: MovementScratch): void {
       const sp = map.spawns[w.owner[i]!];
       const nx = offGrid(clampI(x + mx, 0, maxX), map.w << 7, sp === undefined ? 0 : sp.x);
       const ny = offGrid(clampI(y + my, 0, maxY), map.h << 7, sp === undefined ? 0 : sp.y);
-      if (walkableAt(ctx, nx, ny)) {
+      if (walkableAt(ctx, nx, ny) || (garde && isFlying(ctx, i))) {
         w.x[i] = nx;
         w.y[i] = ny;
       } else if (walkableAt(ctx, nx, y)) {

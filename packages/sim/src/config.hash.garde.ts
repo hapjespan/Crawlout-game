@@ -2,6 +2,7 @@ import { fnv1aInt } from './math/fnv.js';
 import type { SimConfig, SimEnv } from './config.env.js';
 import { hashInts } from './config.hash.config.js';
 import { hashAiScript, hashHero } from './config.hash.ai.js';
+import { hashGardeB } from './config.hash.gardeB.js';
 
 // Sim 0.32.0 (the Garde, round A; proposal for the architect): faction-scoped hashing of what this round adds. A
 // gated faction is one with Garde rules (veterancy or fusion cores). Its new content (its AI script, its
@@ -13,7 +14,9 @@ import { hashAiScript, hashHero } from './config.hash.ai.js';
 
 /** Per factionId: true for a faction with Garde rules. */
 export function gatedFactions(c: SimConfig): boolean[] {
-  return c.factions.map((f) => f.veterancy !== null || f.fusionCores !== null);
+  return c.factions.map(
+    (f) => f.veterancy !== null || f.fusionCores !== null || f.mapPowerArmor !== null,
+  );
 }
 
 /** Script indices (SimConfig.aiScripts) of the gated factions, default and versus. */
@@ -99,5 +102,5 @@ export function hashGarde(h: number, env: SimEnv): number {
     if (pr != null) h = hashInts(h, [pr.rallyAtParts ? 1 : 0]);
   });
   for (const hr of c.heroes) if (g[hr.factionId] === true) h = hashHero(h, hr);
-  return h;
+  return hashGardeB(h, env, g); // sim 0.33.0: round B
 }

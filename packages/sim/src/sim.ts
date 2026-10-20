@@ -52,6 +52,7 @@ import { ProjectState, spawnProjectSites } from './systems/project.js';
 import { SurvivalState, survivalStatusOf, survivalSystem } from './systems/survival.js';
 import { DefenseState, defenseActive, defenseSystem } from './systems/defense.js';
 import { GardeState, fusionCoreSystem } from './systems/garde.js';
+import { mapPowerArmorSystem } from './systems/garde.powerArmor.js';
 import { gardeOn } from './config.hash.garde.js';
 import type { SurvivalStatus } from './systems/survival.js';
 import { Vision } from './vision.js';
@@ -170,7 +171,8 @@ export class Sim implements SimContext {
     this.defense.active = defenseActive(this);
     this.world.clearOnFree.push(this.defense.mark);
     this.garde.active = gardeOn(env);
-    this.world.clearOnFree.push(this.garde.kills, this.garde.rank);
+    const g = this.garde;
+    this.world.clearOnFree.push(g.kills, g.rank, g.stunUntil, g.overloadAt, g.quality, g.cargoN);
     this.parts = {
       world: this.world,
       flow: this.flow,
@@ -283,6 +285,7 @@ export class Sim implements SimContext {
     // 6 economie: verzamelen, bouwen, omscholen, huisvestingsgroei
     economySystem(this, this.census);
     fusionCoreSystem(this); // sim 0.32.0: the fusion cores of the Garde
+    mapPowerArmorSystem(this); // sim 0.33.0: the power armour of the map
     probe?.(6);
     // 7 claims en winroutes
     claimsSystem(this, this.claimScratch, this.census);

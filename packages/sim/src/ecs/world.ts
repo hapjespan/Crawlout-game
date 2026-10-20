@@ -266,7 +266,7 @@ export class World {
   /** Alle state-arrays in vaste volgorde (na de velden hierboven gedeclareerd). */
   readonly stateArrays: readonly StateArray[] = entityStateArrays(this);
   /** Per-entity arrays of other systems that free() zeroes too (sim 0.31.0: DefenseState.mark). */
-  readonly clearOnFree: Uint8Array[] = [];
+  readonly clearOnFree: (Uint8Array | Uint16Array | Uint32Array | Int32Array)[] = [];
 
   /** Geeft een vrije index uit (vrije lijst eerst, LIFO) of -1 als de wereld vol is. */
   alloc(): number {

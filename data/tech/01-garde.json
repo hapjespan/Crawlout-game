@@ -13,7 +13,7 @@
         "delta": 10
       }
     ],
-    "_comment": "startwaarde, geen balans. Fusiekernen: ontgrendelt de krachtpantser en de geschutstoren (prereqTech) en geeft de Initiate-wacht +10 procent schade (laserkalibratie). Een frame kost straks ook een fusion core (nog niet in de sim, zie docs/garde.md). Slechts 4 Garde-techs: de sim heeft MAX_TECHS 32 en de andere facties vullen er al 28; zie docs/garde.md voor de uitbreidingslijst."
+    "_comment": "startwaarde, geen balans. Fusiekernen: ontgrendelt de krachtpantser en de geschutstoren (prereqTech) en geeft de Initiate-wacht +10 procent schade (laserkalibratie). Een frame kost straks ook een fusion core (nog niet in de sim, zie docs/garde.md). MAX_TECHS is 64 (sim 0.31.0); de uitbreiding van docs/garde.md staat achteraan met idGroup 1 (data 0.39.0)."
   },
   {
     "id": "pantserplaten_zwaar",
@@ -80,5 +80,138 @@
       }
     ],
     "_comment": "startwaarde, geen balans. SPECIAL-kanaal tech (Spelfundament 5): +1 Intelligence, Perception en Strength voor de held. Of de sim tech-effecten op target held toepast is open (zie docs/garde.md)."
+  },
+  {
+    "id": "laserkunde",
+    "faction": "garde",
+    "scrapCost": 160,
+    "researchS": 30,
+    "building": "archief",
+    "prereqTech": [
+      "fusiekernen"
+    ],
+    "effects": [
+      {
+        "stat": "damagePct",
+        "target": "krachtpantser",
+        "delta": 10
+      },
+      {
+        "stat": "damagePct",
+        "target": "geschutstoren",
+        "delta": 10
+      }
+    ],
+    "idGroup": 1,
+    "_comment": "startwaarde, geen balans (data 0.39.0, voorstel sim-core voor de architect; docs/garde.md punt 8; idGroup 1: achteraan, de oudere techIds blijven). Laserkunde: +10 procent schade voor het krachtpantser en de geschutstoren."
+  },
+  {
+    "id": "klerkenschool",
+    "faction": "garde",
+    "scrapCost": 100,
+    "researchS": 25,
+    "building": "archief",
+    "prereqTech": [],
+    "effects": [
+      {
+        "stat": "hpPct",
+        "target": "klerk",
+        "delta": 20
+      },
+      {
+        "stat": "speedPct",
+        "target": "klerk",
+        "delta": 10
+      }
+    ],
+    "idGroup": 1,
+    "_comment": "startwaarde, geen balans (data 0.39.0, voorstel sim-core voor de architect; docs/garde.md punt 8; idGroup 1: achteraan, de oudere techIds blijven). Klerkenschool: +20 procent hp en +10 procent snelheid voor de Klerk."
+  },
+  {
+    "id": "bergingsdienst",
+    "faction": "garde",
+    "scrapCost": 110,
+    "researchS": 25,
+    "building": "archief",
+    "prereqTech": [],
+    "effects": [
+      {
+        "stat": "gatherRatePct",
+        "target": "initiate_zoeker",
+        "delta": 20
+      }
+    ],
+    "idGroup": 1,
+    "_comment": "startwaarde, geen balans (data 0.39.0, voorstel sim-core voor de architect; docs/garde.md punt 8; idGroup 1: achteraan, de oudere techIds blijven). Bergingsdienst: +20 procent opbrengst voor de Initiate-zoeker."
+  },
+  {
+    "id": "drilboek",
+    "faction": "garde",
+    "scrapCost": 120,
+    "researchS": 25,
+    "building": "kazerne",
+    "prereqTech": [],
+    "effects": [
+      {
+        "stat": "hpPct",
+        "target": "initiate_wacht",
+        "delta": 15
+      },
+      {
+        "stat": "damagePct",
+        "target": "initiate_wacht",
+        "delta": 5
+      }
+    ],
+    "idGroup": 1,
+    "_comment": "startwaarde, geen balans (data 0.39.0, voorstel sim-core voor de architect; docs/garde.md punt 8; idGroup 1: achteraan, de oudere techIds blijven). Drilboek: +15 procent hp en +5 procent schade voor de Initiate-wacht."
+  },
+  {
+    "id": "servo_kalibratie",
+    "faction": "garde",
+    "scrapCost": 160,
+    "researchS": 35,
+    "building": "archief",
+    "prereqTech": [
+      "holobanden"
+    ],
+    "effects": [
+      {
+        "stat": "S",
+        "target": "held",
+        "delta": 1
+      },
+      {
+        "stat": "E",
+        "target": "held",
+        "delta": 1
+      }
+    ],
+    "idGroup": 1,
+    "_comment": "startwaarde, geen balans (data 0.39.0, voorstel sim-core voor de architect; docs/garde.md punt 8; idGroup 1: achteraan, de oudere techIds blijven). Servo-kalibratie: SPECIAL-kanaal tech, +1 Strength en Endurance voor de held."
+  },
+  {
+    "id": "vertibird_programma",
+    "faction": "garde",
+    "scrapCost": 220,
+    "researchS": 40,
+    "building": "landingsplatform",
+    "prereqTech": [
+      "plasmakern"
+    ],
+    "effects": [
+      {
+        "stat": "hpPct",
+        "target": "vertibird",
+        "delta": 20
+      },
+      {
+        "stat": "speedPct",
+        "target": "vertibird",
+        "delta": 10
+      }
+    ],
+    "idGroup": 1,
+    "_comment": "startwaarde, geen balans (data 0.39.0, voorstel sim-core voor de architect; docs/garde.md punt 8; idGroup 1: achteraan, de oudere techIds blijven). Vertibird-programma: +20 procent hp en +10 procent snelheid voor de Vertibird."
   }
 ]

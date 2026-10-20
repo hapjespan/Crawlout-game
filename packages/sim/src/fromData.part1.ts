@@ -117,6 +117,9 @@ export const BODY_ROBOT = BODY_TYPES.indexOf('robot');
 /** Index of the human body: only humans are caught by a Slaver. */
 export const BODY_HUMAN = BODY_TYPES.indexOf('human');
 
+/** Index of the vehicle body (sim 0.33.0): what a Klerk repairs (loadouts repair target vehicle). */
+export const BODY_VEHICLE = BODY_TYPES.indexOf('vehicle');
+
 /** Stats a chem can change: damage and speed of every dosed unit, Strength and Agility of a dosed hero. */
 const CHEM_STATS: readonly EffectStatName[] = ['damagePct', 'speedPct'];
 

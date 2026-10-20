@@ -17,6 +17,7 @@ import { heroDied } from './hero.js';
 import { plunderOnDeath } from './plunder.js';
 import { creepDeath } from './creeps.js';
 import { isProjectPart, revertToRuin } from './project.js';
+import { cargoLost } from './garde.transport.js';
 
 // Systeem 8: dood en opruimen, daarna de presentatie (anim, animT, flags) die de snapshot in gaat.
 // Een unit met hp <= 0 wordt een lijk (anim death, flag dead) tot corpseTicks op is; een gebouw verdwijnt meteen en
@@ -50,6 +51,7 @@ export function cleanupSystem(ctx: SimContext): void {
     }
     creepDeath(ctx, i); // sim 0.20.0: the last bandit of a camp gives its loot
     plunderOnDeath(ctx, i); // data 0.21.0: the killer's owner may plunder it (before its cargo is gone)
+    cargoLost(ctx, i); // sim 0.33.0: the passengers of a transport die with it
     const owner = w.owner[i]!;
     if ((m & C.building) !== 0) removeBuilding(ctx, i);
     else if (corpseTicks > 0) makeCorpse(ctx, i);

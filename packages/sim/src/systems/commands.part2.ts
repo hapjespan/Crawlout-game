@@ -11,6 +11,7 @@ import { ROLES } from '@crawlout/data';
 import { applyRecruit, applyHeroAbility, applyPickPerk } from './hero.js';
 import { applyProduce } from './robots.js';
 import { applyTrain } from './training.js';
+import { applyLoad, applyUnload } from './garde.transport.js';
 import {
   applyAttack,
   applyBuild,
@@ -81,6 +82,10 @@ export function applyCommand(ctx: SimContext, cmd: SimCommand): boolean {
       return applyTrain(ctx, p, cmd.payload);
     case 'Guard':
       return applyGuard(ctx, p, cmd.payload);
+    case 'Load':
+      return applyLoad(ctx, p, cmd.payload);
+    case 'Unload':
+      return applyUnload(ctx, p, cmd.payload);
     case 'Surrender':
       ctx.ps.defeated[p] = WIN_SURRENDER;
       ctx.ps.domTicks[p] = 0;

@@ -228,6 +228,15 @@ export interface FactionData {
   veterancy: VeterancyData | null;
   /** Fusion cores (data 0.38.0, the Garde; proposal); null without. */
   fusionCores: FusionCoresData | null;
+  /** The power armour of the map (data 0.39.0, the Garde; proposal); null without. */
+  mapPowerArmor: MapPowerArmorData | null;
+}
+
+export interface MapPowerArmorData {
+  loadoutId: number;
+  respawnTicks: number;
+  /** hp and damage of a frame of a player of another faction, in permille. */
+  otherQualityPermille: number;
 }
 
 export interface VeterancyData {
@@ -286,6 +295,24 @@ export interface LoadoutData {
   canBuild: boolean;
   /** Data 0.38.0 (proposal): fusion cores taken from the stock when the production starts; 0 = none. */
   fusionCores: number;
+  /** Data 0.39.0 (proposal): the Klerk's overload of enemy power armour; null for the rest. */
+  overload: OverloadData | null;
+  /** Data 0.39.0 (proposal): a transport (the Vertibird); null for the rest. */
+  transport: TransportData | null;
+  /** Data 0.39.0 (proposal): moves straight over any terrain. */
+  flying: boolean;
+}
+
+export interface OverloadData {
+  /** Loadout ids it overloads. */
+  targets: number[];
+  stunTicks: number;
+  cooldownTicks: number;
+}
+
+export interface TransportData {
+  capacity: number;
+  loadRangeU: number;
 }
 
 export interface RepairData {

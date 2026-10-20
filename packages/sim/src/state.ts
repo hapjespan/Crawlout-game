@@ -2,6 +2,7 @@ import { MAX_ENTITIES } from '@crawlout/protocol';
 import type { World } from './ecs/world.js';
 import type { FlowFields } from './flowfield.js';
 import { MAX_FLOW_FIELDS } from './flowfield.js';
+import { MAX_CARGO } from './config.limits.js';
 import { FNV_OFFSET, fnv1a } from './math/fnv.js';
 import type { GlobalState, PlayerState } from './systems/common.js';
 import type { Vision } from './vision.js';
@@ -152,6 +153,20 @@ function bodyChunks(p: StateParts): Uint8Array[] {
   if (g.active) {
     out.push(bytesOf(g.kills, w.highWater), bytesOf(g.rank, w.highWater));
     out.push(bytesOf(g.cores, g.cores.length), bytesOf(g.coreWork, g.coreWork.length));
+    // round B (sim 0.33.0)
+    const n = w.highWater;
+    for (const a of [
+      g.stunUntil,
+      g.overloadAt,
+      g.quality,
+      g.cargoN,
+      g.paHolder,
+      g.paTimer,
+      g.paFrame,
+    ])
+      out.push(bytesOf(a, n));
+    for (const a of [g.cargoType, g.cargoHp, g.cargoRank, g.cargoKills])
+      out.push(bytesOf(a, n * MAX_CARGO));
   }
   return out;
 }

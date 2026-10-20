@@ -148,6 +148,19 @@ export function convertFactions(ctx: LoadContext): FactionData[] {
                 ref(techIx, 'tech', `${where} fusionCores`, t),
               ),
             },
+      mapPowerArmor:
+        f.mapPowerArmor === undefined
+          ? null
+          : {
+              loadoutId: ref(
+                loadoutIx,
+                'loadout',
+                `${where} mapPowerArmor`,
+                f.mapPowerArmor.loadout,
+              ),
+              respawnTicks: secondsToTicks(f.mapPowerArmor.respawnS),
+              otherQualityPermille: pctToPermille(f.mapPowerArmor.otherQualityPct),
+            },
     };
   });
   return factions;

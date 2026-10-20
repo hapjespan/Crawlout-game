@@ -25,6 +25,10 @@ import {
   ORDER_GUARD,
   ORDER_CAST,
 } from '../ecs/world.js';
+import { ROLES } from '@crawlout/data';
+import { ORDER_LOAD, ORDER_UNLOAD, loadOrder, unloadOrder } from './garde.transport.js';
+
+const ROLE_TECHNICIAN = ROLES.indexOf('technician');
 import { repairIdle } from './robots.js';
 import { PROVIDES_KOOI, PROVIDES_WORKSHOP } from '../fromData.js';
 import { resolvePendingSlots } from './formation.js';
@@ -48,7 +52,8 @@ import {
 function idle(ctx: SimContext, s: OrdersScratch, i: number): void {
   const w = ctx.world;
   if ((w.role[i] === ROLE_MILITIA || w.role[i] === ROLE_ROBOT) && autoEngage(ctx, s, i)) return;
-  if (w.role[i] === ROLE_ROBOT && (w.mask[i]! & C.hero) === 0) {
+  // sim 0.33.0: a technician with repair (the Klerk) repairs like a support robot
+  if ((w.role[i] === ROLE_ROBOT || w.role[i] === ROLE_TECHNICIAN) && (w.mask[i]! & C.hero) === 0) {
     const rep = ctx.unitType(w.typeId[i]!)?.repair;
     if (rep !== undefined && rep !== null && repairIdle(ctx, i, rep)) return;
   }
@@ -126,6 +131,13 @@ export function ordersSystem(ctx: SimContext, s: OrdersScratch): void {
         break;
       case ORDER_GUARD:
         guard(ctx, s, i, o);
+        break;
+      case ORDER_LOAD:
+        w.target[i] = NO_ENTITY;
+        loadOrder(ctx, i, o); // sim 0.33.0: board a transport
+        break;
+      case ORDER_UNLOAD:
+        unloadOrder(ctx, i);
         break;
       default:
         if (type >= ORDER_CAST && type < ORDER_CAST + MAX_ABILITIES) castOrder(ctx, i, o);

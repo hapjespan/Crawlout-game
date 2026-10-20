@@ -28,7 +28,13 @@ import {
   simEffect,
 } from './fromData.part1.js';
 import { simSurvivalFromData } from './fromData.part4.js';
-import { simFusionCores, simRaidPlan, simVeterancy } from './fromData.garde.js';
+import {
+  simFusionCores,
+  simGardeUnit,
+  simMapPowerArmor,
+  simRaidPlan,
+  simVeterancy,
+} from './fromData.garde.js';
 
 /** GameData naar SimConfig. Gooit als een factie geen hoofdgebouw (provides hq) heeft. */
 export function simConfigFromGameData(data: GameData): SimConfig {
@@ -136,6 +142,7 @@ export function simConfigFromGameData(data: GameData): SimConfig {
       })),
       veterancy: simVeterancy(f),
       fusionCores: simFusionCores(f),
+      mapPowerArmor: simMapPowerArmor(f),
     };
   });
   const heroes: SimHero[] = data.heroes.map((h) => {
@@ -214,6 +221,7 @@ export function simConfigFromGameData(data: GameData): SimConfig {
               seekRange: l.repair.seekRangeU,
               buildings: l.repair.targets.includes(REPAIR_TARGETS.indexOf('building')),
               robots: l.repair.targets.includes(REPAIR_TARGETS.indexOf('robot')),
+              vehicles: l.repair.targets.includes(REPAIR_TARGETS.indexOf('vehicle')),
             },
       siege:
         l.siege === null
@@ -226,6 +234,7 @@ export function simConfigFromGameData(data: GameData): SimConfig {
       slave: l.slave,
       canBuild: l.canBuild,
       fusionCores: l.fusionCores,
+      ...simGardeUnit(l),
       capture:
         l.capture === null
           ? null

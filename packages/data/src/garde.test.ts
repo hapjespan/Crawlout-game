@@ -47,7 +47,7 @@ describe('Garde: data laadt', () => {
       'plasmaridder',
       'vertibird',
     ]);
-    expect(data.tech.filter((t) => t.factionId === faction.id).length).toBe(4);
+    expect(data.tech.filter((t) => t.factionId === faction.id).length).toBe(10);
     expect(data.buildings.filter((b) => b.factionId === faction.id).length).toBe(7);
   });
 

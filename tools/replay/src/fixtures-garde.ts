@@ -1,5 +1,6 @@
 import type { FixtureDef } from './fixtures-def.part1.js';
 import { base } from './fixtures-def.part1.js';
+import { GARDE_B_FIXTURES } from './fixtures-gardeB.js';
 
 // The Garde, round A (sim 0.32.0, data 0.38.0; docs/garde.md): s18-rustbelt-garde, the scripted Garde AI
 // (ai/garde-basic.json, player 0) against the Dweller AI on Rustbelt XL for 17.5 minutes (short, no win): the Initiates
@@ -19,4 +20,5 @@ export const GARDE_FIXTURES: readonly FixtureDef[] = [
       return r;
     },
   },
+  ...GARDE_B_FIXTURES,
 ];

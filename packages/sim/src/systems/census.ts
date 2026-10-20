@@ -10,6 +10,7 @@ import {
 } from '../ecs/world.js';
 import { BODY_ROBOT, PROVIDES_HQ } from '../fromData.js';
 import type { SimContext } from './common.js';
+import { cargoCensus } from './garde.transport.js';
 
 const ROLE_MILITIA = ROLES.indexOf('militia');
 
@@ -103,6 +104,8 @@ export function takeCensus(ctx: SimContext, c: Census): void {
         else if (st === SLAVE_NONE && w.role[i] === ROLE_MILITIA)
           c.fighters[o] = c.fighters[o]! + 1;
       }
+      // sim 0.33.0: the passengers of a transport (systems/garde.transport.ts)
+      if (ctx.garde.active && ctx.garde.cargoN[i] !== 0) cargoCensus(ctx, c, i, o);
     } else if ((m & C.building) !== 0) {
       const bt = ctx.buildingType(w.typeId[i]!);
       if (bt === undefined) continue;

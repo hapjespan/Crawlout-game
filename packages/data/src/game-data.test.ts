@@ -42,7 +42,7 @@ describe('data/ valideert', () => {
     // 18 faction buildings plus the 7 of the Garde (data 0.37.0) plus (data 0.31.0, win route C) a restored and a ruin type per part of the strip mall
     expect(data.buildings).toHaveLength(18 + 7 + 2 * 4);
     expect(data.buildings.filter((b) => b.factionId === NEUTRAL_FACTION_ID)).toHaveLength(8);
-    expect(data.tech).toHaveLength(32);
+    expect(data.tech).toHaveLength(38); // data 0.39.0: 6 Garde techs in idGroup 1
     // data 0.38.0: the Paladin-Commander of the Garde (id zwaardridder, after warlord)
     expect(data.heroes).toHaveLength(3);
     expect(data.perks).toHaveLength(13);
@@ -63,10 +63,14 @@ describe('data/ valideert', () => {
     ]) {
       list.forEach((record, i) => expect(record.id).toBe(i));
       // the bandits of the creep camps (data 0.25.0) follow the faction loadouts, in the order of creeps.json
-      const keys = list
-        .filter((r) => !('factionId' in r) || r.factionId !== NEUTRAL_FACTION_ID)
-        .map((r) => r.key);
-      expect(keys).toEqual([...keys].sort());
+      // techs (data 0.39.0): sorted within each idGroup; the 6 of group 1 follow the 32 of group 0
+      const groups = list === data.tech ? [list.slice(0, 32), list.slice(32)] : [list];
+      for (const g of groups) {
+        const keys = g
+          .filter((r) => !('factionId' in r) || r.factionId !== NEUTRAL_FACTION_ID)
+          .map((r) => r.key);
+        expect(keys).toEqual([...keys].sort());
+      }
     }
   });
 

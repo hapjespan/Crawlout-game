@@ -24,6 +24,8 @@ export const MAX_SIGHT = 64 << 8;
 export const MAX_TECHS = 64;
 /** Uint32-woorden van de tech-bitset per speler (MAX_TECHS / 32). */
 export const TECH_WORDS = MAX_TECHS >>> 5;
+/** Geometry of the state (sim 0.33.0, the Garde round B): passengers per transport (GardeState cargo slots). */
+export const MAX_CARGO = 8;
 /** Geometrie van de state: gekozen perks staan per held in een uint32-bitset. */
 export const MAX_PERKS = 32;
 /** Geometrie van de state: abilities per held (cooldown en zone per slot). */
