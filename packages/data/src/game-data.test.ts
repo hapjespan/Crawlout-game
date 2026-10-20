@@ -237,7 +237,7 @@ describe('sim-tuning', () => {
       guard: { standU: 1280, leashU: 3584 },
       baseDefense: {
         survival: true,
-        skirmish: true,
+        skirmish: false,
         radiusU: 10240,
         calmTicks: 160,
       },

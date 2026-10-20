@@ -31,7 +31,7 @@ describe('Raiders: de factie laadt', () => {
     // data 0.31.0: win route C, the Bouwproject (data/project.json); no Raider change
     // data 0.30.0: the Kooi 5x5 (0.29.0: the guard rule, the Raider fighters back to strength, the weak low camp;
     // 0.28.0: the Raider garrison, 0.27.0: camp takeover)
-    expect(data.dataVersion).toBe('0.38.0');
+    expect(data.dataVersion).toBe('0.37.0');
     // Dwellers ongewijzigd: nog altijd training en geen Raider-blokken
     expect(dwellers.specialChannel).toBe('training');
     expect(dwellers.slaves).toBeNull();
@@ -166,7 +166,7 @@ describe('Raiders: de factie laadt', () => {
     const techs = mine(data.tech);
     expect(techs.length).toBeGreaterThanOrEqual(12);
     expect(techs.length).toBeLessThanOrEqual(15);
-    expect(data.tech.length).toBeLessThanOrEqual(64); // sim MAX_TECHS (64 since sim 0.31.0)
+    expect(data.tech.length).toBeLessThanOrEqual(32); // sim MAX_TECHS
     const keys = techs.map((t) => t.key);
     for (const k of ['chemie', 'psycho', 'jet', 'molotovs', 'honden_africhten', 'buggy_chassis'])
       expect(keys, k).toContain(k);
