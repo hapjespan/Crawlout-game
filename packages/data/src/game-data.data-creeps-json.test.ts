@@ -64,7 +64,7 @@ describe('data/creeps.json', () => {
   it('the Dwellers clear camps from minute 10, the Raiders take them over from minute 1; the Dwellers against Raiders do not', () => {
     const raiders = data.factions.findIndex((f) => f.key === 'raiders');
     for (const a of data.aiScripts) {
-      if (a.versusFactionId >= 0) {
+      if (a.versusFactionId === raiders) {
         // ai/dwellers-vs-raiders.json: no camp runs (measured: with them the Raiders won none of 66)
         expect(a.creeps).toBeNull();
         continue;
