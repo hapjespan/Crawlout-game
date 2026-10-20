@@ -37,19 +37,23 @@ describe('survival fixtures', () => {
     expect(sim.winner()).toBeNull();
   });
 
-  it('duo: wave 1 goes for the weaker slot 1, retargets to slot 0 when his HQ falls, wave 2 picks slot 0', () => {
+  it('duo: wave 1 goes for the weaker slot 1, whose defenders (the armed workers too) hold the HQ; wave 2 too', () => {
+    // data 0.36.0, sim 0.30.0: the defend stance; before it the Dweller HQ fell at frame 4.7k and the waves turned to slot 0
     const r = load('s17-rustbelt-survival-duo');
     let first = -1;
     let lost = -1;
+    let alarm = 0;
     const sim = play(r, 5301, (s, f) => {
       if (first < 0 && s.survival.batches[0]! > 0) first = s.survival.target[0]! - 1;
       if (lost < 0 && hqOf(s, 1) < 0) lost = f;
+      if (s.defense.alarm[1]! > 0) alarm++;
     });
     expect(first).toBe(1);
-    expect(lost).toBeGreaterThan(0);
-    expect(sim.survival.target[0]).toBe(1);
-    expect(sim.survival.target[1]).toBe(1);
-    expect(sim.isDefeated(1)).toBe(true);
+    expect(alarm).toBeGreaterThan(0);
+    expect(lost).toBe(-1);
+    expect(sim.survival.target[0]).toBe(2);
+    expect(sim.survival.target[1]).toBe(2);
+    expect(sim.isDefeated(1)).toBe(false);
     expect(sim.winner()).toBeNull();
   });
 });

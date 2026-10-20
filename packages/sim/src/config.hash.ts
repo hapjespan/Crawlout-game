@@ -30,7 +30,7 @@ export function envHash(env: SimEnv): number {
   // base defence (sim 0.29.0): only where it is on, so every other env keeps its hash
   if (defenseOn(env)) {
     const d = c.baseDefense;
-    h = hashInts(h, [d.survival ? 1 : 0, d.skirmish ? 1 : 0, d.radius, d.calmTicks, d.retarget]);
+    h = hashInts(h, [d.survival ? 1 : 0, d.skirmish ? 1 : 0, d.radius, d.calmTicks]);
   }
   return h;
 }

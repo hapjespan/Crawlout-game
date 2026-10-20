@@ -472,7 +472,6 @@ export function simConfigFromGameData(data: GameData): SimConfig {
       skirmish: t.baseDefense.skirmish,
       radius: t.baseDefense.radiusU,
       calmTicks: t.baseDefense.calmTicks,
-      retarget: t.baseDefense.retargetU,
     },
   };
 }

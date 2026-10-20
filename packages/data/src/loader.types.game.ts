@@ -325,7 +325,6 @@ export interface BaseDefenseTuningData {
   skirmish: boolean;
   radiusU: number;
   calmTicks: number;
-  retargetU: number;
 }
 
 /** sim.json `guard` in sim units (data 0.29.0). */

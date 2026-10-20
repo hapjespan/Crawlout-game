@@ -240,7 +240,6 @@ describe('sim-tuning', () => {
         skirmish: false,
         radiusU: 10240,
         calmTicks: 160,
-        retargetU: 1536,
       },
     });
   });

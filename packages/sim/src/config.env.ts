@@ -107,7 +107,6 @@ export interface SimConfig {
     readonly skirmish: boolean;
     readonly radius: number;
     readonly calmTicks: number;
-    readonly retarget: number;
   };
 }
 
