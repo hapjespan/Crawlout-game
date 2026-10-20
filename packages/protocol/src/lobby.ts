@@ -28,8 +28,10 @@ const clientId = z.string().min(8).max(64);
 // - Reconnect: een join met bekend clientId na start krijgt opnieuw `start` (zelfde seed, map en spelers) en de
 //   relay start de resync zelf (resyncRequest naar de laagste online menselijke peer). Een resyncRequest van de
 //   client blijft toegestaan en is dan een no-op zolang er een resync loopt.
-// mode 'project' (protocol 0.16.0; voorstel, ter bevestiging door de architect): het speltype Bouwproject, Skirmish plus
+// mode 'project' (protocol 0.16.0; bevestigd in fase-0 sectie 24 besluit 1): het speltype Bouwproject, Skirmish plus
 // winroute C; alleen dan zet de sim de projectdelen van de map neer (envHash). 'skirmish' heeft de winroutes A en B.
+// mode 'survival' (sim 0.27.0, data 0.33.0; sectie 24 besluit 1): Survival co-op, 1 tot 4 spelers zonder AI-speler, de
+// bouwzones en golven uit data/survival; de winroutes A, B en C gelden niet, de uitkomst staat in PlayerStatus.survival.
 export const MatchSettings = z
   .object({
     mode: z.enum(['skirmish', 'survival', 'project']),
@@ -72,7 +74,7 @@ export const ClientMessage = z.discriminatedUnion('kind', [
 export type ClientMessage = z.infer<typeof ClientMessage>;
 
 export const ServerMessage = z.discriminatedUnion('kind', [
-  // Besluit fase-0 sectie 23 (protocol 0.12.0, verplicht in 0.13.0; voorstel, ter bevestiging door de architect): `you` is
+  // Besluit fase-0 sectie 23 (protocol 0.12.0, verplicht sinds 0.13.0; bevestigd in fase-0 sectie 24 besluit 1): `you` is
   // de playerId van de verbinding die dit lobby-bericht ontvangt, zoals in `start`. De relay stuurt het lobby-bericht
   // daarom per verbinding (dezelfde inhoud, een ander `you`; Room.broadcastLobby, relay 0.3.0); een AI-speler ontvangt
   // niets. De client leest het (session.ts, de menu-flow); de naam is geen identiteit meer, de unieke namen van de
