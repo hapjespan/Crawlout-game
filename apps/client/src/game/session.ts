@@ -33,8 +33,8 @@ import {
 } from '@crawlout/sim';
 import type { SimWorkerInbound } from '@crawlout/sim';
 import { modeParam, type SessionEvents, type SessionLobbyRequest } from './sessionLobby.js';
-import SimWorker from './simWorker.ts?worker';
-import type { SurvivalWorkerOutbound } from './survivalStatus.js';
+import SimWorker from '@crawlout/sim/worker?worker';
+import type { SimWorkerOutbound } from '@crawlout/sim';
 import { identifyYou } from '@crawlout/ui';
 import type { ClientMap } from './content.js';
 import { buildDesyncDump, saveDesyncDump } from '../net/desyncDump.js';
@@ -165,7 +165,7 @@ export function startSession(
 
   const hashLog = new Map<number, number>();
 
-  worker.onmessage = (ev: MessageEvent<SurvivalWorkerOutbound>) => {
+  worker.onmessage = (ev: MessageEvent<SimWorkerOutbound>) => {
     const msg = ev.data;
     if (msg.kind === 'snapshot') {
       const header = readSnapshotHeader(msg.buffer);
@@ -192,7 +192,7 @@ export function startSession(
     } else if (msg.kind === 'state') {
       dumpWaiters.shift()?.(msg);
     } else if (msg.kind === 'status') {
-      events.onStatus?.(msg.status, msg.winner, { status: msg.survival, frame: msg.frame });
+      events.onStatus?.(msg.status, msg.winner, msg.frame);
     } else if (msg.kind === 'fog') {
       events.onFog?.(msg.mask);
     } else if (msg.kind === 'error') {
