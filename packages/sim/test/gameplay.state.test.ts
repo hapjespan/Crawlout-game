@@ -109,6 +109,7 @@ describe('state', () => {
         camps: [],
         slaveGroups: [], // protocol 0.15.0 (voorstel): the Dwellers have no slaves
         project: null, // protocol 0.16.0 (voorstel): no Bouwproject on the test map
+        survival: null, // protocol 0.17.0: not a survival run
       },
       winner: null,
     });

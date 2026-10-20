@@ -1,3 +1,4 @@
+import { grantTech } from '../src/techBits.js';
 import { typeByKey, CONFIG, SCAV, bundle, cmd, MILITIA } from './helpers.js';
 import { describe, it, expect } from 'vitest';
 import { EVENT_TYPE, OWNER_NEUTRAL } from '@crawlout/protocol';
@@ -90,7 +91,7 @@ describe('scripted AI (balans speltest 14 oktober)', () => {
     play(sim, 400);
     expect(unitsOf(sim, 0).some((u) => u.typeId === MILITIA)).toBe(true);
     expect(unitsOf(sim, 0).some((u) => u.typeId === PATROL)).toBe(false);
-    sim.ps.tech[0] = 1 << techId('geweerrek');
+    grantTech(sim.ps, 0, techId('geweerrek'));
     // boven richScrap schoolt hij bestaande militie om naar patrol
     play(sim, 600);
     expect(unitsOf(sim, 0).some((u) => u.typeId === PATROL)).toBe(true);

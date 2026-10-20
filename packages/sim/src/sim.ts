@@ -22,6 +22,7 @@ import { EventBuffer } from './events.js';
 import { FlowFields } from './flowfield.js';
 import { isInt } from './math/int.js';
 import { Rng } from './rng.js';
+import { hasTech } from './techBits.js';
 import { writeSnapshot } from './snapshot.js';
 import { setupStart } from './start.js';
 import type { StateParts } from './state.js';
@@ -163,6 +164,7 @@ export class Sim implements SimContext {
     this.survival.active = env.map.survival !== undefined;
     this.world.coop = this.survival.active;
     this.defense.active = defenseActive(this);
+    this.world.clearOnFree.push(this.defense.mark);
     this.parts = {
       world: this.world,
       flow: this.flow,
@@ -381,9 +383,9 @@ export class Sim implements SimContext {
 
   /** Onderzochte tech-ids van een speler, oplopend (debug, tests; de HUD heeft hiervoor nog geen contractveld). */
   researched(playerId: number): number[] {
-    const bits = this.ps.tech[playerId] ?? 0;
     const out: number[] = [];
-    for (const t of this.config.techs) if (((bits >>> t.techId) & 1) !== 0) out.push(t.techId);
+    if (playerId < 0 || playerId >= MAX_PLAYERS) return out;
+    for (const t of this.config.techs) if (hasTech(this.ps, playerId, t.techId)) out.push(t.techId);
     return out;
   }
 

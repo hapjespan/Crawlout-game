@@ -54,10 +54,12 @@ export {
   MAX_ABILITIES,
   MAX_PERKS,
   MAX_TECHS,
+  TECH_WORDS,
   SAFETY_NET_BEACON,
   SAFETY_NET_TENTS,
 } from './config.js';
 export { HERO_ALIVE, HERO_DEAD, HERO_EMPTY, HERO_NONE, HERO_REVIVING } from './effects.js';
+export { anyTech, grantTech, hasTech } from './techBits.js';
 export { MAX_RADIUS, MAX_SPEED, envHash, validateEnv } from './config.js';
 export type { ClaimKind, SimMapSource } from './fromData.js';
 export {

@@ -5,6 +5,7 @@ import { PROVIDES_TURRET, statIndex } from './fromData.js';
 import { clampI, idiv } from './math/int.js';
 import type { SimContext } from './systems/common.js';
 import { projectEffectSum } from './systems/project.js';
+import { anyTech, hasTech } from './techBits.js';
 
 // Effecten van onderzochte techs (tech.json effects[]) en van de perks van een levende held (perks.json effects[]) op
 // de stats van de eigen units, gebouwen en de held. Afgeleid: de bron is de tech-bitset per speler (PlayerState.tech)
@@ -62,8 +63,7 @@ const matches = (e: SimEffect, stat: number, typeId: number, isHero: boolean): b
 
 /** Of speler p alle techs in `list` heeft onderzocht. */
 export function hasTechs(ctx: SimContext, p: number, list: readonly number[]): boolean {
-  const bits = ctx.ps.tech[p]!;
-  for (const t of list) if (((bits >>> t) & 1) === 0) return false;
+  for (const t of list) if (!hasTech(ctx.ps, p, t)) return false;
   return true;
 }
 
@@ -77,10 +77,9 @@ export function effectSum(
 ): number {
   // win route C (sim 0.25.0): the kinds of restored project parts the player holds, like researched techs
   let sum = projectEffectSum(ctx, p, stat, typeId, isHero);
-  const bits = ctx.ps.tech[p]!;
-  if (bits !== 0) {
+  if (anyTech(ctx.ps, p)) {
     for (const t of ctx.config.techs) {
-      if (((bits >>> t.techId) & 1) === 0) continue;
+      if (!hasTech(ctx.ps, p, t.techId)) continue;
       for (const e of t.effects) if (matches(e, stat, typeId, isHero)) sum += e.delta;
     }
   }

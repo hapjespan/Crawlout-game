@@ -1,6 +1,6 @@
 import type { LobbyPlayer } from '@crawlout/protocol';
 import { OWNER_NEUTRAL } from '@crawlout/protocol';
-import { createSim } from '@crawlout/sim';
+import { TECH_WORDS, createSim } from '@crawlout/sim';
 import type { Sim, SimConfig, SimEnv, UnitView } from '@crawlout/sim';
 import { buildEnv } from './env.js';
 
@@ -100,7 +100,7 @@ function describe(sim: Sim, p: number, mirror: boolean): string[] {
   out.sort();
   const ps = sim.ps;
   out.push(
-    `ps scrap${ps.scrap[p]} growth${ps.growth[p]} dom${ps.domTicks[p]} build${ps.aiBuild[p]} attack${ps.aiAttack[p]} waveAt${ps.aiWaveAt[p]} claimAt${ps.aiClaimAt[p]} tech${ps.tech[p]} hero${ps.heroState[p]}/${ps.heroLevel[p]}/${ps.heroXp[p]}/${ps.heroPerks[p]}/${ps.heroTimer[p]} trained${ps.trained.slice(p * 7, p * 7 + 7).join('.')} net${ps.netTimer[p]}/${ps.netArrivals[p]} robot${ps.aiRobot[p]} mix${ps.aiMix[p]} raid${ps.aiRaidAt[p]}/${ps.aiRaidOut[p]} trib${ps.tributeAcc[p]}`,
+    `ps scrap${ps.scrap[p]} growth${ps.growth[p]} dom${ps.domTicks[p]} build${ps.aiBuild[p]} attack${ps.aiAttack[p]} waveAt${ps.aiWaveAt[p]} claimAt${ps.aiClaimAt[p]} tech${ps.tech.slice(p * TECH_WORDS, p * TECH_WORDS + TECH_WORDS).join('.')} hero${ps.heroState[p]}/${ps.heroLevel[p]}/${ps.heroXp[p]}/${ps.heroPerks[p]}/${ps.heroTimer[p]} trained${ps.trained.slice(p * 7, p * 7 + 7).join('.')} net${ps.netTimer[p]}/${ps.netArrivals[p]} robot${ps.aiRobot[p]} mix${ps.aiMix[p]} raid${ps.aiRaidAt[p]}/${ps.aiRaidOut[p]} trib${ps.tributeAcc[p]}`,
   );
   return out;
 }

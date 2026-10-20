@@ -265,6 +265,8 @@ export class World {
 
   /** Alle state-arrays in vaste volgorde (na de velden hierboven gedeclareerd). */
   readonly stateArrays: readonly StateArray[] = entityStateArrays(this);
+  /** Per-entity arrays of other systems that free() zeroes too (sim 0.31.0: DefenseState.mark). */
+  readonly clearOnFree: Uint8Array[] = [];
 
   /** Geeft een vrije index uit (vrije lijst eerst, LIFO) of -1 als de wereld vol is. */
   alloc(): number {
@@ -304,6 +306,7 @@ export class World {
       const o = i * s.perEntity;
       for (let k = 0; k < s.perEntity; k++) s.array[o + k] = 0;
     }
+    for (const a of this.clearOnFree) a[i] = 0;
     this.gen[i] = g >= GEN_MASK ? 1 : g + 1;
     this.alive[i] = 0;
     this.freeStack[this.freeCount++] = i;

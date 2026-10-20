@@ -1,4 +1,4 @@
-import { FNV_OFFSET, fnv1a, fnv1aInt, fnv1aString } from './math/fnv.js';
+import { FNV_OFFSET, fnv1a, fnv1aInt } from './math/fnv.js';
 import { type SimEnv, defenseOn } from './config.env.js';
 import {
   hashBuildingTypes,
@@ -11,12 +11,15 @@ import { hashAiScripts, hashProgression } from './config.hash.ai.js';
 import { hashSurvival } from './config.survival.env.js';
 
 /**
- * Hash van de omgeving (dataVersion, config, map, spelers) in vaste veldvolgorde. Gaat de state-header in,
+ * Hash van de omgeving (config, map, spelers) in vaste veldvolgorde. Gaat de state-header in,
  * zodat twee clients met andere data, een andere map of andere spelers op tick 0 al verschillen.
+ * Sim 0.31.0 (fase-0 sectie 24 besluit 4): de versiestring `dataVersion` hoort er niet meer in; de envHash dekt wat
+ * de sim leest veld voor veld, dus een data-bump die daar niets aan verandert houdt elke hash. `dataVersion` blijft
+ * de lobby-check in start en Replay.
  */
 export function envHash(env: SimEnv): number {
   const { config: c } = env;
-  let h = fnv1aString(FNV_OFFSET, c.dataVersion);
+  let h = FNV_OFFSET;
   h = hashTuning(h, c);
   h = hashUnitTypes(h, c);
   h = hashBuildingTypes(h, c);

@@ -21,7 +21,7 @@ describe('sim: Raider data (data 0.21.0)', () => {
       { factionId: RAIDERS, ai: false },
     ]);
     expect(() => validateEnv(envOf(init))).not.toThrow();
-    expect(REAL_CONFIG.factions).toHaveLength(2);
+    expect(REAL_CONFIG.factions).toHaveLength(3); // data 0.37.0: the Garde, data only for now
   });
 
   it('picks the hq, the claim post, the settler, the roles, the hero base and the safety-net unit of the Raiders', () => {

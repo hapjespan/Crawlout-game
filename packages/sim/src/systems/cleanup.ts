@@ -42,6 +42,7 @@ export function cleanupSystem(ctx: SimContext): void {
     }
     if ((m & C.health) === 0 || w.hp[i]! > 0) continue;
     ctx.events.push(EVENT_TYPE.death, w.idOf(i), w.typeId[i]!, w.x[i]!, w.y[i]!);
+    ctx.defense.mark[i] = 0; // sim 0.31.0: a dead unit or corpse is no defender (fase-0 sectie 24 besluit 6)
     // win route C (sim 0.25.0): a part of the strip mall is never removed; it falls back to a ruin (no plunder)
     if ((m & C.building) !== 0 && isProjectPart(ctx, i)) {
       revertToRuin(ctx, i);

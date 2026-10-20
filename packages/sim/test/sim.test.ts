@@ -149,9 +149,21 @@ describe('determinisme', () => {
       /envHash/,
     );
     expect(() =>
-      deserialize(buf, { ...testInit(), config: { ...TEST_SIM_CONFIG, dataVersion: 'x' } }),
+      deserialize(buf, {
+        ...testInit(),
+        config: { ...TEST_SIM_CONFIG, corpseTicks: TEST_SIM_CONFIG.corpseTicks + 1 },
+      }),
     ).toThrow(/envHash/);
     expect(() => deserialize(new ArrayBuffer(8), testInit())).toThrow();
+  });
+
+  it('de versiestring dataVersion zit niet in de envHash (fase-0 sectie 24 besluit 4)', () => {
+    const { sim } = setup();
+    const copy = deserialize(sim.serialize(), {
+      ...testInit(),
+      config: { ...TEST_SIM_CONFIG, dataVersion: 'x' },
+    });
+    expect(copy.hash()).toBe(sim.hash());
   });
 });
 

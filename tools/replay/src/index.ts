@@ -3,7 +3,7 @@
 // Exitcode 1 bij een afwijkende hash of een ongeldige fixture. Een lege fixtures-map is groen.
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { checkReplay, parseReplay } from './run.js';
+import { asFixture, checkReplay, parseReplay } from './run.js';
 
 const dir = process.argv[2] ?? 'fixtures';
 const files = existsSync(dir)
@@ -20,7 +20,7 @@ const hex = (h: number): string => `0x${h.toString(16).padStart(8, '0')}`;
 let failed = 0;
 for (const f of files) {
   try {
-    const r = parseReplay(JSON.parse(readFileSync(join(dir, f), 'utf8')));
+    const r = asFixture(parseReplay(JSON.parse(readFileSync(join(dir, f), 'utf8'))));
     const plain = checkReplay(r);
     const mid = Math.floor((plain.frames - 1) / 2);
     const reloaded = plain.ok ? checkReplay(r, { reloadAfterFrame: mid }) : plain;

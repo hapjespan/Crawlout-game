@@ -99,11 +99,11 @@ describe('data/creeps.json', () => {
     const unknownFaction = raw();
     creepsOf(unknownFaction).takeover = [
       {
-        faction: 'garde',
+        faction: 'nomaden',
         tiers: [{ tier: 1, surrenderHpPct: 30, minUnits: 3, yieldS: 0, yieldMax: 0 }],
       },
     ];
-    expect(() => loadGameData(unknownFaction)).toThrow(/onbekende factie 'garde'/);
+    expect(() => loadGameData(unknownFaction)).toThrow(/onbekende factie 'nomaden'/);
     const twice = raw();
     creepsOf(twice).takeover = [
       {

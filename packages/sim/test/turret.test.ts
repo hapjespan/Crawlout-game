@@ -1,3 +1,4 @@
+import { grantTech } from '../src/techBits.js';
 import { describe, expect, it } from 'vitest';
 import { ENTITY_FLAG, EVENT_TYPE } from '@crawlout/protocol';
 import type { CommandEnvelope } from '@crawlout/protocol';
@@ -134,7 +135,8 @@ describe('turrets', () => {
 
   it('tech-effecten op het turrettype (lasergeleiding: +20% schade, +1 m range)', () => {
     const sim = open();
-    sim.ps.tech[0] = (1 << techId('raffinage')) | (1 << techId('lasergeleiding'));
+    grantTech(sim.ps, 0, techId('raffinage'));
+    grantTech(sim.ps, 0, techId('lasergeleiding'));
     const turret = withTurret(sim);
     const enemy = sim.spawnUnit({ typeId: SCAV, owner: 1, ...cellCenter(33, 21) }); // 12 m + rand: alleen met de +1 m
     play(sim, 1);

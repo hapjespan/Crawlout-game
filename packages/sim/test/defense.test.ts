@@ -193,4 +193,32 @@ describe('base defence', () => {
     expect(envHash(envOf(on))).not.toBe(envHash(envOf(init)));
     expect(sim.serialize().byteLength).toBe(createSim(off2).serialize().byteLength);
   });
+
+  it('clears the defence mark when an entity dies or is freed: a unit on a reused index is no defender', () => {
+    const { sim } = attacked(DWELLERS);
+    const w = sim.world;
+    toAlarm(sim);
+    runTo(sim, sim.frame + 1);
+    const marked = (): number[] => {
+      const out: number[] = [];
+      for (let i = 0; i < w.highWater; i++) if (sim.defense.mark[i] !== 0) out.push(i);
+      return out;
+    };
+    const [dies, freed] = marked();
+    expect(freed).toBeDefined();
+    // death (system 8): the mark goes with the hp, also while it lies as a corpse
+    w.hp[dies!] = 0;
+    runTo(sim, sim.frame + 1);
+    expect(sim.defense.mark[dies!]).toBe(0);
+    // freed (World.free): a new unit on the same index starts without a mark
+    const typeId = w.typeId[freed!]!;
+    const x = w.x[freed!]!;
+    const y = w.y[freed!]!;
+    expect(sim.defense.mark[freed!]).not.toBe(0);
+    expect(sim.destroyEntity(w.idOf(freed!))).toBe(true);
+    expect(sim.defense.mark[freed!]).toBe(0);
+    const id = sim.spawnUnit({ typeId, owner: 0, x, y });
+    expect(w.resolve(id)).toBe(freed);
+    expect(sim.defense.mark[freed!]).toBe(0);
+  });
 });

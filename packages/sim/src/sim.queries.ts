@@ -1,4 +1,11 @@
-import type { ChemStatus, FogMask, PlayerStatus, QueueItem } from '@crawlout/protocol';
+import type {
+  ChemStatus,
+  FogMask,
+  PlayerStatus,
+  QueueItem,
+  SurvivalRank,
+  SurvivalStatus as SurvivalStatusMsg,
+} from '@crawlout/protocol';
 import { ENTITY_NONE } from '@crawlout/protocol';
 import {
   C,
@@ -28,6 +35,7 @@ import {
 import { heroStatus } from './systems/hero.js';
 import { trainTicks, trainedOf } from './systems/training.js';
 import { ROLE_MILITIA, craftSiteMask } from './systems/orders.js';
+import { survivalStatusOf } from './systems/survival.js';
 import { slaveGroupStatus } from './systems/slaves.js';
 import { projectStatus } from './systems/project.js';
 import { WIN_OVERRUN, WIN_SURVIVED } from './systems/survival.js';
@@ -81,6 +89,30 @@ export function playerStatusOf(sim: Sim, census: Census, playerId: number): Play
     camps: campStatus(sim, playerId), // protocol 0.14.0 (voorstel): creep-kampen, overgenomen in de kleur van de eigenaar
     slaveGroups: slaveGroupStatus(sim, playerId, ROLE_MILITIA), // protocol 0.15.0 (voorstel): slavengroepen en bewakers
     project: projectStatus(sim), // protocol 0.16.0 (voorstel): winroute C, de delen en de countdowns
+    survival: survivalStatusMsg(sim), // protocol 0.17.0 (fase-0 sectie 24 besluit 3): golven, rang als string
+  };
+}
+
+/** Indexed by RANK_NORMAL, RANK_MINIBOSS, RANK_BOSS. */
+const RANK_NAMES: readonly SurvivalRank[] = ['normal', 'miniboss', 'boss'];
+const rankName = (rank: number): SurvivalRank => RANK_NAMES[rank] ?? 'normal';
+
+/**
+ * PlayerStatus.survival (protocol 0.17.0, fase-0 sectie 24 besluit 3): Sim.survivalStatus() with the rank as a
+ * string; shared knowledge, the same for every player; null outside Survival. Reads state only.
+ */
+export function survivalStatusMsg(sim: Sim): SurvivalStatusMsg | null {
+  const s = survivalStatusOf(sim);
+  if (s === null) return null;
+  return {
+    wavesStarted: s.wavesStarted,
+    waves: s.waves,
+    next:
+      s.next === null
+        ? null
+        : { wave: s.next.wave, atFrame: s.next.atFrame, rank: rankName(s.next.rank) },
+    active: s.active.map((a) => ({ target: a.target, alive: a.alive })),
+    result: s.result === null ? null : { outcome: s.result.outcome, frame: s.result.frame },
   };
 }
 

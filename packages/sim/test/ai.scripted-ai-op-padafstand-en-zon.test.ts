@@ -1,4 +1,5 @@
 // Split from ai.test.ts to stay under the 5,000-token file limit.
+import { grantTech } from '../src/techBits.js';
 import { typeByKey, CONFIG, MILITIA } from './helpers.js';
 import {
   type SimMap,
@@ -193,7 +194,8 @@ describe('scripted AI: budget rules for the tech tree (data 0.17.0)', () => {
         builders: { typeId: BOT, max: 1, fromTicks: 0 },
       },
     });
-    sim.ps.tech[0] = (1 << techId('raffinage')) | (1 << techId('robotica'));
+    grantTech(sim.ps, 0, techId('raffinage'));
+    grantTech(sim.ps, 0, techId('robotica'));
     sim.spawnBuilding(typeByKey('robotfabriek'), 0, 40, 30, true);
     // no human builder: only the robot can follow the build order
     for (const u of unitsOf(sim, 0).filter((u) => u.role === ROLES.indexOf('builder')))

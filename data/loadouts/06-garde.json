@@ -1,0 +1,207 @@
+[
+  {
+    "id": "initiate_zoeker",
+    "faction": "garde",
+    "bodyType": "human",
+    "role": "scavenger",
+    "weapon": "multitool",
+    "armorType": "light",
+    "hp": 55,
+    "damage": 3,
+    "damageType": "melee",
+    "rangeM": 1.5,
+    "speedMps": 3,
+    "cooldownS": 1.5,
+    "scrapCost": 45,
+    "craftS": 8,
+    "gatherAmount": 6,
+    "gatherS": 13,
+    "popCost": 1,
+    "prereqTech": [],
+    "visuals": {
+      "meshSlots": {
+        "body": "garde_body_initiate",
+        "weapon": "garde_weapon_multitool"
+      }
+    },
+    "producedAt": "kazerne",
+    "_comment": "startwaarde, geen balans. Initiate-zoeker: de verzamelaar van de Garde, een leerling in een versleten overall. Zelfde tempo als de Dweller-scavenger (6 scrap per 13 s) maar 45 scrap en 8 s tegen 30 en 5 (Spelfundament 4: werven voor veel scrap, alles kost meer). Wordt geworven in de kazerne (producedAt kazerne), niet omgeschoold: de Garde heeft weinig huisvestingsgroei."
+  },
+  {
+    "id": "initiate_bouwer",
+    "faction": "garde",
+    "bodyType": "human",
+    "role": "builder",
+    "weapon": "multitool",
+    "armorType": "light",
+    "hp": 55,
+    "damage": 3,
+    "damageType": "melee",
+    "rangeM": 1.5,
+    "speedMps": 3,
+    "cooldownS": 1.5,
+    "scrapCost": 80,
+    "craftS": 10,
+    "gatherAmount": 0,
+    "gatherS": 0,
+    "popCost": 1,
+    "prereqTech": [],
+    "visuals": {
+      "meshSlots": {
+        "body": "garde_body_initiate",
+        "weapon": "garde_weapon_multitool"
+      }
+    },
+    "producedAt": "kazerne",
+    "_comment": "startwaarde, geen balans. Initiate-bouwer: bouwt en claimt, verzamelt niet. 80 scrap: de Garde begint met een enkele bouwer en bouwt traag en duur."
+  },
+  {
+    "id": "initiate_wacht",
+    "faction": "garde",
+    "bodyType": "human",
+    "role": "militia",
+    "weapon": "laser_pistol",
+    "armorType": "light",
+    "hp": 60,
+    "damage": 8,
+    "damageType": "energy",
+    "rangeM": 8,
+    "speedMps": 2.75,
+    "cooldownS": 1.0,
+    "scrapCost": 40,
+    "craftS": 6,
+    "gatherAmount": 0,
+    "gatherS": 0,
+    "popCost": 1,
+    "prereqTech": [],
+    "visuals": {
+      "meshSlots": {
+        "body": "garde_body_initiate",
+        "weapon": "garde_weapon_laser_pistol"
+      }
+    },
+    "producedAt": "kazerne",
+    "_comment": "startwaarde, geen balans. Initiate-wacht: de basisvechter en het gratis vangnet-loadout. Laserpistool 8 schade per 1,0 s op 8 m (zelfde dps als de Dweller-militie) maar 40 scrap tegen 30 en iets trager (2,75 m/s): zwak vroeg en duur, zoals het Spelfundament wil. Energy raakt light 100 procent. Dit is de unit die door gevechtservaring promoveert (zie docs/garde.md, Wat de sim moet bouwen)."
+  },
+  {
+    "id": "krachtpantser",
+    "faction": "garde",
+    "bodyType": "vehicle",
+    "role": "militia",
+    "weapon": "laser_carbine",
+    "armorType": "heavy",
+    "hp": 380,
+    "damage": 16,
+    "damageType": "energy",
+    "rangeM": 10,
+    "speedMps": 2,
+    "cooldownS": 1.2,
+    "scrapCost": 150,
+    "craftS": 18,
+    "gatherAmount": 0,
+    "gatherS": 0,
+    "popCost": 3,
+    "prereqTech": [
+      "fusiekernen"
+    ],
+    "visuals": {
+      "meshSlots": {
+        "body": "garde_body_power_armor",
+        "weapon": "garde_weapon_laser_carbine"
+      }
+    },
+    "producedAt": "smederij",
+    "sightM": 14,
+    "_comment": "startwaarde, geen balans. Ridder in krachtpantser: de kern van de Garde en de reden voor de driehoek (Spelfundament 4: pantser negeert pipe guns). Heavy pantser en 380 hp: ballistic 50 procent (damage-matrix) dus een plunderaar (7) doet 3,5, een molotov (fire) 60 procent, melee 40 procent; effectief 760 hp tegen pipe guns. Laserkarabijn 16 energy per 1,2 s op 10 m (13,3 per s). 150 scrap, 18 s, 3 pop (frame plus klerk; bodyType vehicle, dus 3 pop maar 0 bedden), 2 m/s (traag). Heeft fusiekernen nodig en wordt in de smederij gebouwd. Kwetsbaar voor energy (125 procent op heavy): de Dwellers kantelen dit laat met laserturrets en robots."
+  },
+  {
+    "id": "plasmaridder",
+    "faction": "garde",
+    "bodyType": "vehicle",
+    "role": "militia",
+    "weapon": "plasma_caster",
+    "armorType": "heavy",
+    "hp": 460,
+    "damage": 30,
+    "damageType": "energy",
+    "rangeM": 7,
+    "speedMps": 1.9,
+    "cooldownS": 2.0,
+    "scrapCost": 240,
+    "craftS": 26,
+    "gatherAmount": 0,
+    "gatherS": 0,
+    "popCost": 3,
+    "prereqTech": [
+      "plasmakern"
+    ],
+    "visuals": {
+      "meshSlots": {
+        "body": "garde_body_power_armor_heavy",
+        "weapon": "garde_weapon_plasma_caster"
+      }
+    },
+    "producedAt": "smederij",
+    "sightM": 12,
+    "_comment": "startwaarde, geen balans. Plasmaridder: zware krachtpantser met plasmawerper, het late brekijzer. 30 energy per 2,0 s op 7 m (15 per s, korte range, veel schade per schot tegen pantser en gebouwen), 460 hp heavy, 240 scrap, 26 s, 3 pop, 1,9 m/s. Achter plasmakern."
+  },
+  {
+    "id": "klerk",
+    "faction": "garde",
+    "bodyType": "human",
+    "role": "technician",
+    "weapon": "multitool",
+    "armorType": "light",
+    "hp": 50,
+    "damage": 3,
+    "damageType": "melee",
+    "rangeM": 1.5,
+    "speedMps": 3,
+    "cooldownS": 1.5,
+    "scrapCost": 60,
+    "craftS": 8,
+    "gatherAmount": 0,
+    "gatherS": 0,
+    "popCost": 1,
+    "prereqTech": [],
+    "visuals": {
+      "meshSlots": {
+        "body": "garde_body_clerk",
+        "weapon": "garde_weapon_multitool"
+      }
+    },
+    "producedAt": "kazerne",
+    "_comment": "startwaarde, geen balans. Klerk: de technicus van de Garde. Repareert frames en gebouwen, onderzoekt sneller en kan vijandelijke krachtpantser overloaden (Spelfundament 4 en 6). In deze data alleen het loadout (role technician, 50 hp, 60 scrap); de repareer-, onderzoeks- en sabotagerol zijn nog niet in de sim (zie docs/garde.md)."
+  },
+  {
+    "id": "vertibird",
+    "faction": "garde",
+    "bodyType": "vehicle",
+    "role": "militia",
+    "weapon": "vertibird_gun",
+    "armorType": "medium",
+    "hp": 320,
+    "damage": 9,
+    "damageType": "energy",
+    "rangeM": 9,
+    "speedMps": 6,
+    "cooldownS": 0.6,
+    "scrapCost": 320,
+    "craftS": 40,
+    "gatherAmount": 0,
+    "gatherS": 0,
+    "popCost": 4,
+    "prereqTech": [
+      "plasmakern"
+    ],
+    "visuals": {
+      "meshSlots": {
+        "body": "garde_body_vertibird",
+        "weapon": "garde_weapon_vertibird_gun"
+      }
+    },
+    "producedAt": "landingsplatform",
+    "sightM": 26,
+    "_comment": "startwaarde, geen balans. Vertibird: transport en strafe, laat in het potje. Medium pantser, 320 hp, 9 energy per 0,6 s op 9 m (15 per s), 6 m/s (de snelste unit van het spel), 320 scrap, 40 s, 4 pop. Transportcapaciteit en vliegen (negeert terrein) zijn nog niet in de sim."
+  }
+]

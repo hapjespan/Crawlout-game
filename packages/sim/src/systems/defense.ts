@@ -49,9 +49,6 @@ export class DefenseState {
   active = false;
   /** Per player: ticks left of the alarm (0 = calm). */
   readonly alarm = new Int32Array(MAX_PLAYERS);
-  /** Per player: the threat position (sim units). */
-  readonly tx = new Int32Array(MAX_PLAYERS);
-  readonly ty = new Int32Array(MAX_PLAYERS);
   /** Per entity index: MARK_DEFEND, MARK_SHELTER or MARK_RETURN while its front order is a defence order, else 0. */
   readonly mark = new Uint8Array(MAX_ENTITIES);
   /** Scratch, not state: the hostiles inside the base radius this tick (entity indices, ascending). */
@@ -97,10 +94,6 @@ export function noteBaseHit(ctx: SimContext, i: number, t: number): void {
     const b = baseOf(ctx, p);
     if (b === null || !inside(w, t, b)) return;
   }
-  if (d.alarm[p] === 0) {
-    d.tx[p] = w.x[i]!;
-    d.ty[p] = w.y[i]!;
-  }
   d.alarm[p] = ctx.config.baseDefense.calmTicks + 1;
 }
 
@@ -112,26 +105,14 @@ export function defenseSystem(ctx: SimContext): void {
   for (let p = 0; p < ctx.playerCount; p++) {
     if (d.alarm[p] === 0) continue;
     const b = baseOf(ctx, p);
-    let threat = -1;
-    let best = 0;
     d.foeCount = 0;
     if (b !== null)
       for (let t = 0; t < w.highWater; t++) {
         if (!hostile(w, t, p) || !inside(w, t, b)) continue;
         d.foes[d.foeCount++] = t;
-        const dx = w.x[t]! - b.x;
-        const dy = w.y[t]! - b.y;
-        const dd = dx * dx + dy * dy;
-        if (threat < 0 || dd < best) {
-          threat = t;
-          best = dd;
-        }
       }
-    if (threat >= 0) {
-      d.alarm[p] = ctx.config.baseDefense.calmTicks + 1;
-      d.tx[p] = w.x[threat]!;
-      d.ty[p] = w.y[threat]!;
-    } else d.alarm[p] = d.alarm[p]! - 1;
+    if (d.foeCount > 0) d.alarm[p] = ctx.config.baseDefense.calmTicks + 1;
+    else d.alarm[p] = d.alarm[p]! - 1;
     if (d.alarm[p] === 0 || b === null) {
       d.alarm[p] = 0;
       release(ctx, p);

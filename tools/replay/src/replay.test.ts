@@ -3,13 +3,15 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { FIXTURES } from './fixtures-def.js';
-import { checkReplay, parseReplay, recordedHashes, runReplay } from './run.js';
+import { asFixture, checkReplay, parseReplay, recordedHashes, runReplay } from './run.js';
 
 const fixturesDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'fixtures');
 const files = readdirSync(fixturesDir)
   .filter((f) => f.endsWith('.json'))
   .sort();
-const load = (f: string) => parseReplay(JSON.parse(readFileSync(join(fixturesDir, f), 'utf8')));
+/** A fixture compares hashes only; its dataVersion is informational (fase-0 sectie 24 besluit 4). */
+const load = (f: string) =>
+  asFixture(parseReplay(JSON.parse(readFileSync(join(fixturesDir, f), 'utf8'))));
 /** De kortste fixture (laatste frame), voor tests die alleen een afwijking willen zien. */
 const shortest = (): string =>
   files
