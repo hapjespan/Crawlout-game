@@ -22,6 +22,10 @@ const buildingFiles = import.meta.glob('../../../../data/buildings/*.json', {
   eager: true,
   import: 'default',
 });
+const techFiles = import.meta.glob('../../../../data/tech/*.json', {
+  eager: true,
+  import: 'default',
+});
 const survivalFiles = import.meta.glob('../../../../data/survival/*.json', {
   eager: true,
   import: 'default',
@@ -53,7 +57,8 @@ export function loadClientGameData(): GameData {
     factions: file('factions.json'),
     loadouts: concatSorted(loadoutFiles),
     buildings: concatSorted(buildingFiles),
-    tech: file('tech.json'),
+    // tech.json (Dwellers and Raiders) plus the fragments in data/tech/ (Garde, data 0.37.0), as readDataDir in Node
+    tech: [...(file('tech.json') as unknown[]), ...concatSorted(techFiles)],
     heroes: file('heroes.json'),
     perks: file('perks.json'),
     training: file('training.json'),
