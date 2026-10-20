@@ -1,6 +1,9 @@
 import { I31, intIn, req } from './config.limits.js';
 import type { SimConfig } from './config.env.js';
-import { STAT_DAMAGE_TAKEN } from './effects.js';
+import { EffectStat } from '@crawlout/data';
+
+// Straight from the data enum, not from effects.ts: effects.ts -> fromData -> config.validate would be an import cycle.
+const STAT_DAMAGE_TAKEN = EffectStat.options.indexOf('damageTakenPct');
 
 /**
  * The Garde, round A (sim 0.32.0): veteran ranks (ascending kills within a Uint8 counter), fusion cores (a known
