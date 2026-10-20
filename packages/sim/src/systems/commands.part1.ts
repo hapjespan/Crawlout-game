@@ -1,5 +1,6 @@
 // Split from commands.ts to stay under the 5,000-token file limit; commands.ts re-exports the public surface.
 // Holds: SimCommand, normalizeCommand, ownedWith, UNIT, refundOf, refundCraft, +15 more.
+import { refundCores } from './garde.js';
 import {
   type CommandType,
   type CommandPayload,
@@ -357,8 +358,10 @@ export function applyCancel(ctx: SimContext, p: number, ids: readonly number[]):
     // data 0.16.0: robotproductie of training stoppen, met teruggave van wat de run kostte
     if (w.job[i] !== 0) {
       let cost = 0;
-      if (w.jobKind[i] === JOB_PRODUCE) cost = ctx.unitType(w.job[i]!)?.scrapCost ?? 0;
-      else if (w.jobKind[i] === JOB_TRAIN) {
+      if (w.jobKind[i] === JOB_PRODUCE) {
+        cost = ctx.unitType(w.job[i]!)?.scrapCost ?? 0;
+        refundCores(ctx, p, ctx.unitType(w.job[i]!)?.fusionCores ?? 0); // sim 0.32.0
+      } else if (w.jobKind[i] === JOB_TRAIN) {
         const tr = ctx.config.training[w.job[i]! - 1];
         cost = tr === undefined ? 0 : trainCost(ctx, p, tr);
       }

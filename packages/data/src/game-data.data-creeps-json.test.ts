@@ -71,7 +71,11 @@ describe('data/creeps.json', () => {
       }
       expect(a.creeps).not.toBeNull();
       // data 0.27.0 (voorstel): the Raider AI takes its camps over from the start (data/creeps.json takeover)
-      expect(a.creeps!.fromTicks).toBe(secondsToTicks(a.factionId === raiders ? 60 : 600));
+      // data 0.38.0: the Garde (ai/garde-basic.json) from minute 7
+      const garde = data.factions.findIndex((f) => f.key === 'garde');
+      expect(a.creeps!.fromTicks).toBe(
+        secondsToTicks(a.factionId === raiders ? 60 : a.factionId === garde ? 420 : 600),
+      );
       expect(a.creeps!.tiers.map((t) => t.tier)).toEqual([1, 2]);
     }
   });

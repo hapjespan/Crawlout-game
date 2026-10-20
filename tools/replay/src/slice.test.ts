@@ -9,7 +9,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildEnv, gameData, mapGrid } from './env.js';
 import { centrePoint } from './bot.js';
-import { createReplaySim, parseReplay } from './run.js';
+import { asFixture, createReplaySim, parseReplay } from './run.js';
 
 // Eindcriterium van de sim-core-brief op de slice-map Rustbelt, met de echte data:
 //  - 50 bewoners per kant verzamelen, bouwen, wisselen van rol en vechten (fixture s4-rustbelt-fifty, binnen de regels);
@@ -23,7 +23,8 @@ import { createReplaySim, parseReplay } from './run.js';
 
 const FIXTURES_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'fixtures');
 const fixture = (name: string): Replay =>
-  parseReplay(JSON.parse(readFileSync(join(FIXTURES_DIR, `${name}.json`), 'utf8')));
+  // the dataVersion of a fixture is informative (fase-0 sectie 24 besluit 4, run.ts asFixture)
+  asFixture(parseReplay(JSON.parse(readFileSync(join(FIXTURES_DIR, `${name}.json`), 'utf8'))));
 
 /** Speelt een replay af en roept na elke tick `each` aan (events van die tick staan in sim.events). */
 function play(r: Replay, each: (sim: Sim) => void): Sim {

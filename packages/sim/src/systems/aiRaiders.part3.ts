@@ -189,7 +189,7 @@ export function raiderThink(
   }
 
   // 5 production
-  if (!heroWaits) produce(ctx, p, plan, t, reserve);
+  if (!heroWaits) produce(ctx, p, plan, t, reserve, script.builders);
 
   // 6 claims, building help, gathering, slave builders
   // Before the far claims open (claimFarFromS) saving for the build order or a tech does not hold the claims back
@@ -219,7 +219,12 @@ export function raiderThink(
       },
     });
   gatherIdle(ctx, p, script, t, scratch);
-  if (t.builders.length + t.buildersPlanned < script.builders && t.scavs.length > 1) {
+  // slave builders by SetRole at a cage; free workers (data 0.38.0) come from production instead
+  if (
+    plan.workers === null &&
+    t.builders.length + t.buildersPlanned < script.builders &&
+    t.scavs.length > 1
+  ) {
     const pick =
       t.idleScavs.length > 0 ? t.idleScavs[t.idleScavs.length - 1] : t.scavs[t.scavs.length - 1];
     applyCommand(ctx, {

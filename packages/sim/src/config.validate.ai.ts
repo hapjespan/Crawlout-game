@@ -110,23 +110,28 @@ export function validateAiScripts(
           rp.fighterMix.every((m) => unitIds.has(m.typeId) && intIn(m.weight, 1, 1000)),
         'aiScript raidPlan.fighterMix',
       );
-      req(
-        unitIds.has(rp.harass.typeId) &&
-          intIn(rp.harass.fromTicks, 0, I31) &&
-          intIn(rp.harass.max, 0, 4096) &&
-          intIn(rp.harass.retreatHpPermille, 0, 1000),
-        'aiScript raidPlan.harass',
-      );
+      const hr = rp.harass;
+      if (hr !== null)
+        req(
+          unitIds.has(hr.typeId) &&
+            intIn(hr.fromTicks, 0, I31) &&
+            intIn(hr.max, 0, 4096) &&
+            intIn(hr.retreatHpPermille, 0, 1000),
+          'aiScript raidPlan.harass',
+        );
       const sr = rp.slaveRaids;
-      req(
-        unitIds.has(sr.slaverTypeId) &&
-          intIn(sr.fromTicks, 0, I31) &&
-          intIn(sr.slavers, 0, 4096) &&
-          intIn(sr.escort, 0, 4096) &&
-          intIn(sr.maxRaidTicks, 1, I31) &&
-          intIn(sr.retryTicks, 0, I31),
-        'aiScript raidPlan.slaveRaids',
-      );
+      if (sr !== null)
+        req(
+          unitIds.has(sr.slaverTypeId) &&
+            intIn(sr.fromTicks, 0, I31) &&
+            intIn(sr.slavers, 0, 4096) &&
+            intIn(sr.escort, 0, 4096) &&
+            intIn(sr.maxRaidTicks, 1, I31) &&
+            intIn(sr.retryTicks, 0, I31),
+          'aiScript raidPlan.slaveRaids',
+        );
+      if (rp.workers !== null)
+        req(intIn(rp.workers.scavengers, 0, 4096), 'aiScript raidPlan.workers');
       req(
         intIn(rp.garrisonMinFighters, 0, 4096) &&
           intIn(rp.dominancePush.fromTicks, 0, I31) &&

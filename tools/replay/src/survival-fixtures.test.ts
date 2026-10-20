@@ -5,13 +5,14 @@ import { describe, expect, it } from 'vitest';
 import type { Replay } from '@crawlout/protocol';
 import { hqOf, waveAlive } from '@crawlout/sim';
 import type { Sim } from '@crawlout/sim';
-import { createReplaySim, parseReplay } from './run.js';
+import { asFixture, createReplaySim, parseReplay } from './run.js';
 
 // Survival co-op (sim 0.27.0): what the s17 fixtures show besides their hashes (fixtures-survival.ts).
 
 const dir = join(dirname(fileURLToPath(import.meta.url)), '..', 'fixtures');
 const load = (name: string): Replay =>
-  parseReplay(JSON.parse(readFileSync(join(dir, `${name}.json`), 'utf8')));
+  // the dataVersion of a fixture is informative (fase-0 sectie 24 besluit 4, run.ts asFixture)
+  asFixture(parseReplay(JSON.parse(readFileSync(join(dir, `${name}.json`), 'utf8'))));
 
 /** Runs a replay up to (not including) `frame`, calling `each` after every tick. */
 function play(r: Replay, frame: number, each?: (sim: Sim, f: number) => void): Sim {

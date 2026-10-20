@@ -39,7 +39,13 @@ describe('Garde: data laadt', () => {
 
   it('alle Garde-unieke units en gebouwen, techs en loadouts verwijzen naar bestaande data', () => {
     expect(mine.map((l) => l.key).sort()).toEqual([
-      'initiate_bouwer', 'initiate_wacht', 'initiate_zoeker', 'klerk', 'krachtpantser', 'plasmaridder', 'vertibird',
+      'initiate_bouwer',
+      'initiate_wacht',
+      'initiate_zoeker',
+      'klerk',
+      'krachtpantser',
+      'plasmaridder',
+      'vertibird',
     ]);
     expect(data.tech.filter((t) => t.factionId === faction.id).length).toBe(4);
     expect(data.buildings.filter((b) => b.factionId === faction.id).length).toBe(7);
@@ -47,5 +53,74 @@ describe('Garde: data laadt', () => {
 
   it('de Dwellers en Raiders blijven geladen', () => {
     expect(data.factions.map((f) => f.key).sort()).toEqual(['dwellers', 'garde', 'raiders']);
+  });
+});
+
+// Data 0.38.0 (sim 0.32.0, proposal for the architect): the fields the sim needs for the Garde round A.
+describe('Garde: sim fields (data 0.38.0, proposal)', () => {
+  const data = loadGameData(raw());
+  const faction = data.factions.find((f) => f.key === 'garde')!;
+  const key = (id: number) => data.loadouts[id]!.key;
+
+  it('veterancy: the Initiate-wacht climbs to Ridder and Paladin, in permille', () => {
+    const v = faction.veterancy!;
+    expect(v.loadouts.map(key)).toEqual(['initiate_wacht']);
+    expect(v.ranks.map((r) => [r.key, r.kills])).toEqual([
+      ['ridder', 3],
+      ['paladin', 8],
+    ]);
+    expect(v.ranks[0]!.hpPermille).toBe(250);
+    expect(data.factions.find((f) => f.key === 'dwellers')!.veterancy).toBeNull();
+  });
+
+  it('fusion cores: the smederij crafts them after fusiekernen; every frame takes one', () => {
+    const fc = faction.fusionCores!;
+    expect(data.buildings[fc.buildingId]!.key).toBe('smederij');
+    expect(fc.craftTicks).toBe(secondsToTicks(20));
+    expect(fc.prereqTech.map((t) => data.tech[t]!.key)).toEqual(['fusiekernen']);
+    const cores = (k: string) => data.loadouts.find((l) => l.key === k)!.fusionCores;
+    expect([cores('krachtpantser'), cores('plasmaridder'), cores('initiate_wacht')]).toEqual([
+      1, 1, 0,
+    ]);
+  });
+
+  it('the Paladin-Commander sorts after the Warlord, with the armour aura (damageTakenPct)', () => {
+    expect(data.heroes.map((h) => h.key)).toEqual(['opziener', 'warlord', 'zwaardridder']);
+    const h = data.heroes[2]!;
+    expect(h.factionId).toBe(faction.id);
+    expect(h.naam).toBe('Paladin-Commander');
+    expect(key(h.baseLoadoutId)).toBe('krachtpantser');
+    expect(h.aura!.effects[0]!.stat).toBe('damageTakenPct');
+  });
+
+  it('garde-basic: a raid plan without harass and slave raids, with free workers', () => {
+    const a = data.aiScripts.find((s) => s.key === 'garde-basic')!;
+    expect(a.factionId).toBe(faction.id);
+    expect(a.raidPlan!.harass).toBeNull();
+    expect(a.raidPlan!.slaveRaids).toBeNull();
+    expect(a.raidPlan!.workers).toEqual({ scavengers: 12 });
+    expect(a.raidPlan!.mixInOrder).toBe(true);
+    const raiders = data.aiScripts.find((s) => s.key === 'raiders-basic')!;
+    expect(raiders.raidPlan!.workers).toBeNull();
+    expect(raiders.raidPlan!.mixInOrder).toBe(false);
+  });
+
+  it('rejects ranks without ascending kills and an unknown core building', () => {
+    const bad = (edit: (f: Record<string, unknown>) => void) => {
+      const r = raw();
+      const f = (r.factions as Record<string, unknown>[]).find((x) => x.id === 'garde')!;
+      edit(f);
+      return () => loadGameData(r);
+    };
+    expect(
+      bad((f) => {
+        (f.veterancy as { ranks: { kills: number }[] }).ranks[1]!.kills = 3;
+      }),
+    ).toThrow(/ascending/);
+    expect(
+      bad((f) => {
+        (f.fusionCores as { building: string }).building = 'bestaat_niet';
+      }),
+    ).toThrow(/bestaat_niet/);
   });
 });

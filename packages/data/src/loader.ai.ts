@@ -109,31 +109,42 @@ export function convertAiScripts(ctx: LoadContext, loadouts: LoadoutData[]): AiS
                 loadoutId: ref(loadoutIx, 'loadout', `${where} raidPlan fighterMix`, m.loadoutId),
                 weight: m.weight,
               })),
-              harass: {
-                loadoutId: ref(
-                  loadoutIx,
-                  'loadout',
-                  `${where} raidPlan harass`,
-                  a.raidPlan.harass.loadoutId,
-                ),
-                fromTicks: secondsToTicks(a.raidPlan.harass.fromS),
-                max: a.raidPlan.harass.max,
-                retreatHpPermille: pctToPermille(a.raidPlan.harass.retreatHpPct),
-                targets: a.raidPlan.harass.targets,
-              },
-              slaveRaids: {
-                slaverLoadoutId: ref(
-                  loadoutIx,
-                  'loadout',
-                  `${where} raidPlan slaveRaids`,
-                  a.raidPlan.slaveRaids.slaverLoadoutId,
-                ),
-                fromTicks: secondsToTicks(a.raidPlan.slaveRaids.fromS),
-                slavers: a.raidPlan.slaveRaids.slavers,
-                escort: a.raidPlan.slaveRaids.escort,
-                maxRaidTicks: secondsToTicks(a.raidPlan.slaveRaids.maxRaidS),
-                retryTicks: secondsToTicks(a.raidPlan.slaveRaids.retryS),
-              },
+              harass: ((hr) =>
+                hr === undefined
+                  ? null
+                  : {
+                      loadoutId: ref(
+                        loadoutIx,
+                        'loadout',
+                        `${where} raidPlan harass`,
+                        hr.loadoutId,
+                      ),
+                      fromTicks: secondsToTicks(hr.fromS),
+                      max: hr.max,
+                      retreatHpPermille: pctToPermille(hr.retreatHpPct),
+                      targets: hr.targets,
+                    })(a.raidPlan.harass),
+              slaveRaids: ((sr) =>
+                sr === undefined
+                  ? null
+                  : {
+                      slaverLoadoutId: ref(
+                        loadoutIx,
+                        'loadout',
+                        `${where} raidPlan slaveRaids`,
+                        sr.slaverLoadoutId,
+                      ),
+                      fromTicks: secondsToTicks(sr.fromS),
+                      slavers: sr.slavers,
+                      escort: sr.escort,
+                      maxRaidTicks: secondsToTicks(sr.maxRaidS),
+                      retryTicks: secondsToTicks(sr.retryS),
+                    })(a.raidPlan.slaveRaids),
+              workers:
+                a.raidPlan.workers === undefined
+                  ? null
+                  : { scavengers: a.raidPlan.workers.scavengers },
+              mixInOrder: a.raidPlan.mixInOrder === true,
               garrison: { minFighters: a.raidPlan.garrison.minFighters },
               dominancePush: {
                 fromTicks: secondsToTicks(a.raidPlan.dominancePush.fromS),

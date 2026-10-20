@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { parseReplay } from './run.js';
+import { asFixture, parseReplay } from './run.js';
 import { raiderMechanics } from './raiders-mechanics.js';
 
 // The Raider fixtures (sim 0.18.0) do what their description says: replay.test.ts pins their hashes, this test pins
@@ -10,7 +10,8 @@ import { raiderMechanics } from './raiders-mechanics.js';
 
 const dir = join(dirname(fileURLToPath(import.meta.url)), '..', 'fixtures');
 const load = (name: string) =>
-  parseReplay(JSON.parse(readFileSync(join(dir, `${name}.json`), 'utf8')));
+  // the dataVersion of a fixture is informative (fase-0 sectie 24 besluit 4, run.ts asFixture)
+  asFixture(parseReplay(JSON.parse(readFileSync(join(dir, `${name}.json`), 'utf8'))));
 
 describe('Raider fixtures: the mechanics happen', () => {
   it('s10-rustbelt-raiders-slaves: capture, the cage transition, liberation and revolt', () => {

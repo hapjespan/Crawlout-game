@@ -1,3 +1,4 @@
+import { gatedFactions, gatedHeroes, gatedScripts, rankOf } from './config.hash.garde.js';
 import { fnv1aInt } from './math/fnv.js';
 import type { SimEffect } from './config.types.js';
 import type { SimConfig } from './config.env.js';
@@ -153,18 +154,27 @@ export function hashBuildingTypes(h: number, c: SimConfig): number {
 /** Factions. */
 export function hashFactions(h: number, c: SimConfig): number {
   h = fnv1aInt(h, c.factions.length);
+  // sim 0.32.0: a gated faction (the Garde) shows its data 0.37.0 view here (no script or hero); its real
+  // values are in hashGarde, only when it plays. Script and hero indices skip the gated ones (config.hash.garde.ts).
+  const gated = gatedFactions(c);
+  const scripts = gatedScripts(c);
+  const heroes = gatedHeroes(c);
   for (const f of c.factions) {
+    const g = gated[f.factionId] === true;
     h = hashInts(h, [
       f.factionId,
       f.startScrap,
       f.housingGrowthPerMin,
       f.hqTypeId,
       f.settlerTypeId,
-      f.aiScript,
+      g ? -1 : rankOf(f.aiScript, scripts),
       f.claimTypeId,
-      f.heroId,
+      g ? -1 : rankOf(f.heroId, heroes),
     ]);
-    h = hashInts(h, f.aiScriptVersus);
+    h = hashInts(
+      h,
+      f.aiScriptVersus.map((v) => (g ? -1 : rankOf(v, scripts))),
+    );
     h = fnv1aInt(h, f.startUnits.length);
     for (const s of f.startUnits) h = hashInts(h, [s.typeId, s.count]);
     h = hashInts(h, f.roleTypeIds);

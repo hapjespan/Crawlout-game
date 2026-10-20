@@ -110,6 +110,7 @@
         "weapon": "garde_weapon_laser_carbine"
       }
     },
+    "fusionCores": 1,
     "producedAt": "smederij",
     "sightM": 14,
     "_comment": "startwaarde, geen balans. Ridder in krachtpantser: de kern van de Garde en de reden voor de driehoek (Spelfundament 4: pantser negeert pipe guns). Heavy pantser en 380 hp: ballistic 50 procent (damage-matrix) dus een plunderaar (7) doet 3,5, een molotov (fire) 60 procent, melee 40 procent; effectief 760 hp tegen pipe guns. Laserkarabijn 16 energy per 1,2 s op 10 m (13,3 per s). 150 scrap, 18 s, 3 pop (frame plus klerk; bodyType vehicle, dus 3 pop maar 0 bedden), 2 m/s (traag). Heeft fusiekernen nodig en wordt in de smederij gebouwd. Kwetsbaar voor energy (125 procent op heavy): de Dwellers kantelen dit laat met laserturrets en robots."
@@ -141,6 +142,7 @@
         "weapon": "garde_weapon_plasma_caster"
       }
     },
+    "fusionCores": 1,
     "producedAt": "smederij",
     "sightM": 12,
     "_comment": "startwaarde, geen balans. Plasmaridder: zware krachtpantser met plasmawerper, het late brekijzer. 30 energy per 2,0 s op 7 m (15 per s, korte range, veel schade per schot tegen pantser en gebouwen), 460 hp heavy, 240 scrap, 26 s, 3 pop, 1,9 m/s. Achter plasmakern."

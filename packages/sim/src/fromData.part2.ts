@@ -28,6 +28,7 @@ import {
   simEffect,
 } from './fromData.part1.js';
 import { simSurvivalFromData } from './fromData.part4.js';
+import { simFusionCores, simRaidPlan, simVeterancy } from './fromData.garde.js';
 
 /** GameData naar SimConfig. Gooit als een factie geen hoofdgebouw (provides hq) heeft. */
 export function simConfigFromGameData(data: GameData): SimConfig {
@@ -133,6 +134,8 @@ export function simConfigFromGameData(data: GameData): SimConfig {
         crash: c.crash.map((e) => simChemEffect(data, e, `chem ${c.key} crash`)),
         refined: c.refined === null ? null : { ...c.refined },
       })),
+      veterancy: simVeterancy(f),
+      fusionCores: simFusionCores(f),
     };
   });
   const heroes: SimHero[] = data.heroes.map((h) => {
@@ -222,6 +225,7 @@ export function simConfigFromGameData(data: GameData): SimConfig {
       sight: l.sightU,
       slave: l.slave,
       canBuild: l.canBuild,
+      fusionCores: l.fusionCores,
       capture:
         l.capture === null
           ? null
@@ -331,31 +335,7 @@ export function simConfigFromGameData(data: GameData): SimConfig {
         a.training === null
           ? null
           : { programIds: [...a.training.sequence], fromTicks: a.training.fromTicks },
-      raidPlan:
-        a.raidPlan === null
-          ? null
-          : {
-              fighterMix: a.raidPlan.fighterMix.map((m) => ({
-                typeId: unitTypeId(m.loadoutId),
-                weight: m.weight,
-              })),
-              harass: {
-                typeId: unitTypeId(a.raidPlan.harass.loadoutId),
-                fromTicks: a.raidPlan.harass.fromTicks,
-                max: a.raidPlan.harass.max,
-                retreatHpPermille: a.raidPlan.harass.retreatHpPermille,
-              },
-              slaveRaids: {
-                slaverTypeId: unitTypeId(a.raidPlan.slaveRaids.slaverLoadoutId),
-                fromTicks: a.raidPlan.slaveRaids.fromTicks,
-                slavers: a.raidPlan.slaveRaids.slavers,
-                escort: a.raidPlan.slaveRaids.escort,
-                maxRaidTicks: a.raidPlan.slaveRaids.maxRaidTicks,
-                retryTicks: a.raidPlan.slaveRaids.retryTicks,
-              },
-              garrisonMinFighters: a.raidPlan.garrison.minFighters,
-              dominancePush: { ...a.raidPlan.dominancePush },
-            },
+      raidPlan: simRaidPlan(a.raidPlan),
       liberate:
         a.liberate === null
           ? null

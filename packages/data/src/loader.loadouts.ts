@@ -95,6 +95,7 @@ export function convertLoadouts(ctx: LoadContext): LoadoutData[] {
             },
       sightU: metersToUnits(l.sightM ?? simRaw.vision.unitSightM),
       canBuild: l.canBuild === true,
+      fusionCores: l.fusionCores ?? 0,
     };
   });
   return loadouts;
@@ -131,6 +132,7 @@ export function neutralLoadout(u: CreepUnit, id: number, simRaw: SimTuning): Loa
     aura: null,
     sightU: metersToUnits(u.sightM ?? simRaw.vision.unitSightM),
     canBuild: false,
+    fusionCores: 0,
   };
 }
 

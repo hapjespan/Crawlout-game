@@ -38,7 +38,7 @@ export const TARGET_ALL = 'alle';
 export const TARGET_HERO = 'held';
 
 /** Stats die een ability-zone kan zetten (de sim past ze per tick toe op units in de straal). */
-const AURA_STATS: readonly EffectStatName[] = ['speedPct', 'damagePct'];
+const AURA_STATS: readonly EffectStatName[] = ['speedPct', 'damagePct', 'damageTakenPct'];
 
 export function simAuraEffect(e: AbilityEffectData, where: string): SimAuraEffect {
   if (!AURA_STATS.includes(e.stat))

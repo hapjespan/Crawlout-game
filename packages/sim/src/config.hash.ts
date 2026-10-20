@@ -9,6 +9,7 @@ import {
 } from './config.hash.config.js';
 import { hashAiScripts, hashProgression } from './config.hash.ai.js';
 import { hashSurvival } from './config.survival.env.js';
+import { gatedScripts, hashGarde } from './config.hash.garde.js';
 
 /**
  * Hash van de omgeving (config, map, spelers) in vaste veldvolgorde. Gaat de state-header in,
@@ -30,6 +31,8 @@ export function envHash(env: SimEnv): number {
   h = hashCreeps(h, env);
   // survival co-op (sim 0.27.0): only with SimMap.survival, so every other env keeps its hash
   h = hashSurvival(h, env);
+  // the Garde (sim 0.32.0): its rules, script and hero only when a player plays it, so every other env keeps its hash
+  h = hashGarde(h, env);
   // base defence (sim 0.29.0): only where it is on, so every other env keeps its hash
   if (defenseOn(env)) {
     const d = c.baseDefense;
@@ -65,7 +68,8 @@ function hashMapEnv(h: number, env: SimEnv): number {
       h = hashInts(h, [k.restoredTypeId, k.ruinTypeId, k.effects.length]);
       for (const e of k.effects) h = hashInts(h, [e.stat, e.target, e.typeId, e.delta]);
     }
-    for (const s of c.aiScripts) {
+    const gated = gatedScripts(c);
+    for (const s of c.aiScripts.filter((_, k) => !gated.has(k))) {
       const a = s.project;
       h = hashInts(
         h,
@@ -92,7 +96,10 @@ function hashCreeps(h: number, env: SimEnv): number {
   // creep camps (data 0.25.0): only when there are any, so an env without them keeps its hash
   const camps = map.creepCamps ?? [];
   const tiers = c.creepTiers ?? [];
-  const aiCreeps = c.aiScripts.some((s) => s.creeps !== undefined && s.creeps !== null);
+  // sim 0.32.0: the scripts of a gated faction (the Garde) are in hashGarde
+  const gated = gatedScripts(c);
+  const scripts = c.aiScripts.filter((_, k) => !gated.has(k));
+  const aiCreeps = scripts.some((s) => s.creeps !== undefined && s.creeps !== null);
   if (camps.length === 0 && tiers.length === 0 && !aiCreeps) return h;
   h = fnv1aInt(h, camps.length);
   for (const cc of camps) h = hashInts(h, [cc.x, cc.y, cc.tier]);
@@ -120,7 +127,7 @@ function hashCreeps(h: number, env: SimEnv): number {
         h = hashInts(h, [t.tier, t.surrenderPermille, t.minUnits, t.yieldTicks, t.yieldMax]);
     }
   }
-  for (const s of c.aiScripts) {
+  for (const s of scripts) {
     const cr = s.creeps;
     if (cr === undefined || cr === null) {
       h = fnv1aInt(h, 0);

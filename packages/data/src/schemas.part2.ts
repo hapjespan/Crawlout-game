@@ -56,6 +56,9 @@ export const Loadout = z
     slave: z.boolean().optional(), // true = slaaf: arbeider (role scavenger of builder), vecht nooit, werkt binnen de Kooi-straal, bevrijdbaar
     capture: Capture.optional(), // Slaver
     aura: UnitAura.optional(), // Chem-dealer
+    // Data 0.38.0 (de Garde; proposal for the architect): fusion cores this unit takes from the stock when its
+    // production starts (factions fusionCores); absent = 0
+    fusionCores: z.number().int().nonnegative().max(255).optional(),
     // Data 0.22.0 (fog of war; bevestigd in fase-0 sectie 23 besluit 1): sight radius from the unit's centre;
     // absent = sim.json vision.unitSightM
     sightM: sight.optional(),
@@ -362,7 +365,8 @@ export const RaidPlan = z
         retreatHpPct: pct,
         targets: z.enum(['gatherers']),
       })
-      .strict(),
+      .strict()
+      .optional(), // data 0.38.0 (proposal): absent = no harass (the Garde)
     // Slavenroof: slavers met escorte op zwervers en op vijandelijke bewoners buiten de basisradius; terug naar de Kooi
     slaveRaids: z
       .object({
@@ -373,11 +377,19 @@ export const RaidPlan = z
         maxRaidS: nonneg, // een tocht duurt hoogstens zoveel seconden, daarna terug
         retryS: nonneg, // wachttijd tussen twee tochten
       })
-      .strict(),
+      .strict()
+      .optional(), // data 0.38.0 (proposal): absent = no slave raids (a faction without slaves)
     // Garnizoen: zoveel vechters blijven thuis (anders opstand), ook tijdens golven en tochten
     garrison: z.object({ minFighters: z.number().int().nonnegative() }).strict(),
     // Dominantie-push: vanaf fromS en met minArmy vechters neemt hij claimpunten en houdt ze (verder dan claimSafeRadiusM met escorte)
     dominancePush: z.object({ fromS: nonneg, minArmy: z.number().int().nonnegative() }).strict(),
+    // Data 0.38.0 (proposal for the architect; the Garde): a faction without slaves produces its free workers (Produce of
+    // its cheapest builder and scavenger loadout): `builders` (the script field) builders, and scavengers up to this many
+    // (counting the growth). Absent = the workers are slaves (the Raiders).
+    workers: z.object({ scavengers: z.number().int().nonnegative() }).strict().optional(),
+    // Data 0.38.0 (proposal): true = the fighter mix is made strictly in its cycle order: a building waits while the
+    // next fighter (with its techs) comes from another building. Absent = each idle building makes the next it can.
+    mixInOrder: z.boolean().optional(),
   })
   .strict();
 

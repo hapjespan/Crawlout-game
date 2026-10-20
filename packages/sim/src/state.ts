@@ -9,6 +9,7 @@ import type { CreepCamps } from './systems/creeps.js';
 import type { ProjectState } from './systems/project.js';
 import type { SurvivalState } from './systems/survival.js';
 import type { DefenseState } from './systems/defense.js';
+import type { GardeState } from './systems/garde.js';
 
 // Volledige state als één reeks byte-chunks in vaste volgorde. serialize() plakt ze achter elkaar in één
 // ArrayBuffer; hash() is FNV-1a 32-bit over precies dezelfde bytes. Daardoor geldt per constructie:
@@ -93,6 +94,8 @@ export interface StateParts {
   readonly survival: SurvivalState;
   /** Base defence (sim 0.29.0): alarms and defence marks, only where it is on (defense.active). */
   readonly defense: DefenseState;
+  /** The Garde (sim 0.32.0): veteran ranks and fusion cores, only where a Garde player plays (garde.active). */
+  readonly garde: GardeState;
 }
 
 /** De chunks na de header, gemaakt op basis van de huidige highWater en freeCount. */
@@ -143,6 +146,12 @@ function bodyChunks(p: StateParts): Uint8Array[] {
   if (d.active) {
     out.push(bytesOf(d.alarm, d.alarm.length));
     out.push(bytesOf(d.mark, w.highWater));
+  }
+  // the Garde (sim 0.32.0): only with a Garde player, the same
+  const g = p.garde;
+  if (g.active) {
+    out.push(bytesOf(g.kills, w.highWater), bytesOf(g.rank, w.highWater));
+    out.push(bytesOf(g.cores, g.cores.length), bytesOf(g.coreWork, g.coreWork.length));
   }
   return out;
 }

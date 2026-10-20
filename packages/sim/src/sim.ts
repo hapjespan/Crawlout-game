@@ -51,6 +51,8 @@ import { OrdersScratch, ordersSystem } from './systems/orders.js';
 import { ProjectState, spawnProjectSites } from './systems/project.js';
 import { SurvivalState, survivalStatusOf, survivalSystem } from './systems/survival.js';
 import { DefenseState, defenseActive, defenseSystem } from './systems/defense.js';
+import { GardeState, fusionCoreSystem } from './systems/garde.js';
+import { gardeOn } from './config.hash.garde.js';
 import type { SurvivalStatus } from './systems/survival.js';
 import { Vision } from './vision.js';
 import {
@@ -123,6 +125,8 @@ export class Sim implements SimContext {
   readonly survival = new SurvivalState();
   /** Base defence (sim 0.29.0): `active` (derived) per game type, sim.json baseDefense. */
   readonly defense = new DefenseState();
+  /** The Garde (sim 0.32.0): `active` (derived) when a player plays a faction with Garde rules. */
+  readonly garde = new GardeState();
 
   private tickNo = 0;
   private readonly envHashValue: number;
@@ -165,6 +169,8 @@ export class Sim implements SimContext {
     this.world.coop = this.survival.active;
     this.defense.active = defenseActive(this);
     this.world.clearOnFree.push(this.defense.mark);
+    this.garde.active = gardeOn(env);
+    this.world.clearOnFree.push(this.garde.kills, this.garde.rank);
     this.parts = {
       world: this.world,
       flow: this.flow,
@@ -175,6 +181,7 @@ export class Sim implements SimContext {
       project: this.project,
       survival: this.survival,
       defense: this.defense,
+      garde: this.garde,
     };
   }
 
@@ -275,6 +282,7 @@ export class Sim implements SimContext {
     probe?.(5);
     // 6 economie: verzamelen, bouwen, omscholen, huisvestingsgroei
     economySystem(this, this.census);
+    fusionCoreSystem(this); // sim 0.32.0: the fusion cores of the Garde
     probe?.(6);
     // 7 claims en winroutes
     claimsSystem(this, this.claimScratch, this.census);

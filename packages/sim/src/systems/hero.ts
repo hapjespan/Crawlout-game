@@ -27,6 +27,7 @@ import {
   HERO_NONE,
   HERO_REVIVING,
   STAT_DAMAGE,
+  STAT_DAMAGE_TAKEN,
   STAT_SPEED,
   applyStats,
   heroOf,
@@ -69,6 +70,8 @@ export class Auras {
   any = false;
   readonly speed = new Int32Array(MAX_ENTITIES);
   readonly damage = new Int32Array(MAX_ENTITIES);
+  /** Incoming damage permille (damageTakenPct, sim 0.32.0). */
+  readonly taken = new Int32Array(MAX_ENTITIES);
   /** Scratch for the chem modifiers of one unit: [speed, damage]. */
   readonly scratch = new Int32Array(2);
 }
@@ -193,6 +196,7 @@ export function auraSystem(ctx: SimContext, auras: Auras): void {
     auras.any = true;
     auras.speed.fill(0, 0, w.highWater);
     auras.damage.fill(0, 0, w.highWater);
+    auras.taken.fill(0, 0, w.highWater);
   };
   for (let p = 0; p < ctx.playerCount; p++) {
     const h = heroOf(ctx, p);
@@ -268,6 +272,7 @@ function applyZone(
       if ((e.side === AURA_SIDE_ENEMY) === (o === p)) continue;
       if (e.stat === STAT_SPEED) auras.speed[i] = auras.speed[i]! + e.delta;
       else if (e.stat === STAT_DAMAGE) auras.damage[i] = auras.damage[i]! + e.delta;
+      else if (e.stat === STAT_DAMAGE_TAKEN) auras.taken[i] = auras.taken[i]! + e.delta;
     }
   }
 }

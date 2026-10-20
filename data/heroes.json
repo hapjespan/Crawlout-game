@@ -139,5 +139,45 @@
     "revivePenaltyPct": 20,
     "maxRevives": 4,
     "_comment": "startwaarde, geen balans. Warlord (Krijger-variant van de Raiders, Spelfundament 4 en 5): SPECIAL totaal 34 (gelijk aan de Opziener), zwaar op S 7 en C 6 voor een brulboer die zijn horde voorgaat, P 4 en I 3 laag. Aangewezen basis: baseLoadoutId warlord_basis. LEVELT HET SNELST (Spelfundament 4): xpPerLevel per stap 60, 90, 120, 150, 190, 230 (cumulatief 60, 150, 270, 420, 610, 840 tegen 80, 200, 360, 560, 810, 1110 voor de Opziener), xpPerKill 30 (25), xpPerDiscovery 60 (50), xpPerAssist 20 (15) binnen 15 m en xpPerCapture 25 per geroofde gevangene (nieuw veld): de held leert van elke overval. Zes stappen = maxlevel 7, perk-keuze per level uit 7 perks. INTIMIDATIE-AURA (aura, data 0.21.0, alleen data): altijd aan zolang de held leeft; vijandelijke units binnen 10 m van de held doen 10 procent minder schade (damagePct -10) en lopen 8 procent trager (speedPct -8); zelfde effect-vorm als een ability (side enemy). Geen passieve bonussen voor de speler (passives []): de aura is de factiebonus. Oplappen bij het hoofdgebouw kost 90 scrap en 35 s (de Opziener 100 en 40), 20 procent verlies van perks en hp per keer, na 4 keer leeg (Spelfundament 5). SPECIAL-kanaal: de chems psycho en jet verhogen S en A van de held tijdelijk zolang hij in de aura van een Chem-dealer staat (factions.json chems, target held)."
+  },
+  {
+    "id": "zwaardridder",
+    "faction": "garde",
+    "archetype": "krijger",
+    "special": { "S": 6, "P": 5, "E": 7, "C": 4, "I": 6, "A": 3, "L": 3 },
+    "naam": "Paladin-Commander",
+    "xpPerLevel": [80, 120, 160, 200, 250, 300],
+    "xpPerKill": 25,
+    "xpPerDiscovery": 50,
+    "xpPerAssist": 15,
+    "xpAssistRadiusM": 15,
+    "abilities": [
+      {
+        "id": "charge",
+        "naam": "Charge",
+        "cooldownS": 40,
+        "rangeM": 12,
+        "radiusM": 8,
+        "durationS": 6,
+        "effects": [
+          { "stat": "speedPct", "side": "ally", "target": "units", "delta": 40 },
+          { "stat": "damagePct", "side": "ally", "target": "units", "delta": 15 }
+        ],
+        "_comment": "startwaarde, geen balans: de held en eigen units binnen 8 m van een punt tot 12 m van hem lopen 6 s 40 procent sneller en doen 15 procent meer schade (de stormloop van de frames)."
+      }
+    ],
+    "passives": [],
+    "aura": {
+      "radiusM": 10,
+      "effects": [{ "stat": "damageTakenPct", "side": "ally", "target": "units", "delta": -15 }]
+    },
+    "baseLoadoutId": "krachtpantser",
+    "perkPool": [],
+    "reviveScrap": 120,
+    "reviveS": 45,
+    "revivePenaltyPct": 20,
+    "maxRevives": 4,
+    "sightM": 16,
+    "_comment": "startwaarde, geen balans (data 0.38.0, voorstel sim-core voor content en de architect; docs/garde.md punt 7): de Paladin-Commander van de Garde, in krachtpantser (baseLoadoutId krachtpantser: heavy, laserkarabijn). Pantser-aura: eigen units binnen 10 m van de levende held krijgen 15 procent minder schade (damageTakenPct -15, nieuw in de stat-enum). Charge: zie de ability. De id zwaardridder sorteert na warlord, zodat de held-ids van de Opziener en de Warlord (en dus elke Dwellers- en Raiders-hash) gelijk blijven; de naam is Paladin-Commander. Perks volgen in een aparte stap (perkPool leeg). SPECIAL-kanaal tech: holobanden (+1 I, P, S op target held)."
   }
 ]

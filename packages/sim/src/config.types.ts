@@ -155,6 +155,8 @@ export interface SimUnitType {
    * (Build, Claim, help at a site, resume a site; systems/common.ts canBuild). False for every other type.
    */
   readonly canBuild: boolean;
+  /** Data 0.38.0 (sim 0.32.0, proposal; loadouts fusionCores): cores this type takes when its production starts. */
+  readonly fusionCores: number;
 }
 
 /** Capture (Slaver, data 0.21.0): catches a beaten-down human of another player (or a neutral wanderer). */
