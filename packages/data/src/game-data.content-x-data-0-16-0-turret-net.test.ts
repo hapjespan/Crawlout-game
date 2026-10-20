@@ -202,7 +202,7 @@ describe('content-x (data 0.16.0): turret-netwerk, uitrusting in tiers, held-pas
   });
 
   it('blijft binnen de grenzen van de sim: hoogstens 32 techs, loadout-ids onder het held-blok', () => {
-    expect(data.tech.length).toBeLessThanOrEqual(32); // sim MAX_TECHS: bitset per speler
+    expect(data.tech.length).toBeLessThanOrEqual(64); // sim MAX_TECHS (64 since sim 0.31.0)
     expect(data.loadouts.length).toBeLessThan(999); // typeId-ruimte 1..999
     expect(data.buildings.length).toBeLessThan(1024);
   });
