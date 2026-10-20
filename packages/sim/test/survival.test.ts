@@ -124,6 +124,27 @@ describe('survival: the wave spawner', () => {
     );
   });
 
+  it('fills PlayerStatus.survival (protocol 0.17.0) with the rank as a string, the same for every player', () => {
+    const sim = survivalSim(testPlayers(2));
+    const names = ['normal', 'miniboss', 'boss'];
+    const seen = new Set<string>();
+    for (let k = 0; k <= SURVIVAL.waves.length; k++) {
+      for (let j = 0; j < k; j++) sim.survival.batches[j] = 1;
+      const s = sim.survivalStatus()!;
+      const msg = sim.playerStatus(0).survival!;
+      expect(msg).toEqual({
+        ...s,
+        next: s.next === null ? null : { ...s.next, rank: names[s.next.rank] },
+      });
+      expect(sim.playerStatus(1).survival).toEqual(msg);
+      if (msg.next !== null) seen.add(msg.next.rank);
+    }
+    expect(seen.has('normal')).toBe(true);
+    expect(seen.has('boss') || seen.has('miniboss')).toBe(true);
+    const skirmish = createSim({ ...survivalInit(), map: createOpenMap(128, 128) });
+    expect(skirmish.playerStatus(0).survival).toBe(null);
+  });
+
   it('spawns within spread of the edge nearest the target zone, then clockwise', () => {
     // solo: slot 0 (nearEdge noord); two edges: noord and oost, the rest to the first
     const sim = survivalSim(testPlayers(1), fastWaves([wave(1, 7, { edges: 2 })]));

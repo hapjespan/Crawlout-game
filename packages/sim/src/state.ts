@@ -28,8 +28,10 @@ export const STATE_MAGIC = 0x4c575243; // 'CRWL' als little-endian bytes
  * 14: camp takeover (sim 0.22.0; voorstel, ter bevestiging door de architect): CreepCamps.yields after clearedAt.
  * 15: win route C (sim 0.25.0; voorstel, ter bevestiging door de architect): PlayerState.projTicks and aiProjectAt
  * after aiRaidOut, and ProjectState (hit, lastHp per part) after the creep camps.
+ * 16: MAX_TECHS 64 (sim 0.31.0, data 0.37.0 the Garde): PlayerState.tech is TECH_WORDS (2) uint32 words per player;
+ * the dead threat position (tx, ty) left the defence state (fase-0 sectie 24 besluit 1).
  */
-export const STATE_FORMAT_VERSION = 15;
+export const STATE_FORMAT_VERSION = 16;
 
 /** Header-velden (uint32), in volgorde. */
 const H = {
@@ -139,7 +141,7 @@ function bodyChunks(p: StateParts): Uint8Array[] {
   // base defence (sim 0.29.0): only where it is on, the same
   const d = p.defense;
   if (d.active) {
-    for (const a of [d.alarm, d.tx, d.ty]) out.push(bytesOf(a, a.length));
+    out.push(bytesOf(d.alarm, d.alarm.length));
     out.push(bytesOf(d.mark, w.highWater));
   }
   return out;

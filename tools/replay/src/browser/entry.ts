@@ -36,8 +36,7 @@ export function run(input: BrowserInput): { userAgent: string; results: BrowserR
     const t0 = performance.now();
     try {
       const r = Replay.parse(replay);
-      if (r.dataVersion !== data.dataVersion)
-        throw new Error(`replay is voor data ${r.dataVersion}, de data is ${data.dataVersion}`);
+      // fixtures compare hashes only; their dataVersion is a recording detail (fase-0 sectie 24 besluit 4)
       const src = input.maps[r.map];
       if (src === undefined) throw new Error(`map ${r.map} niet meegegeven`);
       const def = MapDef.parse(src.def);

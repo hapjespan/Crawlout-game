@@ -1,4 +1,5 @@
 // Split from robots.test.ts to stay under the 5,000-token file limit.
+import { grantTech } from '../src/techBits.js';
 import { typeByKey, CONFIG, DATA, bundle, cmd, emptySim } from './helpers.js';
 import type { Sim } from '../src/index.js';
 import type { CommandEnvelope } from '@crawlout/protocol';
@@ -44,5 +45,5 @@ export const now = (
 export const open = (): Sim => emptySim(1, createOpenMap(64, 64));
 
 export const research = (sim: Sim, p: number, ...keys: string[]): void => {
-  for (const k of keys) sim.ps.tech[p] = (sim.ps.tech[p]! | (1 << techId(k))) >>> 0;
+  for (const k of keys) grantTech(sim.ps, p, techId(k));
 };

@@ -17,8 +17,13 @@ export const MAX_RADIUS = UNITS_PER_METER;
 export const MAX_FOOTPRINT = 32;
 /** Largest sight radius (fog of war): 64 m, so a stamp stays small and a radius in vision cells fits a byte. */
 export const MAX_SIGHT = 64 << 8;
-/** Geometrie van de state: onderzochte techs staan per speler in een uint32-bitset. */
-export const MAX_TECHS = 32;
+/**
+ * Geometrie van de state: onderzochte techs staan per speler in een bitset van TECH_WORDS uint32-woorden (sim 0.31.0:
+ * 64, de Garde in data 0.37.0 maakte 32 vol; STATE_FORMAT_VERSION 16).
+ */
+export const MAX_TECHS = 64;
+/** Uint32-woorden van de tech-bitset per speler (MAX_TECHS / 32). */
+export const TECH_WORDS = MAX_TECHS >>> 5;
 /** Geometrie van de state: gekozen perks staan per held in een uint32-bitset. */
 export const MAX_PERKS = 32;
 /** Geometrie van de state: abilities per held (cooldown en zone per slot). */

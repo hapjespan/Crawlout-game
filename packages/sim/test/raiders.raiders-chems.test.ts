@@ -1,4 +1,5 @@
 // Split from raiders.test.ts to stay under the 5,000-token file limit.
+import { grantTech } from '../src/techBits.js';
 import { typeByKey, DATA, testInit, SCAV, CONFIG } from './helpers.js';
 import { type Sim, createSim, type SimAiScript, type SimConfig } from '../src/index.js';
 import { describe, it, expect } from 'vitest';
@@ -32,7 +33,7 @@ const DEALER = typeByKey('chemdealer');
 const techId = (key: string): number => DATA.tech.find((t) => t.key === key)!.id;
 
 const research = (sim: Sim, p: number, ...keys: string[]): void => {
-  for (const k of keys) sim.ps.tech[p] = (sim.ps.tech[p]! | (1 << techId(k))) >>> 0;
+  for (const k of keys) grantTech(sim.ps, p, techId(k));
 };
 
 describe('Raiders: chems', () => {

@@ -21,6 +21,16 @@ export function replayEnv(r: Replay): SimEnv {
   return buildEnv(r.map, r.players, r.settings);
 }
 
+/**
+ * A fixture of the replay set: its `dataVersion` is a recording detail, not a check (fase-0 sectie 24 besluit 4). The
+ * set compares hashes only, so it runs against the current data/VERSION; the envHash covers what the sim reads field
+ * by field, so a data bump that changes nothing the sim reads keeps every hash. A real replay keeps the lobby check
+ * (replayEnv).
+ */
+export function asFixture(r: Replay): Replay {
+  return { ...r, dataVersion: gameData().data.dataVersion };
+}
+
 /** Maakt de sim voor een replay: omgeving uit data/ en data/maps, startopstelling in createSim. */
 export function createReplaySim(r: Replay): Sim {
   return createSim({ seed: r.seed, ...replayEnv(r) });

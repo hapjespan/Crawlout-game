@@ -1,7 +1,7 @@
 import { EVENT_TYPE } from '@crawlout/protocol';
 import type { LobbyPlayer } from '@crawlout/protocol';
 import { ROLES } from '@crawlout/data';
-import { createSim } from '@crawlout/sim';
+import { createSim, hasTech } from '@crawlout/sim';
 import type { Sim, WinReason } from '@crawlout/sim';
 import { buildEnv, gameData } from './env.js';
 import type { BotPlan, Controller, PlannedBuilding } from './bot.js';
@@ -152,7 +152,7 @@ export function playMatch(seed: number, opts: MatchOptions = {}): MatchResult {
   const keyOf = buildingKeys(sim);
   const unitKeyOf = unitKeys(sim);
   const techKeys = gameData().data.tech.map((t) => t.key);
-  const techSeen = ai.map(() => 0);
+  const techSeen = ai.map(() => new Set<number>());
   const last = ai.map((_, p) => sim.playerStatus(p).scrap);
   const seq: number[] = [];
   const slaveSeen = new Uint8Array(sim.world.slaveState.length);
@@ -244,12 +244,12 @@ export function playMatch(seed: number, opts: MatchOptions = {}): MatchResult {
     }
     if ((f + 1) % 20 === 0)
       for (let p = 0; p < n; p++) {
-        const bits = sim.ps.tech[p]!;
-        if (bits === techSeen[p]) continue;
+        const seen = techSeen[p]!;
         for (let t = 0; t < techKeys.length; t++)
-          if (((bits >>> t) & 1) !== 0 && ((techSeen[p]! >>> t) & 1) === 0)
+          if (!seen.has(t) && hasTech(sim.ps, p, t)) {
+            seen.add(t);
             traces[p]!.techAt[techKeys[t]!] = Math.floor(((f + 1) / TICKS_PER_MINUTE) * 10) / 10;
-        techSeen[p] = bits;
+          }
       }
     if ((f + 1) % TICKS_PER_MINUTE === 0) sample(sim, traces);
   }

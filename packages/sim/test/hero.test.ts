@@ -1,3 +1,4 @@
+import { grantTech } from '../src/techBits.js';
 import { describe, expect, it } from 'vitest';
 import { EVENT_TYPE, OWNER_NEUTRAL } from '@crawlout/protocol';
 import type { CommandEnvelope } from '@crawlout/protocol';
@@ -236,7 +237,11 @@ describe('held', () => {
     const kluisvet = perkByKey('kluisvet'); // turrets +10% hp
     sim.ps.heroPending[0] = 1;
     play(sim, 1, at(0, cmd(0, 0, 'PickPerk', { heroId: HERO.heroId, perkId: kluisvet })));
-    sim.ps.tech[0] = 1 << CONFIG.techs.findIndex((t) => DATA.tech[t.techId]!.key === 'geweerrek');
+    grantTech(
+      sim.ps,
+      0,
+      CONFIG.techs.findIndex((t) => DATA.tech[t.techId]!.key === 'geweerrek'),
+    );
     const turretType = CONFIG.buildingTypes.find((b) => b.typeId === typeByKey('turret'))!;
     const turret = sim.spawnBuilding(turretType.typeId, 0, 4, 30);
     play(sim, 1);

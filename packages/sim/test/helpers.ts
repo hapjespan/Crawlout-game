@@ -36,6 +36,7 @@ export const COMPACT_FOOTPRINTS: Readonly<Record<string, readonly [number, numbe
   mitrailleursnest: [2, 2],
   plunderpost: [1, 1],
 };
+const GARDE = DATA.factions.find((f) => f.key === 'garde')?.id ?? -2;
 /** De sim-config uit de echte data, met de footprints van de echte schaal. */
 export const REAL_CONFIG = simConfigFromGameData(DATA);
 export const CONFIG: typeof REAL_CONFIG = {
@@ -56,6 +57,8 @@ export const CONFIG: typeof REAL_CONFIG = {
     const fp = COMPACT_FOOTPRINTS[key];
     // win route C (data 0.31.0): the parts of the strip mall keep their real size (project.test.ts places them)
     if (fp === undefined && t.factionId === -1) return t;
+    // the Garde (data 0.37.0) is data only, not played by the sim yet: its buildings keep their real size
+    if (fp === undefined && t.factionId === GARDE) return t;
     if (fp === undefined) throw new Error(`geen compacte footprint voor ${key}`);
     return { ...t, footprintW: fp[0], footprintH: fp[1] };
   }),

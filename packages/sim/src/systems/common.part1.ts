@@ -4,6 +4,7 @@ import { MAX_PLAYERS, OWNER_NEUTRAL, MAX_ENTITIES } from '@crawlout/protocol';
 import {
   MAX_ABILITIES,
   SPECIAL_COUNT,
+  TECH_WORDS,
   type SimMap,
   type SimConfig,
   type SimPlayer,
@@ -47,8 +48,8 @@ export class PlayerState {
    * (claimFarFromTicks plus 0..waveJitterTicks via sim.rng, getrokken zodra claimFarFromTicks bereikt is); 0 = nog niet.
    */
   readonly aiClaimAt = new Int32Array(MAX_PLAYERS);
-  /** Onderzochte techs als bitset (bit k = techId k, MAX_TECHS). */
-  readonly tech = new Uint32Array(MAX_PLAYERS);
+  /** Onderzochte techs als bitset, TECH_WORDS woorden per speler (bit k = techId k, MAX_TECHS; techBits.ts). */
+  readonly tech = new Uint32Array(MAX_PLAYERS * TECH_WORDS);
   // Held (één per speler; systems/hero.ts). De held-entity draagt C.hero; dit blijft bestaan als hij dood is.
   /** HERO_NONE, HERO_ALIVE, HERO_DEAD, HERO_REVIVING of HERO_EMPTY. */
   readonly heroState = new Uint8Array(MAX_PLAYERS);

@@ -57,6 +57,7 @@ import {
 } from './common.js';
 import { DEPOT_MASK, autoGather } from './orders.js';
 import { PROVIDES_WORKSHOP } from '../fromData.js';
+import { grantTech } from '../techBits.js';
 
 // Systeem 6: economie. Verzamelen (een rit duurt gatherTicks en levert gatherAmount), afleveren bij een depot,
 // bouwen (elke bouwer in bereik telt één tick voortgang), omscholen in de werkplaats (betalen, dan craftTicks
@@ -110,7 +111,7 @@ function researchWork(ctx: SimContext, i: number): void {
   w.research[i] = 0;
   w.researchPaid[i] = 0;
   w.work[i] = 0;
-  ctx.ps.tech[p] = (ctx.ps.tech[p]! | (1 << t.techId)) >>> 0;
+  grantTech(ctx.ps, p, t.techId);
   refreshPlayer(ctx, p);
 }
 
