@@ -144,6 +144,11 @@ export interface SimPlayer {
   readonly factionId: number;
   /** AI-speler (LobbyPlayer.ai): de sim geeft zelf zijn commando's in systeemstap 2. */
   readonly ai: boolean;
+  /**
+   * Held-keuze (sim 0.33.0, data 0.39.0; voorstel): de gekozen held, index in SimConfig.heroes, een held van de eigen
+   * factie. Afwezig = de held van de factie (SimFaction.heroId, de Krijger); alleen een andere held gaat de envHash in.
+   */
+  readonly heroId?: number;
 }
 
 export interface SimInit {

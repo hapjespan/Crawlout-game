@@ -32,6 +32,12 @@ Elke factie heeft drie speelstijlen met gelijk SPECIAL-totaal en dezelfde oplap-
 
 Alleen bestaande stats en mechanica (speedPct, damagePct, damageTakenPct, gatherRatePct, buildTimePct, research*, rangeM, hpPct). **Optioneel schemavoorstel (enige nieuwe mechanica)**: `idGroup` (geheel getal, afwezig 0) op Hero en Perk; `sortById` sorteert op (idGroup, id), zodat de oude ids niet verschuiven (de nieuwe heroes-ids sorteren anders voor `warlord`). Perks 31 van MAX_PERKS 32. Bouwer-abilities kennen geen eco-stat (alleen speedPct, damageTakenPct): een echte economie-ability (bv. gatherRatePct in een zone) vraagt een sim-uitbreiding van AURA_STATS en is niet voorgesteld.
 
+## Gebouwd (sim 0.33.0, protocol 0.18.0, relay 0.4.0, ui 0.21.0, client 0.14.0; voorstel, ter bevestiging door de architect)
+
+Protocol: `LobbyPlayer.heroArchetype?` en `setHero` (archetype, de factie kiest de held). Sim: `SimPlayer.heroId?` (simPlayersFromLobby lost het archetype op; afwezig = de Krijger, `SimFaction.heroId`), spawn, oplappen, perks, passieven, aura en ability via `heroOf`; MAX_PERKS 64. AI: optioneel `heroArchetype` in data/ai (geen script zet het nu, dus alle AI's spelen de Krijger); het script waarmee de AI opent (versus de eerste tegenstander, anders het standaardscript) bepaalt het. Hashing: keuzehelden en hun perks alleen in de envHash als iemand er een speelt; alle 26 bestaande fixtures spelen met hun oude hashes. Nieuwe fixtures `s20-rustbelt-heroes` (Controleur tegen Marktmeester) en `s20-rustbelt-heroes-garde` (Kwartiermeester tegen Voorman), Rustbelt heeft twee spawns. Client: drie heldkaarten per factie in Tegen AI en in de lobby (Krijger voorgeselecteerd), het oplapkaartje volgt de gekozen held.
+
+**Open: balansmeting.** De archetypes zijn niet gemeten (geen balansruns in deze ronde). Nodig: elke keuze 45 tot 55 procent tegen elke andere, per factie, en een AI die zelf een Bouwer of Tacticus kiest (data/ai `heroArchetype`) zodra die meting er is. Ook open: SPECIAL-balken en portretten op de kaarten.
+
 ## Wat de sim, het protocol en de client moeten bouwen
 
 1. **Protocol**: `LobbyPlayer.heroId` (optioneel, de key van een held van de eigen factie) of `heroArchetype` ('bouwer' | 'krijger' | 'tacticus'). Aanbeveling: archetype, de factie kiest de held; de lobby valideert dat de held bij de factie hoort. Een lobby-commando `SetHero` voor de start; het zod-schema en het doc (contract 2) volgen. Het veld is deel van de seed-/replay-invoer.

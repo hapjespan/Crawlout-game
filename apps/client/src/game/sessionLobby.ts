@@ -22,7 +22,7 @@ export interface SessionLobby {
 
 /** The lobby messages a player can send from the menu. */
 export type SessionLobbyRequest =
-  | Extract<ClientMessage, { kind: 'ready' | 'setFaction' | 'addAi' | 'removeAi' }>
+  | Extract<ClientMessage, { kind: 'ready' | 'setFaction' | 'setHero' | 'addAi' | 'removeAi' }>
   /** The host's game type (relay setSettings; the delay is the client's default). */
   | { kind: 'setMode'; mode: 'skirmish' | 'survival' };
 

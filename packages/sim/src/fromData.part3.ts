@@ -1,7 +1,8 @@
 // Split from fromData.ts to stay under the 5,000-token file limit; fromData.ts re-exports the public surface.
 // Holds: SimMapSource, SimMapOptions, simMapFromGrid, simPlayersFromLobby.
 import type { SimMap, SimPlayer } from './config.js';
-import type { GameData } from '@crawlout/data';
+import { ARCHETYPES, type GameData } from '@crawlout/data';
+import { defaultHeroId } from './fromData.part2.js';
 import { CLAIM_KINDS } from './fromData.part1.js';
 import { type SurvivalSource, survivalMapOf, survivalScrapNodes } from './fromData.part4.js';
 import type { ClaimKind } from './fromData.part1.js';
@@ -96,19 +97,56 @@ export function simMapFromGrid(grid: SimMapSource, opts: SimMapOptions = {}): Si
 /**
  * Spelers uit het start-bericht (LobbyPlayer[]) naar SimPlayer[], in playerId-volgorde. playerId moet 0..n-1 zijn:
  * spawns[i] hoort bij playerId i. Gooit bij een onbekende factie of een gat in de playerIds.
+ * Held-keuze (sim 0.33.0, protocol 0.18.0): heroArchetype kiest de held van dat archetype van de factie; zonder keuze
+ * kiest een AI-speler het archetype van zijn script (data/ai heroArchetype), een mens de Krijger. Een archetype zonder
+ * held in de factie is de held van de factie. SimPlayer.heroId staat alleen bij een andere held dan die van de factie.
  */
 export function simPlayersFromLobby(
   data: GameData,
-  players: readonly { playerId: number; faction: string; ai: boolean }[],
+  players: readonly {
+    playerId: number;
+    faction: string;
+    ai: boolean;
+    heroArchetype?: string | undefined;
+  }[],
 ): SimPlayer[] {
   const sorted = [...players].sort((a, b) => a.playerId - b.playerId);
-  return sorted.map((p, i) => {
+  const factionIds = sorted.map((p, i) => {
     if (p.playerId !== i)
       throw new Error(
         `playerIds moeten 0..${players.length - 1} zijn, kreeg ${p.playerId} op plek ${i}`,
       );
     const f = data.factions.find((x) => x.key === p.faction);
     if (f === undefined) throw new Error(`speler ${p.playerId}: onbekende factie ${p.faction}`);
-    return { factionId: f.id, ai: p.ai };
+    return f.id;
   });
+  return sorted.map((p, i) => {
+    const factionId = factionIds[i]!;
+    let archetype = ARCHETYPES.indexOf('krijger');
+    if (p.heroArchetype !== undefined)
+      archetype = ARCHETYPES.indexOf(p.heroArchetype as (typeof ARCHETYPES)[number]);
+    else if (p.ai) archetype = aiHeroArchetype(data, factionIds, i);
+    if (archetype < 0)
+      throw new Error(`speler ${p.playerId}: onbekend archetype ${p.heroArchetype}`);
+    const hero = data.heroes.findIndex(
+      (h) => h.factionId === factionId && h.archetype === archetype,
+    );
+    return hero < 0 || hero === defaultHeroId(data, factionId)
+      ? { factionId, ai: p.ai }
+      : { factionId, ai: p.ai, heroId: hero };
+  });
+}
+
+/**
+ * The archetype of an AI player without a lobby choice: from the script it opens with (the versus script for the
+ * faction of its first opponent at the start, as systems/ai.think.ts picks it, else the faction's default script).
+ */
+function aiHeroArchetype(data: GameData, factionIds: readonly number[], i: number): number {
+  const own = factionIds[i]!;
+  const enemy = factionIds.length > 1 ? factionIds[i + 1 < factionIds.length ? i + 1 : 0]! : -1;
+  const vs = data.aiScripts.find(
+    (a) => a.factionId === own && a.versusFactionId === enemy && enemy >= 0,
+  );
+  const script = vs ?? data.aiScripts.find((a) => a.factionId === own && a.versusFactionId < 0);
+  return script?.heroArchetype ?? ARCHETYPES.indexOf('krijger');
 }

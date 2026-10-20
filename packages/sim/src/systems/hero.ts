@@ -36,6 +36,7 @@ import {
 } from '../effects.js';
 import { PROVIDES_HQ } from '../fromData.js';
 import { isInt } from '../math/int.js';
+import { grantPerk, hasPerk } from '../perkBits.js';
 import type { Census } from './census.js';
 import type { SimContext } from './common.js';
 import { NO_COMPONENT } from '../pathdist.js';
@@ -52,7 +53,8 @@ import {
   visibleTo,
 } from './common.js';
 
-// De held (Spelfundament 5, contract 1 HeroStatus). Eén per speler: de eerste held van zijn factie (SimFaction.heroId).
+// De held (Spelfundament 5, contract 1 HeroStatus). Eén per speler: de gekozen held (SimPlayer.heroId, sim 0.33.0) of de
+// held van zijn factie (SimFaction.heroId, de Krijger); heroOf in effects.ts.
 //  - Hij spawnt in de startopstelling naast het hoofdgebouw, als unit met C.hero en typeId heroTypeId(heroId). Lichaam,
 //    wapen en basisstats komen van SimHero.baseTypeId; SPECIAL, perks en techs schalen ze (effects.ts).
 //  - xp: xpPerKill per vijandelijke unit die hij zelf doodt (systeem 5), xpPerAssist per vijandelijke unit die een eigen
@@ -285,14 +287,10 @@ export function applyPickPerk(ctx: SimContext, p: number, pl: CommandPayload<'Pi
   const st = ps.heroState[p]!;
   if (st === HERO_NONE || st === HERO_EMPTY || ps.heroPending[p]! <= 0) return false;
   const perk = ctx.config.perks[pl.perkId];
-  if (
-    perk === undefined ||
-    !h.perkPool.includes(perk.perkId) ||
-    ((ps.heroPerks[p]! >>> perk.perkId) & 1) !== 0
-  )
+  if (perk === undefined || !h.perkPool.includes(perk.perkId) || hasPerk(ps, p, perk.perkId))
     return false;
   if (heroSpecial(ctx, p, perk.requiresStat) < perk.requiresMin) return false;
-  ps.heroPerks[p] = (ps.heroPerks[p]! | (1 << perk.perkId)) >>> 0;
+  grantPerk(ps, p, perk.perkId);
   ps.heroPending[p] = ps.heroPending[p]! - 1;
   refreshPlayer(ctx, p);
   return true;
@@ -493,8 +491,7 @@ export function heroStatus(ctx: SimContext, p: number): HeroStatus | null {
   const special: number[] = [];
   for (let k = 0; k < SPECIAL_COUNT; k++) special.push(heroSpecial(ctx, p, k));
   const perks: number[] = [];
-  for (const pk of ctx.config.perks)
-    if (((ps.heroPerks[p]! >>> pk.perkId) & 1) !== 0) perks.push(pk.perkId);
+  for (const pk of ctx.config.perks) if (hasPerk(ps, p, pk.perkId)) perks.push(pk.perkId);
   // Op maxlevel is er geen volgende drempel: xpNext is dan de laatste drempel (die al gehaald is).
   const xpNext =
     level - 1 < h.xpThresholds.length

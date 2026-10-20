@@ -185,7 +185,10 @@ export function buildingCards(ctx: CardContext): BuildingCard[] {
     const hq = ready.find((e) =>
       data.buildings[kindOfTypeId(e.typeId).index]?.provides.includes(hqIdx),
     );
-    const hero = data.heroes.find((h) => h.factionId === factionId);
+    // hero choice (protocol 0.18.0): the player's own hero from HeroStatus, else the first hero of the faction
+    const hero =
+      (status?.hero ? data.heroes[status.hero.heroId] : undefined) ??
+      data.heroes.find((h) => h.factionId === factionId);
     if (hq && hero && ctx.heroDead) {
       const reviving = status?.hero?.state === 'reviving';
       cards.push({

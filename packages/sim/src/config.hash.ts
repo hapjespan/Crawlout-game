@@ -10,6 +10,7 @@ import {
 import { hashAiScripts, hashProgression } from './config.hash.ai.js';
 import { hashSurvival } from './config.survival.env.js';
 import { gatedScripts, hashGarde } from './config.hash.garde.js';
+import { hashHeroChoice } from './config.hash.heroes.js';
 
 /**
  * Hash van de omgeving (config, map, spelers) in vaste veldvolgorde. Gaat de state-header in,
@@ -33,6 +34,8 @@ export function envHash(env: SimEnv): number {
   h = hashSurvival(h, env);
   // the Garde (sim 0.32.0): its rules, script and hero only when a player plays it, so every other env keeps its hash
   h = hashGarde(h, env);
+  // hero choice (sim 0.33.0): the choice heroes and their perks only when a player plays one, the same
+  h = hashHeroChoice(h, env);
   // base defence (sim 0.29.0): only where it is on, so every other env keeps its hash
   if (defenseOn(env)) {
     const d = c.baseDefense;

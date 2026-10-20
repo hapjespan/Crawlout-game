@@ -1,7 +1,8 @@
 // What the pre-match menu shows, built from the loaded data and map: factions with their hero, and the map with a
 // minimap preview (terrain, water, start positions, scrap and claim points). Menu texts are Dutch and live here, not in
 // packages/ui, so the data stays the one source for names and numbers.
-import type { GameData } from '@crawlout/data';
+import { ARCHETYPES, type GameData } from '@crawlout/data';
+import { heroCards } from './heroCards.js';
 import type { MapGrid } from '@crawlout/map';
 import type { MenuContent, MenuFaction, MenuMapInfo } from '@crawlout/ui';
 import type { MinimapLayers } from './minimapLayers.js';
@@ -26,7 +27,14 @@ export function menuFactions(data: GameData): MenuFaction[] {
       name,
       subtitle,
       blurb: BLURBS[f.key] ?? '',
-      hero: data.heroes.find((h) => h.factionId === f.id)?.naam ?? 'onbekend',
+      // the Krijger, the hero without a choice (hero choice, protocol 0.18.0)
+      hero:
+        data.heroes.find(
+          (h) => h.factionId === f.id && h.archetype === ARCHETYPES.indexOf('krijger'),
+        )?.naam ??
+        data.heroes.find((h) => h.factionId === f.id)?.naam ??
+        'onbekend',
+      heroes: heroCards(data, f.id),
     };
   });
 }

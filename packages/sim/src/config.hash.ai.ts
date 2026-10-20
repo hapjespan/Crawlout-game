@@ -4,6 +4,7 @@ import type { SimConfig } from './config.env.js';
 import type { SimAiScript } from './config.faction.js';
 import type { SimHero } from './config.types.js';
 import { gatedHeroes, gatedScripts } from './config.hash.garde.js';
+import { choiceHeroes, choicePerks } from './config.heroes.js';
 import { hashEffects, hashInts } from './config.hash.config.js';
 
 /**
@@ -118,8 +119,11 @@ export function hashProgression(h: number, c: SimConfig): number {
     h = hashInts(h, t.prereqTech);
     h = hashEffects(h, t.effects);
   }
-  h = fnv1aInt(h, c.perks.length);
+  // sim 0.33.0: the perks and heroes of the hero choice only in hashHeroChoice (config.hash.heroes.ts)
+  const choiceP = choicePerks(c);
+  h = fnv1aInt(h, c.perks.length - choiceP.size);
   for (const pk of c.perks) {
+    if (choiceP.has(pk.perkId)) continue;
     h = hashInts(h, [pk.perkId, pk.requiresStat, pk.requiresMin]);
     h = hashEffects(h, pk.effects);
   }
@@ -141,8 +145,10 @@ export function hashProgression(h: number, c: SimConfig): number {
   }
   // sim 0.32.0: the heroes of a gated faction only in hashGarde (config.hash.garde.ts)
   const gatedH = gatedHeroes(c);
-  h = fnv1aInt(h, c.heroes.length - gatedH.size);
-  for (const hr of c.heroes) if (!gatedH.has(hr.heroId)) h = hashHero(h, hr);
+  const choiceH = choiceHeroes(c);
+  h = fnv1aInt(h, c.heroes.length - gatedH.size - choiceH.size);
+  for (const hr of c.heroes)
+    if (!gatedH.has(hr.heroId) && !choiceH.has(hr.heroId)) h = hashHero(h, hr);
   const sp = c.special;
   h = hashInts(h, [
     sp.strengthDamagePermille,

@@ -88,6 +88,9 @@ const STAT_TEXT: Record<string, { label: string; unit: 'pct' | 'm' | 'raw' }> = 
   gatherRatePct: { label: 'verzameltempo', unit: 'pct' },
   buildTimePct: { label: 'bouwtijd', unit: 'pct' },
   researchTimePct: { label: 'onderzoekstijd', unit: 'pct' },
+  // client 0.x (hero choice): the passives and abilities of the new heroes
+  researchCostPct: { label: 'onderzoekskosten', unit: 'pct' },
+  damageTakenPct: { label: 'schade ontvangen', unit: 'pct' },
 };
 
 export const STAT_ICON: Record<string, CardIconId> = {
@@ -121,7 +124,7 @@ const targetName = (target: string): string =>
   TARGET_NAMES[target] ?? (LOADOUT_NAMES[target] ?? humanize(target)).toLowerCase();
 
 /** Stats that apply to the whole player, not to units: "-10% onderzoekstijd", without a "voor alle eenheden". */
-const PLAYER_WIDE_STATS = new Set(['researchTimePct', 'buildTimePct']);
+const PLAYER_WIDE_STATS = new Set(['researchTimePct', 'buildTimePct', 'researchCostPct']);
 
 /** One effect in plain language, e.g. "+20% schade voor turrets" or "+1 m bereik voor turrets". */
 export function effectText(e: EffectData): string {

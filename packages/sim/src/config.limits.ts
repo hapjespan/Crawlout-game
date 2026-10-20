@@ -24,8 +24,15 @@ export const MAX_SIGHT = 64 << 8;
 export const MAX_TECHS = 64;
 /** Uint32-woorden van de tech-bitset per speler (MAX_TECHS / 32). */
 export const TECH_WORDS = MAX_TECHS >>> 5;
-/** Geometrie van de state: gekozen perks staan per held in een uint32-bitset. */
-export const MAX_PERKS = 32;
+/**
+ * Geometrie van de state: gekozen perks staan per held in een bitset van PERK_WORDS uint32-woorden (sim 0.33.0: 64, de
+ * held-keuze in data 0.39.0 maakte 31 van 32 vol). Woord w van speler p staat op w * MAX_PLAYERS + p, zodat woord 0
+ * dezelfde bytes heeft als de oude uint32 per speler; de state neemt de hogere woorden alleen op met meer dan 32 perks
+ * in de config (PlayerState.perkWords), zodat elke bestaande state zijn formaat en hash houdt.
+ */
+export const MAX_PERKS = 64;
+/** Uint32-woorden van de perk-bitset per held (MAX_PERKS / 32). */
+export const PERK_WORDS = MAX_PERKS >>> 5;
 /** Geometrie van de state: abilities per held (cooldown en zone per slot). */
 export const MAX_ABILITIES = 4;
 /** SPECIAL heeft zeven letters. */

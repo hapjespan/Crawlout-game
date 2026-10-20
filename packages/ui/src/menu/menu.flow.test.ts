@@ -101,8 +101,20 @@ describe('Tegen AI', () => {
     expect(ai().state.ai).toEqual({
       gameType: 'skirmish',
       faction: 'dwellers',
+      hero: 'krijger',
       aiFaction: RANDOM_FACTION,
     });
+  });
+
+  it('hero choice (protocol 0.18.0): an archetype, kept across a faction change, into the start config', () => {
+    const r = ai(
+      { type: 'ai/hero', archetype: 'tacticus' },
+      { type: 'ai/faction', key: 'raiders' },
+      { type: 'ai/start' },
+    );
+    expect(r.state.ai.hero).toBe('tacticus');
+    expect(r.effect).toMatchObject({ config: { faction: 'raiders', heroArchetype: 'tacticus' } });
+    expect(ai({ type: 'ai/hero', archetype: 'held' as never }).state.ai.hero).toBe('krijger');
   });
 
   it('lists all three game types as playable', () => {
@@ -135,7 +147,12 @@ describe('Tegen AI', () => {
     );
     expect(r.effect).toEqual({
       kind: 'startAi',
-      config: { gameType: 'skirmish', faction: 'raiders', aiFaction: 'dwellers' },
+      config: {
+        gameType: 'skirmish',
+        faction: 'raiders',
+        heroArchetype: 'krijger',
+        aiFaction: 'dwellers',
+      },
     });
   });
 

@@ -15,6 +15,16 @@ describe('held-keuze: drie archetypes per factie', () => {
     }
   });
 
+  it('AI-script heroArchetype (voorstel): afwezig = krijger, anders het gegeven archetype', () => {
+    for (const a of data.aiScripts) expect(a.heroArchetype).toBe(1); // geen script zet het nu
+    const r = raw();
+    const files = r.ai as { heroArchetype?: string }[];
+    files[0]!.heroArchetype = 'tacticus';
+    expect(loadGameData(r).aiScripts.some((a) => a.heroArchetype === 2)).toBe(true);
+    files[0]!.heroArchetype = 'held';
+    expect(() => loadGameData(r)).toThrow();
+  });
+
   it('de bestaande held-ids en perk-ids verschuiven niet (idGroup)', () => {
     expect(data.heroes.slice(0, 3).map((h) => h.key)).toEqual([
       'opziener',
@@ -28,7 +38,7 @@ describe('held-keuze: drie archetypes per factie', () => {
         .at(-1),
     ).toBe('zware_laarzen');
     expect(data.perks).toHaveLength(31);
-    expect(data.perks.length).toBeLessThanOrEqual(32); // sim MAX_PERKS
+    expect(data.perks.length).toBeLessThanOrEqual(64); // sim MAX_PERKS (sim 0.33.0)
     data.heroes.forEach((h, i) => expect(h.id).toBe(i));
   });
 

@@ -5,6 +5,7 @@ import {
   MAX_ABILITIES,
   SPECIAL_COUNT,
   TECH_WORDS,
+  PERK_WORDS,
   type SimMap,
   type SimConfig,
   type SimPlayer,
@@ -58,8 +59,10 @@ export class PlayerState {
   readonly heroEnt = new Uint32Array(MAX_PLAYERS);
   readonly heroLevel = new Int32Array(MAX_PLAYERS);
   readonly heroXp = new Int32Array(MAX_PLAYERS);
-  /** Gekozen perks als bitset (bit k = perkId k, MAX_PERKS). */
-  readonly heroPerks = new Uint32Array(MAX_PLAYERS);
+  /** Gekozen perks als bitset, PERK_WORDS woorden (woord w van speler p op w * MAX_PLAYERS + p; perkBits.ts). */
+  readonly heroPerks = new Uint32Array(MAX_PLAYERS * PERK_WORDS);
+  /** Woorden van heroPerks in de state: 1 tot en met 32 perks in de config, anders PERK_WORDS (sim 0.33.0). */
+  perkWords = 1;
   /** Level-ups zonder gekozen perk. */
   readonly heroPending = new Int32Array(MAX_PLAYERS);
   /** Aantal keer opgelapt. */

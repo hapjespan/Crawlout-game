@@ -2,6 +2,7 @@
 // Holds: simConfigFromGameData.
 import {
   type GameData,
+  ARCHETYPES,
   PROVIDES,
   ROLES,
   unitTypeId,
@@ -71,8 +72,9 @@ export function simConfigFromGameData(data: GameData): SimConfig {
       aiScript,
       aiScriptVersus,
       claimTypeId: claim === undefined ? 0 : buildingTypeId(claim.id),
-      // De eerste held van de factie (laagste id): de lobby kent nog geen heldkeuze.
-      heroId: data.heroes.findIndex((h) => h.factionId === f.id),
+      // De Krijger van de factie (data 0.39.0, held-keuze), anders de eerste held (laagste id); SimPlayer.heroId kiest
+      // een andere (sim 0.33.0).
+      heroId: defaultHeroId(data, f.id),
       safetyNet:
         f.safetyNet.loadoutId < 0
           ? null
@@ -454,4 +456,12 @@ export function simConfigFromGameData(data: GameData): SimConfig {
       calmTicks: t.baseDefense.calmTicks,
     },
   };
+}
+
+/** The hero of a faction when a player chooses none: its Krijger, else its first hero (lowest id), -1 = none. */
+export function defaultHeroId(data: GameData, factionId: number): number {
+  const krijger = data.heroes.findIndex(
+    (h) => h.factionId === factionId && h.archetype === ARCHETYPES.indexOf('krijger'),
+  );
+  return krijger >= 0 ? krijger : data.heroes.findIndex((h) => h.factionId === factionId);
 }

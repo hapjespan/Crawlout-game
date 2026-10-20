@@ -40,6 +40,13 @@ export const MatchSettings = z
   })
   .strict();
 export type MatchSettings = z.infer<typeof MatchSettings>;
+// Held-keuze (protocol 0.18.0, sim 0.33.0, data 0.39.0; voorstel, ter bevestiging door de architect; docs/held-keuze.md):
+// een speler kiest een archetype, de factie bepaalt de held (de held van dat archetype van zijn factie). Afwezig = de
+// Krijger; bij een AI-speler zonder keuze kiest zijn AI-script (data/ai heroArchetype, afwezig krijger). Het veld is
+// deel van de start- en replay-invoer; zonder keuze blijft de envHash zoals hij was.
+export const HeroArchetype = z.enum(['bouwer', 'krijger', 'tacticus']);
+export type HeroArchetype = z.infer<typeof HeroArchetype>;
+export const HERO_ARCHETYPES = HeroArchetype.options;
 export const LobbyPlayer = z
   .object({
     playerId: uint,
@@ -48,6 +55,7 @@ export const LobbyPlayer = z
     ready: z.boolean(),
     online: z.boolean(),
     ai: z.boolean(),
+    heroArchetype: HeroArchetype.optional(),
   })
   .strict();
 export type LobbyPlayer = z.infer<typeof LobbyPlayer>;
@@ -60,6 +68,8 @@ export const ClientMessage = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('leave') }).strict(),
   z.object({ kind: z.literal('ready'), ready: z.boolean() }).strict(),
   z.object({ kind: z.literal('setFaction'), faction: z.string() }).strict(),
+  // protocol 0.18.0 (voorstel): het archetype van de eigen held, voor de start; zoals setFaction vraagt het opnieuw om ready
+  z.object({ kind: z.literal('setHero'), heroArchetype: HeroArchetype }).strict(),
   z.object({ kind: z.literal('setMap'), map: z.string() }).strict(),
   // Alleen de speler met de laagste playerId (de host van de room) mag settings en AI-spelers zetten.
   z.object({ kind: z.literal('setSettings'), settings: MatchSettings }).strict(),
