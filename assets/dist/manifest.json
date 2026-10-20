@@ -1572,6 +1572,1170 @@
       "teamMask": "none"
     },
     {
+      "id": "garde_body_clerk",
+      "kind": "character",
+      "bounds": {
+        "min": [
+          -0.940586,
+          0.002343,
+          -0.157243
+        ],
+        "max": [
+          0.941017,
+          1.772577,
+          0.196202
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "garde_body_clerk/lod0.glb",
+          "triangles": 3598
+        },
+        {
+          "level": 1,
+          "path": "garde_body_clerk/lod1.glb",
+          "triangles": 1349
+        },
+        {
+          "level": 2,
+          "path": "garde_body_clerk/lod2.glb",
+          "triangles": 493
+        }
+      ],
+      "sockets": {
+        "hand": [
+          -0.716733,
+          1.397576,
+          -0.063438
+        ],
+        "back": [
+          0,
+          1.275356,
+          -0.004753
+        ],
+        "head": [
+          0,
+          1.521639,
+          0.004947
+        ]
+      },
+      "animations": [
+        {
+          "name": "death",
+          "durationSeconds": 2.4
+        },
+        {
+          "name": "build",
+          "durationSeconds": 5.2
+        },
+        {
+          "name": "idle",
+          "durationSeconds": 2.5
+        },
+        {
+          "name": "gather",
+          "durationSeconds": 2
+        },
+        {
+          "name": "run",
+          "durationSeconds": 0.933333
+        },
+        {
+          "name": "attack1",
+          "durationSeconds": 0.633333
+        },
+        {
+          "name": "attack2",
+          "durationSeconds": 1
+        },
+        {
+          "name": "walk",
+          "durationSeconds": 1.333333
+        }
+      ],
+      "boneCount": 20,
+      "teamMask": "materialName",
+      "baked": {
+        "path": "garde_body_clerk/garde_body_clerk.anim.f32",
+        "width": 80,
+        "height": 480,
+        "fps": 30,
+        "clips": [
+          {
+            "name": "idle",
+            "startRow": 0,
+            "frames": 75,
+            "loop": true,
+            "durationSeconds": 2.5
+          },
+          {
+            "name": "walk",
+            "startRow": 75,
+            "frames": 40,
+            "loop": true,
+            "durationSeconds": 1.333333
+          },
+          {
+            "name": "run",
+            "startRow": 115,
+            "frames": 28,
+            "loop": true,
+            "durationSeconds": 0.933333
+          },
+          {
+            "name": "attack1",
+            "startRow": 143,
+            "frames": 19,
+            "loop": true,
+            "durationSeconds": 0.633333
+          },
+          {
+            "name": "attack2",
+            "startRow": 162,
+            "frames": 30,
+            "loop": true,
+            "durationSeconds": 1
+          },
+          {
+            "name": "gather",
+            "startRow": 192,
+            "frames": 60,
+            "loop": true,
+            "durationSeconds": 2
+          },
+          {
+            "name": "build",
+            "startRow": 252,
+            "frames": 156,
+            "loop": true,
+            "durationSeconds": 5.2
+          },
+          {
+            "name": "death",
+            "startRow": 408,
+            "frames": 72,
+            "loop": false,
+            "durationSeconds": 2.4
+          }
+        ]
+      },
+      "palette": {
+        "jacket": "#5a3f2c",
+        "patchTop": "#7a2d26",
+        "patchLeg": "#46362a",
+        "belt": "#2b2018",
+        "trousers": "#46362a",
+        "boots": "#2b2523",
+        "skin": "#b08a6e"
+      }
+    },
+    {
+      "id": "garde_body_initiate",
+      "kind": "character",
+      "bounds": {
+        "min": [
+          -0.969676,
+          0.002415,
+          -0.162106
+        ],
+        "max": [
+          0.97012,
+          1.827399,
+          0.202271
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "garde_body_initiate/lod0.glb",
+          "triangles": 3598
+        },
+        {
+          "level": 1,
+          "path": "garde_body_initiate/lod1.glb",
+          "triangles": 1348
+        },
+        {
+          "level": 2,
+          "path": "garde_body_initiate/lod2.glb",
+          "triangles": 492
+        }
+      ],
+      "sockets": {
+        "hand": [
+          -0.7389,
+          1.4408,
+          -0.0654
+        ],
+        "back": [
+          0,
+          1.3148,
+          -0.0049
+        ],
+        "head": [
+          0,
+          1.5687,
+          0.0051
+        ]
+      },
+      "animations": [
+        {
+          "name": "death",
+          "durationSeconds": 2.4
+        },
+        {
+          "name": "build",
+          "durationSeconds": 5.2
+        },
+        {
+          "name": "idle",
+          "durationSeconds": 2.5
+        },
+        {
+          "name": "gather",
+          "durationSeconds": 2
+        },
+        {
+          "name": "run",
+          "durationSeconds": 0.933333
+        },
+        {
+          "name": "attack1",
+          "durationSeconds": 0.633333
+        },
+        {
+          "name": "attack2",
+          "durationSeconds": 1
+        },
+        {
+          "name": "walk",
+          "durationSeconds": 1.333333
+        }
+      ],
+      "boneCount": 20,
+      "teamMask": "materialName",
+      "baked": {
+        "path": "dweller_body_human/dweller_body_human.anim.f32",
+        "width": 80,
+        "height": 480,
+        "fps": 30,
+        "clips": [
+          {
+            "name": "idle",
+            "startRow": 0,
+            "frames": 75,
+            "loop": true,
+            "durationSeconds": 2.5
+          },
+          {
+            "name": "walk",
+            "startRow": 75,
+            "frames": 40,
+            "loop": true,
+            "durationSeconds": 1.333333
+          },
+          {
+            "name": "run",
+            "startRow": 115,
+            "frames": 28,
+            "loop": true,
+            "durationSeconds": 0.933333
+          },
+          {
+            "name": "attack1",
+            "startRow": 143,
+            "frames": 19,
+            "loop": true,
+            "durationSeconds": 0.633333
+          },
+          {
+            "name": "attack2",
+            "startRow": 162,
+            "frames": 30,
+            "loop": true,
+            "durationSeconds": 1
+          },
+          {
+            "name": "gather",
+            "startRow": 192,
+            "frames": 60,
+            "loop": true,
+            "durationSeconds": 2
+          },
+          {
+            "name": "build",
+            "startRow": 252,
+            "frames": 156,
+            "loop": true,
+            "durationSeconds": 5.2
+          },
+          {
+            "name": "death",
+            "startRow": 408,
+            "frames": 72,
+            "loop": false,
+            "durationSeconds": 2.4
+          }
+        ]
+      },
+      "palette": {
+        "jacket": "#6f767c",
+        "patchTop": "#7a2d26",
+        "patchLeg": "#4b5158",
+        "belt": "#3a2a22",
+        "trousers": "#4b5158",
+        "boots": "#2b2523",
+        "skin": "#b08a6e"
+      }
+    },
+    {
+      "id": "garde_body_power_armor",
+      "kind": "character",
+      "bounds": {
+        "min": [
+          -1.163611,
+          0.002898,
+          -0.194527
+        ],
+        "max": [
+          1.164145,
+          2.192878,
+          0.242725
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "garde_body_power_armor/lod0.glb",
+          "triangles": 3598
+        },
+        {
+          "level": 1,
+          "path": "garde_body_power_armor/lod1.glb",
+          "triangles": 1348
+        },
+        {
+          "level": 2,
+          "path": "garde_body_power_armor/lod2.glb",
+          "triangles": 493
+        }
+      ],
+      "sockets": {
+        "hand": [
+          -0.88668,
+          1.72896,
+          -0.07848
+        ],
+        "back": [
+          0,
+          1.57776,
+          -0.00588
+        ],
+        "head": [
+          0,
+          1.88244,
+          0.00612
+        ]
+      },
+      "animations": [
+        {
+          "name": "death",
+          "durationSeconds": 2.4
+        },
+        {
+          "name": "build",
+          "durationSeconds": 5.2
+        },
+        {
+          "name": "idle",
+          "durationSeconds": 2.5
+        },
+        {
+          "name": "gather",
+          "durationSeconds": 2
+        },
+        {
+          "name": "run",
+          "durationSeconds": 0.933333
+        },
+        {
+          "name": "attack1",
+          "durationSeconds": 0.633333
+        },
+        {
+          "name": "attack2",
+          "durationSeconds": 1
+        },
+        {
+          "name": "walk",
+          "durationSeconds": 1.333333
+        }
+      ],
+      "boneCount": 20,
+      "teamMask": "materialName",
+      "baked": {
+        "path": "garde_body_power_armor/garde_body_power_armor.anim.f32",
+        "width": 80,
+        "height": 480,
+        "fps": 30,
+        "clips": [
+          {
+            "name": "idle",
+            "startRow": 0,
+            "frames": 75,
+            "loop": true,
+            "durationSeconds": 2.5
+          },
+          {
+            "name": "walk",
+            "startRow": 75,
+            "frames": 40,
+            "loop": true,
+            "durationSeconds": 1.333333
+          },
+          {
+            "name": "run",
+            "startRow": 115,
+            "frames": 28,
+            "loop": true,
+            "durationSeconds": 0.933333
+          },
+          {
+            "name": "attack1",
+            "startRow": 143,
+            "frames": 19,
+            "loop": true,
+            "durationSeconds": 0.633333
+          },
+          {
+            "name": "attack2",
+            "startRow": 162,
+            "frames": 30,
+            "loop": true,
+            "durationSeconds": 1
+          },
+          {
+            "name": "gather",
+            "startRow": 192,
+            "frames": 60,
+            "loop": true,
+            "durationSeconds": 2
+          },
+          {
+            "name": "build",
+            "startRow": 252,
+            "frames": 156,
+            "loop": true,
+            "durationSeconds": 5.2
+          },
+          {
+            "name": "death",
+            "startRow": 408,
+            "frames": 72,
+            "loop": false,
+            "durationSeconds": 2.4
+          }
+        ]
+      },
+      "palette": {
+        "jacket": "#8a9096",
+        "patchTop": "#7a2d26",
+        "patchLeg": "#6b7278",
+        "belt": "#3a2a22",
+        "trousers": "#6b7278",
+        "boots": "#4b5158",
+        "skin": "#8a9096"
+      }
+    },
+    {
+      "id": "garde_body_power_armor_heavy",
+      "kind": "character",
+      "bounds": {
+        "min": [
+          -1.221792,
+          0.003043,
+          -0.204254
+        ],
+        "max": [
+          1.222352,
+          2.302522,
+          0.254861
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "garde_body_power_armor_heavy/lod0.glb",
+          "triangles": 3598
+        },
+        {
+          "level": 1,
+          "path": "garde_body_power_armor_heavy/lod1.glb",
+          "triangles": 1348
+        },
+        {
+          "level": 2,
+          "path": "garde_body_power_armor_heavy/lod2.glb",
+          "triangles": 493
+        }
+      ],
+      "sockets": {
+        "hand": [
+          -0.931014,
+          1.815408,
+          -0.082404
+        ],
+        "back": [
+          0,
+          1.656648,
+          -0.006174
+        ],
+        "head": [
+          0,
+          1.976562,
+          0.006426
+        ]
+      },
+      "animations": [
+        {
+          "name": "death",
+          "durationSeconds": 2.4
+        },
+        {
+          "name": "build",
+          "durationSeconds": 5.2
+        },
+        {
+          "name": "idle",
+          "durationSeconds": 2.5
+        },
+        {
+          "name": "gather",
+          "durationSeconds": 2
+        },
+        {
+          "name": "run",
+          "durationSeconds": 0.933333
+        },
+        {
+          "name": "attack1",
+          "durationSeconds": 0.633333
+        },
+        {
+          "name": "attack2",
+          "durationSeconds": 1
+        },
+        {
+          "name": "walk",
+          "durationSeconds": 1.333333
+        }
+      ],
+      "boneCount": 20,
+      "teamMask": "materialName",
+      "baked": {
+        "path": "garde_body_power_armor_heavy/garde_body_power_armor_heavy.anim.f32",
+        "width": 80,
+        "height": 480,
+        "fps": 30,
+        "clips": [
+          {
+            "name": "idle",
+            "startRow": 0,
+            "frames": 75,
+            "loop": true,
+            "durationSeconds": 2.5
+          },
+          {
+            "name": "walk",
+            "startRow": 75,
+            "frames": 40,
+            "loop": true,
+            "durationSeconds": 1.333333
+          },
+          {
+            "name": "run",
+            "startRow": 115,
+            "frames": 28,
+            "loop": true,
+            "durationSeconds": 0.933333
+          },
+          {
+            "name": "attack1",
+            "startRow": 143,
+            "frames": 19,
+            "loop": true,
+            "durationSeconds": 0.633333
+          },
+          {
+            "name": "attack2",
+            "startRow": 162,
+            "frames": 30,
+            "loop": true,
+            "durationSeconds": 1
+          },
+          {
+            "name": "gather",
+            "startRow": 192,
+            "frames": 60,
+            "loop": true,
+            "durationSeconds": 2
+          },
+          {
+            "name": "build",
+            "startRow": 252,
+            "frames": 156,
+            "loop": true,
+            "durationSeconds": 5.2
+          },
+          {
+            "name": "death",
+            "startRow": 408,
+            "frames": 72,
+            "loop": false,
+            "durationSeconds": 2.4
+          }
+        ]
+      },
+      "palette": {
+        "jacket": "#7c838a",
+        "patchTop": "#7a2d26",
+        "patchLeg": "#5d646a",
+        "belt": "#3a2a22",
+        "trousers": "#5d646a",
+        "boots": "#3f444a",
+        "skin": "#7c838a"
+      }
+    },
+    {
+      "id": "garde_body_vertibird",
+      "kind": "rigid-unit",
+      "bounds": {
+        "min": [
+          -6.1,
+          2,
+          -7.1
+        ],
+        "max": [
+          6.1,
+          6,
+          4.85
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "garde_body_vertibird/lod0.glb",
+          "triangles": 376
+        },
+        {
+          "level": 1,
+          "path": "garde_body_vertibird/lod1.glb",
+          "triangles": 328
+        },
+        {
+          "level": 2,
+          "path": "garde_body_vertibird/lod2.glb",
+          "triangles": 220
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMaterials": [
+        "team_trim"
+      ],
+      "teamMask": "materialName",
+      "rigid": true,
+      "hover": 2
+    },
+    {
+      "id": "garde_building_archive",
+      "kind": "building",
+      "bounds": {
+        "min": [
+          -8.5,
+          0,
+          -9.5
+        ],
+        "max": [
+          8.5,
+          15.9,
+          10
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "garde_building_archive/lod0.glb",
+          "triangles": 634
+        },
+        {
+          "level": 1,
+          "path": "garde_building_archive/lod1.glb",
+          "triangles": 586
+        },
+        {
+          "level": 2,
+          "path": "garde_building_archive/lod2.glb",
+          "triangles": 218
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "footprint": {
+        "w": 17,
+        "h": 19
+      },
+      "teamMaterials": [
+        "team_trim"
+      ]
+    },
+    {
+      "id": "garde_building_barracks",
+      "kind": "building",
+      "bounds": {
+        "min": [
+          -7.5,
+          0,
+          -7.45
+        ],
+        "max": [
+          7.5,
+          5.45,
+          7.45
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "garde_building_barracks/lod0.glb",
+          "triangles": 358
+        },
+        {
+          "level": 1,
+          "path": "garde_building_barracks/lod1.glb",
+          "triangles": 274
+        },
+        {
+          "level": 2,
+          "path": "garde_building_barracks/lod2.glb",
+          "triangles": 150
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "footprint": {
+        "w": 15,
+        "h": 15
+      },
+      "teamMaterials": [
+        "team_trim"
+      ]
+    },
+    {
+      "id": "garde_building_bastion",
+      "kind": "building",
+      "bounds": {
+        "min": [
+          -10.7,
+          0,
+          -10.7
+        ],
+        "max": [
+          10.7,
+          17.200001,
+          10.7
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "garde_building_bastion/lod0.glb",
+          "triangles": 834
+        },
+        {
+          "level": 1,
+          "path": "garde_building_bastion/lod1.glb",
+          "triangles": 550
+        },
+        {
+          "level": 2,
+          "path": "garde_building_bastion/lod2.glb",
+          "triangles": 294
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "footprint": {
+        "w": 21,
+        "h": 21
+      },
+      "teamMaterials": [
+        "team_trim"
+      ]
+    },
+    {
+      "id": "garde_building_forge",
+      "kind": "building",
+      "bounds": {
+        "min": [
+          -10.5,
+          0,
+          -9.5
+        ],
+        "max": [
+          10.5,
+          11,
+          9.4
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "garde_building_forge/lod0.glb",
+          "triangles": 430
+        },
+        {
+          "level": 1,
+          "path": "garde_building_forge/lod1.glb",
+          "triangles": 346
+        },
+        {
+          "level": 2,
+          "path": "garde_building_forge/lod2.glb",
+          "triangles": 198
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "footprint": {
+        "w": 21,
+        "h": 19
+      },
+      "teamMaterials": [
+        "team_trim"
+      ]
+    },
+    {
+      "id": "garde_building_helipad",
+      "kind": "building",
+      "bounds": {
+        "min": [
+          -10.4,
+          0,
+          -10.4
+        ],
+        "max": [
+          10.4,
+          8.1,
+          10.4
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "garde_building_helipad/lod0.glb",
+          "triangles": 512
+        },
+        {
+          "level": 1,
+          "path": "garde_building_helipad/lod1.glb",
+          "triangles": 468
+        },
+        {
+          "level": 2,
+          "path": "garde_building_helipad/lod2.glb",
+          "triangles": 232
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "footprint": {
+        "w": 21,
+        "h": 21
+      },
+      "teamMaterials": [
+        "team_trim"
+      ]
+    },
+    {
+      "id": "garde_building_outpost",
+      "kind": "building",
+      "bounds": {
+        "min": [
+          -0.47,
+          0,
+          -0.47
+        ],
+        "max": [
+          0.47,
+          2.98,
+          0.47
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "garde_building_outpost/lod0.glb",
+          "triangles": 96
+        },
+        {
+          "level": 1,
+          "path": "garde_building_outpost/lod1.glb",
+          "triangles": 84
+        },
+        {
+          "level": 2,
+          "path": "garde_building_outpost/lod2.glb",
+          "triangles": 60
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "footprint": {
+        "w": 1,
+        "h": 1
+      },
+      "teamMaterials": [
+        "team_trim"
+      ]
+    },
+    {
+      "id": "garde_building_turret_laser",
+      "kind": "building",
+      "bounds": {
+        "min": [
+          -1.55,
+          0,
+          -1.55
+        ],
+        "max": [
+          1.55,
+          2.5,
+          1.55
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "garde_building_turret_laser/lod0.glb",
+          "triangles": 336
+        },
+        {
+          "level": 1,
+          "path": "garde_building_turret_laser/lod1.glb",
+          "triangles": 256
+        },
+        {
+          "level": 2,
+          "path": "garde_building_turret_laser/lod2.glb",
+          "triangles": 116
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "footprint": {
+        "w": 3,
+        "h": 3
+      },
+      "teamMaterials": [
+        "team_trim"
+      ]
+    },
+    {
+      "id": "garde_weapon_laser_carbine",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.0475,
+          -0.103479,
+          -0.52
+        ],
+        "max": [
+          0.0475,
+          0.11,
+          0.85
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "garde_weapon_laser_carbine/lod0.glb",
+          "triangles": 224
+        },
+        {
+          "level": 1,
+          "path": "garde_weapon_laser_carbine/lod1.glb",
+          "triangles": 116
+        },
+        {
+          "level": 2,
+          "path": "garde_weapon_laser_carbine/lod2.glb",
+          "triangles": 60
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none"
+    },
+    {
+      "id": "garde_weapon_laser_pistol",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.026,
+          -0.104341,
+          -0.1
+        ],
+        "max": [
+          0.026,
+          0.06,
+          0.34
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "garde_weapon_laser_pistol/lod0.glb",
+          "triangles": 84
+        },
+        {
+          "level": 1,
+          "path": "garde_weapon_laser_pistol/lod1.glb",
+          "triangles": 72
+        },
+        {
+          "level": 2,
+          "path": "garde_weapon_laser_pistol/lod2.glb",
+          "triangles": 48
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none"
+    },
+    {
+      "id": "garde_weapon_multitool",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.045,
+          -0.03,
+          -0.22
+        ],
+        "max": [
+          0.045,
+          0.06,
+          0.26
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "garde_weapon_multitool/lod0.glb",
+          "triangles": 60
+        },
+        {
+          "level": 1,
+          "path": "garde_weapon_multitool/lod1.glb",
+          "triangles": 60
+        },
+        {
+          "level": 2,
+          "path": "garde_weapon_multitool/lod2.glb",
+          "triangles": 48
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none"
+    },
+    {
+      "id": "garde_weapon_plasma_caster",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.115,
+          -0.144175,
+          -0.625
+        ],
+        "max": [
+          0.115,
+          0.23,
+          1
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "garde_weapon_plasma_caster/lod0.glb",
+          "triangles": 284
+        },
+        {
+          "level": 1,
+          "path": "garde_weapon_plasma_caster/lod1.glb",
+          "triangles": 272
+        },
+        {
+          "level": 2,
+          "path": "garde_weapon_plasma_caster/lod2.glb",
+          "triangles": 108
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none"
+    },
+    {
+      "id": "garde_weapon_vertibird_gun",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.26,
+          -0.35,
+          -0.7
+        ],
+        "max": [
+          0.26,
+          0.15,
+          1.24
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "garde_weapon_vertibird_gun/lod0.glb",
+          "triangles": 220
+        },
+        {
+          "level": 1,
+          "path": "garde_weapon_vertibird_gun/lod1.glb",
+          "triangles": 220
+        },
+        {
+          "level": 2,
+          "path": "garde_weapon_vertibird_gun/lod2.glb",
+          "triangles": 88
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none"
+    },
+    {
       "id": "grass_patch_01",
       "kind": "prop",
       "bounds": {

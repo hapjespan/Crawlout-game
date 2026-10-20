@@ -24,6 +24,7 @@ const raiders = loadRobotsConfig(join(repo, 'assets/src/raiders.json'));
 const dwellerGear = loadRobotsConfig(join(repo, 'assets/src/dwellers-gear.json'));
 const sites = loadRobotsConfig(join(repo, 'assets/src/sites.json'));
 const survival = loadRobotsConfig(join(repo, 'assets/src/survival.json'));
+const garde = loadRobotsConfig(join(repo, 'assets/src/garde.json'));
 
 type Shape = Exclude<VariantPart, HousePart>;
 const allVariants = [
@@ -36,6 +37,9 @@ const allVariants = [
   ...Object.entries(dwellerGear.attachments),
   ...Object.entries(sites.buildings),
   ...Object.entries(survival.units),
+  ...Object.entries(garde.units),
+  ...Object.entries(garde.buildings),
+  ...Object.entries(garde.attachments),
 ];
 
 /** Triangles whose geometric normal opposes the normals stored on their vertices. */

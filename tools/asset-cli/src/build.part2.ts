@@ -222,6 +222,7 @@ export async function buildAssets(options: BuildOptions): Promise<BuildResult> {
     options.dwellersGearPath ?? join(srcDir, 'dwellers-gear.json'),
     options.sitesPath ?? join(srcDir, 'sites.json'),
     options.survivalPath ?? join(srcDir, 'survival.json'),
+    options.gardePath ?? join(srcDir, 'garde.json'),
   ].filter((path) => splitJsonExists(path));
   const robots: RobotsResult = { reports: [], entries: [], outputs: new Map() };
   for (const robotsSource of robotConfigs) {
