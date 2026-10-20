@@ -1,5 +1,5 @@
 {
-  "_comment": "Data 0.33.0 (Survival co-op; voorstel, ter bevestiging door de architect; docs/survival-coop.md). Alle waarden startwaarde, niet gemeten: de sim-ronde meet en stelt bij. Tijdlijn: golf 1 op 120 s (opbouwen), daarna elke 115 s; golf 15 start op 1730 s (28,8 min) en de Behemoth leeft tot ongeveer 32 tot 35 min. Aantallen in `spawns` gelden voor 1 speler; `scaling` schaalt ze.",
+  "_comment": "Data 0.33.0 (Survival co-op; voorstel, ter bevestiging door de architect; docs/survival-coop.md). Alle waarden startwaarde, niet gemeten: de sim-ronde meet en stelt bij. Tijdlijn: golf 1 op 120 s (opbouwen), daarna elke 115 s; golf 15 start op 1730 s (28,8 min) en de Behemoth leeft tot ongeveer 32 tot 35 min. Aantallen in `spawns` gelden voor 1 speler; `scaling` schaalt ze. `spreadM` (de spreiding van de spawnpositie langs een rand) is NIET hashneutraal: elke wijziging verschuift de spawnposities via sim.rng en dus de survival-fixtures (s17); na een wijziging opnieuw opnemen.",
   "players": {
     "min": 1,
     "max": 4

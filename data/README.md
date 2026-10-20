@@ -103,6 +103,10 @@ Elk `site` in `buildOrder` en `richBuilds` is `hq`, `claim` (eigen claimpunt het
 
 `clearanceM` (minstens 1 m): vrije begaanbare grond rond elke footprint, ook van nodes en claimpunten. `depotClearanceM` (minstens `clearanceM`): gang rond een afleverpunt (hq, werkplaats). `buildRangeM` en `claimBuildRangeM`: een nieuwe footprint moet een cel raken die binnen deze afstand ligt van een eigen gebouw (of van een claimpost voor `claimBuildRangeM`), geteld in stappen over begaanbaar terrein (rots, klif en water stoppen het); 0 = geen territoriumregel. Verwante globale velden in `sim.json`: `exclusiveRadiusM` (een scrap-node binnen deze afstand van een gehouden claimpunt is exclusief van de eigenaar; minstens `claimRadiusM`), `heroClaimS` en `contestFlipS` (een held claimt een vrij punt door er `heroClaimS` te staan; een claim zonder toren gaat na `contestFlipS` naar een vijand die er staat zonder de houder), `autoGatherRadiusM`.
 
+## Survival, `zoneScrap` en `baseDefense`
+
+Zie `survival/README.md` (waves, `spreadM` niet hashneutraal, `zoneScrap`, `baseDefense` aan in skirmish).
+
 ## Visuals
 
 `loadouts/*.json` `visuals.meshSlots` koppelt een slot (`body`, `weapon`, `tool`, `armor`, `gear_back`, `gear_head`) aan een manifest-id uit `assets/dist/manifest.json`. Een id zonder asset wordt door render stil overgeslagen. Procedurele wapens, gereedschap en pantser: `assets/src/raiders.json` en `assets/src/dwellers-gear.json` (zie `tools/asset-cli/README.md`).
