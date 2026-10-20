@@ -178,6 +178,7 @@ export function slaveRaid(
 ): void {
   const ps = ctx.ps;
   const sr = plan.slaveRaids;
+  if (sr === null) return; // data 0.38.0: no slave raids (the Garde)
   const tick = ctx.frame;
   if (ps.aiRaidOut[p] === 1) {
     if (tick < ps.aiRaidAt[p]! && t.slavers.length > 0) return;
@@ -239,6 +240,7 @@ export function harass(
 ): void {
   const w = ctx.world;
   const hr = plan.harass;
+  if (hr === null) return; // data 0.38.0: no harass (the Garde)
   if (ctx.frame < hr.fromTicks || t.buggies.length === 0) return;
   const hurt = (id: number): boolean => {
     const i = w.resolve(id);

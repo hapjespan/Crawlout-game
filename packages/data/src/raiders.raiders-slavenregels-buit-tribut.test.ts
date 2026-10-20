@@ -184,10 +184,10 @@ describe('Raiders: AI-script', () => {
     const plan = ai.raidPlan!;
     expect(plan).not.toBeNull();
     for (const m of plan.fighterMix) expect(loadoutIds.has(m.loadoutId)).toBe(true);
-    expect(loadoutIds.has(plan.harass.loadoutId)).toBe(true);
-    expect(loadoutIds.has(plan.slaveRaids.slaverLoadoutId)).toBe(true);
-    expect(data.loadouts[plan.harass.loadoutId]!.key).toBe('buggy');
-    expect(data.loadouts[plan.slaveRaids.slaverLoadoutId]!.key).toBe('slaver');
+    expect(loadoutIds.has(plan.harass!.loadoutId)).toBe(true);
+    expect(loadoutIds.has(plan.slaveRaids!.slaverLoadoutId)).toBe(true);
+    expect(data.loadouts[plan.harass!.loadoutId]!.key).toBe('buggy');
+    expect(data.loadouts[plan.slaveRaids!.slaverLoadoutId]!.key).toBe('slaver');
     // geen robots en geen training: de Raiders hebben ze niet. Data 0.23.0 (sim 0.18.0, gemeten): wel een reserve voor
     // het onderzoek
     expect(ai.robots).toBeNull();
@@ -216,12 +216,12 @@ describe('Raiders: AI-script', () => {
     expect(firstResearch).toBe('staalplaten');
     const garage = data.buildings.find((b) => b.key === 'autosloperij')!.id;
     const garageAt = ai.buildOrder.find((o) => o.buildingId === garage)!.atTick;
-    expect(garageAt).toBeLessThanOrEqual(ai.raidPlan!.harass.fromTicks);
+    expect(garageAt).toBeLessThanOrEqual(ai.raidPlan!.harass!.fromTicks);
     // data 0.27.0 (gemeten, voorstel): eerst de kampen overnemen (vanaf minuut 1), dan de slavenroof (minuut 6, na de
     // eerste golf: een vroege roof zonder de kampen langs de weg ving tot 578 slaven in 66 potjes en won 80 procent);
     // dominantie-push na de eerste golf
     expect(ai.creeps!.fromTicks).toBeLessThan(ai.attackTimersTicks[0]!);
-    expect(ai.raidPlan!.slaveRaids.fromTicks).toBeGreaterThan(ai.creeps!.fromTicks);
+    expect(ai.raidPlan!.slaveRaids!.fromTicks).toBeGreaterThan(ai.creeps!.fromTicks);
     expect(ai.raidPlan!.dominancePush.fromTicks).toBeGreaterThan(ai.attackTimersTicks[0]!);
     // data 0.24.0 (sim 0.19.0, gemeten): dominantie is de route, het kamp bij de claimpunten komt ruim voor de push
     expect(ai.raidPlan!.dominancePush.fromTicks).toBeLessThan(ai.pushFromTicks);

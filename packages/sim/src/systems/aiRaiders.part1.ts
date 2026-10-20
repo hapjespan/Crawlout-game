@@ -30,6 +30,7 @@ import { type WorkReach, guardGroups, isOwnKooi } from './slaves.js';
 import { applyCommand, canPlaceType } from './commands.js';
 import { idiv, imod } from '../math/int.js';
 import { hasTechs } from '../effects.js';
+import { produceWorkers } from './aiWorkers.js';
 
 // System 2 (AI part) for a script with a raid plan (ai/raiders-basic.json, data 0.21.0; sim 0.18.0): the scripted
 // Raider. No cheats, the same commands and fog of war as the Dweller AI (systems/ai.ts, whose helpers it uses), and
@@ -85,6 +86,8 @@ export interface Tally {
   readonly idleBuildings: number[];
   readonly depots: number[];
   buildersPlanned: number;
+  /** Free scavengers in production (data 0.38.0). */
+  scavsPlanned: number;
   producingSlavers: number;
   producingBuggies: number;
   site: number;
@@ -136,12 +139,17 @@ export function tally(
     idleBuildings: [],
     depots: [],
     buildersPlanned: 0,
+    scavsPlanned: 0,
     producingSlavers: 0,
     producingBuggies: 0,
     site: -1,
     housingSite: false,
   };
   const load = scratch.nodeLoad;
+  const slaverType = plan.slaveRaids?.slaverTypeId ?? -1;
+  const buggyType = plan.harass?.typeId ?? -1;
+  // data 0.38.0 (sim 0.32.0): a faction without slaves (raidPlan workers) works with free builders and scavengers
+  const freeWorkers = plan.workers !== null;
   for (let i = 0; i < w.highWater; i++) {
     if (w.alive[i] !== 1) continue;
     if (w.has(i, C.resource)) {
@@ -155,8 +163,14 @@ export function tally(
         if (bt !== undefined && (bt.provides & DEPOT_MASK) !== 0) t.depots.push(i);
         if (w.job[i] === 0 && w.research[i] === 0 && w.hp[i]! > 0) t.idleBuildings.push(i);
         if (w.jobKind[i] === JOB_PRODUCE && w.job[i] !== 0) {
-          if (w.job[i] === plan.slaveRaids.slaverTypeId) t.producingSlavers++;
-          else if (w.job[i] === plan.harass.typeId) t.producingBuggies++;
+          if (w.job[i] === slaverType) t.producingSlavers++;
+          else if (w.job[i] === buggyType) t.producingBuggies++;
+          else if (freeWorkers) {
+            // data 0.38.0 (the Garde): free workers in production count as planned
+            const role = ctx.unitType(w.job[i]!)?.role;
+            if (role === ROLE_BUILDER) t.buildersPlanned++;
+            else if (role === ROLE_SCAVENGER) t.scavsPlanned++;
+          }
         }
       } else if (w.bstate[i] === BSTATE_SITE) {
         if (t.site < 0) t.site = i;
@@ -168,7 +182,11 @@ export function tally(
     const st = w.slaveState[i]!;
     const ord = w.orderType(i);
     const id = w.idOf(i);
-    if (st === SLAVE_SLAVE) {
+    const freeWorker =
+      freeWorkers &&
+      st === SLAVE_NONE &&
+      (w.role[i] === ROLE_BUILDER || w.role[i] === ROLE_SCAVENGER);
+    if (st === SLAVE_SLAVE || freeWorker) {
       if (ord === ORDER_CRAFT) {
         if (ctx.unitType(w.ordX[w.currentOrder(i)]!)?.role === ROLE_BUILDER) t.buildersPlanned++;
         continue;
@@ -187,7 +205,7 @@ export function tally(
     if (ctx.unitType(w.typeId[i]!)?.capture != null) {
       t.slavers.push(id);
       if (idle) t.idleSlavers.push(id);
-    } else if (w.typeId[i] === plan.harass.typeId) {
+    } else if (w.typeId[i] === buggyType) {
       t.buggies.push(id);
       if (idle) t.idleBuggies.push(id);
     } else {
@@ -346,14 +364,19 @@ export function produce(
   plan: SimRaidPlan,
   t: Tally,
   reserve: number,
+  builders: number,
 ): void {
   const w = ctx.world;
   const ps = ctx.ps;
   const tick = ctx.frame;
   const cycle = mixCycle(plan);
+  // data 0.38.0 (the Garde): free workers first, each from a building that makes them
+  const used: number[] = [];
+  if (plan.workers !== null && !produceWorkers(ctx, p, plan.workers, builders, t, used)) return;
   let slavers = t.slavers.length + t.producingSlavers;
   let buggies = t.buggies.length + t.producingBuggies;
-  const used: number[] = [];
+  const sr = plan.slaveRaids;
+  const hr = plan.harass;
   // three passes in priority order: Slavers, buggies, the fighter mix; a pick that waits for scrap keeps it for itself
   for (let pass = 0; pass < 3; pass++) {
     for (const b of t.idleBuildings) {
@@ -366,19 +389,22 @@ export function produce(
       let pick = 0;
       let step = -1;
       if (pass === 0) {
-        if (
-          tick >= plan.slaveRaids.fromTicks &&
-          slavers < plan.slaveRaids.slavers &&
-          can(plan.slaveRaids.slaverTypeId)
-        )
-          pick = plan.slaveRaids.slaverTypeId;
+        if (sr !== null && tick >= sr.fromTicks && slavers < sr.slavers && can(sr.slaverTypeId))
+          pick = sr.slaverTypeId;
       } else if (pass === 1) {
-        if (tick >= plan.harass.fromTicks && buggies < plan.harass.max && can(plan.harass.typeId))
-          pick = plan.harass.typeId;
+        if (hr !== null && tick >= hr.fromTicks && buggies < hr.max && can(hr.typeId))
+          pick = hr.typeId;
       } else {
         for (let k = 0; k < cycle.length; k++) {
           const typeId = cycle[imod(ps.aiMix[p]! + k, cycle.length)]!;
-          if (!can(typeId)) continue;
+          // data 0.38.0 (raidPlan mixInOrder): the next fighter with its techs is made where it is made; until then
+          // this building waits (a cheap Initiate does not take the beds a frame needs)
+          if (plan.mixInOrder && !hasTechs(ctx, p, ctx.unitType(typeId)?.prereqTech ?? []))
+            continue;
+          if (!can(typeId)) {
+            if (plan.mixInOrder) break;
+            continue;
+          }
           pick = typeId;
           step = k;
           break;
@@ -397,8 +423,8 @@ export function produce(
         })
       )
         continue;
-      if (pick === plan.slaveRaids.slaverTypeId) slavers++;
-      else if (pick === plan.harass.typeId) buggies++;
+      if (pick === sr?.slaverTypeId) slavers++;
+      else if (pick === hr?.typeId) buggies++;
       if (step >= 0) ps.aiMix[p] = imod(ps.aiMix[p]! + step + 1, cycle.length);
     }
   }

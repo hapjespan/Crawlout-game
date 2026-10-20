@@ -5,6 +5,7 @@ import { PROVIDES_TURRET, statIndex } from './fromData.js';
 import { clampI, idiv } from './math/int.js';
 import type { SimContext } from './systems/common.js';
 import { projectEffectSum } from './systems/project.js';
+import { veteranPermille } from './systems/garde.js';
 import { anyTech, hasTech } from './techBits.js';
 
 // Effecten van onderzochte techs (tech.json effects[]) en van de perks van een levende held (perks.json effects[]) op
@@ -36,6 +37,8 @@ export const STAT_RESEARCH_COST = statIndex('researchCostPct');
 
 /** Eerste SPECIAL-stat (S); P E C I A L volgen in die volgorde. */
 export const STAT_SPECIAL = statIndex('S');
+/** Data 0.38.0 (sim 0.32.0): incoming damage, only in ability and aura effects (Auras.taken). */
+export const STAT_DAMAGE_TAKEN = statIndex('damageTakenPct');
 export const SPECIAL_S = 0;
 export const SPECIAL_P = 1;
 export const SPECIAL_E = 2;
@@ -236,8 +239,13 @@ export function applyStats(ctx: SimContext, i: number, grow: boolean): void {
   } else if (w.has(i, C.unit | C.health)) {
     const t = ctx.unitType(typeId);
     if (t === undefined) return;
-    w.maxHp[i] = Math.max(1, scalePermille(t.maxHp, effectSum(ctx, p, STAT_HP, typeId, false)));
-    w.damage[i] = scalePermille(t.damage, effectSum(ctx, p, STAT_DAMAGE, typeId, false));
+    // veteran rank (sim 0.32.0, systems/garde.ts): on top of the effects, like a tech
+    const hpSum = effectSum(ctx, p, STAT_HP, typeId, false) + veteranPermille(ctx, i, STAT_HP);
+    w.maxHp[i] = Math.max(1, scalePermille(t.maxHp, hpSum));
+    w.damage[i] = scalePermille(
+      t.damage,
+      effectSum(ctx, p, STAT_DAMAGE, typeId, false) + veteranPermille(ctx, i, STAT_DAMAGE),
+    );
     w.speed[i] = clampI(
       scalePermille(t.speed, effectSum(ctx, p, STAT_SPEED, typeId, false)),
       0,

@@ -1,4 +1,5 @@
 import { MAX_PLAYERS } from '@crawlout/protocol';
+import { validateGarde } from './config.validate.garde.js';
 import { NEUTRAL_FACTION } from './config.types.js';
 import type { SimConfig, SimEnv } from './config.env.js';
 import {
@@ -34,6 +35,7 @@ export function validateEnv(env: SimEnv): void {
   validateTechs(config, unitIds, buildingIds);
   validateHeroes(config, unitIds, buildingIds);
   validateAiScripts(config, unitIds, buildingIds);
+  validateGarde(config, unitIds, buildingIds); // sim 0.32.0
   validateSurvival(env, unitIds);
   for (const p of players) {
     req(

@@ -170,6 +170,22 @@
       "landingsplatform"
     ],
     "specialChannel": "tech",
+    "veterancy": {
+      "loadouts": ["initiate_wacht"],
+      "ranks": [
+        { "id": "ridder", "kills": 3, "hpPct": 25, "damagePct": 15 },
+        { "id": "paladin", "kills": 8, "hpPct": 50, "damagePct": 30 }
+      ],
+      "_comment": "startwaarde, geen balans (data 0.38.0, voorstel sim-core voor de architect; docs/garde.md punt 1): een Initiate-wacht die vijandelijke units doodt wordt na 3 kills Ridder (+25 procent hp, +15 procent schade) en na 8 kills Paladin (+50, +30). Perks op bewoners volgen in fase 2."
+    },
+    "fusionCores": {
+      "building": "smederij",
+      "scrapCost": 40,
+      "craftS": 20,
+      "maxStock": 2,
+      "prereqTech": ["fusiekernen"],
+      "_comment": "startwaarde, geen balans (data 0.38.0, voorstel sim-core voor de architect; docs/garde.md punt 2): na fusiekernen smeedt de Garde met een voltooide smederij om de 20 s een fusion core voor 40 scrap (betaald bij de start) tot er 2 op voorraad zijn; elk frame (krachtpantser, plasmaridder: fusionCores 1) neemt er een bij de start van zijn productie, Cancel geeft hem terug. Repareren van cores volgt met de Klerk (punt 3)."
+    },
     "_comment": "startwaarde, geen balans. De Garde (Spelfundament 4, docs/garde.md): traag, zwaar, alles duurder. 320 scrap (Dwellers 300) voor 3 zoekers, 1 bouwer en 2 wachten. housingGrowthPerMin 1 (Dwellers 2): matige groei, Initiates worden geworven in de kazerne. VANGNET hergebruikt tenten_instroom: de Bastion heeft provides tent, zolang er minder dan 3 vechters zijn komt er elke 90 s een gratis Initiate-wacht (max 6). bodyTypes human en vehicle: krachtpantsers en Vertibirds zijn vehicle (3 en 4 pop, geen bedden). specialChannel tech: SPECIAL via onderzoek in het Archief (holobanden, servo_kalibratie). Natuurlijke winroute: vernietiging. Driehoek: zie docs/garde.md."
   }
 ]

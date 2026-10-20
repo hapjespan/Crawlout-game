@@ -51,6 +51,29 @@ export interface SimFaction {
   readonly tribute: SimTribute | null;
   /** Chems of the SPECIAL channel chems (data 0.21.0), by faction-local index; empty for another channel. */
   readonly chems: readonly SimChem[];
+  /** Veteran promotion (data 0.38.0, sim 0.32.0, the Garde; proposal); null without. */
+  readonly veterancy: SimVeterancy | null;
+  /** Fusion cores (data 0.38.0, sim 0.32.0, the Garde; proposal); null without. */
+  readonly fusionCores: SimFusionCores | null;
+}
+
+/** Veteran promotion (systems/garde.ts): unit types that gain ranks, ranks by ascending kills (permille bonuses). */
+export interface SimVeterancy {
+  readonly typeIds: readonly number[];
+  readonly ranks: readonly {
+    readonly kills: number;
+    readonly hpPermille: number;
+    readonly damagePermille: number;
+  }[];
+}
+
+/** Fusion cores (systems/garde.ts): crafted one at a time in a completed building of buildingTypeId. */
+export interface SimFusionCores {
+  readonly buildingTypeId: number;
+  readonly scrapCost: number;
+  readonly craftTicks: number;
+  readonly maxStock: number;
+  readonly prereqTech: readonly number[];
 }
 
 /** Safety net actions (SimFaction.safetyNet.action). */
@@ -255,12 +278,14 @@ export interface SimAiScript {
 export interface SimRaidPlan {
   /** Fighters from the tents, cyclic by weight (a type without its techs is skipped). */
   readonly fighterMix: readonly { readonly typeId: number; readonly weight: number }[];
+  /** Null = no harass (data 0.38.0). */
   readonly harass: {
     readonly typeId: number;
     readonly fromTicks: number;
     readonly max: number;
     readonly retreatHpPermille: number;
-  };
+  } | null;
+  /** Null = no slave raids (data 0.38.0). */
   readonly slaveRaids: {
     readonly slaverTypeId: number;
     readonly fromTicks: number;
@@ -268,7 +293,14 @@ export interface SimRaidPlan {
     readonly escort: number;
     readonly maxRaidTicks: number;
     readonly retryTicks: number;
-  };
+  } | null;
   readonly garrisonMinFighters: number;
   readonly dominancePush: { readonly fromTicks: number; readonly minArmy: number };
+  /**
+   * Data 0.38.0 (sim 0.32.0, proposal): a faction without slaves produces its free workers (the cheapest builder and
+   * scavenger loadout of a building): `builders` builders and scavengers up to `scavengers`; null = slave workers.
+   */
+  readonly workers: { readonly scavengers: number } | null;
+  /** Data 0.38.0 (proposal): produce the fighter mix strictly in its cycle order (a building waits for its turn). */
+  readonly mixInOrder: boolean;
 }

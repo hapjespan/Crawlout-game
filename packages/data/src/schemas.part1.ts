@@ -67,6 +67,9 @@ export const EffectStat = z.enum([
   'L',
   // Data 0.16.0: kosten van onderzoek in procenten (negatief = goedkoper); target 'alle'. Achteraan, zodat de indices gelijk blijven.
   'researchCostPct',
+  // Data 0.38.0 (sim 0.32.0, proposal for the architect): incoming damage in percent (negative = less damage taken);
+  // only in ability and hero-aura effects (the armour aura of the Paladin-Commander). Appended, so the indices stay.
+  'damageTakenPct',
 ]);
 
 export const Effect = z
@@ -245,6 +248,44 @@ export const BuildingPlacement = z
     path: ['maxFromHqM'],
   });
 
+// Data 0.38.0 (sim 0.32.0, proposal for the architect; docs/garde.md item 1): veteran promotion. A unit of one of
+// `loadouts` that kills enemy units climbs the ranks (ascending kills); a rank adds hpPct and damagePct to its unit.
+export const VeteranRank = z
+  .object({
+    id,
+    kills: z.number().int().positive(),
+    hpPct: z.number(),
+    damagePct: z.number(),
+    _comment: comment,
+  })
+  .strict();
+export const Veterancy = z
+  .object({ loadouts: z.array(id).min(1), ranks: z.array(VeteranRank).min(1), _comment: comment })
+  .strict()
+  .superRefine((v, ctx) => {
+    for (let i = 1; i < v.ranks.length; i++)
+      if (v.ranks[i]!.kills <= v.ranks[i - 1]!.kills)
+        ctx.addIssue({
+          code: 'custom',
+          path: ['ranks', i, 'kills'],
+          message: 'ranks need ascending kills',
+        });
+  });
+
+// Data 0.38.0 (sim 0.32.0, proposal for the architect; docs/garde.md item 2): fusion cores. A completed `building` of the
+// faction crafts one core at a time (scrapCost paid at the start, craftS long, with prereqTech) while the stock is
+// under maxStock; a loadout with fusionCores takes that many cores from the stock when its production starts.
+export const FusionCores = z
+  .object({
+    building: id,
+    scrapCost: nonneg,
+    craftS: z.number().positive(),
+    maxStock: z.number().int().positive().max(255),
+    prereqTech: z.array(id),
+    _comment: comment,
+  })
+  .strict();
+
 export const Faction = z
   .object({
     id,
@@ -263,6 +304,9 @@ export const Faction = z
     plunder: PlunderRules.optional(),
     tribute: Tribute.optional(),
     chems: z.array(Chem).optional(), // verplicht bij specialChannel chems en anders niet toegestaan
+    // Data 0.38.0 (de Garde; proposal for the architect), both optional
+    veterancy: Veterancy.optional(),
+    fusionCores: FusionCores.optional(),
     _comment: comment,
   })
   .strict()

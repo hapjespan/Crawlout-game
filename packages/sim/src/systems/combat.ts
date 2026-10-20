@@ -6,6 +6,7 @@ import { distToRect2, face, isEnemy, withinReach } from './common.js';
 import { grantXp, heroIndex } from './hero.js';
 import { robotRate } from './robots.js';
 import { SPECIAL_L, heroOf, heroSpecial, scalePermille } from '../effects.js';
+import { veteranKill } from './garde.js';
 import { captureOf, captureTick } from './slaves.js';
 import { creepAwake } from './creeps.js';
 import { noteBaseHit } from './defense.js';
@@ -55,12 +56,22 @@ export function combatSystem(ctx: SimContext): void {
         dmg = scalePermille(dmg, ctx.config.special.critDamagePermille);
     }
     const before = w.hp[t]!;
-    w.hp[t] = before - idiv(dmg * mult, 1000);
+    let hit = idiv(dmg * mult, 1000);
+    // the armour aura of the Paladin-Commander (sim 0.32.0, damageTakenPct): only where an aura sets it
+    if (ctx.auras.any && ctx.auras.taken[t] !== 0) hit = scalePermille(hit, ctx.auras.taken[t]!);
+    w.hp[t] = before - hit;
     // who razes or kills it plunders it (data 0.21.0, systems/plunder.ts)
     w.lastHit[t] = w.owner[i]! + 1;
     noteBaseHit(ctx, i, t); // base defence (sim 0.29.0)
-    if (before > 0 && w.hp[t]! <= 0 && (w.mask[t]! & C.unit) !== 0 && w.owner[i]! < ctx.playerCount)
+    if (
+      before > 0 &&
+      w.hp[t]! <= 0 &&
+      (w.mask[t]! & C.unit) !== 0 &&
+      w.owner[i]! < ctx.playerCount
+    ) {
       killXp(ctx, i, t, hero);
+      veteranKill(ctx, i); // sim 0.32.0: veteran promotion of the Garde
+    }
     w.cooldown[i] = rate >= 1000 ? w.cooldownMax[i]! : idiv(w.cooldownMax[i]! * 1000, rate);
     face(w, i, w.x[t]!, w.y[t]!);
     const sid = w.idOf(i);

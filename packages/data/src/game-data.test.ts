@@ -43,9 +43,10 @@ describe('data/ valideert', () => {
     expect(data.buildings).toHaveLength(18 + 7 + 2 * 4);
     expect(data.buildings.filter((b) => b.factionId === NEUTRAL_FACTION_ID)).toHaveLength(8);
     expect(data.tech).toHaveLength(32);
-    expect(data.heroes).toHaveLength(2);
+    // data 0.38.0: the Paladin-Commander of the Garde (id zwaardridder, after warlord)
+    expect(data.heroes).toHaveLength(3);
     expect(data.perks).toHaveLength(13);
-    expect(data.aiScripts).toHaveLength(3);
+    expect(data.aiScripts).toHaveLength(4); // data 0.38.0: garde-basic
     expect(data.dataVersion).toMatch(/^\d+\.\d+\.\d+$/);
   });
 

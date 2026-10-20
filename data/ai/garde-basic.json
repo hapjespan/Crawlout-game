@@ -1,0 +1,70 @@
+{
+  "id": "garde-basic",
+  "faction": "garde",
+  "_comment": "startwaarde, geen balans (data 0.38.0, voorstel sim-core voor content en de architect; docs/garde.md punt 7). De Garde speelt de Raider-AI (raidPlan, systems/aiRaiders.ts) zonder slaven: de Initiates worden geworven in de kazerne (Produce), de frames gesmeed in de smederij. Opening: kazerne (bedden en werving), archief, smederij; fusiekernen eerst (frames, cores en de laserturret), dan zware pantserplaten, holobanden voor de held en de plasmakern. Laserturrets alleen als richBuild (boven 400 scrap), zodat het sparen ervoor de frames niet tegenhoudt. Leger: frames en Initiate-wachten, plasmaridders na de plasmakern. Natuurlijke winroute vernietiging: golven vanaf minuut 6, een push op het hoofdgebouw vanaf minuut 18 met 9 vechters.",
+  "buildOrder": [
+    { "atS": 5, "buildingId": "kazerne" },
+    { "atS": 60, "buildingId": "archief" },
+    { "atS": 150, "buildingId": "smederij" },
+    { "atS": 900, "buildingId": "smederij" }
+  ],
+  "attackTimersS": [360, 540],
+  "militiaPct": 0,
+  "militiaPctMax": 0,
+  "militiaPctPerMin": 0,
+  "threatMilitiaPct": 0,
+  "builders": 2,
+  "housingBuildingId": "kazerne",
+  "housingFreeBeds": 3,
+  "research": ["fusiekernen", "pantserplaten_zwaar", "holobanden", "plasmakern"],
+  "researchFromS": 120,
+  "armyLoadouts": ["krachtpantser", "initiate_wacht"],
+  "richScrap": 400,
+  "richBuilds": [
+    { "buildingId": "geschutstoren", "site": "front" },
+    { "buildingId": "geschutstoren", "site": "claim" }
+  ],
+  "scavengersPerNode": 4,
+  "claimFromS": 60,
+  "claimSafeRadiusM": 35,
+  "claimFarFromS": 1000,
+  "heroClaimRadiusM": 20,
+  "defendRadiusM": 36,
+  "rallySite": "front",
+  "rallyRadiusM": 8,
+  "waveIntervalS": 150,
+  "waveJitterS": 60,
+  "waveMinArmy": 5,
+  "waveArmyGrowth": 2,
+  "waveMaxWaitS": 90,
+  "pushMinArmy": 9,
+  "pushFromS": 1080,
+  "raidPlan": {
+    "fighterMix": [
+      { "loadoutId": "krachtpantser", "weight": 3 },
+      { "loadoutId": "initiate_wacht", "weight": 2 },
+      { "loadoutId": "plasmaridder", "weight": 2 }
+    ],
+    "garrison": { "minFighters": 0 },
+    "dominancePush": { "fromS": 1200, "minArmy": 8 },
+    "workers": { "scavengers": 12 },
+    "mixInOrder": true
+  },
+  "reserve": { "fromS": 600, "minArmy": 10, "robotsFirstFromS": 99999 },
+  "creeps": {
+    "fromS": 420,
+    "maxPathM": 140,
+    "tiers": [
+      { "tier": 1, "minArmy": 5 },
+      { "tier": 2, "minArmy": 14 }
+    ]
+  },
+  "project": {
+    "restoreMinArmy": 0,
+    "builders": 1,
+    "sabotageKinds": 2,
+    "sabotageMinArmy": 5,
+    "rallyAtParts": false
+  },
+  "allInWithoutNodes": true
+}

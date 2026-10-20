@@ -1,4 +1,5 @@
 import { MAX_ENTITIES, MAX_PLAYERS } from '@crawlout/protocol';
+import { takeCores } from './garde.js';
 import type { CommandPayload } from '@crawlout/protocol';
 import type { SimRepair, SimUnitType } from '../config.js';
 import { BSTATE_DONE, C, JOB_NONE, JOB_PRODUCE, NO_ENTITY, ORDER_NONE } from '../ecs/world.js';
@@ -136,6 +137,8 @@ export function applyProduce(ctx: SimContext, p: number, pl: CommandPayload<'Pro
   const t = producible(ctx, p, b, pl.loadoutId);
   if (t === undefined || !hasTechs(ctx, p, t.prereqTech) || ctx.ps.scrap[p]! < t.scrapCost)
     return false;
+  // fusion cores (sim 0.32.0, the Garde frames): the stock must hold them
+  if (!takeCores(ctx, p, t.fusionCores, false)) return false;
   // total pop from a fresh census (the single source: Census.totalPop; a command can change it within a tick)
   const census = new Census();
   takeCensus(ctx, census);
@@ -144,6 +147,7 @@ export function applyProduce(ctx: SimContext, p: number, pl: CommandPayload<'Pro
   if (t.bodyType !== BODY_ROBOT && census.pop[p]! + t.popCost > census.popCap(ctx, p)) return false;
   const w = ctx.world;
   ctx.ps.scrap[p] = ctx.ps.scrap[p]! - t.scrapCost;
+  takeCores(ctx, p, t.fusionCores, true);
   w.job[b] = t.typeId;
   w.jobKind[b] = JOB_PRODUCE;
   w.jobWork[b] = 0;

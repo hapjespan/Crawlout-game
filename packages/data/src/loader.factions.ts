@@ -122,6 +122,32 @@ export function convertFactions(ctx: LoadContext): FactionData[] {
                 },
         };
       }),
+      veterancy:
+        f.veterancy === undefined
+          ? null
+          : {
+              loadouts: f.veterancy.loadouts.map((l) =>
+                ref(loadoutIx, 'loadout', `${where} veterancy`, l),
+              ),
+              ranks: f.veterancy.ranks.map((r) => ({
+                key: r.id,
+                kills: r.kills,
+                hpPermille: pctToPermille(r.hpPct),
+                damagePermille: pctToPermille(r.damagePct),
+              })),
+            },
+      fusionCores:
+        f.fusionCores === undefined
+          ? null
+          : {
+              buildingId: ref(buildingIx, 'gebouw', `${where} fusionCores`, f.fusionCores.building),
+              scrapCost: Math.trunc(f.fusionCores.scrapCost),
+              craftTicks: secondsToTicks(f.fusionCores.craftS),
+              maxStock: f.fusionCores.maxStock,
+              prereqTech: f.fusionCores.prereqTech.map((t) =>
+                ref(techIx, 'tech', `${where} fusionCores`, t),
+              ),
+            },
     };
   });
   return factions;

@@ -23,6 +23,7 @@ import type { CreepCamps } from './creeps.js';
 import type { ProjectState } from './project.js';
 import type { SurvivalState } from './survival.part1.js';
 import type { DefenseState } from './defense.js';
+import type { GardeState } from './garde.js';
 import { imod } from '../math/int.js';
 import { ROLES } from '@crawlout/data';
 import { atan2A } from '../math/trig.js';
@@ -229,6 +230,8 @@ export interface SimContext {
   readonly survival: SurvivalState;
   /** Base defence (sim 0.29.0, systems/defense.ts). */
   readonly defense: DefenseState;
+  /** The Garde (sim 0.32.0, systems/garde.ts): veteran ranks and fusion cores. */
+  readonly garde: GardeState;
   unitType(typeId: number): SimUnitType | undefined;
   buildingType(typeId: number): SimBuildingType | undefined;
 }

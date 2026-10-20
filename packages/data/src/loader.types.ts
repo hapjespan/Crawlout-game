@@ -164,13 +164,15 @@ export interface HeroAuraData {
 
 export interface RaidPlanData {
   fighterMix: { loadoutId: number; weight: number }[];
+  /** Null = no harass (data 0.38.0). */
   harass: {
     loadoutId: number;
     fromTicks: number;
     max: number;
     retreatHpPermille: number;
     targets: 'gatherers';
-  };
+  } | null;
+  /** Null = no slave raids (data 0.38.0). */
   slaveRaids: {
     slaverLoadoutId: number;
     fromTicks: number;
@@ -178,7 +180,11 @@ export interface RaidPlanData {
     escort: number;
     maxRaidTicks: number;
     retryTicks: number;
-  };
+  } | null;
+  /** Data 0.38.0 (proposal): free workers by Produce up to `scavengers`; null = the workers are slaves. */
+  workers: { scavengers: number } | null;
+  /** Data 0.38.0 (proposal): the fighter mix strictly in cycle order; false when absent. */
+  mixInOrder: boolean;
   garrison: { minFighters: number };
   dominancePush: { fromTicks: number; minArmy: number };
 }
@@ -218,6 +224,25 @@ export interface FactionData {
   tribute: TributeData | null;
   /** Chems van het SPECIAL-kanaal chems (data 0.21.0); leeg bij een ander kanaal. */
   chems: ChemData[];
+  /** Veteran promotion (data 0.38.0, the Garde; proposal); null without. */
+  veterancy: VeterancyData | null;
+  /** Fusion cores (data 0.38.0, the Garde; proposal); null without. */
+  fusionCores: FusionCoresData | null;
+}
+
+export interface VeterancyData {
+  /** Loadout ids that gain ranks. */
+  loadouts: number[];
+  /** Ascending kills; hp and damage in permille. */
+  ranks: { key: string; kills: number; hpPermille: number; damagePermille: number }[];
+}
+
+export interface FusionCoresData {
+  buildingId: number;
+  scrapCost: number;
+  craftTicks: number;
+  maxStock: number;
+  prereqTech: number[];
 }
 
 export interface LoadoutData {
@@ -259,6 +284,8 @@ export interface LoadoutData {
   sightU: number;
   /** Data 0.26.0 (voorstel, ter bevestiging door de architect): a robot that builds like a builder (canBuild). */
   canBuild: boolean;
+  /** Data 0.38.0 (proposal): fusion cores taken from the stock when the production starts; 0 = none. */
+  fusionCores: number;
 }
 
 export interface RepairData {

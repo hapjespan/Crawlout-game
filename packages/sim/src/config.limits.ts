@@ -30,8 +30,11 @@ export const MAX_PERKS = 32;
 export const MAX_ABILITIES = 4;
 /** SPECIAL heeft zeven letters. */
 export const SPECIAL_COUNT = 7;
-/** Aantal effect-stats (EffectStat in packages/data): hpPct .. researchTimePct, de zeven SPECIAL-letters en researchCostPct. */
-export const EFFECT_STAT_COUNT = 15;
+/**
+ * Aantal effect-stats (EffectStat in packages/data): hpPct .. researchTimePct, de zeven SPECIAL-letters,
+ * researchCostPct en (data 0.38.0) damageTakenPct, dat alleen in ability- en aura-effecten mag (config.validate.garde.ts).
+ */
+export const EFFECT_STAT_COUNT = 16;
 /** Geometrie van de state: getrainde punten per letter staan in een uint8 per speler en letter. */
 export const MAX_TRAINED_POINTS = 255;
 /** Grens voor bouw- en onderzoekstijd in ticks: voortgang telt in duizendsten van een tick (PROGRESS_ONE) in een int32. */

@@ -1,12 +1,27 @@
 import { fnv1aInt } from './math/fnv.js';
 import { AI_SITE_HQ } from './config.faction.js';
 import type { SimConfig } from './config.env.js';
+import type { SimAiScript } from './config.faction.js';
+import type { SimHero } from './config.types.js';
+import { gatedHeroes, gatedScripts } from './config.hash.garde.js';
 import { hashEffects, hashInts } from './config.hash.config.js';
 
-/** Scripted AI. */
+/**
+ * Scripted AI. Sim 0.32.0: the scripts of a gated faction (the Garde, config.hash.garde.ts) are left out here and hashed
+ * by hashGarde only when it plays, so every env without the Garde keeps its hash.
+ */
 export function hashAiScripts(h: number, c: SimConfig): number {
-  h = fnv1aInt(h, c.aiScripts.length);
-  for (const s of c.aiScripts) {
+  const gated = gatedScripts(c);
+  h = fnv1aInt(h, c.aiScripts.length - gated.size);
+  c.aiScripts.forEach((s, k) => {
+    if (!gated.has(k)) h = hashAiScript(h, s);
+  });
+  return h;
+}
+
+/** One script, in fixed field order. */
+export function hashAiScript(h: number, s: SimAiScript): number {
+  {
     h = fnv1aInt(h, s.buildOrder.length);
     for (const o of s.buildOrder) h = hashInts(h, [o.atTick, o.typeId, o.site ?? AI_SITE_HQ]);
     h = hashInts(h, s.attackTimersTicks);
@@ -70,26 +85,23 @@ export function hashAiScripts(h: number, c: SimConfig): number {
     if (rp !== null) {
       h = fnv1aInt(h, rp.fighterMix.length);
       for (const m of rp.fighterMix) h = hashInts(h, [m.typeId, m.weight]);
-      h = hashInts(h, [
-        rp.harass.typeId,
-        rp.harass.fromTicks,
-        rp.harass.max,
-        rp.harass.retreatHpPermille,
-      ]);
+      // data 0.38.0: harass and slave raids may be absent (only a gated script has that, see hashGarde)
+      const hr = rp.harass;
+      h = hashInts(h, hr === null ? [0] : [hr.typeId, hr.fromTicks, hr.max, hr.retreatHpPermille]);
       const sr = rp.slaveRaids;
-      h = hashInts(h, [
-        sr.slaverTypeId,
-        sr.fromTicks,
-        sr.slavers,
-        sr.escort,
-        sr.maxRaidTicks,
-        sr.retryTicks,
-      ]);
+      h = hashInts(
+        h,
+        sr === null
+          ? [0]
+          : [sr.slaverTypeId, sr.fromTicks, sr.slavers, sr.escort, sr.maxRaidTicks, sr.retryTicks],
+      );
       h = hashInts(h, [
         rp.garrisonMinFighters,
         rp.dominancePush.fromTicks,
         rp.dominancePush.minArmy,
       ]);
+      if (rp.workers !== null) h = hashInts(h, [rp.workers.scavengers]);
+      if (rp.mixInOrder) h = hashInts(h, [1]); // data 0.38.0: only when set
     }
     const lb = s.liberate;
     h = hashInts(h, lb === null ? [0] : [1, lb.minFree, lb.units, lb.radius]);
@@ -127,36 +139,10 @@ export function hashProgression(h: number, c: SimConfig): number {
     ]);
     h = hashInts(h, tr.prereqTech);
   }
-  h = fnv1aInt(h, c.heroes.length);
-  for (const hr of c.heroes) {
-    h = hashInts(h, [
-      hr.heroId,
-      hr.typeId,
-      hr.factionId,
-      hr.baseTypeId,
-      hr.xpPerKill,
-      hr.xpPerDiscovery,
-      hr.xpPerAssist,
-      hr.xpAssistRadius,
-    ]);
-    h = hashInts(h, [hr.reviveScrap, hr.reviveTicks, hr.revivePenaltyPermille, hr.maxRevives]);
-    h = hashInts(h, [hr.sight, hr.xpPerCapture]);
-    h = hashInts(h, hr.aura === null ? [0] : [1, hr.aura.radius]);
-    if (hr.aura !== null) {
-      h = fnv1aInt(h, hr.aura.effects.length);
-      for (const e of hr.aura.effects) h = hashInts(h, [e.stat, e.side, e.target, e.delta]);
-    }
-    h = hashInts(h, hr.special);
-    h = hashInts(h, hr.xpThresholds);
-    h = hashInts(h, hr.perkPool);
-    h = hashEffects(h, hr.passives);
-    h = fnv1aInt(h, hr.abilities.length);
-    for (const a of hr.abilities) {
-      h = hashInts(h, [a.cooldownTicks, a.rangeU, a.radiusU, a.durationTicks]);
-      h = fnv1aInt(h, a.effects.length);
-      for (const e of a.effects) h = hashInts(h, [e.stat, e.side, e.target, e.delta]);
-    }
-  }
+  // sim 0.32.0: the heroes of a gated faction only in hashGarde (config.hash.garde.ts)
+  const gatedH = gatedHeroes(c);
+  h = fnv1aInt(h, c.heroes.length - gatedH.size);
+  for (const hr of c.heroes) if (!gatedH.has(hr.heroId)) h = hashHero(h, hr);
   const sp = c.special;
   h = hashInts(h, [
     sp.strengthDamagePermille,
@@ -170,5 +156,37 @@ export function hashProgression(h: number, c: SimConfig): number {
   ]);
   h = fnv1aInt(h, c.damageMatrix.length);
   for (const row of c.damageMatrix) h = hashInts(h, row);
+  return h;
+}
+
+/** One hero, in fixed field order. */
+export function hashHero(h: number, hr: SimHero): number {
+  h = hashInts(h, [
+    hr.heroId,
+    hr.typeId,
+    hr.factionId,
+    hr.baseTypeId,
+    hr.xpPerKill,
+    hr.xpPerDiscovery,
+    hr.xpPerAssist,
+    hr.xpAssistRadius,
+  ]);
+  h = hashInts(h, [hr.reviveScrap, hr.reviveTicks, hr.revivePenaltyPermille, hr.maxRevives]);
+  h = hashInts(h, [hr.sight, hr.xpPerCapture]);
+  h = hashInts(h, hr.aura === null ? [0] : [1, hr.aura.radius]);
+  if (hr.aura !== null) {
+    h = fnv1aInt(h, hr.aura.effects.length);
+    for (const e of hr.aura.effects) h = hashInts(h, [e.stat, e.side, e.target, e.delta]);
+  }
+  h = hashInts(h, hr.special);
+  h = hashInts(h, hr.xpThresholds);
+  h = hashInts(h, hr.perkPool);
+  h = hashEffects(h, hr.passives);
+  h = fnv1aInt(h, hr.abilities.length);
+  for (const a of hr.abilities) {
+    h = hashInts(h, [a.cooldownTicks, a.rangeU, a.radiusU, a.durationTicks]);
+    h = fnv1aInt(h, a.effects.length);
+    for (const e of a.effects) h = hashInts(h, [e.stat, e.side, e.target, e.delta]);
+  }
   return h;
 }

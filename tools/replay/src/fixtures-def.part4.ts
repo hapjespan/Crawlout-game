@@ -4,6 +4,7 @@ import { SitePlanner, settlementPoint, centrePoint, toward } from './bot.js';
 import { createReplaySim } from './run.js';
 import { PROJECT_FIXTURES } from './fixtures-project.js';
 import { SURVIVAL_FIXTURES } from './fixtures-survival.js';
+import { GARDE_FIXTURES } from './fixtures-garde.js';
 import {
   FIXTURES_S4,
   FIXTURES_S6,
@@ -238,4 +239,5 @@ export const FIXTURES: readonly FixtureDef[] = [
   ...FIXTURES_S15,
   ...PROJECT_FIXTURES,
   ...SURVIVAL_FIXTURES,
+  ...GARDE_FIXTURES,
 ];
