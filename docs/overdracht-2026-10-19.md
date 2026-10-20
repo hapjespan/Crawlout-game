@@ -23,3 +23,6 @@ Alles op `sprint-1` (lokaal, nog niet gepusht). Sim 0.30.0, client 0.12.0, ui 0.
 - Architect-review gemerged (fase-0 sectie 24, protocol 0.17.0: `PlayerStatus.survival`); sim 0.31.0 (mark-fix, dataVersion uit envHash, MAX_TECHS 64, STATE_FORMAT 16), Garde-data 0.37.0 (`docs/garde.md`, nog niet speelbaar), client leest `PlayerStatus.survival` (client 0.13.0).
 - `baseDefense.skirmish` aan (branch `defence-skirmish`, data 0.38.0) is TERUGGEDRAAID (0fe2bea): de volledige `raiders-balance` en `match-length` braken (dominantie i.p.v. vernietiging, potje zonder winnaar). Beslissing Martien: skirmish uit laten tot een speeltest, of een eigen balansronde.
 - Open: Bouwproject Raiders 65-73% (buiten band), Garde-sim en -assets, held-keuze.
+- Garde ronde A gemerged (sim 0.32.0, data 0.38.0): veteranen, fusion cores, held `zwaardridder` (Paladin-Commander), AI `garde-basic`, fixture `s18-rustbelt-garde`; placeholders `garde_*` (asset-cli 0.13.0). Suite 1959 groen.
+- Rook (8 potjes): Garde wint 4/4 van Dwellers, verliest 3/4 van Raiders: omgekeerd aan de driehoek. Balansronde nodig.
+- Open Garde: Klerk (repareren, overload), map-power-armor, Vertibird, 6 extra techs, huisvestingsgroei (frames en bedden), HUD voor cores en rang (protocolvoorstel `PlayerStatus.fusionCores`), schema-voorstellen voor de architect.
