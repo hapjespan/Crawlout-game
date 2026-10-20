@@ -1,7 +1,7 @@
 {
   "_comment": "startwaarde, geen balans. Multipliers in procenten (100 = normale schade). Ballistic is zwak tegen zwaar pantser; energy (lasers) schaalt tegen pantser en robots; melee breekt licht; fire is een bonus tegen onbeschermd. Rijen: schadetype, kolommen: pantsertype.",
-  "ballistic": { "none": 100, "light": 100, "medium": 75, "heavy": 50, "robot": 60 },
-  "energy": { "none": 100, "light": 100, "medium": 110, "heavy": 125, "robot": 150 },
-  "melee": { "none": 100, "light": 110, "medium": 80, "heavy": 40, "robot": 30 },
-  "fire": { "none": 125, "light": 120, "medium": 90, "heavy": 60, "robot": 50 }
+  "ballistic": { "none": 100, "light": 100, "medium": 75, "heavy": 25, "robot": 60 },
+  "energy": { "none": 100, "light": 100, "medium": 110, "heavy": 260, "robot": 150 },
+  "melee": { "none": 100, "light": 110, "medium": 80, "heavy": 20, "robot": 30 },
+  "fire": { "none": 125, "light": 120, "medium": 90, "heavy": 32, "robot": 50 }
 }

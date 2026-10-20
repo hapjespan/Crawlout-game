@@ -31,7 +31,7 @@ describe('data/ valideert', () => {
     expect(data.training).toHaveLength(7);
     expect(data.heroes.filter(dwellers)).toHaveLength(1);
     // data 0.24.0: the default script and the one against the Raiders (versus)
-    expect(data.aiScripts.filter(dwellers)).toHaveLength(2);
+    expect(data.aiScripts.filter(dwellers)).toHaveLength(3);
     expect(data.aiScripts.filter(dwellers).filter((a) => a.versusFactionId < 0)).toHaveLength(1);
     // totalen met de Raiders; de sim kent hoogstens 32 techs en 32 perks
     // 25 faction loadouts (data 0.26.0: the bouwrobot) plus the 5 bandits of the creep camps (data 0.25.0; 0.29.0: the
@@ -46,7 +46,7 @@ describe('data/ valideert', () => {
     // data 0.38.0: the Paladin-Commander of the Garde (id zwaardridder, after warlord)
     expect(data.heroes).toHaveLength(3);
     expect(data.perks).toHaveLength(13);
-    expect(data.aiScripts).toHaveLength(4); // data 0.38.0: garde-basic
+    expect(data.aiScripts).toHaveLength(5); // data 0.39.0: dwellers-vs-garde
     expect(data.dataVersion).toMatch(/^\d+\.\d+\.\d+$/);
   });
 
@@ -242,9 +242,9 @@ describe('sim-tuning', () => {
       guard: { standU: 1280, leashU: 3584 },
       baseDefense: {
         survival: true,
-        skirmish: false,
-        radiusU: 10240,
-        calmTicks: 160,
+        skirmish: true,
+        radiusU: 7168,
+        calmTicks: 100,
       },
     });
   });
