@@ -32,7 +32,11 @@ export function readDataDir(dir: string): RawGameData {
     factions: readJson(join(dir, 'factions.json')),
     loadouts: readJsonArrays(join(dir, 'loadouts')),
     buildings: readJsonArrays(join(dir, 'buildings')),
-    tech: readJson(join(dir, 'tech.json')),
+    // tech.json (Dwellers en Raiders) plus de fragmenten in data/tech/ (Garde, data 0.37.0), in die volgorde
+    tech: [
+      ...(readJson(join(dir, 'tech.json')) as unknown[]),
+      ...(existsSync(join(dir, 'tech')) ? readJsonArrays(join(dir, 'tech')) : []),
+    ],
     heroes: readJson(join(dir, 'heroes.json')),
     perks: readJson(join(dir, 'perks.json')),
     training: readJson(join(dir, 'training.json')),
