@@ -168,7 +168,6 @@ function convertSimTuning(simRaw: SimTuning): GameData['sim'] {
       skirmish: simRaw.baseDefense.skirmish,
       radiusU: metersToUnits(simRaw.baseDefense.radiusM),
       calmTicks: secondsToTicks(simRaw.baseDefense.calmS),
-      retargetU: metersToUnits(simRaw.baseDefense.retargetM),
     },
     guard: {
       standU: metersToUnits(simRaw.guard.standM),

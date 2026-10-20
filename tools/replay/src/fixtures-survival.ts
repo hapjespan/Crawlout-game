@@ -13,7 +13,8 @@ import { raidersVsDwellers } from './fixtures-def.part2.js';
 //    wave 2 (12 ghouls) marches in.
 //  - s17-rustbelt-survival-duo: Raiders (slot 0) and Dwellers (slot 1). The Dwellers score lower (one militia against
 //    three plunderaars and a knuppelaar), so wave 1 (scaled to 14) goes for slot 1 from the east edge; the Dwellers
-//    meet it with hero and militia, lose their HQ (frame 4.7k), wave 1 retargets to slot 0 and wave 2 picks slot 0.
+//    meet it with hero and militia, and since the defend stance (sim 0.30.0, data 0.36.0) their armed workers defend
+//    the base too: the HQ holds and wave 2 picks slot 1 again (before: the HQ fell at frame 4.7k, the waves to slot 0).
 
 const END = 5300;
 

@@ -212,15 +212,15 @@ export const GuardTuning = z
     path: ['leashM'],
   });
 
-// Base defence (data/sim.json `baseDefense`, data 0.35.0; voorstel, ter bevestiging door de architect): fighters in an
-// attacked base engage the threat, workers take shelter, everyone resumes after calmS without a threat.
+// Base defence (data/sim.json `baseDefense`, data 0.35.0; voorstel, ter bevestiging door de architect): fighters and armed workers
+// in an attacked base defend it inside the radius (data 0.36.0: no charge, no chase), unarmed units take shelter,
+// everyone resumes after calmS without a threat.
 export const BaseDefenseTuning = z
   .object({
     survival: z.boolean(), // on in the game type Survival (radius: the build zone)
     skirmish: z.boolean(), // on in every other game type (radius: radiusM around the HQ)
     radiusM: z.number().positive(),
     calmS: nonneg, // the alarm ends this long after the last threat in the radius
-    retargetM: nonneg, // defenders get a new AttackMove point once the threat is this far from the old one
     _comment: comment,
   })
   .strict();

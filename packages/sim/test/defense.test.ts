@@ -1,13 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { ROLES } from '@crawlout/data';
-import { C, ORDER_ATTACK_MOVE, ORDER_GATHER, ORDER_MOVE, SLAVE_SLAVE } from '../src/ecs/world.js';
+import { C, ORDER_ATTACK, ORDER_GATHER, ORDER_MOVE, SLAVE_SLAVE } from '../src/ecs/world.js';
 import { createSim, envHash, hqOf } from '../src/index.js';
 import type { Sim } from '../src/index.js';
 import { CONFIG, DATA, bundle, cmd, envOf, testInit } from './helpers.js';
 import { fastWaves, hordeOf, runTo, survivalInit, wave } from './survivalHarness.js';
 
-// Base defence (sim 0.29.0, data 0.35.0; Martien 19 October): an attacked base makes its fighters engage and its
-// workers shelter at the HQ or Kooi; once calm the work resumes. On in Survival, off in skirmish (data toggle).
+// Base defence, the defend stance (sim 0.30.0, data 0.36.0; Martien 20 October): an attacked base makes its fighters
+// and armed workers defend it inside the radius (no charge, no chase), its unarmed units (the Raider slaves) shelter at
+// the HQ or Kooi; once calm the work resumes. On in Survival, off in skirmish (data toggle).
 
 const RAIDERS = DATA.factions.find((f) => f.key === 'raiders')!.id;
 const DWELLERS = DATA.factions.find((f) => f.key === 'dwellers')!.id;
@@ -16,6 +17,15 @@ const BUILDER = ROLES.indexOf('builder');
 const isWorker = (sim: Sim, i: number): boolean =>
   sim.world.role[i] === SCAV || sim.world.role[i] === BUILDER;
 const CALM = CONFIG.baseDefense.calmTicks;
+const MARK_DEFEND = 1;
+const MARK_RETURN = 3;
+
+/** Distance squared from i to the centre of player 0's build zone, and the zone radius. */
+const zoneOf = (sim: Sim) => sim.map.survival!.zones[0]!;
+const fromZone2 = (sim: Sim, i: number): number => {
+  const z = zoneOf(sim);
+  return (sim.world.x[i]! - z.x) ** 2 + (sim.world.y[i]! - z.y) ** 2;
+};
 
 const unitsOf = (sim: Sim, p: number, ok: (i: number) => boolean): number[] => {
   const w = sim.world;
@@ -59,44 +69,90 @@ function attacked(faction: number) {
   return { sim, workers, fighters };
 }
 
+/** Runs until player 0's alarm is on. */
+function toAlarm(sim: Sim): void {
+  for (let f = 0; f < 400 && sim.defense.alarm[0] === 0; f++) runTo(sim, sim.frame + 1);
+  expect(sim.defense.alarm[0]).toBeGreaterThan(0);
+}
+
 describe('base defence', () => {
   for (const [name, faction] of [
-    ['Dwellers', DWELLERS],
+    ['Dwellers (armed workers)', DWELLERS],
     ['Raiders (slaves)', RAIDERS],
   ] as const) {
-    it(`${name}: fighters engage, workers shelter, then the work resumes`, () => {
+    it(`${name}: armed units defend inside the radius, unarmed shelter, then the work resumes`, () => {
       const { sim, workers, fighters } = attacked(faction);
       const w = sim.world;
-      expect(workers.length).toBeGreaterThan(0);
+      const armed = workers.filter((i) => w.damage[i]! > 0);
+      const unarmed = workers.filter((i) => w.damage[i]! === 0);
       expect(fighters.length).toBeGreaterThan(0);
-      if (faction === RAIDERS)
-        expect(workers.some((i) => w.slaveState[i] === SLAVE_SLAVE)).toBe(true);
-      // the ghoul walks in and hits something of the base
-      let alarmAt = -1;
-      for (let f = 0; f < 400 && alarmAt < 0; f++) {
-        runTo(sim, sim.frame + 1);
-        if (sim.defense.alarm[0]! > 0) alarmAt = sim.frame;
-      }
-      expect(alarmAt).toBeGreaterThan(0);
+      if (faction === RAIDERS) {
+        expect(unarmed.length).toBeGreaterThan(0);
+        expect(unarmed.every((i) => w.slaveState[i] === SLAVE_SLAVE)).toBe(true);
+      } else expect(armed.length).toBeGreaterThan(0);
+      toAlarm(sim);
       runTo(sim, sim.frame + 1);
       const busy = (i: number) => w.orderType(i);
-      expect(
-        fighters.filter((i) => busy(i) === ORDER_ATTACK_MOVE || w.resolve(w.target[i]!) >= 0)
-          .length,
-      ).toBeGreaterThan(0);
-      for (const i of workers)
+      // armed workers defend (an Attack in front of their Gather), never shelter; the unarmed shelter
+      for (const i of armed)
+        if (w.hp[i]! > 0) expect([ORDER_ATTACK, ORDER_GATHER]).toContain(busy(i));
+      if (armed.length > 0)
+        expect(armed.filter((i) => busy(i) === ORDER_ATTACK).length).toBeGreaterThan(0);
+      for (const i of unarmed)
         if (w.hp[i]! > 0) expect([ORDER_MOVE, ORDER_GATHER]).toContain(busy(i));
-      expect(workers.filter((i) => busy(i) === ORDER_MOVE).length).toBeGreaterThan(0);
-      // the fighters kill it; calm after CALM ticks, everyone back at work
-      for (let f = 0; f < 1200 && hordeOf(sim).length > 0; f++) runTo(sim, sim.frame + 1);
+      if (unarmed.length > 0)
+        expect(unarmed.filter((i) => busy(i) === ORDER_MOVE).length).toBeGreaterThan(0);
+      expect(
+        fighters.filter((i) => busy(i) === ORDER_ATTACK || w.resolve(w.target[i]!) >= 0).length,
+      ).toBeGreaterThan(0);
+      // the defenders kill it without leaving the zone; calm after CALM ticks, everyone back at work
+      const r = zoneOf(sim).radius + 4 * 256;
+      for (let f = 0; f < 1200 && hordeOf(sim).length > 0; f++) {
+        runTo(sim, sim.frame + 1);
+        for (let i = 0; i < w.highWater; i++)
+          if (sim.defense.mark[i] === MARK_DEFEND)
+            expect(fromZone2(sim, i)).toBeLessThanOrEqual(r * r);
+      }
       expect(hordeOf(sim)).toHaveLength(0);
       runTo(sim, sim.frame + CALM + 4);
       expect(sim.defense.alarm[0]).toBe(0);
       for (const i of workers)
         if (w.alive[i] === 1 && w.hp[i]! > 0) expect(busy(i)).toBe(ORDER_GATHER);
-      for (const i of fighters) if (w.alive[i] === 1) expect(busy(i)).not.toBe(ORDER_ATTACK_MOVE);
+      for (const i of [...workers, ...fighters])
+        if (w.alive[i] === 1) expect(busy(i)).not.toBe(ORDER_ATTACK);
     });
   }
+
+  it('does not chase a threat out of the radius: the defenders walk back to their post', () => {
+    const { sim } = attacked(DWELLERS);
+    const w = sim.world;
+    toAlarm(sim);
+    runTo(sim, sim.frame + 2);
+    const posts = new Map<number, [number, number]>();
+    for (let i = 0; i < w.highWater; i++)
+      if (sim.defense.mark[i] === MARK_DEFEND) {
+        const o = w.currentOrder(i);
+        posts.set(i, [w.ordX[o]!, w.ordY[o]!]);
+      }
+    expect(posts.size).toBeGreaterThan(0);
+    // the threat steps out: twice the radius east of the zone centre
+    const z = zoneOf(sim);
+    for (const [k, i] of hordeOf(sim).entries()) {
+      w.x[i] = z.x + 2 * z.radius + k * 256;
+      w.y[i] = z.y;
+    }
+    runTo(sim, sim.frame + 1);
+    expect(sim.defense.alarm[0]).toBeGreaterThan(0);
+    for (const [i, [x, y]] of posts) {
+      if (w.alive[i] !== 1 || w.hp[i]! <= 0) continue;
+      expect(w.orderType(i)).not.toBe(ORDER_ATTACK);
+      if (sim.defense.mark[i] === MARK_RETURN) {
+        expect(w.orderType(i)).toBe(ORDER_MOVE);
+        expect([w.ordX[w.currentOrder(i)], w.ordY[w.currentOrder(i)]]).toEqual([x, y]);
+      }
+    }
+    expect([...posts.keys()].some((i) => sim.defense.mark[i] === MARK_RETURN)).toBe(true);
+  });
 
   it('leaves a unit on a player command (Move) alone', () => {
     const { sim, workers } = attacked(DWELLERS);
