@@ -28,6 +28,7 @@ import {
   writeSnapshotHeader,
   type HeroStatus,
   type PlayerStatus,
+  type SurvivalStatus,
 } from './index.js';
 
 describe('besluiten sprint 1', () => {
@@ -354,5 +355,33 @@ describe('fog of war (protocol 0.11.0, fase-0 sectie 23 besluit 1)', () => {
     expect(fogAt(mask, 1, 1)).toBe(FOG.visible);
     expect(fogAt(mask, -1, 0)).toBe(FOG.unexplored);
     expect(fogAt(mask, 3, 0)).toBe(FOG.unexplored);
+  });
+
+  it('PlayerStatus.survival (protocol 0.17.0, sectie 24): de stand van een survival-run, null buiten Survival', () => {
+    const survival: SurvivalStatus = {
+      wavesStarted: 8,
+      waves: 15,
+      next: { wave: 9, atFrame: 20_800, rank: 'normal' },
+      active: [{ target: 0, alive: 3 }],
+      result: null,
+    };
+    const status: PlayerStatus = {
+      playerId: 0,
+      scrap: 0,
+      settlers: 0,
+      pop: 0,
+      popCap: 0,
+      beds: 0,
+      hero: null,
+      queue: [],
+      dominance: { pointsHeld: 0, pointsRequired: 2, ticksHeld: 0, ticksRequired: 9600, leader: null },
+      robotPop: 0,
+      trained: [0, 0, 0, 0, 0, 0, 0],
+      claimPoints: [],
+      survival,
+    };
+    expect(status.survival?.next?.rank).toBe('normal');
+    const ended: SurvivalStatus = { ...survival, result: { outcome: 'overrun', frame: 21_000 } };
+    expect(ended.result?.outcome).toBe('overrun');
   });
 });

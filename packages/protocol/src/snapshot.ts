@@ -37,3 +37,10 @@ export type {
   DominanceLeader,
 } from './snapshot.part1.js';
 export type { PlayerStatus, QueueItem } from './snapshot.part2.js';
+export type {
+  SurvivalRank,
+  SurvivalOutcome,
+  SurvivalWaveStatus,
+  SurvivalActiveWave,
+  SurvivalStatus,
+} from './snapshot.part3.js';

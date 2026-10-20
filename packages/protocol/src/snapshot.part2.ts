@@ -9,6 +9,7 @@ import type {
   ProjectStatus,
   SlaveGroupStatus,
 } from './snapshot.part1.js';
+import type { SurvivalStatus } from './snapshot.part3.js';
 
 export interface PlayerStatus {
   playerId: number;
@@ -59,19 +60,19 @@ export interface PlayerStatus {
    * aanbouw, de held die het punt claimt door erin te staan, of de overname van een punt zonder paal. pointId is het
    * entity-id van het claimpunt in de snapshot. Oplopend op pointId. De sim levert hem altijd (Sim.status,
    * claims.ts claimPointStatus) en de client leest hem (render: de ring; minimap). Verplicht sinds protocol 0.13.0
-   * (voorstel, ter bevestiging door de architect; sectie 22 besluit 3): alle PlayerStatus-literals dragen hem.
+   * (bevestigd door de architect in fase-0 sectie 24 besluit 1): alle PlayerStatus-literals dragen hem.
    */
   claimPoints: ClaimPointStatus[];
   /**
-   * Chem-dosis per eenheid (protocol 0.13.0; voorstel van hud, ter bevestiging door de architect, fase-0 sectie 23
-   * besluit 8): elke eigen eenheid met een chem in een fase (active, crash of cooldown), zodat de HUD de dosis en de
+   * Chem-dosis per eenheid (protocol 0.13.0; voorstel van hud, bevestigd door de architect in fase-0 sectie 24
+   * besluit 1): elke eigen eenheid met een chem in een fase (active, crash of cooldown), zodat de HUD de dosis en de
    * cooldown van een Chem-dealer uit state leest en niet uit de snapshot benadert. Oplopend op unitId. De sim houdt
    * ze al bij (w.chem, w.chemPhase, w.chemTicks), dus geen state en geen hashwijziging; Sim.chems. Optioneel tot de
    * HUD hem leest (de sim levert hem altijd); leeg zonder doses.
    */
   chems?: ChemStatus[];
   /**
-   * Creep-kampen (protocol 0.14.0; voorstel van sim-core, ter bevestiging door de architect): elk kamp van de map met
+   * Creep-kampen (protocol 0.14.0; voorstel van sim-core, bevestigd in fase-0 sectie 24 besluit 1): elk kamp van de map met
    * zijn stand, zodat de HUD een overgenomen kamp in de kleur van zijn eigenaar toont (minimap) en de Raiders bij een
    * bandiet "Overnemen" zien. Op kampindex (de volgorde van MapDef.creepCamps). Kaartkennis zoals claimPoints (een
    * kamp is een map-feature; wie het houdt is openbaar, of het nu vecht niet). De sim levert hem altijd (Sim.camps,
@@ -80,8 +81,8 @@ export interface PlayerStatus {
    */
   camps?: CreepCampStatus[];
   /**
-   * De slavengroepen van de speler met hun bewakers (protocol 0.15.0, data 0.29.0; voorstel van sim-core, ter
-   * bevestiging door de architect): per groep de slaven, de bewakers en wat de bewaakregel eist, zodat de HUD
+   * De slavengroepen van de speler met hun bewakers (protocol 0.15.0, data 0.29.0; voorstel van sim-core, bevestigd in
+   * fase-0 sectie 24 besluit 1): per groep de slaven, de bewakers en wat de bewaakregel eist, zodat de HUD
    * "Bewakers 1/2 nodig" en de opstandwaarschuwing uit state toont in plaats van het uit de snapshot te benaderen (de
    * bewaakmodus staat niet in de snapshot). Oplopend op kind (kooi voor node), dan targetId. Eigen kennis; leeg voor een
    * factie zonder slaven. De sim levert hem altijd (Sim.status, slaves.ts guardStatus; leest alleen state, geen
@@ -89,7 +90,7 @@ export interface PlayerStatus {
    */
   slaveGroups?: SlaveGroupStatus[];
   /**
-   * Winroute C, Bouwproject (protocol 0.16.0, sim 0.25.0, data 0.31.0; voorstel, ter bevestiging door de architect):
+   * Winroute C, Bouwproject (protocol 0.16.0, sim 0.25.0, data 0.31.0; bevestigd in fase-0 sectie 24 besluit 1):
    * de delen van het winkelcentrum met hun stand en de countdown van elke speler, zodat de HUD het projectpaneel, de
    * markers op de minimap en de meldingen (deel hersteld, deel verloren, countdown loopt, sabotage) uit state toont.
    * Kaartkennis zoals claimPoints: de ruines staan op de map en wie een deel houdt is openbaar. null zonder Bouwproject
@@ -97,6 +98,13 @@ export interface PlayerStatus {
    * hashwijziging). Optioneel tot alle PlayerStatus-literals hem dragen.
    */
   project?: ProjectStatus | null;
+  /**
+   * Survival co-op (protocol 0.17.0; besluit fase-0 sectie 24 besluit 3): de stand van de run voor het golfpaneel en
+   * het eindscherm; vervangt de eigen worker-entry van de client (apps/client/src/game/simWorker.ts). null buiten het
+   * speltype Survival. De sim levert hem altijd (Sim.status; leest alleen state, geen hashwijziging). Optioneel tot
+   * alle PlayerStatus-literals hem dragen.
+   */
+  survival?: SurvivalStatus | null;
 }
 
 /**
