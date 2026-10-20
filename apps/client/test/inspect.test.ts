@@ -15,6 +15,11 @@ describe('inspect (enemy selection)', () => {
     expect(info.detail).toMatch(/^Wapen: Pipe pistol \(ballistisch\) · Pantser: /);
   });
 
+  it('names the Garde power armour in Dutch (data 0.40.0)', () => {
+    const info = inspect(data, unitTypeId(loadout('krachtpantser').id));
+    expect(info.detail).toMatch(/· Pantser: krachtpantser$/);
+  });
+
   it('names robots and the hero', () => {
     expect(inspect(data, unitTypeId(loadout('beveiligingsrobot').id)).name).toBe(
       'Beveiligingsrobot',

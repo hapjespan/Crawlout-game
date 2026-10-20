@@ -101,8 +101,7 @@ describe('Garde: fusion cores (item 2)', () => {
     expect(sim.playerStatus(0).scrap).toBe(1000 - fc.scrapCost * 2); // the second one is in work
     run(sim, fc.craftTicks * 3);
     expect(sim.garde.cores[0]).toBe(fc.maxStock);
-    // a frame needs beds: give the player a kazerne
-    sim.spawnBuilding(typeByKey('kazerne'), 0, 60, 30, true);
+    // sim 0.34.0: a frame needs no bed (the player has none here)
     const produce = cmd(sim.frame, 0, 'Produce', {
       buildingId: smederij,
       loadoutId: loadoutId('krachtpantser'),

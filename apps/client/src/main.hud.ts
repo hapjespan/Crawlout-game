@@ -275,6 +275,7 @@ export function wireHud(ctx: ClientContext): void {
         scrapCost: b.scrapCost,
         footprint: b.footprint,
         affordable: (ctx.status?.scrap ?? 0) >= b.scrapCost,
+        ...(b.beds > 0 ? { beds: b.beds } : {}),
       })),
     beginPlacement: (option) => {
       ctx.placing = option;

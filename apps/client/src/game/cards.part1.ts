@@ -33,6 +33,7 @@ export const BUILDING_NAMES: Record<string, string> = {
   // Garde (data 0.37.0)
   bastion: 'Bastion',
   kazerne: 'Kazerne',
+  slaapzaal: 'Slaapzaal', // data 0.41.0
   smederij: 'Smederij',
   archief: 'Archief',
   wachtpost: 'Wachtpost',

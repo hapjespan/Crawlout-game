@@ -48,7 +48,17 @@ describe('Garde: data laadt', () => {
       'vertibird',
     ]);
     expect(data.tech.filter((t) => t.factionId === faction.id).length).toBe(10);
-    expect(data.buildings.filter((b) => b.factionId === faction.id).length).toBe(7);
+    expect(data.buildings.filter((b) => b.factionId === faction.id).length).toBe(8); // data 0.41.0: slaapzaal
+  });
+
+  it('data 0.41.0: de Slaapzaal is het goedkope woongebouw van de Garde (6 bedden, huisvesting, geen prereq)', () => {
+    const zaal = data.buildings.find((b) => b.key === 'slaapzaal')!;
+    const woning = data.buildings.find((b) => b.key === 'woning')!;
+    expect(zaal.factionId).toBe(faction.id);
+    expect(zaal.beds).toBe(6);
+    expect(zaal.provides).toContain(PROVIDES.indexOf('huisvesting'));
+    expect(zaal.prereqTech).toEqual([]);
+    expect(Math.abs(zaal.scrapCost - woning.scrapCost)).toBeLessThanOrEqual(15);
   });
 
   it('de Dwellers en Raiders blijven geladen', () => {

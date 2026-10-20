@@ -15,6 +15,7 @@ import {
 const data = loadGameDataFromDir(fileURLToPath(new URL('../../../data', import.meta.url)));
 const dwellers = data.factions.find((f) => f.key === 'dwellers')!;
 const raiders = data.factions.find((f) => f.key === 'raiders')!;
+const garde = data.factions.find((f) => f.key === 'garde')!;
 const status = (over: Partial<PlayerStatus> = {}): PlayerStatus => ({
   playerId: 0,
   scrap: 100,
@@ -35,6 +36,8 @@ describe('no free beds hint', () => {
   it('names the bed building of the faction', () => {
     expect(bedHintText(data, dwellers.id)).toBe('Geen vrije bedden: bouw een woning');
     expect(bedHintText(data, raiders.id)).toBe('Geen vrije bedden: bouw een tent');
+    // data 0.41.0: the Slaapzaal is the cheapest Garde bed building (the kazerne recruits)
+    expect(bedHintText(data, garde.id)).toBe('Geen vrije bedden: bouw een slaapzaal');
   });
 
   it('only when the beds are what caps the population, not popCapMax', () => {

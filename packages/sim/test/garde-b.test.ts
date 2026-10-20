@@ -188,7 +188,7 @@ describe('Garde: the Vertibird (item 5)', () => {
     w.hp[v] = 0;
     run(sim, 2);
     expect(sim.garde.cargoN[v]).toBe(0);
-    expect(sim.playerStatus(0).settlers).toBe(settlers0 - 5);
+    expect(sim.playerStatus(0).settlers).toBe(settlers0 - 4); // sim 0.34.0: the Vertibird itself is no settler
   });
 });
 

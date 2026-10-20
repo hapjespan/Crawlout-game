@@ -8,7 +8,7 @@ import {
   SLAVE_NONE,
   SLAVE_SLAVE,
 } from '../ecs/world.js';
-import { BODY_ROBOT, PROVIDES_HQ } from '../fromData.js';
+import { BODY_HUMAN, BODY_ROBOT, PROVIDES_HQ } from '../fromData.js';
 import type { SimContext } from './common.js';
 import { cargoCensus } from './garde.transport.js';
 
@@ -20,6 +20,9 @@ const ROLE_MILITIA = ROLES.indexOf('militia');
  * robot) tellen niet voor de bedden, maar bewoners plus robots plus de robots in productie blijven binnen popCapMax.
  * Raiders (sim 0.18.0): slaves and captives count as settlers and for popCapMax, but sleep in their cage, not in a bed
  * (slavePop); a fighter in production in a tent (Produce of a human loadout) reserves a bed (reservedBedPop).
+ * Sim 0.34.0 (data 0.41.0, Martien: "de garde heeft geen opties om bedden te maken"): only bodyType human sleeps in a
+ * bed (data/factions.json). A frame, vehicle or beast (krachtpantser, vertibird, buggy, dog) counts for popCapMax only,
+ * like a robot (noBedPop), but it is no robot (no technician) and a militia one still counts as a fighter.
  */
 export class Census {
   /** Levende bewoners (geen held, geen robots); slaves and captives included. */
@@ -31,6 +34,8 @@ export class Census {
   readonly robotPop = new Int32Array(MAX_PLAYERS);
   /** Pop van alles in productie (betaald, nog niet af): gereserveerd binnen popCapMax. */
   readonly reservedPop = new Int32Array(MAX_PLAYERS);
+  /** Pop of the living units that are neither human nor robot (frames, vehicles, beasts): no bed (sim 0.34.0). */
+  readonly noBedPop = new Int32Array(MAX_PLAYERS);
   /** Pop in production that will need a bed (a human loadout from a tent; data 0.21.0). */
   readonly reservedBedPop = new Int32Array(MAX_PLAYERS);
   /** Pop of the slaves and captives: they need no bed (they live in the cage). */
@@ -52,13 +57,14 @@ export class Census {
    */
   popCap(ctx: SimContext, p: number): number {
     const b = this.beds[p]! + this.slavePop[p]! - this.reservedBedPop[p]!;
-    const max = ctx.config.popCapMax - this.robotPop[p]! - this.reservedPop[p]!;
+    const max =
+      ctx.config.popCapMax - this.robotPop[p]! - this.noBedPop[p]! - this.reservedPop[p]!;
     return b < max ? b : max;
   }
 
   /** Totale pop: bewoners, robots en alles in productie (binnen popCapMax). */
   totalPop(p: number): number {
-    return this.pop[p]! + this.robotPop[p]! + this.reservedPop[p]!;
+    return this.pop[p]! + this.robotPop[p]! + this.noBedPop[p]! + this.reservedPop[p]!;
   }
 }
 
@@ -78,6 +84,7 @@ export function takeCensus(ctx: SimContext, c: Census): void {
   c.robots.fill(0);
   c.robotPop.fill(0);
   c.reservedPop.fill(0);
+  c.noBedPop.fill(0);
   c.reservedBedPop.fill(0);
   c.slavePop.fill(0);
   c.fighters.fill(0);
@@ -96,6 +103,11 @@ export function takeCensus(ctx: SimContext, c: Census): void {
       if (t !== undefined && t.bodyType === BODY_ROBOT) {
         c.robots[o] = c.robots[o]! + 1;
         c.robotPop[o] = c.robotPop[o]! + cost;
+      } else if (t !== undefined && t.bodyType !== BODY_HUMAN) {
+        // sim 0.34.0: a frame, vehicle or beast needs no bed; a militia one is a fighter
+        c.noBedPop[o] = c.noBedPop[o]! + cost;
+        if (w.slaveState[i] === SLAVE_NONE && w.role[i] === ROLE_MILITIA)
+          c.fighters[o] = c.fighters[o]! + 1;
       } else {
         c.settlers[o] = c.settlers[o]! + 1;
         c.pop[o] = c.pop[o]! + cost;
@@ -118,7 +130,7 @@ export function takeCensus(ctx: SimContext, c: Census): void {
         const t = ctx.unitType(w.job[i]!); // job = loadoutId + 1 = unitTypeId(loadoutId)
         const cost = t?.popCost ?? 0;
         c.reservedPop[o] = c.reservedPop[o]! + cost;
-        if (t !== undefined && t.bodyType !== BODY_ROBOT)
+        if (t !== undefined && t.bodyType === BODY_HUMAN)
           c.reservedBedPop[o] = c.reservedBedPop[o]! + cost;
       }
     }
