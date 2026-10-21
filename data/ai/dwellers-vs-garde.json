@@ -39,10 +39,7 @@
       "site": "front"
     }
   ],
-  "attackTimersS": [
-    480,
-    720
-  ],
+  "attackTimersS": [480, 720],
   "militiaPct": 20,
   "militiaPctMax": 60,
   "militiaPctPerMin": 2.5,
@@ -65,10 +62,7 @@
     "snelle_voeten"
   ],
   "researchFromS": 180,
-  "armyLoadouts": [
-    "patrol",
-    "militie"
-  ],
+  "armyLoadouts": ["patrol", "militie"],
   "richScrap": 260,
   "richBuilds": [
     {
@@ -100,13 +94,7 @@
   "pushMinArmy": 12,
   "pushFromS": 1440,
   "robots": {
-    "sequence": [
-      "sentinel",
-      "beveiligingsrobot",
-      "sentinel",
-      "sentinel",
-      "reparatiedrone"
-    ],
+    "sequence": ["sentinel", "beveiligingsrobot", "sentinel", "sentinel", "reparatiedrone"],
     "fromS": 480,
     "max": 12,
     "countAsArmy": true,
@@ -160,6 +148,7 @@
     "_comment": "Data 0.31.0 (winroute C, het Bouwproject; voorstel, ter bevestiging door content en de architect): de natuurlijke winroute van de Dwellers. Vanaf minuut 13, met minstens 10 man leger en zonder vijand bij zijn gebouwen, stuurt hij 2 vrije bouwers naar de dichtstbijzijnde ruine van een soort die hij mist (een herstel tegelijk; de andere vrije bouwers helpen). Houdt de tegenstander 3 soorten of loopt zijn countdown, dan gaat een vrij leger van minstens 6 naar zijn deel het dichtst bij huis. Zolang hij een deel houdt, verzamelt het leger daar. Startwaarden, gemeten in de CHANGELOG van data 0.31.0."
   },
   "allInWithoutNodes": true,
-  "_comment": "Data 0.39.0 (Garde balance round; voorstel, ter bevestiging door content en de architect): de Dwellers tegen de Garde. Zware pantsers negeren pipe guns, dus de Dwellers gaan vroeg voor laserturrets en robots (sentinels, energy 160 procent op heavy): lasertechniek en robotfabriek eerder, robots vanaf 480 s met meer in het veld, laserturrets bij de eerste uitgaven. Gemeten Garde tegen Dwellers: zie CHANGELOG. Data 0.40.0 (balance-integration): de robotvolgorde begon met sentinels, die zonder sentinel_protocol worden overgeslagen; de AI kocht daardoor tot max 12 ongewapende reparatiedrones en nooit een sentinel. Nu raffinage, robotica, lasergeleiding en sentinel_protocol eerst, de volgorde sentinel, beveiligingsrobot, sentinel, sentinel, reparatiedrone, robots voor onderzoek pas vanaf 900 s (was 540). Gemeten: de Garde wint 10 van 24 (42 procent, was 100).",
+  "heroArchetype": "tacticus",
+  "_comment": "Data 0.39.0 (Garde balance round; voorstel, ter bevestiging door content en de architect): de Dwellers tegen de Garde. Zware pantsers negeren pipe guns, dus de Dwellers gaan vroeg voor laserturrets en robots (sentinels, energy 160 procent op heavy): lasertechniek en robotfabriek eerder, robots vanaf 480 s met meer in het veld, laserturrets bij de eerste uitgaven. Gemeten Garde tegen Dwellers: zie CHANGELOG. Data 0.40.0 (balance-integration): de robotvolgorde begon met sentinels, die zonder sentinel_protocol worden overgeslagen; de AI kocht daardoor tot max 12 ongewapende reparatiedrones en nooit een sentinel. Nu raffinage, robotica, lasergeleiding en sentinel_protocol eerst, de volgorde sentinel, beveiligingsrobot, sentinel, sentinel, reparatiedrone, robots voor onderzoek pas vanaf 900 s (was 540). Gemeten: de Garde wint 10 van 24 (42 procent, was 100). Data 0.43.0 (garde-ai; voorstel, ter bevestiging door de architect; docs/held-keuze.md): heroArchetype tacticus. Dit is het defensieve script (laserturrets, robots, geen vroege push) en de Controleur past erbij: geschutstorens +1 m bereik, aura 8 m vijanden 10 procent trager en Noodslot (vijanden 40 procent trager, 25 procent minder schade) houdt een stelling vast tegen trage zware frames. Het eerste script dat een ander archetype dan de Krijger kiest.",
   "versus": "garde"
 }

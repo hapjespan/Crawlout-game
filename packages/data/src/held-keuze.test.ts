@@ -16,7 +16,11 @@ describe('held-keuze: drie archetypes per factie', () => {
   });
 
   it('AI-script heroArchetype (voorstel): afwezig = krijger, anders het gegeven archetype', () => {
-    for (const a of data.aiScripts) expect(a.heroArchetype).toBe(1); // geen script zet het nu
+    // data 0.43.0 (garde-ai): dwellers-vs-garde kiest de Tacticus; elk ander script laat het veld weg = krijger
+    const byKey = (k: string) => data.aiScripts.find((a) => a.key === k)!;
+    expect(byKey('dwellers-vs-garde').heroArchetype).toBe(2); // tacticus
+    for (const a of data.aiScripts)
+      if (a.key !== 'dwellers-vs-garde') expect(a.heroArchetype, a.key).toBe(1);
     const r = raw();
     const files = r.ai as { heroArchetype?: string }[];
     files[0]!.heroArchetype = 'tacticus';

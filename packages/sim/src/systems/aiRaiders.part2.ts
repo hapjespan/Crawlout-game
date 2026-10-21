@@ -158,11 +158,29 @@ export function attackMove(
 }
 
 /** Where the army gathers at home: in front of the headquarters on the way to the enemy (as the Dwellers' rally hq). */
-function homePoint(ctx: SimContext, hq: number, fields: Fields): { x: number; y: number } {
+export function homePoint(ctx: SimContext, hq: number, fields: Fields): { x: number; y: number } {
   const c = rallyCell(ctx, hq, fields);
   return c === null
     ? { x: ctx.world.x[hq]!, y: ctx.world.y[hq]! }
     : { x: (c.cx << 8) + 128, y: (c.cy << 8) + 128 };
+}
+
+/**
+ * The rally point of the script with no threat and no dominance camp: its own claim point nearest home or nearest the
+ * enemy (rallySite), else the home point. `rally` below and the airlift of the Garde (systems/aiGarde.ts) use the same
+ * one, so the shuttle always sets its load down where the army stands.
+ */
+export function rallyPoint(
+  ctx: SimContext,
+  p: number,
+  hq: number,
+  script: SimAiScript,
+  fields: Fields,
+): { x: number; y: number } {
+  const f =
+    script.rallySite === AI_SITE_FRONT && fields.enemy !== null ? fields.enemy : fields.home;
+  const pt = script.rallySite === AI_SITE_HQ ? -1 : ownClaimNear(ctx, p, f);
+  return pt >= 0 ? { x: ctx.world.x[pt]!, y: ctx.world.y[pt]! } : homePoint(ctx, hq, fields);
 }
 
 /** Step 7: the slave raid (see the top of this file). Takes its escort out of `free`. */
@@ -345,12 +363,7 @@ export function rally(
   } else if (push >= 0) {
     // camp next to the point (one unit off: raidOver must not take the march for a finished raid)
     to = { x: w.x[push]! + ESCORT_OFFSET, y: w.y[push]! };
-  } else {
-    const f =
-      script.rallySite === AI_SITE_FRONT && fields.enemy !== null ? fields.enemy : fields.home;
-    const pt = script.rallySite === AI_SITE_HQ ? -1 : ownClaimNear(ctx, p, f);
-    to = pt >= 0 ? { x: w.x[pt]!, y: w.y[pt]! } : homePoint(ctx, hq, fields);
-  }
+  } else to = rallyPoint(ctx, p, hq, script, fields);
   const go: number[] = [];
   for (const id of idle) {
     const i = w.resolve(id);

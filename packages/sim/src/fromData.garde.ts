@@ -101,5 +101,29 @@ export function simRaidPlan(rp: AiScriptData['raidPlan']): SimRaidPlan | null {
     dominancePush: { ...rp.dominancePush },
     workers: rp.workers === null ? null : { scavengers: rp.workers.scavengers },
     mixInOrder: rp.mixInOrder,
+    // data 0.43.0 (the Garde AI, proposal): the Klerk and the Vertibird of the script
+    support:
+      rp.support === null
+        ? null
+        : {
+            typeId: unitTypeId(rp.support.loadoutId),
+            fromTicks: rp.support.fromTicks,
+            max: rp.support.max,
+            perArmy: rp.support.perArmy,
+            withWave: rp.support.withWave,
+          },
+    airlift:
+      rp.airlift === null
+        ? null
+        : {
+            typeId: unitTypeId(rp.airlift.loadoutId),
+            fromTicks: rp.airlift.fromTicks,
+            max: rp.airlift.max,
+            minArmy: rp.airlift.minArmy,
+            minPath: rp.airlift.minPathU,
+            gather: rp.airlift.gatherU,
+            minLoad: rp.airlift.minLoad,
+            minHpPermille: rp.airlift.minHpPermille,
+          },
   };
 }

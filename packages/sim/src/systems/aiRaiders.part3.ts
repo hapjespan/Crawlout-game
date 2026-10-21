@@ -32,8 +32,10 @@ import {
   harass,
   raidSpot,
   rally,
+  rallyPoint,
   slaveRaid,
 } from './aiRaiders.part2.js';
+import { airlift, supportWave } from './aiGarde.js';
 
 export function raiderThink(
   ctx: SimContext,
@@ -235,10 +237,21 @@ export function raiderThink(
     });
   }
 
+  // 6b the Garde (data 0.43.0, raidPlan support): the free technicians split into the ones that march with the attack
+  // and the ones that stand with the defence (systems/aiGarde.ts)
+  const techs = supportWave(plan, t);
+
   if (fields === null || enemy < 0 || enemySpawn === null) {
-    rally(ctx, p, hq, script, fields, threat, free, heroId, hero);
+    rally(ctx, p, hq, script, fields, threat, [...free, ...techs.stay], heroId, hero);
     return;
   }
+
+  // 6c the Garde (data 0.43.0, raidPlan airlift): the Vertibird sets a load it carries down at the push target and
+  // otherwise parks at the rally point. Boarding happens in step 9, with the wave it carries (systems/aiGarde.ts).
+  const rallyAt = rallyPoint(ctx, p, hq, script, fields);
+  const liftPath =
+    fields.enemy === null ? 0 : ctx.terrainDist.at(fields.enemy, rallyAt.x, rallyAt.y) * 256;
+  airlift(ctx, p, plan, t, null, rallyAt, enemySpawn, liftPath);
 
   // 7 the slave raid, 8 harass
   const spot = rules === null ? -1 : raidSpot(ctx, enemy, rules, fields);
@@ -249,7 +262,7 @@ export function raiderThink(
   // Bouwproject draws the free army to his part nearest to the headquarters, unless the headquarters is under attack
   const sabotage = homeThreat ? -1 : sabotageTarget(ctx, p, script, hq);
   if (sabotage >= 0 && free.length > 0 && free.length >= script.project!.sabotageMinArmy) {
-    const send = [...free];
+    const send = [...free, ...techs.go];
     if (heroId >= 0 && w.orderType(hero) === ORDER_NONE) send.push(heroId);
     attackMove(ctx, p, send, w.x[sabotage]!, w.y[sabotage]!);
     return;
@@ -270,9 +283,12 @@ export function raiderThink(
     ps.aiAttack[p] = k + 1;
     ps.aiWaveAt[p] = tick + script.waveIntervalTicks + jitter;
     if (target !== null) {
-      const send = [...free];
+      // data 0.43.0 (the Garde): support units march with the wave (the overload stun is a weapon), never alone
+      const send = [...free, ...techs.go];
       if (heroId >= 0) send.push(heroId);
       if (pt >= 0 && t.idleBuilders.length > 0) claimAt(ctx, p, t.idleBuilders[0]!, pt);
+      // data 0.43.0 (the Garde): a wave to a far target flies part of itself there instead of walking it
+      airlift(ctx, p, plan, t, send, rallyAt, target, liftPath);
       attackMove(ctx, p, send, target.x, target.y);
       return;
     }
@@ -291,6 +307,7 @@ export function raiderThink(
   )
     return;
   const push = tick >= plan.dominancePush.fromTicks ? dominanceTarget(ctx, p, fields) : -1;
+  // the technicians that stay home follow the army (and a threat): standing still at the rally point they repair
   rally(
     ctx,
     p,
@@ -298,7 +315,7 @@ export function raiderThink(
     script,
     fields,
     threat,
-    free,
+    [...free, ...techs.stay],
     heroId,
     hero,
     push >= 0 && free.length >= plan.dominancePush.minArmy ? push : -1,

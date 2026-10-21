@@ -313,4 +313,32 @@ export interface SimRaidPlan {
   readonly workers: { readonly scavengers: number } | null;
   /** Data 0.38.0 (proposal): produce the fighter mix strictly in its cycle order (a building waits for its turn). */
   readonly mixInOrder: boolean;
+  /**
+   * Data 0.43.0 (sim 0.34.0, the Garde AI; proposal): support units (the Klerk, systems/aiGarde.ts). From fromTicks the
+   * AI keeps one per `perArmy` fighters, at most `max`; they are no fighters, `withWave` of the free ones go with every
+   * wave, push and sabotage and the rest stand with the defence. Null = none.
+   */
+  readonly support: {
+    readonly typeId: number;
+    readonly fromTicks: number;
+    readonly max: number;
+    readonly perArmy: number;
+    readonly withWave: number;
+  } | null;
+  /**
+   * Data 0.43.0 (sim 0.34.0, the Garde AI; proposal): the airlift (the Vertibird, systems/aiGarde.ts). From fromTicks
+   * the AI keeps `max` transports; while the rally point lies at least `minPath` over land from the headquarters, an
+   * empty transport above minHpPermille within `gather` of home loads at least minLoad free fighters within `gather`
+   * of it and sets them down at the rally point. Null = none.
+   */
+  readonly airlift: {
+    readonly typeId: number;
+    readonly fromTicks: number;
+    readonly max: number;
+    readonly minArmy: number;
+    readonly minPath: number;
+    readonly gather: number;
+    readonly minLoad: number;
+    readonly minHpPermille: number;
+  } | null;
 }

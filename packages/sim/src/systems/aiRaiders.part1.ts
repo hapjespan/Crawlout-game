@@ -31,6 +31,7 @@ import { applyCommand, canPlaceType } from './commands.js';
 import { idiv, imod } from '../math/int.js';
 import { hasTechs } from '../effects.js';
 import { produceWorkers } from './aiWorkers.js';
+import { produceGarde } from './aiGarde.js';
 
 // System 2 (AI part) for a script with a raid plan (ai/raiders-basic.json, data 0.21.0; sim 0.18.0): the scripted
 // Raider. No cheats, the same commands and fog of war as the Dweller AI (systems/ai.ts, whose helpers it uses), and
@@ -69,6 +70,8 @@ const ROLE_BUILDER = ROLES.indexOf('builder');
 
 const ROLE_MILITIA = ROLES.indexOf('militia');
 
+const ROLE_TECHNICIAN = ROLES.indexOf('technician');
+
 /** The units and buildings of a Raider player this tick. */
 export interface Tally {
   readonly builders: number[];
@@ -82,6 +85,14 @@ export interface Tally {
   readonly idleSlavers: number[];
   readonly buggies: number[];
   readonly idleBuggies: number[];
+  /**
+   * Data 0.43.0 (the Garde, raidPlan support): technicians (the Klerk). No fighters: they never count for a wave, a
+   * push or the reserve. Empty for a faction without a technician loadout.
+   */
+  readonly techs: number[];
+  readonly idleTechs: number[];
+  /** Data 0.43.0 (the Garde, raidPlan airlift): own transports. No fighters either (systems/aiGarde.ts). */
+  readonly transports: number[];
   /** Completed own buildings without work (research or job), ascending: where Produce and Research can go. */
   readonly idleBuildings: number[];
   readonly depots: number[];
@@ -90,6 +101,9 @@ export interface Tally {
   scavsPlanned: number;
   producingSlavers: number;
   producingBuggies: number;
+  /** Data 0.43.0 (the Garde): technicians and transports in production. */
+  producingTechs: number;
+  producingTransports: number;
   site: number;
   housingSite: boolean;
 }
@@ -136,18 +150,26 @@ export function tally(
     idleSlavers: [],
     buggies: [],
     idleBuggies: [],
+    techs: [],
+    idleTechs: [],
+    transports: [],
     idleBuildings: [],
     depots: [],
     buildersPlanned: 0,
     scavsPlanned: 0,
     producingSlavers: 0,
     producingBuggies: 0,
+    producingTechs: 0,
+    producingTransports: 0,
     site: -1,
     housingSite: false,
   };
   const load = scratch.nodeLoad;
   const slaverType = plan.slaveRaids?.slaverTypeId ?? -1;
   const buggyType = plan.harass?.typeId ?? -1;
+  // data 0.43.0 (the Garde): the Klerk and the Vertibird of the script; -1 for a script without them
+  const techType = plan.support?.typeId ?? -1;
+  const transportType = plan.airlift?.typeId ?? -1;
   // data 0.38.0 (sim 0.32.0): a faction without slaves (raidPlan workers) works with free builders and scavengers
   const freeWorkers = plan.workers !== null;
   for (let i = 0; i < w.highWater; i++) {
@@ -165,6 +187,8 @@ export function tally(
         if (w.jobKind[i] === JOB_PRODUCE && w.job[i] !== 0) {
           if (w.job[i] === slaverType) t.producingSlavers++;
           else if (w.job[i] === buggyType) t.producingBuggies++;
+          else if (w.job[i] === techType) t.producingTechs++;
+          else if (w.job[i] === transportType) t.producingTransports++;
           else if (freeWorkers) {
             // data 0.38.0 (the Garde): free workers in production count as planned
             const role = ctx.unitType(w.job[i]!)?.role;
@@ -200,9 +224,21 @@ export function tally(
       }
       continue;
     }
+    // data 0.43.0 (the Garde, raidPlan support): a technician (the Klerk) is no worker and no fighter; a free one goes
+    // with a wave or the defence (systems/aiGarde.ts), an idle one repairs where it stands (orders.part2.ts)
+    if (st === SLAVE_NONE && w.role[i] === ROLE_TECHNICIAN) {
+      t.techs.push(id);
+      if (ord === ORDER_NONE || (ord === ORDER_ATTACK_MOVE && !onMission(ctx, p, i)))
+        t.idleTechs.push(id);
+      continue;
+    }
     if (st !== SLAVE_NONE || w.role[i] !== ROLE_MILITIA) continue;
     const idle = ord === ORDER_NONE || (ord === ORDER_ATTACK_MOVE && !onMission(ctx, p, i));
-    if (ctx.unitType(w.typeId[i]!)?.capture != null) {
+    if (ctx.unitType(w.typeId[i]!)?.transport != null) {
+      // data 0.43.0 (the Garde, raidPlan airlift): a transport is logistics, never a fighter. A loaded one that is shot
+      // down takes its cargo with it, so it is never counted into a wave and never sent at the enemy.
+      t.transports.push(id);
+    } else if (ctx.unitType(w.typeId[i]!)?.capture != null) {
       t.slavers.push(id);
       if (idle) t.idleSlavers.push(id);
     } else if (w.typeId[i] === buggyType) {
@@ -373,6 +409,9 @@ export function produce(
   // data 0.38.0 (the Garde): free workers first, each from a building that makes them
   const used: number[] = [];
   if (plan.workers !== null && !produceWorkers(ctx, p, plan.workers, builders, t, used)) return;
+  // data 0.43.0 (the Garde): the Klerks and the Vertibird come before the fighter mix, and the mix leaves the price of
+  // a transport it is saving for alone (systems/aiGarde.ts)
+  const keep = reserve + produceGarde(ctx, p, plan, t, used, reserve);
   let slavers = t.slavers.length + t.producingSlavers;
   let buggies = t.buggies.length + t.producingBuggies;
   const sr = plan.slaveRaids;
@@ -412,7 +451,7 @@ export function produce(
       }
       if (pick === 0) continue;
       const u = ctx.unitType(pick)!;
-      if (ps.scrap[p]! < u.scrapCost + reserve) return;
+      if (ps.scrap[p]! < u.scrapCost + keep) return;
       used.push(b);
       if (
         !applyCommand(ctx, {

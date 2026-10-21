@@ -22,7 +22,6 @@ import {
   comment,
   id,
   nonneg,
-  pct,
   sight,
 } from './schemas.part1.js';
 
@@ -369,52 +368,6 @@ export const MapDef = z
 
 /** Waar de AI een gebouw uit de bouwvolgorde neerzet: bij het hoofdgebouw, bij zijn eigen claimpunt het dichtst bij huis, of bij zijn claimpunt het dichtst bij de vijand. */
 export const AiSite = z.enum(['hq', 'claim', 'front']);
-
-// Het roofplan van de Raider-AI (data 0.21.0). Alle loadout-ids moeten bestaan; de tijden zijn speeltijd in seconden.
-export const RaidPlan = z
-  .object({
-    // Samenstelling van de vechters uit de tenten, cyclisch naar gewicht (een loadout waarvoor de techs er niet zijn slaat hij over)
-    fighterMix: z
-      .array(z.object({ loadoutId: id, weight: z.number().int().positive() }).strict())
-      .min(1),
-    // Harass: snelle units (Buggy) die verzamelaars en losse units van de vijand aanvallen en bij te weinig hp terugtrekken
-    harass: z
-      .object({
-        loadoutId: id,
-        fromS: nonneg,
-        max: z.number().int().positive(),
-        retreatHpPct: pct,
-        targets: z.enum(['gatherers']),
-      })
-      .strict()
-      .optional(), // data 0.38.0 (proposal): absent = no harass (the Garde)
-    // Slavenroof: slavers met escorte op zwervers en op vijandelijke bewoners buiten de basisradius; terug naar de Kooi
-    slaveRaids: z
-      .object({
-        slaverLoadoutId: id,
-        fromS: nonneg,
-        slavers: z.number().int().positive(),
-        escort: z.number().int().nonnegative(),
-        maxRaidS: nonneg, // een tocht duurt hoogstens zoveel seconden, daarna terug
-        retryS: nonneg, // wachttijd tussen twee tochten
-      })
-      .strict()
-      .optional(), // data 0.38.0 (proposal): absent = no slave raids (a faction without slaves)
-    // Garnizoen: zoveel vechters blijven thuis (anders opstand), ook tijdens golven en tochten
-    garrison: z.object({ minFighters: z.number().int().nonnegative() }).strict(),
-    // Dominantie-push: vanaf fromS en met minArmy vechters neemt hij claimpunten en houdt ze (verder dan claimSafeRadiusM met escorte)
-    dominancePush: z.object({ fromS: nonneg, minArmy: z.number().int().nonnegative() }).strict(),
-    // Data 0.38.0 (proposal for the architect; the Garde): a faction without slaves produces its free workers (Produce of
-    // its cheapest builder and scavenger loadout): `builders` (the script field) builders, and scavengers up to this many
-    // (counting the growth). Absent = the workers are slaves (the Raiders).
-    workers: z.object({ scavengers: z.number().int().nonnegative() }).strict().optional(),
-    // Data 0.38.0 (proposal): true = the fighter mix is made strictly in its cycle order: a building waits while the
-    // next fighter (with its techs) comes from another building. Absent = each idle building makes the next it can.
-    mixInOrder: z.boolean().optional(),
-  })
-  .strict();
-
-export type RaidPlan = z.infer<typeof RaidPlan>;
 
 export type Loadout = z.infer<typeof Loadout>;
 

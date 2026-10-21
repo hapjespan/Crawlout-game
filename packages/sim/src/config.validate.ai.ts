@@ -132,6 +132,30 @@ export function validateAiScripts(
         );
       if (rp.workers !== null)
         req(intIn(rp.workers.scavengers, 0, 4096), 'aiScript raidPlan.workers');
+      // data 0.43.0 (the Garde AI, proposal)
+      const sp = rp.support;
+      if (sp !== null)
+        req(
+          unitIds.has(sp.typeId) &&
+            intIn(sp.fromTicks, 0, I31) &&
+            intIn(sp.max, 1, 4096) &&
+            intIn(sp.perArmy, 1, 4096) &&
+            intIn(sp.withWave, 0, 4096),
+          'aiScript raidPlan.support',
+        );
+      const al = rp.airlift;
+      if (al !== null)
+        req(
+          unitIds.has(al.typeId) &&
+            intIn(al.fromTicks, 0, I31) &&
+            intIn(al.max, 1, 4096) &&
+            intIn(al.minArmy, 0, 4096) &&
+            intIn(al.minPath, 0, MAX_MAP_CELLS_SIDE << 8) &&
+            intIn(al.gather, 1, MAX_MAP_CELLS_SIDE << 8) &&
+            intIn(al.minLoad, 1, 4096) &&
+            intIn(al.minHpPermille, 0, 1000),
+          'aiScript raidPlan.airlift',
+        );
       req(
         intIn(rp.garrisonMinFighters, 0, 4096) &&
           intIn(rp.dominancePush.fromTicks, 0, I31) &&

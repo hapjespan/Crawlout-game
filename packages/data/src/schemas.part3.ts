@@ -2,7 +2,8 @@
 // Holds: AiScript, FormationTuning, PlacementTuning, VisionTuning, GuardTuning, BaseDefenseTuning, AiScript, +3 more.
 import { z } from 'zod';
 import { comment, id, nonneg, pct, sight } from './schemas.part1.js';
-import { AiSite, RaidPlan } from './schemas.part2.js';
+import { AiSite } from './schemas.part2.js';
+import { RaidPlan } from './schemas.part6.js';
 import { Archetype } from './schemas.part1.js';
 
 export const AiScript = z

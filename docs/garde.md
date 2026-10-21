@@ -40,10 +40,10 @@ Gebouwen: `garde_building_bastion`, `_barracks`, `_forge`, `_archive`, `_outpost
 ## Wat de sim moet bouwen
 1. Veteranen-promotie: Initiate-wacht na kills naar Ridder (en Paladin), fase 2 perks op bewoners.
 2. Fusion cores: elk frame kost een core, alleen de Garde craft en repareert ze (nu alleen `fusiekernen` als gate).
-3. (sim 0.33.0, data 0.39.0: repareren en overloaden gebouwd; onderzoekssnelheid open) Klerk: repareren van frames en gebouwen (`Repair` is nu alleen voor robots; voorstel: `RepairTarget` uitbreiden met `vehicle`, optioneel, en `repair` toestaan bij role technician), onderzoekssnelheid, vijandelijke krachtpantser overloaden.
+3. (sim 0.36.0, data 0.43.0: de AI bouwt en gebruikt hem ook, raidPlan `support`; sim 0.33.0 repareren en overloaden gebouwd; onderzoekssnelheid open) Klerk: repareren van frames en gebouwen (`Repair` is nu alleen voor robots; voorstel: `RepairTarget` uitbreiden met `vehicle`, optioneel, en `repair` toestaan bij role technician), onderzoekssnelheid, vijandelijke krachtpantser overloaden.
 4. (sim 0.33.0: gebouwd, factions mapPowerArmor) Map-power-armor: claimen door Dwellers en Raiders op 2/3 kwaliteit (`claimKind powerArmor` bestaat in het schema).
-5. (sim 0.33.0, protocol 0.18.0 Load en Unload: gebouwd) Vertibird: vliegen (negeert terrein) en transport (capaciteit, laden en lossen); strafe is gewoon een aanval.
+5. (sim 0.36.0, data 0.43.0: de AI vliegt er een golf mee, raidPlan `airlift`; sim 0.33.0 en protocol 0.18.0 Load en Unload gebouwd) Vertibird: vliegen (negeert terrein) en transport (capaciteit, laden en lossen); strafe is gewoon een aanval.
 6. Tech-effecten op target `held` (SPECIAL via tech) toepassen.
-7. Held Paladin-Commander (pantser-aura, Charge) en een AI-script `garde-basic`.
+7. (gebouwd) Held Paladin-Commander (pantser-aura, Charge) en een AI-script `garde-basic`; sinds data 0.43.0 bouwt en gebruikt dat script ook de Klerk en de Vertibird. Open: met de huidige drempels koopt de AI in AI-tegen-AI geen Vertibird, haar leger is op voor ze de scrap over heeft (knoppen: `airlift.minArmy`, `richScrap`).
 8. (data 0.39.0: de 6 techs staan in data/tech/01-garde.json met idGroup 1) `MAX_TECHS` (nu 32) verhogen; de Garde heeft nu 4 techs omdat het cap vol is. Uitbreiding: `laserkunde`, `klerkenschool`, `bergingsdienst`, `drilboek`, `servo_kalibratie`, `vertibird_programma`.
 9. Loader leest nu `data/tech/*.json` na `tech.json`; sim-fixtures opnieuw opnemen (ids verschuiven door sortById).
