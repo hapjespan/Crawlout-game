@@ -1,0 +1,46 @@
+## 5. Contract 2: commandoprotocol (deel b)
+
+Vervolg op [05-contract-2-commandoprotocol.md](05-contract-2-commandoprotocol.md), waar de **Commando**-sectie staat.
+
+**Lockstep**
+
+1. Frame = één tick. Een commando dat de speler geeft in frame f, voert de sim uit in frame f + DELAY. DELAY = 4 frames (200 ms) bij de start, later adaptief tussen 2 en 8 op basis van gemeten latency.
+   Besluit sprint 2: de relay past DELAY zelf aan uit het verschil tussen het frame dat hij uitgeeft en envelope.frame (of HashReport.frame + 1) van de traagste online speler, omhoog direct en omlaag met hysterese; er is geen bericht voor nodig. MatchSettings.delayFrames is alleen de startwaarde. Een client kent DELAY niet: hij stuurt envelope.frame = zijn eerstvolgende frame en de relay plant. Per speler zijn uitvoerframes monotoon, zodat seq-volgorde blijft als DELAY tussendoor verandert.
+2. De relay bundelt per frame: { frame, commands: \[...\] } en stuurt de bundel naar alle spelers, ook een lege. Een client voert frame f pas uit als de bundel voor f binnen is.
+   Frame-semantiek (besluit sprint 1): bundle.frame is het uitvoerframe; envelope.frame is het frame waarin de speler het commando gaf. De relay plant een commando op max(envelope.frame + DELAY, eerstvolgende bundel): een te laat commando schuift naar de eerstvolgende bundel en wordt nooit verworpen. De sim leest alleen bundle.frame. Sim.frame is het volgende uit te voeren frame; in de state-serialisatie staat tick = aantal uitgevoerde ticks.
+3. Ontbreekt een bundel langer dan 2 seconden, dan pauzeert de sim en toont de UI wie er wacht. De relay stuurt bundels in volgorde, nooit met een gat.
+   Besluit sprint 2: twee kanten. De client pauzeert zelf zodra zijn eerstvolgende bundel ontbreekt (de worker tikt alleen met bundel). De relay blijft bundels uitgeven en stuurt `stall` { waitingFor } zodra een online menselijke speler zijn hash voor het oudste openstaande frame langer dan STALL\_TIMEOUT\_MS schuldig blijft nadat een ander al meldde; alleen bij wijziging, een lege waitingFor wist de melding. Hashes zijn dus de hartslag.
+   Besluit sprint 4: "nooit met een gat" geldt aan beide kanten. De client (BundleFeed in apps/client/src/net/resync.ts) geeft alleen aaneengesloten frames aan de worker; een bundel achter een gat wacht tot het ontbrekende frame er is.
+
+**Hash en desync**
+
+1. Elke client stuurt { frame, hash } elke 20 frames. De relay vergelijkt zodra alle spelers dezelfde frame gemeld hebben. { frame: f, hash } betekent: de state-hash na uitvoering van frame f, gemeld als f mod 20 = 0 (besluit sprint 1; dezelfde conventie als Replay.hashes en de snapshot-header). AI-spelers en offline spelers tellen niet mee.
+   Besluit sprint 4: ook tijdens inhalen meldt de client elk meldframe (de worker geeft ze gebundeld door, contract 1); de relay krijgt dus nooit een gat in de hashreeks van een speler. De relay neemt hashmeldingen tijdens een resync en de eerste 100 frames erna niet mee in de DELAY-meting (SAMPLE\_GRACE\_FRAMES), zodat het inhalen DELAY niet omhoog drijft.
+2. Bij afwijking stuurt de relay een desyncEvent met de frame. Elke client dumpt zijn state-serialisatie van die frame naar IndexedDB, zodat de oorzaak achteraf te vergelijken is.
+3. In de slice stopt een desync het potje met een duidelijke melding. Later: automatische resync vanaf de meerderheid.
+
+**Reconnect en resync**
+
+1. Een terugkerende client vraagt resync. De relay wijst een peer aan (de speler met de laagste playerId die online is), die zijn volledige state-serialisatie van frame f stuurt plus alle bundels sinds f.
+   Besluit sprint 2: ResyncResponse.frame = Sim.frame van de meegestuurde state, dus het eerstvolgende uit te voeren frame (state na frame − 1). bundles zijn alle bundels vanaf frame, aansluitend; de peer stuurt wat hij heeft en de relay vult aan uit zijn eigen geschiedenis (de laatste 1200 frames). Een state ouder dan die geschiedenis wijst de relay af en hij vraagt de volgende peer; een peer die niet binnen 5 s antwoordt ook. De peer is de laagste online menselijke playerId met een state (niet het doel, niet al geprobeerd).
+2. De client laadt de state, speelt de bundels versneld af tot hij bij is, en meldt zich weer. Resync in de slice alleen voor lokaal testen; de echte test komt in fase 2 met survival.
+   Besluit sprint 2: na een reconnect (lobby 5) start de relay de resync zelf; een resyncRequest van de client blijft toegestaan en is een no-op zolang er een loopt. De teruggekeerde speler meldt hashes vanaf ResyncResponse.frame; de relay verwacht er geen van hem voor eerdere frames.
+
+**Lobby**
+
+1. Berichten van de client: join (roomId, naam, clientId), leave, ready, setFaction, setHero (archetype, protocol 0.19.0), setMap, setSettings, addAi (factie), removeAi (playerId), chat. Van de relay: lobby, start (seed, map, players, settings, dataVersion, you), bundle, desync, stall, chat, error. De relay kiest de seed (uint32) en stuurt die in start.
+   dataVersion (besluit sprint 4): `pnpm relay` leest data/VERSION en geeft die als dataVersion door in start; de client vergelijkt hem met zijn eigen data en weigert bij verschil, ook bij '0' (een relay zonder versie is een fout, geen uitzondering).
+   you in lobby (besluit sectie 23 besluit 7, protocol 0.12.0): het lobby-bericht draagt `you`, de playerId van de verbinding die het ontvangt, net als start. De relay stuurt het lobby-bericht daarom per verbinding (dezelfde roomId, map, players en settings, een ander `you`); een AI-speler ontvangt niets. Optioneel in 0.12.0 zodat een relay zonder het veld nog valideert; de client leest het zodra het er is en valt alleen zonder terug op zijn naam (`identifyYou` in packages/ui); verplicht in de volgende versie zodra relay en client het dragen. De regel dat menselijke namen in een room uniek zijn ("Speler", "Speler 2") blijft als weergaveregel van de relay, maar draagt geen identiteit meer.
+2. Rooms zijn in het geheugen van de relay. Geen accounts, geen matchmaking in de slice.
+3. Start (besluit sprint 1): er is geen client-bericht start. De relay start zodra elke menselijke speler ready is en het minimum aantal spelers (mens plus AI) is gehaald. Een AI-speler komt via addAi in de lobby, staat als LobbyPlayer met ai = true in start en heeft geen verbinding.
+
+   Held-keuze (protocol 0.19.0, voorstel van sim-core, bevestigd in sectie 24 besluit 2; docs/held-keuze.md): `LobbyPlayer.heroArchetype?` ('bouwer' | 'krijger' | 'tacticus'), gezet met setHero voor de start (vraagt opnieuw om ready, zoals setFaction). De factie bepaalt de held; afwezig = de Krijger, bij een AI-speler het archetype van zijn AI-script (data/ai `heroArchetype`, afwezig krijger). Het veld staat in start en Replay.players en is dus replay-invoer; zonder keuze blijft de envHash gelijk.
+4. Instellingen (besluit sprint 1): de relay kent geen spelregels. MatchSettings = { mode, delayFrames, dominanceMinutes? }. mode is `skirmish` (winroutes A en B), `project` (sectie 23 en 24: plus winroute C, de projectdelen op de map) of `survival` (sectie 24: Survival co-op, 1 tot 4 spelers, geen AI-speler, de relay start solo met minPlayers 1; de winroutes gelden niet). De host (laagste playerId) zet ze met setSettings; de relay vult ze in lobby en start door. Ontbreekt dominanceMinutes, dan geldt de waarde uit de map (maps/\*.json, dominance). Geen defaultgetallen in relay-code.
+5. Reconnect (besluit sprint 1): clientId is een willekeurige string die de client zelf kiest en in sessionStorage bewaart. Joint een verbinding na start met een bekend clientId, dan koppelt de relay haar aan dezelfde playerId, zet online op true en de client vraagt resync. Zonder clientId weigert de relay een join na start. Aanscherping sprint 2: de relay stuurt de teruggekeerde verbinding opnieuw `start` (zelfde seed, map, spelers en settings), zodat de client een verse sim kan maken, en start daarna zelf de resync (contract 2, resync). Een gestarte room zonder verbindingen blijft 60 s bestaan voor reconnect.
+6. Desync (besluit sprint 1): na een desyncEvent geeft de relay geen bundels meer uit; het potje stopt. Dit blijft zo tot de automatische resync (na de slice).
+
+**Replay**
+
+1. Een replay is { dataVersion, seed, map, players, settings, bundles\[\], hashes\[\] }. tools/replay speelt hem headless af en vergelijkt de hash per 20 frames met de opgeslagen hashes.
+2. Elke pull request op packages/sim draait de vaste replay-set. Een afwijkende hash blokkeert de merge.
+3. Startopstelling (besluit sprint 1): niet in de replay. Zij volgt deterministisch uit map (spawns, toegewezen in volgorde van playerId), data (factions.startUnits van de factie van elke speler, in bestandsvolgorde) en players. De sim bouwt haar op in start(), voor frame 0, met entity-ids in die volgorde. Tot de integratie met packages/map en de data-loader (sprint 2) staat een programmatische testopstelling per mapnaam in tools/replay/src/scenarios.ts; de sprint-1-fixtures draaien op de testconfig (dataVersion test-sprint1) en worden in sprint 2 opnieuw opgenomen op echte data.

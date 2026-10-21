@@ -49,13 +49,8 @@ export type Role = z.infer<typeof Role>;
 //   kiezen zolang ze binnen guard.leashM van het doel blijven, en keren terug. De order blijft tot een ander commando
 //   of tot het doel weg is (gesloopt, leeg). Voor de Raiders telt zo'n eenheid als bewaker van de slaven daar
 //   (data/factions.json slaves.revolt); voor de Dwellers bewaakt hij gewoon de node.
-// Voorstel sim-core (protocol 0.18.0, sim 0.33.0, data 0.39.0; ter bevestiging door de architect; docs/garde.md punt 5):
-// - Load (ids, transportId): eigen units (geen held, geen slaaf, geen vehicle) lopen naar de eigen transport-unit
-//   (loadouts transport, de Vertibird) en stappen in binnen transport.loadRangeM zolang er plaats is (capacity). Een
-//   passagier is geen entity meer: hij leeft in de lading van de transport (systems/garde.transport.ts) en telt voor de
-//   pop. Sterft de transport, dan sterft de lading.
-// - Unload (ids, x?, y?): eigen transports lossen al hun passagiers op de vrije cellen rond zich; met x, y vliegen ze
-//   eerst daarheen. De uitgestapte units zijn nieuwe entities (nieuwe ids) met hun hp en veteranenrang.
+// Besluit Garde-ronde B (protocol 0.18.0, sim 0.33.0, data 0.39.0; fase-0 sectie 5 en sectie 24 besluit 2):
+// Load en Unload voor de Vertibird (zie `docs/fase-0/05-contract-2-commandoprotocol.md` Besluit Garde-ronde B voor de regels).
 export const COMMAND_PAYLOADS = {
   Move: z.object({ ids: EntityIds, ...Pos }).strict(),
   AttackMove: z.object({ ids: EntityIds, ...Pos }).strict(),

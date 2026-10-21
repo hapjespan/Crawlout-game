@@ -8,8 +8,10 @@ Dit document is het werkcontract, gesplitst in één bestand per hoofdsectie in 
 - [02-architectuur.md](docs/fase-0/02-architectuur.md): 2. Architectuur
 - [03-repo-structuur-en-stack.md](docs/fase-0/03-repo-structuur-en-stack.md): 3. Repo-structuur en stack
 - [04a-contract-1-simulatie-en-snapshotformaat.md](docs/fase-0/04a-contract-1-simulatie-en-snapshotformaat.md): 4. Contract 1: simulatie en snapshotformaat (deel a)
-- [04b-contract-1-state-hash-en-snapshot.md](docs/fase-0/04b-contract-1-state-hash-en-snapshot.md): 4. Contract 1: simulatie en snapshotformaat (deel b)
-- [05-contract-2-commandoprotocol.md](docs/fase-0/05-contract-2-commandoprotocol.md): 5. Contract 2: commandoprotocol
+- [04b-contract-1-state-hash-en-snapshot.md](docs/fase-0/04b-contract-1-state-hash-en-snapshot.md): 4. Contract 1: simulatie en snapshotformaat (deel b, state-hash)
+- [04c-contract-1-snapshot-en-ai.md](docs/fase-0/04c-contract-1-snapshot-en-ai.md): 4. Contract 1: simulatie en snapshotformaat (deel c, snapshot sim naar render en AI)
+- [05-contract-2-commandoprotocol.md](docs/fase-0/05-contract-2-commandoprotocol.md): 5. Contract 2: commandoprotocol (deel a, Commando)
+- [05b-contract-2-lockstep-lobby-replay.md](docs/fase-0/05b-contract-2-lockstep-lobby-replay.md): 5. Contract 2: commandoprotocol (deel b, Lockstep, Hash, Reconnect, Lobby, Replay)
 - [06a-contract-3-dataschema.md](docs/fase-0/06a-contract-3-dataschema.md): 6. Contract 3: dataschema (deel a)
 - [06b-contract-3-dataschema.md](docs/fase-0/06b-contract-3-dataschema.md): 6. Contract 3: dataschema (deel b, tabel)
 - [06c-contract-3-dataschema.md](docs/fase-0/06c-contract-3-dataschema.md): 6. Contract 3: dataschema (deel c, tabel)
@@ -36,3 +38,4 @@ Dit document is het werkcontract, gesplitst in één bestand per hoofdsectie in 
 - [23c-contractbesluiten-na-fase-2-ronde-1-en-2-open.md](docs/fase-0/23c-contractbesluiten-na-fase-2-ronde-1-en-2-open.md): 23. Contractbesluiten na fase 2 ronde 1 en 2 (17 oktober: fog of war, de Raiders, de balans, de creep-kampen, het menu) (deel c, open punten)
 - [24a-contractbesluiten-na-fase-3-ronde-1-en-2.md](docs/fase-0/24a-contractbesluiten-na-fase-3-ronde-1-en-2.md): 24. Contractbesluiten na fase 2 ronde 3 en fase 3 ronde 1 en 2 (20 oktober: de bouwrobot, de kampovername, Bewaak, winroute C, Survival co-op, de basisverdediging) (deel a, besluiten)
 - [24b-contractbesluiten-na-fase-3-ronde-1-en-2-open.md](docs/fase-0/24b-contractbesluiten-na-fase-3-ronde-1-en-2-open.md): 24. Contractbesluiten na fase 2 ronde 3 en fase 3 ronde 1 en 2 (deel b, open punten)
+- [25-contractbesluiten-na-fase-3-ronde-3.md](docs/fase-0/25-contractbesluiten-na-fase-3-ronde-3.md): 25. Contractbesluiten na fase 3 ronde 3 (21 oktober: Garde-ronde B, held-keuze, scope-uitbreiding)

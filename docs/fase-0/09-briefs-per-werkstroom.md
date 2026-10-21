@@ -23,7 +23,7 @@ Elke brief: wat je bouwt, waar het op steunt, en wanneer het klaar is. Alles gel
 
 **content (werkstroom 4)**
 
-1. Bouwt: packages/data (zod-schema's, loader, omrekening naar sim-eenheden) en data/ voor de Dwellers: factie, 1 body, 4 loadouts (scavenger, bouwer, militie, patrol), 8 gebouwen, 6 upgrades, held Krijger met 7 SPECIAL en 6 perks, damage-matrix, AI-script.
+1. Bouwt: packages/data (zod-schema's, loader, omrekening naar sim-eenheden) en data/ voor de Dwellers: factie, 1 body, 4 loadouts (scavenger, bouwer, militie, patrol), 8 gebouwen, 6 upgrades, held Krijger met 7 SPECIAL en 6 perks, damage-matrix, AI-script. Besluit Garde-ronde (data 0.21.0 t/m 0.42.0, sectie 24 besluit 2 en 25): sinds fase 2/3 bouwt content ook de Raiders en De Garde (drie facties), en per factie drie archetype-helden (Bouwer, Krijger, Tacticus): data/heroes.json (idGroup 1 voor de nieuwe helden), data/perks.json (idGroup 1 voor de nieuwe perks), passende loadouts (Klerk, Vertibird, map-power-armor-frame), gebouwen (Slaapzaal), Garde-techs (idGroup 1 in data/tech.json), factions.fusionCores, factions.veterancy, factions.mapPowerArmor, damage-matrix met `power`-kolom, data/survival/ (co-op content). Zie docs/held-keuze.md, docs/garde.md, docs/survival-coop.md.
 2. Steunt op: Spelfundament secties 2, 4, 5; contract 3.
 3. Klaar als: elk bestand valideert; de sim start op deze data; een nieuwe loadout toevoegen is alleen JSON; elke waarde heeft een regel commentaar met de bedoeling.
 

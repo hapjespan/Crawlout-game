@@ -20,9 +20,12 @@ export interface SurvivalWaveStatus {
   rank: SurvivalRank;
 }
 
+/** Een golf zonder doel (SurvivalActiveWave.target). */
+export const SURVIVAL_NO_TARGET = -1;
+
 /** Eén gestarte golf (SurvivalStatus.active, index = golf − 1). */
 export interface SurvivalActiveWave {
-  /** playerId van het doel van de golf (de zwakste speler bij de start), −1 zonder doel. */
+  /** playerId van het doel van de golf (de zwakste speler bij de start), `SURVIVAL_NO_TARGET` (-1) zonder doel. */
   target: number;
   /** Levende eenheden van de golf. */
   alive: number;

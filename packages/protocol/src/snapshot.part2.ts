@@ -39,11 +39,13 @@ export interface PlayerStatus {
    */
   dominance: DominanceStatus;
   /**
-   * Robots (protocol 0.8.0, data 0.16.0; besluit fase-0 sectie 20): de pop van de levende eigen robots. Robots
-   * tellen voor pop maar niet voor bedden: `pop` is de pop van de bewoners (binnen de bedden), `robotPop` die van de
-   * robots, en pop + robotPop (plus de robots in productie) blijft binnen popCapMax. `settlers` telt alleen bewoners.
-   * popCap = min(beds, popCapMax - robotPop - pop van robots in productie): de ruimte voor bewoners. Verplicht sinds
-   * protocol 0.9.0 (de HUD leest hem; bevestigd door de architect in fase-0 sectie 22); de sim levert hem altijd.
+   * Pop van elke eigen levende unit die geen bed gebruikt (protocol 0.8.0, data 0.16.0; besluit fase-0 sectie 20).
+   * Sinds sim 0.34.0 (data 0.41.0, Slaapzaal en frames-zonder-bed, fase-0 sectie 25 besluit 2) telt dit ook de
+   * Vertibird-vehicles, de Garde-frames en de beasts; de naam `robotPop` is historisch, het veld is in feite
+   * `noBedPop` (sim: `census.robotPop + census.noBedPop`). `pop` is de pop van de bewoners (binnen de bedden) en
+   * `settlers` telt alleen bewoners. popCap = min(beds, popCapMax - robotPop - pop van robots in productie): de
+   * ruimte voor bewoners. Hernoemen naar `noBedPop` is besluit sectie 25 (protocol 0.20.0, volgende PR, want 30
+   * literals te verzetten). Verplicht sinds protocol 0.9.0.
    */
   robotPop: number;
   /**

@@ -1,5 +1,11 @@
 // Split from snapshot.ts to stay under the 5,000-token file limit; snapshot.ts re-exports the public surface.
-// Holds: SNAPSHOT_HEADER_BYTES, ENTITY_FIELDS, EntityField, ENTITY_FLAG, ANIM, AnimName, +30 more.
+// Holds (in order):
+//   SNAPSHOT_HEADER_BYTES; ENTITY_FIELDS, EntityField, ENTITY_FLAG; ANIM, AnimName, ANIM_NAMES;
+//   EVENT_TYPE, EventType, EVENT_FIELDS, EventField; SnapshotLayout, snapshotLayout;
+//   SnapshotHeader, readSnapshotHeader, writeSnapshotHeader; FogMask, FOG, fogAt;
+//   HeroState, HeroStatus; ProjectPartState, ProjectPartStatus, ProjectPlayerStatus, ProjectStatus;
+//   SlaveGroupStatus; CampState, CreepCampStatus; ChemPhase, ChemStatus;
+//   ClaimActivity, ClaimPointStatus; DominanceStatus, DominanceLeader.
 
 // Contract 1: snapshot sim naar render. Eén transferable ArrayBuffer per tick.
 // Header, dan SoA-arrays per entity (gesorteerd op elementgrootte voor alignment), dan events.

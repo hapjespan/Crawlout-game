@@ -44,3 +44,4 @@ export type {
   SurvivalActiveWave,
   SurvivalStatus,
 } from './snapshot.part3.js';
+export { SURVIVAL_NO_TARGET } from './snapshot.part3.js';
