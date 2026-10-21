@@ -15,6 +15,23 @@ Branch `sprint-1`, laatste commit `5c9c187`. Protocol **0.20.0**, sim 0.35.0, da
 - **Agent garde-ai** (Opus, eigen worktree): de Garde-AI bouwt en gebruikt de Klerk, laadt golven in de Vertibird met Load en Unload, en een AI-script kiest een ander archetype dan de Krijger. Dat is punt 2 van de overdracht van 21 oktober. Levert een eigen branch `worktree-agent-*`; mergen, resterende `robotPop`-verwijzingen omzetten naar `noBedPop`, dan de volle suite.
 - **CI** draait opnieuw zodra de volgende push de PR bijwerkt.
 
+## Wat de eerste echte CI-run opleverde
+
+De split werkt: `lint, typecheck, build` is nu klaar in **1 minuut** in plaats van verstopt in een job die na 30 minuten omviel. Twee bevindingen, allebei nieuw omdat CI nooit eerder gedraaid heeft.
+
+**Groen en belangrijk:** alle **29 replay-fixtures kloppen op Linux**, inclusief serialize/deserialize halverwege, en inclusief de Garde- en held-fixtures. De lockstep-sim is dus óók reproduceerbaar buiten Martiens Mac. Dat is precies wat regel 6 moet bewijzen en het was nooit eerder aangetoond.
+
+**Rood 1 (opgelost):** de balansband van 33 Raider-potjes liep tegen de limiet van 300 s per test. Lokaal duurt hij een minuut op veel cores; de runner heeft er veel minder. Limiet naar 20 minuten, geen enkele assertie gewijzigd (`613e3aa`).
+
+**Rood 2 (vraagt een besluit van Martien, bewust niet 's nachts gefixt):** `tools/asset-cli` vergelijkt een verse build **byte voor byte** met wat in `assets/dist` is gecommit. Op Linux vallen **5 van de 132 assets** anders uit: `dweller_armor_composite`, `garde_body_vertibird`, `raider_armor_steel`, `site_garage_restored`, `survival_behemoth`. Oorzaak: de assetbuild rekent met `Math.sin`, `Math.cos`, `Math.pow` en die zijn niet bit-identiek tussen macOS en glibc. Vandaar dat het er maar vijf zijn — alleen waar een waarde net over een afrondgrens valt. Dit is **geen regressie van deze PR**; het is een eigenschap die er altijd al was en die niemand kon zien omdat CI nooit liep. Vier mogelijkheden:
+
+1. De assetbuild net zo deterministisch maken als de sim (fase-0 sectie 7-discipline, eigen wiskunde in plaats van `Math.*`). Correct en het meeste werk.
+2. Vergelijken met een kleine marge op floats in plaats van op bytes. Houdt het doel van de test (niemand heeft met de hand in een `.glb` zitten knoeien, de fragmenten zijn de bron) en laat het platformverschil los.
+3. De byte-vergelijking alleen draaien op het platform waarop `assets/dist` gebouwd is. Houdt de strengheid lokaal, verliest de dekking in CI.
+4. Niets doen en deze job rood laten tot de assetronde. Dan blokkeert hij wel de merge.
+
+Mijn voorkeur is 2: het doel van de test blijft overeind en de kosten zijn klein. Maar dit is werkstroom 3 plus de architect, niet iets om half twee 's nachts eenzijdig te beslissen.
+
 ## Open
 
 1. **Gate 1 is mensenwerk.** Speeltest met 5 tot 8 mensen en een potje op een laptop met geïntegreerde GPU (60 fps, onder 150 draw calls, geen frame boven 20 ms). Zie `docs/gate-1-checklist/01-samenvatting-is-dit-een-gate-1-kandidaat.md`.
