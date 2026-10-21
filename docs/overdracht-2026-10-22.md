@@ -1,6 +1,6 @@
 # Overdracht 22 oktober 2026 (nachtrun van 21 op 22 oktober)
 
-Branch `sprint-1`, laatste commit `5c9c187`. Protocol **0.20.0**, sim 0.35.0, data 0.42.0, client 0.14.1, ui 0.21.1, relay 0.4.0. Plan van de nacht: `docs/nachtplan-2026-10-21.md`.
+Gepushte stand `origin/sprint-1` = `537a2dc`. Protocol **0.20.0**, sim 0.35.0, data 0.42.0, client 0.14.1, ui 0.21.1, relay 0.4.0. Plan van de nacht: `docs/nachtplan-2026-10-21.md`. Lees ook "Waar de branches staan" onderaan — lokale `sprint-1` loopt voor en mag niet zomaar gepusht worden.
 
 ## Gedaan
 
@@ -10,10 +10,15 @@ Branch `sprint-1`, laatste commit `5c9c187`. Protocol **0.20.0**, sim 0.35.0, da
 4. **PR #1 naar `main` geopend**: de eerste sinds gate 1, 436 commits, 1446 bestanden. https://github.com/hapjespan/Crawlout-game/pull/1
 5. **CI gesplitst** (`.github/workflows/ci.yml`). De eerste run ooit werd na 30 minuten afgekapt: lint en typecheck haalden het, `pnpm test` niet, en replay, de clientbuild en de bench kwamen niet aan de beurt. Nu drie parallelle jobs — verify (lint, typecheck, build, bench), test (alle packages behalve replay) en replay (fixtures, spiegel, balansbanden, `pnpm replay`) — elk met een eigen budget. Dekking ongewijzigd: de zware tests draaien nog steeds en `REPLAY_FAST` blijft in CI uit.
 
-## Loopt nog
+## De Garde-AI: gebouwd, gemeten, bewust niet gemerged
 
-- **Agent garde-ai** (Opus, eigen worktree): de Garde-AI bouwt en gebruikt de Klerk, laadt golven in de Vertibird met Load en Unload, en een AI-script kiest een ander archetype dan de Krijger. Dat is punt 2 van de overdracht van 21 oktober. Levert een eigen branch `worktree-agent-*`; mergen, resterende `robotPop`-verwijzingen omzetten naar `noBedPop`, dan de volle suite.
-- **CI** draait opnieuw zodra de volgende push de PR bijwerkt.
+De agent heeft punt 2 van de vorige overdracht gebouwd en het werkt: de Klerk gaat mee met elke golf en repareert bij de verdediging, de Vertibird laadt tot vier vechters van een golf en zet ze af waar het leger heen marcheert (afzetpunt elke tick afgeleid uit het leger, dus geen nieuwe state), en `dwellers-vs-garde` kiest als eerste script een archetype (de Controleur). Twee optionele datavelden in `raidPlan`: `support` en `airlift`, data 0.43.0.
+
+**Maar het staat niet op `sprint-1` en is niet gepusht.** De volledige suite gaf 2024 geslaagd en **1 gefaald**: in de heropgenomen `s18-rustbelt-garde` haalt geen enkele Garde-eenheid nog veteranenrang 1. Ik heb het apart herhaald — reproduceerbaar, geen flake. Dat is dezelfde oorzaak als de balanscijfers die de agent zelf meldde: tegen de Raiders ging het van 71 naar 75 procent, maar **tegen de Dwellers van 42 naar 29**. De Garde geeft nu uit aan ondersteuning en een landingsplatform ten koste van vechtkracht, krijgt daardoor minder kills, en promoveert binnen de 17,5 minuten van die fixture niemand meer. De fixture bewijst de veteranenmechaniek dus niet langer, terwijl hij daar juist voor bestaat.
+
+Dat is geen testartefact maar een afstemvraag, en de agent zat al op zijn drie meetrondes. Het werk staat compleet op branch **`garde-ai`** (merge `fd7ebe4`). Wil je het alsnog op `sprint-1`: `git merge garde-ai`. Wil je `sprint-1` eerst gelijk aan de gepushte groene stand: `git reset --hard origin/sprint-1` — dat gooit niets weg, alles zit in `garde-ai`.
+
+Mijn inschatting: één afstemronde op `airlift.minArmy`, `support.max` en het moment van het landingsplatform brengt de Dweller-band waarschijnlijk terug, maar dat hoort bij daglicht en bij jouw keuze om balans via een speeltest met mensen te doen in plaats van via nog meer AI-tuning.
 
 ## Wat de eerste echte CI-run opleverde
 
@@ -42,6 +47,12 @@ Dat pleit tegen optie 1 — die betekent de trigonometrie in de hele assetpijpli
 4. **Balansmeting archetypes**: de negen helden zijn nooit gemeten (`docs/held-keuze.md`). Hoort na een speeltest, niet ervoor.
 5. **Label "Robots"** in de HUD dekt zijn inhoud niet meer (punt 3 hierboven).
 
+## Waar de branches staan
+
+- **`origin/sprint-1` = `537a2dc`**: groen en gepusht, dit is wat PR #1 toont. Suite 2020 groen op dat punt.
+- **lokale `sprint-1`**: drie commits vóór origin, want de Garde-AI-merge zit er nog in. **Niet pushen** zolang de veteranenfixture rood staat.
+- **`garde-ai` = `fd7ebe4`**: hetzelfde werk, bewaard. `git reset --hard origin/sprint-1` op `sprint-1` gooit dus niets weg. Dat heb ik bewust niet zelf gedaan: een harde reset hoort een bewuste keuze van jou te zijn, niet van mij om half twee.
+
 ## Eerstvolgende stap
 
-Agent garde-ai mergen, dan `pnpm lint && pnpm typecheck && pnpm test` volledig, fixtures heropnemen als de Garde-AI hashes raakt (met een regel in `docs/CHANGELOG.md` welke en waarom, fase-0 sectie 24 besluit 4), en bij groen pushen naar `origin/sprint-1` zodat PR #1 bijwerkt. Bij rood: committen op een eigen branch en `sprint-1` met rust laten.
+Kies over de Garde-AI (afstemronde of laten liggen tot na de speeltest) en over de assetvergelijking (de vier opties hierboven). Zodra de assetkeuze gemaakt is, is CI groen te krijgen en kan PR #1 verder; de replay-kant is dat al, inclusief alle 29 fixtures op Linux.
