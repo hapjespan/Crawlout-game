@@ -165,9 +165,11 @@ describe('Raiders against Raiders: the mirror', () => {
 });
 
 describe.skipIf(process.env.REPLAY_FAST === '1')('Raiders against Raiders: fairness', () => {
+  // 33 matches, about a minute on a dev Mac with many cores. The budget is for the CI runner, which has far fewer:
+  // the first real CI run (PR #1, 21 October) blew the old 300 s cap on this test while every other test passed.
   it(
     'over the 33 seeds each player wins 12 to 21 matches, every match with a winner',
-    { timeout: 300_000 },
+    { timeout: 1_200_000 },
     async () => {
       const results = await playMatchesParallel(FAIRNESS_SEEDS, undefined, ['raiders', 'raiders']);
       for (const r of results) {
