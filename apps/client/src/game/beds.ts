@@ -10,12 +10,12 @@ export const BEDS_REPEAT_MS = 90000;
 
 /**
  * Whether the population is capped by beds: pop has reached popCap and popCap is below the hard cap that is left after
- * the robots (popCapMax - robotPop). The sim's popCap is min(beds (+ slaves, Raiders), popCapMax - robots - what is in
+ * the no-bed pop (popCapMax - noBedPop). The sim's popCap is min(beds (+ slaves, Raiders), popCapMax - noBedPop - what is in
  * production), so below the hard cap the beds are what binds (an item in production can make this a false positive
  * for the few seconds it runs; harmless for a hint).
  */
 export function cappedByBeds(data: GameData, s: PlayerStatus): boolean {
-  return s.pop >= s.popCap && s.popCap < data.sim.popCapMax - s.robotPop;
+  return s.pop >= s.popCap && s.popCap < data.sim.popCapMax - s.noBedPop;
 }
 
 /**

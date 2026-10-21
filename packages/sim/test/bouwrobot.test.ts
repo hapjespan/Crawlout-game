@@ -137,7 +137,7 @@ describe('bouwrobot: a robot (technician rule, pop, no retraining)', () => {
     // the bouwrobot does not cover the guard, nor itself
     expect(rate(sim, bot)).toBe(1000 - rules.penaltyPermille);
     expect(rate(sim, guard)).toBe(1000 - rules.penaltyPermille);
-    expect(sim.playerStatus(0).robotPop).toBe(unitType(BOT).popCost + unitType(GUARD).popCost);
+    expect(sim.playerStatus(0).noBedPop).toBe(unitType(BOT).popCost + unitType(GUARD).popCost);
     expect(sim.playerStatus(0).settlers).toBe(0);
     // uncovered: half the progress per tick
     const site = sim.spawnBuilding(WONING, 0, 8, 14, false);

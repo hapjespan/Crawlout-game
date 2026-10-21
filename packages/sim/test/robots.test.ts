@@ -66,7 +66,7 @@ describe('robotproductie (Produce)', () => {
     expect(Math.abs(r.y - f.y)).toBeLessThan(5 * 256);
     expect(sim.getUnit(scav)!.typeId).toBe(SCAV);
     expect(sim.queue(0)).toEqual([]);
-    expect(sim.playerStatus(0).robotPop).toBe(guard.popCost);
+    expect(sim.playerStatus(0).noBedPop).toBe(guard.popCost);
     expect(sim.playerStatus(0).settlers).toBe(1);
   });
 
@@ -118,7 +118,7 @@ describe('robotproductie (Produce)', () => {
     expect(sim.queue(0)).toEqual([]);
     const st = sim.playerStatus(0);
     expect(st.pop).toBe(free + 1);
-    expect(st.robotPop).toBe(guard.popCost);
+    expect(st.noBedPop).toBe(guard.popCost);
     expect(st.popCap).toBe(0); // geen bedden
   });
 
@@ -138,7 +138,7 @@ describe('robotproductie (Produce)', () => {
     play(sim, CONFIG.ticksPerMinute * 4);
     const st = sim.playerStatus(0);
     expect(st.settlers).toBe(room);
-    expect(st.pop + (st.robotPop ?? 0)).toBe(CONFIG.popCapMax);
+    expect(st.pop + (st.noBedPop ?? 0)).toBe(CONFIG.popCapMax);
   });
 
   it('Craft weigert een robot-loadout en een robot schoolt niet om', () => {

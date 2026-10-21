@@ -38,7 +38,7 @@ const status = (over: Partial<PlayerStatus> = {}): PlayerStatus => ({
   techs: [],
   queue: [],
   dominance: { pointsHeld: 0, pointsRequired: 2, ticksHeld: 0, ticksRequired: 9600, leader: null },
-  robotPop: 0,
+  noBedPop: 0,
   trained: [0, 0, 0, 0, 0, 0, 0],
   claimPoints: [],
   ...over,
@@ -280,7 +280,7 @@ describe('robot production and training cards', () => {
         scrap: 5000,
         techs: [tech('sentinel_protocol').id, robotica.id],
         pop: 30,
-        robotPop: data.sim.popCapMax - 30 - l.popCost + 1,
+        noBedPop: data.sim.popCapMax - 30 - l.popCost + 1,
       }),
     });
     const c = cards.find((x) => x.id === l.id)!;

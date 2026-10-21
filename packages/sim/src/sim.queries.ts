@@ -83,8 +83,8 @@ export function playerStatusOf(sim: Sim, census: Census, playerId: number): Play
     queue: sim.queue(playerId),
     dominance: sim.dominance(playerId), // protocol 0.6.0: winroute B voor de HUD
     // protocol 0.8.0: robots tellen niet voor bedden; sim 0.34.0: frames, vehicles and beasts neither (the pop that
-    // needs no bed, so pop + robotPop stays within popCapMax and popCap = min(beds, popCapMax - robotPop - ...))
-    robotPop: census.robotPop[playerId]! + census.noBedPop[playerId]!,
+    // needs no bed, so pop + noBedPop stays within popCapMax and popCap = min(beds, popCapMax - noBedPop - ...))
+    noBedPop: census.robotPop[playerId]! + census.noBedPop[playerId]!,
     trained: trainedOf(sim, playerId) as NonNullable<PlayerStatus['trained']>, // protocol 0.8.0
     chems: sim.chems(playerId), // protocol 0.13.0 (voorstel): chem-dosis per eenheid voor de Chem-dealer in de HUD
     claimPoints: claimPointStatus(sim), // protocol 0.10.0 (bevestigd in fase-0 sectie 22 besluit 3): claimstand voor de ring in de HUD

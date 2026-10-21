@@ -82,7 +82,7 @@ describe('state', () => {
         },
         techs: [],
         queue: [],
-        robotPop: 0,
+        noBedPop: 0,
         trained: [0, 0, 0, 0, 0, 0, 0],
         chems: [],
         dominance: {

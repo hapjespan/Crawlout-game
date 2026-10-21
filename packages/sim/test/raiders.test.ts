@@ -78,7 +78,7 @@ describe('Raiders: start, tents, beds and the safety net', () => {
     expect(sim.playerStatus(0).scrap).toBe(500 - p.scrapCost);
     play(sim, p.craftTicks + 2);
     expect(owned(sim, 0, PLUNDERAAR)).toHaveLength(1);
-    expect(sim.playerStatus(0).robotPop).toBe(0);
+    expect(sim.playerStatus(0).noBedPop).toBe(0);
     // the tent has 4 beds: four fighters, then no fifth without a bed
     for (let k = 0; k < 3; k++) spawn(sim, PLUNDERAAR, 0, 5 + k, 40);
     now(sim, 0, 'Produce', { buildingId: tent, loadoutId: p.loadoutId });

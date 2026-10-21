@@ -66,7 +66,7 @@ export function setup(
     units: opts.units ?? [],
     queue: [] as PlayerStatus['queue'],
     targetingEnded: 0,
-    robotPop: 0,
+    noBedPop: 0,
   };
   const status = (): PlayerStatus => ({
     playerId: 0,
@@ -77,7 +77,7 @@ export function setup(
     beds: 4,
     hero: null,
     queue: model.queue,
-    robotPop: model.robotPop,
+    noBedPop: model.noBedPop,
     dominance: {
       pointsHeld: 0,
       pointsRequired: 2,

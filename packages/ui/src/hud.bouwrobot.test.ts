@@ -19,7 +19,7 @@ const status: PlayerStatus = {
   hero: null,
   queue: [],
   dominance: { pointsHeld: 0, pointsRequired: 2, ticksHeld: 0, ticksRequired: 9600, leader: null },
-  robotPop: 1,
+  noBedPop: 1,
   trained: [0, 0, 0, 0, 0, 0, 0],
   claimPoints: [],
 };

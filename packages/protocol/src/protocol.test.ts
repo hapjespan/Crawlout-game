@@ -178,7 +178,7 @@ describe('besluiten sprint 3', () => {
         ticksRequired: 9600,
         leader: null,
       },
-      robotPop: 0,
+      noBedPop: 0,
       trained: [0, 0, 0, 0, 0, 0, 0],
       claimPoints: [],
     };
@@ -201,7 +201,7 @@ describe('besluiten sprint 3', () => {
         ticksRequired: 9600,
         leader: { playerId: 1, pointsHeld: 2, ticksHeld: 4800 },
       },
-      robotPop: 0,
+      noBedPop: 0,
       trained: [0, 0, 0, 0, 0, 0, 0],
       claimPoints: [],
     };
@@ -243,7 +243,7 @@ describe('voorstel content-x (protocol 0.8.0, ter bevestiging door de architect)
     expect(env('Produce', { buildingId: 1, loadoutId: 2, ids: [1] })).toBe(false);
   });
 
-  it('QueueItem kent produce en train; robotPop en trained zijn verplicht (0.9.0)', () => {
+  it('QueueItem kent produce en train; noBedPop en trained zijn verplicht (0.9.0/0.20.0)', () => {
     const status: PlayerStatus = {
       playerId: 0,
       scrap: 0,
@@ -269,7 +269,7 @@ describe('voorstel content-x (protocol 0.8.0, ter bevestiging door de architect)
         ticksRequired: 9600,
         leader: null,
       },
-      robotPop: 2,
+      noBedPop: 2,
       trained: [1, 0, 0, 0, 0, 0, 0],
       claimPoints: [],
     };
@@ -375,7 +375,7 @@ describe('fog of war (protocol 0.11.0, fase-0 sectie 23 besluit 1)', () => {
       hero: null,
       queue: [],
       dominance: { pointsHeld: 0, pointsRequired: 2, ticksHeld: 0, ticksRequired: 9600, leader: null },
-      robotPop: 0,
+      noBedPop: 0,
       trained: [0, 0, 0, 0, 0, 0, 0],
       claimPoints: [],
       survival,

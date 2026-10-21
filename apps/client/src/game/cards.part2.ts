@@ -125,7 +125,7 @@ export function buildingCards(ctx: CardContext): BuildingCard[] {
             q.kind === 'produce' && q.id === l.id && factories.some((f) => f.id === q.buildingId),
         );
         const target = factories.find((f) => !busyBuildings.has(f.id)) ?? factories[0]!;
-        const pop = (status?.pop ?? 0) + (status?.robotPop ?? 0) + producingPop(data, status);
+        const pop = (status?.pop ?? 0) + (status?.noBedPop ?? 0) + producingPop(data, status);
         const popFull = pop + l.popCost > data.sim.popCapMax;
         let st = stateOf(l.scrapCost, l.prereqTech, run !== undefined, false, idx);
         // A Raider fighter from a tent also needs a free bed (slaves and prisoners sleep in the Kooi and do not count).

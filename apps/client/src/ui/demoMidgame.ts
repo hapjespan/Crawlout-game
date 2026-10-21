@@ -30,7 +30,7 @@ const STATUS: PlayerStatus = {
   pop: 38,
   popCap: 40,
   beds: 40,
-  robotPop: 4,
+  noBedPop: 4,
   hero: {
     heroId: 0,
     level: 5,

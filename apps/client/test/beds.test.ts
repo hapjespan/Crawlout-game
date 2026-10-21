@@ -26,7 +26,7 @@ const status = (over: Partial<PlayerStatus> = {}): PlayerStatus => ({
   hero: null,
   queue: [],
   dominance: { pointsHeld: 0, pointsRequired: 2, ticksHeld: 0, ticksRequired: 9600, leader: null },
-  robotPop: 0,
+  noBedPop: 0,
   trained: [0, 0, 0, 0, 0, 0, 0],
   claimPoints: [],
   ...over,
@@ -45,9 +45,9 @@ describe('no free beds hint', () => {
     expect(cappedByBeds(data, status({ pop: 7 }))).toBe(false);
     const max = data.sim.popCapMax;
     expect(cappedByBeds(data, status({ pop: max, popCap: max, beds: max + 10 }))).toBe(false);
-    // robots take room under popCapMax: the cap left for settlers is popCapMax - robotPop
-    expect(cappedByBeds(data, status({ pop: max - 6, popCap: max - 6, robotPop: 6 }))).toBe(false);
-    expect(cappedByBeds(data, status({ pop: 10, popCap: 10, robotPop: 6 }))).toBe(true);
+    // no-bed units take room under popCapMax: the cap left for settlers is popCapMax - noBedPop
+    expect(cappedByBeds(data, status({ pop: max - 6, popCap: max - 6, noBedPop: 6 }))).toBe(false);
+    expect(cappedByBeds(data, status({ pop: 10, popCap: 10, noBedPop: 6 }))).toBe(true);
   });
 
   it('is throttled: once when the cap starts, again only after a while', () => {
