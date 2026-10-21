@@ -66,6 +66,17 @@ describe('lobby: namen en facties', () => {
     expect(start.players.map((p) => p.faction)).toEqual(['dwellers', 'raiders']);
     expect(h.of('b', 'start')[0]!.you).toBe(1);
   });
+
+  it('held-keuze (protocol 0.19.0): setHero komt in lobby en start; zonder keuze geen veld', () => {
+    const h = harness();
+    h.say('a', { kind: 'join', roomId: 'r', name: 'A' });
+    h.say('b', { kind: 'join', roomId: 'r', name: 'B' });
+    h.say('a', { kind: 'setHero', heroArchetype: 'tacticus' });
+    h.say('a', { kind: 'ready', ready: true });
+    h.say('b', { kind: 'ready', ready: true });
+    const start = h.of('b', 'start')[0]!;
+    expect(start.players.map((p) => p.heroArchetype)).toEqual(['tacticus', undefined]);
+  });
 });
 
 describe('instellingen en AI', () => {

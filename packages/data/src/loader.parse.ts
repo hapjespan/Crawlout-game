@@ -43,10 +43,8 @@ export function parseRawData(raw: RawGameData): LoadContext {
     'buildings.json',
     parseList('buildings.json', Building, raw.buildings),
   );
-  // data 0.39.0 (proposal): by (idGroup, id), so a later group appends techIds (tiebreak on the id)
-  const techRaw = sortById('tech.json', parseList('tech.json', Tech, raw.tech)).sort(
-    (a, b) => (a.idGroup ?? 0) - (b.idGroup ?? 0) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0),
-  );
+  // data 0.39.0 (proposal): sortById sorts by (idGroup, id), so a later group appends techIds
+  const techRaw = sortById('tech.json', parseList('tech.json', Tech, raw.tech));
   const heroesRaw = sortById('heroes.json', parseList('heroes.json', Hero, raw.heroes));
   const perksRaw = sortById('perks.json', parseList('perks.json', Perk, raw.perks));
   const trainingRaw = sortById('training.json', parseList('training.json', Training, raw.training));

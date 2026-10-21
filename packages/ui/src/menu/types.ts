@@ -1,4 +1,4 @@
-import type { LobbyPlayer } from '@crawlout/protocol';
+import type { HeroArchetype, LobbyPlayer } from '@crawlout/protocol';
 import type { MinimapData } from '../types.js';
 import type { AiMatchConfig, LobbyMode, MenuScreen, PvpConnectConfig, PvpForm } from './flow.js';
 import type { MenuSettings } from './settings.js';
@@ -11,8 +11,23 @@ export interface MenuFaction {
   /** "De Kluis". */
   subtitle: string;
   blurb: string;
-  /** The hero of this faction ("Opziener"). */
+  /** The hero of this faction ("Opziener"): its Krijger, the hero without a choice. */
   hero: string;
+  /** Hero choice (protocol 0.19.0): the three heroes of the faction, Bouwer, Krijger, Tacticus; absent = no choice. */
+  heroes?: readonly MenuHero[];
+}
+
+/** One hero card of the hero choice. Names and numbers come from the data, the texts are Dutch (the client builds them). */
+export interface MenuHero {
+  archetype: HeroArchetype;
+  /** "Voorman". */
+  name: string;
+  /** "Bouwer · economie". */
+  role: string;
+  /** "Scavengers +8% verzameltempo; -10% bouwtijd". */
+  passive: string;
+  /** "Haastklus: eigen units +25% snelheid, -10% schade ontvangen (14 m, 10 s, cd 60 s)". */
+  ability: string;
 }
 
 export interface MenuMapInfo {
@@ -40,6 +55,7 @@ export interface MenuContent {
 export type LobbyRequest =
   | { kind: 'ready'; ready: boolean }
   | { kind: 'setFaction'; faction: string }
+  | { kind: 'setHero'; heroArchetype: HeroArchetype }
   | { kind: 'setMode'; mode: 'skirmish' | 'survival' }
   | { kind: 'addAi'; faction: string }
   | { kind: 'removeAi'; playerId: number };

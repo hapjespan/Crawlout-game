@@ -4,7 +4,7 @@ import type { MenuController } from './controller.js';
 import type { PvpState, MenuAction } from './flow.js';
 import { type ComponentChild, h } from 'preact';
 import { type LobbyRow, lobbyRows, lobbyControls } from './lobbyModel.js';
-import type { MenuContent } from './types.js';
+import type { MenuContent, MenuFaction } from './types.js';
 import {
   type ShadowSetting,
   SHADOW_CHOICES,
@@ -15,7 +15,7 @@ import {
   HUD_SCALE_CHOICES,
 } from './settings.js';
 import { useRef, useEffect } from 'preact/hooks';
-import { AiScreen, MainMenu, RadioGroup, Splash } from './view.part1.js';
+import { AiScreen, HeroPicker, MainMenu, RadioGroup, Splash } from './view.part1.js';
 
 function PvpForm(props: { ctl: MenuController; pvp: PvpState }): ComponentChild {
   const { ctl, pvp } = props;
@@ -151,6 +151,12 @@ function linkStatus(pvp: PvpState): { tone: 'ok' | 'warn' | 'bad'; text: string 
   return { tone: 'warn', text: `Verbinden met ${url}…` };
 }
 
+/** " · held Voorman" for a row with a hero choice (protocol 0.19.0); empty without heroes in the content. */
+const heroLabel = (faction: MenuFaction, row: LobbyRow): string => {
+  const hero = faction.heroes?.find((x) => x.archetype === (row.heroArchetype ?? 'krijger'));
+  return hero ? ` · held ${hero.name}` : '';
+};
+
 function PlayerRow(props: {
   ctl: MenuController;
   row: LobbyRow;
@@ -182,7 +188,7 @@ function PlayerRow(props: {
       : h(
           'span',
           { class: 'co-m-pfaction' },
-          faction ? `${faction.name} (${faction.subtitle})` : row.faction,
+          faction ? `${faction.name} (${faction.subtitle})${heroLabel(faction, row)}` : row.faction,
         ),
     row.ready
       ? h(
@@ -277,6 +283,13 @@ function PvpLobby(props: {
               h(PlayerRow, { key: row.playerId, ctl, row, content, canChange: pvp.link === 'up' }),
             ),
       ),
+      controls.me && pvp.link === 'up'
+        ? h(HeroPicker, {
+            faction: content.factions.find((f) => f.key === controls.me!.faction),
+            value: controls.me.heroArchetype,
+            onChange: (heroArchetype) => ctl.deps.lobbyRequest({ kind: 'setHero', heroArchetype }),
+          })
+        : null,
       h(
         'div',
         { class: 'co-m-status', 'data-tone': status.tone, role: 'status' },

@@ -1,4 +1,4 @@
-import { MAX_ENTITIES } from '@crawlout/protocol';
+import { MAX_ENTITIES, MAX_PLAYERS } from '@crawlout/protocol';
 import type { World } from './ecs/world.js';
 import type { FlowFields } from './flowfield.js';
 import { MAX_FLOW_FIELDS } from './flowfield.js';
@@ -122,7 +122,7 @@ function bodyChunks(p: StateParts): Uint8Array[] {
     ps.heroEnt,
     ps.heroLevel,
     ps.heroXp,
-    ps.heroPerks,
+    ps.heroPerks.subarray(0, MAX_PLAYERS * ps.perkWords),
     ps.heroPending,
     ps.heroRevives,
     ps.heroTimer,

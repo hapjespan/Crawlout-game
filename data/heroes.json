@@ -179,5 +179,440 @@
     "maxRevives": 4,
     "sightM": 16,
     "_comment": "startwaarde, geen balans (data 0.38.0, voorstel sim-core voor content en de architect; docs/garde.md punt 7): de Paladin-Commander van de Garde, in krachtpantser (baseLoadoutId krachtpantser: heavy, laserkarabijn). Pantser-aura: eigen units binnen 10 m van de levende held krijgen 15 procent minder schade (damageTakenPct -15, nieuw in de stat-enum). Charge: zie de ability. De id zwaardridder sorteert na warlord, zodat de held-ids van de Opziener en de Warlord (en dus elke Dwellers- en Raiders-hash) gelijk blijven; de naam is Paladin-Commander. Perks volgen in een aparte stap (perkPool leeg). SPECIAL-kanaal tech: holobanden (+1 I, P, S op target held)."
+  },
+  {
+    "id": "voorman",
+    "idGroup": 1,
+    "faction": "dwellers",
+    "archetype": "bouwer",
+    "special": {
+      "S": 3,
+      "P": 4,
+      "E": 5,
+      "C": 7,
+      "I": 7,
+      "A": 4,
+      "L": 4
+    },
+    "naam": "Voorman",
+    "xpPerLevel": [80, 120, 160, 200, 250, 300],
+    "xpPerKill": 20,
+    "xpPerDiscovery": 50,
+    "xpPerAssist": 15,
+    "xpAssistRadiusM": 15,
+    "abilities": [
+      {
+        "id": "haastklus",
+        "naam": "Haastklus",
+        "cooldownS": 60,
+        "rangeM": 0,
+        "radiusM": 14,
+        "durationS": 10,
+        "effects": [
+          {
+            "stat": "speedPct",
+            "side": "ally",
+            "target": "units",
+            "delta": 25
+          },
+          {
+            "stat": "damageTakenPct",
+            "side": "ally",
+            "target": "units",
+            "delta": -10
+          }
+        ],
+        "_comment": "startwaarde, geen balans. Haastklus (Bouwer): zie docs/held-keuze.md."
+      }
+    ],
+    "passives": [
+      {
+        "stat": "gatherRatePct",
+        "target": "scavenger",
+        "delta": 8
+      },
+      {
+        "stat": "buildTimePct",
+        "target": "bouwer",
+        "delta": -10
+      }
+    ],
+    "perkPool": [
+      "papierwerk",
+      "opzichter_blik",
+      "zware_laarzen",
+      "voorraadkast",
+      "gereedschapsriem",
+      "zuinig_beheer"
+    ],
+    "reviveScrap": 100,
+    "reviveS": 40,
+    "revivePenaltyPct": 20,
+    "maxRevives": 4,
+    "_comment": "startwaarde, geen balans (data 0.39.0, docs/held-keuze.md). SPECIAL 34 (gelijk aan de Krijger). Voorman (Bouwer van de Dwellers): zwaar op C 7 en I 7, S 3 laag."
+  },
+  {
+    "id": "controleur",
+    "idGroup": 1,
+    "faction": "dwellers",
+    "archetype": "tacticus",
+    "special": {
+      "S": 3,
+      "P": 7,
+      "E": 5,
+      "C": 4,
+      "I": 6,
+      "A": 3,
+      "L": 6
+    },
+    "naam": "Controleur",
+    "xpPerLevel": [80, 120, 160, 200, 250, 300],
+    "xpPerKill": 25,
+    "xpPerDiscovery": 50,
+    "xpPerAssist": 15,
+    "xpAssistRadiusM": 15,
+    "abilities": [
+      {
+        "id": "noodslot",
+        "naam": "Noodslot",
+        "cooldownS": 50,
+        "rangeM": 12,
+        "radiusM": 7,
+        "durationS": 8,
+        "effects": [
+          {
+            "stat": "speedPct",
+            "side": "enemy",
+            "target": "units",
+            "delta": -40
+          },
+          {
+            "stat": "damagePct",
+            "side": "enemy",
+            "target": "units",
+            "delta": -25
+          }
+        ],
+        "_comment": "startwaarde, geen balans. Noodslot (Tacticus): zie docs/held-keuze.md."
+      }
+    ],
+    "passives": [
+      {
+        "stat": "rangeM",
+        "target": "turret",
+        "delta": 1
+      },
+      {
+        "stat": "rangeM",
+        "target": "turret_laser",
+        "delta": 1
+      }
+    ],
+    "aura": {
+      "radiusM": 8,
+      "effects": [
+        {
+          "stat": "speedPct",
+          "side": "enemy",
+          "target": "units",
+          "delta": -10
+        }
+      ]
+    },
+    "baseLoadoutId": "patrol",
+    "perkPool": [
+      "stille_knop",
+      "geluksschot",
+      "zware_laarzen",
+      "scherpe_blik",
+      "kortsluiting",
+      "noodprotocol"
+    ],
+    "reviveScrap": 100,
+    "reviveS": 40,
+    "revivePenaltyPct": 20,
+    "maxRevives": 4,
+    "_comment": "startwaarde, geen balans (data 0.39.0, docs/held-keuze.md). SPECIAL 34 (gelijk aan de Krijger). Controleur (Tacticus van de Dwellers): zwaar op P 7 en I 6."
+  },
+  {
+    "id": "marktmeester",
+    "idGroup": 1,
+    "faction": "raiders",
+    "archetype": "bouwer",
+    "special": {
+      "S": 3,
+      "P": 3,
+      "E": 5,
+      "C": 7,
+      "I": 6,
+      "A": 4,
+      "L": 6
+    },
+    "naam": "Marktmeester",
+    "xpPerLevel": [60, 90, 120, 150, 190, 230],
+    "xpPerKill": 30,
+    "xpPerDiscovery": 60,
+    "xpPerAssist": 20,
+    "xpAssistRadiusM": 15,
+    "abilities": [
+      {
+        "id": "opbod",
+        "naam": "Opbod",
+        "cooldownS": 55,
+        "rangeM": 0,
+        "radiusM": 14,
+        "durationS": 10,
+        "effects": [
+          {
+            "stat": "speedPct",
+            "side": "ally",
+            "target": "units",
+            "delta": 30
+          }
+        ],
+        "_comment": "startwaarde, geen balans. Opbod (Bouwer): zie docs/held-keuze.md."
+      }
+    ],
+    "passives": [
+      {
+        "stat": "gatherRatePct",
+        "target": "slaaf",
+        "delta": 10
+      },
+      {
+        "stat": "buildTimePct",
+        "target": "slaaf_bouwer",
+        "delta": -10
+      }
+    ],
+    "xpPerCapture": 25,
+    "baseLoadoutId": "warlord_basis",
+    "perkPool": [
+      "schuldeiser",
+      "vakbond_verboden",
+      "dubbele_dosis",
+      "zwarte_markt",
+      "afdingen",
+      "gladde_prater"
+    ],
+    "reviveScrap": 90,
+    "reviveS": 35,
+    "revivePenaltyPct": 20,
+    "maxRevives": 4,
+    "_comment": "startwaarde, geen balans (data 0.39.0, docs/held-keuze.md). SPECIAL 34 (gelijk aan de Krijger). Marktmeester (Bouwer van de Raiders): zwaar op C 7 en I 6."
+  },
+  {
+    "id": "ketenmeester",
+    "idGroup": 1,
+    "faction": "raiders",
+    "archetype": "tacticus",
+    "special": {
+      "S": 4,
+      "P": 5,
+      "E": 4,
+      "C": 5,
+      "I": 5,
+      "A": 6,
+      "L": 5
+    },
+    "naam": "Ketenmeester",
+    "xpPerLevel": [60, 90, 120, 150, 190, 230],
+    "xpPerKill": 30,
+    "xpPerDiscovery": 60,
+    "xpPerAssist": 20,
+    "xpAssistRadiusM": 15,
+    "abilities": [
+      {
+        "id": "prikkeldraad",
+        "naam": "Prikkeldraad",
+        "cooldownS": 45,
+        "rangeM": 12,
+        "radiusM": 7,
+        "durationS": 8,
+        "effects": [
+          {
+            "stat": "speedPct",
+            "side": "enemy",
+            "target": "units",
+            "delta": -45
+          },
+          {
+            "stat": "damagePct",
+            "side": "enemy",
+            "target": "units",
+            "delta": -15
+          }
+        ],
+        "_comment": "startwaarde, geen balans. Prikkeldraad (Tacticus): zie docs/held-keuze.md."
+      }
+    ],
+    "passives": [],
+    "aura": {
+      "radiusM": 8,
+      "effects": [
+        {
+          "stat": "speedPct",
+          "side": "enemy",
+          "target": "units",
+          "delta": -10
+        }
+      ]
+    },
+    "xpPerCapture": 25,
+    "baseLoadoutId": "warlord_basis",
+    "perkPool": [
+      "rammelende_ketting",
+      "goot_scherpschutter",
+      "grote_bek",
+      "lange_ketting",
+      "achtervolgingswaan",
+      "rookgordijn"
+    ],
+    "reviveScrap": 90,
+    "reviveS": 35,
+    "revivePenaltyPct": 20,
+    "maxRevives": 4,
+    "_comment": "startwaarde, geen balans (data 0.39.0, docs/held-keuze.md). SPECIAL 34 (gelijk aan de Krijger). Ketenmeester (Tacticus van de Raiders): zwaar op A 6 en C 5."
+  },
+  {
+    "id": "kwartiermeester",
+    "idGroup": 1,
+    "faction": "garde",
+    "archetype": "bouwer",
+    "special": {
+      "S": 3,
+      "P": 4,
+      "E": 5,
+      "C": 6,
+      "I": 7,
+      "A": 3,
+      "L": 6
+    },
+    "naam": "Kwartiermeester",
+    "xpPerLevel": [80, 120, 160, 200, 250, 300],
+    "xpPerKill": 20,
+    "xpPerDiscovery": 50,
+    "xpPerAssist": 15,
+    "xpAssistRadiusM": 15,
+    "abilities": [
+      {
+        "id": "bevoorrading",
+        "naam": "Bevoorrading",
+        "cooldownS": 60,
+        "rangeM": 0,
+        "radiusM": 12,
+        "durationS": 10,
+        "effects": [
+          {
+            "stat": "speedPct",
+            "side": "ally",
+            "target": "units",
+            "delta": 20
+          },
+          {
+            "stat": "damageTakenPct",
+            "side": "ally",
+            "target": "units",
+            "delta": -10
+          }
+        ],
+        "_comment": "startwaarde, geen balans. Bevoorrading (Bouwer): zie docs/held-keuze.md."
+      }
+    ],
+    "passives": [
+      {
+        "stat": "gatherRatePct",
+        "target": "initiate_zoeker",
+        "delta": 8
+      },
+      {
+        "stat": "researchTimePct",
+        "target": "alle",
+        "delta": -10
+      }
+    ],
+    "baseLoadoutId": "initiate_wacht",
+    "perkPool": [
+      "papierwerk",
+      "zware_laarzen",
+      "geluksschot",
+      "voorraadlijst",
+      "bouwplan",
+      "rijke_archieven"
+    ],
+    "reviveScrap": 120,
+    "reviveS": 45,
+    "revivePenaltyPct": 20,
+    "maxRevives": 4,
+    "sightM": 16,
+    "_comment": "startwaarde, geen balans (data 0.39.0, docs/held-keuze.md). SPECIAL 34 (gelijk aan de Krijger). Kwartiermeester (Bouwer van de Garde): zwaar op I 7 en C 6."
+  },
+  {
+    "id": "archivaris",
+    "idGroup": 1,
+    "faction": "garde",
+    "archetype": "tacticus",
+    "special": {
+      "S": 3,
+      "P": 6,
+      "E": 5,
+      "C": 4,
+      "I": 7,
+      "A": 3,
+      "L": 6
+    },
+    "naam": "Archivaris",
+    "xpPerLevel": [80, 120, 160, 200, 250, 300],
+    "xpPerKill": 25,
+    "xpPerDiscovery": 50,
+    "xpPerAssist": 15,
+    "xpAssistRadiusM": 15,
+    "abilities": [
+      {
+        "id": "dwangprotocol",
+        "naam": "Dwangprotocol",
+        "cooldownS": 50,
+        "rangeM": 12,
+        "radiusM": 7,
+        "durationS": 7,
+        "effects": [
+          {
+            "stat": "speedPct",
+            "side": "enemy",
+            "target": "units",
+            "delta": -35
+          },
+          {
+            "stat": "damagePct",
+            "side": "enemy",
+            "target": "units",
+            "delta": -30
+          }
+        ],
+        "_comment": "startwaarde, geen balans. Dwangprotocol (Tacticus): zie docs/held-keuze.md."
+      }
+    ],
+    "passives": [
+      {
+        "stat": "rangeM",
+        "target": "geschutstoren",
+        "delta": 1
+      }
+    ],
+    "baseLoadoutId": "initiate_wacht",
+    "perkPool": [
+      "papierwerk",
+      "zware_laarzen",
+      "geluksschot",
+      "heldere_richtlijn",
+      "gelaagde_beveiliging",
+      "doelwitprotocol"
+    ],
+    "reviveScrap": 120,
+    "reviveS": 45,
+    "revivePenaltyPct": 20,
+    "maxRevives": 4,
+    "sightM": 16,
+    "_comment": "startwaarde, geen balans (data 0.39.0, docs/held-keuze.md). SPECIAL 34 (gelijk aan de Krijger). Archivaris (Tacticus van de Garde): zwaar op I 7 en P 6."
   }
 ]

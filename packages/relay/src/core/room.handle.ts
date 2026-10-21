@@ -21,6 +21,12 @@ export function roomHandle(room: RoomInternals, connId: string, msg: ClientMessa
       player.faction = msg.faction;
       player.ready = false;
       return room.broadcastLobby();
+    case 'setHero':
+      // protocol 0.19.0 (voorstel): the archetype of the own hero; the sim resolves the hero of the faction
+      if (room.started) return room.error(connId, 'potje is al gestart');
+      player.heroArchetype = msg.heroArchetype;
+      player.ready = false;
+      return room.broadcastLobby();
     case 'setMap':
       if (room.started) return room.error(connId, 'potje is al gestart');
       room.map = msg.map;

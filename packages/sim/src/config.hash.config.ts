@@ -1,6 +1,7 @@
 import { gatedFactions, gatedHeroes, gatedScripts, rankOf } from './config.hash.garde.js';
 import { hashGardeUnit } from './config.hash.gardeB.js';
 import { fnv1aInt } from './math/fnv.js';
+import { choiceHeroes } from './config.heroes.js';
 import type { SimEffect } from './config.types.js';
 import type { SimConfig } from './config.env.js';
 
@@ -164,7 +165,8 @@ export function hashFactions(h: number, c: SimConfig): number {
   // values are in hashGarde, only when it plays. Script and hero indices skip the gated ones (config.hash.garde.ts).
   const gated = gatedFactions(c);
   const scripts = gatedScripts(c);
-  const heroes = gatedHeroes(c);
+  // sim 0.33.0: the choice heroes are counted out like the gated ones (config.heroes.ts)
+  const heroes = new Set([...gatedHeroes(c), ...choiceHeroes(c)]);
   for (const f of c.factions) {
     const g = gated[f.factionId] === true;
     h = hashInts(h, [

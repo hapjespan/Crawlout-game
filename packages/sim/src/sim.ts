@@ -16,7 +16,7 @@ import type {
   SimPlayer,
   SimUnitType,
 } from './config.js';
-import { envHash, validateEnv } from './config.js';
+import { PERK_WORDS, envHash, validateEnv } from './config.js';
 import { NO_ENTITY, World } from './ecs/world.js';
 import { EventBuffer } from './events.js';
 import { FlowFields } from './flowfield.js';
@@ -149,7 +149,11 @@ export class Sim implements SimContext {
     validateEnv(env);
     this.map = env.map;
     this.config = env.config;
-    this.players = env.players.map((p) => ({ factionId: p.factionId, ai: p.ai }));
+    this.players = env.players.map((p) =>
+      p.heroId === undefined
+        ? { factionId: p.factionId, ai: p.ai }
+        : { factionId: p.factionId, ai: p.ai, heroId: p.heroId },
+    );
     this.playerCount = env.players.length;
     this.envHashValue = envHash(env);
     this.terrain = new Terrain(env.map);
@@ -171,6 +175,8 @@ export class Sim implements SimContext {
     this.defense.active = defenseActive(this);
     this.world.clearOnFree.push(this.defense.mark);
     this.garde.active = gardeOn(env);
+    // sim 0.33.0: the higher perk words only with more than 32 perks, so every other state keeps its format and hash
+    this.ps.perkWords = env.config.perks.length > 32 ? PERK_WORDS : 1;
     const g = this.garde;
     this.world.clearOnFree.push(g.kills, g.rank, g.stunUntil, g.overloadAt, g.quality, g.cargoN);
     this.parts = {

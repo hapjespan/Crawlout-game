@@ -19,6 +19,7 @@ import {
   type CommandPayload,
   type CommandType,
   type FrameBundle,
+  type HeroArchetype,
   type LobbyPlayer,
   type ServerMessage,
   type StallNotice,
@@ -58,6 +59,8 @@ export interface SessionOptions {
   faction?: string;
   /** The AI's faction (loopback and `?ai=1`); default `?aifaction=`. */
   aiFaction?: string;
+  /** Hero choice (protocol 0.19.0): the archetype of this player's hero; absent = none sent (the Krijger). */
+  heroArchetype?: HeroArchetype;
   /** Over ws: `auto` (default) readies itself from the URL options, `manual` leaves the lobby to the player (the menu). */
   lobby?: 'auto' | 'manual';
   /**
@@ -389,6 +392,8 @@ export function startSession(
     // The AI is a lobby player without a connection; it runs in the sim on every client and reports no hashes.
     link.send({ kind: 'join', roomId: 'skirmish', name: 'Jij' });
     link.send({ kind: 'setFaction', faction: ownFaction });
+    if (options.heroArchetype !== undefined)
+      link.send({ kind: 'setHero', heroArchetype: options.heroArchetype });
     // win route C: the game type Bouwproject puts the strip mall into the sim (the host's settings); Survival co-op
     // too, but without the AI (the scripted AI does not know survival) and solo (the relay's minimum is 1 here)
     if (gameMode !== 'skirmish')

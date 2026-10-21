@@ -74,8 +74,8 @@ import { playMatchesParallel, summarize } from './fairness.js';
 // 0.40.0: the Garde power armour has its own column): speler 0 wint 11 en speler 1 wint 22, 13 keer vernietiging en 20
 // keer dominantie, lengte 25,7 tot 37,2 minuten (31 van de 33 tussen 25 en 35). Seed 7 re-pinned (same winner and
 // route, 11 frames earlier); seed 11 (now player 1 on dominance at 35,3 min, outside the window) is replaced by seed 21
-// (player 0 on destruction) so the five keep both winners and both routes. OPEN: the 12-to-21 band (11 for player 0;
-// 12 without base defence, so the skew to player 1 predates it).
+// (player 0 on destruction) so the five keep both winners and both routes. The 12-to-21 band (11 for player 0;
+// 12 without base defence, so the skew to player 1 predates it) is widened to 11-22, see the fairness test below.
 const EXPECTED = [
   { seed: 1, winner: 0, reason: 'dominance', frame: 32021 },
   { seed: 2, winner: 1, reason: 'dominance', frame: 32109 },
@@ -112,12 +112,16 @@ describe.skipIf(process.env.REPLAY_FAST === '1')(
       });
     }
 
-    it('eerlijk: over de 33 seeds wint elke speler 12 tot 21 potjes (36 tot 64 procent; doel 40 tot 60)', () => {
+    // Fairness band widened to 11-22 of 33 (phase3-final, Martien: "Marge verruimen + mensen-test"): with 33 games the
+    // win count of a fair mirror is binomial with a standard deviation of 2.9 games, so 11 against 22 is within two
+    // sigma of 16.5 and not a balance signal. This band only catches a sim that clearly favours one seat (like 28
+    // against 5); the real balance comes from a playtest with people, not from tuning on this sample.
+    it('eerlijk: over de 33 seeds wint elke speler 11 tot 22 potjes (33 tot 67 procent; binomiale ruis)', () => {
       const s = summarize(results);
       expect(s.wins[0] + s.wins[1]).toBe(FAIRNESS_SEEDS.length);
       for (const w of s.wins) {
-        expect(w).toBeGreaterThanOrEqual(12);
-        expect(w).toBeLessThanOrEqual(21);
+        expect(w).toBeGreaterThanOrEqual(11);
+        expect(w).toBeLessThanOrEqual(22);
       }
     });
 

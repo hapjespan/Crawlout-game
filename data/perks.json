@@ -163,5 +163,349 @@
     "requires": { "stat": "I", "min": 3 },
     "effects": [{ "stat": "buildTimePct", "target": "slaaf_bouwer", "delta": -15 }],
     "_comment": "startwaarde, geen balans. Vakbond Verboden (vereist I 3): slaaf_bouwers bouwen 15 procent sneller (stapelt met slavenboeien). De Warlord heeft I 3, dus kiesbaar. Elk perk is bereikbaar met het basis-SPECIAL van de Warlord; de chems tillen hem er tijdelijk boven."
+  },
+  {
+    "id": "voorraadkast",
+    "idGroup": 1,
+    "naam": "Voorraadkast",
+    "flavourText": "Altijd een kast meer dan de inventaris zegt.",
+    "requires": {
+      "stat": "C",
+      "min": 6
+    },
+    "effects": [
+      {
+        "stat": "gatherRatePct",
+        "target": "scavenger",
+        "delta": 6
+      }
+    ],
+    "_comment": "startwaarde, geen balans (data 0.39.0, docs/held-keuze.md). Voorman (Bouwer): +6 procent scavenger-opbrengst (C 6)."
+  },
+  {
+    "id": "gereedschapsriem",
+    "idGroup": 1,
+    "naam": "Gereedschapsriem",
+    "flavourText": "Alles hangt binnen handbereik. Behalve de tang.",
+    "requires": {
+      "stat": "I",
+      "min": 6
+    },
+    "effects": [
+      {
+        "stat": "buildTimePct",
+        "target": "bouwer",
+        "delta": -10
+      }
+    ],
+    "_comment": "startwaarde, geen balans (data 0.39.0, docs/held-keuze.md). Voorman (Bouwer): bouwers bouwen 10 procent sneller (I 6)."
+  },
+  {
+    "id": "zuinig_beheer",
+    "idGroup": 1,
+    "naam": "Zuinig Beheer",
+    "flavourText": "Elke schroef wordt twee keer omgedraaid voor hij wordt uitgegeven.",
+    "requires": {
+      "stat": "I",
+      "min": 7
+    },
+    "effects": [
+      {
+        "stat": "researchCostPct",
+        "target": "alle",
+        "delta": -8
+      }
+    ],
+    "_comment": "startwaarde, geen balans (data 0.39.0, docs/held-keuze.md). Voorman (Bouwer): onderzoek 8 procent goedkoper (I 7); stapelt met de passief van de Opziener niet, want die held is een andere keuze."
+  },
+  {
+    "id": "scherpe_blik",
+    "idGroup": 1,
+    "naam": "Scherpe Blik",
+    "flavourText": "Hij ziet de opening voordat de vijand weet dat hij er een heeft.",
+    "requires": {
+      "stat": "P",
+      "min": 6
+    },
+    "effects": [
+      {
+        "stat": "rangeM",
+        "target": "held",
+        "delta": 1
+      }
+    ],
+    "_comment": "startwaarde, geen balans (data 0.39.0, docs/held-keuze.md). Controleur (Tacticus): +1 m bereik voor de held (P 6)."
+  },
+  {
+    "id": "kortsluiting",
+    "idGroup": 1,
+    "naam": "Kortsluiting",
+    "flavourText": "Een draadje hier, een draadje daar. Het licht gaat uit, maar de turret niet.",
+    "requires": {
+      "stat": "I",
+      "min": 6
+    },
+    "effects": [
+      {
+        "stat": "damagePct",
+        "target": "turret",
+        "delta": 8
+      },
+      {
+        "stat": "damagePct",
+        "target": "turret_laser",
+        "delta": 8
+      }
+    ],
+    "_comment": "startwaarde, geen balans (data 0.39.0, docs/held-keuze.md). Controleur (Tacticus): turrets +8 procent schade (I 6)."
+  },
+  {
+    "id": "noodprotocol",
+    "idGroup": 1,
+    "naam": "Noodprotocol",
+    "flavourText": "Bij brand: niet rennen. Bij vijand: ook niet rennen.",
+    "requires": {
+      "stat": "E",
+      "min": 4
+    },
+    "effects": [
+      {
+        "stat": "hpPct",
+        "target": "turret",
+        "delta": 10
+      },
+      {
+        "stat": "hpPct",
+        "target": "turret_laser",
+        "delta": 10
+      }
+    ],
+    "_comment": "startwaarde, geen balans (data 0.39.0, docs/held-keuze.md). Controleur (Tacticus): turrets +10 procent hp (E 4)."
+  },
+  {
+    "id": "zwarte_markt",
+    "idGroup": 1,
+    "naam": "Zwarte Markt",
+    "flavourText": "Alles heeft een prijs. Vooral wat niet van jou is.",
+    "requires": {
+      "stat": "C",
+      "min": 5
+    },
+    "effects": [
+      {
+        "stat": "gatherRatePct",
+        "target": "slaaf",
+        "delta": 6
+      }
+    ],
+    "_comment": "startwaarde, geen balans (data 0.39.0, docs/held-keuze.md). Marktmeester (Bouwer): +6 procent scrap per rit voor elke slaaf (C 5); stapelt met de Schuldeiser."
+  },
+  {
+    "id": "afdingen",
+    "idGroup": 1,
+    "naam": "Afdingen",
+    "flavourText": "Eerst lachen, dan het bedrag halveren, dan nog een keer lachen.",
+    "requires": {
+      "stat": "I",
+      "min": 6
+    },
+    "effects": [
+      {
+        "stat": "researchCostPct",
+        "target": "alle",
+        "delta": -8
+      }
+    ],
+    "_comment": "startwaarde, geen balans (data 0.39.0, docs/held-keuze.md). Marktmeester (Bouwer): onderzoek 8 procent goedkoper (I 6)."
+  },
+  {
+    "id": "gladde_prater",
+    "idGroup": 1,
+    "naam": "Gladde Prater",
+    "flavourText": "Het contract is vier regels. Het kleine lettertype is een andere taal.",
+    "requires": {
+      "stat": "C",
+      "min": 6
+    },
+    "effects": [
+      {
+        "stat": "researchTimePct",
+        "target": "alle",
+        "delta": -10
+      }
+    ],
+    "_comment": "startwaarde, geen balans (data 0.39.0, docs/held-keuze.md). Marktmeester (Bouwer): onderzoek 10 procent sneller (C 6)."
+  },
+  {
+    "id": "lange_ketting",
+    "idGroup": 1,
+    "naam": "Lange Ketting",
+    "flavourText": "Net te kort om te ontsnappen. Net lang genoeg voor jou.",
+    "requires": {
+      "stat": "P",
+      "min": 5
+    },
+    "effects": [
+      {
+        "stat": "rangeM",
+        "target": "held",
+        "delta": 1
+      }
+    ],
+    "_comment": "startwaarde, geen balans (data 0.39.0, docs/held-keuze.md). Ketenmeester (Tacticus): +1 m bereik voor de held (P 5)."
+  },
+  {
+    "id": "achtervolgingswaan",
+    "idGroup": 1,
+    "naam": "Achtervolgingswaan",
+    "flavourText": "Wie rent, heeft iets te verbergen. En iets te betalen.",
+    "requires": {
+      "stat": "A",
+      "min": 5
+    },
+    "effects": [
+      {
+        "stat": "speedPct",
+        "target": "plunderaar",
+        "delta": 4
+      },
+      {
+        "stat": "speedPct",
+        "target": "plunderaar_staal",
+        "delta": 4
+      }
+    ],
+    "_comment": "startwaarde, geen balans (data 0.39.0, docs/held-keuze.md). Ketenmeester (Tacticus): plunderaar en plunderaar_staal 4 procent sneller (A 5)."
+  },
+  {
+    "id": "rookgordijn",
+    "idGroup": 1,
+    "naam": "Rookgordijn",
+    "flavourText": "Niemand weet waar het vandaan komt. Iedereen weet waar het heen gaat.",
+    "requires": {
+      "stat": "E",
+      "min": 4
+    },
+    "effects": [
+      {
+        "stat": "hpPct",
+        "target": "plunderaar",
+        "delta": 5
+      },
+      {
+        "stat": "hpPct",
+        "target": "plunderaar_staal",
+        "delta": 5
+      }
+    ],
+    "_comment": "startwaarde, geen balans (data 0.39.0, docs/held-keuze.md). Ketenmeester (Tacticus): plunderaar en plunderaar_staal +5 procent hp (E 4)."
+  },
+  {
+    "id": "voorraadlijst",
+    "idGroup": 1,
+    "naam": "Voorraadlijst",
+    "flavourText": "Alles is geteld. Wat niet geteld is, bestaat niet.",
+    "requires": {
+      "stat": "C",
+      "min": 5
+    },
+    "effects": [
+      {
+        "stat": "gatherRatePct",
+        "target": "initiate_zoeker",
+        "delta": 8
+      }
+    ],
+    "_comment": "startwaarde, geen balans (data 0.39.0, docs/held-keuze.md). Kwartiermeester (Bouwer): +8 procent opbrengst voor de initiate_zoeker (C 5)."
+  },
+  {
+    "id": "bouwplan",
+    "idGroup": 1,
+    "naam": "Bouwplan",
+    "flavourText": "Gestempeld, gedateerd en in drievoud. Nu mag er pas gebouwd worden.",
+    "requires": {
+      "stat": "I",
+      "min": 6
+    },
+    "effects": [
+      {
+        "stat": "buildTimePct",
+        "target": "initiate_bouwer",
+        "delta": -12
+      }
+    ],
+    "_comment": "startwaarde, geen balans (data 0.39.0, docs/held-keuze.md). Kwartiermeester (Bouwer): initiate_bouwers bouwen 12 procent sneller (I 6)."
+  },
+  {
+    "id": "rijke_archieven",
+    "idGroup": 1,
+    "naam": "Rijke Archieven",
+    "flavourText": "Drie verdiepingen perkament. De kelder is nog niet gecatalogiseerd.",
+    "requires": {
+      "stat": "I",
+      "min": 7
+    },
+    "effects": [
+      {
+        "stat": "researchCostPct",
+        "target": "alle",
+        "delta": -8
+      }
+    ],
+    "_comment": "startwaarde, geen balans (data 0.39.0, docs/held-keuze.md). Kwartiermeester (Bouwer): onderzoek 8 procent goedkoper (I 7)."
+  },
+  {
+    "id": "heldere_richtlijn",
+    "idGroup": 1,
+    "naam": "Heldere Richtlijn",
+    "flavourText": "Artikel 1: de vijand heeft ongelijk. Artikel 2: zie artikel 1.",
+    "requires": {
+      "stat": "P",
+      "min": 6
+    },
+    "effects": [
+      {
+        "stat": "rangeM",
+        "target": "held",
+        "delta": 1
+      }
+    ],
+    "_comment": "startwaarde, geen balans (data 0.39.0, docs/held-keuze.md). Archivaris (Tacticus): +1 m bereik voor de held (P 6)."
+  },
+  {
+    "id": "gelaagde_beveiliging",
+    "idGroup": 1,
+    "naam": "Gelaagde Beveiliging",
+    "flavourText": "Zeven sloten, en de sleutel ligt bij een commissie.",
+    "requires": {
+      "stat": "E",
+      "min": 5
+    },
+    "effects": [
+      {
+        "stat": "hpPct",
+        "target": "geschutstoren",
+        "delta": 10
+      }
+    ],
+    "_comment": "startwaarde, geen balans (data 0.39.0, docs/held-keuze.md). Archivaris (Tacticus): geschutstorens +10 procent hp (E 5)."
+  },
+  {
+    "id": "doelwitprotocol",
+    "idGroup": 1,
+    "naam": "Doelwitprotocol",
+    "flavourText": "De regels zijn simpel: eerst richten, dan een formulier, dan pas schieten.",
+    "requires": {
+      "stat": "I",
+      "min": 6
+    },
+    "effects": [
+      {
+        "stat": "damagePct",
+        "target": "geschutstoren",
+        "delta": 8
+      }
+    ],
+    "_comment": "startwaarde, geen balans (data 0.39.0, docs/held-keuze.md). Archivaris (Tacticus): geschutstorens +8 procent schade (I 6)."
   }
 ]

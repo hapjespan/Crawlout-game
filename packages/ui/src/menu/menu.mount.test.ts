@@ -360,3 +360,67 @@ describe('type size', () => {
     for (const f of fontSizes) expect(f).toMatch(/max\(11px|max\(\d+px,/);
   });
 });
+
+describe('hero choice (protocol 0.19.0)', () => {
+  const hero = (archetype: 'bouwer' | 'krijger' | 'tacticus', name: string) => ({
+    archetype,
+    name,
+    role: archetype === 'bouwer' ? 'Bouwer · economie' : archetype,
+    passive: `passief ${name}`,
+    ability: `Ability ${name}`,
+  });
+  const withHeroes: MenuDeps['content'] = {
+    ...content,
+    factions: content.factions.map((f) => ({
+      ...f,
+      heroes: [
+        hero('bouwer', `B-${f.key}`),
+        hero('krijger', f.hero),
+        hero('tacticus', `T-${f.key}`),
+      ],
+    })),
+  };
+
+  it('Tegen AI: three cards of the own faction, Krijger preselected; the choice goes into the start', () => {
+    const started: string[] = [];
+    setup({ content: withHeroes, startAi: (c) => started.push(`${c.faction}:${c.heroArchetype}`) });
+    act(() => menu.setLoaded());
+    key(' ');
+    key('1');
+    const group = () => host.querySelector('[role=radiogroup][aria-label="Jouw held"]')!;
+    expect(group().querySelectorAll('[role=radio]')).toHaveLength(3);
+    expect(group().querySelector('[aria-checked=true]')?.textContent).toContain('Opziener');
+    expect(group().textContent).toContain('Bouwer · economie');
+    click(byText('[role=radio]', 'Raiders'));
+    expect(group().textContent).toContain('B-raiders');
+    click(byText('[role=radiogroup][aria-label="Jouw held"] [role=radio]', 'T-raiders'));
+    click(byText('.co-btn', 'Start'));
+    expect(started).toEqual(['raiders:tacticus']);
+  });
+
+  it('lobby: the own hero choice sends setHero; other rows show their hero', () => {
+    setup({ content: withHeroes });
+    act(() => menu.setLoaded());
+    key(' ');
+    key('2');
+    click(byText('.co-btn', 'Nieuwe kamer'));
+    act(() => {
+      menu.setLink('up');
+      menu.setLobby('ROOM1', 'rustbelt', [
+        p(0, 'Rik'),
+        p(1, 'Els', { faction: 'raiders', heroArchetype: 'bouwer' }),
+      ]);
+    });
+    expect(byText('.co-m-player', 'Els')?.textContent).toContain('held B-raiders');
+    click(byText('[role=radiogroup][aria-label="Jouw held"] [role=radio]', 'T-dwellers'));
+    expect(calls.at(-1)).toBe('lobby:{"kind":"setHero","heroArchetype":"tacticus"}');
+  });
+
+  it('without heroes in the content there is no hero choice', () => {
+    setup();
+    act(() => menu.setLoaded());
+    key(' ');
+    key('1');
+    expect(host.querySelector('[aria-label="Jouw held"]')).toBeNull();
+  });
+});

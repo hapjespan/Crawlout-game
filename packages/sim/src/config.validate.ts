@@ -43,6 +43,13 @@ export function validateEnv(env: SimEnv): void {
       `speler met onbekende factie ${p.factionId}`,
     );
     req(typeof p.ai === 'boolean', 'speler zonder ai-vlag');
+    // sim 0.33.0: a chosen hero is a hero of the player's own faction
+    if (p.heroId !== undefined)
+      req(
+        intIn(p.heroId, 0, config.heroes.length - 1) &&
+          config.heroes[p.heroId]!.factionId === p.factionId,
+        `speler met een held ${p.heroId} buiten zijn factie`,
+      );
   }
 }
 

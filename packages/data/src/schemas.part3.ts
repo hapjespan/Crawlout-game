@@ -3,6 +3,7 @@
 import { z } from 'zod';
 import { comment, id, nonneg, pct, sight } from './schemas.part1.js';
 import { AiSite, RaidPlan } from './schemas.part2.js';
+import { Archetype } from './schemas.part1.js';
 
 export const AiScript = z
   .object({
@@ -135,6 +136,9 @@ export const AiScript = z
     // this faction (optional; the opponent's faction is lobby knowledge). Without `versus` it is the faction's default
     // script; at most one script per faction and opponent (the loader checks).
     versus: id.optional(),
+    // data 0.39.0 (hero choice, proposal for the architect; docs/held-keuze.md): the archetype of the hero an AI
+    // player of this script plays when the lobby chose none; absent = krijger
+    heroArchetype: Archetype.optional(),
     // Data 0.24.0 (proposal, to be confirmed by the architect): liberation (optional). With at least minFree idle militia
     // and no threat, the AI sends up to `units` of them (Attack: walk up and touch) to the visible enemy slave or captive
     // nearest its headquarters within radiusM of one of its own buildings.

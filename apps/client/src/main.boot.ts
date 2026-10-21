@@ -112,6 +112,7 @@ export async function bootClient(ctx: ClientContext): Promise<void> {
           ctx.launchMatch(null, {
             faction: config.faction,
             aiFaction: config.aiFaction,
+            heroArchetype: config.heroArchetype,
             mode:
               config.gameType === 'build'
                 ? 'project'
