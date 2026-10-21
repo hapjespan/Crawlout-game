@@ -30,7 +30,9 @@ De split werkt: `lint, typecheck, build` is nu klaar in **1 minuut** in plaats v
 3. De byte-vergelijking alleen draaien op het platform waarop `assets/dist` gebouwd is. Houdt de strengheid lokaal, verliest de dekking in CI.
 4. Niets doen en deze job rood laten tot de assetronde. Dan blokkeert hij wel de merge.
 
-Mijn voorkeur is 2: het doel van de test blijft overeind en de kosten zijn klein. Maar dit is werkstroom 3 plus de architect, niet iets om half twee 's nachts eenzijdig te beslissen.
+Ik heb nagegaan of het aan één vormsoort ligt: nee. `segments` (en dus `sin`/`cos`) zit in **40 van de 54 bronfragmenten**, 759 keer in totaal, en de vijf falende assets gebruiken het juist mínder dan gemiddeld. Het is dus geen kapot onderdeel maar statistiek: bij genoeg radiale onderdelen landt af en toe een waarde net op een afrondgrens waar de twee libm-implementaties uiteenlopen, en dan verschuift één byte in de `.glb`.
+
+Dat pleit tegen optie 1 — die betekent de trigonometrie in de hele assetpijplijn vervangen, niet één bug zoeken. Mijn voorkeur is **2**: het doel van de test (de fragmenten zijn de bron, niemand heeft met de hand in een `.glb` geknoeid) blijft volledig overeind, terwijl het platformverschil eruit valt. Optie 3 is de goedkope noodoplossing als het snel moet. Maar dit is werkstroom 3 plus de architect, niet iets om half twee 's nachts eenzijdig te beslissen.
 
 ## Open
 
