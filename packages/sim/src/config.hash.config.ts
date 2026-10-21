@@ -1,5 +1,7 @@
 import { gatedFactions, gatedHeroes, gatedScripts, rankOf } from './config.hash.garde.js';
+import { hashGardeUnit } from './config.hash.gardeB.js';
 import { fnv1aInt } from './math/fnv.js';
+import { choiceHeroes } from './config.heroes.js';
 import type { SimEffect } from './config.types.js';
 import type { SimConfig } from './config.env.js';
 
@@ -53,7 +55,10 @@ export function hashTuning(h: number, c: SimConfig): number {
 /** Unit types. */
 export function hashUnitTypes(h: number, c: SimConfig): number {
   h = fnv1aInt(h, c.unitTypes.length);
+  const gated = gatedFactions(c);
   for (const u of c.unitTypes) {
+    // sim 0.33.0: the repair of a gated faction's type (the Klerk) is in hashGarde, like its overload and transport
+    const repair = gated[u.factionId] === true ? null : u.repair;
     h = hashInts(h, [
       u.typeId,
       u.loadoutId,
@@ -80,17 +85,19 @@ export function hashUnitTypes(h: number, c: SimConfig): number {
     h = hashInts(h, [u.producedAtTypeId]);
     h = hashInts(
       h,
-      u.repair === null
+      repair === null
         ? [0]
         : [
             1,
-            u.repair.milliHpPerTick,
-            u.repair.range,
-            u.repair.seekRange,
-            u.repair.buildings ? 1 : 0,
-            u.repair.robots ? 1 : 0,
+            repair.milliHpPerTick,
+            repair.range,
+            repair.seekRange,
+            repair.buildings ? 1 : 0,
+            repair.robots ? 1 : 0,
           ],
     );
+    // sim 0.33.0: of another faction only when set, like canBuild
+    if (gated[u.factionId] !== true) h = hashGardeUnit(h, u, false);
     h = hashInts(
       h,
       u.siege === null ? [0] : [1, u.siege.vsBuildingsPermille, u.siege.buildingsFirst ? 1 : 0],
@@ -158,7 +165,8 @@ export function hashFactions(h: number, c: SimConfig): number {
   // values are in hashGarde, only when it plays. Script and hero indices skip the gated ones (config.hash.garde.ts).
   const gated = gatedFactions(c);
   const scripts = gatedScripts(c);
-  const heroes = gatedHeroes(c);
+  // sim 0.33.0: the choice heroes are counted out like the gated ones (config.heroes.ts)
+  const heroes = new Set([...gatedHeroes(c), ...choiceHeroes(c)]);
   for (const f of c.factions) {
     const g = gated[f.factionId] === true;
     h = hashInts(h, [

@@ -157,6 +157,25 @@ export interface SimUnitType {
   readonly canBuild: boolean;
   /** Data 0.38.0 (sim 0.32.0, proposal; loadouts fusionCores): cores this type takes when its production starts. */
   readonly fusionCores: number;
+  /** Data 0.39.0 (sim 0.33.0, proposal; the Klerk): overload of enemy power armour, or null. */
+  readonly overload: SimOverload | null;
+  /** Data 0.39.0 (sim 0.33.0, proposal; the Vertibird): carries own human units, or null. */
+  readonly transport: SimTransport | null;
+  /** Data 0.39.0 (sim 0.33.0, proposal): moves straight over any terrain, no flow field, walls or separation. */
+  readonly flying: boolean;
+}
+
+/** Overload (systems/garde.klerk.ts): a hit on an enemy unit of one of typeIds stuns it stunTicks long. */
+export interface SimOverload {
+  readonly typeIds: readonly number[];
+  readonly stunTicks: number;
+  readonly cooldownTicks: number;
+}
+
+/** Transport (systems/garde.transport.ts): up to `capacity` passengers board within loadRange. */
+export interface SimTransport {
+  readonly capacity: number;
+  readonly loadRange: number;
 }
 
 /** Capture (Slaver, data 0.21.0): catches a beaten-down human of another player (or a neutral wanderer). */
@@ -190,6 +209,8 @@ export interface SimRepair {
   readonly seekRange: number;
   readonly buildings: boolean;
   readonly robots: boolean;
+  /** Data 0.39.0 (sim 0.33.0, proposal; the Klerk): own units of bodyType vehicle. */
+  readonly vehicles: boolean;
 }
 
 /** Belegering (data 0.16.0, loadouts siege). */

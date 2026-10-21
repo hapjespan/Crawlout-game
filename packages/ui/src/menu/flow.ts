@@ -1,4 +1,4 @@
-import type { LobbyPlayer } from '@crawlout/protocol';
+import { HERO_ARCHETYPES, type HeroArchetype, type LobbyPlayer } from '@crawlout/protocol';
 import { identifyYou, relayErrorText } from './lobbyModel.js';
 
 /**
@@ -42,12 +42,17 @@ export const GAME_TYPES: readonly GameTypeInfo[] = [
   },
 ];
 
+/** The hero without a choice (protocol 0.19.0): the Krijger of the faction. */
+export const DEFAULT_HERO: HeroArchetype = 'krijger';
+
 /** The AI faction choice that picks one at random when the match starts. */
 export const RANDOM_FACTION = 'random';
 
 export interface AiSetup {
   gameType: GameTypeId;
   faction: string;
+  /** Hero choice (protocol 0.19.0): the archetype of the own hero; kept when the faction changes. */
+  hero: HeroArchetype;
   /** A faction key, or RANDOM_FACTION. */
   aiFaction: string;
 }
@@ -56,6 +61,8 @@ export interface AiMatchConfig {
   /** build: Bouwproject, Skirmish plus win route C (MatchSettings.mode 'project'). */
   gameType: 'skirmish' | 'build' | 'survival';
   faction: string;
+  /** The archetype of the own hero (LobbyPlayer.heroArchetype); krijger is the default. */
+  heroArchetype: HeroArchetype;
   /** Always a real faction key here: "willekeurig" is resolved when the match starts. Unused in survival (no AI). */
   aiFaction: string;
 }
@@ -123,6 +130,7 @@ export type MenuAction =
   | { type: 'back' }
   | { type: 'ai/gameType'; id: GameTypeId }
   | { type: 'ai/faction'; key: string }
+  | { type: 'ai/hero'; archetype: HeroArchetype }
   | { type: 'ai/aiFaction'; key: string }
   | { type: 'ai/start' }
   | { type: 'pvp/form'; patch: Partial<PvpForm> }
@@ -205,7 +213,12 @@ export function initialMenuState(options: {
     autoContinue: options.skipSplash === true,
     progress: 0,
     progressLabel: '',
-    ai: { gameType: 'skirmish', faction: options.factionKey, aiFaction: RANDOM_FACTION },
+    ai: {
+      gameType: 'skirmish',
+      faction: options.factionKey,
+      hero: DEFAULT_HERO,
+      aiFaction: RANDOM_FACTION,
+    },
     pvp: {
       phase: 'form',
       form: options.form,
@@ -279,6 +292,10 @@ export function reduceMenu(state: MenuState, action: MenuAction, env: MenuEnv): 
       return env.factionKeys.includes(action.key)
         ? done({ ...state, ai: { ...state.ai, faction: action.key } })
         : done(state);
+    case 'ai/hero':
+      return HERO_ARCHETYPES.includes(action.archetype)
+        ? done({ ...state, ai: { ...state.ai, hero: action.archetype } })
+        : done(state);
     case 'ai/aiFaction':
       return action.key === RANDOM_FACTION || env.factionKeys.includes(action.key)
         ? done({ ...state, ai: { ...state.ai, aiFaction: action.key } })
@@ -296,7 +313,7 @@ export function reduceMenu(state: MenuState, action: MenuAction, env: MenuEnv): 
           : state.ai.aiFaction;
       return done(state, {
         kind: 'startAi',
-        config: { gameType, faction: state.ai.faction, aiFaction },
+        config: { gameType, faction: state.ai.faction, heroArchetype: state.ai.hero, aiFaction },
       });
     }
     case 'pvp/form':

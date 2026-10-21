@@ -175,6 +175,8 @@ export interface AiScriptData {
   project: AiProjectData | null;
   /** Data 0.24.0 (proposal): the opponent faction this script is for; -1 = the faction's default script. */
   versusFactionId: number;
+  /** Data 0.39.0 (hero choice, proposal): index in ARCHETYPES of the hero an AI of this script plays; krijger if absent. */
+  heroArchetype: number;
   /** Data 0.24.0 (proposal): liberation of enemy-held slaves; null without. */
   liberate: { minFree: number; units: number; radiusU: number } | null;
   /** Data 0.24.0 (proposal): an enemy at the headquarters draws every militia and robot not on a push. */

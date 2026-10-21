@@ -14,7 +14,7 @@
   "militiaPctPerMin": 0,
   "threatMilitiaPct": 0,
   "builders": 2,
-  "housingBuildingId": "kazerne",
+  "housingBuildingId": "slaapzaal",
   "housingFreeBeds": 3,
   "research": ["fusiekernen", "pantserplaten_zwaar", "holobanden", "plasmakern"],
   "researchFromS": 120,

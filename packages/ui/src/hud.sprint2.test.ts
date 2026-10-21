@@ -57,6 +57,7 @@ const options: BuildOption[] = [
     scrapCost: 30,
     footprint: { w: 2, h: 2 },
     affordable: true,
+    beds: 6,
   },
   {
     buildingId: 2,
@@ -170,6 +171,8 @@ describe('bouwmenu en plaatsing', () => {
     expect(btns[0]?.disabled).toBe(false);
     expect(btns[1]?.disabled).toBe(true);
     expect(btns[0]?.textContent).toContain('Hut');
+    expect(btns[0]?.textContent).toContain('+6 bedden'); // data 0.41.0: the beds on the build card
+    expect(btns[1]?.textContent).not.toContain('bed');
   });
 
   it('keuze, plaatsingsklik en Build-payload met alleen de bouwers', () => {

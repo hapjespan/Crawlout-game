@@ -24,7 +24,7 @@ import { idx, parseWith, ref } from './loader.util.js';
 
 /** Stage 3: the faction loadouts in id order. */
 export function convertLoadouts(ctx: LoadContext): LoadoutData[] {
-  const { factionsRaw, loadoutsRaw, factionIx, techIx, buildingIx, simRaw } = ctx;
+  const { factionsRaw, loadoutsRaw, factionIx, techIx, buildingIx, loadoutIx, simRaw } = ctx;
   const chemKeysOfFaction = (factionKey: string): string[] =>
     (factionsRaw.find((f) => f.id === factionKey)?.chems ?? []).map((c) => c.id);
 
@@ -96,6 +96,21 @@ export function convertLoadouts(ctx: LoadContext): LoadoutData[] {
       sightU: metersToUnits(l.sightM ?? simRaw.vision.unitSightM),
       canBuild: l.canBuild === true,
       fusionCores: l.fusionCores ?? 0,
+      overload:
+        l.overload === undefined
+          ? null
+          : {
+              targets: l.overload.targets.map((t) =>
+                ref(loadoutIx, 'loadout', `${where} overload`, t),
+              ),
+              stunTicks: secondsToTicks(l.overload.stunS),
+              cooldownTicks: secondsToTicks(l.overload.cooldownS),
+            },
+      transport:
+        l.transport === undefined
+          ? null
+          : { capacity: l.transport.capacity, loadRangeU: metersToUnits(l.transport.loadRangeM) },
+      flying: l.flying === true,
     };
   });
   return loadouts;
@@ -133,6 +148,9 @@ export function neutralLoadout(u: CreepUnit, id: number, simRaw: SimTuning): Loa
     sightU: metersToUnits(u.sightM ?? simRaw.vision.unitSightM),
     canBuild: false,
     fusionCores: 0,
+    overload: null,
+    transport: null,
+    flying: false,
   };
 }
 

@@ -3,7 +3,14 @@
 import { type ComponentChild, h } from 'preact';
 import { useRef, useEffect } from 'preact/hooks';
 import type { MenuController } from './controller.js';
-import { type MenuState, RANDOM_FACTION, GAME_TYPES, type GameTypeId } from './flow.js';
+import type { HeroArchetype } from '@crawlout/protocol';
+import {
+  type MenuState,
+  RANDOM_FACTION,
+  GAME_TYPES,
+  type GameTypeId,
+  DEFAULT_HERO,
+} from './flow.js';
 import type { MenuContent, MenuFaction } from './types.js';
 import { drawMinimap } from '../minimap.js';
 
@@ -307,6 +314,41 @@ function MapPreview(props: { content: MenuContent }): ComponentChild {
   );
 }
 
+/**
+ * Hero choice (protocol 0.19.0): the three hero cards of a faction (name, archetype, passive, ability), Krijger
+ * preselected. Null for a faction without heroes in the content (the menu then shows no choice).
+ */
+export function HeroPicker(props: {
+  faction: MenuFaction | undefined;
+  value: HeroArchetype | undefined;
+  onChange(archetype: HeroArchetype): void;
+  label?: string;
+}): ComponentChild {
+  const heroes = props.faction?.heroes ?? [];
+  if (heroes.length === 0) return null;
+  const label = props.label ?? 'Jouw held';
+  return h(
+    'div',
+    { class: 'co-m-section' },
+    h('h2', null, label),
+    h(RadioGroup<HeroArchetype>, {
+      label,
+      value: props.value ?? DEFAULT_HERO,
+      cols: 3,
+      variant: 'cards',
+      class: 'co-m-heroes',
+      onChange: props.onChange,
+      options: heroes.map((x) => ({
+        value: x.archetype,
+        label: x.name,
+        tag: x.role,
+        text: `Passief: ${x.passive}. ${x.ability}.`,
+        aria: `${x.name}, ${x.role}. Passief: ${x.passive}. Ability ${x.ability}.`,
+      })),
+    }),
+  );
+}
+
 export function AiScreen(props: {
   ctl: MenuController;
   state: MenuState;
@@ -380,6 +422,11 @@ export function AiScreen(props: {
               options: factions,
             }),
           ),
+          h(HeroPicker, {
+            faction: content.factions.find((f) => f.key === ai.faction),
+            value: ai.hero,
+            onChange: (archetype) => ctl.dispatch({ type: 'ai/hero', archetype }),
+          }),
           ai.gameType === 'survival'
             ? h(
                 'div',

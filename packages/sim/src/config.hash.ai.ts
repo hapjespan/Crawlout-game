@@ -3,7 +3,9 @@ import { AI_SITE_HQ } from './config.faction.js';
 import type { SimConfig } from './config.env.js';
 import type { SimAiScript } from './config.faction.js';
 import type { SimHero } from './config.types.js';
-import { gatedHeroes, gatedScripts } from './config.hash.garde.js';
+import { gatedFactions, gatedHeroes, gatedScripts } from './config.hash.garde.js';
+import { legacyTechCount } from './config.hash.gardeB.js';
+import { choiceHeroes, choicePerks } from './config.heroes.js';
 import { hashEffects, hashInts } from './config.hash.config.js';
 
 /**
@@ -112,14 +114,15 @@ export function hashAiScript(h: number, s: SimAiScript): number {
 
 /** Techs, perks, training programs, heroes, SPECIAL tuning and the damage matrix. */
 export function hashProgression(h: number, c: SimConfig): number {
-  h = fnv1aInt(h, c.techs.length);
-  for (const t of c.techs) {
-    h = hashInts(h, [t.techId, t.factionId, t.scrapCost, t.researchTicks, t.buildingTypeId]);
-    h = hashInts(h, t.prereqTech);
-    h = hashEffects(h, t.effects);
-  }
-  h = fnv1aInt(h, c.perks.length);
+  // sim 0.33.0: the trailing techs of gated factions (the Garde's idGroup 1) are in hashGarde
+  const nt = legacyTechCount(c, gatedFactions(c));
+  h = fnv1aInt(h, nt);
+  for (const t of c.techs.slice(0, nt)) h = hashTech(h, t);
+  // sim 0.33.0: the perks and heroes of the hero choice only in hashHeroChoice (config.hash.heroes.ts)
+  const choiceP = choicePerks(c);
+  h = fnv1aInt(h, c.perks.length - choiceP.size);
   for (const pk of c.perks) {
+    if (choiceP.has(pk.perkId)) continue;
     h = hashInts(h, [pk.perkId, pk.requiresStat, pk.requiresMin]);
     h = hashEffects(h, pk.effects);
   }
@@ -141,8 +144,10 @@ export function hashProgression(h: number, c: SimConfig): number {
   }
   // sim 0.32.0: the heroes of a gated faction only in hashGarde (config.hash.garde.ts)
   const gatedH = gatedHeroes(c);
-  h = fnv1aInt(h, c.heroes.length - gatedH.size);
-  for (const hr of c.heroes) if (!gatedH.has(hr.heroId)) h = hashHero(h, hr);
+  const choiceH = choiceHeroes(c);
+  h = fnv1aInt(h, c.heroes.length - gatedH.size - choiceH.size);
+  for (const hr of c.heroes)
+    if (!gatedH.has(hr.heroId) && !choiceH.has(hr.heroId)) h = hashHero(h, hr);
   const sp = c.special;
   h = hashInts(h, [
     sp.strengthDamagePermille,
@@ -157,6 +162,13 @@ export function hashProgression(h: number, c: SimConfig): number {
   h = fnv1aInt(h, c.damageMatrix.length);
   for (const row of c.damageMatrix) h = hashInts(h, row);
   return h;
+}
+
+/** One tech, in fixed field order. */
+export function hashTech(h: number, t: SimConfig['techs'][number]): number {
+  h = hashInts(h, [t.techId, t.factionId, t.scrapCost, t.researchTicks, t.buildingTypeId]);
+  h = hashInts(h, t.prereqTech);
+  return hashEffects(h, t.effects);
 }
 
 /** One hero, in fixed field order. */

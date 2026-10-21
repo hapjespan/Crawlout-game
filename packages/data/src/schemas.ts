@@ -26,6 +26,9 @@ export {
   RepairTarget,
   Repair,
   Siege,
+  Overload,
+  Transport,
+  MapPowerArmor,
 } from './schemas.part1.js';
 export {
   Loadout,

@@ -156,5 +156,26 @@
       "mesh": "garde_building_helipad"
     },
     "_comment": "startwaarde, geen balans. Landingsplatform: bouwt de Vertibird (producedAt landingsplatform). 300 scrap, 55 s, groot (21x21)."
+  },
+  {
+    "id": "slaapzaal",
+    "faction": "garde",
+    "hp": 320,
+    "armorType": "medium",
+    "scrapCost": 100,
+    "buildS": 20,
+    "footprint": {
+      "w": 13,
+      "h": 17
+    },
+    "beds": 6,
+    "provides": [
+      "huisvesting"
+    ],
+    "prereqTech": [],
+    "visuals": {
+      "mesh": "garde_building_barracks"
+    },
+    "_comment": "startwaarde, geen balans (data 0.41.0; Martien: \"de garde heeft geen opties om bedden te maken hoe zit dit?\", besluit: een goedkoop woongebouw voor de Garde). Slaapzaal: 6 bedden voor 100 scrap en 20 s (Dwellers woning 5 voor 95, kazerne 4 voor 130), provides huisvesting, geen prereq. 320 hp medium: steviger dan een woning (300 light), zoals alles van de Garde. Footprint 13 x 17 m op echte schaal: een zaal met drie stapelbedden per kant, een gang en een wapenrek bij de deur (woning 13 x 19 voor 5 bedden). Alleen bewoners (bodyType human) slapen in een bed; frames en de Vertibird tellen alleen voor pop (popCapMax). OPEN: eigen mesh garde_building_dormitory; tot die er is hergebruikt de Slaapzaal de kazerne-mesh (garde_building_barracks) als placeholder."
   }
 ]

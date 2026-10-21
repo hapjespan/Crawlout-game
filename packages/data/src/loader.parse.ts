@@ -43,6 +43,7 @@ export function parseRawData(raw: RawGameData): LoadContext {
     'buildings.json',
     parseList('buildings.json', Building, raw.buildings),
   );
+  // data 0.39.0 (proposal): sortById sorts by (idGroup, id), so a later group appends techIds
   const techRaw = sortById('tech.json', parseList('tech.json', Tech, raw.tech));
   const heroesRaw = sortById('heroes.json', parseList('heroes.json', Hero, raw.heroes));
   const perksRaw = sortById('perks.json', parseList('perks.json', Perk, raw.perks));

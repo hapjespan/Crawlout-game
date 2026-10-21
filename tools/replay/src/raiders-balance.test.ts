@@ -56,7 +56,7 @@ const EXPECTED = [
   { seed: 2, raider: 0, winner: 'raiders', reason: 'dominance' },
   { seed: 6, raider: 0, winner: 'dwellers', reason: 'dominance' },
   { seed: 1, raider: 0, winner: 'raiders', reason: 'dominance' },
-  { seed: 4, raider: 1, winner: 'raiders', reason: 'destruction' },
+  { seed: 4, raider: 1, winner: 'raiders', reason: 'dominance' },
 ] as const;
 
 describe.skipIf(process.env.REPLAY_FAST === '1')(

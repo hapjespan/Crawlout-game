@@ -10,7 +10,7 @@ import {
   PERK_KEYS,
 } from './controller.js';
 import { type ComponentChild, h } from 'preact';
-import type { RosterGroup, UnitState } from './types.js';
+import type { BuildOption, RosterGroup, UnitState } from './types.js';
 import { UNIT_STATE_TEXT, ACTIVITY_TEXT } from './consoles.js';
 import { portraitOfGroup } from './portraits.js';
 import { kindOfTypeId } from '@crawlout/data';
@@ -227,6 +227,10 @@ function buildingIcon(naam: string): string {
   return 'build';
 }
 
+/** "+6 bedden" for a building with beds, else the empty string. */
+export const bedsText = (o: BuildOption): string =>
+  o.beds !== undefined && o.beds > 0 ? `+${o.beds} ${o.beds === 1 ? 'bed' : 'bedden'}` : '';
+
 function BuildMenu(props: { ctl: HudController; state: HudState }): ComponentChild {
   const { ctl, state } = props;
   const noBuilder = ctl.selectedBuilders().length === 0;
@@ -251,7 +255,7 @@ function BuildMenu(props: { ctl: HudController; state: HudState }): ComponentChi
               class: 'co-btn co-build-option',
               disabled: !ctl.canChooseBuild(o),
               'data-building': o.buildingId,
-              'aria-label': `${o.naam}, ${o.scrapCost} scrap, ${o.footprint.w} bij ${o.footprint.h}${o.affordable ? '' : ', te duur'} (sneltoets ${i + 1})`,
+              'aria-label': `${o.naam}, ${o.scrapCost} scrap, ${o.footprint.w} bij ${o.footprint.h}${bedsText(o) ? `, ${bedsText(o)}` : ''}${o.affordable ? '' : ', te duur'} (sneltoets ${i + 1})`,
               onClick: () => ctl.chooseBuild(o.buildingId),
             },
             h('span', {
@@ -263,7 +267,7 @@ function BuildMenu(props: { ctl: HudController; state: HudState }): ComponentChi
             h(
               'span',
               { class: o.affordable ? 'co-cost' : 'co-cost co-full' },
-              `${o.scrapCost} · ${o.footprint.w}x${o.footprint.h}`,
+              `${o.scrapCost} · ${o.footprint.w}x${o.footprint.h}${bedsText(o) ? ` · ${bedsText(o)}` : ''}`,
             ),
             h('span', { class: 'co-key', 'aria-hidden': 'true' }, String(i + 1)),
           ),

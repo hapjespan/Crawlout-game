@@ -16,7 +16,7 @@ import type {
   SimPlayer,
   SimUnitType,
 } from './config.js';
-import { envHash, validateEnv } from './config.js';
+import { PERK_WORDS, envHash, validateEnv } from './config.js';
 import { NO_ENTITY, World } from './ecs/world.js';
 import { EventBuffer } from './events.js';
 import { FlowFields } from './flowfield.js';
@@ -52,6 +52,7 @@ import { ProjectState, spawnProjectSites } from './systems/project.js';
 import { SurvivalState, survivalStatusOf, survivalSystem } from './systems/survival.js';
 import { DefenseState, defenseActive, defenseSystem } from './systems/defense.js';
 import { GardeState, fusionCoreSystem } from './systems/garde.js';
+import { mapPowerArmorSystem } from './systems/garde.powerArmor.js';
 import { gardeOn } from './config.hash.garde.js';
 import type { SurvivalStatus } from './systems/survival.js';
 import { Vision } from './vision.js';
@@ -148,7 +149,11 @@ export class Sim implements SimContext {
     validateEnv(env);
     this.map = env.map;
     this.config = env.config;
-    this.players = env.players.map((p) => ({ factionId: p.factionId, ai: p.ai }));
+    this.players = env.players.map((p) =>
+      p.heroId === undefined
+        ? { factionId: p.factionId, ai: p.ai }
+        : { factionId: p.factionId, ai: p.ai, heroId: p.heroId },
+    );
     this.playerCount = env.players.length;
     this.envHashValue = envHash(env);
     this.terrain = new Terrain(env.map);
@@ -170,7 +175,10 @@ export class Sim implements SimContext {
     this.defense.active = defenseActive(this);
     this.world.clearOnFree.push(this.defense.mark);
     this.garde.active = gardeOn(env);
-    this.world.clearOnFree.push(this.garde.kills, this.garde.rank);
+    // sim 0.33.0: the higher perk words only with more than 32 perks, so every other state keeps its format and hash
+    this.ps.perkWords = env.config.perks.length > 32 ? PERK_WORDS : 1;
+    const g = this.garde;
+    this.world.clearOnFree.push(g.kills, g.rank, g.stunUntil, g.overloadAt, g.quality, g.cargoN);
     this.parts = {
       world: this.world,
       flow: this.flow,
@@ -283,6 +291,7 @@ export class Sim implements SimContext {
     // 6 economie: verzamelen, bouwen, omscholen, huisvestingsgroei
     economySystem(this, this.census);
     fusionCoreSystem(this); // sim 0.32.0: the fusion cores of the Garde
+    mapPowerArmorSystem(this); // sim 0.33.0: the power armour of the map
     probe?.(6);
     // 7 claims en winroutes
     claimsSystem(this, this.claimScratch, this.census);

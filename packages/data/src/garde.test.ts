@@ -27,10 +27,10 @@ describe('Garde: data laadt', () => {
     }
   });
 
-  it('krachtpantser: heavy, 3 pop, vehicle, traag; frames kosten meer dan de Raider-plunderaar', () => {
+  it('krachtpantser: power (data 0.40.0), 3 pop, vehicle, traag; frames kosten meer dan de Raider-plunderaar', () => {
     const frame = loadout('krachtpantser');
     const plunderaar = loadout('plunderaar');
-    expect(frame.armorType).toBe(ARMOR_TYPES.indexOf('heavy'));
+    expect(frame.armorType).toBe(ARMOR_TYPES.indexOf('power'));
     expect(frame.bodyType).toBe(BODY_TYPES.indexOf('vehicle'));
     expect(frame.popCost).toBe(3);
     expect(frame.speedUPT).toBeLessThan(plunderaar.speedUPT);
@@ -47,8 +47,18 @@ describe('Garde: data laadt', () => {
       'plasmaridder',
       'vertibird',
     ]);
-    expect(data.tech.filter((t) => t.factionId === faction.id).length).toBe(4);
-    expect(data.buildings.filter((b) => b.factionId === faction.id).length).toBe(7);
+    expect(data.tech.filter((t) => t.factionId === faction.id).length).toBe(10);
+    expect(data.buildings.filter((b) => b.factionId === faction.id).length).toBe(8); // data 0.41.0: slaapzaal
+  });
+
+  it('data 0.41.0: de Slaapzaal is het goedkope woongebouw van de Garde (6 bedden, huisvesting, geen prereq)', () => {
+    const zaal = data.buildings.find((b) => b.key === 'slaapzaal')!;
+    const woning = data.buildings.find((b) => b.key === 'woning')!;
+    expect(zaal.factionId).toBe(faction.id);
+    expect(zaal.beds).toBe(6);
+    expect(zaal.provides).toContain(PROVIDES.indexOf('huisvesting'));
+    expect(zaal.prereqTech).toEqual([]);
+    expect(Math.abs(zaal.scrapCost - woning.scrapCost)).toBeLessThanOrEqual(15);
   });
 
   it('de Dwellers en Raiders blijven geladen', () => {
@@ -85,7 +95,7 @@ describe('Garde: sim fields (data 0.38.0, proposal)', () => {
   });
 
   it('the Paladin-Commander sorts after the Warlord, with the armour aura (damageTakenPct)', () => {
-    expect(data.heroes.map((h) => h.key)).toEqual(['opziener', 'warlord', 'zwaardridder']);
+    expect(data.heroes.slice(0, 3).map((h) => h.key)).toEqual(['opziener', 'warlord', 'zwaardridder']);
     const h = data.heroes[2]!;
     expect(h.factionId).toBe(faction.id);
     expect(h.naam).toBe('Paladin-Commander');

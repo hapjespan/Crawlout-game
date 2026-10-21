@@ -15,6 +15,7 @@ export {
   PROVIDES_CHEMLAB,
   BODY_ROBOT,
   BODY_HUMAN,
+  BODY_VEHICLE,
 } from './fromData.part1.js';
 export type { EffectStatName, ClaimKind } from './fromData.part1.js';
 export { simConfigFromGameData } from './fromData.part2.js';

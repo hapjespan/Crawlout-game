@@ -175,9 +175,13 @@ describe('base defence', () => {
     }
   });
 
-  it('is off in skirmish by default: no state, no env hash change', () => {
-    expect(CONFIG.baseDefense.skirmish).toBe(false);
-    const init = testInit();
+  it('is off in skirmish when the toggle is off: no state, no env hash change', () => {
+    // data 0.39.0 turns the skirmish toggle on; the off case is built here
+    const base = testInit();
+    const init = {
+      ...base,
+      config: { ...base.config, baseDefense: { ...base.config.baseDefense, skirmish: false } },
+    };
     const sim = createSim(init);
     expect(sim.defense.active).toBe(false);
     const on = {

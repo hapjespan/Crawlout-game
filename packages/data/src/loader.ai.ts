@@ -1,4 +1,4 @@
-import type { LoadoutData } from './loader.types.js';
+import { ARCHETYPES, type LoadoutData } from './loader.types.js';
 import { AI_SITES, type AiScriptData } from './loader.types.game.js';
 import { metersToUnits, pctToPermille, secondsToTicks } from './units.js';
 import type { LoadContext } from './loader.parse.js';
@@ -172,6 +172,7 @@ export function convertAiScripts(ctx: LoadContext, loadouts: LoadoutData[]): AiS
               rallyAtParts: a.project.rallyAtParts,
             },
       versusFactionId: a.versus === undefined ? -1 : ref(factionIx, 'factie', where, a.versus),
+      heroArchetype: ARCHETYPES.indexOf(a.heroArchetype ?? 'krijger'),
       liberate:
         a.liberate === undefined
           ? null

@@ -166,6 +166,8 @@ export interface BuildOption {
   /** Footprint in cellen. */
   footprint: { w: number; h: number };
   affordable: boolean;
+  /** Beds the building adds (data beds); shown as "+6 bedden" when above 0. */
+  beds?: number;
 }
 
 /** Een ability van de held; de lijst komt uit data (heroes.abilities) plus de cooldown uit de sim. */

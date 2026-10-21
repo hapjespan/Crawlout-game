@@ -4,7 +4,7 @@ import type { CommandPayload } from '@crawlout/protocol';
 import type { SimRepair, SimUnitType } from '../config.js';
 import { BSTATE_DONE, C, JOB_NONE, JOB_PRODUCE, NO_ENTITY, ORDER_NONE } from '../ecs/world.js';
 import { hasTechs } from '../effects.js';
-import { BODY_ROBOT } from '../fromData.js';
+import { BODY_HUMAN, BODY_VEHICLE } from '../fromData.js';
 import { createUnit } from '../entities.js';
 import { idiv, imod, isInt } from '../math/int.js';
 import { Census, isRobot, takeCensus } from './census.js';
@@ -143,8 +143,9 @@ export function applyProduce(ctx: SimContext, p: number, pl: CommandPayload<'Pro
   const census = new Census();
   takeCensus(ctx, census);
   if (census.totalPop(p) + t.popCost > ctx.config.popCapMax) return false;
-  // a human from a tent (Raiders, data 0.21.0) also needs a free bed; a robot never does
-  if (t.bodyType !== BODY_ROBOT && census.pop[p]! + t.popCost > census.popCap(ctx, p)) return false;
+  // a human from a tent (Raiders, data 0.21.0) also needs a free bed; a robot, frame, vehicle or beast never does
+  // (sim 0.34.0: only bodyType human sleeps in a bed)
+  if (t.bodyType === BODY_HUMAN && census.pop[p]! + t.popCost > census.popCap(ctx, p)) return false;
   const w = ctx.world;
   ctx.ps.scrap[p] = ctx.ps.scrap[p]! - t.scrapCost;
   takeCores(ctx, p, t.fusionCores, true);
@@ -189,7 +190,10 @@ function repairable(ctx: SimContext, i: number, j: number, rep: SimRepair): bool
   const hp = w.hp[j]!;
   if (hp <= 0 || hp >= w.maxHp[j]!) return false;
   if ((w.mask[j]! & C.building) !== 0) return rep.buildings && w.bstate[j] === BSTATE_DONE;
-  return rep.robots && (w.mask[j]! & (C.unit | C.hero)) === C.unit && isRobot(ctx, j);
+  if ((w.mask[j]! & (C.unit | C.hero)) !== C.unit) return false;
+  if (rep.robots && isRobot(ctx, j)) return true;
+  // sim 0.33.0 (the Klerk): an own frame or Vertibird
+  return rep.vehicles && ctx.unitType(w.typeId[j]!)?.bodyType === BODY_VEHICLE;
 }
 
 /** Of j binnen r ligt van unit i: tot de footprint bij gebouwen, tot de rand bij units. */

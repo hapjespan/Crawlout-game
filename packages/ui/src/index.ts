@@ -63,6 +63,7 @@ export type {
   MenuDeps,
   MenuFaction,
   MenuHandle,
+  MenuHero,
   MenuMapInfo,
 } from './menu/types.js';
 export type {
@@ -72,7 +73,7 @@ export type {
   PvpConnectConfig,
   PvpForm,
 } from './menu/flow.js';
-export { defaultRelayUrl, RANDOM_FACTION } from './menu/flow.js';
+export { DEFAULT_HERO, defaultRelayUrl, RANDOM_FACTION } from './menu/flow.js';
 export { identifyYou } from './menu/lobbyModel.js';
 export {
   DEFAULT_SETTINGS,

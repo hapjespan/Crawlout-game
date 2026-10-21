@@ -7,6 +7,8 @@ import type { SimContext } from './systems/common.js';
 import { projectEffectSum } from './systems/project.js';
 import { veteranPermille } from './systems/garde.js';
 import { anyTech, hasTech } from './techBits.js';
+import { anyPerk, hasPerk } from './perkBits.js';
+import { playerHeroId } from './config.heroes.js';
 
 // Effecten van onderzochte techs (tech.json effects[]) en van de perks van een levende held (perks.json effects[]) op
 // de stats van de eigen units, gebouwen en de held. Afgeleid: de bron is de tech-bitset per speler (PlayerState.tech)
@@ -47,9 +49,11 @@ export const SPECIAL_I = 4;
 export const SPECIAL_A = 5;
 export const SPECIAL_L = 6;
 
-/** De held van de factie van speler p, of undefined. */
+/**
+ * De held van speler p (sim 0.33.0: de gekozen held SimPlayer.heroId, anders de held van zijn factie), of undefined.
+ */
 export function heroOf(ctx: SimContext, p: number): SimHero | undefined {
-  const id = ctx.config.factions[ctx.players[p]!.factionId]!.heroId;
+  const id = playerHeroId(ctx.config, ctx.players[p]!);
   return id < 0 ? undefined : ctx.config.heroes[id];
 }
 
@@ -88,13 +92,13 @@ export function effectSum(
   }
   if (ctx.ps.heroState[p] !== HERO_ALIVE) return sum;
   // perks en (data 0.16.0) de passieven van de held: alleen zolang hij leeft, geschaald met de oplap-straf
-  const perks = ctx.ps.heroPerks[p]!;
+  const perks = anyPerk(ctx.ps, p);
   const h = heroOf(ctx, p);
-  if (h === undefined || (perks === 0 && h.passives.length === 0)) return sum;
+  if (h === undefined || (!perks && h.passives.length === 0)) return sum;
   const scale = reviveScale(h, ctx.ps.heroRevives[p]!);
-  if (perks !== 0) {
+  if (perks) {
     for (const pk of ctx.config.perks) {
-      if (((perks >>> pk.perkId) & 1) === 0) continue;
+      if (!hasPerk(ctx.ps, p, pk.perkId)) continue;
       for (const e of pk.effects)
         if (matches(e, stat, typeId, isHero)) sum += idiv(e.delta * scale, 1000);
     }

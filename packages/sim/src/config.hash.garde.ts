@@ -2,6 +2,8 @@ import { fnv1aInt } from './math/fnv.js';
 import type { SimConfig, SimEnv } from './config.env.js';
 import { hashInts } from './config.hash.config.js';
 import { hashAiScript, hashHero } from './config.hash.ai.js';
+import { hashGardeB } from './config.hash.gardeB.js';
+import { choiceHeroes } from './config.heroes.js';
 
 // Sim 0.32.0 (the Garde, round A; proposal for the architect): faction-scoped hashing of what this round adds. A
 // gated faction is one with Garde rules (veterancy or fusion cores). Its new content (its AI script, its
@@ -13,7 +15,9 @@ import { hashAiScript, hashHero } from './config.hash.ai.js';
 
 /** Per factionId: true for a faction with Garde rules. */
 export function gatedFactions(c: SimConfig): boolean[] {
-  return c.factions.map((f) => f.veterancy !== null || f.fusionCores !== null);
+  return c.factions.map(
+    (f) => f.veterancy !== null || f.fusionCores !== null || f.mapPowerArmor !== null,
+  );
 }
 
 /** Script indices (SimConfig.aiScripts) of the gated factions, default and versus. */
@@ -28,11 +32,12 @@ export function gatedScripts(c: SimConfig): Set<number> {
   return out;
 }
 
-/** Hero ids of the gated factions. */
+/** Hero ids of the gated factions (sim 0.33.0: without the choice heroes, config.hash.heroes.ts hashes those). */
 export function gatedHeroes(c: SimConfig): Set<number> {
   const g = gatedFactions(c);
+  const choice = choiceHeroes(c);
   const out = new Set<number>();
-  for (const h of c.heroes) if (g[h.factionId] === true) out.add(h.heroId);
+  for (const h of c.heroes) if (g[h.factionId] === true && !choice.has(h.heroId)) out.add(h.heroId);
   return out;
 }
 
@@ -98,6 +103,7 @@ export function hashGarde(h: number, env: SimEnv): number {
     );
     if (pr != null) h = hashInts(h, [pr.rallyAtParts ? 1 : 0]);
   });
-  for (const hr of c.heroes) if (g[hr.factionId] === true) h = hashHero(h, hr);
-  return h;
+  const heroes = gatedHeroes(c);
+  for (const hr of c.heroes) if (heroes.has(hr.heroId)) h = hashHero(h, hr);
+  return hashGardeB(h, env, g); // sim 0.33.0: round B
 }

@@ -55,6 +55,16 @@ export interface SimFaction {
   readonly veterancy: SimVeterancy | null;
   /** Fusion cores (data 0.38.0, sim 0.32.0, the Garde; proposal); null without. */
   readonly fusionCores: SimFusionCores | null;
+  /** The power armour of the map (data 0.39.0, sim 0.33.0, the Garde; proposal); null without. */
+  readonly mapPowerArmor: SimMapPowerArmor | null;
+}
+
+/** Map power armour (systems/garde.powerArmor.ts): a frame of typeId for whoever holds a powerArmor claim point. */
+export interface SimMapPowerArmor {
+  readonly typeId: number;
+  readonly respawnTicks: number;
+  /** hp and damage of a frame of a player of another faction, in permille (1000 = full). */
+  readonly otherQualityPermille: number;
 }
 
 /** Veteran promotion (systems/garde.ts): unit types that gain ranks, ranks by ascending kills (permille bonuses). */

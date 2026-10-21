@@ -9,6 +9,7 @@ import {
 import type { SimContext } from './systems/common.js';
 import { MAX_FREE_RING, cellCenterOf, face, nthFreeCellAround } from './systems/common.js';
 import { spawnStartHero } from './systems/hero.js';
+import { heroOf } from './effects.js';
 import { bindStartSlave } from './systems/slaves.js';
 
 // Startopstelling (contract 2, besluit sprint 1): volgt deterministisch uit map, data en spelers, voor frame 0.
@@ -83,7 +84,7 @@ export function setupStart(ctx: SimContext): void {
         bindStartSlave(ctx, i, hq);
       }
     }
-    if (faction.heroId >= 0) {
+    if (heroOf(ctx, p) !== undefined) {
       const c = nthFreeCellAround(ctx, fx, fy, bt.footprintW, bt.footprintH, k++);
       if (c < 0) throw new Error(`start: geen vrije cel voor de held van speler ${p}`);
       spawnStartHero(ctx, p, c, midX, midY);

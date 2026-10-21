@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { loadGameData, NEUTRAL_FACTION_ID, convertDelta, convertDominance } from './loader.js';
+import { ARMOR_TYPES } from './loader.types.js';
 import { metersToUnits, secondsToTicks } from './units.js';
 import { MapDef } from './schemas.js';
 import { clone, raw } from './game-data.helpers.js';
@@ -29,9 +30,9 @@ describe('data/ valideert', () => {
     expect(data.buildings.filter(dwellers)).toHaveLength(10);
     expect(data.tech.filter(dwellers)).toHaveLength(14);
     expect(data.training).toHaveLength(7);
-    expect(data.heroes.filter(dwellers)).toHaveLength(1);
+    expect(data.heroes.filter(dwellers)).toHaveLength(3);
     // data 0.24.0: the default script and the one against the Raiders (versus)
-    expect(data.aiScripts.filter(dwellers)).toHaveLength(2);
+    expect(data.aiScripts.filter(dwellers)).toHaveLength(3);
     expect(data.aiScripts.filter(dwellers).filter((a) => a.versusFactionId < 0)).toHaveLength(1);
     // totalen met de Raiders; de sim kent hoogstens 32 techs en 32 perks
     // 25 faction loadouts (data 0.26.0: the bouwrobot) plus the 5 bandits of the creep camps (data 0.25.0; 0.29.0: the
@@ -39,14 +40,15 @@ describe('data/ valideert', () => {
     // data 0.33.0: plus the 6 hostile units of survival (data/survival/units.json)
     expect(data.loadouts).toHaveLength(43);
     expect(data.loadouts.filter((l) => l.factionId === NEUTRAL_FACTION_ID)).toHaveLength(11);
-    // 18 faction buildings plus the 7 of the Garde (data 0.37.0) plus (data 0.31.0, win route C) a restored and a ruin type per part of the strip mall
-    expect(data.buildings).toHaveLength(18 + 7 + 2 * 4);
+    // 18 faction buildings plus the 8 of the Garde (data 0.37.0, the slaapzaal data 0.41.0) plus (data 0.31.0, win route C) a restored and a ruin type per part of the strip mall
+    expect(data.buildings).toHaveLength(18 + 8 + 2 * 4);
     expect(data.buildings.filter((b) => b.factionId === NEUTRAL_FACTION_ID)).toHaveLength(8);
-    expect(data.tech).toHaveLength(32);
+    expect(data.tech).toHaveLength(38); // data 0.39.0: 6 Garde techs in idGroup 1
     // data 0.38.0: the Paladin-Commander of the Garde (id zwaardridder, after warlord)
-    expect(data.heroes).toHaveLength(3);
-    expect(data.perks).toHaveLength(13);
-    expect(data.aiScripts).toHaveLength(4); // data 0.38.0: garde-basic
+    // data 0.39.0: plus a Bouwer and a Tacticus per faction (idGroup 1) and 18 perks
+    expect(data.heroes).toHaveLength(9);
+    expect(data.perks).toHaveLength(31);
+    expect(data.aiScripts).toHaveLength(5); // data 0.39.0: dwellers-vs-garde
     expect(data.dataVersion).toMatch(/^\d+\.\d+\.\d+$/);
   });
 
@@ -63,20 +65,40 @@ describe('data/ valideert', () => {
     ]) {
       list.forEach((record, i) => expect(record.id).toBe(i));
       // the bandits of the creep camps (data 0.25.0) follow the faction loadouts, in the order of creeps.json
-      const keys = list
-        .filter((r) => !('factionId' in r) || r.factionId !== NEUTRAL_FACTION_ID)
-        .map((r) => r.key);
-      expect(keys).toEqual([...keys].sort());
+      // techs (data 0.39.0): sorted within each idGroup; the 6 of group 1 follow the 32 of group 0
+      const groups = list === data.tech ? [list.slice(0, 32), list.slice(32)] : [list];
+      for (const g of groups) {
+        const keys = g
+          .filter((r) => !('factionId' in r) || r.factionId !== NEUTRAL_FACTION_ID)
+          .map((r) => r.key);
+        // heroes and perks (data 0.39.0): the old ids sort first, the idGroup 1 ids follow, see held-keuze.test.ts
+        if (list === data.heroes)
+          expect(keys.slice(0, 3)).toEqual(['opziener', 'warlord', 'zwaardridder']);
+        else if (list !== data.perks) expect(keys).toEqual([...keys].sort());
+      }
     }
   });
 
   it('heeft een volledige damage-matrix in promille', () => {
     expect(data.damageMatrix).toHaveLength(4);
     for (const row of data.damageMatrix) {
-      expect(row).toHaveLength(5);
+      expect(row).toHaveLength(6); // data 0.40.0: power appended
       for (const cell of row) expect(Number.isInteger(cell)).toBe(true);
     }
     expect(data.damageMatrix[0]![2]).toBe(750); // ballistic tegen medium: 75 procent
+  });
+
+  it('data 0.40.0: power armour only on Garde units, so its column never touches a building or another faction', () => {
+    const power = ARMOR_TYPES.indexOf('power');
+    expect(power).toBe(5); // appended: the older armour indices stay
+    const garde = data.factions.find((f) => f.key === 'garde')!.id;
+    const users = data.loadouts.filter((l) => l.armorType === power);
+    expect(users.map((l) => l.key).sort()).toEqual(['krachtpantser', 'plasmaridder']);
+    for (const l of users) expect(l.factionId).toBe(garde);
+    for (const b of data.buildings) expect(b.armorType).not.toBe(power);
+    // the Dweller HQ and turrets keep heavy at the values from before data 0.39.0
+    const heavy = ARMOR_TYPES.indexOf('heavy');
+    expect(data.damageMatrix.map((row) => row[heavy])).toEqual([500, 1250, 400, 600]);
   });
 
   it('heeft elke loadout-waarde als integer in sim-eenheden', () => {
@@ -238,9 +260,9 @@ describe('sim-tuning', () => {
       guard: { standU: 1280, leashU: 3584 },
       baseDefense: {
         survival: true,
-        skirmish: false,
-        radiusU: 10240,
-        calmTicks: 160,
+        skirmish: true,
+        radiusU: 7168,
+        calmTicks: 100,
       },
     });
   });

@@ -1,4 +1,4 @@
-import { I31, intIn, req } from './config.limits.js';
+import { I31, MAX_CARGO, intIn, req } from './config.limits.js';
 import type { SimConfig } from './config.env.js';
 import { EffectStat } from '@crawlout/data';
 
@@ -50,6 +50,32 @@ export function validateGarde(
         (u.fusionCores === 0 || config.factions[u.factionId]?.fusionCores != null),
       `unittype ${u.typeId}: fusionCores`,
     );
+  // round B (sim 0.33.0): overload, transport, vehicle repair and the power armour of the map
+  for (const u of config.unitTypes) {
+    const at = `unittype ${u.typeId}`;
+    const o = u.overload;
+    if (o !== null)
+      req(
+        o.typeIds.length > 0 &&
+          o.typeIds.every((t) => unitIds.has(t)) &&
+          intIn(o.stunTicks, 1, I31) &&
+          intIn(o.cooldownTicks, 0, I31),
+        `${at}: overload`,
+      );
+    const tr = u.transport;
+    if (tr !== null)
+      req(intIn(tr.capacity, 1, MAX_CARGO) && intIn(tr.loadRange, 0, 1 << 20), `${at}: transport`);
+  }
+  config.factions.forEach((f, k) => {
+    const m = f.mapPowerArmor;
+    if (m !== null)
+      req(
+        unitIds.has(m.typeId) &&
+          intIn(m.respawnTicks, 1, I31) &&
+          intIn(m.otherQualityPermille, 1, 1000),
+        `factie ${k}: mapPowerArmor`,
+      );
+  });
   const noTaken = (effects: readonly { stat: number }[], at: string): void => {
     for (const e of effects)
       req(e.stat !== STAT_DAMAGE_TAKEN, `${at}: damageTakenPct alleen in een aura`);

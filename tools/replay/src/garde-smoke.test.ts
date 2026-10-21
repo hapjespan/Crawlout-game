@@ -4,7 +4,7 @@ import type { MatchResult } from './balance.js';
 
 // The Garde, round A (sim 0.32.0, data 0.38.0; docs/garde.md): a smoke check, NOT a balance test. The scripted Garde AI
 // (ai/garde-basic.json) against the Raider AI and the Dweller AI on Rustbelt XL, a few seeds and both sides: every
-// match has a winner within 45 minutes. The outcomes are reported, not asserted (balance follows in its own round).
+// match has a winner within 45 minutes. The outcomes are reported, not asserted (balance follows in its own round); the Garde target bands are report-only in garde-report.ts.
 const MATCHUPS: readonly { factions: readonly string[]; seeds: readonly number[] }[] = [
   { factions: ['garde', 'raiders'], seeds: [1, 2, 3] },
   { factions: ['raiders', 'garde'], seeds: [4] },

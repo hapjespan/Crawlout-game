@@ -15,7 +15,9 @@ export const comment = z.string().optional(); // _comment: bedoeling van de waar
 
 export const pct = z.number().min(0).max(100);
 
-export const ArmorType = z.enum(['none', 'light', 'medium', 'heavy', 'robot']);
+// 'power' (data 0.40.0, proposal for the architect): the Garde power armour; appended so the older indices stay, and
+// apart from 'heavy' because the Dweller HQ and turrets and the Garde buildings carry heavy too.
+export const ArmorType = z.enum(['none', 'light', 'medium', 'heavy', 'robot', 'power']);
 
 export const DamageType = z.enum(['ballistic', 'energy', 'melee', 'fire']);
 
@@ -286,6 +288,27 @@ export const FusionCores = z
   })
   .strict();
 
+// Data 0.39.0 (the Garde, round B; proposal for the architect; docs/garde.md items 3 to 5), all optional on a loadout:
+// overload (the Klerk: its hit on an enemy unit of one of `targets` stuns it stunS long, then cooldownS before the next),
+// transport (the Vertibird: up to `capacity` own human units board it within loadRangeM, Load and Unload).
+export const Overload = z
+  .object({ targets: z.array(id).min(1), stunS: z.number().positive(), cooldownS: nonneg })
+  .strict();
+export const Transport = z
+  .object({ capacity: z.number().int().positive().max(8), loadRangeM: nonneg })
+  .strict();
+// On a faction (the Garde): the power armour of the map. A player holding a claim point of kind powerArmor gets a frame
+// of `loadout` next to it, respawnS after he took it or after his last frame of that point died; a player of another
+// faction gets it at otherQualityPct of its hp and damage.
+export const MapPowerArmor = z
+  .object({
+    loadout: id,
+    respawnS: z.number().positive(),
+    otherQualityPct: z.number().positive().max(100),
+    _comment: comment,
+  })
+  .strict();
+
 export const Faction = z
   .object({
     id,
@@ -307,6 +330,7 @@ export const Faction = z
     // Data 0.38.0 (de Garde; proposal for the architect), both optional
     veterancy: Veterancy.optional(),
     fusionCores: FusionCores.optional(),
+    mapPowerArmor: MapPowerArmor.optional(), // data 0.39.0 (proposal)
     _comment: comment,
   })
   .strict()
@@ -326,7 +350,9 @@ export const Faction = z
   });
 
 // Reparatie van een support-robot (data 0.16.0). targets: wat hij repareert (eigen units van bodyType robot en eigen gebouwen).
-export const RepairTarget = z.enum(['building', 'robot']);
+// Data 0.39.0 (the Garde, round B; proposal for the architect): 'vehicle', own units of bodyType vehicle (the frames
+// and the Vertibird), for the Klerk. Appended, so the indices stay.
+export const RepairTarget = z.enum(['building', 'robot', 'vehicle']);
 
 export const Repair = z
   .object({

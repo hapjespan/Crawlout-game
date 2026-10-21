@@ -18,6 +18,7 @@ const ARMOR_NL: Record<string, string> = {
   medium: 'middel',
   heavy: 'zwaar',
   robot: 'robot',
+  power: 'krachtpantser', // data 0.40.0: the Garde power armour
 };
 const DAMAGE_NL: Record<string, string> = {
   ballistic: 'ballistisch',

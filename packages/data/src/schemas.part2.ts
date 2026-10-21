@@ -13,6 +13,8 @@ import {
   EffectStat,
   Provides,
   Repair,
+  Overload,
+  Transport,
   Role,
   Siege,
   Stat,
@@ -50,7 +52,7 @@ export const Loadout = z
     // Data 0.21.0 (bevestigd in fase-0 sectie 23 besluit 2): ook toegestaan voor een ander lichaam (de vechters,
     // honden en de Buggy van de Raiders worden nieuw gebouwd in een tent of de autosloperij); een slaaf heeft het nooit.
     producedAt: id.optional(),
-    repair: Repair.optional(), // alleen role robot
+    repair: Repair.optional(), // role robot, or (data 0.39.0, proposal) role technician (the Klerk)
     siege: Siege.optional(), // alleen role robot
     // Data 0.21.0 (Raiders; bevestigd in fase-0 sectie 23 besluit 2), alle optioneel
     slave: z.boolean().optional(), // true = slaaf: arbeider (role scavenger of builder), vecht nooit, werkt binnen de Kooi-straal, bevrijdbaar
@@ -59,6 +61,11 @@ export const Loadout = z
     // Data 0.38.0 (de Garde; proposal for the architect): fusion cores this unit takes from the stock when its
     // production starts (factions fusionCores); absent = 0
     fusionCores: z.number().int().nonnegative().max(255).optional(),
+    // Data 0.39.0 (the Garde, round B; proposal for the architect): see Overload and Transport in schemas.part1.ts;
+    // flying = moves straight over any terrain (no flow field, no walls, no separation); absent = false
+    overload: Overload.optional(),
+    transport: Transport.optional(),
+    flying: z.boolean().optional(),
     // Data 0.22.0 (fog of war; bevestigd in fase-0 sectie 23 besluit 1): sight radius from the unit's centre;
     // absent = sim.json vision.unitSightM
     sightM: sight.optional(),
@@ -99,9 +106,14 @@ export const Loadout = z
         path: ['producedAt'],
         message: 'verplicht bij bodyType robot',
       });
-    for (const field of ['repair', 'siege'] as const)
-      if (l[field] !== undefined && !robot)
-        ctx.addIssue({ code: 'custom', path: [field], message: 'alleen voor een robot' });
+    if (l.siege !== undefined && !robot)
+      ctx.addIssue({ code: 'custom', path: ['siege'], message: 'alleen voor een robot' });
+    if (l.repair !== undefined && !robot && l.role !== 'technician')
+      ctx.addIssue({
+        code: 'custom',
+        path: ['repair'],
+        message: 'alleen voor een robot of een technician',
+      });
   });
 
 // Turret-netwerk (data 0.16.0): een turret krijgt extra schade voor elke andere eigen voltooide turret binnen radiusM,
@@ -181,6 +193,9 @@ export const Tech = z
     building: id,
     prereqTech: z.array(id),
     effects: z.array(Effect),
+    // Data 0.39.0 (proposal for the architect): techs sort by (idGroup, id); a later group appends its techIds without
+    // shifting the older ones, so recorded replays keep their Research techIds. Absent = 0.
+    idGroup: z.number().int().nonnegative().max(255).optional(),
     _comment: comment,
   })
   .strict();
@@ -229,6 +244,9 @@ export const HeroAura = z
 export const Hero = z
   .object({
     id,
+    // Data 0.39.0 (hero choice, proposal for the architect): sort group of the numeric id, absent = 0. The loader sorts
+    // heroes and perks on (idGroup, id), so a new group appends after the old ids and no existing hero or perk id shifts.
+    idGroup: z.number().int().nonnegative().optional(),
     faction: id,
     archetype: Archetype,
     special: Special,
@@ -268,6 +286,9 @@ export const Hero = z
 export const Perk = z
   .object({
     id,
+    // Data 0.39.0 (hero choice, proposal for the architect): sort group of the numeric id, absent = 0. The loader sorts
+    // heroes and perks on (idGroup, id), so a new group appends after the old ids and no existing hero or perk id shifts.
+    idGroup: z.number().int().nonnegative().optional(),
     naam: z.string(),
     flavourText: z.string(),
     requires: z.object({ stat: Stat, min: z.number().int() }).strict(),
