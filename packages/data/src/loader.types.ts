@@ -185,6 +185,25 @@ export interface RaidPlanData {
   workers: { scavengers: number } | null;
   /** Data 0.38.0 (proposal): the fighter mix strictly in cycle order; false when absent. */
   mixInOrder: boolean;
+  /** Data 0.43.0 (the Garde AI, proposal): support units (the Klerk); null = none. */
+  support: {
+    loadoutId: number;
+    fromTicks: number;
+    max: number;
+    perArmy: number;
+    withWave: number;
+  } | null;
+  /** Data 0.43.0 (the Garde AI, proposal): the airlift (the Vertibird); null = none. */
+  airlift: {
+    loadoutId: number;
+    fromTicks: number;
+    max: number;
+    minArmy: number;
+    minPathU: number;
+    gatherU: number;
+    minLoad: number;
+    minHpPermille: number;
+  } | null;
   garrison: { minFighters: number };
   dominancePush: { fromTicks: number; minArmy: number };
 }

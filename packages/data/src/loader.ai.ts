@@ -145,6 +145,40 @@ export function convertAiScripts(ctx: LoadContext, loadouts: LoadoutData[]): AiS
                   ? null
                   : { scavengers: a.raidPlan.workers.scavengers },
               mixInOrder: a.raidPlan.mixInOrder === true,
+              // data 0.43.0 (the Garde AI, proposal): the Klerk and the Vertibird of the script
+              support: ((sp) =>
+                sp === undefined
+                  ? null
+                  : {
+                      loadoutId: ref(
+                        loadoutIx,
+                        'loadout',
+                        `${where} raidPlan support`,
+                        sp.loadoutId,
+                      ),
+                      fromTicks: secondsToTicks(sp.fromS),
+                      max: sp.max,
+                      perArmy: sp.perArmy,
+                      withWave: sp.withWave,
+                    })(a.raidPlan.support),
+              airlift: ((al) =>
+                al === undefined
+                  ? null
+                  : {
+                      loadoutId: ref(
+                        loadoutIx,
+                        'loadout',
+                        `${where} raidPlan airlift`,
+                        al.loadoutId,
+                      ),
+                      fromTicks: secondsToTicks(al.fromS),
+                      max: al.max,
+                      minArmy: al.minArmy,
+                      minPathU: metersToUnits(al.minPathM),
+                      gatherU: metersToUnits(al.gatherM),
+                      minLoad: al.minLoad,
+                      minHpPermille: pctToPermille(al.minHpPct),
+                    })(a.raidPlan.airlift),
               garrison: { minFighters: a.raidPlan.garrison.minFighters },
               dominancePush: {
                 fromTicks: secondsToTicks(a.raidPlan.dominancePush.fromS),

@@ -22,7 +22,8 @@
   "richScrap": 400,
   "richBuilds": [
     { "buildingId": "geschutstoren", "site": "front" },
-    { "buildingId": "geschutstoren", "site": "claim" }
+    { "buildingId": "geschutstoren", "site": "claim" },
+    { "buildingId": "landingsplatform", "site": "hq" }
   ],
   "scavengersPerNode": 4,
   "claimFromS": 60,
@@ -48,7 +49,26 @@
     "garrison": { "minFighters": 0 },
     "dominancePush": { "fromS": 1200, "minArmy": 8 },
     "workers": { "scavengers": 12 },
-    "mixInOrder": true
+    "mixInOrder": true,
+    "support": {
+      "loadoutId": "klerk",
+      "fromS": 420,
+      "max": 2,
+      "perArmy": 5,
+      "withWave": 1,
+      "_comment": "startwaarde, geen balans (data 0.43.0, voorstel sim-core voor de architect; docs/garde.md punt 3). Vanaf minuut 7 houdt de Garde 1 Klerk per 5 vechters, hoogstens 2 (ronde 1 met 3 vanaf minuut 5 kostte haar zichtbaar leger, zie CHANGELOG). 60 scrap elk, dus de eerste komt pas als het leger er staat. Een Klerk telt nooit mee voor een golf, push of reserve. Er loopt er 1 mee met elke golf, push en sabotage (zijn treffer legt een vijandelijk krachtpantser 3 s stil, ook een van de map); de rest staat bij de verdediging en repareert daar frames, de Vertibird en gebouwen."
+    },
+    "airlift": {
+      "loadoutId": "vertibird",
+      "fromS": 960,
+      "max": 1,
+      "minArmy": 10,
+      "minPathM": 80,
+      "gatherM": 20,
+      "minLoad": 2,
+      "minHpPct": 70,
+      "_comment": "startwaarde, geen balans (data 0.43.0, voorstel sim-core voor de architect; docs/garde.md punt 5). Vanaf minuut 16, met minstens 10 vechters en boven 400 scrap (het landingsplatform is een richBuild, de Vertibird spaart hij ervoor): een Vertibird. Hij vecht nooit mee: een volle transport die neergehaald wordt neemt zijn lading mee, dus hij vliegt alleen over eigen gebied. Hij parkeert bij het verzamelpunt waar het leger staat. Vertrekt daar een push naar de vijandelijke spawn en ligt die minstens 80 m over land (op Rustbelt 160 tot 260 m), dan stappen tot 4 vechters van die golf binnen 20 m aan boord (minstens 2) en zet hij ze bij de spawn neer; de rest loopt. Boven 70 procent hp, daaronder blijft hij aan de grond. Gemeten: thuis staan laat in het potje 0 tot 2 vrije vechters, dus een pendel tussen hoofdgebouw en front vond nooit lading; bij de golf staat het leger wel."
+    }
   },
   "reserve": { "fromS": 600, "minArmy": 10, "robotsFirstFromS": 99999 },
   "creeps": {

@@ -45,8 +45,8 @@ export {
   DamageMatrix,
   MapDef,
   AiSite,
-  RaidPlan,
 } from './schemas.part2.js';
+export { RaidPlan } from './schemas.part6.js';
 export {
   AiScript,
   FormationTuning,

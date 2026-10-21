@@ -104,6 +104,21 @@ export function hashAiScript(h: number, s: SimAiScript): number {
       ]);
       if (rp.workers !== null) h = hashInts(h, [rp.workers.scavengers]);
       if (rp.mixInOrder) h = hashInts(h, [1]); // data 0.38.0: only when set
+      // data 0.43.0 (the Garde AI): only when set, so a script without them keeps its hash
+      const sp = rp.support;
+      if (sp !== null) h = hashInts(h, [sp.typeId, sp.fromTicks, sp.max, sp.perArmy, sp.withWave]);
+      const al = rp.airlift;
+      if (al !== null)
+        h = hashInts(h, [
+          al.typeId,
+          al.fromTicks,
+          al.max,
+          al.minArmy,
+          al.minPath,
+          al.gather,
+          al.minLoad,
+          al.minHpPermille,
+        ]);
     }
     const lb = s.liberate;
     h = hashInts(h, lb === null ? [0] : [1, lb.minFree, lb.units, lb.radius]);
