@@ -31,6 +31,10 @@ export const BUILDING_NAMES: Record<string, string> = {
   tent: 'Tent',
   kooi: 'Kooi',
   // Garde (data 0.37.0)
+  // data 0.44.0: the three delivered Dweller buildings
+  zendtoren: 'Zendtoren',
+  nutsgebouw: 'Nutsgebouw',
+  opslagloods: 'Opslagloods',
   bastion: 'Bastion',
   kazerne: 'Kazerne',
   slaapzaal: 'Slaapzaal', // data 0.41.0
