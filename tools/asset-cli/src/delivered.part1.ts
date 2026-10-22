@@ -60,6 +60,19 @@ export const deliveredAssetSchema = z
      * of steps is applied one after the other (a roll about an axis the first step turned the model onto).
      */
     rotate: z.union([vec3, z.array(vec3).min(1)]).optional(),
+    /**
+     * Turns part of the model before the whole model is turned: the rotor discs of a tilt-rotor from cruise into
+     * helicopter mode, a turret onto its target. Degrees in the same order as `rotate`, about `pivot` (the hub) in the
+     * source's own space, because the node transforms are already in the vertices by then. A part matches when any
+     * node in its chain carries one of these names.
+     */
+    partRotate: z
+      .array(
+        z
+          .object({ nodes: z.array(z.string()).min(1), rotate: vec3, pivot: vec3.optional() })
+          .strict(),
+      )
+      .optional(),
     /** Uniform scale of the source units to meters (applied after `rotate`). One of `scale` and `fit`. */
     scale: positive.optional(),
     /** Uniform scale that gives the model this size along one axis (after `rotate`). */

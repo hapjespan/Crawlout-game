@@ -31,8 +31,30 @@ export function placeModel(
       : typeof asset.rotate[0] === 'number'
         ? [asset.rotate as V3]
         : (asset.rotate as V3[]);
+  // Per-part turns first, in the source's own space: about the hub, before the whole model is squared up.
+  const partTurns = (asset.partRotate ?? []).map((r) => {
+    const p = r.pivot ?? ([0, 0, 0] as V3);
+    return {
+      names: new Set(r.nodes),
+      steps: [
+        makeTransform({ translation: [-p[0], -p[1], -p[2]] }),
+        makeTransform({ rotation: r.rotate }),
+        makeTransform({ translation: p }),
+      ],
+    };
+  });
+  const prepared =
+    partTurns.length === 0
+      ? parts
+      : parts.map((part) => {
+          const rule = partTurns.find((t) => part.nodes.some((n) => t.names.has(n)));
+          return rule
+            ? { ...part, mesh: rule.steps.reduce((mesh, s) => transformMesh(mesh, s), part.mesh) }
+            : part;
+        });
+
   const turns = steps.map((rotation) => makeTransform({ rotation }));
-  const turned = parts.map((p) => ({
+  const turned = prepared.map((p) => ({
     ...p,
     mesh: turns.reduce((mesh, turn) => transformMesh(mesh, turn), p.mesh),
   }));
