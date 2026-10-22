@@ -27,7 +27,7 @@ describe('data/ valideert', () => {
       'slagwapen_leer',
       'technicus',
     ]);
-    expect(data.buildings.filter(dwellers)).toHaveLength(10);
+    expect(data.buildings.filter(dwellers)).toHaveLength(13);
     expect(data.tech.filter(dwellers)).toHaveLength(14);
     expect(data.training).toHaveLength(7);
     expect(data.heroes.filter(dwellers)).toHaveLength(3);
@@ -40,8 +40,8 @@ describe('data/ valideert', () => {
     // data 0.33.0: plus the 6 hostile units of survival (data/survival/units.json)
     expect(data.loadouts).toHaveLength(43);
     expect(data.loadouts.filter((l) => l.factionId === NEUTRAL_FACTION_ID)).toHaveLength(11);
-    // 18 faction buildings plus the 8 of the Garde (data 0.37.0, the slaapzaal data 0.41.0) plus (data 0.31.0, win route C) a restored and a ruin type per part of the strip mall
-    expect(data.buildings).toHaveLength(18 + 8 + 2 * 4);
+    // 21 faction buildings (data 0.44.0: +3 Dweller buildings) plus the 8 of the Garde (data 0.37.0, the slaapzaal data 0.41.0) plus (data 0.31.0, win route C) a restored and a ruin type per part of the strip mall
+    expect(data.buildings).toHaveLength(21 + 8 + 2 * 4);
     expect(data.buildings.filter((b) => b.factionId === NEUTRAL_FACTION_ID)).toHaveLength(8);
     expect(data.tech).toHaveLength(38); // data 0.39.0: 6 Garde techs in idGroup 1
     // data 0.38.0: the Paladin-Commander of the Garde (id zwaardridder, after warlord)

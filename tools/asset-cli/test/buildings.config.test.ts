@@ -22,14 +22,24 @@ describe('variants.json', () => {
   it('valideert en dekt alle Dweller-gebouwen uit data/buildings/*.json (acht hier, de robotgebouwen in robots.json)', () => {
     const dwellers = buildingsJson.filter((b) => b.visuals.mesh.startsWith('dweller_building_'));
     // data 0.15.0: tien gebouwen; robotfabriek en laserturret komen uit assets/src/robots.json (src/robots.ts)
+    // data 0.44.0: dertien gebouwen; drie nieuwe afgeleverde assets (broadcast_tower, utility, storage) zitten in
+    // delivered.json (gitignored) en niet in variants.json of robots.json.
+    const DELIVERED_MESHES = new Set([
+      'dweller_building_broadcast_tower',
+      'dweller_building_utility',
+      'dweller_building_storage',
+    ]);
     const robots = readSplitJson(join(srcDir, 'robots.json')) as {
       buildings: Record<string, { footprint: { w: number; h: number } }>;
     };
-    expect(dwellers).toHaveLength(10);
-    const inVariants = dwellers.filter((b) => robots.buildings[b.visuals.mesh] === undefined);
+    expect(dwellers).toHaveLength(13);
+    const inVariants = dwellers.filter(
+      (b) => robots.buildings[b.visuals.mesh] === undefined && !DELIVERED_MESHES.has(b.visuals.mesh),
+    );
     expect(inVariants).toHaveLength(8);
     expect(ids).toEqual(inVariants.map((b) => b.visuals.mesh).sort());
     for (const b of dwellers) {
+      if (DELIVERED_MESHES.has(b.visuals.mesh)) continue; // footprint lives in delivered.json (gitignored)
       const footprint =
         config.variants[b.visuals.mesh]?.footprint ?? robots.buildings[b.visuals.mesh]?.footprint;
       expect(footprint, b.visuals.mesh).toEqual(b.footprint);
