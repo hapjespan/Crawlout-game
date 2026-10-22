@@ -1,0 +1,426 @@
+// Turns one LOD GLB of the asset-cli (as loaded by three's GLTFLoader) into the vertex layout of the unit material:
+// position and normal in skin bind space, color (linear rgb, team mask in alpha), skinIndex and skinWeight in the
+// bone order of the baked texture, plus uv when the asset has a diffuse texture. All skinned primitives are merged
+// into one geometry, so a unit stays one instanced draw per LOD.
+//
+// Quantization: the asset-cli writes meshopt with KHR_mesh_quantization. For a skinned mesh, gltf-transform's
+// quantize() folds the dequantization transform T (uniform scale plus offset) into the inverse bind matrices of the
+// LOD GLB, while the baked texture uses the source IBMs (skin = joint world * IBM_source). So the quantized vertices
+// must be brought back with T before the texture applies: IBM_lod = IBM_source * T, and with the rest pose as the
+// bind pose (IBM_source = inverse(rest world)), T = rest world * IBM_lod for every joint. All joints must agree.
+import type { BodyPalette } from '@crawlout/asset-cli/manifest';
+import {
+  BufferAttribute,
+  BufferGeometry,
+  Color,
+  Matrix3,
+  Matrix4,
+  Vector3,
+  type Bone,
+  type Material,
+  type Object3D,
+  type SkinnedMesh,
+  type Texture,
+} from 'three/webgpu';
+import { texelLuminance, type Rasterize } from '../structures/textureArray.js';
+import {
+  BAND_BONE,
+  hasBodyRegions,
+  resolveBodyPalette,
+  teamBandMask,
+  vertexRegion,
+  type VertexRegion,
+} from './bodyRegions.js';
+
+export class UnitGeometryError extends Error {
+  override name = 'UnitGeometryError';
+}
+
+/**
+ * Where the team mask comes from. 'materialName' (default): primitives whose glTF material name contains "team"
+ * take the owner's color, the rest keep their own. An asset without a "team" material falls back to its main
+ * material (name "main" or "body" as a word, e.g. Quaternius' M_Main): that whole material takes the owner's color,
+ * on a neutral base so the team color reads clean (TEAM_FALLBACK_BASE). With a body skeleton (bodyRegions.ts) the
+ * team color is an accent on the upper chest and shoulders instead and the rest of the body gets clothing colors.
+ * 'diffuseAlpha': the alpha of the diffuse texture is the mask
+ * per texel (artist brief; 1 = team color). 'auto' (this function's default; the loader passes the manifest's
+ * teamMask): 'diffuseAlpha' when the atlas carries a mask in its alpha (some texels below ALPHA_MASK_MAX; an opaque
+ * atlas or a JPEG has none), else 'materialName'. 'none': no team color
+ * on the model; the selection ring and blob still show the owner.
+ */
+export type TeamMaskSource = 'auto' | 'materialName' | 'diffuseAlpha' | 'none';
+
+export interface UnitGeometryOptions {
+  /** Bones in the baked texture; the GLB's skin must have exactly this many joints. */
+  boneCount: number;
+  teamMask?: TeamMaskSource;
+  /** Reads the atlas' pixels (structures/textureArray.ts canvasRasterize in the browser); null where it cannot. */
+  rasterize?: Rasterize;
+  /** Clothing palette of the body (manifest `palette`); without it the Dweller clothing (bodyRegions.ts). */
+  palette?: BodyPalette | undefined;
+}
+
+export interface UnitGeometryResult {
+  geometry: BufferGeometry;
+  /** The diffuse texture shared by the textured primitives, or null when the asset is vertex/material colored. */
+  map: Texture | null;
+  triangles: number;
+  /** Distinct diffuse textures found; only the first one is used (one draw per LOD needs one atlas). */
+  textureCount: number;
+  /** Where the team mask came from ('auto' resolved). */
+  teamMask: Exclude<TeamMaskSource, 'auto'>;
+  /**
+   * Mean linear luminance of the albedo under the team mask: the team color is shaded relative to it, so the texture's
+   * light and dark stay (unitMaterial.ts teamAlbedo). TEAM_PIVOT_DEFAULT when nothing is masked or it cannot be read.
+   */
+  teamPivot: number;
+  /** Bone names in the joint order of the baked texture (attachments find their bone here). */
+  boneNames: string[];
+  /** 0..1: how much of the whole upper body takes the team color from far away (the palette's `farTeam`). */
+  farTeam: number;
+}
+
+/** An atlas alpha below this counts as "not team": an atlas with such texels carries a mask in its alpha. */
+export const ALPHA_MASK_MAX = 0.98;
+/** Edge (px) the atlas is read at for the mask test and the team pivot. */
+const STATS_SIZE = 128;
+export const TEAM_PIVOT_DEFAULT = 0.5;
+
+const lumaOf = (r: number, g: number, b: number): number => 0.2126 * r + 0.7152 * g + 0.0722 * b;
+
+/** True when the RGBA pixels (row 0 at the top) hold a team mask in their alpha. */
+export function hasAlphaMask(px: Uint8Array): boolean {
+  const limit = ALPHA_MASK_MAX * 255;
+  let low = 0;
+  let high = 0;
+  for (let i = 3; i < px.length; i += 4) {
+    if (px[i]! < limit) low++;
+    else high++;
+  }
+  return low > 0 && high > 0;
+}
+
+/** Linear luminance of the texel at uv (glTF convention: v down, row 0 at the top; repeat). */
+function texelLuma(px: Uint8Array, size: number, u: number, v: number): number {
+  const x = Math.min(size - 1, Math.floor((u - Math.floor(u)) * size));
+  const y = Math.min(size - 1, Math.floor((v - Math.floor(v)) * size));
+  return texelLuminance(px, (y * size + x) * 4);
+}
+
+/** Material names that carry the team mask. */
+export const TEAM_MATERIAL = /team/i;
+/** The main material, team-masked when no material matches TEAM_MATERIAL. */
+export const TEAM_MATERIAL_FALLBACK = /(^|[^a-z])(main|body)([^a-z]|$)/i;
+/** Base color (linear grey) of a fallback team material: the unit material then shows the pure team color. */
+export const TEAM_FALLBACK_BASE = 0.8;
+
+/** uv of primitives without the atlas: the material reads white there. */
+export const NO_UV = -1;
+
+interface MaterialLike extends Material {
+  color?: Color;
+  map?: Texture | null;
+}
+
+function isQuantized(attr: BufferAttribute): boolean {
+  return attr.normalized || !(attr.array instanceof Float32Array);
+}
+
+/** True for a matrix that only scales uniformly (s > 0) and translates. */
+function isScaleOffset(m: Matrix4, tol: number): boolean {
+  const e = m.elements;
+  const s = e[0]!;
+  if (!(s > 0)) return false;
+  const t = tol * Math.max(1, s);
+  const off = [1, 2, 3, 4, 6, 7, 8, 9, 11];
+  return (
+    Math.abs(e[5]! - s) < t &&
+    Math.abs(e[10]! - s) < t &&
+    Math.abs(e[15]! - 1) < tol &&
+    off.every((i) => Math.abs(e[i]!) < t)
+  );
+}
+
+function close(a: Matrix4, b: Matrix4, tol: number): boolean {
+  for (let i = 0; i < 16; i++)
+    if (Math.abs(a.elements[i]! - b.elements[i]!) > tol * Math.max(1, Math.abs(b.elements[i]!)))
+      return false;
+  return true;
+}
+
+/** Dequantization transform of a skinned mesh's vertices into its source bind space (see the header). */
+export function dequantizationOf(mesh: SkinnedMesh): Matrix4 {
+  const { bones, boneInverses } = mesh.skeleton;
+  const candidates = bones.map((bone, j) =>
+    new Matrix4().multiplyMatrices(bone.matrixWorld, boneInverses[j]!),
+  );
+  const tol = 1e-3;
+  let best: Matrix4 | null = null;
+  let bestVotes = 0;
+  for (const c of candidates) {
+    if (!isScaleOffset(c, tol)) continue;
+    const votes = candidates.reduce((n, o) => n + (close(o, c, tol) ? 1 : 0), 0);
+    if (votes > bestVotes) {
+      best = c;
+      bestVotes = votes;
+    }
+  }
+  // A majority of the joints must agree; a skin whose rest pose differs from its bind pose cannot be recovered here.
+  if (!best || bestVotes * 2 <= candidates.length) {
+    throw new UnitGeometryError(
+      `cannot recover the quantization transform of "${mesh.name}": rest pose differs from the bind pose in ${candidates.length - bestVotes} of ${candidates.length} joints`,
+    );
+  }
+  return best;
+}
+
+/** Merges every skinned mesh under `root` into the unit vertex layout. Throws UnitGeometryError on a mismatch. */
+export function unitGeometryFromGltf(
+  root: Object3D,
+  opts: UnitGeometryOptions,
+): UnitGeometryResult {
+  root.updateMatrixWorld(true);
+  const meshes: SkinnedMesh[] = [];
+  root.traverse((o) => {
+    if ((o as SkinnedMesh).isSkinnedMesh) meshes.push(o as SkinnedMesh);
+  });
+  if (meshes.length === 0) throw new UnitGeometryError('no skinned mesh in the GLB');
+
+  // Bone order of the baked texture = joint order of the first skin (asset-cli: one skin, same order as the bake).
+  const reference = meshes[0]!.skeleton.bones;
+  if (reference.length !== opts.boneCount)
+    throw new UnitGeometryError(
+      `skin has ${reference.length} joints, the baked texture ${opts.boneCount}`,
+    );
+  const byBone = new Map<Bone, number>();
+  const byName = new Map<string, number>();
+  reference.forEach((b, i) => {
+    byBone.set(b, i);
+    byName.set(b.name, i);
+  });
+
+  const requested = opts.teamMask ?? 'auto';
+  const maps: Texture[] = [];
+  const mapOf = (m: MaterialLike): Texture | null => {
+    const map = m.map ?? null;
+    if (map && !maps.some((t) => t === map || (t.source === map.source && t.source !== undefined)))
+      maps.push(map);
+    return map;
+  };
+  for (const mesh of meshes)
+    mapOf((Array.isArray(mesh.material) ? mesh.material[0] : mesh.material) as MaterialLike);
+  const atlas = maps[0] ?? null;
+  const pixels = atlas && opts.rasterize ? opts.rasterize(atlas.image, STATS_SIZE) : null;
+  const atlasPx = pixels && pixels.length === STATS_SIZE * STATS_SIZE * 4 ? pixels : null;
+  const teamMask: Exclude<TeamMaskSource, 'auto'> =
+    requested !== 'auto'
+      ? requested
+      : atlasPx && hasAlphaMask(atlasPx)
+        ? 'diffuseAlpha'
+        : 'materialName';
+  const materialName = (mesh: SkinnedMesh): string =>
+    ((Array.isArray(mesh.material) ? mesh.material[0] : mesh.material) as MaterialLike).name;
+  const teamPattern =
+    teamMask !== 'materialName'
+      ? null
+      : meshes.some((m) => TEAM_MATERIAL.test(materialName(m)))
+        ? TEAM_MATERIAL
+        : TEAM_MATERIAL_FALLBACK;
+
+  // A mannequin (the main material takes the team color) with a body skeleton: team accent plus clothing regions.
+  const boneNames = reference.map((b) => b.name);
+  const regions = teamPattern === TEAM_MATERIAL_FALLBACK && hasBodyRegions(boneNames);
+  const palette = resolveBodyPalette(opts.palette);
+  /** Band zone: per vertex, the skin weight on the band's bone (the team band is a window along that bone). */
+  const bandShare: number[] = [];
+  const region: VertexRegion = { team: 0, color: [0, 0, 0] };
+  const vertexNames: (string | undefined)[] = [];
+  const vertexWeights: number[] = [];
+
+  const pos: number[] = [];
+  const nrm: number[] = [];
+  const col: number[] = [];
+  const uvs: number[] = [];
+  const skinIndex: number[] = [];
+  const skinWeight: number[] = [];
+  const idx: number[] = [];
+  const v = new Vector3();
+  const normalMatrix = new Matrix3();
+  const base = new Color();
+  const remap: number[] = [];
+  let pivotSum = 0;
+  let pivotCount = 0;
+  let vertexLumaSum = 0;
+  let texturedCount = 0;
+
+  for (const mesh of meshes) {
+    const g = mesh.geometry;
+    const p = g.getAttribute('position') as BufferAttribute | undefined;
+    const si = g.getAttribute('skinIndex') as BufferAttribute | undefined;
+    const sw = g.getAttribute('skinWeight') as BufferAttribute | undefined;
+    if (!p || !si || !sw)
+      throw new UnitGeometryError(`mesh "${mesh.name}" lacks position, JOINTS_0 or WEIGHTS_0`);
+    let n = g.getAttribute('normal') as BufferAttribute | undefined;
+    if (!n) {
+      const copy = g.clone();
+      copy.computeVertexNormals();
+      n = copy.getAttribute('normal') as BufferAttribute;
+    }
+    const vc = g.getAttribute('color') as BufferAttribute | undefined;
+    const uv = g.getAttribute('uv') as BufferAttribute | undefined;
+    const material = (
+      Array.isArray(mesh.material) ? mesh.material[0] : mesh.material
+    ) as MaterialLike;
+    const map = material.map ?? null;
+    const textured =
+      atlas !== null &&
+      map !== null &&
+      (map === atlas || map.source === atlas.source) &&
+      uv !== undefined;
+    base.copy(material.color ?? new Color(1, 1, 1));
+    const materialMask = teamPattern?.test(material.name) ? 1 : 0;
+    if (materialMask && teamPattern === TEAM_MATERIAL_FALLBACK)
+      base.setRGB(TEAM_FALLBACK_BASE, TEAM_FALLBACK_BASE, TEAM_FALLBACK_BASE);
+
+    const T = isQuantized(p) ? dequantizationOf(mesh) : new Matrix4();
+    normalMatrix.getNormalMatrix(T);
+
+    // Joint index of this mesh's skin -> index in the reference order.
+    remap.length = 0;
+    mesh.skeleton.bones.forEach((b, i) => {
+      const r = byBone.get(b) ?? byName.get(b.name);
+      if (r === undefined)
+        throw new UnitGeometryError(
+          `joint "${b.name}" of mesh "${mesh.name}" is not in the baked skeleton`,
+        );
+      remap[i] = r;
+    });
+
+    const first = pos.length / 3;
+    for (let i = 0; i < p.count; i++) {
+      v.fromBufferAttribute(p, i).applyMatrix4(T);
+      pos.push(v.x, v.y, v.z);
+      v.fromBufferAttribute(n, i).applyMatrix3(normalMatrix).normalize();
+      nrm.push(v.x, v.y, v.z);
+      let sum = 0;
+      for (let k = 0; k < 4; k++) sum += sw.getComponent(i, k);
+      vertexNames.length = vertexWeights.length = 0;
+      for (let k = 0; k < 4; k++) {
+        const w = sum > 0 ? sw.getComponent(i, k) / sum : k === 0 ? 1 : 0;
+        const j = si.getComponent(i, k);
+        const ref = remap[j];
+        if (ref === undefined) {
+          if (w > 0)
+            throw new UnitGeometryError(
+              `mesh "${mesh.name}" vertex ${i} references joint ${j}, the skin has ${remap.length}`,
+            );
+          skinIndex.push(0);
+        } else skinIndex.push(ref);
+        skinWeight.push(w);
+        vertexNames.push(ref === undefined ? undefined : boneNames[ref]);
+        vertexWeights.push(w);
+      }
+      const r = vc ? vc.getX(i) : 1;
+      const gg = vc ? vc.getY(i) : 1;
+      const b = vc ? vc.getZ(i) : 1;
+      let mask = materialMask;
+      let cr = base.r * r;
+      let cg = base.g * gg;
+      let cb = base.b * b;
+      if (regions) {
+        vertexRegion(vertexNames, vertexWeights, TEAM_FALLBACK_BASE, region, palette);
+        mask = region.team;
+        [cr, cg, cb] = region.color;
+      }
+      col.push(cr, cg, cb, mask);
+      if (regions && palette.teamZone === 'band') {
+        let share = 0;
+        for (let k = 0; k < 4; k++) if (vertexNames[k] === BAND_BONE) share += vertexWeights[k]!;
+        bandShare.push(share);
+      }
+      if (atlas) {
+        if (textured) uvs.push(uv.getX(i), uv.getY(i));
+        else uvs.push(NO_UV, NO_UV);
+      }
+      if (mask > 0.5) {
+        const t =
+          textured && atlasPx ? texelLuma(atlasPx, STATS_SIZE, uv!.getX(i), uv!.getY(i)) : 1;
+        pivotSum += lumaOf(cr, cg, cb) * t;
+        pivotCount++;
+      } else if (textured && teamMask === 'diffuseAlpha') {
+        vertexLumaSum += lumaOf(cr, cg, cb);
+        texturedCount++;
+      }
+    }
+    const gi = g.getIndex();
+    if (gi) for (let i = 0; i < gi.count; i++) idx.push(first + gi.getX(i));
+    else for (let i = 0; i < p.count; i++) idx.push(first + i);
+  }
+
+  if (bandShare.length > 0) {
+    // Team band: a window along the band's bone (|x| in the T-pose, shoulder end to elbow end), over the weight on it.
+    let lo = Infinity;
+    let hi = -Infinity;
+    bandShare.forEach((share, i) => {
+      if (share <= 0.5) return;
+      const x = Math.abs(pos[i * 3]!);
+      lo = Math.min(lo, x);
+      hi = Math.max(hi, x);
+    });
+    const length = hi - lo;
+    if (length > 1e-4) {
+      pivotSum = 0;
+      pivotCount = 0;
+      bandShare.forEach((share, i) => {
+        if (share <= 0) return;
+        const m = share * teamBandMask((Math.abs(pos[i * 3]!) - lo) / length);
+        if (m <= 0) return;
+        for (let c = 0; c < 3; c++)
+          col[i * 4 + c] = col[i * 4 + c]! * (1 - m) + TEAM_FALLBACK_BASE * m;
+        col[i * 4 + 3] = m;
+      });
+      for (let i = 0; i < col.length; i += 4)
+        if (col[i + 3]! > 0.5) {
+          pivotSum += lumaOf(col[i]!, col[i + 1]!, col[i + 2]!);
+          pivotCount++;
+        }
+    }
+  }
+
+  const geometry = new BufferGeometry();
+  geometry.setAttribute('position', new BufferAttribute(new Float32Array(pos), 3));
+  geometry.setAttribute('normal', new BufferAttribute(new Float32Array(nrm), 3));
+  geometry.setAttribute('color', new BufferAttribute(new Float32Array(col), 4));
+  if (atlas) geometry.setAttribute('uv', new BufferAttribute(new Float32Array(uvs), 2));
+  // Float bone indices keep the vertex layout identical on the WebGPU and WebGL2 backends (as the placeholder).
+  geometry.setAttribute('skinIndex', new BufferAttribute(new Float32Array(skinIndex), 4));
+  geometry.setAttribute('skinWeight', new BufferAttribute(new Float32Array(skinWeight), 4));
+  const vertexCount = pos.length / 3;
+  geometry.setIndex(
+    new BufferAttribute(vertexCount > 65535 ? new Uint32Array(idx) : new Uint16Array(idx), 1),
+  );
+  geometry.computeBoundingSphere();
+  let teamPivot = pivotCount > 0 ? pivotSum / pivotCount : TEAM_PIVOT_DEFAULT;
+  if (teamMask === 'diffuseAlpha' && atlasPx) {
+    // Mask per texel: the mean of the masked texels, times the mean vertex color of the textured primitives.
+    let sum = 0;
+    let n = 0;
+    for (let i = 0; i < atlasPx.length; i += 4)
+      if (atlasPx[i + 3]! >= 128) {
+        sum += texelLuminance(atlasPx, i);
+        n++;
+      }
+    const vertexLuma = texturedCount > 0 ? vertexLumaSum / texturedCount : 1;
+    if (n > 0) teamPivot = (sum / n) * vertexLuma;
+  }
+  return {
+    geometry,
+    map: atlas,
+    triangles: idx.length / 3,
+    textureCount: maps.length,
+    teamMask,
+    teamPivot: Math.min(1, Math.max(0.02, teamPivot)),
+    boneNames,
+    farTeam: palette.farTeam,
+  };
+}

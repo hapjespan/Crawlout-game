@@ -1,0 +1,618 @@
+[
+  {
+    "id": "opziener",
+    "faction": "dwellers",
+    "archetype": "krijger",
+    "special": {
+      "S": 6,
+      "P": 5,
+      "E": 6,
+      "C": 4,
+      "I": 4,
+      "A": 6,
+      "L": 3
+    },
+    "naam": "Opziener",
+    "xpPerLevel": [80, 120, 160, 200, 250, 300],
+    "xpPerKill": 25,
+    "xpPerDiscovery": 50,
+    "xpPerAssist": 15,
+    "xpAssistRadiusM": 15,
+    "abilities": [
+      {
+        "id": "lockdown",
+        "naam": "Lockdown",
+        "cooldownS": 45,
+        "rangeM": 10,
+        "radiusM": 6,
+        "durationS": 8,
+        "effects": [
+          {
+            "stat": "speedPct",
+            "side": "enemy",
+            "target": "units",
+            "delta": -50
+          },
+          {
+            "stat": "damagePct",
+            "side": "ally",
+            "target": "alle",
+            "delta": 25
+          }
+        ],
+        "_comment": "startwaarde, geen balans. Lockdown (Spelfundament 5, Opziener): richt op een punt tot 10 m (rangeM) van de held; binnen 6 m straal (radiusM) zijn vijandelijke units 8 s (durationS) 50 procent trager (speedPct -50) en doen eigen units en turrets in de straal 25 procent meer schade (damagePct +25, target alle). Cooldown 45 s. Effecten gelden zolang een unit in de straal staat; de sim past ze per tick toe en leest ze uit effects."
+      }
+    ],
+    "passives": [
+      {
+        "stat": "researchCostPct",
+        "target": "alle",
+        "delta": -15
+      },
+      {
+        "stat": "damagePct",
+        "target": "turret",
+        "delta": 10
+      },
+      {
+        "stat": "damagePct",
+        "target": "turret_laser",
+        "delta": 10
+      },
+      {
+        "stat": "rangeM",
+        "target": "turret",
+        "delta": 1
+      },
+      {
+        "stat": "rangeM",
+        "target": "turret_laser",
+        "delta": 1
+      }
+    ],
+    "perkPool": [
+      "zware_laarzen",
+      "opzichter_blik",
+      "kluisvet",
+      "papierwerk",
+      "stille_knop",
+      "geluksschot"
+    ],
+    "reviveScrap": 100,
+    "reviveS": 40,
+    "revivePenaltyPct": 20,
+    "maxRevives": 4,
+    "_comment": "Balans speltest 14 oktober (held levelde nauwelijks; doel: level 3 tot 5 in een potje van 25 tot 35 minuten). Opziener (Krijger-variant van de Dwellers): SPECIAL totaal 34, zwaar op S, E en A voor een vechter (startwaarde). Oplappen bij het hoofdgebouw kost 100 scrap en 40 s, en 20 procent van perks en health (Spelfundament sectie 5); na 4 keer is de held leeg (maxRevives). xpPerLevel is PER STAP: 80, 120, 160, 200, 250, 300 (was 100 tot 600); de loader levert cumulatieve drempels 80, 200, 360, 560, 810, 1110, dus level 3 bij 200 xp en level 5 bij 560 xp; 6 stappen = maxlevel 7, een perk-keuze per level voor de 6 perks. xp-bronnen: xpPerKill 25 per vijandelijke unit die hij zelf doodt (was 10); xpPerAssist 15 per vijandelijke unit die een eigen unit of turret doodt binnen xpAssistRadiusM 15 m van de levende held (nieuw: de held leert van het gevecht om hem heen, ook als hij het laatste schot niet lost); xpPerDiscovery 50 per ontdekking, de eerste keer dat zijn speler een claimpunt neemt (was 25). Gemeten bij AI tegen AI (vijf seeds): de held van de winnaar haalt level 4 tot 6, die van de verliezer 2 tot 4. PASSIEVEN (passives, data 0.16.0, startwaarde, geen balans): de factiebonussen van de Opziener uit het Spelfundament (sectie 4: upgrades goedkoper, turrets sterker) als passief voor zijn speler, geen aura met straal. Ze gelden zolang de held LEEFT (dood, oplappend of leeg: weg), met dezelfde semantiek als de effecten van perks: optelbaar bij het basisgetal van het doel en geschaald met (1000 - aantal keer opgelapt maal revivePenaltyPermille) promille, dus na één keer oplappen werken ze op 80 procent. researchCostPct -15 met doel alle: elk onderzoek kost 15 procent minder scrap (de kosten worden bij het starten van het onderzoek naar beneden afgerond op een geheel getal; Cancel betaalt het betaalde bedrag terug). damagePct +10 en rangeM +1 (m) op turret en turret_laser: turrets zijn 10 procent sterker en schieten een meter verder (stapelt met lasergeleiding, turret_schade, turret_bereik, het turretnetwerk en de perks)."
+  },
+  {
+    "id": "warlord",
+    "faction": "raiders",
+    "archetype": "krijger",
+    "special": { "S": 7, "P": 4, "E": 5, "C": 6, "I": 3, "A": 5, "L": 4 },
+    "naam": "Warlord",
+    "xpPerLevel": [60, 90, 120, 150, 190, 230],
+    "xpPerKill": 30,
+    "xpPerDiscovery": 60,
+    "xpPerAssist": 20,
+    "xpAssistRadiusM": 15,
+    "abilities": [
+      {
+        "id": "raid",
+        "naam": "Raid",
+        "cooldownS": 40,
+        "rangeM": 14,
+        "radiusM": 10,
+        "durationS": 7,
+        "effects": [
+          { "stat": "speedPct", "side": "ally", "target": "units", "delta": 35 },
+          { "stat": "damagePct", "side": "ally", "target": "units", "delta": 20 }
+        ],
+        "_comment": "startwaarde, geen balans. Raid (Spelfundament 4 en 5, Warlord): richt op een punt tot 14 m (rangeM) van de held; binnen 10 m straal (radiusM) lopen eigen units 7 s (durationS) 35 procent sneller (speedPct +35) en doen 20 procent meer schade (damagePct +20, target units: ook slaven in de straal, die geen schade doen). Cooldown 40 s (Lockdown van de Opziener 45). Een aanvalsknop: de zwerm stort zich op een punt. Geen buit-bonus in deze versie: de sim kent alleen speedPct en damagePct voor abilities (fromData AURA_STATS)."
+      }
+    ],
+    "passives": [],
+    "aura": {
+      "radiusM": 10,
+      "effects": [
+        {
+          "stat": "damagePct",
+          "side": "enemy",
+          "target": "units",
+          "delta": -10
+        },
+        { "stat": "speedPct", "side": "enemy", "target": "units", "delta": -8 }
+      ]
+    },
+    "xpPerCapture": 25,
+    "baseLoadoutId": "warlord_basis",
+    "perkPool": [
+      "gebroken_flessen",
+      "dubbele_dosis",
+      "schuldeiser",
+      "rammelende_ketting",
+      "grote_bek",
+      "goot_scherpschutter",
+      "vakbond_verboden"
+    ],
+    "reviveScrap": 90,
+    "reviveS": 35,
+    "revivePenaltyPct": 20,
+    "maxRevives": 4,
+    "_comment": "startwaarde, geen balans. Warlord (Krijger-variant van de Raiders, Spelfundament 4 en 5): SPECIAL totaal 34 (gelijk aan de Opziener), zwaar op S 7 en C 6 voor een brulboer die zijn horde voorgaat, P 4 en I 3 laag. Aangewezen basis: baseLoadoutId warlord_basis. LEVELT HET SNELST (Spelfundament 4): xpPerLevel per stap 60, 90, 120, 150, 190, 230 (cumulatief 60, 150, 270, 420, 610, 840 tegen 80, 200, 360, 560, 810, 1110 voor de Opziener), xpPerKill 30 (25), xpPerDiscovery 60 (50), xpPerAssist 20 (15) binnen 15 m en xpPerCapture 25 per geroofde gevangene (nieuw veld): de held leert van elke overval. Zes stappen = maxlevel 7, perk-keuze per level uit 7 perks. INTIMIDATIE-AURA (aura, data 0.21.0, alleen data): altijd aan zolang de held leeft; vijandelijke units binnen 10 m van de held doen 10 procent minder schade (damagePct -10) en lopen 8 procent trager (speedPct -8); zelfde effect-vorm als een ability (side enemy). Geen passieve bonussen voor de speler (passives []): de aura is de factiebonus. Oplappen bij het hoofdgebouw kost 90 scrap en 35 s (de Opziener 100 en 40), 20 procent verlies van perks en hp per keer, na 4 keer leeg (Spelfundament 5). SPECIAL-kanaal: de chems psycho en jet verhogen S en A van de held tijdelijk zolang hij in de aura van een Chem-dealer staat (factions.json chems, target held)."
+  },
+  {
+    "id": "zwaardridder",
+    "faction": "garde",
+    "archetype": "krijger",
+    "special": { "S": 6, "P": 5, "E": 7, "C": 4, "I": 6, "A": 3, "L": 3 },
+    "naam": "Paladin-Commander",
+    "xpPerLevel": [80, 120, 160, 200, 250, 300],
+    "xpPerKill": 25,
+    "xpPerDiscovery": 50,
+    "xpPerAssist": 15,
+    "xpAssistRadiusM": 15,
+    "abilities": [
+      {
+        "id": "charge",
+        "naam": "Charge",
+        "cooldownS": 40,
+        "rangeM": 12,
+        "radiusM": 8,
+        "durationS": 6,
+        "effects": [
+          { "stat": "speedPct", "side": "ally", "target": "units", "delta": 40 },
+          { "stat": "damagePct", "side": "ally", "target": "units", "delta": 15 }
+        ],
+        "_comment": "startwaarde, geen balans: de held en eigen units binnen 8 m van een punt tot 12 m van hem lopen 6 s 40 procent sneller en doen 15 procent meer schade (de stormloop van de frames)."
+      }
+    ],
+    "passives": [],
+    "aura": {
+      "radiusM": 10,
+      "effects": [{ "stat": "damageTakenPct", "side": "ally", "target": "units", "delta": -15 }]
+    },
+    "baseLoadoutId": "krachtpantser",
+    "perkPool": [],
+    "reviveScrap": 120,
+    "reviveS": 45,
+    "revivePenaltyPct": 20,
+    "maxRevives": 4,
+    "sightM": 16,
+    "_comment": "startwaarde, geen balans (data 0.38.0, voorstel sim-core voor content en de architect; docs/garde.md punt 7): de Paladin-Commander van de Garde, in krachtpantser (baseLoadoutId krachtpantser: heavy, laserkarabijn). Pantser-aura: eigen units binnen 10 m van de levende held krijgen 15 procent minder schade (damageTakenPct -15, nieuw in de stat-enum). Charge: zie de ability. De id zwaardridder sorteert na warlord, zodat de held-ids van de Opziener en de Warlord (en dus elke Dwellers- en Raiders-hash) gelijk blijven; de naam is Paladin-Commander. Perks volgen in een aparte stap (perkPool leeg). SPECIAL-kanaal tech: holobanden (+1 I, P, S op target held)."
+  },
+  {
+    "id": "voorman",
+    "idGroup": 1,
+    "faction": "dwellers",
+    "archetype": "bouwer",
+    "special": {
+      "S": 3,
+      "P": 4,
+      "E": 5,
+      "C": 7,
+      "I": 7,
+      "A": 4,
+      "L": 4
+    },
+    "naam": "Voorman",
+    "xpPerLevel": [80, 120, 160, 200, 250, 300],
+    "xpPerKill": 20,
+    "xpPerDiscovery": 50,
+    "xpPerAssist": 15,
+    "xpAssistRadiusM": 15,
+    "abilities": [
+      {
+        "id": "haastklus",
+        "naam": "Haastklus",
+        "cooldownS": 60,
+        "rangeM": 0,
+        "radiusM": 14,
+        "durationS": 10,
+        "effects": [
+          {
+            "stat": "speedPct",
+            "side": "ally",
+            "target": "units",
+            "delta": 25
+          },
+          {
+            "stat": "damageTakenPct",
+            "side": "ally",
+            "target": "units",
+            "delta": -10
+          }
+        ],
+        "_comment": "startwaarde, geen balans. Haastklus (Bouwer): zie docs/held-keuze.md."
+      }
+    ],
+    "passives": [
+      {
+        "stat": "gatherRatePct",
+        "target": "scavenger",
+        "delta": 8
+      },
+      {
+        "stat": "buildTimePct",
+        "target": "bouwer",
+        "delta": -10
+      }
+    ],
+    "perkPool": [
+      "papierwerk",
+      "opzichter_blik",
+      "zware_laarzen",
+      "voorraadkast",
+      "gereedschapsriem",
+      "zuinig_beheer"
+    ],
+    "reviveScrap": 100,
+    "reviveS": 40,
+    "revivePenaltyPct": 20,
+    "maxRevives": 4,
+    "_comment": "startwaarde, geen balans (data 0.39.0, docs/held-keuze.md). SPECIAL 34 (gelijk aan de Krijger). Voorman (Bouwer van de Dwellers): zwaar op C 7 en I 7, S 3 laag."
+  },
+  {
+    "id": "controleur",
+    "idGroup": 1,
+    "faction": "dwellers",
+    "archetype": "tacticus",
+    "special": {
+      "S": 3,
+      "P": 7,
+      "E": 5,
+      "C": 4,
+      "I": 6,
+      "A": 3,
+      "L": 6
+    },
+    "naam": "Controleur",
+    "xpPerLevel": [80, 120, 160, 200, 250, 300],
+    "xpPerKill": 25,
+    "xpPerDiscovery": 50,
+    "xpPerAssist": 15,
+    "xpAssistRadiusM": 15,
+    "abilities": [
+      {
+        "id": "noodslot",
+        "naam": "Noodslot",
+        "cooldownS": 50,
+        "rangeM": 12,
+        "radiusM": 7,
+        "durationS": 8,
+        "effects": [
+          {
+            "stat": "speedPct",
+            "side": "enemy",
+            "target": "units",
+            "delta": -40
+          },
+          {
+            "stat": "damagePct",
+            "side": "enemy",
+            "target": "units",
+            "delta": -25
+          }
+        ],
+        "_comment": "startwaarde, geen balans. Noodslot (Tacticus): zie docs/held-keuze.md."
+      }
+    ],
+    "passives": [
+      {
+        "stat": "rangeM",
+        "target": "turret",
+        "delta": 1
+      },
+      {
+        "stat": "rangeM",
+        "target": "turret_laser",
+        "delta": 1
+      }
+    ],
+    "aura": {
+      "radiusM": 8,
+      "effects": [
+        {
+          "stat": "speedPct",
+          "side": "enemy",
+          "target": "units",
+          "delta": -10
+        }
+      ]
+    },
+    "baseLoadoutId": "patrol",
+    "perkPool": [
+      "stille_knop",
+      "geluksschot",
+      "zware_laarzen",
+      "scherpe_blik",
+      "kortsluiting",
+      "noodprotocol"
+    ],
+    "reviveScrap": 100,
+    "reviveS": 40,
+    "revivePenaltyPct": 20,
+    "maxRevives": 4,
+    "_comment": "startwaarde, geen balans (data 0.39.0, docs/held-keuze.md). SPECIAL 34 (gelijk aan de Krijger). Controleur (Tacticus van de Dwellers): zwaar op P 7 en I 6."
+  },
+  {
+    "id": "marktmeester",
+    "idGroup": 1,
+    "faction": "raiders",
+    "archetype": "bouwer",
+    "special": {
+      "S": 3,
+      "P": 3,
+      "E": 5,
+      "C": 7,
+      "I": 6,
+      "A": 4,
+      "L": 6
+    },
+    "naam": "Marktmeester",
+    "xpPerLevel": [60, 90, 120, 150, 190, 230],
+    "xpPerKill": 30,
+    "xpPerDiscovery": 60,
+    "xpPerAssist": 20,
+    "xpAssistRadiusM": 15,
+    "abilities": [
+      {
+        "id": "opbod",
+        "naam": "Opbod",
+        "cooldownS": 55,
+        "rangeM": 0,
+        "radiusM": 14,
+        "durationS": 10,
+        "effects": [
+          {
+            "stat": "speedPct",
+            "side": "ally",
+            "target": "units",
+            "delta": 30
+          }
+        ],
+        "_comment": "startwaarde, geen balans. Opbod (Bouwer): zie docs/held-keuze.md."
+      }
+    ],
+    "passives": [
+      {
+        "stat": "gatherRatePct",
+        "target": "slaaf",
+        "delta": 10
+      },
+      {
+        "stat": "buildTimePct",
+        "target": "slaaf_bouwer",
+        "delta": -10
+      }
+    ],
+    "xpPerCapture": 25,
+    "baseLoadoutId": "warlord_basis",
+    "perkPool": [
+      "schuldeiser",
+      "vakbond_verboden",
+      "dubbele_dosis",
+      "zwarte_markt",
+      "afdingen",
+      "gladde_prater"
+    ],
+    "reviveScrap": 90,
+    "reviveS": 35,
+    "revivePenaltyPct": 20,
+    "maxRevives": 4,
+    "_comment": "startwaarde, geen balans (data 0.39.0, docs/held-keuze.md). SPECIAL 34 (gelijk aan de Krijger). Marktmeester (Bouwer van de Raiders): zwaar op C 7 en I 6."
+  },
+  {
+    "id": "ketenmeester",
+    "idGroup": 1,
+    "faction": "raiders",
+    "archetype": "tacticus",
+    "special": {
+      "S": 4,
+      "P": 5,
+      "E": 4,
+      "C": 5,
+      "I": 5,
+      "A": 6,
+      "L": 5
+    },
+    "naam": "Ketenmeester",
+    "xpPerLevel": [60, 90, 120, 150, 190, 230],
+    "xpPerKill": 30,
+    "xpPerDiscovery": 60,
+    "xpPerAssist": 20,
+    "xpAssistRadiusM": 15,
+    "abilities": [
+      {
+        "id": "prikkeldraad",
+        "naam": "Prikkeldraad",
+        "cooldownS": 45,
+        "rangeM": 12,
+        "radiusM": 7,
+        "durationS": 8,
+        "effects": [
+          {
+            "stat": "speedPct",
+            "side": "enemy",
+            "target": "units",
+            "delta": -45
+          },
+          {
+            "stat": "damagePct",
+            "side": "enemy",
+            "target": "units",
+            "delta": -15
+          }
+        ],
+        "_comment": "startwaarde, geen balans. Prikkeldraad (Tacticus): zie docs/held-keuze.md."
+      }
+    ],
+    "passives": [],
+    "aura": {
+      "radiusM": 8,
+      "effects": [
+        {
+          "stat": "speedPct",
+          "side": "enemy",
+          "target": "units",
+          "delta": -10
+        }
+      ]
+    },
+    "xpPerCapture": 25,
+    "baseLoadoutId": "warlord_basis",
+    "perkPool": [
+      "rammelende_ketting",
+      "goot_scherpschutter",
+      "grote_bek",
+      "lange_ketting",
+      "achtervolgingswaan",
+      "rookgordijn"
+    ],
+    "reviveScrap": 90,
+    "reviveS": 35,
+    "revivePenaltyPct": 20,
+    "maxRevives": 4,
+    "_comment": "startwaarde, geen balans (data 0.39.0, docs/held-keuze.md). SPECIAL 34 (gelijk aan de Krijger). Ketenmeester (Tacticus van de Raiders): zwaar op A 6 en C 5."
+  },
+  {
+    "id": "kwartiermeester",
+    "idGroup": 1,
+    "faction": "garde",
+    "archetype": "bouwer",
+    "special": {
+      "S": 3,
+      "P": 4,
+      "E": 5,
+      "C": 6,
+      "I": 7,
+      "A": 3,
+      "L": 6
+    },
+    "naam": "Kwartiermeester",
+    "xpPerLevel": [80, 120, 160, 200, 250, 300],
+    "xpPerKill": 20,
+    "xpPerDiscovery": 50,
+    "xpPerAssist": 15,
+    "xpAssistRadiusM": 15,
+    "abilities": [
+      {
+        "id": "bevoorrading",
+        "naam": "Bevoorrading",
+        "cooldownS": 60,
+        "rangeM": 0,
+        "radiusM": 12,
+        "durationS": 10,
+        "effects": [
+          {
+            "stat": "speedPct",
+            "side": "ally",
+            "target": "units",
+            "delta": 20
+          },
+          {
+            "stat": "damageTakenPct",
+            "side": "ally",
+            "target": "units",
+            "delta": -10
+          }
+        ],
+        "_comment": "startwaarde, geen balans. Bevoorrading (Bouwer): zie docs/held-keuze.md."
+      }
+    ],
+    "passives": [
+      {
+        "stat": "gatherRatePct",
+        "target": "initiate_zoeker",
+        "delta": 8
+      },
+      {
+        "stat": "researchTimePct",
+        "target": "alle",
+        "delta": -10
+      }
+    ],
+    "baseLoadoutId": "initiate_wacht",
+    "perkPool": [
+      "papierwerk",
+      "zware_laarzen",
+      "geluksschot",
+      "voorraadlijst",
+      "bouwplan",
+      "rijke_archieven"
+    ],
+    "reviveScrap": 120,
+    "reviveS": 45,
+    "revivePenaltyPct": 20,
+    "maxRevives": 4,
+    "sightM": 16,
+    "_comment": "startwaarde, geen balans (data 0.39.0, docs/held-keuze.md). SPECIAL 34 (gelijk aan de Krijger). Kwartiermeester (Bouwer van de Garde): zwaar op I 7 en C 6."
+  },
+  {
+    "id": "archivaris",
+    "idGroup": 1,
+    "faction": "garde",
+    "archetype": "tacticus",
+    "special": {
+      "S": 3,
+      "P": 6,
+      "E": 5,
+      "C": 4,
+      "I": 7,
+      "A": 3,
+      "L": 6
+    },
+    "naam": "Archivaris",
+    "xpPerLevel": [80, 120, 160, 200, 250, 300],
+    "xpPerKill": 25,
+    "xpPerDiscovery": 50,
+    "xpPerAssist": 15,
+    "xpAssistRadiusM": 15,
+    "abilities": [
+      {
+        "id": "dwangprotocol",
+        "naam": "Dwangprotocol",
+        "cooldownS": 50,
+        "rangeM": 12,
+        "radiusM": 7,
+        "durationS": 7,
+        "effects": [
+          {
+            "stat": "speedPct",
+            "side": "enemy",
+            "target": "units",
+            "delta": -35
+          },
+          {
+            "stat": "damagePct",
+            "side": "enemy",
+            "target": "units",
+            "delta": -30
+          }
+        ],
+        "_comment": "startwaarde, geen balans. Dwangprotocol (Tacticus): zie docs/held-keuze.md."
+      }
+    ],
+    "passives": [
+      {
+        "stat": "rangeM",
+        "target": "geschutstoren",
+        "delta": 1
+      }
+    ],
+    "baseLoadoutId": "initiate_wacht",
+    "perkPool": [
+      "papierwerk",
+      "zware_laarzen",
+      "geluksschot",
+      "heldere_richtlijn",
+      "gelaagde_beveiliging",
+      "doelwitprotocol"
+    ],
+    "reviveScrap": 120,
+    "reviveS": 45,
+    "revivePenaltyPct": 20,
+    "maxRevives": 4,
+    "sightM": 16,
+    "_comment": "startwaarde, geen balans (data 0.39.0, docs/held-keuze.md). SPECIAL 34 (gelijk aan de Krijger). Archivaris (Tacticus van de Garde): zwaar op I 7 en P 6."
+  }
+]

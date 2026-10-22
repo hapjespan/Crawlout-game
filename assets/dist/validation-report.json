@@ -1,0 +1,5646 @@
+{
+  "version": 1,
+  "ok": true,
+  "assets": [
+    {
+      "id": "barrel_01",
+      "source": "packs/fps_dungeon_extras.glb#barrel",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "pack": "fps_dungeon_extras",
+      "category": "barrel",
+      "sourceTriangles": 1280,
+      "lodTriangles": [
+        600,
+        250,
+        80
+      ],
+      "sourceHeightM": 1.407,
+      "heightM": 0.9,
+      "scale": 0.006396,
+      "atlas": {
+        "size": 512,
+        "cells": [
+          {
+            "texture": "barrel",
+            "source": 0,
+            "size": 512,
+            "repeat": 1
+          }
+        ]
+      },
+      "textures": [
+        {
+          "size": 512,
+          "format": "jpeg",
+          "bytes": 32405
+        },
+        {
+          "size": 256,
+          "format": "jpeg",
+          "bytes": 9879
+        },
+        {
+          "size": 128,
+          "format": "jpeg",
+          "bytes": 3261
+        }
+      ],
+      "alpha": {
+        "triangleShare": 0,
+        "meanRgb": [
+          0,
+          0,
+          0
+        ],
+        "hue": 0,
+        "saturation": 0,
+        "foliage": "none",
+        "cutoff": 0.5
+      },
+      "materials": [
+        "barrel"
+      ]
+    },
+    {
+      "id": "bush001",
+      "source": "props/Bush001.glb",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "sourceTriangles": 48,
+      "lodTriangles": [
+        48,
+        48,
+        48
+      ],
+      "sourceBones": 0,
+      "bones": 0,
+      "prunedBones": [],
+      "channelsDropped": 0,
+      "clipsKept": {},
+      "clipsDropped": [],
+      "extraUvSetsRemoved": 0,
+      "scale": 0.01
+    },
+    {
+      "id": "bush002",
+      "source": "props/Bush002.glb",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "sourceTriangles": 48,
+      "lodTriangles": [
+        48,
+        48,
+        48
+      ],
+      "sourceBones": 0,
+      "bones": 0,
+      "prunedBones": [],
+      "channelsDropped": 0,
+      "clipsKept": {},
+      "clipsDropped": [],
+      "extraUvSetsRemoved": 0,
+      "scale": 0.01
+    },
+    {
+      "id": "chest_01",
+      "source": "packs/fps_dungeon_extras.glb#chest",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "pack": "fps_dungeon_extras",
+      "category": "chest",
+      "sourceTriangles": 2280,
+      "lodTriangles": [
+        800,
+        294,
+        100
+      ],
+      "sourceHeightM": 1.119,
+      "heightM": 0.546,
+      "scale": 0.004915,
+      "atlas": {
+        "size": 512,
+        "cells": [
+          {
+            "texture": "chest",
+            "source": 0,
+            "size": 512,
+            "repeat": 1
+          }
+        ]
+      },
+      "textures": [
+        {
+          "size": 512,
+          "format": "jpeg",
+          "bytes": 33730
+        },
+        {
+          "size": 256,
+          "format": "jpeg",
+          "bytes": 9797
+        },
+        {
+          "size": 128,
+          "format": "jpeg",
+          "bytes": 3083
+        }
+      ],
+      "alpha": {
+        "triangleShare": 0,
+        "meanRgb": [
+          0,
+          0,
+          0
+        ],
+        "hue": 0,
+        "saturation": 0,
+        "foliage": "none",
+        "cutoff": 0.5
+      },
+      "materials": [
+        "chest"
+      ]
+    },
+    {
+      "id": "chest_02",
+      "source": "packs/fps_dungeon_extras.glb#healthbox",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "pack": "fps_dungeon_extras",
+      "category": "chest",
+      "sourceTriangles": 256,
+      "lodTriangles": [
+        256,
+        256,
+        100
+      ],
+      "sourceHeightM": 0.264,
+      "heightM": 0.3,
+      "scale": 0.011379,
+      "atlas": {
+        "size": 512,
+        "cells": [
+          {
+            "texture": "healthbox",
+            "source": 0,
+            "size": 512,
+            "repeat": 1
+          }
+        ]
+      },
+      "textures": [
+        {
+          "size": 512,
+          "format": "jpeg",
+          "bytes": 39669
+        },
+        {
+          "size": 256,
+          "format": "jpeg",
+          "bytes": 10370
+        },
+        {
+          "size": 128,
+          "format": "jpeg",
+          "bytes": 3154
+        }
+      ],
+      "alpha": {
+        "triangleShare": 0,
+        "meanRgb": [
+          0,
+          0,
+          0
+        ],
+        "hue": 0,
+        "saturation": 0,
+        "foliage": "none",
+        "cutoff": 0.5
+      },
+      "materials": [
+        "healthbox"
+      ]
+    },
+    {
+      "id": "chest_03",
+      "source": "packs/fps_dungeon_extras.glb#ammobox",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "pack": "fps_dungeon_extras",
+      "category": "chest",
+      "sourceTriangles": 256,
+      "lodTriangles": [
+        256,
+        256,
+        100
+      ],
+      "sourceHeightM": 0.264,
+      "heightM": 0.3,
+      "scale": 0.011379,
+      "atlas": {
+        "size": 512,
+        "cells": [
+          {
+            "texture": "ammobox",
+            "source": 0,
+            "size": 512,
+            "repeat": 1
+          }
+        ]
+      },
+      "textures": [
+        {
+          "size": 512,
+          "format": "jpeg",
+          "bytes": 41157
+        },
+        {
+          "size": 256,
+          "format": "jpeg",
+          "bytes": 10913
+        },
+        {
+          "size": 128,
+          "format": "jpeg",
+          "bytes": 3315
+        }
+      ],
+      "alpha": {
+        "triangleShare": 0,
+        "meanRgb": [
+          0,
+          0,
+          0
+        ],
+        "hue": 0,
+        "saturation": 0,
+        "foliage": "none",
+        "cutoff": 0.5
+      },
+      "materials": [
+        "ammobox"
+      ]
+    },
+    {
+      "id": "crate_01",
+      "source": "packs/fps_dungeon_extras.glb#crate_1",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "pack": "fps_dungeon_extras",
+      "category": "crate",
+      "sourceTriangles": 260,
+      "lodTriangles": [
+        260,
+        200,
+        80
+      ],
+      "sourceHeightM": 1.44,
+      "heightM": 0.9,
+      "scale": 0.00625,
+      "atlas": {
+        "size": 512,
+        "cells": [
+          {
+            "texture": "crate",
+            "source": 0,
+            "size": 512,
+            "repeat": 1
+          }
+        ]
+      },
+      "textures": [
+        {
+          "size": 512,
+          "format": "jpeg",
+          "bytes": 27647
+        },
+        {
+          "size": 256,
+          "format": "jpeg",
+          "bytes": 8401
+        },
+        {
+          "size": 128,
+          "format": "jpeg",
+          "bytes": 2708
+        }
+      ],
+      "alpha": {
+        "triangleShare": 0,
+        "meanRgb": [
+          0,
+          0,
+          0
+        ],
+        "hue": 0,
+        "saturation": 0,
+        "foliage": "none",
+        "cutoff": 0.5
+      },
+      "materials": [
+        "crate"
+      ]
+    },
+    {
+      "id": "debris_barrel_01",
+      "source": "packs/fps_dungeon_extras.glb#barrelbroken",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "pack": "fps_dungeon_extras",
+      "category": "debris",
+      "sourceTriangles": 556,
+      "lodTriangles": [
+        400,
+        150,
+        46
+      ],
+      "sourceHeightM": 1.251,
+      "heightM": 0.8,
+      "scale": 0.006393,
+      "atlas": {
+        "size": 512,
+        "cells": [
+          {
+            "texture": "barrel",
+            "source": 0,
+            "size": 512,
+            "repeat": 1
+          }
+        ]
+      },
+      "textures": [
+        {
+          "size": 512,
+          "format": "jpeg",
+          "bytes": 32405
+        },
+        {
+          "size": 256,
+          "format": "jpeg",
+          "bytes": 9879
+        },
+        {
+          "size": 128,
+          "format": "jpeg",
+          "bytes": 3261
+        }
+      ],
+      "alpha": {
+        "triangleShare": 0,
+        "meanRgb": [
+          0,
+          0,
+          0
+        ],
+        "hue": 0,
+        "saturation": 0,
+        "foliage": "none",
+        "cutoff": 0.5
+      },
+      "materials": [
+        "barrel"
+      ]
+    },
+    {
+      "id": "debris_chair_01",
+      "source": "packs/fps_dungeon_extras.glb#chair",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "pack": "fps_dungeon_extras",
+      "category": "debris",
+      "sourceTriangles": 492,
+      "lodTriangles": [
+        400,
+        150,
+        50
+      ],
+      "sourceHeightM": 1.378,
+      "heightM": 0.9,
+      "scale": 0.00653,
+      "atlas": {
+        "size": 512,
+        "cells": [
+          {
+            "texture": "chair",
+            "source": 0,
+            "size": 512,
+            "repeat": 1
+          }
+        ]
+      },
+      "textures": [
+        {
+          "size": 512,
+          "format": "jpeg",
+          "bytes": 30886
+        },
+        {
+          "size": 256,
+          "format": "jpeg",
+          "bytes": 8709
+        },
+        {
+          "size": 128,
+          "format": "jpeg",
+          "bytes": 2754
+        }
+      ],
+      "alpha": {
+        "triangleShare": 0,
+        "meanRgb": [
+          0,
+          0,
+          0
+        ],
+        "hue": 0,
+        "saturation": 0,
+        "foliage": "none",
+        "cutoff": 0.5
+      },
+      "materials": [
+        "chair"
+      ]
+    },
+    {
+      "id": "debris_crate_01",
+      "source": "packs/fps_dungeon_extras.glb#cratepieces",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "pack": "fps_dungeon_extras",
+      "category": "debris",
+      "sourceTriangles": 120,
+      "lodTriangles": [
+        120,
+        120,
+        50
+      ],
+      "sourceHeightM": 1.46,
+      "heightM": 0.9,
+      "scale": 0.006165,
+      "atlas": {
+        "size": 512,
+        "cells": [
+          {
+            "texture": "crate",
+            "source": 0,
+            "size": 512,
+            "repeat": 1
+          }
+        ]
+      },
+      "textures": [
+        {
+          "size": 512,
+          "format": "jpeg",
+          "bytes": 27647
+        },
+        {
+          "size": 256,
+          "format": "jpeg",
+          "bytes": 8401
+        },
+        {
+          "size": 128,
+          "format": "jpeg",
+          "bytes": 2708
+        }
+      ],
+      "alpha": {
+        "triangleShare": 0,
+        "meanRgb": [
+          0,
+          0,
+          0
+        ],
+        "hue": 0,
+        "saturation": 0,
+        "foliage": "none",
+        "cutoff": 0.5
+      },
+      "materials": [
+        "crate"
+      ]
+    },
+    {
+      "id": "debris_pallet_01",
+      "source": "packs/wood_walls.glb#palet",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "pack": "wood_walls",
+      "category": "debris",
+      "sourceTriangles": 240,
+      "lodTriangles": [
+        240,
+        150,
+        50
+      ],
+      "sourceHeightM": 0.452,
+      "heightM": 0.168,
+      "scale": 0.003725,
+      "atlas": {
+        "size": 512,
+        "cells": [
+          {
+            "texture": "wood",
+            "source": 0,
+            "size": 512,
+            "repeat": 2
+          }
+        ]
+      },
+      "textures": [
+        {
+          "size": 512,
+          "format": "jpeg",
+          "bytes": 38781
+        },
+        {
+          "size": 256,
+          "format": "jpeg",
+          "bytes": 8912
+        },
+        {
+          "size": 128,
+          "format": "jpeg",
+          "bytes": 2341
+        }
+      ],
+      "alpha": {
+        "triangleShare": 0,
+        "meanRgb": [
+          0,
+          0,
+          0
+        ],
+        "hue": 0,
+        "saturation": 0,
+        "foliage": "none",
+        "cutoff": 0.5
+      },
+      "materials": [
+        "wood"
+      ]
+    },
+    {
+      "id": "debris_pallet_02",
+      "source": "packs/wood_walls.glb#palet2",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "pack": "wood_walls",
+      "category": "debris",
+      "sourceTriangles": 480,
+      "lodTriangles": [
+        400,
+        150,
+        50
+      ],
+      "sourceHeightM": 0.893,
+      "heightM": 0.317,
+      "scale": 0.003544,
+      "atlas": {
+        "size": 512,
+        "cells": [
+          {
+            "texture": "wood",
+            "source": 0,
+            "size": 512,
+            "repeat": 2
+          }
+        ]
+      },
+      "textures": [
+        {
+          "size": 512,
+          "format": "jpeg",
+          "bytes": 38781
+        },
+        {
+          "size": 256,
+          "format": "jpeg",
+          "bytes": 8912
+        },
+        {
+          "size": 128,
+          "format": "jpeg",
+          "bytes": 2341
+        }
+      ],
+      "alpha": {
+        "triangleShare": 0,
+        "meanRgb": [
+          0,
+          0,
+          0
+        ],
+        "hue": 0,
+        "saturation": 0,
+        "foliage": "none",
+        "cutoff": 0.5
+      },
+      "materials": [
+        "wood"
+      ]
+    },
+    {
+      "id": "debris_table_01",
+      "source": "packs/fps_dungeon_extras.glb#table",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "pack": "fps_dungeon_extras",
+      "category": "debris",
+      "sourceTriangles": 516,
+      "lodTriangles": [
+        400,
+        150,
+        50
+      ],
+      "sourceHeightM": 0.971,
+      "heightM": 0.75,
+      "scale": 0.007722,
+      "atlas": {
+        "size": 512,
+        "cells": [
+          {
+            "texture": "table",
+            "source": 0,
+            "size": 512,
+            "repeat": 1
+          }
+        ]
+      },
+      "textures": [
+        {
+          "size": 512,
+          "format": "jpeg",
+          "bytes": 37032
+        },
+        {
+          "size": 256,
+          "format": "jpeg",
+          "bytes": 10021
+        },
+        {
+          "size": 128,
+          "format": "jpeg",
+          "bytes": 2993
+        }
+      ],
+      "alpha": {
+        "triangleShare": 0,
+        "meanRgb": [
+          0,
+          0,
+          0
+        ],
+        "hue": 0,
+        "saturation": 0,
+        "foliage": "none",
+        "cutoff": 0.5
+      },
+      "materials": [
+        "table"
+      ]
+    },
+    {
+      "id": "dweller_armor_composite",
+      "source": "dwellers-gear.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "lodTriangles": [
+        244,
+        84,
+        54
+      ],
+      "materials": [
+        "composite_metal",
+        "lens_blue",
+        "metal_vault",
+        "metal_vault_dark",
+        "metal_vault_yellow",
+        "rubber_grip"
+      ],
+      "sizeM": [
+        0.74,
+        0.575,
+        0.375
+      ]
+    },
+    {
+      "id": "dweller_body_human",
+      "source": "characters/dweller_body_human.glb",
+      "errors": [],
+      "warnings": [],
+      "kind": "character",
+      "sourceTriangles": 13744,
+      "lodTriangles": [
+        3598,
+        1348,
+        492
+      ],
+      "sourceBones": 53,
+      "bones": 20,
+      "prunedBones": [
+        "root",
+        "DEF-f_index.01.L",
+        "DEF-f_index.02.L",
+        "DEF-f_index.03.L",
+        "DEF-f_middle.01.L",
+        "DEF-f_middle.02.L",
+        "DEF-f_middle.03.L",
+        "DEF-f_pinky.01.L",
+        "DEF-f_pinky.02.L",
+        "DEF-f_pinky.03.L",
+        "DEF-f_ring.01.L",
+        "DEF-f_ring.02.L",
+        "DEF-f_ring.03.L",
+        "DEF-thumb.01.L",
+        "DEF-thumb.02.L",
+        "DEF-thumb.03.L",
+        "DEF-f_index.01.R",
+        "DEF-f_index.02.R",
+        "DEF-f_index.03.R",
+        "DEF-f_middle.01.R",
+        "DEF-f_middle.02.R",
+        "DEF-f_middle.03.R",
+        "DEF-f_pinky.01.R",
+        "DEF-f_pinky.02.R",
+        "DEF-f_pinky.03.R",
+        "DEF-f_ring.01.R",
+        "DEF-f_ring.02.R",
+        "DEF-f_ring.03.R",
+        "DEF-thumb.01.R",
+        "DEF-thumb.02.R",
+        "DEF-thumb.03.R",
+        "DEF-toe.L",
+        "DEF-toe.R"
+      ],
+      "channelsDropped": 4554,
+      "clipsKept": {
+        "Death01": "death",
+        "Fixing_Kneeling": "build",
+        "Idle_Loop": "idle",
+        "Interact": "gather",
+        "Jog_Fwd_Loop": "run",
+        "Pistol_Shoot": "attack1",
+        "Punch_Cross": "attack2",
+        "Walk_Loop": "walk"
+      },
+      "clipsDropped": [
+        "A_TPose",
+        "Crouch_Fwd_Loop",
+        "Crouch_Idle_Loop",
+        "Dance_Loop",
+        "Driving_Loop",
+        "Hit_Chest",
+        "Hit_Head",
+        "Idle_Talking_Loop",
+        "Idle_Torch_Loop",
+        "Jump_Land",
+        "Jump_Loop",
+        "Jump_Start",
+        "PickUp_Table",
+        "Pistol_Aim_Down",
+        "Pistol_Aim_Neutral",
+        "Pistol_Aim_Up",
+        "Pistol_Idle_Loop",
+        "Pistol_Reload",
+        "Punch_Enter",
+        "Punch_Jab",
+        "Push_Loop",
+        "Roll",
+        "Roll_RM",
+        "Sitting_Enter",
+        "Sitting_Exit",
+        "Sitting_Idle_Loop",
+        "Sitting_Talking_Loop",
+        "Spell_Simple_Enter",
+        "Spell_Simple_Exit",
+        "Spell_Simple_Idle_Loop",
+        "Spell_Simple_Shoot",
+        "Sprint_Loop",
+        "Swim_Fwd_Loop",
+        "Swim_Idle_Loop",
+        "Sword_Attack",
+        "Sword_Attack_RM",
+        "Sword_Idle",
+        "Walk_Formal_Loop"
+      ],
+      "extraUvSetsRemoved": 2,
+      "scale": null
+    },
+    {
+      "id": "dweller_building_beacon",
+      "source": "buildings/variants.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "building",
+      "sourceTriangles": 0,
+      "lodTriangles": [
+        132,
+        132,
+        132
+      ],
+      "materials": [
+        "metal",
+        "team_trim"
+      ],
+      "textureSizes": [
+        1024,
+        512,
+        256
+      ]
+    },
+    {
+      "id": "dweller_building_claim_post",
+      "source": "buildings/variants.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "building",
+      "sourceTriangles": 0,
+      "lodTriangles": [
+        84,
+        84,
+        84
+      ],
+      "materials": [
+        "metal",
+        "team_trim"
+      ],
+      "textureSizes": [
+        1024,
+        512,
+        256
+      ]
+    },
+    {
+      "id": "dweller_building_housing",
+      "source": "buildings/variants.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "building",
+      "sourceTriangles": 86,
+      "lodTriangles": [
+        2469,
+        995,
+        146
+      ],
+      "materials": [
+        "metal",
+        "roof",
+        "team_trim",
+        "wall_proxy"
+      ],
+      "textureSizes": [
+        1024,
+        512,
+        256
+      ]
+    },
+    {
+      "id": "dweller_building_hq",
+      "source": "buildings/variants.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "building",
+      "sourceTriangles": 86,
+      "lodTriangles": [
+        2343,
+        942,
+        278
+      ],
+      "materials": [
+        "metal",
+        "roof",
+        "team_trim",
+        "wall_proxy"
+      ],
+      "textureSizes": [
+        1024,
+        512,
+        256
+      ]
+    },
+    {
+      "id": "dweller_building_lab",
+      "source": "buildings/variants.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "building",
+      "sourceTriangles": 86,
+      "lodTriangles": [
+        1985,
+        795,
+        222
+      ],
+      "materials": [
+        "metal",
+        "roof",
+        "team_trim",
+        "wall_proxy"
+      ],
+      "textureSizes": [
+        1024,
+        512,
+        256
+      ]
+    },
+    {
+      "id": "dweller_building_robotfactory",
+      "source": "robots.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "building",
+      "lodTriangles": [
+        2166,
+        806,
+        166
+      ],
+      "materials": [
+        "concrete",
+        "lens_amber",
+        "lens_glass",
+        "metal",
+        "metal_dark",
+        "metal_hazard",
+        "metal_light",
+        "opening",
+        "rubber",
+        "rust_dark",
+        "rust_metal",
+        "rust_roof",
+        "team_trim"
+      ],
+      "sizeM": [
+        14.92,
+        9.6,
+        13.25
+      ]
+    },
+    {
+      "id": "dweller_building_training",
+      "source": "buildings/variants.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "building",
+      "sourceTriangles": 86,
+      "lodTriangles": [
+        1994,
+        795,
+        122
+      ],
+      "materials": [
+        "roof",
+        "team_trim",
+        "wall_proxy"
+      ],
+      "textureSizes": [
+        1024,
+        512,
+        256
+      ]
+    },
+    {
+      "id": "dweller_building_turret",
+      "source": "buildings/variants.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "building",
+      "sourceTriangles": 0,
+      "lodTriangles": [
+        176,
+        176,
+        176
+      ],
+      "materials": [
+        "metal",
+        "team_trim"
+      ],
+      "textureSizes": [
+        1024,
+        512,
+        256
+      ]
+    },
+    {
+      "id": "dweller_building_turret_laser",
+      "source": "robots.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "building",
+      "lodTriangles": [
+        1034,
+        388,
+        152
+      ],
+      "materials": [
+        "concrete",
+        "lens",
+        "lens_red",
+        "metal",
+        "metal_dark",
+        "metal_light",
+        "rubber",
+        "rust_metal",
+        "team_trim"
+      ],
+      "sizeM": [
+        3,
+        3.16,
+        3.1
+      ]
+    },
+    {
+      "id": "dweller_building_workshop",
+      "source": "buildings/variants.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "building",
+      "sourceTriangles": 0,
+      "lodTriangles": [
+        1879,
+        754,
+        92
+      ],
+      "materials": [
+        "metal",
+        "team_trim",
+        "wall_proxy"
+      ],
+      "textureSizes": [
+        1024,
+        512,
+        256
+      ]
+    },
+    {
+      "id": "dweller_robot_builder",
+      "source": "robots.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "rigid-unit",
+      "lodTriangles": [
+        1832,
+        732,
+        270
+      ],
+      "materials": [
+        "lens",
+        "lens_amber",
+        "metal",
+        "metal_dark",
+        "metal_hazard",
+        "metal_light",
+        "rubber",
+        "rust_dark",
+        "rust_metal",
+        "team_trim"
+      ],
+      "sizeM": [
+        1.09,
+        1.97,
+        1.22
+      ]
+    },
+    {
+      "id": "dweller_robot_drone",
+      "source": "robots.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "rigid-unit",
+      "lodTriangles": [
+        956,
+        508,
+        200
+      ],
+      "materials": [
+        "lens",
+        "lens_red",
+        "metal",
+        "metal_dark",
+        "metal_light",
+        "rubber",
+        "rust_metal",
+        "team_trim"
+      ],
+      "sizeM": [
+        0.94,
+        0.84,
+        1.28
+      ],
+      "hover": 1.3
+    },
+    {
+      "id": "dweller_robot_guard",
+      "source": "robots.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "rigid-unit",
+      "lodTriangles": [
+        1946,
+        538,
+        202
+      ],
+      "materials": [
+        "lens",
+        "lens_amber",
+        "lens_red",
+        "metal",
+        "metal_dark",
+        "metal_light",
+        "rubber",
+        "rust_dark",
+        "rust_metal",
+        "team_trim"
+      ],
+      "sizeM": [
+        3,
+        2.2,
+        3.511731
+      ]
+    },
+    {
+      "id": "dweller_robot_sentinel",
+      "source": "robots.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "rigid-unit",
+      "lodTriangles": [
+        1952,
+        486,
+        178
+      ],
+      "materials": [
+        "lens",
+        "lens_amber",
+        "lens_red",
+        "metal",
+        "metal_dark",
+        "metal_hazard",
+        "metal_light",
+        "rubber",
+        "rust_dark",
+        "rust_metal",
+        "team_trim"
+      ],
+      "sizeM": [
+        4.08,
+        3.5,
+        6.408198
+      ]
+    },
+    {
+      "id": "dweller_tool_hammer",
+      "source": "dwellers-gear.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "lodTriangles": [
+        156,
+        128,
+        68
+      ],
+      "materials": [
+        "metal_vault",
+        "metal_vault_dark",
+        "metal_vault_yellow",
+        "rubber_grip",
+        "steel_bare"
+      ],
+      "sizeM": [
+        0.29,
+        0.09,
+        0.525
+      ]
+    },
+    {
+      "id": "dweller_tool_multitool",
+      "source": "dwellers-gear.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "lodTriangles": [
+        184,
+        144,
+        72
+      ],
+      "materials": [
+        "lens_blue",
+        "metal_vault",
+        "metal_vault_dark",
+        "metal_vault_yellow",
+        "rubber_grip",
+        "steel_bare"
+      ],
+      "sizeM": [
+        0.14,
+        0.09,
+        0.425
+      ]
+    },
+    {
+      "id": "dweller_tool_scrapbag",
+      "source": "dwellers-gear.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "lodTriangles": [
+        204,
+        132,
+        72
+      ],
+      "materials": [
+        "canvas_grey",
+        "metal_vault",
+        "metal_vault_dark",
+        "metal_vault_yellow",
+        "rubber_grip",
+        "steel_bare"
+      ],
+      "sizeM": [
+        0.31,
+        0.674667,
+        0.206
+      ]
+    },
+    {
+      "id": "dweller_weapon_club",
+      "source": "dwellers-gear.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "lodTriangles": [
+        304,
+        192,
+        52
+      ],
+      "materials": [
+        "lens_blue",
+        "metal_vault",
+        "metal_vault_dark",
+        "metal_vault_light",
+        "metal_vault_yellow",
+        "rubber_grip"
+      ],
+      "sizeM": [
+        0.108,
+        0.102714,
+        1.025
+      ]
+    },
+    {
+      "id": "dweller_weapon_patrol_rifle",
+      "source": "dwellers-gear.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "lodTriangles": [
+        344,
+        268,
+        84
+      ],
+      "materials": [
+        "composite_metal",
+        "lens_blue",
+        "metal_vault",
+        "metal_vault_dark",
+        "metal_vault_light",
+        "metal_vault_yellow",
+        "rubber_grip"
+      ],
+      "sizeM": [
+        0.06,
+        0.303,
+        1.18
+      ]
+    },
+    {
+      "id": "dweller_weapon_pipe_pistol",
+      "source": "dwellers-gear.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "lodTriangles": [
+        180,
+        104,
+        72
+      ],
+      "materials": [
+        "lens_blue",
+        "metal_vault",
+        "metal_vault_dark",
+        "metal_vault_yellow",
+        "rubber_grip"
+      ],
+      "sizeM": [
+        0.046,
+        0.185,
+        0.37
+      ]
+    },
+    {
+      "id": "dweller_weapon_rifle",
+      "source": "dwellers-gear.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "lodTriangles": [
+        280,
+        200,
+        84
+      ],
+      "materials": [
+        "lens_blue",
+        "metal_vault",
+        "metal_vault_dark",
+        "metal_vault_light",
+        "metal_vault_yellow",
+        "rubber_grip"
+      ],
+      "sizeM": [
+        0.052,
+        0.277,
+        1.105
+      ]
+    },
+    {
+      "id": "dweller_weapon_shotgun",
+      "source": "dwellers-gear.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "lodTriangles": [
+        256,
+        184,
+        84
+      ],
+      "materials": [
+        "metal_vault",
+        "metal_vault_dark",
+        "metal_vault_light",
+        "metal_vault_yellow",
+        "rubber_grip"
+      ],
+      "sizeM": [
+        0.074,
+        0.182,
+        1.1
+      ]
+    },
+    {
+      "id": "garde_body_clerk",
+      "source": "characters/dweller_body_human.glb",
+      "errors": [],
+      "warnings": [],
+      "kind": "character",
+      "sourceTriangles": 13744,
+      "lodTriangles": [
+        3598,
+        1349,
+        493
+      ],
+      "sourceBones": 53,
+      "bones": 20,
+      "prunedBones": [
+        "root",
+        "DEF-f_index.01.L",
+        "DEF-f_index.02.L",
+        "DEF-f_index.03.L",
+        "DEF-f_middle.01.L",
+        "DEF-f_middle.02.L",
+        "DEF-f_middle.03.L",
+        "DEF-f_pinky.01.L",
+        "DEF-f_pinky.02.L",
+        "DEF-f_pinky.03.L",
+        "DEF-f_ring.01.L",
+        "DEF-f_ring.02.L",
+        "DEF-f_ring.03.L",
+        "DEF-thumb.01.L",
+        "DEF-thumb.02.L",
+        "DEF-thumb.03.L",
+        "DEF-f_index.01.R",
+        "DEF-f_index.02.R",
+        "DEF-f_index.03.R",
+        "DEF-f_middle.01.R",
+        "DEF-f_middle.02.R",
+        "DEF-f_middle.03.R",
+        "DEF-f_pinky.01.R",
+        "DEF-f_pinky.02.R",
+        "DEF-f_pinky.03.R",
+        "DEF-f_ring.01.R",
+        "DEF-f_ring.02.R",
+        "DEF-f_ring.03.R",
+        "DEF-thumb.01.R",
+        "DEF-thumb.02.R",
+        "DEF-thumb.03.R",
+        "DEF-toe.L",
+        "DEF-toe.R"
+      ],
+      "channelsDropped": 4554,
+      "clipsKept": {
+        "Death01": "death",
+        "Fixing_Kneeling": "build",
+        "Idle_Loop": "idle",
+        "Interact": "gather",
+        "Jog_Fwd_Loop": "run",
+        "Pistol_Shoot": "attack1",
+        "Punch_Cross": "attack2",
+        "Walk_Loop": "walk"
+      },
+      "clipsDropped": [
+        "A_TPose",
+        "Crouch_Fwd_Loop",
+        "Crouch_Idle_Loop",
+        "Dance_Loop",
+        "Driving_Loop",
+        "Hit_Chest",
+        "Hit_Head",
+        "Idle_Talking_Loop",
+        "Idle_Torch_Loop",
+        "Jump_Land",
+        "Jump_Loop",
+        "Jump_Start",
+        "PickUp_Table",
+        "Pistol_Aim_Down",
+        "Pistol_Aim_Neutral",
+        "Pistol_Aim_Up",
+        "Pistol_Idle_Loop",
+        "Pistol_Reload",
+        "Punch_Enter",
+        "Punch_Jab",
+        "Push_Loop",
+        "Roll",
+        "Roll_RM",
+        "Sitting_Enter",
+        "Sitting_Exit",
+        "Sitting_Idle_Loop",
+        "Sitting_Talking_Loop",
+        "Spell_Simple_Enter",
+        "Spell_Simple_Exit",
+        "Spell_Simple_Idle_Loop",
+        "Spell_Simple_Shoot",
+        "Sprint_Loop",
+        "Swim_Fwd_Loop",
+        "Swim_Idle_Loop",
+        "Sword_Attack",
+        "Sword_Attack_RM",
+        "Sword_Idle",
+        "Walk_Formal_Loop"
+      ],
+      "extraUvSetsRemoved": 2,
+      "scale": null
+    },
+    {
+      "id": "garde_body_initiate",
+      "source": "characters/dweller_body_human.glb",
+      "errors": [],
+      "warnings": [],
+      "kind": "character",
+      "sourceTriangles": 13744,
+      "lodTriangles": [
+        3598,
+        1348,
+        492
+      ],
+      "sourceBones": 53,
+      "bones": 20,
+      "prunedBones": [
+        "root",
+        "DEF-f_index.01.L",
+        "DEF-f_index.02.L",
+        "DEF-f_index.03.L",
+        "DEF-f_middle.01.L",
+        "DEF-f_middle.02.L",
+        "DEF-f_middle.03.L",
+        "DEF-f_pinky.01.L",
+        "DEF-f_pinky.02.L",
+        "DEF-f_pinky.03.L",
+        "DEF-f_ring.01.L",
+        "DEF-f_ring.02.L",
+        "DEF-f_ring.03.L",
+        "DEF-thumb.01.L",
+        "DEF-thumb.02.L",
+        "DEF-thumb.03.L",
+        "DEF-f_index.01.R",
+        "DEF-f_index.02.R",
+        "DEF-f_index.03.R",
+        "DEF-f_middle.01.R",
+        "DEF-f_middle.02.R",
+        "DEF-f_middle.03.R",
+        "DEF-f_pinky.01.R",
+        "DEF-f_pinky.02.R",
+        "DEF-f_pinky.03.R",
+        "DEF-f_ring.01.R",
+        "DEF-f_ring.02.R",
+        "DEF-f_ring.03.R",
+        "DEF-thumb.01.R",
+        "DEF-thumb.02.R",
+        "DEF-thumb.03.R",
+        "DEF-toe.L",
+        "DEF-toe.R"
+      ],
+      "channelsDropped": 4554,
+      "clipsKept": {
+        "Death01": "death",
+        "Fixing_Kneeling": "build",
+        "Idle_Loop": "idle",
+        "Interact": "gather",
+        "Jog_Fwd_Loop": "run",
+        "Pistol_Shoot": "attack1",
+        "Punch_Cross": "attack2",
+        "Walk_Loop": "walk"
+      },
+      "clipsDropped": [
+        "A_TPose",
+        "Crouch_Fwd_Loop",
+        "Crouch_Idle_Loop",
+        "Dance_Loop",
+        "Driving_Loop",
+        "Hit_Chest",
+        "Hit_Head",
+        "Idle_Talking_Loop",
+        "Idle_Torch_Loop",
+        "Jump_Land",
+        "Jump_Loop",
+        "Jump_Start",
+        "PickUp_Table",
+        "Pistol_Aim_Down",
+        "Pistol_Aim_Neutral",
+        "Pistol_Aim_Up",
+        "Pistol_Idle_Loop",
+        "Pistol_Reload",
+        "Punch_Enter",
+        "Punch_Jab",
+        "Push_Loop",
+        "Roll",
+        "Roll_RM",
+        "Sitting_Enter",
+        "Sitting_Exit",
+        "Sitting_Idle_Loop",
+        "Sitting_Talking_Loop",
+        "Spell_Simple_Enter",
+        "Spell_Simple_Exit",
+        "Spell_Simple_Idle_Loop",
+        "Spell_Simple_Shoot",
+        "Sprint_Loop",
+        "Swim_Fwd_Loop",
+        "Swim_Idle_Loop",
+        "Sword_Attack",
+        "Sword_Attack_RM",
+        "Sword_Idle",
+        "Walk_Formal_Loop"
+      ],
+      "extraUvSetsRemoved": 2,
+      "scale": null
+    },
+    {
+      "id": "garde_body_power_armor",
+      "source": "characters/dweller_body_human.glb",
+      "errors": [],
+      "warnings": [],
+      "kind": "character",
+      "sourceTriangles": 13744,
+      "lodTriangles": [
+        3598,
+        1348,
+        493
+      ],
+      "sourceBones": 53,
+      "bones": 20,
+      "prunedBones": [
+        "root",
+        "DEF-f_index.01.L",
+        "DEF-f_index.02.L",
+        "DEF-f_index.03.L",
+        "DEF-f_middle.01.L",
+        "DEF-f_middle.02.L",
+        "DEF-f_middle.03.L",
+        "DEF-f_pinky.01.L",
+        "DEF-f_pinky.02.L",
+        "DEF-f_pinky.03.L",
+        "DEF-f_ring.01.L",
+        "DEF-f_ring.02.L",
+        "DEF-f_ring.03.L",
+        "DEF-thumb.01.L",
+        "DEF-thumb.02.L",
+        "DEF-thumb.03.L",
+        "DEF-f_index.01.R",
+        "DEF-f_index.02.R",
+        "DEF-f_index.03.R",
+        "DEF-f_middle.01.R",
+        "DEF-f_middle.02.R",
+        "DEF-f_middle.03.R",
+        "DEF-f_pinky.01.R",
+        "DEF-f_pinky.02.R",
+        "DEF-f_pinky.03.R",
+        "DEF-f_ring.01.R",
+        "DEF-f_ring.02.R",
+        "DEF-f_ring.03.R",
+        "DEF-thumb.01.R",
+        "DEF-thumb.02.R",
+        "DEF-thumb.03.R",
+        "DEF-toe.L",
+        "DEF-toe.R"
+      ],
+      "channelsDropped": 4554,
+      "clipsKept": {
+        "Death01": "death",
+        "Fixing_Kneeling": "build",
+        "Idle_Loop": "idle",
+        "Interact": "gather",
+        "Jog_Fwd_Loop": "run",
+        "Pistol_Shoot": "attack1",
+        "Punch_Cross": "attack2",
+        "Walk_Loop": "walk"
+      },
+      "clipsDropped": [
+        "A_TPose",
+        "Crouch_Fwd_Loop",
+        "Crouch_Idle_Loop",
+        "Dance_Loop",
+        "Driving_Loop",
+        "Hit_Chest",
+        "Hit_Head",
+        "Idle_Talking_Loop",
+        "Idle_Torch_Loop",
+        "Jump_Land",
+        "Jump_Loop",
+        "Jump_Start",
+        "PickUp_Table",
+        "Pistol_Aim_Down",
+        "Pistol_Aim_Neutral",
+        "Pistol_Aim_Up",
+        "Pistol_Idle_Loop",
+        "Pistol_Reload",
+        "Punch_Enter",
+        "Punch_Jab",
+        "Push_Loop",
+        "Roll",
+        "Roll_RM",
+        "Sitting_Enter",
+        "Sitting_Exit",
+        "Sitting_Idle_Loop",
+        "Sitting_Talking_Loop",
+        "Spell_Simple_Enter",
+        "Spell_Simple_Exit",
+        "Spell_Simple_Idle_Loop",
+        "Spell_Simple_Shoot",
+        "Sprint_Loop",
+        "Swim_Fwd_Loop",
+        "Swim_Idle_Loop",
+        "Sword_Attack",
+        "Sword_Attack_RM",
+        "Sword_Idle",
+        "Walk_Formal_Loop"
+      ],
+      "extraUvSetsRemoved": 2,
+      "scale": null
+    },
+    {
+      "id": "garde_body_power_armor_heavy",
+      "source": "characters/dweller_body_human.glb",
+      "errors": [],
+      "warnings": [],
+      "kind": "character",
+      "sourceTriangles": 13744,
+      "lodTriangles": [
+        3598,
+        1348,
+        493
+      ],
+      "sourceBones": 53,
+      "bones": 20,
+      "prunedBones": [
+        "root",
+        "DEF-f_index.01.L",
+        "DEF-f_index.02.L",
+        "DEF-f_index.03.L",
+        "DEF-f_middle.01.L",
+        "DEF-f_middle.02.L",
+        "DEF-f_middle.03.L",
+        "DEF-f_pinky.01.L",
+        "DEF-f_pinky.02.L",
+        "DEF-f_pinky.03.L",
+        "DEF-f_ring.01.L",
+        "DEF-f_ring.02.L",
+        "DEF-f_ring.03.L",
+        "DEF-thumb.01.L",
+        "DEF-thumb.02.L",
+        "DEF-thumb.03.L",
+        "DEF-f_index.01.R",
+        "DEF-f_index.02.R",
+        "DEF-f_index.03.R",
+        "DEF-f_middle.01.R",
+        "DEF-f_middle.02.R",
+        "DEF-f_middle.03.R",
+        "DEF-f_pinky.01.R",
+        "DEF-f_pinky.02.R",
+        "DEF-f_pinky.03.R",
+        "DEF-f_ring.01.R",
+        "DEF-f_ring.02.R",
+        "DEF-f_ring.03.R",
+        "DEF-thumb.01.R",
+        "DEF-thumb.02.R",
+        "DEF-thumb.03.R",
+        "DEF-toe.L",
+        "DEF-toe.R"
+      ],
+      "channelsDropped": 4554,
+      "clipsKept": {
+        "Death01": "death",
+        "Fixing_Kneeling": "build",
+        "Idle_Loop": "idle",
+        "Interact": "gather",
+        "Jog_Fwd_Loop": "run",
+        "Pistol_Shoot": "attack1",
+        "Punch_Cross": "attack2",
+        "Walk_Loop": "walk"
+      },
+      "clipsDropped": [
+        "A_TPose",
+        "Crouch_Fwd_Loop",
+        "Crouch_Idle_Loop",
+        "Dance_Loop",
+        "Driving_Loop",
+        "Hit_Chest",
+        "Hit_Head",
+        "Idle_Talking_Loop",
+        "Idle_Torch_Loop",
+        "Jump_Land",
+        "Jump_Loop",
+        "Jump_Start",
+        "PickUp_Table",
+        "Pistol_Aim_Down",
+        "Pistol_Aim_Neutral",
+        "Pistol_Aim_Up",
+        "Pistol_Idle_Loop",
+        "Pistol_Reload",
+        "Punch_Enter",
+        "Punch_Jab",
+        "Push_Loop",
+        "Roll",
+        "Roll_RM",
+        "Sitting_Enter",
+        "Sitting_Exit",
+        "Sitting_Idle_Loop",
+        "Sitting_Talking_Loop",
+        "Spell_Simple_Enter",
+        "Spell_Simple_Exit",
+        "Spell_Simple_Idle_Loop",
+        "Spell_Simple_Shoot",
+        "Sprint_Loop",
+        "Swim_Fwd_Loop",
+        "Swim_Idle_Loop",
+        "Sword_Attack",
+        "Sword_Attack_RM",
+        "Sword_Idle",
+        "Walk_Formal_Loop"
+      ],
+      "extraUvSetsRemoved": 2,
+      "scale": null
+    },
+    {
+      "id": "garde_body_vertibird",
+      "source": "garde.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "rigid-unit",
+      "lodTriangles": [
+        376,
+        328,
+        220
+      ],
+      "materials": [
+        "lens_glass",
+        "lens_red",
+        "opening",
+        "steel_metal",
+        "steel_metal_dark",
+        "steel_metal_red",
+        "team_trim"
+      ],
+      "sizeM": [
+        12.2,
+        4,
+        11.95
+      ],
+      "hover": 2
+    },
+    {
+      "id": "garde_building_archive",
+      "source": "garde.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "building",
+      "lodTriangles": [
+        634,
+        586,
+        218
+      ],
+      "materials": [
+        "concrete",
+        "lens_amber",
+        "lens_red",
+        "opening",
+        "steel_metal",
+        "steel_metal_dark",
+        "steel_metal_red",
+        "team_trim"
+      ],
+      "sizeM": [
+        17,
+        15.9,
+        19.5
+      ]
+    },
+    {
+      "id": "garde_building_barracks",
+      "source": "garde.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "building",
+      "lodTriangles": [
+        358,
+        274,
+        150
+      ],
+      "materials": [
+        "leather_brown",
+        "lens_amber",
+        "opening",
+        "steel_metal",
+        "steel_metal_dark",
+        "steel_metal_red",
+        "team_trim"
+      ],
+      "sizeM": [
+        15,
+        5.45,
+        14.9
+      ]
+    },
+    {
+      "id": "garde_building_bastion",
+      "source": "garde.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "building",
+      "lodTriangles": [
+        834,
+        550,
+        294
+      ],
+      "materials": [
+        "lens_amber",
+        "lens_red",
+        "opening",
+        "steel_metal",
+        "steel_metal_dark",
+        "steel_metal_red",
+        "team_trim"
+      ],
+      "sizeM": [
+        21.4,
+        17.200001,
+        21.4
+      ]
+    },
+    {
+      "id": "garde_building_forge",
+      "source": "garde.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "building",
+      "lodTriangles": [
+        430,
+        346,
+        198
+      ],
+      "materials": [
+        "leather_brown",
+        "lens_amber",
+        "opening",
+        "steel_metal",
+        "steel_metal_dark",
+        "steel_metal_red",
+        "team_trim"
+      ],
+      "sizeM": [
+        21,
+        11,
+        18.9
+      ]
+    },
+    {
+      "id": "garde_building_helipad",
+      "source": "garde.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "building",
+      "lodTriangles": [
+        512,
+        468,
+        232
+      ],
+      "materials": [
+        "concrete",
+        "lens_amber",
+        "opening",
+        "steel_metal",
+        "steel_metal_dark",
+        "steel_metal_red",
+        "team_trim"
+      ],
+      "sizeM": [
+        20.799999,
+        8.1,
+        20.799999
+      ]
+    },
+    {
+      "id": "garde_building_outpost",
+      "source": "garde.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "building",
+      "lodTriangles": [
+        96,
+        84,
+        60
+      ],
+      "materials": [
+        "leather_brown",
+        "lens_red",
+        "steel_metal",
+        "steel_metal_dark",
+        "steel_metal_red",
+        "team_trim"
+      ],
+      "sizeM": [
+        0.94,
+        2.98,
+        0.94
+      ]
+    },
+    {
+      "id": "garde_building_turret_laser",
+      "source": "garde.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "building",
+      "lodTriangles": [
+        336,
+        256,
+        116
+      ],
+      "materials": [
+        "lens_red",
+        "steel_metal",
+        "steel_metal_dark",
+        "steel_metal_red",
+        "team_trim"
+      ],
+      "sizeM": [
+        3.1,
+        2.5,
+        3.1
+      ]
+    },
+    {
+      "id": "garde_weapon_laser_carbine",
+      "source": "garde.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "lodTriangles": [
+        224,
+        116,
+        60
+      ],
+      "materials": [
+        "leather_brown",
+        "lens_red",
+        "steel_metal",
+        "steel_metal_dark",
+        "steel_metal_red"
+      ],
+      "sizeM": [
+        0.095,
+        0.213479,
+        1.37
+      ]
+    },
+    {
+      "id": "garde_weapon_laser_pistol",
+      "source": "garde.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "lodTriangles": [
+        84,
+        72,
+        48
+      ],
+      "materials": [
+        "leather_brown",
+        "lens_red",
+        "steel_metal",
+        "steel_metal_dark",
+        "steel_metal_red"
+      ],
+      "sizeM": [
+        0.052,
+        0.164341,
+        0.44
+      ]
+    },
+    {
+      "id": "garde_weapon_multitool",
+      "source": "garde.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "lodTriangles": [
+        60,
+        60,
+        48
+      ],
+      "materials": [
+        "leather_brown",
+        "lens_red",
+        "steel_metal",
+        "steel_metal_dark"
+      ],
+      "sizeM": [
+        0.09,
+        0.09,
+        0.48
+      ]
+    },
+    {
+      "id": "garde_weapon_plasma_caster",
+      "source": "garde.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "lodTriangles": [
+        284,
+        272,
+        108
+      ],
+      "materials": [
+        "leather_brown",
+        "lens_amber",
+        "steel_metal",
+        "steel_metal_dark",
+        "steel_metal_red"
+      ],
+      "sizeM": [
+        0.23,
+        0.374175,
+        1.625
+      ]
+    },
+    {
+      "id": "garde_weapon_vertibird_gun",
+      "source": "garde.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "lodTriangles": [
+        220,
+        220,
+        88
+      ],
+      "materials": [
+        "lens_red",
+        "steel_metal_dark",
+        "steel_metal_red"
+      ],
+      "sizeM": [
+        0.52,
+        0.5,
+        1.94
+      ]
+    },
+    {
+      "id": "grass_patch_01",
+      "source": "packs/grass_patches.glb#grasspatch1",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "pack": "grass_patches",
+      "category": "grass",
+      "sourceTriangles": 517,
+      "lodTriangles": [
+        400,
+        149,
+        50
+      ],
+      "sourceHeightM": 1.262,
+      "heightM": 0.6,
+      "scale": 0.004755,
+      "atlas": {
+        "size": 512,
+        "cells": [
+          {
+            "texture": "grass1",
+            "source": 0,
+            "size": 512,
+            "repeat": 1
+          }
+        ]
+      },
+      "textures": [
+        {
+          "size": 512,
+          "format": "webp",
+          "bytes": 67260
+        },
+        {
+          "size": 256,
+          "format": "webp",
+          "bytes": 24596
+        },
+        {
+          "size": 128,
+          "format": "webp",
+          "bytes": 8814
+        }
+      ],
+      "alpha": {
+        "triangleShare": 1,
+        "meanRgb": [
+          113.6,
+          89.6,
+          50.2
+        ],
+        "hue": 37,
+        "saturation": 0.56,
+        "foliage": "leafy",
+        "cutoff": 0.5
+      },
+      "materials": [
+        "grass1"
+      ]
+    },
+    {
+      "id": "grass_patch_02",
+      "source": "packs/grass_patches.glb#grasspatch2",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "pack": "grass_patches",
+      "category": "grass",
+      "sourceTriangles": 236,
+      "lodTriangles": [
+        236,
+        149,
+        50
+      ],
+      "sourceHeightM": 1.204,
+      "heightM": 0.6,
+      "scale": 0.004985,
+      "atlas": {
+        "size": 512,
+        "cells": [
+          {
+            "texture": "grass1",
+            "source": 0,
+            "size": 512,
+            "repeat": 1
+          }
+        ]
+      },
+      "textures": [
+        {
+          "size": 512,
+          "format": "webp",
+          "bytes": 67260
+        },
+        {
+          "size": 256,
+          "format": "webp",
+          "bytes": 24596
+        },
+        {
+          "size": 128,
+          "format": "webp",
+          "bytes": 8814
+        }
+      ],
+      "alpha": {
+        "triangleShare": 1,
+        "meanRgb": [
+          113.6,
+          89.6,
+          50.2
+        ],
+        "hue": 37,
+        "saturation": 0.56,
+        "foliage": "leafy",
+        "cutoff": 0.5
+      },
+      "materials": [
+        "grass1"
+      ]
+    },
+    {
+      "id": "grass_patch_03",
+      "source": "packs/grass_patches.glb#grasspatch3",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "pack": "grass_patches",
+      "category": "grass",
+      "sourceTriangles": 1157,
+      "lodTriangles": [
+        400,
+        150,
+        50
+      ],
+      "sourceHeightM": 1.295,
+      "heightM": 0.6,
+      "scale": 0.004634,
+      "atlas": {
+        "size": 512,
+        "cells": [
+          {
+            "texture": "grass1",
+            "source": 0,
+            "size": 512,
+            "repeat": 1
+          }
+        ]
+      },
+      "textures": [
+        {
+          "size": 512,
+          "format": "webp",
+          "bytes": 67260
+        },
+        {
+          "size": 256,
+          "format": "webp",
+          "bytes": 24596
+        },
+        {
+          "size": 128,
+          "format": "webp",
+          "bytes": 8814
+        }
+      ],
+      "alpha": {
+        "triangleShare": 1,
+        "meanRgb": [
+          113.6,
+          89.6,
+          50.2
+        ],
+        "hue": 37,
+        "saturation": 0.56,
+        "foliage": "leafy",
+        "cutoff": 0.5
+      },
+      "materials": [
+        "grass1"
+      ]
+    },
+    {
+      "id": "grass001",
+      "source": "props/Grass001.glb",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "sourceTriangles": 3,
+      "lodTriangles": [
+        3,
+        3,
+        3
+      ],
+      "sourceBones": 0,
+      "bones": 0,
+      "prunedBones": [],
+      "channelsDropped": 0,
+      "clipsKept": {},
+      "clipsDropped": [],
+      "extraUvSetsRemoved": 0,
+      "scale": 0.01
+    },
+    {
+      "id": "plant_01",
+      "source": "packs/plant.glb#root",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "pack": "plant",
+      "category": "plant",
+      "sourceTriangles": 186,
+      "lodTriangles": [
+        186,
+        99,
+        39
+      ],
+      "sourceHeightM": 4.35,
+      "heightM": 1.2,
+      "scale": 0.002759,
+      "atlas": {
+        "size": 512,
+        "cells": [
+          {
+            "texture": "plant1leaf",
+            "source": 0,
+            "size": 512,
+            "repeat": 1
+          }
+        ]
+      },
+      "textures": [
+        {
+          "size": 512,
+          "format": "webp",
+          "bytes": 48086
+        },
+        {
+          "size": 256,
+          "format": "webp",
+          "bytes": 18508
+        },
+        {
+          "size": 128,
+          "format": "webp",
+          "bytes": 6932
+        }
+      ],
+      "alpha": {
+        "triangleShare": 1,
+        "meanRgb": [
+          97.3,
+          76.4,
+          26.9
+        ],
+        "hue": 42,
+        "saturation": 0.72,
+        "foliage": "leafy",
+        "cutoff": 0.5
+      },
+      "materials": [
+        "plant1leaf"
+      ]
+    },
+    {
+      "id": "raider_armor_steel",
+      "source": "raiders.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "lodTriangles": [
+        280,
+        108,
+        66
+      ],
+      "materials": [
+        "bone_stone",
+        "leather_dark",
+        "opening",
+        "rust_metal",
+        "scrap_metal",
+        "scrap_metal_dark",
+        "scrap_metal_red"
+      ],
+      "sizeM": [
+        0.76,
+        0.735,
+        0.355
+      ]
+    },
+    {
+      "id": "raider_body_hound",
+      "source": "raiders.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "rigid-unit",
+      "lodTriangles": [
+        438,
+        228,
+        172
+      ],
+      "materials": [
+        "bone_stone",
+        "leather_dark",
+        "leather_tan",
+        "lens_red",
+        "opening",
+        "scrap_metal_dark",
+        "scrap_metal_red",
+        "team_trim"
+      ],
+      "sizeM": [
+        0.32,
+        0.77,
+        1.358025
+      ]
+    },
+    {
+      "id": "raider_body_human",
+      "source": "characters/dweller_body_human.glb",
+      "errors": [],
+      "warnings": [],
+      "kind": "character",
+      "sourceTriangles": 13744,
+      "lodTriangles": [
+        3598,
+        1348,
+        492
+      ],
+      "sourceBones": 53,
+      "bones": 20,
+      "prunedBones": [
+        "root",
+        "DEF-f_index.01.L",
+        "DEF-f_index.02.L",
+        "DEF-f_index.03.L",
+        "DEF-f_middle.01.L",
+        "DEF-f_middle.02.L",
+        "DEF-f_middle.03.L",
+        "DEF-f_pinky.01.L",
+        "DEF-f_pinky.02.L",
+        "DEF-f_pinky.03.L",
+        "DEF-f_ring.01.L",
+        "DEF-f_ring.02.L",
+        "DEF-f_ring.03.L",
+        "DEF-thumb.01.L",
+        "DEF-thumb.02.L",
+        "DEF-thumb.03.L",
+        "DEF-f_index.01.R",
+        "DEF-f_index.02.R",
+        "DEF-f_index.03.R",
+        "DEF-f_middle.01.R",
+        "DEF-f_middle.02.R",
+        "DEF-f_middle.03.R",
+        "DEF-f_pinky.01.R",
+        "DEF-f_pinky.02.R",
+        "DEF-f_pinky.03.R",
+        "DEF-f_ring.01.R",
+        "DEF-f_ring.02.R",
+        "DEF-f_ring.03.R",
+        "DEF-thumb.01.R",
+        "DEF-thumb.02.R",
+        "DEF-thumb.03.R",
+        "DEF-toe.L",
+        "DEF-toe.R"
+      ],
+      "channelsDropped": 4554,
+      "clipsKept": {
+        "Death01": "death",
+        "Fixing_Kneeling": "build",
+        "Idle_Loop": "idle",
+        "Interact": "gather",
+        "Jog_Fwd_Loop": "run",
+        "Pistol_Shoot": "attack1",
+        "Punch_Cross": "attack2",
+        "Walk_Loop": "walk"
+      },
+      "clipsDropped": [
+        "A_TPose",
+        "Crouch_Fwd_Loop",
+        "Crouch_Idle_Loop",
+        "Dance_Loop",
+        "Driving_Loop",
+        "Hit_Chest",
+        "Hit_Head",
+        "Idle_Talking_Loop",
+        "Idle_Torch_Loop",
+        "Jump_Land",
+        "Jump_Loop",
+        "Jump_Start",
+        "PickUp_Table",
+        "Pistol_Aim_Down",
+        "Pistol_Aim_Neutral",
+        "Pistol_Aim_Up",
+        "Pistol_Idle_Loop",
+        "Pistol_Reload",
+        "Punch_Enter",
+        "Punch_Jab",
+        "Push_Loop",
+        "Roll",
+        "Roll_RM",
+        "Sitting_Enter",
+        "Sitting_Exit",
+        "Sitting_Idle_Loop",
+        "Sitting_Talking_Loop",
+        "Spell_Simple_Enter",
+        "Spell_Simple_Exit",
+        "Spell_Simple_Idle_Loop",
+        "Spell_Simple_Shoot",
+        "Sprint_Loop",
+        "Swim_Fwd_Loop",
+        "Swim_Idle_Loop",
+        "Sword_Attack",
+        "Sword_Attack_RM",
+        "Sword_Idle",
+        "Walk_Formal_Loop"
+      ],
+      "extraUvSetsRemoved": 2,
+      "scale": null
+    },
+    {
+      "id": "raider_body_slave",
+      "source": "characters/dweller_body_human.glb",
+      "errors": [],
+      "warnings": [],
+      "kind": "character",
+      "sourceTriangles": 13744,
+      "lodTriangles": [
+        3598,
+        1348,
+        492
+      ],
+      "sourceBones": 53,
+      "bones": 20,
+      "prunedBones": [
+        "root",
+        "DEF-f_index.01.L",
+        "DEF-f_index.02.L",
+        "DEF-f_index.03.L",
+        "DEF-f_middle.01.L",
+        "DEF-f_middle.02.L",
+        "DEF-f_middle.03.L",
+        "DEF-f_pinky.01.L",
+        "DEF-f_pinky.02.L",
+        "DEF-f_pinky.03.L",
+        "DEF-f_ring.01.L",
+        "DEF-f_ring.02.L",
+        "DEF-f_ring.03.L",
+        "DEF-thumb.01.L",
+        "DEF-thumb.02.L",
+        "DEF-thumb.03.L",
+        "DEF-f_index.01.R",
+        "DEF-f_index.02.R",
+        "DEF-f_index.03.R",
+        "DEF-f_middle.01.R",
+        "DEF-f_middle.02.R",
+        "DEF-f_middle.03.R",
+        "DEF-f_pinky.01.R",
+        "DEF-f_pinky.02.R",
+        "DEF-f_pinky.03.R",
+        "DEF-f_ring.01.R",
+        "DEF-f_ring.02.R",
+        "DEF-f_ring.03.R",
+        "DEF-thumb.01.R",
+        "DEF-thumb.02.R",
+        "DEF-thumb.03.R",
+        "DEF-toe.L",
+        "DEF-toe.R"
+      ],
+      "channelsDropped": 4554,
+      "clipsKept": {
+        "Death01": "death",
+        "Fixing_Kneeling": "build",
+        "Idle_Loop": "idle",
+        "Interact": "gather",
+        "Jog_Fwd_Loop": "run",
+        "Pistol_Shoot": "attack1",
+        "Punch_Cross": "attack2",
+        "Walk_Loop": "walk"
+      },
+      "clipsDropped": [
+        "A_TPose",
+        "Crouch_Fwd_Loop",
+        "Crouch_Idle_Loop",
+        "Dance_Loop",
+        "Driving_Loop",
+        "Hit_Chest",
+        "Hit_Head",
+        "Idle_Talking_Loop",
+        "Idle_Torch_Loop",
+        "Jump_Land",
+        "Jump_Loop",
+        "Jump_Start",
+        "PickUp_Table",
+        "Pistol_Aim_Down",
+        "Pistol_Aim_Neutral",
+        "Pistol_Aim_Up",
+        "Pistol_Idle_Loop",
+        "Pistol_Reload",
+        "Punch_Enter",
+        "Punch_Jab",
+        "Push_Loop",
+        "Roll",
+        "Roll_RM",
+        "Sitting_Enter",
+        "Sitting_Exit",
+        "Sitting_Idle_Loop",
+        "Sitting_Talking_Loop",
+        "Spell_Simple_Enter",
+        "Spell_Simple_Exit",
+        "Spell_Simple_Idle_Loop",
+        "Spell_Simple_Shoot",
+        "Sprint_Loop",
+        "Swim_Fwd_Loop",
+        "Swim_Idle_Loop",
+        "Sword_Attack",
+        "Sword_Attack_RM",
+        "Sword_Idle",
+        "Walk_Formal_Loop"
+      ],
+      "extraUvSetsRemoved": 2,
+      "scale": null
+    },
+    {
+      "id": "raider_building_cage",
+      "source": "raiders.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "building",
+      "lodTriangles": [
+        1470,
+        690,
+        232
+      ],
+      "materials": [
+        "bone_stone",
+        "canvas_tent",
+        "opening",
+        "rust_dark",
+        "rust_metal",
+        "rust_roof",
+        "scrap_metal_dark",
+        "team_trim",
+        "tyre_rubber",
+        "wood_dark"
+      ],
+      "sizeM": [
+        5.090451,
+        5.35,
+        4.968796
+      ]
+    },
+    {
+      "id": "raider_building_camp",
+      "source": "raiders.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "building",
+      "lodTriangles": [
+        2423,
+        990,
+        260
+      ],
+      "materials": [
+        "bone_stone",
+        "canvas_dark",
+        "canvas_red",
+        "canvas_tent",
+        "concrete",
+        "lens_amber",
+        "lens_red",
+        "opening",
+        "rust_dark",
+        "rust_metal",
+        "rust_roof",
+        "scrap_metal",
+        "scrap_metal_black",
+        "scrap_metal_dark",
+        "scrap_metal_red",
+        "tank_toxic",
+        "team_trim",
+        "tyre_rubber",
+        "wood_dark",
+        "wood_plank"
+      ],
+      "sizeM": [
+        17.3,
+        9.25,
+        16.743
+      ]
+    },
+    {
+      "id": "raider_building_chemlab",
+      "source": "raiders.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "building",
+      "lodTriangles": [
+        920,
+        426,
+        132
+      ],
+      "materials": [
+        "bone_stone",
+        "concrete",
+        "concrete_soot",
+        "lens_amber",
+        "opening",
+        "rust_dark",
+        "rust_metal",
+        "scrap_metal",
+        "scrap_metal_dark",
+        "scrap_metal_hazard",
+        "tank_toxic",
+        "tank_yellow",
+        "team_trim",
+        "wood_dark"
+      ],
+      "sizeM": [
+        10.75,
+        8.5,
+        8.3
+      ]
+    },
+    {
+      "id": "raider_building_claim_post",
+      "source": "raiders.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "building",
+      "lodTriangles": [
+        605,
+        218,
+        118
+      ],
+      "materials": [
+        "bone_stone",
+        "lens_amber",
+        "opening",
+        "rust_dark",
+        "rust_metal",
+        "scrap_metal",
+        "scrap_metal_black",
+        "scrap_metal_dark",
+        "scrap_metal_red",
+        "team_trim",
+        "wood_dark",
+        "wood_plank"
+      ],
+      "sizeM": [
+        3,
+        6.85,
+        3
+      ]
+    },
+    {
+      "id": "raider_building_garage",
+      "source": "raiders.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "building",
+      "lodTriangles": [
+        1618,
+        470,
+        152
+      ],
+      "materials": [
+        "bone_stone",
+        "lens_amber",
+        "lens_glass",
+        "opening",
+        "rust_dark",
+        "rust_metal",
+        "rust_roof",
+        "scrap_metal",
+        "scrap_metal_black",
+        "scrap_metal_dark",
+        "scrap_metal_hazard",
+        "scrap_metal_red",
+        "tank_toxic",
+        "tank_yellow",
+        "team_trim",
+        "tyre_rubber",
+        "wood_dark"
+      ],
+      "sizeM": [
+        17.15,
+        8.2,
+        13.05
+      ]
+    },
+    {
+      "id": "raider_building_market",
+      "source": "raiders.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "building",
+      "lodTriangles": [
+        1752,
+        580,
+        276
+      ],
+      "materials": [
+        "bone_stone",
+        "canvas_black",
+        "canvas_red",
+        "opening",
+        "rust_metal",
+        "rust_roof",
+        "scrap_metal_dark",
+        "tank_toxic",
+        "tank_yellow",
+        "team_trim",
+        "tyre_rubber",
+        "wood_dark",
+        "wood_plank"
+      ],
+      "sizeM": [
+        13.45,
+        6.45,
+        10.99
+      ]
+    },
+    {
+      "id": "raider_building_mg_nest",
+      "source": "raiders.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "building",
+      "lodTriangles": [
+        1411,
+        296,
+        208
+      ],
+      "materials": [
+        "bone_stone",
+        "opening",
+        "rust_dark",
+        "rust_roof",
+        "sandbag_canvas",
+        "scrap_metal",
+        "scrap_metal_dark",
+        "tank_yellow",
+        "team_trim",
+        "wood_dark",
+        "wood_plank"
+      ],
+      "sizeM": [
+        4.82,
+        3.55,
+        4.891783
+      ]
+    },
+    {
+      "id": "raider_building_tent",
+      "source": "raiders.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "building",
+      "lodTriangles": [
+        469,
+        312,
+        104
+      ],
+      "materials": [
+        "bone_stone",
+        "canvas_black",
+        "canvas_dark",
+        "canvas_red",
+        "canvas_tent",
+        "opening",
+        "rust_dark",
+        "rust_metal",
+        "scrap_metal_dark",
+        "scrap_metal_red",
+        "team_trim",
+        "wood_dark",
+        "wood_plank"
+      ],
+      "sizeM": [
+        7.238806,
+        4.45,
+        5.101846
+      ]
+    },
+    {
+      "id": "raider_gear_chem_tank",
+      "source": "raiders.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "lodTriangles": [
+        424,
+        288,
+        124
+      ],
+      "materials": [
+        "bone_stone",
+        "leather_dark",
+        "opening",
+        "scrap_metal",
+        "scrap_metal_dark",
+        "tank_toxic",
+        "tank_yellow"
+      ],
+      "sizeM": [
+        0.518033,
+        0.74,
+        0.265194
+      ]
+    },
+    {
+      "id": "raider_gear_shackles",
+      "source": "raiders.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "lodTriangles": [
+        220,
+        136,
+        76
+      ],
+      "materials": [
+        "leather_dark",
+        "rust_metal",
+        "scrap_metal_dark"
+      ],
+      "sizeM": [
+        0.41,
+        0.695,
+        0.185
+      ]
+    },
+    {
+      "id": "raider_gear_warlord_helm",
+      "source": "raiders.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "lodTriangles": [
+        282,
+        110,
+        60
+      ],
+      "materials": [
+        "bone_stone",
+        "canvas_red",
+        "opening",
+        "scrap_metal",
+        "scrap_metal_dark",
+        "scrap_metal_red"
+      ],
+      "sizeM": [
+        0.59706,
+        0.405,
+        0.342832
+      ]
+    },
+    {
+      "id": "raider_tool_hammer",
+      "source": "raiders.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "lodTriangles": [
+        122,
+        56,
+        28
+      ],
+      "materials": [
+        "canvas_tent",
+        "rust_metal",
+        "scrap_metal_dark",
+        "scrap_metal_red",
+        "wood_plank"
+      ],
+      "sizeM": [
+        0.37,
+        0.13,
+        0.885
+      ]
+    },
+    {
+      "id": "raider_tool_shovel",
+      "source": "raiders.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "lodTriangles": [
+        76,
+        48,
+        29
+      ],
+      "materials": [
+        "rust_dark",
+        "rust_metal",
+        "wood_dark",
+        "wood_plank"
+      ],
+      "sizeM": [
+        0.2,
+        0.051962,
+        1.4975
+      ]
+    },
+    {
+      "id": "raider_vehicle_buggy",
+      "source": "raiders.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "rigid-unit",
+      "lodTriangles": [
+        1584,
+        712,
+        264
+      ],
+      "materials": [
+        "bone_stone",
+        "canvas_tent",
+        "leather_dark",
+        "opening",
+        "rust_dark",
+        "rust_metal",
+        "scrap_metal",
+        "scrap_metal_black",
+        "scrap_metal_dark",
+        "scrap_metal_red",
+        "tank_yellow",
+        "team_trim",
+        "tyre_rubber",
+        "wood_dark"
+      ],
+      "sizeM": [
+        2.37,
+        2.5,
+        3.76
+      ]
+    },
+    {
+      "id": "raider_weapon_chem_sprayer",
+      "source": "raiders.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "lodTriangles": [
+        180,
+        116,
+        100
+      ],
+      "materials": [
+        "leather_dark",
+        "scrap_metal",
+        "scrap_metal_dark",
+        "tank_toxic",
+        "tank_yellow",
+        "wood_dark"
+      ],
+      "sizeM": [
+        0.165437,
+        0.724129,
+        1.013009
+      ]
+    },
+    {
+      "id": "raider_weapon_molotov",
+      "source": "raiders.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "lodTriangles": [
+        100,
+        66,
+        44
+      ],
+      "materials": [
+        "canvas_red",
+        "canvas_tent",
+        "lens_amber",
+        "lens_glass",
+        "lens_red"
+      ],
+      "sizeM": [
+        0.084,
+        0.48,
+        0.084
+      ]
+    },
+    {
+      "id": "raider_weapon_net_whip",
+      "source": "raiders.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "lodTriangles": [
+        392,
+        114,
+        46
+      ],
+      "materials": [
+        "canvas_dark",
+        "leather_dark",
+        "rust_dark",
+        "rust_metal",
+        "wood_dark"
+      ],
+      "sizeM": [
+        0.498,
+        0.3522,
+        1.422517
+      ]
+    },
+    {
+      "id": "raider_weapon_pipe_gun",
+      "source": "raiders.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "lodTriangles": [
+        188,
+        80,
+        52
+      ],
+      "materials": [
+        "rust_dark",
+        "rust_metal",
+        "scrap_metal",
+        "scrap_metal_dark",
+        "scrap_metal_red",
+        "wood_dark",
+        "wood_plank"
+      ],
+      "sizeM": [
+        0.076,
+        0.232321,
+        1.17
+      ]
+    },
+    {
+      "id": "raider_weapon_scrap_revolver",
+      "source": "raiders.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "lodTriangles": [
+        196,
+        84,
+        40
+      ],
+      "materials": [
+        "bone_stone",
+        "opening",
+        "rust_metal",
+        "scrap_metal",
+        "scrap_metal_dark",
+        "scrap_metal_red",
+        "wood_dark"
+      ],
+      "sizeM": [
+        0.08,
+        0.29,
+        0.5525
+      ]
+    },
+    {
+      "id": "raider_weapon_spiked_club",
+      "source": "raiders.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "lodTriangles": [
+        169,
+        109,
+        44
+      ],
+      "materials": [
+        "rust_metal",
+        "scrap_metal_dark",
+        "wood_dark"
+      ],
+      "sizeM": [
+        0.26,
+        0.26,
+        1.05
+      ]
+    },
+    {
+      "id": "reed001",
+      "source": "props/Reed001.glb",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "sourceTriangles": 20,
+      "lodTriangles": [
+        20,
+        20,
+        20
+      ],
+      "sourceBones": 0,
+      "bones": 0,
+      "prunedBones": [],
+      "channelsDropped": 0,
+      "clipsKept": {},
+      "clipsDropped": [],
+      "extraUvSetsRemoved": 0,
+      "scale": 0.01
+    },
+    {
+      "id": "rock_set2_01",
+      "source": "packs/rocks_set2.glb#smallrock1",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "pack": "rocks_set2",
+      "category": "rock",
+      "sourceTriangles": 590,
+      "lodTriangles": [
+        590,
+        400,
+        120
+      ],
+      "sourceHeightM": 0.913,
+      "heightM": 0.913,
+      "scale": 0.01,
+      "atlas": {
+        "size": 512,
+        "cells": [
+          {
+            "texture": "cliffs",
+            "source": 0,
+            "size": 512,
+            "repeat": 1
+          }
+        ]
+      },
+      "textures": [
+        {
+          "size": 512,
+          "format": "jpeg",
+          "bytes": 38468
+        },
+        {
+          "size": 256,
+          "format": "jpeg",
+          "bytes": 10328
+        },
+        {
+          "size": 128,
+          "format": "jpeg",
+          "bytes": 2994
+        }
+      ],
+      "alpha": {
+        "triangleShare": 0,
+        "meanRgb": [
+          0,
+          0,
+          0
+        ],
+        "hue": 0,
+        "saturation": 0,
+        "foliage": "none",
+        "cutoff": 0.5
+      },
+      "materials": [
+        "cliffs"
+      ]
+    },
+    {
+      "id": "rock_set2_02",
+      "source": "packs/rocks_set2.glb#smallrock2",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "pack": "rocks_set2",
+      "category": "rock",
+      "sourceTriangles": 164,
+      "lodTriangles": [
+        164,
+        164,
+        120
+      ],
+      "sourceHeightM": 0.631,
+      "heightM": 0.631,
+      "scale": 0.01,
+      "atlas": {
+        "size": 512,
+        "cells": [
+          {
+            "texture": "cliffs",
+            "source": 0,
+            "size": 512,
+            "repeat": 1
+          }
+        ]
+      },
+      "textures": [
+        {
+          "size": 512,
+          "format": "jpeg",
+          "bytes": 38468
+        },
+        {
+          "size": 256,
+          "format": "jpeg",
+          "bytes": 10328
+        },
+        {
+          "size": 128,
+          "format": "jpeg",
+          "bytes": 2994
+        }
+      ],
+      "alpha": {
+        "triangleShare": 0,
+        "meanRgb": [
+          0,
+          0,
+          0
+        ],
+        "hue": 0,
+        "saturation": 0,
+        "foliage": "none",
+        "cutoff": 0.5
+      },
+      "materials": [
+        "cliffs"
+      ]
+    },
+    {
+      "id": "rock_set2_03",
+      "source": "packs/rocks_set2.glb#smallrock3",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "pack": "rocks_set2",
+      "category": "rock",
+      "sourceTriangles": 236,
+      "lodTriangles": [
+        236,
+        236,
+        120
+      ],
+      "sourceHeightM": 0.761,
+      "heightM": 0.761,
+      "scale": 0.01,
+      "atlas": {
+        "size": 512,
+        "cells": [
+          {
+            "texture": "cliffs",
+            "source": 0,
+            "size": 512,
+            "repeat": 1
+          }
+        ]
+      },
+      "textures": [
+        {
+          "size": 512,
+          "format": "jpeg",
+          "bytes": 38468
+        },
+        {
+          "size": 256,
+          "format": "jpeg",
+          "bytes": 10328
+        },
+        {
+          "size": 128,
+          "format": "jpeg",
+          "bytes": 2994
+        }
+      ],
+      "alpha": {
+        "triangleShare": 0,
+        "meanRgb": [
+          0,
+          0,
+          0
+        ],
+        "hue": 0,
+        "saturation": 0,
+        "foliage": "none",
+        "cutoff": 0.5
+      },
+      "materials": [
+        "cliffs"
+      ]
+    },
+    {
+      "id": "rock_set2_04",
+      "source": "packs/rocks_set2.glb#smallrock4",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "pack": "rocks_set2",
+      "category": "rock",
+      "sourceTriangles": 204,
+      "lodTriangles": [
+        204,
+        204,
+        120
+      ],
+      "sourceHeightM": 0.731,
+      "heightM": 0.731,
+      "scale": 0.01,
+      "atlas": {
+        "size": 512,
+        "cells": [
+          {
+            "texture": "cliffs",
+            "source": 0,
+            "size": 512,
+            "repeat": 1
+          }
+        ]
+      },
+      "textures": [
+        {
+          "size": 512,
+          "format": "jpeg",
+          "bytes": 38468
+        },
+        {
+          "size": 256,
+          "format": "jpeg",
+          "bytes": 10328
+        },
+        {
+          "size": 128,
+          "format": "jpeg",
+          "bytes": 2994
+        }
+      ],
+      "alpha": {
+        "triangleShare": 0,
+        "meanRgb": [
+          0,
+          0,
+          0
+        ],
+        "hue": 0,
+        "saturation": 0,
+        "foliage": "none",
+        "cutoff": 0.5
+      },
+      "materials": [
+        "cliffs"
+      ]
+    },
+    {
+      "id": "rock_set2_05",
+      "source": "packs/rocks_set2.glb#smallrock5",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "pack": "rocks_set2",
+      "category": "rock",
+      "sourceTriangles": 1344,
+      "lodTriangles": [
+        1000,
+        400,
+        120
+      ],
+      "sourceHeightM": 1.739,
+      "heightM": 1.736,
+      "scale": 0.01,
+      "atlas": {
+        "size": 512,
+        "cells": [
+          {
+            "texture": "cliffs",
+            "source": 0,
+            "size": 512,
+            "repeat": 1
+          }
+        ]
+      },
+      "textures": [
+        {
+          "size": 512,
+          "format": "jpeg",
+          "bytes": 38468
+        },
+        {
+          "size": 256,
+          "format": "jpeg",
+          "bytes": 10328
+        },
+        {
+          "size": 128,
+          "format": "jpeg",
+          "bytes": 2994
+        }
+      ],
+      "alpha": {
+        "triangleShare": 0,
+        "meanRgb": [
+          0,
+          0,
+          0
+        ],
+        "hue": 0,
+        "saturation": 0,
+        "foliage": "none",
+        "cutoff": 0.5
+      },
+      "materials": [
+        "cliffs"
+      ]
+    },
+    {
+      "id": "rock_set2_06",
+      "source": "packs/rocks_set2.glb#smallrock5_1",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "pack": "rocks_set2",
+      "category": "rock",
+      "sourceTriangles": 1344,
+      "lodTriangles": [
+        1000,
+        400,
+        120
+      ],
+      "sourceHeightM": 2.012,
+      "heightM": 2.009,
+      "scale": 0.01,
+      "atlas": {
+        "size": 512,
+        "cells": [
+          {
+            "texture": "cliffs",
+            "source": 0,
+            "size": 512,
+            "repeat": 1
+          }
+        ]
+      },
+      "textures": [
+        {
+          "size": 512,
+          "format": "jpeg",
+          "bytes": 38468
+        },
+        {
+          "size": 256,
+          "format": "jpeg",
+          "bytes": 10328
+        },
+        {
+          "size": 128,
+          "format": "jpeg",
+          "bytes": 2994
+        }
+      ],
+      "alpha": {
+        "triangleShare": 0,
+        "meanRgb": [
+          0,
+          0,
+          0
+        ],
+        "hue": 0,
+        "saturation": 0,
+        "foliage": "none",
+        "cutoff": 0.5
+      },
+      "materials": [
+        "cliffs"
+      ]
+    },
+    {
+      "id": "rock_set2_07",
+      "source": "packs/rocks_set2.glb#smallrockcluster",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "pack": "rocks_set2",
+      "category": "rock",
+      "sourceTriangles": 2938,
+      "lodTriangles": [
+        1000,
+        400,
+        120
+      ],
+      "sourceHeightM": 2.233,
+      "heightM": 2.225,
+      "scale": 0.01,
+      "atlas": {
+        "size": 1024,
+        "cells": [
+          {
+            "texture": "cliffs",
+            "source": 0,
+            "size": 1024,
+            "repeat": 1
+          }
+        ]
+      },
+      "textures": [
+        {
+          "size": 1024,
+          "format": "jpeg",
+          "bytes": 146618
+        },
+        {
+          "size": 512,
+          "format": "jpeg",
+          "bytes": 38468
+        },
+        {
+          "size": 256,
+          "format": "jpeg",
+          "bytes": 10169
+        }
+      ],
+      "alpha": {
+        "triangleShare": 0,
+        "meanRgb": [
+          0,
+          0,
+          0
+        ],
+        "hue": 0,
+        "saturation": 0,
+        "foliage": "none",
+        "cutoff": 0.5
+      },
+      "materials": [
+        "cliffs"
+      ]
+    },
+    {
+      "id": "rock_set2_08",
+      "source": "packs/rocks_set2.glb#smallrockcluster_1",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "pack": "rocks_set2",
+      "category": "rock",
+      "sourceTriangles": 2938,
+      "lodTriangles": [
+        1000,
+        400,
+        120
+      ],
+      "sourceHeightM": 2.533,
+      "heightM": 2.523,
+      "scale": 0.01,
+      "atlas": {
+        "size": 1024,
+        "cells": [
+          {
+            "texture": "cliffs",
+            "source": 0,
+            "size": 1024,
+            "repeat": 1
+          }
+        ]
+      },
+      "textures": [
+        {
+          "size": 1024,
+          "format": "jpeg",
+          "bytes": 146618
+        },
+        {
+          "size": 512,
+          "format": "jpeg",
+          "bytes": 38468
+        },
+        {
+          "size": 256,
+          "format": "jpeg",
+          "bytes": 10169
+        }
+      ],
+      "alpha": {
+        "triangleShare": 0,
+        "meanRgb": [
+          0,
+          0,
+          0
+        ],
+        "hue": 0,
+        "saturation": 0,
+        "foliage": "none",
+        "cutoff": 0.5
+      },
+      "materials": [
+        "cliffs"
+      ]
+    },
+    {
+      "id": "rock_set2_09",
+      "source": "packs/rocks_set2.glb#cliff1",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "pack": "rocks_set2",
+      "category": "rock",
+      "sourceTriangles": 9028,
+      "lodTriangles": [
+        1000,
+        400,
+        120
+      ],
+      "sourceHeightM": 10.083,
+      "heightM": 10.078,
+      "scale": 0.01,
+      "atlas": {
+        "size": 1024,
+        "cells": [
+          {
+            "texture": "cliffs",
+            "source": 0,
+            "size": 1024,
+            "repeat": 1
+          }
+        ]
+      },
+      "textures": [
+        {
+          "size": 1024,
+          "format": "jpeg",
+          "bytes": 146618
+        },
+        {
+          "size": 512,
+          "format": "jpeg",
+          "bytes": 38468
+        },
+        {
+          "size": 256,
+          "format": "jpeg",
+          "bytes": 10169
+        }
+      ],
+      "alpha": {
+        "triangleShare": 0,
+        "meanRgb": [
+          0,
+          0,
+          0
+        ],
+        "hue": 0,
+        "saturation": 0,
+        "foliage": "none",
+        "cutoff": 0.5
+      },
+      "materials": [
+        "cliffs"
+      ]
+    },
+    {
+      "id": "rock_set2_10",
+      "source": "packs/rocks_set2.glb#cliff2",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "pack": "rocks_set2",
+      "category": "rock",
+      "sourceTriangles": 7180,
+      "lodTriangles": [
+        1000,
+        400,
+        119
+      ],
+      "sourceHeightM": 7.833,
+      "heightM": 7.747,
+      "scale": 0.01,
+      "atlas": {
+        "size": 1024,
+        "cells": [
+          {
+            "texture": "cliffs",
+            "source": 0,
+            "size": 1024,
+            "repeat": 1
+          }
+        ]
+      },
+      "textures": [
+        {
+          "size": 1024,
+          "format": "jpeg",
+          "bytes": 146618
+        },
+        {
+          "size": 512,
+          "format": "jpeg",
+          "bytes": 38468
+        },
+        {
+          "size": 256,
+          "format": "jpeg",
+          "bytes": 10169
+        }
+      ],
+      "alpha": {
+        "triangleShare": 0,
+        "meanRgb": [
+          0,
+          0,
+          0
+        ],
+        "hue": 0,
+        "saturation": 0,
+        "foliage": "none",
+        "cutoff": 0.5
+      },
+      "materials": [
+        "cliffs"
+      ]
+    },
+    {
+      "id": "rock_set2_11",
+      "source": "packs/rocks_set2.glb#cliff3",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "pack": "rocks_set2",
+      "category": "rock",
+      "sourceTriangles": 14073,
+      "lodTriangles": [
+        1000,
+        400,
+        120
+      ],
+      "sourceHeightM": 7.764,
+      "heightM": 7.701,
+      "scale": 0.01,
+      "atlas": {
+        "size": 1024,
+        "cells": [
+          {
+            "texture": "cliffs",
+            "source": 0,
+            "size": 1024,
+            "repeat": 1
+          }
+        ]
+      },
+      "textures": [
+        {
+          "size": 1024,
+          "format": "jpeg",
+          "bytes": 146618
+        },
+        {
+          "size": 512,
+          "format": "jpeg",
+          "bytes": 38468
+        },
+        {
+          "size": 256,
+          "format": "jpeg",
+          "bytes": 10169
+        }
+      ],
+      "alpha": {
+        "triangleShare": 0,
+        "meanRgb": [
+          0,
+          0,
+          0
+        ],
+        "hue": 0,
+        "saturation": 0,
+        "foliage": "none",
+        "cutoff": 0.5
+      },
+      "materials": [
+        "cliffs"
+      ]
+    },
+    {
+      "id": "rock001",
+      "source": "props/Rock001.glb",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "sourceTriangles": 16,
+      "lodTriangles": [
+        16,
+        16,
+        16
+      ],
+      "sourceBones": 0,
+      "bones": 0,
+      "prunedBones": [],
+      "channelsDropped": 0,
+      "clipsKept": {},
+      "clipsDropped": [],
+      "extraUvSetsRemoved": 0,
+      "scale": 0.01
+    },
+    {
+      "id": "rock002",
+      "source": "props/Rock002.glb",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "sourceTriangles": 16,
+      "lodTriangles": [
+        16,
+        16,
+        16
+      ],
+      "sourceBones": 0,
+      "bones": 0,
+      "prunedBones": [],
+      "channelsDropped": 0,
+      "clipsKept": {},
+      "clipsDropped": [],
+      "extraUvSetsRemoved": 0,
+      "scale": 0.01
+    },
+    {
+      "id": "rock003",
+      "source": "props/Rock003.glb",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "sourceTriangles": 16,
+      "lodTriangles": [
+        16,
+        16,
+        16
+      ],
+      "sourceBones": 0,
+      "bones": 0,
+      "prunedBones": [],
+      "channelsDropped": 0,
+      "clipsKept": {},
+      "clipsDropped": [],
+      "extraUvSetsRemoved": 0,
+      "scale": 0.01
+    },
+    {
+      "id": "site_garage_restored",
+      "source": "sites.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "building",
+      "lodTriangles": [
+        1052,
+        400,
+        196
+      ],
+      "materials": [
+        "concrete",
+        "lens_amber",
+        "lens_glass",
+        "metal",
+        "metal_blue",
+        "metal_dark",
+        "metal_hazard",
+        "metal_light",
+        "metal_red",
+        "opening",
+        "roof_tar",
+        "rubber",
+        "team_trim"
+      ],
+      "sizeM": [
+        13.3,
+        6.62,
+        11.4
+      ]
+    },
+    {
+      "id": "site_garage_ruin",
+      "source": "sites.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "building",
+      "lodTriangles": [
+        1020,
+        560,
+        236
+      ],
+      "materials": [
+        "concrete_dark",
+        "concrete_ruin",
+        "opening",
+        "roof_tar",
+        "rubber",
+        "rust_dark",
+        "rust_metal",
+        "rust_roof"
+      ],
+      "sizeM": [
+        13.3,
+        6.283001,
+        11.4
+      ]
+    },
+    {
+      "id": "site_gas_station_restored",
+      "source": "sites.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "building",
+      "lodTriangles": [
+        626,
+        410,
+        226
+      ],
+      "materials": [
+        "concrete",
+        "lens_amber",
+        "lens_glass",
+        "metal_dark",
+        "metal_hazard",
+        "metal_light",
+        "metal_red",
+        "opening",
+        "rubber",
+        "team_trim"
+      ],
+      "sizeM": [
+        14.84,
+        5.35,
+        10.62
+      ]
+    },
+    {
+      "id": "site_gas_station_ruin",
+      "source": "sites.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "building",
+      "lodTriangles": [
+        984,
+        612,
+        284
+      ],
+      "materials": [
+        "concrete_dark",
+        "concrete_ruin",
+        "opening",
+        "rubber",
+        "rust_dark",
+        "rust_metal",
+        "rust_roof"
+      ],
+      "sizeM": [
+        14.797524,
+        5.38773,
+        10.819139
+      ]
+    },
+    {
+      "id": "site_supermarket_restored",
+      "source": "sites.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "building",
+      "lodTriangles": [
+        964,
+        628,
+        178
+      ],
+      "materials": [
+        "concrete",
+        "concrete_dark",
+        "lens_glass",
+        "metal_dark",
+        "metal_hazard",
+        "metal_light",
+        "opening",
+        "roof_tar",
+        "rubber",
+        "team_trim"
+      ],
+      "sizeM": [
+        25,
+        7.52,
+        15.12
+      ]
+    },
+    {
+      "id": "site_supermarket_ruin",
+      "source": "sites.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "building",
+      "lodTriangles": [
+        1502,
+        998,
+        290
+      ],
+      "materials": [
+        "concrete_dark",
+        "concrete_ruin",
+        "lens_glass",
+        "opening",
+        "rubber",
+        "rust_dark",
+        "rust_metal",
+        "rust_roof"
+      ],
+      "sizeM": [
+        25.34325,
+        7.510313,
+        15.217253
+      ]
+    },
+    {
+      "id": "site_water_tower_restored",
+      "source": "sites.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "building",
+      "lodTriangles": [
+        1718,
+        904,
+        204
+      ],
+      "materials": [
+        "concrete",
+        "lens_amber",
+        "metal",
+        "metal_dark",
+        "metal_hazard",
+        "metal_light",
+        "team_trim"
+      ],
+      "sizeM": [
+        7,
+        18.879999,
+        7
+      ]
+    },
+    {
+      "id": "site_water_tower_ruin",
+      "source": "sites.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "building",
+      "lodTriangles": [
+        1602,
+        890,
+        202
+      ],
+      "materials": [
+        "concrete_dark",
+        "concrete_ruin",
+        "opening",
+        "rust_dark",
+        "rust_metal",
+        "rust_roof"
+      ],
+      "sizeM": [
+        7.199917,
+        18.540396,
+        7.089698
+      ]
+    },
+    {
+      "id": "survival_behemoth",
+      "source": "survival.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "rigid-unit",
+      "lodTriangles": [
+        801,
+        384,
+        188
+      ],
+      "materials": [
+        "bone_stone",
+        "canvas_rag",
+        "club_wood",
+        "lens_red",
+        "opening",
+        "rust_dark",
+        "rust_metal",
+        "skin_leather_dark",
+        "skin_leather_green"
+      ],
+      "sizeM": [
+        5.78,
+        6.65,
+        2.234327
+      ]
+    },
+    {
+      "id": "survival_ghoul",
+      "source": "characters/dweller_body_human.glb",
+      "errors": [],
+      "warnings": [],
+      "kind": "character",
+      "sourceTriangles": 13744,
+      "lodTriangles": [
+        3598,
+        1349,
+        492
+      ],
+      "sourceBones": 53,
+      "bones": 20,
+      "prunedBones": [
+        "root",
+        "DEF-f_index.01.L",
+        "DEF-f_index.02.L",
+        "DEF-f_index.03.L",
+        "DEF-f_middle.01.L",
+        "DEF-f_middle.02.L",
+        "DEF-f_middle.03.L",
+        "DEF-f_pinky.01.L",
+        "DEF-f_pinky.02.L",
+        "DEF-f_pinky.03.L",
+        "DEF-f_ring.01.L",
+        "DEF-f_ring.02.L",
+        "DEF-f_ring.03.L",
+        "DEF-thumb.01.L",
+        "DEF-thumb.02.L",
+        "DEF-thumb.03.L",
+        "DEF-f_index.01.R",
+        "DEF-f_index.02.R",
+        "DEF-f_index.03.R",
+        "DEF-f_middle.01.R",
+        "DEF-f_middle.02.R",
+        "DEF-f_middle.03.R",
+        "DEF-f_pinky.01.R",
+        "DEF-f_pinky.02.R",
+        "DEF-f_pinky.03.R",
+        "DEF-f_ring.01.R",
+        "DEF-f_ring.02.R",
+        "DEF-f_ring.03.R",
+        "DEF-thumb.01.R",
+        "DEF-thumb.02.R",
+        "DEF-thumb.03.R",
+        "DEF-toe.L",
+        "DEF-toe.R"
+      ],
+      "channelsDropped": 4554,
+      "clipsKept": {
+        "Death01": "death",
+        "Fixing_Kneeling": "build",
+        "Idle_Loop": "idle",
+        "Interact": "gather",
+        "Jog_Fwd_Loop": "run",
+        "Pistol_Shoot": "attack1",
+        "Punch_Cross": "attack2",
+        "Walk_Loop": "walk"
+      },
+      "clipsDropped": [
+        "A_TPose",
+        "Crouch_Fwd_Loop",
+        "Crouch_Idle_Loop",
+        "Dance_Loop",
+        "Driving_Loop",
+        "Hit_Chest",
+        "Hit_Head",
+        "Idle_Talking_Loop",
+        "Idle_Torch_Loop",
+        "Jump_Land",
+        "Jump_Loop",
+        "Jump_Start",
+        "PickUp_Table",
+        "Pistol_Aim_Down",
+        "Pistol_Aim_Neutral",
+        "Pistol_Aim_Up",
+        "Pistol_Idle_Loop",
+        "Pistol_Reload",
+        "Punch_Enter",
+        "Punch_Jab",
+        "Push_Loop",
+        "Roll",
+        "Roll_RM",
+        "Sitting_Enter",
+        "Sitting_Exit",
+        "Sitting_Idle_Loop",
+        "Sitting_Talking_Loop",
+        "Spell_Simple_Enter",
+        "Spell_Simple_Exit",
+        "Spell_Simple_Idle_Loop",
+        "Spell_Simple_Shoot",
+        "Sprint_Loop",
+        "Swim_Fwd_Loop",
+        "Swim_Idle_Loop",
+        "Sword_Attack",
+        "Sword_Attack_RM",
+        "Sword_Idle",
+        "Walk_Formal_Loop"
+      ],
+      "extraUvSetsRemoved": 2,
+      "scale": null
+    },
+    {
+      "id": "survival_ghoul_runner",
+      "source": "characters/dweller_body_human.glb",
+      "errors": [],
+      "warnings": [],
+      "kind": "character",
+      "sourceTriangles": 13744,
+      "lodTriangles": [
+        3598,
+        1348,
+        492
+      ],
+      "sourceBones": 53,
+      "bones": 20,
+      "prunedBones": [
+        "root",
+        "DEF-f_index.01.L",
+        "DEF-f_index.02.L",
+        "DEF-f_index.03.L",
+        "DEF-f_middle.01.L",
+        "DEF-f_middle.02.L",
+        "DEF-f_middle.03.L",
+        "DEF-f_pinky.01.L",
+        "DEF-f_pinky.02.L",
+        "DEF-f_pinky.03.L",
+        "DEF-f_ring.01.L",
+        "DEF-f_ring.02.L",
+        "DEF-f_ring.03.L",
+        "DEF-thumb.01.L",
+        "DEF-thumb.02.L",
+        "DEF-thumb.03.L",
+        "DEF-f_index.01.R",
+        "DEF-f_index.02.R",
+        "DEF-f_index.03.R",
+        "DEF-f_middle.01.R",
+        "DEF-f_middle.02.R",
+        "DEF-f_middle.03.R",
+        "DEF-f_pinky.01.R",
+        "DEF-f_pinky.02.R",
+        "DEF-f_pinky.03.R",
+        "DEF-f_ring.01.R",
+        "DEF-f_ring.02.R",
+        "DEF-f_ring.03.R",
+        "DEF-thumb.01.R",
+        "DEF-thumb.02.R",
+        "DEF-thumb.03.R",
+        "DEF-toe.L",
+        "DEF-toe.R"
+      ],
+      "channelsDropped": 4554,
+      "clipsKept": {
+        "Death01": "death",
+        "Fixing_Kneeling": "build",
+        "Idle_Loop": "idle",
+        "Interact": "gather",
+        "Jog_Fwd_Loop": "run",
+        "Pistol_Shoot": "attack1",
+        "Punch_Cross": "attack2",
+        "Walk_Loop": "walk"
+      },
+      "clipsDropped": [
+        "A_TPose",
+        "Crouch_Fwd_Loop",
+        "Crouch_Idle_Loop",
+        "Dance_Loop",
+        "Driving_Loop",
+        "Hit_Chest",
+        "Hit_Head",
+        "Idle_Talking_Loop",
+        "Idle_Torch_Loop",
+        "Jump_Land",
+        "Jump_Loop",
+        "Jump_Start",
+        "PickUp_Table",
+        "Pistol_Aim_Down",
+        "Pistol_Aim_Neutral",
+        "Pistol_Aim_Up",
+        "Pistol_Idle_Loop",
+        "Pistol_Reload",
+        "Punch_Enter",
+        "Punch_Jab",
+        "Push_Loop",
+        "Roll",
+        "Roll_RM",
+        "Sitting_Enter",
+        "Sitting_Exit",
+        "Sitting_Idle_Loop",
+        "Sitting_Talking_Loop",
+        "Spell_Simple_Enter",
+        "Spell_Simple_Exit",
+        "Spell_Simple_Idle_Loop",
+        "Spell_Simple_Shoot",
+        "Sprint_Loop",
+        "Swim_Fwd_Loop",
+        "Swim_Idle_Loop",
+        "Sword_Attack",
+        "Sword_Attack_RM",
+        "Sword_Idle",
+        "Walk_Formal_Loop"
+      ],
+      "extraUvSetsRemoved": 2,
+      "scale": null
+    },
+    {
+      "id": "survival_klauwbeest",
+      "source": "survival.json",
+      "errors": [],
+      "warnings": [],
+      "kind": "rigid-unit",
+      "lodTriangles": [
+        616,
+        328,
+        230
+      ],
+      "materials": [
+        "bone_stone",
+        "hide_leather",
+        "hide_leather_dark",
+        "lens_amber"
+      ],
+      "sizeM": [
+        1.36,
+        1.556618,
+        3.092302
+      ]
+    },
+    {
+      "id": "survival_mutant",
+      "source": "characters/dweller_body_human.glb",
+      "errors": [],
+      "warnings": [],
+      "kind": "character",
+      "sourceTriangles": 13744,
+      "lodTriangles": [
+        3598,
+        1349,
+        492
+      ],
+      "sourceBones": 53,
+      "bones": 20,
+      "prunedBones": [
+        "root",
+        "DEF-f_index.01.L",
+        "DEF-f_index.02.L",
+        "DEF-f_index.03.L",
+        "DEF-f_middle.01.L",
+        "DEF-f_middle.02.L",
+        "DEF-f_middle.03.L",
+        "DEF-f_pinky.01.L",
+        "DEF-f_pinky.02.L",
+        "DEF-f_pinky.03.L",
+        "DEF-f_ring.01.L",
+        "DEF-f_ring.02.L",
+        "DEF-f_ring.03.L",
+        "DEF-thumb.01.L",
+        "DEF-thumb.02.L",
+        "DEF-thumb.03.L",
+        "DEF-f_index.01.R",
+        "DEF-f_index.02.R",
+        "DEF-f_index.03.R",
+        "DEF-f_middle.01.R",
+        "DEF-f_middle.02.R",
+        "DEF-f_middle.03.R",
+        "DEF-f_pinky.01.R",
+        "DEF-f_pinky.02.R",
+        "DEF-f_pinky.03.R",
+        "DEF-f_ring.01.R",
+        "DEF-f_ring.02.R",
+        "DEF-f_ring.03.R",
+        "DEF-thumb.01.R",
+        "DEF-thumb.02.R",
+        "DEF-thumb.03.R",
+        "DEF-toe.L",
+        "DEF-toe.R"
+      ],
+      "channelsDropped": 4554,
+      "clipsKept": {
+        "Death01": "death",
+        "Fixing_Kneeling": "build",
+        "Idle_Loop": "idle",
+        "Interact": "gather",
+        "Jog_Fwd_Loop": "run",
+        "Pistol_Shoot": "attack1",
+        "Punch_Cross": "attack2",
+        "Walk_Loop": "walk"
+      },
+      "clipsDropped": [
+        "A_TPose",
+        "Crouch_Fwd_Loop",
+        "Crouch_Idle_Loop",
+        "Dance_Loop",
+        "Driving_Loop",
+        "Hit_Chest",
+        "Hit_Head",
+        "Idle_Talking_Loop",
+        "Idle_Torch_Loop",
+        "Jump_Land",
+        "Jump_Loop",
+        "Jump_Start",
+        "PickUp_Table",
+        "Pistol_Aim_Down",
+        "Pistol_Aim_Neutral",
+        "Pistol_Aim_Up",
+        "Pistol_Idle_Loop",
+        "Pistol_Reload",
+        "Punch_Enter",
+        "Punch_Jab",
+        "Push_Loop",
+        "Roll",
+        "Roll_RM",
+        "Sitting_Enter",
+        "Sitting_Exit",
+        "Sitting_Idle_Loop",
+        "Sitting_Talking_Loop",
+        "Spell_Simple_Enter",
+        "Spell_Simple_Exit",
+        "Spell_Simple_Idle_Loop",
+        "Spell_Simple_Shoot",
+        "Sprint_Loop",
+        "Swim_Fwd_Loop",
+        "Swim_Idle_Loop",
+        "Sword_Attack",
+        "Sword_Attack_RM",
+        "Sword_Idle",
+        "Walk_Formal_Loop"
+      ],
+      "extraUvSetsRemoved": 2,
+      "scale": null
+    },
+    {
+      "id": "survival_mutant_brute",
+      "source": "characters/dweller_body_human.glb",
+      "errors": [],
+      "warnings": [],
+      "kind": "character",
+      "sourceTriangles": 13744,
+      "lodTriangles": [
+        3598,
+        1349,
+        493
+      ],
+      "sourceBones": 53,
+      "bones": 20,
+      "prunedBones": [
+        "root",
+        "DEF-f_index.01.L",
+        "DEF-f_index.02.L",
+        "DEF-f_index.03.L",
+        "DEF-f_middle.01.L",
+        "DEF-f_middle.02.L",
+        "DEF-f_middle.03.L",
+        "DEF-f_pinky.01.L",
+        "DEF-f_pinky.02.L",
+        "DEF-f_pinky.03.L",
+        "DEF-f_ring.01.L",
+        "DEF-f_ring.02.L",
+        "DEF-f_ring.03.L",
+        "DEF-thumb.01.L",
+        "DEF-thumb.02.L",
+        "DEF-thumb.03.L",
+        "DEF-f_index.01.R",
+        "DEF-f_index.02.R",
+        "DEF-f_index.03.R",
+        "DEF-f_middle.01.R",
+        "DEF-f_middle.02.R",
+        "DEF-f_middle.03.R",
+        "DEF-f_pinky.01.R",
+        "DEF-f_pinky.02.R",
+        "DEF-f_pinky.03.R",
+        "DEF-f_ring.01.R",
+        "DEF-f_ring.02.R",
+        "DEF-f_ring.03.R",
+        "DEF-thumb.01.R",
+        "DEF-thumb.02.R",
+        "DEF-thumb.03.R",
+        "DEF-toe.L",
+        "DEF-toe.R"
+      ],
+      "channelsDropped": 4554,
+      "clipsKept": {
+        "Death01": "death",
+        "Fixing_Kneeling": "build",
+        "Idle_Loop": "idle",
+        "Interact": "gather",
+        "Jog_Fwd_Loop": "run",
+        "Pistol_Shoot": "attack1",
+        "Punch_Cross": "attack2",
+        "Walk_Loop": "walk"
+      },
+      "clipsDropped": [
+        "A_TPose",
+        "Crouch_Fwd_Loop",
+        "Crouch_Idle_Loop",
+        "Dance_Loop",
+        "Driving_Loop",
+        "Hit_Chest",
+        "Hit_Head",
+        "Idle_Talking_Loop",
+        "Idle_Torch_Loop",
+        "Jump_Land",
+        "Jump_Loop",
+        "Jump_Start",
+        "PickUp_Table",
+        "Pistol_Aim_Down",
+        "Pistol_Aim_Neutral",
+        "Pistol_Aim_Up",
+        "Pistol_Idle_Loop",
+        "Pistol_Reload",
+        "Punch_Enter",
+        "Punch_Jab",
+        "Push_Loop",
+        "Roll",
+        "Roll_RM",
+        "Sitting_Enter",
+        "Sitting_Exit",
+        "Sitting_Idle_Loop",
+        "Sitting_Talking_Loop",
+        "Spell_Simple_Enter",
+        "Spell_Simple_Exit",
+        "Spell_Simple_Idle_Loop",
+        "Spell_Simple_Shoot",
+        "Sprint_Loop",
+        "Swim_Fwd_Loop",
+        "Swim_Idle_Loop",
+        "Sword_Attack",
+        "Sword_Attack_RM",
+        "Sword_Idle",
+        "Walk_Formal_Loop"
+      ],
+      "extraUvSetsRemoved": 2,
+      "scale": null
+    },
+    {
+      "id": "tree_bare_01",
+      "source": "packs/trees.glb#tree1",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "pack": "trees",
+      "category": "tree-bare",
+      "sourceTriangles": 3354,
+      "lodTriangles": [
+        1500,
+        500,
+        144
+      ],
+      "sourceHeightM": 9.288,
+      "heightM": 9.274,
+      "scale": 0.01,
+      "atlas": {
+        "size": 1024,
+        "cells": [
+          {
+            "texture": "tree1",
+            "source": 0,
+            "size": 512,
+            "repeat": 1
+          },
+          {
+            "texture": "branches",
+            "source": 1,
+            "size": 512,
+            "repeat": 1
+          }
+        ]
+      },
+      "textures": [
+        {
+          "size": 1024,
+          "format": "webp",
+          "bytes": 52434
+        },
+        {
+          "size": 512,
+          "format": "webp",
+          "bytes": 21088
+        },
+        {
+          "size": 256,
+          "format": "webp",
+          "bytes": 7808
+        }
+      ],
+      "alpha": {
+        "triangleShare": 0.18783542039355994,
+        "meanRgb": [
+          41.4,
+          38,
+          33
+        ],
+        "hue": 35,
+        "saturation": 0.2,
+        "foliage": "bare",
+        "cutoff": 0.5
+      },
+      "materials": [
+        "tree1",
+        "branches"
+      ]
+    },
+    {
+      "id": "tree_bare_02",
+      "source": "packs/trees.glb#tree2",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "pack": "trees",
+      "category": "tree-bare",
+      "sourceTriangles": 3176,
+      "lodTriangles": [
+        1500,
+        500,
+        148
+      ],
+      "sourceHeightM": 7.374,
+      "heightM": 7.339,
+      "scale": 0.01,
+      "atlas": {
+        "size": 1024,
+        "cells": [
+          {
+            "texture": "tree2",
+            "source": 0,
+            "size": 512,
+            "repeat": 1
+          },
+          {
+            "texture": "branches",
+            "source": 1,
+            "size": 512,
+            "repeat": 1
+          }
+        ]
+      },
+      "textures": [
+        {
+          "size": 1024,
+          "format": "webp",
+          "bytes": 50582
+        },
+        {
+          "size": 512,
+          "format": "webp",
+          "bytes": 20782
+        },
+        {
+          "size": 256,
+          "format": "webp",
+          "bytes": 7694
+        }
+      ],
+      "alpha": {
+        "triangleShare": 0.11335012594458438,
+        "meanRgb": [
+          41.4,
+          38,
+          33
+        ],
+        "hue": 35,
+        "saturation": 0.2,
+        "foliage": "bare",
+        "cutoff": 0.5
+      },
+      "materials": [
+        "tree2",
+        "branches"
+      ]
+    },
+    {
+      "id": "tree_bare_03",
+      "source": "packs/trees.glb#tree3",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "pack": "trees",
+      "category": "tree-bare",
+      "sourceTriangles": 3328,
+      "lodTriangles": [
+        1500,
+        498,
+        136
+      ],
+      "sourceHeightM": 7.331,
+      "heightM": 7.331,
+      "scale": 0.01,
+      "atlas": {
+        "size": 1024,
+        "cells": [
+          {
+            "texture": "tree3",
+            "source": 0,
+            "size": 512,
+            "repeat": 1
+          },
+          {
+            "texture": "branches",
+            "source": 1,
+            "size": 512,
+            "repeat": 1
+          }
+        ]
+      },
+      "textures": [
+        {
+          "size": 1024,
+          "format": "webp",
+          "bytes": 54066
+        },
+        {
+          "size": 512,
+          "format": "webp",
+          "bytes": 21738
+        },
+        {
+          "size": 256,
+          "format": "webp",
+          "bytes": 7914
+        }
+      ],
+      "alpha": {
+        "triangleShare": 0.14423076923076922,
+        "meanRgb": [
+          41.4,
+          38,
+          33
+        ],
+        "hue": 35,
+        "saturation": 0.2,
+        "foliage": "bare",
+        "cutoff": 0.5
+      },
+      "materials": [
+        "tree3",
+        "branches"
+      ]
+    },
+    {
+      "id": "tree_oak_01",
+      "source": "packs/oak_trees.glb#Treesmall",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "pack": "oak_trees",
+      "category": "tree-leafy",
+      "sourceTriangles": 3783,
+      "lodTriangles": [
+        1486,
+        498,
+        147
+      ],
+      "sourceHeightM": 3.91,
+      "heightM": 7,
+      "scale": 0.017901,
+      "atlas": {
+        "size": 1024,
+        "cells": [
+          {
+            "texture": "bark1",
+            "source": 0,
+            "size": 512,
+            "repeat": 3
+          },
+          {
+            "texture": "leaf1",
+            "source": 1,
+            "size": 512,
+            "repeat": 1
+          }
+        ]
+      },
+      "textures": [
+        {
+          "size": 1024,
+          "format": "webp",
+          "bytes": 163412
+        },
+        {
+          "size": 512,
+          "format": "webp",
+          "bytes": 55342
+        },
+        {
+          "size": 256,
+          "format": "webp",
+          "bytes": 17204
+        }
+      ],
+      "alpha": {
+        "triangleShare": 0.10362146444620672,
+        "meanRgb": [
+          121.3,
+          116.7,
+          50.2
+        ],
+        "hue": 56,
+        "saturation": 0.59,
+        "foliage": "leafy",
+        "cutoff": 0.6541539634146342
+      },
+      "materials": [
+        "bark1",
+        "leaf1"
+      ]
+    },
+    {
+      "id": "tree_oak_02",
+      "source": "packs/oak_trees.glb#Treemedium",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "pack": "oak_trees",
+      "category": "tree-leafy",
+      "sourceTriangles": 2951,
+      "lodTriangles": [
+        1458,
+        495,
+        147
+      ],
+      "sourceHeightM": 5.586,
+      "heightM": 10,
+      "scale": 0.017901,
+      "atlas": {
+        "size": 1024,
+        "cells": [
+          {
+            "texture": "bark1",
+            "source": 0,
+            "size": 512,
+            "repeat": 2
+          },
+          {
+            "texture": "leaf1",
+            "source": 1,
+            "size": 512,
+            "repeat": 1
+          }
+        ]
+      },
+      "textures": [
+        {
+          "size": 1024,
+          "format": "webp",
+          "bytes": 166228
+        },
+        {
+          "size": 512,
+          "format": "webp",
+          "bytes": 54770
+        },
+        {
+          "size": 256,
+          "format": "webp",
+          "bytes": 17458
+        }
+      ],
+      "alpha": {
+        "triangleShare": 0.3381904439173162,
+        "meanRgb": [
+          121.3,
+          116.7,
+          50.2
+        ],
+        "hue": 56,
+        "saturation": 0.59,
+        "foliage": "leafy",
+        "cutoff": 0.6541539634146342
+      },
+      "materials": [
+        "bark1",
+        "leaf1"
+      ]
+    },
+    {
+      "id": "tree_oak_03",
+      "source": "packs/oak_trees.glb#treelarge",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "pack": "oak_trees",
+      "category": "tree-leafy",
+      "sourceTriangles": 7741,
+      "lodTriangles": [
+        1471,
+        497,
+        146
+      ],
+      "sourceHeightM": 7.792,
+      "heightM": 13,
+      "scale": 0.016684,
+      "atlas": {
+        "size": 1024,
+        "cells": [
+          {
+            "texture": "bark1",
+            "source": 0,
+            "size": 512,
+            "repeat": 2
+          },
+          {
+            "texture": "leaf1",
+            "source": 1,
+            "size": 512,
+            "repeat": 1
+          }
+        ]
+      },
+      "textures": [
+        {
+          "size": 1024,
+          "format": "webp",
+          "bytes": 166228
+        },
+        {
+          "size": 512,
+          "format": "webp",
+          "bytes": 54770
+        },
+        {
+          "size": 256,
+          "format": "webp",
+          "bytes": 17458
+        }
+      ],
+      "alpha": {
+        "triangleShare": 0.2285234465831288,
+        "meanRgb": [
+          121.3,
+          116.7,
+          50.2
+        ],
+        "hue": 56,
+        "saturation": 0.59,
+        "foliage": "leafy",
+        "cutoff": 0.6541539634146342
+      },
+      "materials": [
+        "bark1",
+        "leaf1"
+      ]
+    },
+    {
+      "id": "tree_pine_01",
+      "source": "packs/more_trees.glb#tree1",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "pack": "more_trees",
+      "category": "tree-leafy",
+      "sourceTriangles": 1612,
+      "lodTriangles": [
+        1500,
+        488,
+        130
+      ],
+      "sourceHeightM": 9.386,
+      "heightM": 9.386,
+      "scale": 0.01,
+      "atlas": {
+        "size": 1024,
+        "cells": [
+          {
+            "texture": "bark1",
+            "source": 0,
+            "size": 512,
+            "repeat": 2
+          },
+          {
+            "texture": "pinebranch",
+            "source": 1,
+            "size": 512,
+            "repeat": 1
+          }
+        ]
+      },
+      "textures": [
+        {
+          "size": 1024,
+          "format": "webp",
+          "bytes": 95002
+        },
+        {
+          "size": 512,
+          "format": "webp",
+          "bytes": 33682
+        },
+        {
+          "size": 256,
+          "format": "webp",
+          "bytes": 11178
+        }
+      ],
+      "alpha": {
+        "triangleShare": 0.5359801488833746,
+        "meanRgb": [
+          106.5,
+          89.6,
+          56.3
+        ],
+        "hue": 40,
+        "saturation": 0.47,
+        "foliage": "leafy",
+        "cutoff": 0.8736661585
+      },
+      "materials": [
+        "bark1",
+        "pinebranch"
+      ]
+    },
+    {
+      "id": "tree_pine_02",
+      "source": "packs/more_trees.glb#tree2",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "pack": "more_trees",
+      "category": "tree-leafy",
+      "sourceTriangles": 1718,
+      "lodTriangles": [
+        1499,
+        487,
+        130
+      ],
+      "sourceHeightM": 12.932,
+      "heightM": 12.932,
+      "scale": 0.01,
+      "atlas": {
+        "size": 1024,
+        "cells": [
+          {
+            "texture": "bark1",
+            "source": 0,
+            "size": 512,
+            "repeat": 2
+          },
+          {
+            "texture": "pinebranch",
+            "source": 1,
+            "size": 512,
+            "repeat": 1
+          }
+        ]
+      },
+      "textures": [
+        {
+          "size": 1024,
+          "format": "webp",
+          "bytes": 95002
+        },
+        {
+          "size": 512,
+          "format": "webp",
+          "bytes": 33682
+        },
+        {
+          "size": 256,
+          "format": "webp",
+          "bytes": 11178
+        }
+      ],
+      "alpha": {
+        "triangleShare": 0.5168800931315483,
+        "meanRgb": [
+          106.5,
+          89.6,
+          56.3
+        ],
+        "hue": 40,
+        "saturation": 0.47,
+        "foliage": "leafy",
+        "cutoff": 0.8736661585
+      },
+      "materials": [
+        "bark1",
+        "pinebranch"
+      ]
+    },
+    {
+      "id": "tree_pine_03",
+      "source": "packs/more_trees.glb#tree3",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "pack": "more_trees",
+      "category": "tree-leafy",
+      "sourceTriangles": 1432,
+      "lodTriangles": [
+        1432,
+        488,
+        131
+      ],
+      "sourceHeightM": 5.35,
+      "heightM": 6.5,
+      "scale": 0.012149,
+      "atlas": {
+        "size": 1024,
+        "cells": [
+          {
+            "texture": "bark1",
+            "source": 0,
+            "size": 512,
+            "repeat": 2
+          },
+          {
+            "texture": "pinebranch",
+            "source": 1,
+            "size": 512,
+            "repeat": 1
+          }
+        ]
+      },
+      "textures": [
+        {
+          "size": 1024,
+          "format": "webp",
+          "bytes": 95002
+        },
+        {
+          "size": 512,
+          "format": "webp",
+          "bytes": 33682
+        },
+        {
+          "size": 256,
+          "format": "webp",
+          "bytes": 11178
+        }
+      ],
+      "alpha": {
+        "triangleShare": 0.4860335195530726,
+        "meanRgb": [
+          106.5,
+          89.6,
+          56.3
+        ],
+        "hue": 40,
+        "saturation": 0.47,
+        "foliage": "leafy",
+        "cutoff": 0.8736661585
+      },
+      "materials": [
+        "bark1",
+        "pinebranch"
+      ]
+    },
+    {
+      "id": "treehigh001",
+      "source": "props/TreeHigh001.glb",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "sourceTriangles": 34,
+      "lodTriangles": [
+        34,
+        34,
+        34
+      ],
+      "sourceBones": 0,
+      "bones": 0,
+      "prunedBones": [],
+      "channelsDropped": 0,
+      "clipsKept": {},
+      "clipsDropped": [],
+      "extraUvSetsRemoved": 0,
+      "scale": 0.01
+    },
+    {
+      "id": "treelow001",
+      "source": "props/TreeLow001.glb",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "sourceTriangles": 34,
+      "lodTriangles": [
+        34,
+        34,
+        34
+      ],
+      "sourceBones": 0,
+      "bones": 0,
+      "prunedBones": [],
+      "channelsDropped": 0,
+      "clipsKept": {},
+      "clipsDropped": [],
+      "extraUvSetsRemoved": 0,
+      "scale": 0.01
+    },
+    {
+      "id": "treemed001",
+      "source": "props/TreeMed001.glb",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "sourceTriangles": 52,
+      "lodTriangles": [
+        52,
+        52,
+        52
+      ],
+      "sourceBones": 0,
+      "bones": 0,
+      "prunedBones": [],
+      "channelsDropped": 0,
+      "clipsKept": {},
+      "clipsDropped": [],
+      "extraUvSetsRemoved": 0,
+      "scale": 0.01
+    },
+    {
+      "id": "wall_wood_01",
+      "source": "packs/wood_walls.glb#woodwall1",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "pack": "wood_walls",
+      "category": "structure",
+      "sourceTriangles": 80,
+      "lodTriangles": [
+        80,
+        80,
+        80
+      ],
+      "sourceHeightM": 5.011,
+      "heightM": 3,
+      "scale": 0.005987,
+      "atlas": {
+        "size": 1024,
+        "cells": [
+          {
+            "texture": "wood",
+            "source": 0,
+            "size": 1024,
+            "repeat": 2
+          }
+        ]
+      },
+      "textures": [
+        {
+          "size": 1024,
+          "format": "jpeg",
+          "bytes": 182465
+        },
+        {
+          "size": 512,
+          "format": "jpeg",
+          "bytes": 39524
+        },
+        {
+          "size": 256,
+          "format": "jpeg",
+          "bytes": 8813
+        }
+      ],
+      "alpha": {
+        "triangleShare": 0,
+        "meanRgb": [
+          0,
+          0,
+          0
+        ],
+        "hue": 0,
+        "saturation": 0,
+        "foliage": "none",
+        "cutoff": 0.5
+      },
+      "materials": [
+        "wood"
+      ]
+    },
+    {
+      "id": "wall_wood_02",
+      "source": "packs/wood_walls.glb#woodwall2",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "pack": "wood_walls",
+      "category": "structure",
+      "sourceTriangles": 328,
+      "lodTriangles": [
+        328,
+        328,
+        116
+      ],
+      "sourceHeightM": 6.137,
+      "heightM": 3,
+      "scale": 0.004888,
+      "atlas": {
+        "size": 1024,
+        "cells": [
+          {
+            "texture": "wood",
+            "source": 0,
+            "size": 1024,
+            "repeat": 2
+          }
+        ]
+      },
+      "textures": [
+        {
+          "size": 1024,
+          "format": "jpeg",
+          "bytes": 182465
+        },
+        {
+          "size": 512,
+          "format": "jpeg",
+          "bytes": 39524
+        },
+        {
+          "size": 256,
+          "format": "jpeg",
+          "bytes": 8813
+        }
+      ],
+      "alpha": {
+        "triangleShare": 0,
+        "meanRgb": [
+          0,
+          0,
+          0
+        ],
+        "hue": 0,
+        "saturation": 0,
+        "foliage": "none",
+        "cutoff": 0.5
+      },
+      "materials": [
+        "wood"
+      ]
+    },
+    {
+      "id": "wall_wood_03",
+      "source": "packs/wood_walls.glb#woodwall3",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "pack": "wood_walls",
+      "category": "structure",
+      "sourceTriangles": 152,
+      "lodTriangles": [
+        152,
+        152,
+        120
+      ],
+      "sourceHeightM": 6.805,
+      "heightM": 3,
+      "scale": 0.004408,
+      "atlas": {
+        "size": 1024,
+        "cells": [
+          {
+            "texture": "wood",
+            "source": 0,
+            "size": 1024,
+            "repeat": 2
+          }
+        ]
+      },
+      "textures": [
+        {
+          "size": 1024,
+          "format": "jpeg",
+          "bytes": 182465
+        },
+        {
+          "size": 512,
+          "format": "jpeg",
+          "bytes": 39524
+        },
+        {
+          "size": 256,
+          "format": "jpeg",
+          "bytes": 8813
+        }
+      ],
+      "alpha": {
+        "triangleShare": 0,
+        "meanRgb": [
+          0,
+          0,
+          0
+        ],
+        "hue": 0,
+        "saturation": 0,
+        "foliage": "none",
+        "cutoff": 0.5
+      },
+      "materials": [
+        "wood"
+      ]
+    },
+    {
+      "id": "wall_wood_04",
+      "source": "packs/wood_walls.glb#woodwall4",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "pack": "wood_walls",
+      "category": "structure",
+      "sourceTriangles": 256,
+      "lodTriangles": [
+        256,
+        256,
+        120
+      ],
+      "sourceHeightM": 5.233,
+      "heightM": 3,
+      "scale": 0.005733,
+      "atlas": {
+        "size": 1024,
+        "cells": [
+          {
+            "texture": "wood",
+            "source": 0,
+            "size": 1024,
+            "repeat": 1
+          }
+        ]
+      },
+      "textures": [
+        {
+          "size": 1024,
+          "format": "jpeg",
+          "bytes": 209554
+        },
+        {
+          "size": 512,
+          "format": "jpeg",
+          "bytes": 46009
+        },
+        {
+          "size": 256,
+          "format": "jpeg",
+          "bytes": 10032
+        }
+      ],
+      "alpha": {
+        "triangleShare": 0,
+        "meanRgb": [
+          0,
+          0,
+          0
+        ],
+        "hue": 0,
+        "saturation": 0,
+        "foliage": "none",
+        "cutoff": 0.5
+      },
+      "materials": [
+        "wood"
+      ]
+    },
+    {
+      "id": "watchtower_01",
+      "source": "packs/outpost.glb#outpost",
+      "errors": [],
+      "warnings": [],
+      "kind": "prop",
+      "pack": "outpost",
+      "category": "structure",
+      "sourceTriangles": 474,
+      "lodTriangles": [
+        474,
+        400,
+        120
+      ],
+      "sourceHeightM": 13.06,
+      "heightM": 8,
+      "scale": 0.006126,
+      "atlas": {
+        "size": 1024,
+        "cells": [
+          {
+            "texture": "wood",
+            "source": 0,
+            "size": 1024,
+            "repeat": 3
+          }
+        ]
+      },
+      "textures": [
+        {
+          "size": 1024,
+          "format": "jpeg",
+          "bytes": 73572
+        },
+        {
+          "size": 512,
+          "format": "jpeg",
+          "bytes": 20014
+        },
+        {
+          "size": 256,
+          "format": "jpeg",
+          "bytes": 5807
+        }
+      ],
+      "alpha": {
+        "triangleShare": 0,
+        "meanRgb": [
+          0,
+          0,
+          0
+        ],
+        "hue": 0,
+        "saturation": 0,
+        "foliage": "none",
+        "cutoff": 0.5
+      },
+      "materials": [
+        "wood"
+      ]
+    }
+  ]
+}

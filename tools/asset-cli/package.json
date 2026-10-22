@@ -1,8 +1,29 @@
 {
   "name": "@crawlout/asset-cli",
-  "version": "0.0.1",
+  "version": "0.13.0",
   "private": true,
+  "exports": {
+    ".": "./src/index.ts",
+    "./manifest": "./src/manifest.ts",
+    "./heightfield": "./src/heightfield.ts"
+  },
   "type": "module",
-  "scripts": { "build-assets": "node --import tsx src/index.ts", "test": "vitest run" },
-  "devDependencies": { "tsx": "^4.0.0" }
+  "scripts": {
+    "build-assets": "node --import tsx src/cli.ts",
+    "terrain": "node --import tsx src/terrain-cli.ts",
+    "sites": "node --import tsx scripts/gen-sites.ts && prettier --write '../../assets/src/sites/*.json'",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "tsx": "^4.0.0"
+  },
+  "dependencies": {
+    "@crawlout/protocol": "workspace:*",
+    "@gltf-transform/core": "^4.5.1",
+    "@gltf-transform/extensions": "^4.5.1",
+    "@gltf-transform/functions": "^4.5.1",
+    "meshoptimizer": "^1.3.0",
+    "sharp": "^0.35.5",
+    "zod": "^3.23.0"
+  }
 }

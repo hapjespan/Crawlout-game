@@ -1,0 +1,6398 @@
+{
+  "version": 1,
+  "assets": [
+    {
+      "id": "barrel_01",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.350303,
+          0,
+          -0.350303
+        ],
+        "max": [
+          0.350303,
+          0.9,
+          0.350303
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "barrel_01/lod0.glb",
+          "triangles": 600
+        },
+        {
+          "level": 1,
+          "path": "barrel_01/lod1.glb",
+          "triangles": 250
+        },
+        {
+          "level": 2,
+          "path": "barrel_01/lod2.glb",
+          "triangles": 80
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none",
+      "category": "barrel"
+    },
+    {
+      "id": "bush001",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -1.431485,
+          0,
+          -1.431485
+        ],
+        "max": [
+          1.431485,
+          1.395916,
+          1.431485
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "bush001/lod0.glb",
+          "triangles": 48
+        },
+        {
+          "level": 1,
+          "path": "bush001/lod1.glb",
+          "triangles": 48
+        },
+        {
+          "level": 2,
+          "path": "bush001/lod2.glb",
+          "triangles": 48
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "materialName"
+    },
+    {
+      "id": "bush002",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -1.689578,
+          0,
+          -1.599323
+        ],
+        "max": [
+          1.689578,
+          1.655947,
+          1.599323
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "bush002/lod0.glb",
+          "triangles": 48
+        },
+        {
+          "level": 1,
+          "path": "bush002/lod1.glb",
+          "triangles": 48
+        },
+        {
+          "level": 2,
+          "path": "bush002/lod2.glb",
+          "triangles": 48
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "materialName"
+    },
+    {
+      "id": "chest_01",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.461568,
+          0,
+          -0.192996
+        ],
+        "max": [
+          0.461784,
+          0.545787,
+          0.190817
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "chest_01/lod0.glb",
+          "triangles": 800
+        },
+        {
+          "level": 1,
+          "path": "chest_01/lod1.glb",
+          "triangles": 294
+        },
+        {
+          "level": 2,
+          "path": "chest_01/lod2.glb",
+          "triangles": 100
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none",
+      "category": "chest"
+    },
+    {
+      "id": "chest_02",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.435819,
+          0,
+          -0.311674
+        ],
+        "max": [
+          0.435819,
+          0.3,
+          0.311674
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "chest_02/lod0.glb",
+          "triangles": 256
+        },
+        {
+          "level": 1,
+          "path": "chest_02/lod1.glb",
+          "triangles": 256
+        },
+        {
+          "level": 2,
+          "path": "chest_02/lod2.glb",
+          "triangles": 100
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none",
+      "category": "chest"
+    },
+    {
+      "id": "chest_03",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.435819,
+          0,
+          -0.311674
+        ],
+        "max": [
+          0.435819,
+          0.3,
+          0.311674
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "chest_03/lod0.glb",
+          "triangles": 256
+        },
+        {
+          "level": 1,
+          "path": "chest_03/lod1.glb",
+          "triangles": 256
+        },
+        {
+          "level": 2,
+          "path": "chest_03/lod2.glb",
+          "triangles": 100
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none",
+      "category": "chest"
+    },
+    {
+      "id": "crate_01",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.45,
+          0,
+          -0.45
+        ],
+        "max": [
+          0.45,
+          0.9,
+          0.45
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "crate_01/lod0.glb",
+          "triangles": 260
+        },
+        {
+          "level": 1,
+          "path": "crate_01/lod1.glb",
+          "triangles": 200
+        },
+        {
+          "level": 2,
+          "path": "crate_01/lod2.glb",
+          "triangles": 80
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none",
+      "category": "crate"
+    },
+    {
+      "id": "debris_barrel_01",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.340908,
+          0,
+          -0.330739
+        ],
+        "max": [
+          0.340908,
+          0.799896,
+          0.330739
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "debris_barrel_01/lod0.glb",
+          "triangles": 400
+        },
+        {
+          "level": 1,
+          "path": "debris_barrel_01/lod1.glb",
+          "triangles": 150
+        },
+        {
+          "level": 2,
+          "path": "debris_barrel_01/lod2.glb",
+          "triangles": 46
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none",
+      "category": "debris"
+    },
+    {
+      "id": "debris_chair_01",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.245047,
+          0,
+          -0.271059
+        ],
+        "max": [
+          0.245047,
+          0.9,
+          0.271059
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "debris_chair_01/lod0.glb",
+          "triangles": 400
+        },
+        {
+          "level": 1,
+          "path": "debris_chair_01/lod1.glb",
+          "triangles": 150
+        },
+        {
+          "level": 2,
+          "path": "debris_chair_01/lod2.glb",
+          "triangles": 50
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none",
+      "category": "debris"
+    },
+    {
+      "id": "debris_crate_01",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.579503,
+          0,
+          -0.689982
+        ],
+        "max": [
+          0.579503,
+          0.9,
+          0.689982
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "debris_crate_01/lod0.glb",
+          "triangles": 120
+        },
+        {
+          "level": 1,
+          "path": "debris_crate_01/lod1.glb",
+          "triangles": 120
+        },
+        {
+          "level": 2,
+          "path": "debris_crate_01/lod2.glb",
+          "triangles": 50
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none",
+      "category": "debris"
+    },
+    {
+      "id": "debris_pallet_01",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.415729,
+          0,
+          -0.6
+        ],
+        "max": [
+          0.415729,
+          0.168373,
+          0.6
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "debris_pallet_01/lod0.glb",
+          "triangles": 240
+        },
+        {
+          "level": 1,
+          "path": "debris_pallet_01/lod1.glb",
+          "triangles": 150
+        },
+        {
+          "level": 2,
+          "path": "debris_pallet_01/lod2.glb",
+          "triangles": 50
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none",
+      "category": "debris"
+    },
+    {
+      "id": "debris_pallet_02",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.438917,
+          0,
+          -0.6
+        ],
+        "max": [
+          0.438917,
+          0.316652,
+          0.6
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "debris_pallet_02/lod0.glb",
+          "triangles": 400
+        },
+        {
+          "level": 1,
+          "path": "debris_pallet_02/lod1.glb",
+          "triangles": 150
+        },
+        {
+          "level": 2,
+          "path": "debris_pallet_02/lod2.glb",
+          "triangles": 50
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none",
+      "category": "debris"
+    },
+    {
+      "id": "debris_table_01",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.785763,
+          0,
+          -0.479697
+        ],
+        "max": [
+          0.785763,
+          0.75,
+          0.479697
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "debris_table_01/lod0.glb",
+          "triangles": 400
+        },
+        {
+          "level": 1,
+          "path": "debris_table_01/lod1.glb",
+          "triangles": 150
+        },
+        {
+          "level": 2,
+          "path": "debris_table_01/lod2.glb",
+          "triangles": 50
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none",
+      "category": "debris"
+    },
+    {
+      "id": "dweller_armor_composite",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.37,
+          0.98,
+          -0.225
+        ],
+        "max": [
+          0.37,
+          1.555,
+          0.15
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "dweller_armor_composite/lod0.glb",
+          "triangles": 244
+        },
+        {
+          "level": 1,
+          "path": "dweller_armor_composite/lod1.glb",
+          "triangles": 84
+        },
+        {
+          "level": 2,
+          "path": "dweller_armor_composite/lod2.glb",
+          "triangles": 54
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none"
+    },
+    {
+      "id": "dweller_body_human",
+      "kind": "character",
+      "bounds": {
+        "min": [
+          -0.969676,
+          0.002415,
+          -0.162106
+        ],
+        "max": [
+          0.97012,
+          1.827399,
+          0.202271
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "dweller_body_human/lod0.glb",
+          "triangles": 3598
+        },
+        {
+          "level": 1,
+          "path": "dweller_body_human/lod1.glb",
+          "triangles": 1348
+        },
+        {
+          "level": 2,
+          "path": "dweller_body_human/lod2.glb",
+          "triangles": 492
+        }
+      ],
+      "sockets": {
+        "hand": [
+          -0.7389,
+          1.4408,
+          -0.0654
+        ],
+        "back": [
+          0,
+          1.3148,
+          -0.0049
+        ],
+        "head": [
+          0,
+          1.5687,
+          0.0051
+        ]
+      },
+      "animations": [
+        {
+          "name": "death",
+          "durationSeconds": 2.4
+        },
+        {
+          "name": "build",
+          "durationSeconds": 5.2
+        },
+        {
+          "name": "idle",
+          "durationSeconds": 2.5
+        },
+        {
+          "name": "gather",
+          "durationSeconds": 2
+        },
+        {
+          "name": "run",
+          "durationSeconds": 0.933333
+        },
+        {
+          "name": "attack1",
+          "durationSeconds": 0.633333
+        },
+        {
+          "name": "attack2",
+          "durationSeconds": 1
+        },
+        {
+          "name": "walk",
+          "durationSeconds": 1.333333
+        }
+      ],
+      "boneCount": 20,
+      "teamMask": "materialName",
+      "baked": {
+        "path": "dweller_body_human/dweller_body_human.anim.f32",
+        "width": 80,
+        "height": 480,
+        "fps": 30,
+        "clips": [
+          {
+            "name": "idle",
+            "startRow": 0,
+            "frames": 75,
+            "loop": true,
+            "durationSeconds": 2.5
+          },
+          {
+            "name": "walk",
+            "startRow": 75,
+            "frames": 40,
+            "loop": true,
+            "durationSeconds": 1.333333
+          },
+          {
+            "name": "run",
+            "startRow": 115,
+            "frames": 28,
+            "loop": true,
+            "durationSeconds": 0.933333
+          },
+          {
+            "name": "attack1",
+            "startRow": 143,
+            "frames": 19,
+            "loop": true,
+            "durationSeconds": 0.633333
+          },
+          {
+            "name": "attack2",
+            "startRow": 162,
+            "frames": 30,
+            "loop": true,
+            "durationSeconds": 1
+          },
+          {
+            "name": "gather",
+            "startRow": 192,
+            "frames": 60,
+            "loop": true,
+            "durationSeconds": 2
+          },
+          {
+            "name": "build",
+            "startRow": 252,
+            "frames": 156,
+            "loop": true,
+            "durationSeconds": 5.2
+          },
+          {
+            "name": "death",
+            "startRow": 408,
+            "frames": 72,
+            "loop": false,
+            "durationSeconds": 2.4
+          }
+        ]
+      }
+    },
+    {
+      "id": "dweller_building_beacon",
+      "kind": "building",
+      "bounds": {
+        "min": [
+          -1.5,
+          0,
+          -1.5
+        ],
+        "max": [
+          1.5,
+          7.4,
+          1.5
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "dweller_building_beacon/lod0.glb",
+          "triangles": 132
+        },
+        {
+          "level": 1,
+          "path": "dweller_building_beacon/lod1.glb",
+          "triangles": 132
+        },
+        {
+          "level": 2,
+          "path": "dweller_building_beacon/lod2.glb",
+          "triangles": 132
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "footprint": {
+        "w": 3,
+        "h": 3
+      },
+      "teamMaterials": [
+        "team_trim"
+      ]
+    },
+    {
+      "id": "dweller_building_claim_post",
+      "kind": "building",
+      "bounds": {
+        "min": [
+          -0.5,
+          0,
+          -0.5
+        ],
+        "max": [
+          0.5,
+          5.45,
+          0.5
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "dweller_building_claim_post/lod0.glb",
+          "triangles": 84
+        },
+        {
+          "level": 1,
+          "path": "dweller_building_claim_post/lod1.glb",
+          "triangles": 84
+        },
+        {
+          "level": 2,
+          "path": "dweller_building_claim_post/lod2.glb",
+          "triangles": 84
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "footprint": {
+        "w": 1,
+        "h": 1
+      },
+      "teamMaterials": [
+        "team_trim"
+      ]
+    },
+    {
+      "id": "dweller_building_housing",
+      "kind": "building",
+      "bounds": {
+        "min": [
+          -6.08,
+          0,
+          -9.469282
+        ],
+        "max": [
+          6.061815,
+          9.993019,
+          9.297614
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "dweller_building_housing/lod0.glb",
+          "triangles": 2469
+        },
+        {
+          "level": 1,
+          "path": "dweller_building_housing/lod1.glb",
+          "triangles": 995
+        },
+        {
+          "level": 2,
+          "path": "dweller_building_housing/lod2.glb",
+          "triangles": 146
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "footprint": {
+        "w": 13,
+        "h": 19
+      },
+      "teamMaterials": [
+        "team_trim"
+      ]
+    },
+    {
+      "id": "dweller_building_hq",
+      "kind": "building",
+      "bounds": {
+        "min": [
+          -10.461815,
+          0,
+          -9.297614
+        ],
+        "max": [
+          8.8,
+          13.1,
+          9.297614
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "dweller_building_hq/lod0.glb",
+          "triangles": 2343
+        },
+        {
+          "level": 1,
+          "path": "dweller_building_hq/lod1.glb",
+          "triangles": 942
+        },
+        {
+          "level": 2,
+          "path": "dweller_building_hq/lod2.glb",
+          "triangles": 278
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "footprint": {
+        "w": 21,
+        "h": 21
+      },
+      "teamMaterials": [
+        "team_trim"
+      ]
+    },
+    {
+      "id": "dweller_building_lab",
+      "kind": "building",
+      "bounds": {
+        "min": [
+          -8.461815,
+          0,
+          -9.297614
+        ],
+        "max": [
+          7,
+          9.993019,
+          9.297614
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "dweller_building_lab/lod0.glb",
+          "triangles": 1985
+        },
+        {
+          "level": 1,
+          "path": "dweller_building_lab/lod1.glb",
+          "triangles": 795
+        },
+        {
+          "level": 2,
+          "path": "dweller_building_lab/lod2.glb",
+          "triangles": 222
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "footprint": {
+        "w": 17,
+        "h": 19
+      },
+      "teamMaterials": [
+        "team_trim"
+      ]
+    },
+    {
+      "id": "dweller_building_robotfactory",
+      "kind": "building",
+      "bounds": {
+        "min": [
+          -7.52,
+          0,
+          -6.4
+        ],
+        "max": [
+          7.4,
+          9.6,
+          6.85
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "dweller_building_robotfactory/lod0.glb",
+          "triangles": 2166
+        },
+        {
+          "level": 1,
+          "path": "dweller_building_robotfactory/lod1.glb",
+          "triangles": 806
+        },
+        {
+          "level": 2,
+          "path": "dweller_building_robotfactory/lod2.glb",
+          "triangles": 166
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "footprint": {
+        "w": 15,
+        "h": 13
+      },
+      "teamMaterials": [
+        "team_trim"
+      ]
+    },
+    {
+      "id": "dweller_building_training",
+      "kind": "building",
+      "bounds": {
+        "min": [
+          -10.461815,
+          0,
+          -9.42
+        ],
+        "max": [
+          10.42,
+          9.993019,
+          9.42
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "dweller_building_training/lod0.glb",
+          "triangles": 1994
+        },
+        {
+          "level": 1,
+          "path": "dweller_building_training/lod1.glb",
+          "triangles": 795
+        },
+        {
+          "level": 2,
+          "path": "dweller_building_training/lod2.glb",
+          "triangles": 122
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "footprint": {
+        "w": 21,
+        "h": 19
+      },
+      "teamMaterials": [
+        "team_trim"
+      ]
+    },
+    {
+      "id": "dweller_building_turret",
+      "kind": "building",
+      "bounds": {
+        "min": [
+          -1.5,
+          0,
+          -1.5
+        ],
+        "max": [
+          1.5,
+          2.72,
+          1.5
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "dweller_building_turret/lod0.glb",
+          "triangles": 176
+        },
+        {
+          "level": 1,
+          "path": "dweller_building_turret/lod1.glb",
+          "triangles": 176
+        },
+        {
+          "level": 2,
+          "path": "dweller_building_turret/lod2.glb",
+          "triangles": 176
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "footprint": {
+        "w": 3,
+        "h": 3
+      },
+      "teamMaterials": [
+        "team_trim"
+      ]
+    },
+    {
+      "id": "dweller_building_turret_laser",
+      "kind": "building",
+      "bounds": {
+        "min": [
+          -1.5,
+          0,
+          -1.5
+        ],
+        "max": [
+          1.5,
+          3.16,
+          1.6
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "dweller_building_turret_laser/lod0.glb",
+          "triangles": 1034
+        },
+        {
+          "level": 1,
+          "path": "dweller_building_turret_laser/lod1.glb",
+          "triangles": 388
+        },
+        {
+          "level": 2,
+          "path": "dweller_building_turret_laser/lod2.glb",
+          "triangles": 152
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "footprint": {
+        "w": 3,
+        "h": 3
+      },
+      "teamMaterials": [
+        "team_trim"
+      ]
+    },
+    {
+      "id": "dweller_building_workshop",
+      "kind": "building",
+      "bounds": {
+        "min": [
+          -9.297614,
+          0,
+          -8.661815
+        ],
+        "max": [
+          9.39,
+          6.25,
+          8.7
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "dweller_building_workshop/lod0.glb",
+          "triangles": 1879
+        },
+        {
+          "level": 1,
+          "path": "dweller_building_workshop/lod1.glb",
+          "triangles": 754
+        },
+        {
+          "level": 2,
+          "path": "dweller_building_workshop/lod2.glb",
+          "triangles": 92
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "footprint": {
+        "w": 21,
+        "h": 19
+      },
+      "teamMaterials": [
+        "team_trim"
+      ]
+    },
+    {
+      "id": "dweller_robot_builder",
+      "kind": "rigid-unit",
+      "bounds": {
+        "min": [
+          -0.545,
+          0,
+          -0.55
+        ],
+        "max": [
+          0.545,
+          1.97,
+          0.67
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "dweller_robot_builder/lod0.glb",
+          "triangles": 1832
+        },
+        {
+          "level": 1,
+          "path": "dweller_robot_builder/lod1.glb",
+          "triangles": 732
+        },
+        {
+          "level": 2,
+          "path": "dweller_robot_builder/lod2.glb",
+          "triangles": 270
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMaterials": [
+        "team_trim"
+      ],
+      "teamMask": "materialName",
+      "rigid": true
+    },
+    {
+      "id": "dweller_robot_drone",
+      "kind": "rigid-unit",
+      "bounds": {
+        "min": [
+          -0.47,
+          1.3,
+          -0.5
+        ],
+        "max": [
+          0.47,
+          2.14,
+          0.78
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "dweller_robot_drone/lod0.glb",
+          "triangles": 956
+        },
+        {
+          "level": 1,
+          "path": "dweller_robot_drone/lod1.glb",
+          "triangles": 508
+        },
+        {
+          "level": 2,
+          "path": "dweller_robot_drone/lod2.glb",
+          "triangles": 200
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMaterials": [
+        "team_trim"
+      ],
+      "teamMask": "materialName",
+      "rigid": true,
+      "hover": 1.3
+    },
+    {
+      "id": "dweller_robot_guard",
+      "kind": "rigid-unit",
+      "bounds": {
+        "min": [
+          -1.5,
+          0,
+          -1.611731
+        ],
+        "max": [
+          1.5,
+          2.2,
+          1.9
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "dweller_robot_guard/lod0.glb",
+          "triangles": 1946
+        },
+        {
+          "level": 1,
+          "path": "dweller_robot_guard/lod1.glb",
+          "triangles": 538
+        },
+        {
+          "level": 2,
+          "path": "dweller_robot_guard/lod2.glb",
+          "triangles": 202
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMaterials": [
+        "team_trim"
+      ],
+      "teamMask": "materialName",
+      "rigid": true
+    },
+    {
+      "id": "dweller_robot_sentinel",
+      "kind": "rigid-unit",
+      "bounds": {
+        "min": [
+          -2.04,
+          0,
+          -2.208198
+        ],
+        "max": [
+          2.04,
+          3.5,
+          4.2
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "dweller_robot_sentinel/lod0.glb",
+          "triangles": 1952
+        },
+        {
+          "level": 1,
+          "path": "dweller_robot_sentinel/lod1.glb",
+          "triangles": 486
+        },
+        {
+          "level": 2,
+          "path": "dweller_robot_sentinel/lod2.glb",
+          "triangles": 178
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMaterials": [
+        "team_trim"
+      ],
+      "teamMask": "materialName",
+      "rigid": true
+    },
+    {
+      "id": "dweller_tool_hammer",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.145,
+          -0.045,
+          -0.14
+        ],
+        "max": [
+          0.145,
+          0.045,
+          0.385
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "dweller_tool_hammer/lod0.glb",
+          "triangles": 156
+        },
+        {
+          "level": 1,
+          "path": "dweller_tool_hammer/lod1.glb",
+          "triangles": 128
+        },
+        {
+          "level": 2,
+          "path": "dweller_tool_hammer/lod2.glb",
+          "triangles": 68
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none"
+    },
+    {
+      "id": "dweller_tool_multitool",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.07,
+          -0.035,
+          -0.14
+        ],
+        "max": [
+          0.07,
+          0.055,
+          0.285
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "dweller_tool_multitool/lod0.glb",
+          "triangles": 184
+        },
+        {
+          "level": 1,
+          "path": "dweller_tool_multitool/lod1.glb",
+          "triangles": 144
+        },
+        {
+          "level": 2,
+          "path": "dweller_tool_multitool/lod2.glb",
+          "triangles": 72
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none"
+    },
+    {
+      "id": "dweller_tool_scrapbag",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.155,
+          -0.45,
+          -0.076
+        ],
+        "max": [
+          0.155,
+          0.224667,
+          0.13
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "dweller_tool_scrapbag/lod0.glb",
+          "triangles": 204
+        },
+        {
+          "level": 1,
+          "path": "dweller_tool_scrapbag/lod1.glb",
+          "triangles": 132
+        },
+        {
+          "level": 2,
+          "path": "dweller_tool_scrapbag/lod2.glb",
+          "triangles": 72
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none"
+    },
+    {
+      "id": "dweller_weapon_club",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.054,
+          -0.051357,
+          -0.2
+        ],
+        "max": [
+          0.054,
+          0.051357,
+          0.825
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "dweller_weapon_club/lod0.glb",
+          "triangles": 304
+        },
+        {
+          "level": 1,
+          "path": "dweller_weapon_club/lod1.glb",
+          "triangles": 192
+        },
+        {
+          "level": 2,
+          "path": "dweller_weapon_club/lod2.glb",
+          "triangles": 52
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none"
+    },
+    {
+      "id": "dweller_weapon_patrol_rifle",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.03,
+          -0.16,
+          -0.36
+        ],
+        "max": [
+          0.03,
+          0.143,
+          0.82
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "dweller_weapon_patrol_rifle/lod0.glb",
+          "triangles": 344
+        },
+        {
+          "level": 1,
+          "path": "dweller_weapon_patrol_rifle/lod1.glb",
+          "triangles": 268
+        },
+        {
+          "level": 2,
+          "path": "dweller_weapon_patrol_rifle/lod2.glb",
+          "triangles": 84
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none"
+    },
+    {
+      "id": "dweller_weapon_pipe_pistol",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.023,
+          -0.115,
+          -0.05
+        ],
+        "max": [
+          0.023,
+          0.07,
+          0.32
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "dweller_weapon_pipe_pistol/lod0.glb",
+          "triangles": 180
+        },
+        {
+          "level": 1,
+          "path": "dweller_weapon_pipe_pistol/lod1.glb",
+          "triangles": 104
+        },
+        {
+          "level": 2,
+          "path": "dweller_weapon_pipe_pistol/lod2.glb",
+          "triangles": 72
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none"
+    },
+    {
+      "id": "dweller_weapon_rifle",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.026,
+          -0.15,
+          -0.355
+        ],
+        "max": [
+          0.026,
+          0.127,
+          0.75
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "dweller_weapon_rifle/lod0.glb",
+          "triangles": 280
+        },
+        {
+          "level": 1,
+          "path": "dweller_weapon_rifle/lod1.glb",
+          "triangles": 200
+        },
+        {
+          "level": 2,
+          "path": "dweller_weapon_rifle/lod2.glb",
+          "triangles": 84
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none"
+    },
+    {
+      "id": "dweller_weapon_shotgun",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.037,
+          -0.115,
+          -0.4
+        ],
+        "max": [
+          0.037,
+          0.067,
+          0.7
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "dweller_weapon_shotgun/lod0.glb",
+          "triangles": 256
+        },
+        {
+          "level": 1,
+          "path": "dweller_weapon_shotgun/lod1.glb",
+          "triangles": 184
+        },
+        {
+          "level": 2,
+          "path": "dweller_weapon_shotgun/lod2.glb",
+          "triangles": 84
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none"
+    },
+    {
+      "id": "garde_body_clerk",
+      "kind": "character",
+      "bounds": {
+        "min": [
+          -0.940586,
+          0.002343,
+          -0.157243
+        ],
+        "max": [
+          0.941017,
+          1.772577,
+          0.196202
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "garde_body_clerk/lod0.glb",
+          "triangles": 3598
+        },
+        {
+          "level": 1,
+          "path": "garde_body_clerk/lod1.glb",
+          "triangles": 1349
+        },
+        {
+          "level": 2,
+          "path": "garde_body_clerk/lod2.glb",
+          "triangles": 493
+        }
+      ],
+      "sockets": {
+        "hand": [
+          -0.716733,
+          1.397576,
+          -0.063438
+        ],
+        "back": [
+          0,
+          1.275356,
+          -0.004753
+        ],
+        "head": [
+          0,
+          1.521639,
+          0.004947
+        ]
+      },
+      "animations": [
+        {
+          "name": "death",
+          "durationSeconds": 2.4
+        },
+        {
+          "name": "build",
+          "durationSeconds": 5.2
+        },
+        {
+          "name": "idle",
+          "durationSeconds": 2.5
+        },
+        {
+          "name": "gather",
+          "durationSeconds": 2
+        },
+        {
+          "name": "run",
+          "durationSeconds": 0.933333
+        },
+        {
+          "name": "attack1",
+          "durationSeconds": 0.633333
+        },
+        {
+          "name": "attack2",
+          "durationSeconds": 1
+        },
+        {
+          "name": "walk",
+          "durationSeconds": 1.333333
+        }
+      ],
+      "boneCount": 20,
+      "teamMask": "materialName",
+      "baked": {
+        "path": "garde_body_clerk/garde_body_clerk.anim.f32",
+        "width": 80,
+        "height": 480,
+        "fps": 30,
+        "clips": [
+          {
+            "name": "idle",
+            "startRow": 0,
+            "frames": 75,
+            "loop": true,
+            "durationSeconds": 2.5
+          },
+          {
+            "name": "walk",
+            "startRow": 75,
+            "frames": 40,
+            "loop": true,
+            "durationSeconds": 1.333333
+          },
+          {
+            "name": "run",
+            "startRow": 115,
+            "frames": 28,
+            "loop": true,
+            "durationSeconds": 0.933333
+          },
+          {
+            "name": "attack1",
+            "startRow": 143,
+            "frames": 19,
+            "loop": true,
+            "durationSeconds": 0.633333
+          },
+          {
+            "name": "attack2",
+            "startRow": 162,
+            "frames": 30,
+            "loop": true,
+            "durationSeconds": 1
+          },
+          {
+            "name": "gather",
+            "startRow": 192,
+            "frames": 60,
+            "loop": true,
+            "durationSeconds": 2
+          },
+          {
+            "name": "build",
+            "startRow": 252,
+            "frames": 156,
+            "loop": true,
+            "durationSeconds": 5.2
+          },
+          {
+            "name": "death",
+            "startRow": 408,
+            "frames": 72,
+            "loop": false,
+            "durationSeconds": 2.4
+          }
+        ]
+      },
+      "palette": {
+        "jacket": "#5a3f2c",
+        "patchTop": "#7a2d26",
+        "patchLeg": "#46362a",
+        "belt": "#2b2018",
+        "trousers": "#46362a",
+        "boots": "#2b2523",
+        "skin": "#b08a6e"
+      }
+    },
+    {
+      "id": "garde_body_initiate",
+      "kind": "character",
+      "bounds": {
+        "min": [
+          -0.969676,
+          0.002415,
+          -0.162106
+        ],
+        "max": [
+          0.97012,
+          1.827399,
+          0.202271
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "garde_body_initiate/lod0.glb",
+          "triangles": 3598
+        },
+        {
+          "level": 1,
+          "path": "garde_body_initiate/lod1.glb",
+          "triangles": 1348
+        },
+        {
+          "level": 2,
+          "path": "garde_body_initiate/lod2.glb",
+          "triangles": 492
+        }
+      ],
+      "sockets": {
+        "hand": [
+          -0.7389,
+          1.4408,
+          -0.0654
+        ],
+        "back": [
+          0,
+          1.3148,
+          -0.0049
+        ],
+        "head": [
+          0,
+          1.5687,
+          0.0051
+        ]
+      },
+      "animations": [
+        {
+          "name": "death",
+          "durationSeconds": 2.4
+        },
+        {
+          "name": "build",
+          "durationSeconds": 5.2
+        },
+        {
+          "name": "idle",
+          "durationSeconds": 2.5
+        },
+        {
+          "name": "gather",
+          "durationSeconds": 2
+        },
+        {
+          "name": "run",
+          "durationSeconds": 0.933333
+        },
+        {
+          "name": "attack1",
+          "durationSeconds": 0.633333
+        },
+        {
+          "name": "attack2",
+          "durationSeconds": 1
+        },
+        {
+          "name": "walk",
+          "durationSeconds": 1.333333
+        }
+      ],
+      "boneCount": 20,
+      "teamMask": "materialName",
+      "baked": {
+        "path": "dweller_body_human/dweller_body_human.anim.f32",
+        "width": 80,
+        "height": 480,
+        "fps": 30,
+        "clips": [
+          {
+            "name": "idle",
+            "startRow": 0,
+            "frames": 75,
+            "loop": true,
+            "durationSeconds": 2.5
+          },
+          {
+            "name": "walk",
+            "startRow": 75,
+            "frames": 40,
+            "loop": true,
+            "durationSeconds": 1.333333
+          },
+          {
+            "name": "run",
+            "startRow": 115,
+            "frames": 28,
+            "loop": true,
+            "durationSeconds": 0.933333
+          },
+          {
+            "name": "attack1",
+            "startRow": 143,
+            "frames": 19,
+            "loop": true,
+            "durationSeconds": 0.633333
+          },
+          {
+            "name": "attack2",
+            "startRow": 162,
+            "frames": 30,
+            "loop": true,
+            "durationSeconds": 1
+          },
+          {
+            "name": "gather",
+            "startRow": 192,
+            "frames": 60,
+            "loop": true,
+            "durationSeconds": 2
+          },
+          {
+            "name": "build",
+            "startRow": 252,
+            "frames": 156,
+            "loop": true,
+            "durationSeconds": 5.2
+          },
+          {
+            "name": "death",
+            "startRow": 408,
+            "frames": 72,
+            "loop": false,
+            "durationSeconds": 2.4
+          }
+        ]
+      },
+      "palette": {
+        "jacket": "#6f767c",
+        "patchTop": "#7a2d26",
+        "patchLeg": "#4b5158",
+        "belt": "#3a2a22",
+        "trousers": "#4b5158",
+        "boots": "#2b2523",
+        "skin": "#b08a6e"
+      }
+    },
+    {
+      "id": "garde_body_power_armor",
+      "kind": "character",
+      "bounds": {
+        "min": [
+          -1.163611,
+          0.002898,
+          -0.194527
+        ],
+        "max": [
+          1.164145,
+          2.192878,
+          0.242725
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "garde_body_power_armor/lod0.glb",
+          "triangles": 3598
+        },
+        {
+          "level": 1,
+          "path": "garde_body_power_armor/lod1.glb",
+          "triangles": 1348
+        },
+        {
+          "level": 2,
+          "path": "garde_body_power_armor/lod2.glb",
+          "triangles": 493
+        }
+      ],
+      "sockets": {
+        "hand": [
+          -0.88668,
+          1.72896,
+          -0.07848
+        ],
+        "back": [
+          0,
+          1.57776,
+          -0.00588
+        ],
+        "head": [
+          0,
+          1.88244,
+          0.00612
+        ]
+      },
+      "animations": [
+        {
+          "name": "death",
+          "durationSeconds": 2.4
+        },
+        {
+          "name": "build",
+          "durationSeconds": 5.2
+        },
+        {
+          "name": "idle",
+          "durationSeconds": 2.5
+        },
+        {
+          "name": "gather",
+          "durationSeconds": 2
+        },
+        {
+          "name": "run",
+          "durationSeconds": 0.933333
+        },
+        {
+          "name": "attack1",
+          "durationSeconds": 0.633333
+        },
+        {
+          "name": "attack2",
+          "durationSeconds": 1
+        },
+        {
+          "name": "walk",
+          "durationSeconds": 1.333333
+        }
+      ],
+      "boneCount": 20,
+      "teamMask": "materialName",
+      "baked": {
+        "path": "garde_body_power_armor/garde_body_power_armor.anim.f32",
+        "width": 80,
+        "height": 480,
+        "fps": 30,
+        "clips": [
+          {
+            "name": "idle",
+            "startRow": 0,
+            "frames": 75,
+            "loop": true,
+            "durationSeconds": 2.5
+          },
+          {
+            "name": "walk",
+            "startRow": 75,
+            "frames": 40,
+            "loop": true,
+            "durationSeconds": 1.333333
+          },
+          {
+            "name": "run",
+            "startRow": 115,
+            "frames": 28,
+            "loop": true,
+            "durationSeconds": 0.933333
+          },
+          {
+            "name": "attack1",
+            "startRow": 143,
+            "frames": 19,
+            "loop": true,
+            "durationSeconds": 0.633333
+          },
+          {
+            "name": "attack2",
+            "startRow": 162,
+            "frames": 30,
+            "loop": true,
+            "durationSeconds": 1
+          },
+          {
+            "name": "gather",
+            "startRow": 192,
+            "frames": 60,
+            "loop": true,
+            "durationSeconds": 2
+          },
+          {
+            "name": "build",
+            "startRow": 252,
+            "frames": 156,
+            "loop": true,
+            "durationSeconds": 5.2
+          },
+          {
+            "name": "death",
+            "startRow": 408,
+            "frames": 72,
+            "loop": false,
+            "durationSeconds": 2.4
+          }
+        ]
+      },
+      "palette": {
+        "jacket": "#8a9096",
+        "patchTop": "#7a2d26",
+        "patchLeg": "#6b7278",
+        "belt": "#3a2a22",
+        "trousers": "#6b7278",
+        "boots": "#4b5158",
+        "skin": "#8a9096"
+      }
+    },
+    {
+      "id": "garde_body_power_armor_heavy",
+      "kind": "character",
+      "bounds": {
+        "min": [
+          -1.221792,
+          0.003043,
+          -0.204254
+        ],
+        "max": [
+          1.222352,
+          2.302522,
+          0.254861
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "garde_body_power_armor_heavy/lod0.glb",
+          "triangles": 3598
+        },
+        {
+          "level": 1,
+          "path": "garde_body_power_armor_heavy/lod1.glb",
+          "triangles": 1348
+        },
+        {
+          "level": 2,
+          "path": "garde_body_power_armor_heavy/lod2.glb",
+          "triangles": 493
+        }
+      ],
+      "sockets": {
+        "hand": [
+          -0.931014,
+          1.815408,
+          -0.082404
+        ],
+        "back": [
+          0,
+          1.656648,
+          -0.006174
+        ],
+        "head": [
+          0,
+          1.976562,
+          0.006426
+        ]
+      },
+      "animations": [
+        {
+          "name": "death",
+          "durationSeconds": 2.4
+        },
+        {
+          "name": "build",
+          "durationSeconds": 5.2
+        },
+        {
+          "name": "idle",
+          "durationSeconds": 2.5
+        },
+        {
+          "name": "gather",
+          "durationSeconds": 2
+        },
+        {
+          "name": "run",
+          "durationSeconds": 0.933333
+        },
+        {
+          "name": "attack1",
+          "durationSeconds": 0.633333
+        },
+        {
+          "name": "attack2",
+          "durationSeconds": 1
+        },
+        {
+          "name": "walk",
+          "durationSeconds": 1.333333
+        }
+      ],
+      "boneCount": 20,
+      "teamMask": "materialName",
+      "baked": {
+        "path": "garde_body_power_armor_heavy/garde_body_power_armor_heavy.anim.f32",
+        "width": 80,
+        "height": 480,
+        "fps": 30,
+        "clips": [
+          {
+            "name": "idle",
+            "startRow": 0,
+            "frames": 75,
+            "loop": true,
+            "durationSeconds": 2.5
+          },
+          {
+            "name": "walk",
+            "startRow": 75,
+            "frames": 40,
+            "loop": true,
+            "durationSeconds": 1.333333
+          },
+          {
+            "name": "run",
+            "startRow": 115,
+            "frames": 28,
+            "loop": true,
+            "durationSeconds": 0.933333
+          },
+          {
+            "name": "attack1",
+            "startRow": 143,
+            "frames": 19,
+            "loop": true,
+            "durationSeconds": 0.633333
+          },
+          {
+            "name": "attack2",
+            "startRow": 162,
+            "frames": 30,
+            "loop": true,
+            "durationSeconds": 1
+          },
+          {
+            "name": "gather",
+            "startRow": 192,
+            "frames": 60,
+            "loop": true,
+            "durationSeconds": 2
+          },
+          {
+            "name": "build",
+            "startRow": 252,
+            "frames": 156,
+            "loop": true,
+            "durationSeconds": 5.2
+          },
+          {
+            "name": "death",
+            "startRow": 408,
+            "frames": 72,
+            "loop": false,
+            "durationSeconds": 2.4
+          }
+        ]
+      },
+      "palette": {
+        "jacket": "#7c838a",
+        "patchTop": "#7a2d26",
+        "patchLeg": "#5d646a",
+        "belt": "#3a2a22",
+        "trousers": "#5d646a",
+        "boots": "#3f444a",
+        "skin": "#7c838a"
+      }
+    },
+    {
+      "id": "garde_body_vertibird",
+      "kind": "rigid-unit",
+      "bounds": {
+        "min": [
+          -6.1,
+          2,
+          -7.1
+        ],
+        "max": [
+          6.1,
+          6,
+          4.85
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "garde_body_vertibird/lod0.glb",
+          "triangles": 376
+        },
+        {
+          "level": 1,
+          "path": "garde_body_vertibird/lod1.glb",
+          "triangles": 328
+        },
+        {
+          "level": 2,
+          "path": "garde_body_vertibird/lod2.glb",
+          "triangles": 220
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMaterials": [
+        "team_trim"
+      ],
+      "teamMask": "materialName",
+      "rigid": true,
+      "hover": 2
+    },
+    {
+      "id": "garde_building_archive",
+      "kind": "building",
+      "bounds": {
+        "min": [
+          -8.5,
+          0,
+          -9.5
+        ],
+        "max": [
+          8.5,
+          15.9,
+          10
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "garde_building_archive/lod0.glb",
+          "triangles": 634
+        },
+        {
+          "level": 1,
+          "path": "garde_building_archive/lod1.glb",
+          "triangles": 586
+        },
+        {
+          "level": 2,
+          "path": "garde_building_archive/lod2.glb",
+          "triangles": 218
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "footprint": {
+        "w": 17,
+        "h": 19
+      },
+      "teamMaterials": [
+        "team_trim"
+      ]
+    },
+    {
+      "id": "garde_building_barracks",
+      "kind": "building",
+      "bounds": {
+        "min": [
+          -7.5,
+          0,
+          -7.45
+        ],
+        "max": [
+          7.5,
+          5.45,
+          7.45
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "garde_building_barracks/lod0.glb",
+          "triangles": 358
+        },
+        {
+          "level": 1,
+          "path": "garde_building_barracks/lod1.glb",
+          "triangles": 274
+        },
+        {
+          "level": 2,
+          "path": "garde_building_barracks/lod2.glb",
+          "triangles": 150
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "footprint": {
+        "w": 15,
+        "h": 15
+      },
+      "teamMaterials": [
+        "team_trim"
+      ]
+    },
+    {
+      "id": "garde_building_bastion",
+      "kind": "building",
+      "bounds": {
+        "min": [
+          -10.7,
+          0,
+          -10.7
+        ],
+        "max": [
+          10.7,
+          17.200001,
+          10.7
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "garde_building_bastion/lod0.glb",
+          "triangles": 834
+        },
+        {
+          "level": 1,
+          "path": "garde_building_bastion/lod1.glb",
+          "triangles": 550
+        },
+        {
+          "level": 2,
+          "path": "garde_building_bastion/lod2.glb",
+          "triangles": 294
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "footprint": {
+        "w": 21,
+        "h": 21
+      },
+      "teamMaterials": [
+        "team_trim"
+      ]
+    },
+    {
+      "id": "garde_building_forge",
+      "kind": "building",
+      "bounds": {
+        "min": [
+          -10.5,
+          0,
+          -9.5
+        ],
+        "max": [
+          10.5,
+          11,
+          9.4
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "garde_building_forge/lod0.glb",
+          "triangles": 430
+        },
+        {
+          "level": 1,
+          "path": "garde_building_forge/lod1.glb",
+          "triangles": 346
+        },
+        {
+          "level": 2,
+          "path": "garde_building_forge/lod2.glb",
+          "triangles": 198
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "footprint": {
+        "w": 21,
+        "h": 19
+      },
+      "teamMaterials": [
+        "team_trim"
+      ]
+    },
+    {
+      "id": "garde_building_helipad",
+      "kind": "building",
+      "bounds": {
+        "min": [
+          -10.4,
+          0,
+          -10.4
+        ],
+        "max": [
+          10.4,
+          8.1,
+          10.4
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "garde_building_helipad/lod0.glb",
+          "triangles": 512
+        },
+        {
+          "level": 1,
+          "path": "garde_building_helipad/lod1.glb",
+          "triangles": 468
+        },
+        {
+          "level": 2,
+          "path": "garde_building_helipad/lod2.glb",
+          "triangles": 232
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "footprint": {
+        "w": 21,
+        "h": 21
+      },
+      "teamMaterials": [
+        "team_trim"
+      ]
+    },
+    {
+      "id": "garde_building_outpost",
+      "kind": "building",
+      "bounds": {
+        "min": [
+          -0.47,
+          0,
+          -0.47
+        ],
+        "max": [
+          0.47,
+          2.98,
+          0.47
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "garde_building_outpost/lod0.glb",
+          "triangles": 96
+        },
+        {
+          "level": 1,
+          "path": "garde_building_outpost/lod1.glb",
+          "triangles": 84
+        },
+        {
+          "level": 2,
+          "path": "garde_building_outpost/lod2.glb",
+          "triangles": 60
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "footprint": {
+        "w": 1,
+        "h": 1
+      },
+      "teamMaterials": [
+        "team_trim"
+      ]
+    },
+    {
+      "id": "garde_building_turret_laser",
+      "kind": "building",
+      "bounds": {
+        "min": [
+          -1.55,
+          0,
+          -1.55
+        ],
+        "max": [
+          1.55,
+          2.5,
+          1.55
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "garde_building_turret_laser/lod0.glb",
+          "triangles": 336
+        },
+        {
+          "level": 1,
+          "path": "garde_building_turret_laser/lod1.glb",
+          "triangles": 256
+        },
+        {
+          "level": 2,
+          "path": "garde_building_turret_laser/lod2.glb",
+          "triangles": 116
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "footprint": {
+        "w": 3,
+        "h": 3
+      },
+      "teamMaterials": [
+        "team_trim"
+      ]
+    },
+    {
+      "id": "garde_weapon_laser_carbine",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.0475,
+          -0.103479,
+          -0.52
+        ],
+        "max": [
+          0.0475,
+          0.11,
+          0.85
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "garde_weapon_laser_carbine/lod0.glb",
+          "triangles": 224
+        },
+        {
+          "level": 1,
+          "path": "garde_weapon_laser_carbine/lod1.glb",
+          "triangles": 116
+        },
+        {
+          "level": 2,
+          "path": "garde_weapon_laser_carbine/lod2.glb",
+          "triangles": 60
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none"
+    },
+    {
+      "id": "garde_weapon_laser_pistol",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.026,
+          -0.104341,
+          -0.1
+        ],
+        "max": [
+          0.026,
+          0.06,
+          0.34
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "garde_weapon_laser_pistol/lod0.glb",
+          "triangles": 84
+        },
+        {
+          "level": 1,
+          "path": "garde_weapon_laser_pistol/lod1.glb",
+          "triangles": 72
+        },
+        {
+          "level": 2,
+          "path": "garde_weapon_laser_pistol/lod2.glb",
+          "triangles": 48
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none"
+    },
+    {
+      "id": "garde_weapon_multitool",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.045,
+          -0.03,
+          -0.22
+        ],
+        "max": [
+          0.045,
+          0.06,
+          0.26
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "garde_weapon_multitool/lod0.glb",
+          "triangles": 60
+        },
+        {
+          "level": 1,
+          "path": "garde_weapon_multitool/lod1.glb",
+          "triangles": 60
+        },
+        {
+          "level": 2,
+          "path": "garde_weapon_multitool/lod2.glb",
+          "triangles": 48
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none"
+    },
+    {
+      "id": "garde_weapon_plasma_caster",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.115,
+          -0.144175,
+          -0.625
+        ],
+        "max": [
+          0.115,
+          0.23,
+          1
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "garde_weapon_plasma_caster/lod0.glb",
+          "triangles": 284
+        },
+        {
+          "level": 1,
+          "path": "garde_weapon_plasma_caster/lod1.glb",
+          "triangles": 272
+        },
+        {
+          "level": 2,
+          "path": "garde_weapon_plasma_caster/lod2.glb",
+          "triangles": 108
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none"
+    },
+    {
+      "id": "garde_weapon_vertibird_gun",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.26,
+          -0.35,
+          -0.7
+        ],
+        "max": [
+          0.26,
+          0.15,
+          1.24
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "garde_weapon_vertibird_gun/lod0.glb",
+          "triangles": 220
+        },
+        {
+          "level": 1,
+          "path": "garde_weapon_vertibird_gun/lod1.glb",
+          "triangles": 220
+        },
+        {
+          "level": 2,
+          "path": "garde_weapon_vertibird_gun/lod2.glb",
+          "triangles": 88
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none"
+    },
+    {
+      "id": "grass_patch_01",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.560377,
+          0,
+          -0.567954
+        ],
+        "max": [
+          0.560377,
+          0.6,
+          0.567954
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "grass_patch_01/lod0.glb",
+          "triangles": 400
+        },
+        {
+          "level": 1,
+          "path": "grass_patch_01/lod1.glb",
+          "triangles": 149
+        },
+        {
+          "level": 2,
+          "path": "grass_patch_01/lod2.glb",
+          "triangles": 50
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none",
+      "category": "grass",
+      "alpha": "mask"
+    },
+    {
+      "id": "grass_patch_02",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.401441,
+          0,
+          -0.423913
+        ],
+        "max": [
+          0.401441,
+          0.6,
+          0.423913
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "grass_patch_02/lod0.glb",
+          "triangles": 236
+        },
+        {
+          "level": 1,
+          "path": "grass_patch_02/lod1.glb",
+          "triangles": 149
+        },
+        {
+          "level": 2,
+          "path": "grass_patch_02/lod2.glb",
+          "triangles": 50
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none",
+      "category": "grass",
+      "alpha": "mask"
+    },
+    {
+      "id": "grass_patch_03",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.667967,
+          0,
+          -0.754875
+        ],
+        "max": [
+          0.667967,
+          0.6,
+          0.754875
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "grass_patch_03/lod0.glb",
+          "triangles": 400
+        },
+        {
+          "level": 1,
+          "path": "grass_patch_03/lod1.glb",
+          "triangles": 150
+        },
+        {
+          "level": 2,
+          "path": "grass_patch_03/lod2.glb",
+          "triangles": 50
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none",
+      "category": "grass",
+      "alpha": "mask"
+    },
+    {
+      "id": "grass001",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.562351,
+          0,
+          -0.125849
+        ],
+        "max": [
+          0.562351,
+          3.842866,
+          0.125849
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "grass001/lod0.glb",
+          "triangles": 3
+        },
+        {
+          "level": 1,
+          "path": "grass001/lod1.glb",
+          "triangles": 3
+        },
+        {
+          "level": 2,
+          "path": "grass001/lod2.glb",
+          "triangles": 3
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "materialName"
+    },
+    {
+      "id": "plant_01",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.405681,
+          0,
+          -0.414774
+        ],
+        "max": [
+          0.405681,
+          1.2,
+          0.414774
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "plant_01/lod0.glb",
+          "triangles": 186
+        },
+        {
+          "level": 1,
+          "path": "plant_01/lod1.glb",
+          "triangles": 99
+        },
+        {
+          "level": 2,
+          "path": "plant_01/lod2.glb",
+          "triangles": 39
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none",
+      "category": "plant",
+      "alpha": "mask"
+    },
+    {
+      "id": "raider_armor_steel",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.38,
+          0.935,
+          -0.185
+        ],
+        "max": [
+          0.38,
+          1.67,
+          0.17
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "raider_armor_steel/lod0.glb",
+          "triangles": 280
+        },
+        {
+          "level": 1,
+          "path": "raider_armor_steel/lod1.glb",
+          "triangles": 108
+        },
+        {
+          "level": 2,
+          "path": "raider_armor_steel/lod2.glb",
+          "triangles": 66
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none"
+    },
+    {
+      "id": "raider_body_hound",
+      "kind": "rigid-unit",
+      "bounds": {
+        "min": [
+          -0.16,
+          0,
+          -0.643025
+        ],
+        "max": [
+          0.16,
+          0.77,
+          0.715
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "raider_body_hound/lod0.glb",
+          "triangles": 438
+        },
+        {
+          "level": 1,
+          "path": "raider_body_hound/lod1.glb",
+          "triangles": 228
+        },
+        {
+          "level": 2,
+          "path": "raider_body_hound/lod2.glb",
+          "triangles": 172
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMaterials": [
+        "team_trim"
+      ],
+      "teamMask": "materialName",
+      "rigid": true
+    },
+    {
+      "id": "raider_body_human",
+      "kind": "character",
+      "bounds": {
+        "min": [
+          -0.969676,
+          0.002415,
+          -0.162106
+        ],
+        "max": [
+          0.97012,
+          1.827399,
+          0.202271
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "raider_body_human/lod0.glb",
+          "triangles": 3598
+        },
+        {
+          "level": 1,
+          "path": "raider_body_human/lod1.glb",
+          "triangles": 1348
+        },
+        {
+          "level": 2,
+          "path": "raider_body_human/lod2.glb",
+          "triangles": 492
+        }
+      ],
+      "sockets": {
+        "hand": [
+          -0.7389,
+          1.4408,
+          -0.0654
+        ],
+        "back": [
+          0,
+          1.3148,
+          -0.0049
+        ],
+        "head": [
+          0,
+          1.5687,
+          0.0051
+        ]
+      },
+      "animations": [
+        {
+          "name": "death",
+          "durationSeconds": 2.4
+        },
+        {
+          "name": "build",
+          "durationSeconds": 5.2
+        },
+        {
+          "name": "idle",
+          "durationSeconds": 2.5
+        },
+        {
+          "name": "gather",
+          "durationSeconds": 2
+        },
+        {
+          "name": "run",
+          "durationSeconds": 0.933333
+        },
+        {
+          "name": "attack1",
+          "durationSeconds": 0.633333
+        },
+        {
+          "name": "attack2",
+          "durationSeconds": 1
+        },
+        {
+          "name": "walk",
+          "durationSeconds": 1.333333
+        }
+      ],
+      "boneCount": 20,
+      "teamMask": "materialName",
+      "baked": {
+        "path": "dweller_body_human/dweller_body_human.anim.f32",
+        "width": 80,
+        "height": 480,
+        "fps": 30,
+        "clips": [
+          {
+            "name": "idle",
+            "startRow": 0,
+            "frames": 75,
+            "loop": true,
+            "durationSeconds": 2.5
+          },
+          {
+            "name": "walk",
+            "startRow": 75,
+            "frames": 40,
+            "loop": true,
+            "durationSeconds": 1.333333
+          },
+          {
+            "name": "run",
+            "startRow": 115,
+            "frames": 28,
+            "loop": true,
+            "durationSeconds": 0.933333
+          },
+          {
+            "name": "attack1",
+            "startRow": 143,
+            "frames": 19,
+            "loop": true,
+            "durationSeconds": 0.633333
+          },
+          {
+            "name": "attack2",
+            "startRow": 162,
+            "frames": 30,
+            "loop": true,
+            "durationSeconds": 1
+          },
+          {
+            "name": "gather",
+            "startRow": 192,
+            "frames": 60,
+            "loop": true,
+            "durationSeconds": 2
+          },
+          {
+            "name": "build",
+            "startRow": 252,
+            "frames": 156,
+            "loop": true,
+            "durationSeconds": 5.2
+          },
+          {
+            "name": "death",
+            "startRow": 408,
+            "frames": 72,
+            "loop": false,
+            "durationSeconds": 2.4
+          }
+        ]
+      },
+      "palette": {
+        "jacket": "#5e3d28",
+        "patchTop": "#8f3a2c",
+        "patchLeg": "#3a312c",
+        "belt": "#1d1917",
+        "trousers": "#2e2621",
+        "boots": "#1b1715",
+        "skin": "#9a6a52"
+      }
+    },
+    {
+      "id": "raider_body_slave",
+      "kind": "character",
+      "bounds": {
+        "min": [
+          -0.969676,
+          0.002415,
+          -0.162106
+        ],
+        "max": [
+          0.97012,
+          1.827399,
+          0.202271
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "raider_body_slave/lod0.glb",
+          "triangles": 3598
+        },
+        {
+          "level": 1,
+          "path": "raider_body_slave/lod1.glb",
+          "triangles": 1348
+        },
+        {
+          "level": 2,
+          "path": "raider_body_slave/lod2.glb",
+          "triangles": 492
+        }
+      ],
+      "sockets": {
+        "hand": [
+          -0.7389,
+          1.4408,
+          -0.0654
+        ],
+        "back": [
+          0,
+          1.3148,
+          -0.0049
+        ],
+        "head": [
+          0,
+          1.5687,
+          0.0051
+        ]
+      },
+      "animations": [
+        {
+          "name": "death",
+          "durationSeconds": 2.4
+        },
+        {
+          "name": "build",
+          "durationSeconds": 5.2
+        },
+        {
+          "name": "idle",
+          "durationSeconds": 2.5
+        },
+        {
+          "name": "gather",
+          "durationSeconds": 2
+        },
+        {
+          "name": "run",
+          "durationSeconds": 0.933333
+        },
+        {
+          "name": "attack1",
+          "durationSeconds": 0.633333
+        },
+        {
+          "name": "attack2",
+          "durationSeconds": 1
+        },
+        {
+          "name": "walk",
+          "durationSeconds": 1.333333
+        }
+      ],
+      "boneCount": 20,
+      "teamMask": "materialName",
+      "baked": {
+        "path": "dweller_body_human/dweller_body_human.anim.f32",
+        "width": 80,
+        "height": 480,
+        "fps": 30,
+        "clips": [
+          {
+            "name": "idle",
+            "startRow": 0,
+            "frames": 75,
+            "loop": true,
+            "durationSeconds": 2.5
+          },
+          {
+            "name": "walk",
+            "startRow": 75,
+            "frames": 40,
+            "loop": true,
+            "durationSeconds": 1.333333
+          },
+          {
+            "name": "run",
+            "startRow": 115,
+            "frames": 28,
+            "loop": true,
+            "durationSeconds": 0.933333
+          },
+          {
+            "name": "attack1",
+            "startRow": 143,
+            "frames": 19,
+            "loop": true,
+            "durationSeconds": 0.633333
+          },
+          {
+            "name": "attack2",
+            "startRow": 162,
+            "frames": 30,
+            "loop": true,
+            "durationSeconds": 1
+          },
+          {
+            "name": "gather",
+            "startRow": 192,
+            "frames": 60,
+            "loop": true,
+            "durationSeconds": 2
+          },
+          {
+            "name": "build",
+            "startRow": 252,
+            "frames": 156,
+            "loop": true,
+            "durationSeconds": 5.2
+          },
+          {
+            "name": "death",
+            "startRow": 408,
+            "frames": 72,
+            "loop": false,
+            "durationSeconds": 2.4
+          }
+        ]
+      },
+      "palette": {
+        "jacket": "#b6aa8f",
+        "patchTop": "#9c8f78",
+        "patchLeg": "#a09580",
+        "belt": "#7a6b52",
+        "trousers": "#a89d84",
+        "boots": "#85765f",
+        "skin": "#a07a62",
+        "teamZone": "band",
+        "farTeam": 0
+      }
+    },
+    {
+      "id": "raider_building_cage",
+      "kind": "building",
+      "bounds": {
+        "min": [
+          -2.540451,
+          0,
+          -2.421244
+        ],
+        "max": [
+          2.55,
+          5.35,
+          2.547553
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "raider_building_cage/lod0.glb",
+          "triangles": 1470
+        },
+        {
+          "level": 1,
+          "path": "raider_building_cage/lod1.glb",
+          "triangles": 690
+        },
+        {
+          "level": 2,
+          "path": "raider_building_cage/lod2.glb",
+          "triangles": 232
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "footprint": {
+        "w": 5,
+        "h": 5
+      },
+      "teamMaterials": [
+        "team_trim"
+      ]
+    },
+    {
+      "id": "raider_building_camp",
+      "kind": "building",
+      "bounds": {
+        "min": [
+          -8.27,
+          0,
+          -8.4
+        ],
+        "max": [
+          9.03,
+          9.25,
+          8.343
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "raider_building_camp/lod0.glb",
+          "triangles": 2423
+        },
+        {
+          "level": 1,
+          "path": "raider_building_camp/lod1.glb",
+          "triangles": 990
+        },
+        {
+          "level": 2,
+          "path": "raider_building_camp/lod2.glb",
+          "triangles": 260
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "footprint": {
+        "w": 17,
+        "h": 17
+      },
+      "teamMaterials": [
+        "team_trim"
+      ]
+    },
+    {
+      "id": "raider_building_chemlab",
+      "kind": "building",
+      "bounds": {
+        "min": [
+          -5.05,
+          0,
+          -4.3
+        ],
+        "max": [
+          5.7,
+          8.5,
+          4
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "raider_building_chemlab/lod0.glb",
+          "triangles": 920
+        },
+        {
+          "level": 1,
+          "path": "raider_building_chemlab/lod1.glb",
+          "triangles": 426
+        },
+        {
+          "level": 2,
+          "path": "raider_building_chemlab/lod2.glb",
+          "triangles": 132
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "footprint": {
+        "w": 11,
+        "h": 9
+      },
+      "teamMaterials": [
+        "team_trim"
+      ]
+    },
+    {
+      "id": "raider_building_claim_post",
+      "kind": "building",
+      "bounds": {
+        "min": [
+          -1.5,
+          0,
+          -1.5
+        ],
+        "max": [
+          1.5,
+          6.85,
+          1.5
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "raider_building_claim_post/lod0.glb",
+          "triangles": 605
+        },
+        {
+          "level": 1,
+          "path": "raider_building_claim_post/lod1.glb",
+          "triangles": 218
+        },
+        {
+          "level": 2,
+          "path": "raider_building_claim_post/lod2.glb",
+          "triangles": 118
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "footprint": {
+        "w": 3,
+        "h": 3
+      },
+      "teamMaterials": [
+        "team_trim"
+      ]
+    },
+    {
+      "id": "raider_building_garage",
+      "kind": "building",
+      "bounds": {
+        "min": [
+          -8.7,
+          0,
+          -6.52
+        ],
+        "max": [
+          8.45,
+          8.2,
+          6.53
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "raider_building_garage/lod0.glb",
+          "triangles": 1618
+        },
+        {
+          "level": 1,
+          "path": "raider_building_garage/lod1.glb",
+          "triangles": 470
+        },
+        {
+          "level": 2,
+          "path": "raider_building_garage/lod2.glb",
+          "triangles": 152
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "footprint": {
+        "w": 17,
+        "h": 13
+      },
+      "teamMaterials": [
+        "team_trim"
+      ]
+    },
+    {
+      "id": "raider_building_market",
+      "kind": "building",
+      "bounds": {
+        "min": [
+          -6.72,
+          0,
+          -5.7
+        ],
+        "max": [
+          6.73,
+          6.45,
+          5.29
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "raider_building_market/lod0.glb",
+          "triangles": 1752
+        },
+        {
+          "level": 1,
+          "path": "raider_building_market/lod1.glb",
+          "triangles": 580
+        },
+        {
+          "level": 2,
+          "path": "raider_building_market/lod2.glb",
+          "triangles": 276
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "footprint": {
+        "w": 13,
+        "h": 11
+      },
+      "teamMaterials": [
+        "team_trim"
+      ]
+    },
+    {
+      "id": "raider_building_mg_nest",
+      "kind": "building",
+      "bounds": {
+        "min": [
+          -2.41,
+          0,
+          -2.341783
+        ],
+        "max": [
+          2.41,
+          3.55,
+          2.55
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "raider_building_mg_nest/lod0.glb",
+          "triangles": 1411
+        },
+        {
+          "level": 1,
+          "path": "raider_building_mg_nest/lod1.glb",
+          "triangles": 296
+        },
+        {
+          "level": 2,
+          "path": "raider_building_mg_nest/lod2.glb",
+          "triangles": 208
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "footprint": {
+        "w": 5,
+        "h": 5
+      },
+      "teamMaterials": [
+        "team_trim"
+      ]
+    },
+    {
+      "id": "raider_building_tent",
+      "kind": "building",
+      "bounds": {
+        "min": [
+          -3.619403,
+          0,
+          -2.45
+        ],
+        "max": [
+          3.619403,
+          4.45,
+          2.651846
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "raider_building_tent/lod0.glb",
+          "triangles": 469
+        },
+        {
+          "level": 1,
+          "path": "raider_building_tent/lod1.glb",
+          "triangles": 312
+        },
+        {
+          "level": 2,
+          "path": "raider_building_tent/lod2.glb",
+          "triangles": 104
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "footprint": {
+        "w": 7,
+        "h": 5
+      },
+      "teamMaterials": [
+        "team_trim"
+      ]
+    },
+    {
+      "id": "raider_gear_chem_tank",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.273033,
+          -0.45,
+          -0.395994
+        ],
+        "max": [
+          0.245,
+          0.29,
+          -0.1308
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "raider_gear_chem_tank/lod0.glb",
+          "triangles": 424
+        },
+        {
+          "level": 1,
+          "path": "raider_gear_chem_tank/lod1.glb",
+          "triangles": 288
+        },
+        {
+          "level": 2,
+          "path": "raider_gear_chem_tank/lod2.glb",
+          "triangles": 124
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none"
+    },
+    {
+      "id": "raider_gear_shackles",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.205,
+          -0.515,
+          -0.32
+        ],
+        "max": [
+          0.205,
+          0.18,
+          -0.135
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "raider_gear_shackles/lod0.glb",
+          "triangles": 220
+        },
+        {
+          "level": 1,
+          "path": "raider_gear_shackles/lod1.glb",
+          "triangles": 136
+        },
+        {
+          "level": 2,
+          "path": "raider_gear_shackles/lod2.glb",
+          "triangles": 76
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none"
+    },
+    {
+      "id": "raider_gear_warlord_helm",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.29853,
+          -0.02,
+          -0.178532
+        ],
+        "max": [
+          0.29853,
+          0.385,
+          0.1643
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "raider_gear_warlord_helm/lod0.glb",
+          "triangles": 282
+        },
+        {
+          "level": 1,
+          "path": "raider_gear_warlord_helm/lod1.glb",
+          "triangles": 110
+        },
+        {
+          "level": 2,
+          "path": "raider_gear_warlord_helm/lod2.glb",
+          "triangles": 60
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none"
+    },
+    {
+      "id": "raider_tool_hammer",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.185,
+          -0.065,
+          -0.2
+        ],
+        "max": [
+          0.185,
+          0.065,
+          0.685
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "raider_tool_hammer/lod0.glb",
+          "triangles": 122
+        },
+        {
+          "level": 1,
+          "path": "raider_tool_hammer/lod1.glb",
+          "triangles": 56
+        },
+        {
+          "level": 2,
+          "path": "raider_tool_hammer/lod2.glb",
+          "triangles": 28
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none"
+    },
+    {
+      "id": "raider_tool_shovel",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.1,
+          -0.025981,
+          -0.3775
+        ],
+        "max": [
+          0.1,
+          0.025981,
+          1.12
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "raider_tool_shovel/lod0.glb",
+          "triangles": 76
+        },
+        {
+          "level": 1,
+          "path": "raider_tool_shovel/lod1.glb",
+          "triangles": 48
+        },
+        {
+          "level": 2,
+          "path": "raider_tool_shovel/lod2.glb",
+          "triangles": 29
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none"
+    },
+    {
+      "id": "raider_vehicle_buggy",
+      "kind": "rigid-unit",
+      "bounds": {
+        "min": [
+          -1.185,
+          0,
+          -1.85
+        ],
+        "max": [
+          1.185,
+          2.5,
+          1.91
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "raider_vehicle_buggy/lod0.glb",
+          "triangles": 1584
+        },
+        {
+          "level": 1,
+          "path": "raider_vehicle_buggy/lod1.glb",
+          "triangles": 712
+        },
+        {
+          "level": 2,
+          "path": "raider_vehicle_buggy/lod2.glb",
+          "triangles": 264
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMaterials": [
+        "team_trim"
+      ],
+      "teamMask": "materialName",
+      "rigid": true
+    },
+    {
+      "id": "raider_weapon_chem_sprayer",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.052,
+          -0.624129,
+          -0.43301
+        ],
+        "max": [
+          0.113437,
+          0.1,
+          0.58
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "raider_weapon_chem_sprayer/lod0.glb",
+          "triangles": 180
+        },
+        {
+          "level": 1,
+          "path": "raider_weapon_chem_sprayer/lod1.glb",
+          "triangles": 116
+        },
+        {
+          "level": 2,
+          "path": "raider_weapon_chem_sprayer/lod2.glb",
+          "triangles": 100
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none"
+    },
+    {
+      "id": "raider_weapon_molotov",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.042,
+          -0.1,
+          -0.042
+        ],
+        "max": [
+          0.042,
+          0.38,
+          0.042
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "raider_weapon_molotov/lod0.glb",
+          "triangles": 100
+        },
+        {
+          "level": 1,
+          "path": "raider_weapon_molotov/lod1.glb",
+          "triangles": 66
+        },
+        {
+          "level": 2,
+          "path": "raider_weapon_molotov/lod2.glb",
+          "triangles": 44
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none"
+    },
+    {
+      "id": "raider_weapon_net_whip",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.172,
+          -0.282,
+          -0.2
+        ],
+        "max": [
+          0.326,
+          0.0702,
+          1.222517
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "raider_weapon_net_whip/lod0.glb",
+          "triangles": 392
+        },
+        {
+          "level": 1,
+          "path": "raider_weapon_net_whip/lod1.glb",
+          "triangles": 114
+        },
+        {
+          "level": 2,
+          "path": "raider_weapon_net_whip/lod2.glb",
+          "triangles": 46
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none"
+    },
+    {
+      "id": "raider_weapon_pipe_gun",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.038,
+          -0.13,
+          -0.55
+        ],
+        "max": [
+          0.038,
+          0.102321,
+          0.62
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "raider_weapon_pipe_gun/lod0.glb",
+          "triangles": 188
+        },
+        {
+          "level": 1,
+          "path": "raider_weapon_pipe_gun/lod1.glb",
+          "triangles": 80
+        },
+        {
+          "level": 2,
+          "path": "raider_weapon_pipe_gun/lod2.glb",
+          "triangles": 52
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none"
+    },
+    {
+      "id": "raider_weapon_scrap_revolver",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.04,
+          -0.17,
+          -0.1125
+        ],
+        "max": [
+          0.04,
+          0.12,
+          0.44
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "raider_weapon_scrap_revolver/lod0.glb",
+          "triangles": 196
+        },
+        {
+          "level": 1,
+          "path": "raider_weapon_scrap_revolver/lod1.glb",
+          "triangles": 84
+        },
+        {
+          "level": 2,
+          "path": "raider_weapon_scrap_revolver/lod2.glb",
+          "triangles": 40
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none"
+    },
+    {
+      "id": "raider_weapon_spiked_club",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.13,
+          -0.13,
+          -0.2
+        ],
+        "max": [
+          0.13,
+          0.13,
+          0.85
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "raider_weapon_spiked_club/lod0.glb",
+          "triangles": 169
+        },
+        {
+          "level": 1,
+          "path": "raider_weapon_spiked_club/lod1.glb",
+          "triangles": 109
+        },
+        {
+          "level": 2,
+          "path": "raider_weapon_spiked_club/lod2.glb",
+          "triangles": 44
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none"
+    },
+    {
+      "id": "reed001",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.467562,
+          0,
+          -0.466203
+        ],
+        "max": [
+          0.467562,
+          4.07575,
+          0.466203
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "reed001/lod0.glb",
+          "triangles": 20
+        },
+        {
+          "level": 1,
+          "path": "reed001/lod1.glb",
+          "triangles": 20
+        },
+        {
+          "level": 2,
+          "path": "reed001/lod2.glb",
+          "triangles": 20
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "materialName"
+    },
+    {
+      "id": "rock_set2_01",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.911717,
+          0,
+          -1.031727
+        ],
+        "max": [
+          0.911717,
+          0.912572,
+          1.031727
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "rock_set2_01/lod0.glb",
+          "triangles": 590
+        },
+        {
+          "level": 1,
+          "path": "rock_set2_01/lod1.glb",
+          "triangles": 400
+        },
+        {
+          "level": 2,
+          "path": "rock_set2_01/lod2.glb",
+          "triangles": 120
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none",
+      "category": "rock"
+    },
+    {
+      "id": "rock_set2_02",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.277658,
+          0,
+          -0.306851
+        ],
+        "max": [
+          0.277658,
+          0.63081,
+          0.306851
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "rock_set2_02/lod0.glb",
+          "triangles": 164
+        },
+        {
+          "level": 1,
+          "path": "rock_set2_02/lod1.glb",
+          "triangles": 164
+        },
+        {
+          "level": 2,
+          "path": "rock_set2_02/lod2.glb",
+          "triangles": 120
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none",
+      "category": "rock"
+    },
+    {
+      "id": "rock_set2_03",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.447627,
+          0,
+          -0.500371
+        ],
+        "max": [
+          0.447627,
+          0.760578,
+          0.500371
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "rock_set2_03/lod0.glb",
+          "triangles": 236
+        },
+        {
+          "level": 1,
+          "path": "rock_set2_03/lod1.glb",
+          "triangles": 236
+        },
+        {
+          "level": 2,
+          "path": "rock_set2_03/lod2.glb",
+          "triangles": 120
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none",
+      "category": "rock"
+    },
+    {
+      "id": "rock_set2_04",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.415442,
+          0,
+          -0.389314
+        ],
+        "max": [
+          0.415442,
+          0.730567,
+          0.389314
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "rock_set2_04/lod0.glb",
+          "triangles": 204
+        },
+        {
+          "level": 1,
+          "path": "rock_set2_04/lod1.glb",
+          "triangles": 204
+        },
+        {
+          "level": 2,
+          "path": "rock_set2_04/lod2.glb",
+          "triangles": 120
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none",
+      "category": "rock"
+    },
+    {
+      "id": "rock_set2_05",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -1.782593,
+          0,
+          -1.744946
+        ],
+        "max": [
+          1.782593,
+          1.736452,
+          1.738178
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "rock_set2_05/lod0.glb",
+          "triangles": 1000
+        },
+        {
+          "level": 1,
+          "path": "rock_set2_05/lod1.glb",
+          "triangles": 400
+        },
+        {
+          "level": 2,
+          "path": "rock_set2_05/lod2.glb",
+          "triangles": 120
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none",
+      "category": "rock"
+    },
+    {
+      "id": "rock_set2_06",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -2.06246,
+          0,
+          -2.018903
+        ],
+        "max": [
+          2.06246,
+          2.009075,
+          2.011072
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "rock_set2_06/lod0.glb",
+          "triangles": 1000
+        },
+        {
+          "level": 1,
+          "path": "rock_set2_06/lod1.glb",
+          "triangles": 400
+        },
+        {
+          "level": 2,
+          "path": "rock_set2_06/lod2.glb",
+          "triangles": 120
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none",
+      "category": "rock"
+    },
+    {
+      "id": "rock_set2_07",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -1.870245,
+          0,
+          -2.479679
+        ],
+        "max": [
+          1.874499,
+          2.224856,
+          2.471138
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "rock_set2_07/lod0.glb",
+          "triangles": 1000
+        },
+        {
+          "level": 1,
+          "path": "rock_set2_07/lod1.glb",
+          "triangles": 400
+        },
+        {
+          "level": 2,
+          "path": "rock_set2_07/lod2.glb",
+          "triangles": 120
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none",
+      "category": "rock"
+    },
+    {
+      "id": "rock_set2_08",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -2.120858,
+          0,
+          -2.811956
+        ],
+        "max": [
+          2.125682,
+          2.522986,
+          2.80227
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "rock_set2_08/lod0.glb",
+          "triangles": 1000
+        },
+        {
+          "level": 1,
+          "path": "rock_set2_08/lod1.glb",
+          "triangles": 400
+        },
+        {
+          "level": 2,
+          "path": "rock_set2_08/lod2.glb",
+          "triangles": 120
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none",
+      "category": "rock"
+    },
+    {
+      "id": "rock_set2_09",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -4.221944,
+          0,
+          -4.431234
+        ],
+        "max": [
+          4.238962,
+          10.077539,
+          4.376972
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "rock_set2_09/lod0.glb",
+          "triangles": 1000
+        },
+        {
+          "level": 1,
+          "path": "rock_set2_09/lod1.glb",
+          "triangles": 400
+        },
+        {
+          "level": 2,
+          "path": "rock_set2_09/lod2.glb",
+          "triangles": 120
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none",
+      "category": "rock"
+    },
+    {
+      "id": "rock_set2_10",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -9.924456,
+          0,
+          -8.682119
+        ],
+        "max": [
+          9.978811,
+          7.747105,
+          8.682119
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "rock_set2_10/lod0.glb",
+          "triangles": 1000
+        },
+        {
+          "level": 1,
+          "path": "rock_set2_10/lod1.glb",
+          "triangles": 400
+        },
+        {
+          "level": 2,
+          "path": "rock_set2_10/lod2.glb",
+          "triangles": 119
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none",
+      "category": "rock"
+    },
+    {
+      "id": "rock_set2_11",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -8.875319,
+          0,
+          -10.956415
+        ],
+        "max": [
+          8.902001,
+          7.700915,
+          10.975328
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "rock_set2_11/lod0.glb",
+          "triangles": 1000
+        },
+        {
+          "level": 1,
+          "path": "rock_set2_11/lod1.glb",
+          "triangles": 400
+        },
+        {
+          "level": 2,
+          "path": "rock_set2_11/lod2.glb",
+          "triangles": 120
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none",
+      "category": "rock"
+    },
+    {
+      "id": "rock001",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -2.025849,
+          0,
+          -2.340649
+        ],
+        "max": [
+          2.025849,
+          2.129443,
+          2.340649
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "rock001/lod0.glb",
+          "triangles": 16
+        },
+        {
+          "level": 1,
+          "path": "rock001/lod1.glb",
+          "triangles": 16
+        },
+        {
+          "level": 2,
+          "path": "rock001/lod2.glb",
+          "triangles": 16
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "materialName"
+    },
+    {
+      "id": "rock002",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -1.516739,
+          0,
+          -1.530138
+        ],
+        "max": [
+          1.516739,
+          2.188611,
+          1.530138
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "rock002/lod0.glb",
+          "triangles": 16
+        },
+        {
+          "level": 1,
+          "path": "rock002/lod1.glb",
+          "triangles": 16
+        },
+        {
+          "level": 2,
+          "path": "rock002/lod2.glb",
+          "triangles": 16
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "materialName"
+    },
+    {
+      "id": "rock003",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -2.401759,
+          0,
+          -2.056272
+        ],
+        "max": [
+          2.401759,
+          2.051249,
+          2.056272
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "rock003/lod0.glb",
+          "triangles": 16
+        },
+        {
+          "level": 1,
+          "path": "rock003/lod1.glb",
+          "triangles": 16
+        },
+        {
+          "level": 2,
+          "path": "rock003/lod2.glb",
+          "triangles": 16
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "materialName"
+    },
+    {
+      "id": "site_garage_restored",
+      "kind": "building",
+      "bounds": {
+        "min": [
+          -6.7,
+          0,
+          -5.7
+        ],
+        "max": [
+          6.6,
+          6.62,
+          5.7
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "site_garage_restored/lod0.glb",
+          "triangles": 1052
+        },
+        {
+          "level": 1,
+          "path": "site_garage_restored/lod1.glb",
+          "triangles": 400
+        },
+        {
+          "level": 2,
+          "path": "site_garage_restored/lod2.glb",
+          "triangles": 196
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "footprint": {
+        "w": 13,
+        "h": 11
+      },
+      "teamMaterials": [
+        "team_trim"
+      ]
+    },
+    {
+      "id": "site_garage_ruin",
+      "kind": "building",
+      "bounds": {
+        "min": [
+          -6.7,
+          -0.000311,
+          -5.7
+        ],
+        "max": [
+          6.6,
+          6.28269,
+          5.7
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "site_garage_ruin/lod0.glb",
+          "triangles": 1020
+        },
+        {
+          "level": 1,
+          "path": "site_garage_ruin/lod1.glb",
+          "triangles": 560
+        },
+        {
+          "level": 2,
+          "path": "site_garage_ruin/lod2.glb",
+          "triangles": 236
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "footprint": {
+        "w": 13,
+        "h": 11
+      },
+      "teamMaterials": []
+    },
+    {
+      "id": "site_gas_station_restored",
+      "kind": "building",
+      "bounds": {
+        "min": [
+          -7.42,
+          0,
+          -5.5
+        ],
+        "max": [
+          7.42,
+          5.35,
+          5.12
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "site_gas_station_restored/lod0.glb",
+          "triangles": 626
+        },
+        {
+          "level": 1,
+          "path": "site_gas_station_restored/lod1.glb",
+          "triangles": 410
+        },
+        {
+          "level": 2,
+          "path": "site_gas_station_restored/lod2.glb",
+          "triangles": 226
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "footprint": {
+        "w": 15,
+        "h": 11
+      },
+      "teamMaterials": [
+        "team_trim"
+      ]
+    },
+    {
+      "id": "site_gas_station_ruin",
+      "kind": "building",
+      "bounds": {
+        "min": [
+          -7.3,
+          -0.000392,
+          -5.5
+        ],
+        "max": [
+          7.497524,
+          5.387338,
+          5.319139
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "site_gas_station_ruin/lod0.glb",
+          "triangles": 984
+        },
+        {
+          "level": 1,
+          "path": "site_gas_station_ruin/lod1.glb",
+          "triangles": 612
+        },
+        {
+          "level": 2,
+          "path": "site_gas_station_ruin/lod2.glb",
+          "triangles": 284
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "footprint": {
+        "w": 15,
+        "h": 11
+      },
+      "teamMaterials": []
+    },
+    {
+      "id": "site_supermarket_restored",
+      "kind": "building",
+      "bounds": {
+        "min": [
+          -12.5,
+          0,
+          -7.58
+        ],
+        "max": [
+          12.5,
+          7.52,
+          7.54
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "site_supermarket_restored/lod0.glb",
+          "triangles": 964
+        },
+        {
+          "level": 1,
+          "path": "site_supermarket_restored/lod1.glb",
+          "triangles": 628
+        },
+        {
+          "level": 2,
+          "path": "site_supermarket_restored/lod2.glb",
+          "triangles": 178
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "footprint": {
+        "w": 25,
+        "h": 15
+      },
+      "teamMaterials": [
+        "team_trim"
+      ]
+    },
+    {
+      "id": "site_supermarket_ruin",
+      "kind": "building",
+      "bounds": {
+        "min": [
+          -12.74325,
+          -0.000313,
+          -7.58
+        ],
+        "max": [
+          12.6,
+          7.51,
+          7.637253
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "site_supermarket_ruin/lod0.glb",
+          "triangles": 1502
+        },
+        {
+          "level": 1,
+          "path": "site_supermarket_ruin/lod1.glb",
+          "triangles": 998
+        },
+        {
+          "level": 2,
+          "path": "site_supermarket_ruin/lod2.glb",
+          "triangles": 290
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "footprint": {
+        "w": 25,
+        "h": 15
+      },
+      "teamMaterials": []
+    },
+    {
+      "id": "site_water_tower_restored",
+      "kind": "building",
+      "bounds": {
+        "min": [
+          -3.5,
+          0,
+          -3.5
+        ],
+        "max": [
+          3.5,
+          18.879999,
+          3.5
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "site_water_tower_restored/lod0.glb",
+          "triangles": 1718
+        },
+        {
+          "level": 1,
+          "path": "site_water_tower_restored/lod1.glb",
+          "triangles": 904
+        },
+        {
+          "level": 2,
+          "path": "site_water_tower_restored/lod2.glb",
+          "triangles": 204
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "footprint": {
+        "w": 7,
+        "h": 7
+      },
+      "teamMaterials": [
+        "team_trim"
+      ]
+    },
+    {
+      "id": "site_water_tower_ruin",
+      "kind": "building",
+      "bounds": {
+        "min": [
+          -3.52268,
+          0,
+          -3.5
+        ],
+        "max": [
+          3.677237,
+          18.540396,
+          3.589698
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "site_water_tower_ruin/lod0.glb",
+          "triangles": 1602
+        },
+        {
+          "level": 1,
+          "path": "site_water_tower_ruin/lod1.glb",
+          "triangles": 890
+        },
+        {
+          "level": 2,
+          "path": "site_water_tower_ruin/lod2.glb",
+          "triangles": 202
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "footprint": {
+        "w": 7,
+        "h": 7
+      },
+      "teamMaterials": []
+    },
+    {
+      "id": "survival_behemoth",
+      "kind": "rigid-unit",
+      "bounds": {
+        "min": [
+          -3.18,
+          0,
+          -0.957481
+        ],
+        "max": [
+          2.6,
+          6.65,
+          1.276846
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "survival_behemoth/lod0.glb",
+          "triangles": 801
+        },
+        {
+          "level": 1,
+          "path": "survival_behemoth/lod1.glb",
+          "triangles": 384
+        },
+        {
+          "level": 2,
+          "path": "survival_behemoth/lod2.glb",
+          "triangles": 188
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMaterials": [],
+      "teamMask": "none",
+      "rigid": true
+    },
+    {
+      "id": "survival_ghoul",
+      "kind": "character",
+      "bounds": {
+        "min": [
+          -0.921192,
+          0.002294,
+          -0.154001
+        ],
+        "max": [
+          0.921614,
+          1.736029,
+          0.192157
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "survival_ghoul/lod0.glb",
+          "triangles": 3598
+        },
+        {
+          "level": 1,
+          "path": "survival_ghoul/lod1.glb",
+          "triangles": 1349
+        },
+        {
+          "level": 2,
+          "path": "survival_ghoul/lod2.glb",
+          "triangles": 492
+        }
+      ],
+      "sockets": {
+        "hand": [
+          -0.701955,
+          1.36876,
+          -0.06213
+        ],
+        "back": [
+          0,
+          1.24906,
+          -0.004655
+        ],
+        "head": [
+          0,
+          1.490265,
+          0.004845
+        ]
+      },
+      "animations": [
+        {
+          "name": "death",
+          "durationSeconds": 2.4
+        },
+        {
+          "name": "build",
+          "durationSeconds": 5.2
+        },
+        {
+          "name": "idle",
+          "durationSeconds": 2.5
+        },
+        {
+          "name": "gather",
+          "durationSeconds": 2
+        },
+        {
+          "name": "run",
+          "durationSeconds": 0.933333
+        },
+        {
+          "name": "attack1",
+          "durationSeconds": 0.633333
+        },
+        {
+          "name": "attack2",
+          "durationSeconds": 1
+        },
+        {
+          "name": "walk",
+          "durationSeconds": 1.333333
+        }
+      ],
+      "boneCount": 20,
+      "teamMask": "materialName",
+      "baked": {
+        "path": "survival_ghoul/survival_ghoul.anim.f32",
+        "width": 80,
+        "height": 480,
+        "fps": 30,
+        "clips": [
+          {
+            "name": "idle",
+            "startRow": 0,
+            "frames": 75,
+            "loop": true,
+            "durationSeconds": 2.5
+          },
+          {
+            "name": "walk",
+            "startRow": 75,
+            "frames": 40,
+            "loop": true,
+            "durationSeconds": 1.333333
+          },
+          {
+            "name": "run",
+            "startRow": 115,
+            "frames": 28,
+            "loop": true,
+            "durationSeconds": 0.933333
+          },
+          {
+            "name": "attack1",
+            "startRow": 143,
+            "frames": 19,
+            "loop": true,
+            "durationSeconds": 0.633333
+          },
+          {
+            "name": "attack2",
+            "startRow": 162,
+            "frames": 30,
+            "loop": true,
+            "durationSeconds": 1
+          },
+          {
+            "name": "gather",
+            "startRow": 192,
+            "frames": 60,
+            "loop": true,
+            "durationSeconds": 2
+          },
+          {
+            "name": "build",
+            "startRow": 252,
+            "frames": 156,
+            "loop": true,
+            "durationSeconds": 5.2
+          },
+          {
+            "name": "death",
+            "startRow": 408,
+            "frames": 72,
+            "loop": false,
+            "durationSeconds": 2.4
+          }
+        ]
+      },
+      "palette": {
+        "jacket": "#5d6652",
+        "patchTop": "#4b5342",
+        "patchLeg": "#3b4034",
+        "belt": "#292a23",
+        "trousers": "#434839",
+        "boots": "#2a2b24",
+        "skin": "#7f8c70",
+        "teamZone": "band",
+        "farTeam": 0
+      }
+    },
+    {
+      "id": "survival_ghoul_runner",
+      "kind": "character",
+      "bounds": {
+        "min": [
+          -0.872708,
+          0.002174,
+          -0.145896
+        ],
+        "max": [
+          0.873108,
+          1.644659,
+          0.182043
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "survival_ghoul_runner/lod0.glb",
+          "triangles": 3598
+        },
+        {
+          "level": 1,
+          "path": "survival_ghoul_runner/lod1.glb",
+          "triangles": 1348
+        },
+        {
+          "level": 2,
+          "path": "survival_ghoul_runner/lod2.glb",
+          "triangles": 492
+        }
+      ],
+      "sockets": {
+        "hand": [
+          -0.66501,
+          1.29672,
+          -0.05886
+        ],
+        "back": [
+          0,
+          1.18332,
+          -0.00441
+        ],
+        "head": [
+          0,
+          1.41183,
+          0.00459
+        ]
+      },
+      "animations": [
+        {
+          "name": "death",
+          "durationSeconds": 2.4
+        },
+        {
+          "name": "build",
+          "durationSeconds": 5.2
+        },
+        {
+          "name": "idle",
+          "durationSeconds": 2.5
+        },
+        {
+          "name": "gather",
+          "durationSeconds": 2
+        },
+        {
+          "name": "run",
+          "durationSeconds": 0.933333
+        },
+        {
+          "name": "attack1",
+          "durationSeconds": 0.633333
+        },
+        {
+          "name": "attack2",
+          "durationSeconds": 1
+        },
+        {
+          "name": "walk",
+          "durationSeconds": 1.333333
+        }
+      ],
+      "boneCount": 20,
+      "teamMask": "materialName",
+      "baked": {
+        "path": "survival_ghoul_runner/survival_ghoul_runner.anim.f32",
+        "width": 80,
+        "height": 480,
+        "fps": 30,
+        "clips": [
+          {
+            "name": "idle",
+            "startRow": 0,
+            "frames": 75,
+            "loop": true,
+            "durationSeconds": 2.5
+          },
+          {
+            "name": "walk",
+            "startRow": 75,
+            "frames": 40,
+            "loop": true,
+            "durationSeconds": 1.333333
+          },
+          {
+            "name": "run",
+            "startRow": 115,
+            "frames": 28,
+            "loop": true,
+            "durationSeconds": 0.933333
+          },
+          {
+            "name": "attack1",
+            "startRow": 143,
+            "frames": 19,
+            "loop": true,
+            "durationSeconds": 0.633333
+          },
+          {
+            "name": "attack2",
+            "startRow": 162,
+            "frames": 30,
+            "loop": true,
+            "durationSeconds": 1
+          },
+          {
+            "name": "gather",
+            "startRow": 192,
+            "frames": 60,
+            "loop": true,
+            "durationSeconds": 2
+          },
+          {
+            "name": "build",
+            "startRow": 252,
+            "frames": 156,
+            "loop": true,
+            "durationSeconds": 5.2
+          },
+          {
+            "name": "death",
+            "startRow": 408,
+            "frames": 72,
+            "loop": false,
+            "durationSeconds": 2.4
+          }
+        ]
+      },
+      "palette": {
+        "jacket": "#6c7660",
+        "patchTop": "#59634d",
+        "patchLeg": "#444a3a",
+        "belt": "#2d2e26",
+        "trousers": "#4e5441",
+        "boots": "#2c2d26",
+        "skin": "#8c9a7c",
+        "teamZone": "band",
+        "farTeam": 0
+      }
+    },
+    {
+      "id": "survival_klauwbeest",
+      "kind": "rigid-unit",
+      "bounds": {
+        "min": [
+          -0.68,
+          0,
+          -1.52
+        ],
+        "max": [
+          0.68,
+          1.556618,
+          1.572302
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "survival_klauwbeest/lod0.glb",
+          "triangles": 616
+        },
+        {
+          "level": 1,
+          "path": "survival_klauwbeest/lod1.glb",
+          "triangles": 328
+        },
+        {
+          "level": 2,
+          "path": "survival_klauwbeest/lod2.glb",
+          "triangles": 230
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMaterials": [],
+      "teamMask": "none",
+      "rigid": true
+    },
+    {
+      "id": "survival_mutant",
+      "kind": "character",
+      "bounds": {
+        "min": [
+          -1.212095,
+          0.003019,
+          -0.202633
+        ],
+        "max": [
+          1.212651,
+          2.284248,
+          0.252838
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "survival_mutant/lod0.glb",
+          "triangles": 3598
+        },
+        {
+          "level": 1,
+          "path": "survival_mutant/lod1.glb",
+          "triangles": 1349
+        },
+        {
+          "level": 2,
+          "path": "survival_mutant/lod2.glb",
+          "triangles": 492
+        }
+      ],
+      "sockets": {
+        "hand": [
+          -0.923625,
+          1.801,
+          -0.08175
+        ],
+        "back": [
+          0,
+          1.6435,
+          -0.006125
+        ],
+        "head": [
+          0,
+          1.960875,
+          0.006375
+        ]
+      },
+      "animations": [
+        {
+          "name": "death",
+          "durationSeconds": 2.4
+        },
+        {
+          "name": "build",
+          "durationSeconds": 5.2
+        },
+        {
+          "name": "idle",
+          "durationSeconds": 2.5
+        },
+        {
+          "name": "gather",
+          "durationSeconds": 2
+        },
+        {
+          "name": "run",
+          "durationSeconds": 0.933333
+        },
+        {
+          "name": "attack1",
+          "durationSeconds": 0.633333
+        },
+        {
+          "name": "attack2",
+          "durationSeconds": 1
+        },
+        {
+          "name": "walk",
+          "durationSeconds": 1.333333
+        }
+      ],
+      "boneCount": 20,
+      "teamMask": "materialName",
+      "baked": {
+        "path": "survival_mutant/survival_mutant.anim.f32",
+        "width": 80,
+        "height": 480,
+        "fps": 30,
+        "clips": [
+          {
+            "name": "idle",
+            "startRow": 0,
+            "frames": 75,
+            "loop": true,
+            "durationSeconds": 2.5
+          },
+          {
+            "name": "walk",
+            "startRow": 75,
+            "frames": 40,
+            "loop": true,
+            "durationSeconds": 1.333333
+          },
+          {
+            "name": "run",
+            "startRow": 115,
+            "frames": 28,
+            "loop": true,
+            "durationSeconds": 0.933333
+          },
+          {
+            "name": "attack1",
+            "startRow": 143,
+            "frames": 19,
+            "loop": true,
+            "durationSeconds": 0.633333
+          },
+          {
+            "name": "attack2",
+            "startRow": 162,
+            "frames": 30,
+            "loop": true,
+            "durationSeconds": 1
+          },
+          {
+            "name": "gather",
+            "startRow": 192,
+            "frames": 60,
+            "loop": true,
+            "durationSeconds": 2
+          },
+          {
+            "name": "build",
+            "startRow": 252,
+            "frames": 156,
+            "loop": true,
+            "durationSeconds": 5.2
+          },
+          {
+            "name": "death",
+            "startRow": 408,
+            "frames": 72,
+            "loop": false,
+            "durationSeconds": 2.4
+          }
+        ]
+      },
+      "palette": {
+        "jacket": "#8a9a3c",
+        "patchTop": "#a3a444",
+        "patchLeg": "#5f6a2a",
+        "belt": "#3a3d1c",
+        "trousers": "#68732f",
+        "boots": "#383b1d",
+        "skin": "#a3ae4a",
+        "teamZone": "band",
+        "farTeam": 0
+      }
+    },
+    {
+      "id": "survival_mutant_brute",
+      "kind": "character",
+      "bounds": {
+        "min": [
+          -1.37694,
+          0.003429,
+          -0.230191
+        ],
+        "max": [
+          1.377571,
+          2.594906,
+          0.287224
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "survival_mutant_brute/lod0.glb",
+          "triangles": 3598
+        },
+        {
+          "level": 1,
+          "path": "survival_mutant_brute/lod1.glb",
+          "triangles": 1349
+        },
+        {
+          "level": 2,
+          "path": "survival_mutant_brute/lod2.glb",
+          "triangles": 493
+        }
+      ],
+      "sockets": {
+        "hand": [
+          -1.049238,
+          2.045936,
+          -0.092868
+        ],
+        "back": [
+          0,
+          1.867016,
+          -0.006958
+        ],
+        "head": [
+          0,
+          2.227554,
+          0.007242
+        ]
+      },
+      "animations": [
+        {
+          "name": "death",
+          "durationSeconds": 2.4
+        },
+        {
+          "name": "build",
+          "durationSeconds": 5.2
+        },
+        {
+          "name": "idle",
+          "durationSeconds": 2.5
+        },
+        {
+          "name": "gather",
+          "durationSeconds": 2
+        },
+        {
+          "name": "run",
+          "durationSeconds": 0.933333
+        },
+        {
+          "name": "attack1",
+          "durationSeconds": 0.633333
+        },
+        {
+          "name": "attack2",
+          "durationSeconds": 1
+        },
+        {
+          "name": "walk",
+          "durationSeconds": 1.333333
+        }
+      ],
+      "boneCount": 20,
+      "teamMask": "materialName",
+      "baked": {
+        "path": "survival_mutant_brute/survival_mutant_brute.anim.f32",
+        "width": 80,
+        "height": 480,
+        "fps": 30,
+        "clips": [
+          {
+            "name": "idle",
+            "startRow": 0,
+            "frames": 75,
+            "loop": true,
+            "durationSeconds": 2.5
+          },
+          {
+            "name": "walk",
+            "startRow": 75,
+            "frames": 40,
+            "loop": true,
+            "durationSeconds": 1.333333
+          },
+          {
+            "name": "run",
+            "startRow": 115,
+            "frames": 28,
+            "loop": true,
+            "durationSeconds": 0.933333
+          },
+          {
+            "name": "attack1",
+            "startRow": 143,
+            "frames": 19,
+            "loop": true,
+            "durationSeconds": 0.633333
+          },
+          {
+            "name": "attack2",
+            "startRow": 162,
+            "frames": 30,
+            "loop": true,
+            "durationSeconds": 1
+          },
+          {
+            "name": "gather",
+            "startRow": 192,
+            "frames": 60,
+            "loop": true,
+            "durationSeconds": 2
+          },
+          {
+            "name": "build",
+            "startRow": 252,
+            "frames": 156,
+            "loop": true,
+            "durationSeconds": 5.2
+          },
+          {
+            "name": "death",
+            "startRow": 408,
+            "frames": 72,
+            "loop": false,
+            "durationSeconds": 2.4
+          }
+        ]
+      },
+      "palette": {
+        "jacket": "#7c8a2e",
+        "patchTop": "#b0a63a",
+        "patchLeg": "#566024",
+        "belt": "#33361a",
+        "trousers": "#5f6a29",
+        "boots": "#323518",
+        "skin": "#9aa63f",
+        "teamZone": "band",
+        "farTeam": 0
+      }
+    },
+    {
+      "id": "tree_bare_01",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -2.550408,
+          0,
+          -1.350689
+        ],
+        "max": [
+          2.648557,
+          9.273618,
+          3.878488
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "tree_bare_01/lod0.glb",
+          "triangles": 1500
+        },
+        {
+          "level": 1,
+          "path": "tree_bare_01/lod1.glb",
+          "triangles": 500
+        },
+        {
+          "level": 2,
+          "path": "tree_bare_01/lod2.glb",
+          "triangles": 144
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none",
+      "category": "tree-bare",
+      "alpha": "mask"
+    },
+    {
+      "id": "tree_bare_02",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -3.585048,
+          0,
+          -0.160819
+        ],
+        "max": [
+          4.886115,
+          7.338819,
+          6.694471
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "tree_bare_02/lod0.glb",
+          "triangles": 1500
+        },
+        {
+          "level": 1,
+          "path": "tree_bare_02/lod1.glb",
+          "triangles": 500
+        },
+        {
+          "level": 2,
+          "path": "tree_bare_02/lod2.glb",
+          "triangles": 148
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none",
+      "category": "tree-bare",
+      "alpha": "mask"
+    },
+    {
+      "id": "tree_bare_03",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -2.584261,
+          0,
+          -3.020685
+        ],
+        "max": [
+          2.283586,
+          7.330945,
+          2.449814
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "tree_bare_03/lod0.glb",
+          "triangles": 1500
+        },
+        {
+          "level": 1,
+          "path": "tree_bare_03/lod1.glb",
+          "triangles": 498
+        },
+        {
+          "level": 2,
+          "path": "tree_bare_03/lod2.glb",
+          "triangles": 136
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none",
+      "category": "tree-bare",
+      "alpha": "mask"
+    },
+    {
+      "id": "tree_oak_01",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -3.020348,
+          0,
+          -1.760826
+        ],
+        "max": [
+          2.764657,
+          7,
+          3.458588
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "tree_oak_01/lod0.glb",
+          "triangles": 1486
+        },
+        {
+          "level": 1,
+          "path": "tree_oak_01/lod1.glb",
+          "triangles": 498
+        },
+        {
+          "level": 2,
+          "path": "tree_oak_01/lod2.glb",
+          "triangles": 147
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none",
+      "category": "tree-leafy",
+      "alpha": "mask"
+    },
+    {
+      "id": "tree_oak_02",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -3.738391,
+          0,
+          -4.67248
+        ],
+        "max": [
+          4.639569,
+          10,
+          3.841039
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "tree_oak_02/lod0.glb",
+          "triangles": 1458
+        },
+        {
+          "level": 1,
+          "path": "tree_oak_02/lod1.glb",
+          "triangles": 495
+        },
+        {
+          "level": 2,
+          "path": "tree_oak_02/lod2.glb",
+          "triangles": 147
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none",
+      "category": "tree-leafy",
+      "alpha": "mask"
+    },
+    {
+      "id": "tree_oak_03",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -5.602129,
+          0,
+          -4.743079
+        ],
+        "max": [
+          5.13411,
+          12.999999,
+          5.873591
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "tree_oak_03/lod0.glb",
+          "triangles": 1471
+        },
+        {
+          "level": 1,
+          "path": "tree_oak_03/lod1.glb",
+          "triangles": 497
+        },
+        {
+          "level": 2,
+          "path": "tree_oak_03/lod2.glb",
+          "triangles": 146
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none",
+      "category": "tree-leafy",
+      "alpha": "mask"
+    },
+    {
+      "id": "tree_pine_01",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -2.414298,
+          0,
+          -2.479218
+        ],
+        "max": [
+          2.174985,
+          9.385921,
+          2.240258
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "tree_pine_01/lod0.glb",
+          "triangles": 1500
+        },
+        {
+          "level": 1,
+          "path": "tree_pine_01/lod1.glb",
+          "triangles": 488
+        },
+        {
+          "level": 2,
+          "path": "tree_pine_01/lod2.glb",
+          "triangles": 130
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none",
+      "category": "tree-leafy",
+      "alpha": "mask"
+    },
+    {
+      "id": "tree_pine_02",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -2.539848,
+          0,
+          -2.551518
+        ],
+        "max": [
+          2.553177,
+          12.931706,
+          2.610949
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "tree_pine_02/lod0.glb",
+          "triangles": 1499
+        },
+        {
+          "level": 1,
+          "path": "tree_pine_02/lod1.glb",
+          "triangles": 487
+        },
+        {
+          "level": 2,
+          "path": "tree_pine_02/lod2.glb",
+          "triangles": 130
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none",
+      "category": "tree-leafy",
+      "alpha": "mask"
+    },
+    {
+      "id": "tree_pine_03",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -1.871065,
+          0,
+          -1.649315
+        ],
+        "max": [
+          1.906742,
+          6.5,
+          1.773455
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "tree_pine_03/lod0.glb",
+          "triangles": 1432
+        },
+        {
+          "level": 1,
+          "path": "tree_pine_03/lod1.glb",
+          "triangles": 488
+        },
+        {
+          "level": 2,
+          "path": "tree_pine_03/lod2.glb",
+          "triangles": 131
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none",
+      "category": "tree-leafy",
+      "alpha": "mask"
+    },
+    {
+      "id": "treehigh001",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -1.139134,
+          0,
+          -1.024837
+        ],
+        "max": [
+          1.139134,
+          8.491107,
+          1.024837
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "treehigh001/lod0.glb",
+          "triangles": 34
+        },
+        {
+          "level": 1,
+          "path": "treehigh001/lod1.glb",
+          "triangles": 34
+        },
+        {
+          "level": 2,
+          "path": "treehigh001/lod2.glb",
+          "triangles": 34
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "materialName"
+    },
+    {
+      "id": "treelow001",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -0.804691,
+          0,
+          -0.760175
+        ],
+        "max": [
+          0.804691,
+          4.322748,
+          0.760175
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "treelow001/lod0.glb",
+          "triangles": 34
+        },
+        {
+          "level": 1,
+          "path": "treelow001/lod1.glb",
+          "triangles": 34
+        },
+        {
+          "level": 2,
+          "path": "treelow001/lod2.glb",
+          "triangles": 34
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "materialName"
+    },
+    {
+      "id": "treemed001",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -2.437832,
+          0,
+          -2.239473
+        ],
+        "max": [
+          2.437832,
+          5.962622,
+          2.239473
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "treemed001/lod0.glb",
+          "triangles": 52
+        },
+        {
+          "level": 1,
+          "path": "treemed001/lod1.glb",
+          "triangles": 52
+        },
+        {
+          "level": 2,
+          "path": "treemed001/lod2.glb",
+          "triangles": 52
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "materialName"
+    },
+    {
+      "id": "wall_wood_01",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -1.13569,
+          0,
+          -0.141892
+        ],
+        "max": [
+          1.13569,
+          3,
+          0.141892
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "wall_wood_01/lod0.glb",
+          "triangles": 80
+        },
+        {
+          "level": 1,
+          "path": "wall_wood_01/lod1.glb",
+          "triangles": 80
+        },
+        {
+          "level": 2,
+          "path": "wall_wood_01/lod2.glb",
+          "triangles": 80
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none",
+      "category": "structure"
+    },
+    {
+      "id": "wall_wood_02",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -2.433555,
+          0,
+          -0.126895
+        ],
+        "max": [
+          2.433555,
+          3,
+          0.126895
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "wall_wood_02/lod0.glb",
+          "triangles": 328
+        },
+        {
+          "level": 1,
+          "path": "wall_wood_02/lod1.glb",
+          "triangles": 328
+        },
+        {
+          "level": 2,
+          "path": "wall_wood_02/lod2.glb",
+          "triangles": 116
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none",
+      "category": "structure"
+    },
+    {
+      "id": "wall_wood_03",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -1.1179,
+          0,
+          -0.104476
+        ],
+        "max": [
+          1.1179,
+          3,
+          0.104476
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "wall_wood_03/lod0.glb",
+          "triangles": 152
+        },
+        {
+          "level": 1,
+          "path": "wall_wood_03/lod1.glb",
+          "triangles": 152
+        },
+        {
+          "level": 2,
+          "path": "wall_wood_03/lod2.glb",
+          "triangles": 120
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none",
+      "category": "structure"
+    },
+    {
+      "id": "wall_wood_04",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -2.063571,
+          0,
+          -0.136042
+        ],
+        "max": [
+          2.063571,
+          3,
+          0.136042
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "wall_wood_04/lod0.glb",
+          "triangles": 256
+        },
+        {
+          "level": 1,
+          "path": "wall_wood_04/lod1.glb",
+          "triangles": 256
+        },
+        {
+          "level": 2,
+          "path": "wall_wood_04/lod2.glb",
+          "triangles": 120
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none",
+      "category": "structure"
+    },
+    {
+      "id": "watchtower_01",
+      "kind": "prop",
+      "bounds": {
+        "min": [
+          -1.276862,
+          0,
+          -1.294177
+        ],
+        "max": [
+          1.276862,
+          8,
+          1.294177
+        ]
+      },
+      "lods": [
+        {
+          "level": 0,
+          "path": "watchtower_01/lod0.glb",
+          "triangles": 474
+        },
+        {
+          "level": 1,
+          "path": "watchtower_01/lod1.glb",
+          "triangles": 400
+        },
+        {
+          "level": 2,
+          "path": "watchtower_01/lod2.glb",
+          "triangles": 120
+        }
+      ],
+      "sockets": {},
+      "animations": [],
+      "boneCount": 0,
+      "teamMask": "none",
+      "category": "structure"
+    }
+  ]
+}

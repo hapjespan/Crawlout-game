@@ -1,0 +1,177 @@
+import { fileURLToPath } from 'node:url';
+import { ROLES } from '@crawlout/data';
+import { loadGameDataFromDir } from '@crawlout/data/node';
+import type { CommandEnvelope, FrameBundle } from '@crawlout/protocol';
+import { createSim, simConfigFromGameData } from '../src/index.js';
+import type { Sim, SimInit, SimMap, SimPlayer } from '../src/index.js';
+import { statIndex } from '../src/fromData.js';
+import { cellCenter, createTestMap, testPlayers } from '../src/testing.js';
+
+/** Echte data uit data/, zoals de client en de replay die laden. */
+export const DATA = loadGameDataFromDir(fileURLToPath(new URL('../../../data', import.meta.url)));
+/**
+ * Footprints op de compacte maat van voor de echte-schaalronde (data 0.14.0): de sim-tests spelen op de testmap van
+ * 64 x 64 met vaste cellen, en de sim behandelt een footprint als parameter. Gebouwen op echte schaal (een woning van
+ * 13 x 19, een hoofdgebouw van 21 x 21) worden getest op de echte data in large-footprint.test.ts, ai.test.ts
+ * (Rustbelt XL) en de replay-fixtures.
+ */
+export const COMPACT_FOOTPRINTS: Readonly<Record<string, readonly [number, number]>> = {
+  hoofdgebouw: [5, 5],
+  woning: [3, 3],
+  werkplaats: [3, 3],
+  radiobaken: [1, 1],
+  claimpaal: [1, 1],
+  turret: [2, 2],
+  turret_laser: [2, 2],
+  robotfabriek: [5, 5],
+  lab: [3, 3],
+  trainingsfaciliteit: [3, 3],
+  // Raiders (data 0.21.0, played by the sim since 0.18.0): compact sizes for the test map (raiders.test.ts)
+  raiderkamp: [5, 5],
+  tent: [3, 3],
+  kooi: [3, 3],
+  plundermarkt: [3, 3],
+  chemlab: [3, 3],
+  autosloperij: [5, 5],
+  mitrailleursnest: [2, 2],
+  plunderpost: [1, 1],
+};
+const GARDE = DATA.factions.find((f) => f.key === 'garde')?.id ?? -2;
+/** De sim-config uit de echte data, met de footprints van de echte schaal. */
+export const REAL_CONFIG = simConfigFromGameData(DATA);
+export const CONFIG: typeof REAL_CONFIG = {
+  ...REAL_CONFIG,
+  // compact footprints are not the real scale: no territory rule here (data 0.20.0; placement.test.ts tests it on
+  // REAL_CONFIG)
+  placement: { ...REAL_CONFIG.placement, buildRange: 0 },
+  // Several tests replace aiScripts by one script of the Dwellers (index 0): another faction (Raiders, data 0.21.0) then
+  // runs without a script, so its index never points past the replaced list; the same for the versus scripts (data
+  // 0.24.0): here every faction plays its default script
+  factions: REAL_CONFIG.factions.map((f) => ({
+    ...f,
+    aiScript: f.aiScript > 0 ? -1 : f.aiScript,
+    aiScriptVersus: f.aiScriptVersus.map(() => -1),
+  })),
+  buildingTypes: REAL_CONFIG.buildingTypes.map((t) => {
+    const key = DATA.buildings.find((b) => b.id === t.buildingId)!.key;
+    const fp = COMPACT_FOOTPRINTS[key];
+    // win route C (data 0.31.0): the parts of the strip mall keep their real size (project.test.ts places them)
+    if (fp === undefined && t.factionId === -1) return t;
+    // the Garde (data 0.37.0) is data only, not played by the sim yet: its buildings keep their real size
+    if (fp === undefined && t.factionId === GARDE) return t;
+    if (fp === undefined) throw new Error(`geen compacte footprint voor ${key}`);
+    return { ...t, footprintW: fp[0], footprintH: fp[1] };
+  }),
+};
+const roles = CONFIG.factions[0]!.roleTypeIds;
+export const SCAV = roles[ROLES.indexOf('scavenger')]!;
+export const BUILDER = roles[ROLES.indexOf('builder')]!;
+export const MILITIA = roles[ROLES.indexOf('militia')]!;
+export const typeByKey = (key: string): number => {
+  const l = DATA.loadouts.find((x) => x.key === key);
+  if (l !== undefined) return CONFIG.unitTypes.find((u) => u.loadoutId === l.id)!.typeId;
+  const b = DATA.buildings.find((x) => x.key === key)!;
+  return CONFIG.buildingTypes.find((t) => t.buildingId === b.id)!.typeId;
+};
+
+export function testInit(
+  seed = 1,
+  map: SimMap = createTestMap(),
+  players: SimPlayer[] = testPlayers(2),
+): SimInit {
+  return { seed, players, map, config: CONFIG };
+}
+
+/** Sim zonder startopstelling (alleen de map), voor tests die zelf spawnen. */
+export function emptySim(
+  seed = 1,
+  map: SimMap = createTestMap(),
+  players: SimPlayer[] = testPlayers(2),
+): Sim {
+  return createSim(testInit(seed, map, players), { start: false });
+}
+
+export const envOf = (init: SimInit) => ({
+  players: init.players,
+  map: init.map,
+  config: init.config,
+});
+
+let seq = 0;
+export function cmd(
+  frame: number,
+  playerId: number,
+  type: CommandEnvelope['type'],
+  payload: unknown,
+): CommandEnvelope {
+  return { frame, playerId, seq: seq++, type, payload };
+}
+
+export const bundle = (frame: number, commands: CommandEnvelope[] = []): FrameBundle => ({
+  frame,
+  commands,
+});
+
+/** Spawnt een blok units van één speler rond cel (cx, cy). */
+export function spawnBlock(
+  sim: Sim,
+  owner: number,
+  cx: number,
+  cy: number,
+  count: number,
+  cols = 5,
+  typeId = SCAV,
+): number[] {
+  const ids: number[] = [];
+  for (let k = 0; k < count; k++) {
+    const c = cellCenter(cx + (k % cols), cy + Math.floor(k / cols));
+    const id = sim.spawnUnit({ typeId, owner, x: c.x, y: c.y });
+    if (id === 0) throw new Error(`spawn mislukt op ${c.x},${c.y}`);
+    ids.push(id);
+  }
+  return ids;
+}
+
+/** Een vast script met Move- en Stop-commando's voor twee spelers. */
+export function scriptedBundles(a: number[], b: number[]): Map<number, CommandEnvelope[]> {
+  const m = new Map<number, CommandEnvelope[]>();
+  const add = (c: CommandEnvelope): void => {
+    const list = m.get(c.frame) ?? [];
+    list.push(c);
+    m.set(c.frame, list);
+  };
+  const t1 = cellCenter(50, 40);
+  const t2 = cellCenter(10, 50);
+  add(cmd(2, 0, 'Move', { ids: a, x: t1.x, y: t1.y }));
+  add(cmd(3, 1, 'Move', { ids: b, x: t2.x, y: t2.y }));
+  add(cmd(60, 0, 'Stop', { ids: a.slice(0, 3) }));
+  add(cmd(80, 1, 'Move', { ids: b.slice(0, 5), x: t1.x, y: t1.y }));
+  add(cmd(81, 0, 'Move', { ids: b, x: t1.x, y: t1.y })); // ongeldig: niet van speler 0
+  add(cmd(120, 0, 'Move', { ids: a, x: t2.x, y: t2.y }));
+  return m;
+}
+
+/** Draait `frames` ticks en geeft de hash per tick. */
+export function runFrames(
+  sim: Sim,
+  frames: number,
+  script: Map<number, CommandEnvelope[]> = new Map(),
+): number[] {
+  const out: number[] = [];
+  for (let f = sim.frame; out.length < frames; f++) {
+    sim.applyBundle(bundle(f, script.get(f) ?? []));
+    out.push(sim.tick());
+  }
+  return out;
+}
+
+/**
+ * Kosten van een onderzoek zolang de held leeft (data 0.15.0): de passieven van de Opziener maken onderzoek goedkoper
+ * (researchCostPct, target alle). Zelfde afronding als de sim (scalePermille).
+ */
+export function heroResearchCost(scrapCost: number): number {
+  const stat = statIndex('researchCostPct');
+  let d = 0;
+  for (const e of CONFIG.heroes[0]!.passives) if (e.stat === stat) d += e.delta;
+  return Math.max(0, Math.trunc((scrapCost * (1000 + d)) / 1000));
+}

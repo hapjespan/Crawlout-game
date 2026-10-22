@@ -4,7 +4,9 @@
   "version": "0.0.1",
   "type": "module",
   "packageManager": "pnpm@9",
-  "engines": { "node": ">=22" },
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "dev": "pnpm --filter @crawlout/client dev",
     "relay": "pnpm --filter @crawlout/relay start",
@@ -14,7 +16,9 @@
     "replay": "pnpm --filter @crawlout/replay run replay",
     "bench": "pnpm --filter @crawlout/sim run bench",
     "assets": "pnpm --filter @crawlout/asset-cli run build-assets",
-    "format": "prettier --write ."
+    "assets:local": "pnpm --filter @crawlout/asset-cli run build-assets --local",
+    "format": "prettier --write .",
+    "prepare": "git config core.hooksPath .githooks || true"
   },
   "devDependencies": {
     "@eslint/js": "^9.0.0",

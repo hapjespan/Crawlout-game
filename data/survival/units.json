@@ -1,0 +1,137 @@
+{
+  "_comment": "Data 0.33.0 (Survival co-op, fase 3 ronde 1; voorstel, ter bevestiging door de architect; docs/survival-coop.md). Vijandige loadouts van de golven: neutrale eigenaar zoals de creeps (OWNER_NEUTRAL, geen factie, nooit getraind); de loader zet ze na de creep-bandieten. Anders dan bandieten vallen ze gebouwen aan en hebben ze geen leash: ze lopen naar het doel van de golf (waves.json targetRule). rank: normal, miniboss (golf 8) of boss (golf 15). lootScrap gaat naar de speler met de dodelijke klap, heroXp naar zijn levende held. meshSlots.body is het manifest-id van het vijand-assets-werk. Alle waarden startwaarde; de sim-ronde meet.",
+  "units": [
+    {
+      "id": "survival_ghoul",
+      "naam": "Ghoul",
+      "bodyType": "human",
+      "weapon": "claws",
+      "armorType": "none",
+      "hp": 40,
+      "damage": 5,
+      "damageType": "melee",
+      "rangeM": 1.5,
+      "speedMps": 3.4,
+      "cooldownS": 1,
+      "rank": "normal",
+      "lootScrap": 2,
+      "heroXp": 6,
+      "visuals": {
+        "meshSlots": {
+          "body": "survival_ghoul"
+        }
+      },
+      "_comment": "Voorstel, ter bevestiging door de architect; startwaarde, niet gemeten. De bulk van elke golf: zwak (40 hp, geen pantser, 5 melee per s) maar snel genoeg om een militie (3 m/s) in te halen. Melee doet 100 procent op geen pantser en 110 op licht."
+    },
+    {
+      "id": "survival_ghoul_runner",
+      "naam": "Ghoul-sprinter",
+      "bodyType": "human",
+      "weapon": "claws",
+      "armorType": "none",
+      "hp": 22,
+      "damage": 3,
+      "damageType": "melee",
+      "rangeM": 1.5,
+      "speedMps": 5.5,
+      "cooldownS": 0.8,
+      "rank": "normal",
+      "lootScrap": 2,
+      "heroXp": 5,
+      "visuals": {
+        "meshSlots": {
+          "body": "survival_ghoul_runner"
+        }
+      },
+      "_comment": "Voorstel, startwaarde. Glazen kanon: 22 hp, 5,5 m/s, dus eerst bij bouwers en turrets; een enkele militiesalvo dood hem."
+    },
+    {
+      "id": "survival_mutant",
+      "naam": "Mutant",
+      "bodyType": "human",
+      "weapon": "fists",
+      "armorType": "medium",
+      "hp": 220,
+      "damage": 14,
+      "damageType": "melee",
+      "rangeM": 1.8,
+      "speedMps": 2.6,
+      "cooldownS": 1.4,
+      "rank": "normal",
+      "lootScrap": 5,
+      "heroXp": 25,
+      "visuals": {
+        "meshSlots": {
+          "body": "survival_mutant"
+        }
+      },
+      "_comment": "Voorstel, startwaarde. Taaie bruiser: 220 hp medium pantser (ballistic doet 75 procent), 14 melee per 1,4 s; langzamer dan een militie, dus kiten werkt."
+    },
+    {
+      "id": "survival_mutant_brute",
+      "naam": "Mutant-brute",
+      "bodyType": "human",
+      "weapon": "slab",
+      "armorType": "heavy",
+      "hp": 520,
+      "damage": 30,
+      "damageType": "melee",
+      "rangeM": 2.2,
+      "speedMps": 2.4,
+      "cooldownS": 1.8,
+      "rank": "normal",
+      "lootScrap": 12,
+      "heroXp": 60,
+      "visuals": {
+        "meshSlots": {
+          "body": "survival_mutant_brute"
+        }
+      },
+      "_comment": "Voorstel, startwaarde. Zware tank: 520 hp heavy pantser (ballistic 50 procent, energy 125 procent), 30 melee per 1,8 s; vraagt energiewapens of massa."
+    },
+    {
+      "id": "survival_klauwbeest",
+      "naam": "Klauwbeest",
+      "bodyType": "beast",
+      "weapon": "claws_big",
+      "armorType": "heavy",
+      "hp": 2600,
+      "damage": 45,
+      "damageType": "melee",
+      "rangeM": 2.5,
+      "speedMps": 4.2,
+      "cooldownS": 1.2,
+      "rank": "miniboss",
+      "lootScrap": 150,
+      "heroXp": 400,
+      "visuals": {
+        "meshSlots": {
+          "body": "survival_klauwbeest"
+        }
+      },
+      "_comment": "Voorstel, startwaarde. Mini-boss van golf 8 (deathclaw-achtig roofdier): 2600 hp heavy pantser, 45 melee per 1,2 s, sneller (4,2 m/s) dan elke bewoner. Eigen naam volgt met de IP."
+    },
+    {
+      "id": "survival_behemoth",
+      "naam": "Behemoth",
+      "bodyType": "beast",
+      "weapon": "stomp",
+      "armorType": "heavy",
+      "hp": 11000,
+      "damage": 90,
+      "damageType": "melee",
+      "rangeM": 4,
+      "speedMps": 2.2,
+      "cooldownS": 2,
+      "rank": "boss",
+      "lootScrap": 500,
+      "heroXp": 1500,
+      "visuals": {
+        "meshSlots": {
+          "body": "survival_behemoth"
+        }
+      },
+      "_comment": "Voorstel, startwaarde. Eindbaas van golf 15: 11000 hp heavy pantser, 90 melee per 2 s op 4 m, traag (2,2 m/s) zodat het team tijd heeft; de run eindigt pas als hij dood is."
+    }
+  ]
+}

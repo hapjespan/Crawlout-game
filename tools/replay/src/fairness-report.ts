@@ -1,0 +1,71 @@
+// Eerlijkheidsrapport (fair-ronde): AI tegen AI op Rustbelt XL over de seeds 1 tot 30, 42, 99 en 123 (of de seeds op de
+// opdrachtregel): per seed winnaar, reden en lengte, en de verdeling over de spelers. Gebruik:
+//   node --import tsx src/fairness-report.ts [seed ...]
+// De potjes lopen parallel in losse processen (fairness.ts). Met --json speelt dit proces de seeds zelf, na elkaar, en
+// schrijft het per seed één regel JSON (de volledige MatchResult); zo roept fairness.ts het aan.
+import { FAIRNESS_SEEDS, TICKS_PER_MINUTE, playMatch } from './balance.js';
+import { playMatchesParallel, summarize } from './fairness.js';
+
+const args = process.argv.slice(2);
+// --factions a,b: the faction of each player (sim 0.18.0; default both dwellers)
+const fi = args.indexOf('--factions');
+const factions = fi >= 0 ? args[fi + 1]!.split(',') : undefined;
+// --mode project: the game type Bouwproject (data 0.31.0, win route C); default skirmish
+const mi = args.indexOf('--mode');
+const mode = mi >= 0 ? (args[mi + 1] as 'skirmish' | 'project') : undefined;
+const seeds = args
+  .filter((_, k) => (fi < 0 || k !== fi + 1) && (mi < 0 || k !== mi + 1))
+  .map(Number)
+  .filter((n) => Number.isInteger(n));
+const list = seeds.length > 0 ? seeds : FAIRNESS_SEEDS;
+
+if (args.includes('--json')) {
+  for (const seed of list)
+    console.log(
+      JSON.stringify(playMatch(seed, { maxFrames: 45 * TICKS_PER_MINUTE, factions, mode })),
+    );
+} else {
+  const t0 = Date.now();
+  const results = await playMatchesParallel(list, undefined, factions, mode);
+  for (const r of results) {
+    console.log(
+      `seed ${r.seed}: winnaar ${r.winner ?? '-'} (${r.reason ?? 'geen'}) op frame ${r.frame} = ${r.minutes.toFixed(1)} min`,
+    );
+    // win route C (data 0.31.0): per player restored and lost parts, when he held every kind, his longest countdown
+    if (r.project !== null && args.includes('--project'))
+      r.project.forEach((t, p) =>
+        console.log(
+          `  p${p}${p === r.winner ? '*' : ' '} hersteld ${t.restored} verloren ${t.lost} alle soorten ${t.allKindsAt ?? '-'} langste countdown ${t.longestMinutes} min`,
+        ),
+      );
+    // per speler wat hij uit de techboom haalde (data 0.17.0): techs, sentinels, laserturrets, getrainde punten, piek-scrap
+    if (args.includes('--detail'))
+      r.players.forEach((t, p) => {
+        const last = Object.entries(t.techAt).sort((a, b) => a[1] - b[1]);
+        console.log(
+          `  p${p}${p === r.winner ? '*' : ' '} techs ${t.techs} (laatste ${last.at(-1)?.[0] ?? '-'} ${last.at(-1)?.[1] ?? ''}) sentinels ${t.robots['sentinel'] ?? 0} (protocol ${t.techAt['sentinel_protocol'] ?? '-'}) robots ${Object.values(t.robots).reduce((a, b) => a + b, 0)} laser ${t.built['turret_laser'] ?? 0} turret ${t.built['turret'] ?? 0} trained ${t.trained} piek ${t.peakScrap} ongebruikt ${t.income - t.spent} lab ${t.firstBuilt['lab'] ?? '-'} fabriek ${t.firstBuilt['robotfabriek'] ?? '-'} training ${t.firstBuilt['trainingsfaciliteit'] ?? '-'} held ${t.heroLevel}`,
+        );
+      });
+  }
+  // creep camps (sim 0.20.0): how often and when each was cleared, and by whom
+  if (args.includes('--camps')) {
+    for (const r of results)
+      console.log(
+        `  seed ${r.seed} camps: ${r.camps.map((c) => (c.clearedBy === null ? `t${c.tier} -` : `t${c.tier} p${c.clearedBy}@${c.minute}`)).join(', ')}`,
+      );
+  }
+  const all = results.flatMap((r) => r.camps);
+  const cleared = all.filter((c) => c.minute !== null);
+  if (all.length > 0) {
+    const mins = cleared.map((c) => c.minute!).sort((a, b) => a - b);
+    const byTier = (t: number) => cleared.filter((c) => c.tier === t).length;
+    const ofTier = (t: number) => all.filter((c) => c.tier === t).length;
+    console.log(
+      `kampen: ${cleared.length} van ${all.length} geruimd (tier 1 ${byTier(1)}/${ofTier(1)}, tier 2 ${byTier(2)}/${ofTier(2)}); minuut ${mins[0]?.toFixed(1) ?? '-'} tot ${mins.at(-1)?.toFixed(1) ?? '-'}, mediaan ${mins[Math.floor(mins.length / 2)]?.toFixed(1) ?? '-'}; per potje ${(cleared.length / results.length).toFixed(1)}`,
+    );
+  }
+  const s = summarize(results);
+  console.log(
+    `speler 0 wint ${s.wins[0]}, speler 1 wint ${s.wins[1]} van ${list.length}; vernietiging ${s.reasons.destruction}, dominantie ${s.reasons.dominance}, bouwproject ${s.reasons.project}; lengte ${s.minMinutes.toFixed(1)} tot ${s.maxMinutes.toFixed(1)} min, ${s.inWindow} tussen 25 en 35  [${((Date.now() - t0) / 1000).toFixed(1)} s]`,
+  );
+}

@@ -1,0 +1,154 @@
+{
+  "version": 1,
+  "attribution": "Prop packs by DJMaesen (https://sketchfab.com/bumstrum), CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/). Split, scaled, simplified and re-encoded for Crawlout.",
+  "categories": {
+    "tree-leafy": {
+      "heightRangeM": [6, 15],
+      "tris": [1500, 500, 150],
+      "atlas": 1024,
+      "centre": "base"
+    },
+    "tree-bare": {
+      "heightRangeM": [6, 15],
+      "tris": [1500, 500, 150],
+      "atlas": 1024,
+      "centre": "base"
+    },
+    "grass": { "heightRangeM": [0.2, 1.2], "tris": [400, 150, 50], "atlas": 512 },
+    "plant": { "heightRangeM": [0.3, 2], "tris": [200, 100, 40], "atlas": 512 },
+    "rock": { "heightRangeM": [0.3, 12], "tris": [1000, 400, 120], "atlas": 512 },
+    "crate": { "heightRangeM": [0.5, 1.2], "tris": [400, 200, 80], "atlas": 512 },
+    "chest": { "heightRangeM": [0.25, 1], "tris": [800, 300, 100], "atlas": 512 },
+    "barrel": { "heightRangeM": [0.6, 1.2], "tris": [600, 250, 80], "atlas": 512 },
+    "structure": { "heightRangeM": [1.5, 10], "tris": [1000, 400, 120], "atlas": 1024 },
+    "debris": { "heightRangeM": [0.05, 1.5], "tris": [400, 150, 50], "atlas": 512 }
+  },
+  "simplify": { "flags": ["Prune"], "uvWeight": 4, "normalWeight": 0.5 },
+  "textureQuality": { "jpeg": 82, "webp": 80 },
+  "sources": {
+    "trees": {
+      "file": "trees.glb",
+      "unit": 0.01,
+      "split": { "parent": "Null" },
+      "props": {
+        "tree_bare_01": { "node": "tree1", "category": "tree-bare" },
+        "tree_bare_02": { "node": "tree2", "category": "tree-bare" },
+        "tree_bare_03": { "node": "tree3", "category": "tree-bare" }
+      }
+    },
+    "more_trees": {
+      "file": "more_trees.glb",
+      "unit": 0.01,
+      "split": { "parent": "RootNode" },
+      "props": {
+        "tree_pine_01": { "node": "tree1", "category": "tree-leafy" },
+        "tree_pine_02": { "node": "tree2", "category": "tree-leafy" },
+        "tree_pine_03": { "node": "tree3", "category": "tree-leafy", "heightM": 6.5 }
+      }
+    },
+    "oak_trees": {
+      "file": "oak_trees.glb",
+      "unit": 0.01,
+      "split": { "parent": "RootNode" },
+      "props": {
+        "tree_oak_01": { "node": "Treesmall", "category": "tree-leafy", "heightM": 7 },
+        "tree_oak_02": { "node": "Treemedium", "category": "tree-leafy", "heightM": 10 },
+        "tree_oak_03": { "node": "treelarge", "category": "tree-leafy", "heightM": 13 }
+      }
+    },
+    "grass_patches": {
+      "file": "grass_patches.glb",
+      "unit": 0.01,
+      "split": { "parent": "RootNode" },
+      "props": {
+        "grass_patch_01": { "node": "grasspatch1", "category": "grass", "heightM": 0.6 },
+        "grass_patch_02": { "node": "grasspatch2", "category": "grass", "heightM": 0.6 },
+        "grass_patch_03": { "node": "grasspatch3", "category": "grass", "heightM": 0.6 }
+      }
+    },
+    "plant": {
+      "file": "plant.glb",
+      "unit": 0.01,
+      "split": { "parent": "RootNode" },
+      "props": {
+        "plant_01": { "node": "root", "category": "plant", "heightM": 1.2 }
+      }
+    },
+    "rocks_set2": {
+      "file": "rocks_set2.glb",
+      "unit": 0.01,
+      "split": { "parent": "rocks" },
+      "props": {
+        "rock_set2_01": { "node": "smallrock1", "category": "rock" },
+        "rock_set2_02": { "node": "smallrock2", "category": "rock" },
+        "rock_set2_03": { "node": "smallrock3", "category": "rock" },
+        "rock_set2_04": { "node": "smallrock4", "category": "rock" },
+        "rock_set2_05": { "node": "smallrock5", "category": "rock" },
+        "rock_set2_06": { "node": "smallrock5_1", "category": "rock" },
+        "rock_set2_07": { "node": "smallrockcluster", "category": "rock", "atlas": 1024 },
+        "rock_set2_08": { "node": "smallrockcluster_1", "category": "rock", "atlas": 1024 },
+        "rock_set2_09": {
+          "node": "cliff1",
+          "category": "rock",
+          "atlas": 1024,
+          "lod0Triangles": 1000
+        },
+        "rock_set2_10": {
+          "node": "cliff2",
+          "category": "rock",
+          "atlas": 1024,
+          "lod0Triangles": 1000
+        },
+        "rock_set2_11": {
+          "node": "cliff3",
+          "category": "rock",
+          "atlas": 1024,
+          "lod0Triangles": 1000
+        }
+      }
+    },
+    "wood_walls": {
+      "file": "wood_walls.glb",
+      "unit": 0.01,
+      "split": { "parent": "RootNode" },
+      "props": {
+        "wall_wood_01": { "node": "woodwall1", "category": "structure", "heightM": 3 },
+        "wall_wood_02": { "node": "woodwall2", "category": "structure", "heightM": 3 },
+        "wall_wood_03": { "node": "woodwall3", "category": "structure", "heightM": 3 },
+        "wall_wood_04": { "node": "woodwall4", "category": "structure", "heightM": 3 },
+        "debris_pallet_01": { "node": "palet", "category": "debris", "longestM": 1.2 },
+        "debris_pallet_02": { "node": "palet2", "category": "debris", "longestM": 1.2 }
+      }
+    },
+    "outpost": {
+      "file": "outpost.glb",
+      "unit": 0.01,
+      "split": { "parent": "RootNode" },
+      "props": {
+        "watchtower_01": {
+          "node": "outpost",
+          "category": "structure",
+          "heightM": 8,
+          "heightRangeM": [6, 10]
+        }
+      }
+    },
+    "fps_dungeon_extras": {
+      "file": "fps_dungeon_extras.glb",
+      "unit": 0.01,
+      "split": { "parent": "RootNode" },
+      "skip": { "shells": "kogelhulzen van enkele centimeters, geen prop voor een RTS" },
+      "props": {
+        "crate_01": { "node": "crate_1", "category": "crate", "heightM": 0.9 },
+        "chest_01": { "node": "chest", "category": "chest", "heightM": 0.55 },
+        "chest_02": { "node": "healthbox", "category": "chest", "heightM": 0.3 },
+        "chest_03": { "node": "ammobox", "category": "chest", "heightM": 0.3 },
+        "barrel_01": { "node": "barrel", "category": "barrel", "heightM": 0.9 },
+        "debris_barrel_01": { "node": "barrelbroken", "category": "debris", "heightM": 0.8 },
+        "debris_crate_01": { "node": "cratepieces", "category": "debris", "heightM": 0.9 },
+        "debris_table_01": { "node": "table", "category": "debris", "heightM": 0.75 },
+        "debris_chair_01": { "node": "chair", "category": "debris", "heightM": 0.9 }
+      }
+    }
+  }
+}

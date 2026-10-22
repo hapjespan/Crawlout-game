@@ -1,0 +1,4 @@
+"Low poly House" by winwoods (https://sketchfab.com/winwoods)
+Source: https://sketchfab.com/3d-models/low-poly-house-e35643562ee145cf9bf0088ef5769b51
+License: CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+Used as the base for all Dweller buildings in Crawlout (scaled, recolored and extended per building).

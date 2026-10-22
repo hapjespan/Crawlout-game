@@ -1,0 +1,68 @@
+name: ci
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# Drie parallelle jobs sinds fase 2 en 3 (21 oktober). Eén seriële job liep op PR #1 tegen de limiet van 30 minuten:
+# lint en typecheck haalden het, `pnpm test` werd afgekapt en `pnpm replay`, de clientbuild en de bench draaiden niet
+# meer. De suite groeide naar 2020 tests en 29 fixtures, en vrijwel alle looptijd zit in tools/replay (de fixtures, de
+# spiegelproef, de balansbanden en de 33 potjes van match-length). Die zware tests blijven in CI draaien zoals
+# tools/replay/README.md zegt; ze staan alleen in een eigen job met een eigen budget, zodat de wandklok de traagste job
+# is in plaats van de som. REPLAY_FAST wordt in CI bewust niet gezet.
+jobs:
+  verify:
+    name: lint, typecheck, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - name: Client production build (fase-0 sectie 22 besluit 9)
+        run: pnpm --filter @crawlout/client build
+      - name: Benchmark (meldt, blokkeert niet)
+        run: pnpm bench
+        continue-on-error: true
+
+  test:
+    name: unit tests (zonder replay)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm -r --filter '!@crawlout/replay' exec vitest run
+
+  replay:
+    name: replay-fixtures en balansbanden
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @crawlout/replay exec vitest run
+      - name: Replay-set (fase-0 regel 6, een afwijkende hash blokkeert de merge)
+        run: pnpm replay

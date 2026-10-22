@@ -4,10 +4,95 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Crawlout</title>
-    <style>html,body{margin:0;height:100%;background:#111;color:#ddd;font-family:system-ui}#app{position:relative;height:100%}</style>
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: #111;
+        color: #ddd;
+        font-family: system-ui, sans-serif;
+        overflow: hidden;
+      }
+      #stage {
+        position: relative;
+        height: 100%;
+      }
+      #view {
+        display: block;
+        width: 100%;
+        height: 100%;
+        touch-action: none;
+      }
+      #marquee {
+        position: absolute;
+        display: none;
+        border: 1px solid #7dff7d;
+        background: rgba(125, 255, 125, 0.12);
+        pointer-events: none;
+      }
+      /* Compact frame stats, top right next to the "Opgeven" button (net/perfBadge.ts). */
+      /* One layout unit of the HUD (a 1024x572 pixel of the design scaled by HUD_SCALE 0.64, packages/ui/src/units.ts); Opgeven is 48 wide at 4 from the edge. */
+      #stage {
+        --u: calc(min(calc(100vh / 572), calc(100vw / 1024)) * var(--hud-scale, 0.64));
+      }
+      #perf {
+        position: absolute;
+        top: calc(var(--u) * 4);
+        right: calc(var(--u) * 58);
+        height: calc(var(--u) * 20);
+        display: flex;
+        align-items: center;
+        padding: 0 8px;
+        border-radius: 4px;
+        background: rgba(10, 10, 12, 0.72);
+        color: #cfe8cf;
+        font-family: ui-monospace, Menlo, Consolas, monospace;
+        font-size: max(11px, calc(var(--u) * 8));
+        white-space: nowrap;
+        pointer-events: none;
+      }
+      #hud {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+      }
+      /* The end of a match (Gewonnen / Verloren and the way back to the menu) is drawn by packages/ui (menu/end.ts). */
+      #end {
+        position: absolute;
+        inset: 0;
+        display: none;
+        z-index: 25;
+      }
+      /* The pre-match screens (splash, menu, lobby); the menu root inside takes the pointer and the keys while it shows. */
+      #menu {
+        position: absolute;
+        inset: 0;
+        z-index: 30;
+        pointer-events: none;
+      }
+      #error {
+        position: absolute;
+        inset: 0;
+        z-index: 40;
+        display: none;
+        place-items: center;
+        padding: 24px;
+        text-align: center;
+        background: rgba(10, 10, 12, 0.85);
+      }
+    </style>
   </head>
   <body>
-    <div id="app"></div>
+    <div id="stage">
+      <canvas id="view" aria-label="Crawlout: speelveld"></canvas>
+      <div id="marquee"></div>
+      <div id="hud"></div>
+      <div id="perf"></div>
+      <div id="end"></div>
+      <div id="menu"></div>
+      <div id="error" role="alert"></div>
+    </div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

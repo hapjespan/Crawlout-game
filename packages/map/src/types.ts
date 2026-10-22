@@ -1,0 +1,52 @@
+// Sim-gerichte maptypes. Alles integers: cellen van 1 m, en waar de sim posities nodig heeft sim-eenheden (1 m = 256).
+export interface MapPoint {
+  /** Cel-coordinaten (1 cel = 1 m). */
+  x: number;
+  y: number;
+  /** Middelpunt van de cel in sim-eenheden. */
+  ux: number;
+  uy: number;
+}
+export interface ScrapNode extends MapPoint {
+  amount: number;
+}
+export interface ClaimPoint extends MapPoint {
+  kind: 'scrap' | 'settlement' | 'powerArmor';
+}
+export interface CreepCamp extends MapPoint {
+  tier: number;
+}
+/** A ruined part of the strip mall (win route C, map 0.11.0): the centre cell of its footprint and its part id. */
+export interface ProjectSite extends MapPoint {
+  part: string;
+}
+export interface MapGrid {
+  id: string;
+  /** Breedte en hoogte in cellen. */
+  w: number;
+  h: number;
+  /** w*h bytes, index y*w+x. 1 = begaanbaar, 0 = onbegaanbaar. Het enige terreinveld dat de sim leest. */
+  passable: Uint8Array;
+  scrapNodes: ScrapNode[];
+  claimPoints: ClaimPoint[];
+  /**
+   * Startposities in playerId-volgorde: spawns[i] hoort bij playerId i (spelers 0 en 1 op Rustbelt).
+   * De volgorde komt uit de generator (A-helft eerst, dan de gespiegelde B-helft) en is deel van het mapcontract.
+   * Dominantie (pointsRequired, minutes) leest de data-loader uit MapDef en rekent hij om naar ticks (secondsToTicks);
+   * MapGrid bevat bewust geen spelregelgetallen.
+   */
+  spawns: MapPoint[];
+  creepCamps: CreepCamp[];
+  /** Win route C (map 0.11.0): the parts of the strip mall in map order; empty on a map without them. */
+  projectSites: ProjectSite[];
+}
+/** Alleen voor de renderer. w*h waarden in sim-eenheden (1/256 m), index y*w+x. */
+export interface Heightmap {
+  w: number;
+  h: number;
+  data: Int16Array;
+}
+/** Leest bestanden uit data/ op ref (zoals in MapDef.heightmap en MapDef.passability). Synchroon: de sim heeft geen IO. */
+export interface MapAssets {
+  read(ref: string): string;
+}

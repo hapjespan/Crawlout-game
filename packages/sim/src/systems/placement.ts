@@ -1,0 +1,32 @@
+export {
+  PLACE_OK,
+  PLACE_BLOCKED,
+  PLACE_TERRAIN,
+  PLACE_CROWDED,
+  PLACE_DEPOT,
+  PLACE_FEATURE,
+  PLACE_TERRITORY,
+  PLACE_HQ_RANGE,
+  PLACE_ZONE,
+  PLACEMENT_REASONS,
+  AS_DEPOT,
+  AS_CLAIM,
+  AS_POINTS_NEAR,
+  AS_NO_MARGIN,
+  RECT_DEPOT,
+  RECT_CLAIM,
+  POINT_NODE,
+  POINT_CLAIM,
+  marginCells,
+  placementReason,
+  neighbourReason,
+  placeAs,
+  inHqRange,
+  hqCentres,
+  touchesTerritory,
+  territoryMask,
+  territoryOf,
+} from './placement.part1.js';
+export type { PlacementReason, PlacementInput } from './placement.part1.js';
+export { placementInput, placementReasonAt, CLAIM_TIERS, claimSiteIn } from './placement.part2.js';
+export type { ClaimSite } from './placement.part2.js';

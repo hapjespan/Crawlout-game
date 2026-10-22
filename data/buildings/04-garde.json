@@ -1,0 +1,181 @@
+[
+  {
+    "id": "bastion",
+    "faction": "garde",
+    "hp": 1800,
+    "armorType": "heavy",
+    "scrapCost": 0,
+    "buildS": 0,
+    "footprint": {
+      "w": 21,
+      "h": 21
+    },
+    "beds": 6,
+    "provides": [
+      "hq",
+      "claim",
+      "huisvesting",
+      "tent"
+    ],
+    "prereqTech": [],
+    "visuals": {
+      "mesh": "garde_building_bastion"
+    },
+    "sightM": 14,
+    "_comment": "startwaarde, geen balans. Bastion (hoofdgebouw, provides hq): staat bij de start. 1800 hp heavy (Dwellers 1500, Raiders 1100): het is de vernietigingsroute van de tegenstander en moet duur zijn om te slopen. 6 bedden. provides tent: het vangnet (tenten_instroom) komt hier uit, zodat er geen nieuwe sim-regel nodig is."
+  },
+  {
+    "id": "kazerne",
+    "faction": "garde",
+    "hp": 450,
+    "armorType": "medium",
+    "scrapCost": 130,
+    "buildS": 28,
+    "footprint": {
+      "w": 15,
+      "h": 15
+    },
+    "beds": 4,
+    "provides": [
+      "huisvesting"
+    ],
+    "prereqTech": [],
+    "visuals": {
+      "mesh": "garde_building_barracks"
+    },
+    "_comment": "startwaarde, geen balans. Kazerne: huisvesting (4 bedden voor 130 scrap, de woning van de Dwellers geeft 5 voor 95: matige groei) en de plek waar Initiates, bouwers en klerken geworven worden (loadout producedAt kazerne)."
+  },
+  {
+    "id": "smederij",
+    "faction": "garde",
+    "hp": 800,
+    "armorType": "heavy",
+    "scrapCost": 190,
+    "buildS": 45,
+    "footprint": {
+      "w": 21,
+      "h": 19
+    },
+    "beds": 0,
+    "provides": [
+      "werkplaats"
+    ],
+    "prereqTech": [],
+    "visuals": {
+      "mesh": "garde_building_forge"
+    },
+    "_comment": "startwaarde, geen balans. Smederij: werkplaats van de Garde (onderzoek en afleverpunt) en de plek waar krachtpantsers gebouwd worden (producedAt smederij). 190 scrap, 45 s."
+  },
+  {
+    "id": "archief",
+    "faction": "garde",
+    "hp": 500,
+    "armorType": "medium",
+    "scrapCost": 170,
+    "buildS": 40,
+    "footprint": {
+      "w": 17,
+      "h": 19
+    },
+    "beds": 0,
+    "provides": [
+      "lab"
+    ],
+    "prereqTech": [],
+    "visuals": {
+      "mesh": "garde_building_archive"
+    },
+    "_comment": "startwaarde, geen balans. Archief: lab van de Garde, huis van de tech-boom en het SPECIAL-kanaal (holobanden). 170 scrap, 40 s."
+  },
+  {
+    "id": "wachtpost",
+    "faction": "garde",
+    "hp": 900,
+    "armorType": "heavy",
+    "scrapCost": 60,
+    "buildS": 16,
+    "footprint": {
+      "w": 1,
+      "h": 1
+    },
+    "beds": 0,
+    "provides": [
+      "claim"
+    ],
+    "prereqTech": [],
+    "visuals": {
+      "mesh": "garde_building_outpost"
+    },
+    "sightM": 8,
+    "_comment": "startwaarde, geen balans. Wachtpost: claimpaal van de Garde, zwaarder (900 hp heavy) en 10 scrap duurder dan de claimpaal van de Dwellers."
+  },
+  {
+    "id": "geschutstoren",
+    "faction": "garde",
+    "hp": 700,
+    "armorType": "heavy",
+    "scrapCost": 240,
+    "buildS": 40,
+    "footprint": {
+      "w": 3,
+      "h": 3
+    },
+    "beds": 0,
+    "provides": [
+      "turret"
+    ],
+    "prereqTech": [
+      "fusiekernen"
+    ],
+    "visuals": {
+      "mesh": "garde_building_turret_laser"
+    },
+    "damage": 18,
+    "damageType": "energy",
+    "rangeM": 14,
+    "cooldownS": 1,
+    "_comment": "startwaarde, geen balans. Geschutstoren: laserturret, 18 energy per 1,0 s op 14 m, 700 hp heavy, 240 scrap. De Garde valt aan en verdedigt maar licht; een toren dekt de smederij. Geen netwerkbonus (dat is Dweller-identiteit)."
+  },
+  {
+    "id": "landingsplatform",
+    "faction": "garde",
+    "hp": 600,
+    "armorType": "medium",
+    "scrapCost": 300,
+    "buildS": 55,
+    "footprint": {
+      "w": 21,
+      "h": 21
+    },
+    "beds": 0,
+    "provides": [],
+    "prereqTech": [
+      "plasmakern"
+    ],
+    "visuals": {
+      "mesh": "garde_building_helipad"
+    },
+    "_comment": "startwaarde, geen balans. Landingsplatform: bouwt de Vertibird (producedAt landingsplatform). 300 scrap, 55 s, groot (21x21)."
+  },
+  {
+    "id": "slaapzaal",
+    "faction": "garde",
+    "hp": 320,
+    "armorType": "medium",
+    "scrapCost": 100,
+    "buildS": 20,
+    "footprint": {
+      "w": 13,
+      "h": 17
+    },
+    "beds": 6,
+    "provides": [
+      "huisvesting"
+    ],
+    "prereqTech": [],
+    "visuals": {
+      "mesh": "garde_building_barracks"
+    },
+    "_comment": "startwaarde, geen balans (data 0.41.0; Martien: \"de garde heeft geen opties om bedden te maken hoe zit dit?\", besluit: een goedkoop woongebouw voor de Garde). Slaapzaal: 6 bedden voor 100 scrap en 20 s (Dwellers woning 5 voor 95, kazerne 4 voor 130), provides huisvesting, geen prereq. 320 hp medium: steviger dan een woning (300 light), zoals alles van de Garde. Footprint 13 x 17 m op echte schaal: een zaal met drie stapelbedden per kant, een gang en een wapenrek bij de deur (woning 13 x 19 voor 5 bedden). Alleen bewoners (bodyType human) slapen in een bed; frames en de Vertibird tellen alleen voor pop (popCapMax). OPEN: eigen mesh garde_building_dormitory; tot die er is hergebruikt de Slaapzaal de kazerne-mesh (garde_building_barracks) als placeholder."
+  }
+]

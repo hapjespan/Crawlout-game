@@ -5,14 +5,14 @@ Browser-RTS in three.js met eigen IP: settlement-logica van Fallout 4, toon en S
 ## Bronnen van waarheid
 
 1. `docs/spelfundament-v0.1.md`: het ontwerp. Alle spelregels, facties, winroutes, assetbudgetten.
-2. `docs/fase-0-contracten-en-agentbriefs.md`: de drie contracten (sim en snapshot, commandoprotocol, dataschema), determinisme-regels, agentbriefs, sprintplan.
+2. `docs/fase-0/` (index: `docs/fase-0-contracten-en-agentbriefs.md`): de drie contracten (sim en snapshot, commandoprotocol, dataschema), determinisme-regels, agentbriefs, sprintplan.
 3. `packages/protocol/src/`: de contracten als TypeScript-types en zod-schema's. Code en doc horen gelijk te lopen; bij verschil wint het doc en wordt de code gefixt.
 
 Lees voor je begint: fase-0 sectie 1, 3, 7 en de brief van je eigen werkstroom in sectie 9.
 
 ## Harde regels
 
-1. De contracten zijn bevroren. Een wijziging is een PR op `docs/fase-0-contracten-en-agentbriefs.md` plus `packages/protocol`, met review door de architect. Nooit stil in code aanpassen.
+1. De contracten zijn bevroren. Een wijziging is een PR op de bestanden in `docs/fase-0/` plus `packages/protocol`, met review door de architect. Nooit stil in code aanpassen.
 2. Elke werkstroom schrijft alleen in zijn eigen packages (zie tabel in fase-0 sectie 8). Iets nodig uit een ander package: maak een issue met de gewenste interface.
 3. `packages/sim`, `packages/map` en de loader in `packages/data` volgen de determinisme-regels uit fase-0 sectie 7. De lint-regelset `sim-determinism` in `eslint.config.js` dwingt ze af. Nooit uitschakelen met eslint-disable.
 4. Alle spelregels die getallen zijn, staan in `data/` als JSON. Nooit in code.

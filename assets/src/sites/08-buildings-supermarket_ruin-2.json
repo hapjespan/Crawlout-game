@@ -1,0 +1,474 @@
+{
+  "buildings": {
+    "site_supermarket_ruin": {
+      "parts": [
+        {
+          "type": "box",
+          "material": "rust_dark",
+          "size": [0.426, 0.506, 0.764],
+          "position": [-10.661, 0.341, -6.36],
+          "rotation": [-23.201, 54.683, -18.732],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "material": "concrete_dark",
+          "size": [0.904, 0.532, 0.737],
+          "position": [-7.917, 0.381, -5.401],
+          "rotation": [23.364, 8.49, -6.884],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "material": "concrete_ruin",
+          "size": [0.866, 0.312, 0.47],
+          "position": [-8.322, 0.462, -5.461],
+          "rotation": [18.564, 135.145, 21.898],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "material": "rust_dark",
+          "size": [0.706, 0.45, 0.548],
+          "position": [-8.425, 0.081, -4.711],
+          "rotation": [-12.308, 111.141, -2.227],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "concrete_dark",
+          "size": [0.371, 0.492, 0.54],
+          "position": [-9.58, 0.151, -6.282],
+          "rotation": [4.132, 50.336, 24.741],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "concrete_ruin",
+          "size": [0.659, 0.347, 0.494],
+          "position": [-9.403, 0.393, -5.278],
+          "rotation": [11.614, 92.128, -14.876],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "rust_dark",
+          "size": [0.581, 0.302, 0.341],
+          "position": [-8.789, 0.177, -4.389],
+          "rotation": [9.907, 176.654, -23.66],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "concrete_dark",
+          "size": [0.555, 0.362, 0.885],
+          "position": [-11.669, 0.104, -4.586],
+          "rotation": [2.561, 126.551, 17.206],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "concrete_ruin",
+          "size": [0.448, 0.385, 0.837],
+          "position": [-10.917, 0.237, -6.391],
+          "rotation": [-0.723, 172.628, 5.75],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "rust_dark",
+          "size": [0.623, 0.288, 0.71],
+          "position": [-9.343, 0.147, -4.351],
+          "rotation": [-8.578, 42.438, 1.143],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "concrete_dark",
+          "size": [0.892, 0.47, 0.632],
+          "position": [-12.162, 0.282, -5.521],
+          "rotation": [-20.092, 139.561, 10.655],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "concrete_ruin",
+          "size": [0.566, 0.274, 0.3],
+          "position": [-8.766, 0.263, -4.604],
+          "rotation": [-21.985, 16.536, 4.026],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "rust_dark",
+          "size": [0.906, 0.396, 0.843],
+          "position": [-11.563, 0.376, -5.141],
+          "rotation": [13.094, 72.016, -17.481],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "concrete_dark",
+          "size": [0.436, 0.364, 0.609],
+          "position": [-11.644, 0.165, -5.533],
+          "rotation": [0.075, 74.179, 6.6],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "concrete_ruin",
+          "size": [0.646, 0.473, 0.704],
+          "position": [-9.933, 0.178, -4.479],
+          "rotation": [10.468, 138.189, 12.569],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "rust_dark",
+          "size": [0.724, 0.443, 0.485],
+          "position": [-7.307, 0.16, -4.963],
+          "rotation": [9.659, 13.169, 17.392],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "concrete_dark",
+          "size": [0.622, 0.389, 0.655],
+          "position": [-1.437, 0.189, 2.749],
+          "rotation": [15.958, 46.364, 10.578],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "material": "rust_dark",
+          "size": [0.579, 0.251, 0.69],
+          "position": [0.078, 0.323, 0.211],
+          "rotation": [-12.087, 42.289, -13.486],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "material": "concrete_dark",
+          "size": [0.542, 0.378, 0.71],
+          "position": [-1.55, 0.468, 1.654],
+          "rotation": [19.824, 128.262, -3.645],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "material": "rust_dark",
+          "size": [0.494, 0.495, 0.589],
+          "position": [-1.581, 0.414, 1.91],
+          "rotation": [1.351, 58.298, -18.459],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "concrete_dark",
+          "size": [0.661, 0.519, 0.309],
+          "position": [-1.925, 0.418, 1.752],
+          "rotation": [2.341, 83.847, 5.839],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "rust_dark",
+          "size": [0.583, 0.271, 0.627],
+          "position": [-0.276, 0.247, 2.138],
+          "rotation": [3.084, 168.365, -21.963],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "concrete_dark",
+          "size": [0.649, 0.372, 0.306],
+          "position": [-1.61, 0.133, 1.816],
+          "rotation": [-8.777, 7.859, 9.957],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "rust_dark",
+          "size": [0.539, 0.54, 0.311],
+          "position": [2.423, 0.12, 1.542],
+          "rotation": [-24.3, 101.059, -10.048],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "concrete_dark",
+          "size": [0.621, 0.522, 0.622],
+          "position": [-4.171, 0.282, 1.967],
+          "rotation": [23.033, 13.787, 23.13],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "rust_dark",
+          "size": [0.795, 0.539, 0.416],
+          "position": [-2.421, 0.193, 2.612],
+          "rotation": [8.853, 97.757, -18.777],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "concrete_dark",
+          "size": [0.337, 0.519, 0.565],
+          "position": [-5.331, 0.107, 0.454],
+          "rotation": [17.152, 92.709, 7.712],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "rust_dark",
+          "size": [0.673, 0.237, 0.53],
+          "position": [-0.353, 0.294, 0.404],
+          "rotation": [11.47, 111.901, -5.17],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "concrete_ruin",
+          "size": [0.264, 0.375, 0.229],
+          "position": [6.521, 0.161, 5.106],
+          "rotation": [15.042, 127.057, -22.961],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "material": "concrete_dark",
+          "size": [0.651, 0.395, 0.374],
+          "position": [4.462, 0.102, 5.519],
+          "rotation": [-20.756, 173.466, -2.224],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "material": "concrete_ruin",
+          "size": [0.643, 0.417, 0.285],
+          "position": [5.672, 0.279, 4.129],
+          "rotation": [-1.492, 117.314, 23.079],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "concrete_dark",
+          "size": [0.359, 0.312, 0.559],
+          "position": [4.523, 0.118, 5.303],
+          "rotation": [-13.324, 31.503, -9.51],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "concrete_ruin",
+          "size": [0.593, 0.201, 0.602],
+          "position": [7.959, 0.215, 5.588],
+          "rotation": [8.192, 169.649, -21.533],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "concrete_dark",
+          "size": [0.427, 0.304, 0.418],
+          "position": [7.94, 0.182, 5.232],
+          "rotation": [-19.988, 146.515, -1.787],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "concrete_ruin",
+          "size": [0.387, 0.416, 0.425],
+          "position": [4.915, 0.08, 4.089],
+          "rotation": [-0.717, 39.54, -16.565],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "concrete_dark",
+          "size": [0.531, 0.374, 0.592],
+          "position": [6.15, 0.216, 5.559],
+          "rotation": [-14.909, 167.013, 9.837],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "rust_metal",
+          "size": [0.7, 2, 6.5],
+          "position": [1.925, 0.329, 0.837],
+          "rotation": [0, 10, 70],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "rust_metal",
+          "size": [0.7, 2, 5],
+          "position": [-4.171, 0.883, 1.948],
+          "rotation": [14, -6, 55],
+          "maxLod": 0
+        }
+      ]
+    },
+    "site_water_tower_restored": {
+      "footprint": {
+        "w": 7,
+        "h": 7
+      },
+      "lod0Triangles": 2400,
+      "heightM": [16, 20],
+      "note": "Watertoren, hersteld: schone vakwerkpoten met gele voetkragen, rechte tank met teamband, ladder, rondgang en baken",
+      "parts": [
+        {
+          "type": "box",
+          "material": "concrete",
+          "size": [0.9, 0.5, 0.9],
+          "open": true,
+          "position": [-3.05, 0, -3.05]
+        },
+        {
+          "type": "box",
+          "material": "concrete",
+          "size": [0.9, 0.5, 0.9],
+          "open": true,
+          "position": [3.05, 0, -3.05]
+        },
+        {
+          "type": "box",
+          "material": "concrete",
+          "size": [0.9, 0.5, 0.9],
+          "open": true,
+          "position": [3.05, 0, 3.05]
+        },
+        {
+          "type": "box",
+          "material": "concrete",
+          "size": [0.9, 0.5, 0.9],
+          "open": true,
+          "position": [-3.05, 0, 3.05]
+        },
+        {
+          "type": "tube",
+          "material": "metal",
+          "points": [
+            [0, 0, 0],
+            [0.72, 11.9, 0.72]
+          ],
+          "radius": 0.09,
+          "sides": 3,
+          "position": [-2.865, 0.5, -3.175],
+          "maxLod": 1
+        },
+        {
+          "type": "tube",
+          "material": "metal",
+          "points": [
+            [0, 0, 0],
+            [0.72, 11.9, 0.72]
+          ],
+          "radius": 0.09,
+          "sides": 3,
+          "position": [-3.175, 0.5, -2.865],
+          "maxLod": 1
+        },
+        {
+          "type": "tube",
+          "material": "metal_dark",
+          "points": [
+            [0, 0, 0],
+            [-0.245, 1.082, 0.375],
+            [0.131, 2.164, 0.131],
+            [-0.114, 3.245, 0.506],
+            [0.262, 4.327, 0.262],
+            [0.017, 5.409, 0.637],
+            [0.393, 6.491, 0.393],
+            [0.148, 7.573, 0.768],
+            [0.523, 8.655, 0.523],
+            [0.279, 9.736, 0.899],
+            [0.654, 10.818, 0.654],
+            [0.41, 11.9, 1.03]
+          ],
+          "radius": 0.035,
+          "sides": 3,
+          "position": [-2.865, 0.5, -3.175],
+          "maxLod": 0
+        },
+        {
+          "type": "tube",
+          "material": "metal",
+          "points": [
+            [0, 0, 0],
+            [0.72, 11.9, 0.72]
+          ],
+          "radius": 0.2,
+          "sides": 3,
+          "position": [-3.02, 0.5, -3.02],
+          "minLod": 2
+        },
+        {
+          "type": "box",
+          "material": "metal_hazard",
+          "size": [0.6, 0.7, 0.6],
+          "position": [-3.05, 0.5, -3.05],
+          "maxLod": 0
+        },
+        {
+          "type": "tube",
+          "material": "metal",
+          "points": [
+            [0, 0, 0],
+            [-0.72, 11.9, 0.72]
+          ],
+          "radius": 0.09,
+          "sides": 3,
+          "position": [3.175, 0.5, -2.865],
+          "maxLod": 1
+        },
+        {
+          "type": "tube",
+          "material": "metal",
+          "points": [
+            [0, 0, 0],
+            [-0.72, 11.9, 0.72]
+          ],
+          "radius": 0.09,
+          "sides": 3,
+          "position": [2.865, 0.5, -3.175],
+          "maxLod": 1
+        },
+        {
+          "type": "tube",
+          "material": "metal_dark",
+          "points": [
+            [0, 0, 0],
+            [-0.375, 1.082, -0.245],
+            [-0.131, 2.164, 0.131],
+            [-0.506, 3.245, -0.114],
+            [-0.262, 4.327, 0.262],
+            [-0.637, 5.409, 0.017],
+            [-0.393, 6.491, 0.393],
+            [-0.768, 7.573, 0.148],
+            [-0.523, 8.655, 0.523],
+            [-0.899, 9.736, 0.279],
+            [-0.654, 10.818, 0.654],
+            [-1.03, 11.9, 0.41]
+          ],
+          "radius": 0.035,
+          "sides": 3,
+          "position": [3.175, 0.5, -2.865],
+          "maxLod": 0
+        },
+        {
+          "type": "tube",
+          "material": "metal",
+          "points": [
+            [0, 0, 0],
+            [-0.72, 11.9, 0.72]
+          ],
+          "radius": 0.2,
+          "sides": 3,
+          "position": [3.02, 0.5, -3.02],
+          "minLod": 2
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,154 @@
+{
+  "id": "dwellers-vs-garde",
+  "faction": "dwellers",
+  "buildOrder": [
+    {
+      "atS": 5,
+      "buildingId": "woning"
+    },
+    {
+      "atS": 30,
+      "buildingId": "werkplaats"
+    },
+    {
+      "atS": 150,
+      "buildingId": "werkplaats",
+      "site": "claim"
+    },
+    {
+      "atS": 240,
+      "buildingId": "turret_laser",
+      "site": "front"
+    },
+    {
+      "atS": 300,
+      "buildingId": "lab"
+    },
+    {
+      "atS": 420,
+      "buildingId": "robotfabriek"
+    },
+    {
+      "atS": 540,
+      "buildingId": "turret_laser",
+      "site": "hq"
+    },
+    {
+      "atS": 720,
+      "buildingId": "turret_laser",
+      "site": "front"
+    }
+  ],
+  "attackTimersS": [480, 720],
+  "militiaPct": 20,
+  "militiaPctMax": 60,
+  "militiaPctPerMin": 2.5,
+  "threatMilitiaPct": 50,
+  "builders": 2,
+  "housingBuildingId": "woning",
+  "housingFreeBeds": 2,
+  "research": [
+    "raffinage",
+    "robotica",
+    "lasergeleiding",
+    "sentinel_protocol",
+    "lasertechniek",
+    "turret_netwerk",
+    "turret_schade",
+    "turret_bereik",
+    "bouwrobots",
+    "geweerrek",
+    "composiet_pantser",
+    "snelle_voeten"
+  ],
+  "researchFromS": 180,
+  "armyLoadouts": ["patrol", "militie"],
+  "richScrap": 260,
+  "richBuilds": [
+    {
+      "buildingId": "turret_laser",
+      "site": "front"
+    },
+    {
+      "buildingId": "turret_laser",
+      "site": "claim"
+    },
+    {
+      "buildingId": "turret_laser",
+      "site": "front"
+    }
+  ],
+  "scavengersPerNode": 5,
+  "claimFromS": 60,
+  "claimSafeRadiusM": 30,
+  "claimFarFromS": 990,
+  "heroClaimRadiusM": 20,
+  "defendRadiusM": 38,
+  "rallySite": "front",
+  "rallyRadiusM": 6,
+  "waveIntervalS": 180,
+  "waveJitterS": 60,
+  "waveMinArmy": 5,
+  "waveArmyGrowth": 3,
+  "waveMaxWaitS": 90,
+  "pushMinArmy": 12,
+  "pushFromS": 1440,
+  "robots": {
+    "sequence": ["sentinel", "beveiligingsrobot", "sentinel", "sentinel", "reparatiedrone"],
+    "fromS": 480,
+    "max": 12,
+    "countAsArmy": true,
+    "reservePop": 12,
+    "builders": {
+      "loadoutId": "bouwrobot",
+      "max": 1,
+      "fromS": 960
+    }
+  },
+  "reserve": {
+    "fromS": 480,
+    "minArmy": 8,
+    "robotsFirstFromS": 900
+  },
+  "training": {
+    "sequence": [
+      "training_uithouding",
+      "training_kracht",
+      "training_uithouding",
+      "training_geluk",
+      "training_kracht",
+      "training_behendigheid",
+      "training_uithouding",
+      "training_kracht"
+    ],
+    "fromS": 720
+  },
+  "creeps": {
+    "fromS": 600,
+    "maxPathM": 140,
+    "tiers": [
+      {
+        "tier": 1,
+        "minArmy": 6
+      },
+      {
+        "tier": 2,
+        "minArmy": 16
+      }
+    ],
+    "_comment": "Data 0.25.0 (creep camps; bevestigd in fase-0 sectie 23 besluit 5): from minute 10, with no enemy at its buildings, an idle army of at least 6 (low camp) or 16 (high camp) clears the nearest living camp within 140 m over land of the headquarters, the hero along. 11 for the high camp (its harness value) sent armies at it from minute 12 that bled and lost, and the matches got longer; with 16 both Dweller AIs clear their own three camps at 10.4, 11.2 and 17.2 to 18.8 minutes in every mirror match (fairness-report --camps). Not earlier: before minute 10 the army is the first waves."
+  },
+  "project": {
+    "restoreFromS": 780,
+    "restoreMinArmy": 10,
+    "builders": 2,
+    "sabotageKinds": 3,
+    "sabotageMinArmy": 6,
+    "rallyAtParts": true,
+    "_comment": "Data 0.31.0 (winroute C, het Bouwproject; voorstel, ter bevestiging door content en de architect): de natuurlijke winroute van de Dwellers. Vanaf minuut 13, met minstens 10 man leger en zonder vijand bij zijn gebouwen, stuurt hij 2 vrije bouwers naar de dichtstbijzijnde ruine van een soort die hij mist (een herstel tegelijk; de andere vrije bouwers helpen). Houdt de tegenstander 3 soorten of loopt zijn countdown, dan gaat een vrij leger van minstens 6 naar zijn deel het dichtst bij huis. Zolang hij een deel houdt, verzamelt het leger daar. Startwaarden, gemeten in de CHANGELOG van data 0.31.0."
+  },
+  "allInWithoutNodes": true,
+  "heroArchetype": "tacticus",
+  "_comment": "Data 0.39.0 (Garde balance round; voorstel, ter bevestiging door content en de architect): de Dwellers tegen de Garde. Zware pantsers negeren pipe guns, dus de Dwellers gaan vroeg voor laserturrets en robots (sentinels, energy 160 procent op heavy): lasertechniek en robotfabriek eerder, robots vanaf 480 s met meer in het veld, laserturrets bij de eerste uitgaven. Gemeten Garde tegen Dwellers: zie CHANGELOG. Data 0.40.0 (balance-integration): de robotvolgorde begon met sentinels, die zonder sentinel_protocol worden overgeslagen; de AI kocht daardoor tot max 12 ongewapende reparatiedrones en nooit een sentinel. Nu raffinage, robotica, lasergeleiding en sentinel_protocol eerst, de volgorde sentinel, beveiligingsrobot, sentinel, sentinel, reparatiedrone, robots voor onderzoek pas vanaf 900 s (was 540). Gemeten: de Garde wint 10 van 24 (42 procent, was 100). Data 0.43.0 (garde-ai; voorstel, ter bevestiging door de architect; docs/held-keuze.md): heroArchetype tacticus. Dit is het defensieve script (laserturrets, robots, geen vroege push) en de Controleur past erbij: geschutstorens +1 m bereik, aura 8 m vijanden 10 procent trager en Noodslot (vijanden 40 procent trager, 25 procent minder schade) houdt een stelling vast tegen trage zware frames. Het eerste script dat een ander archetype dan de Krijger kiest.",
+  "versus": "garde"
+}
