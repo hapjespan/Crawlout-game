@@ -11,7 +11,6 @@ import type {
   SimBuildingType,
   SimConfig,
   SimEnv,
-  SimInit,
   SimMap,
   SimPlayer,
   SimUnitType,
@@ -74,15 +73,14 @@ import {
   spawnUnitIn,
 } from './sim.spawn.js';
 import type {
-  CreateSimOptions,
   SimWinner,
   SpawnUnitSpec,
   TickProbe,
   UnitView,
 } from './sim.types.js';
 
+export type { CreateSimOptions } from './sim.types.js';
 export type {
-  CreateSimOptions,
   EntityKind,
   SimWinner,
   SpawnUnitSpec,
