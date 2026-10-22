@@ -42,6 +42,7 @@ export type {
   TargetEnemy,
   TargetNode,
   TargetOwn,
+  TargetClaim,
   TargetResult,
   UnitActivity,
   UnitState,

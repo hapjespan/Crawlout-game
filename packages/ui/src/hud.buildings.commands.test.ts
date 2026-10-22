@@ -85,7 +85,7 @@ describe("context-gevoelige commando's", () => {
   it('bouwer: Verplaats, Stop, Bouw en de andere rollen; geen Val aan', () => {
     const t = setup({ units: [unit(1, 'builder')] });
     keepMounted(t.handle);
-    expect(actionsOf(t.el)).toEqual(['move', 'stop', 'build', 'roleScavenger', 'roleMilitia']);
+    expect(actionsOf(t.el)).toEqual(['move', 'stop', 'build', 'claim', 'roleScavenger', 'roleMilitia']);
   });
 
   it('plunderaar: Verplaats, Stop, Verzamel', () => {

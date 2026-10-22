@@ -1,5 +1,12 @@
 import { MAX_ENTITIES_PER_COMMAND } from '@crawlout/protocol';
-import { type ActionId, ACTIONS, ACTION_ROLE, ACTION_TARGETING } from './controller.actions.js';
+import {
+  type ActionId,
+  ACTIONS,
+  ACTION_ROLE,
+  ACTION_TARGETING,
+  summarize,
+  targetingHint,
+} from './controller.actions.js';
 import {
   type HudControllerCore,
   hasCraftCards,
@@ -25,6 +32,9 @@ export function run(core: HudControllerCore, id: ActionId): boolean {
   if (targeting) {
     setState(core, { targeting, buildMenuOpen: false });
     core.deps.beginTargeting(targeting);
+    // Bewaak en Claim hebben een doel dat de speler moet aanwijzen en dat per factie verschilt: zeg welk.
+    const hint = targetingHint(targeting, summarize(core.state.selection));
+    if (hint) core.ctl.showHint(hint);
   } else if (role) {
     // Only settlers switch role: the hero and robots would be ignored by the sim anyway.
     const settlers = core.state.selection
@@ -147,6 +157,12 @@ export function completeTargeting(core: HudControllerCore, target: TargetResult)
   if (kind === 'gather') {
     if (!('nodeId' in target)) return false;
     core.deps.sendCommand('Gather', { ids, nodeId: target.nodeId });
+  } else if (kind === 'claim') {
+    // Claim: alleen een claimpunt is een doel; een klik op de grond laat de richtmodus staan (contract 2 Claim).
+    // Alleen de bouwers uit de selectie, zodat een grote gemengde selectie de bouwers niet uit de 64 ids drukt.
+    const builders = core.ctl.selectedBuilders();
+    if (!('pointId' in target) || builders.length === 0) return false;
+    core.deps.sendCommand('Claim', { ids: builders, pointId: target.pointId });
   } else if (kind === 'guard') {
     // Bewaak: an own Kooi or a scrap node (the sim checks which); a click on the ground is no target
     if ('nodeId' in target) core.deps.sendCommand('Guard', { ids, targetId: target.nodeId });

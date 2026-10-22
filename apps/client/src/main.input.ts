@@ -97,6 +97,9 @@ export function wireInput(ctx: ClientContext): void {
           hitKind === 'scrapNode'
         ) {
           hud.completeTargeting({ nodeId: picked.id });
+        } else if (ctx.targeting === 'claim' && picked && hitKind === 'claimPoint') {
+          // Claim: de bouwers zetten het claimgebouw van hun factie bij dit punt (contract 2 Claim)
+          hud.completeTargeting({ pointId: picked.id });
         } else if (ctx.targeting === 'guard' && picked && hitKind === 'building' && !hostile) {
           // Bewaak on an own building: the sim takes a Kooi (or the Raiderkamp) and refuses anything else
           hud.completeTargeting({ ownId: picked.id });

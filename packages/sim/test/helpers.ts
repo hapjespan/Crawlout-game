@@ -20,6 +20,11 @@ export const COMPACT_FOOTPRINTS: Readonly<Record<string, readonly [number, numbe
   woning: [3, 3],
   werkplaats: [3, 3],
   radiobaken: [1, 1],
+  // data 0.44.0: three more Dweller buildings, compact like their counterparts (zendtoren as radiobaken, nutsgebouw as
+  // werkplaats, opslagloods as woning)
+  zendtoren: [1, 1],
+  nutsgebouw: [3, 3],
+  opslagloods: [3, 3],
   claimpaal: [1, 1],
   turret: [2, 2],
   turret_laser: [2, 2],

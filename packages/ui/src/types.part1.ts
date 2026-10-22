@@ -55,7 +55,14 @@ export interface NetworkState {
 
 /** Soorten doel die de HUD van de volgende wereldklik verwacht. */
 export type TargetingKind =
-  'move' | 'attackMove' | 'gather' | 'heroAbility' | 'capture' | 'liberate' | 'guard';
+  | 'move'
+  | 'attackMove'
+  | 'gather'
+  | 'heroAbility'
+  | 'capture'
+  | 'liberate'
+  | 'guard'
+  | 'claim';
 
 /** Soort Raider-unit in de selectie, zie SelectedEntity.raiderKind. */
 export type RaiderKind = 'slave' | 'slaver' | 'chemDealer' | 'fighter';
@@ -81,7 +88,15 @@ export interface TargetOwn {
   ownId: number;
 }
 
-export type TargetResult = TargetPoint | TargetNode | TargetEnemy | TargetOwn;
+/**
+ * A claim point that was clicked as the target of Claim (contract 2 Claim): neutral ground, so it is neither an own
+ * nor an enemy entity. The sim puts the faction's claim building (provides `claim`) next to it.
+ */
+export interface TargetClaim {
+  pointId: number;
+}
+
+export type TargetResult = TargetPoint | TargetNode | TargetEnemy | TargetOwn | TargetClaim;
 
 /** Eén punt op de minimap, in sim-eenheden. */
 export interface MinimapBlip {

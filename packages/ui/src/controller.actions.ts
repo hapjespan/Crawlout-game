@@ -23,6 +23,7 @@ export type ActionId =
   | 'roleBuilder'
   | 'roleMilitia'
   | 'build'
+  | 'claim'
   | 'revive'
   | 'lastAlert'
   | 'lobby';
@@ -114,6 +115,32 @@ export interface SelectionSummary {
   raiderFighters: number;
 }
 
+/**
+ * Welke actie bij welke factie hoort. `appliesTo` kent de factie niet: het leest alleen de selectie. Dat kan ook, want
+ * de selectie verraadt de factie (alleen de Raiders hebben slaven, Slavers en vechters met een `raiderKind`) en de drie
+ * facties delen dezelfde rollen. Deze tabel legt per actie vast WAAROM hij er voor die factie staat, zodat een knop die
+ * voor een factie niets doet opvalt. Zie ook `docs/fase-0/05-contract-2-commandoprotocol.md`.
+ *
+ * | Actie             | Dwellers | Raiders | Garde | Waarom                                                             |
+ * |-------------------|----------|---------|-------|--------------------------------------------------------------------|
+ * | Verplaats, Stop   | ja       | ja      | ja    | elke eigen unit                                                      |
+ * | Val aan           | ja       | ja      | ja    | wie vecht (militie, robots, Raidervechters) en de held               |
+ * | Vang              | nee      | ja      | nee   | alleen de Slaver heeft `capture`; andere facties hebben geen Slaver  |
+ * | Bevrijd           | ja       | ja      | ja    | iedereen die loopt en zelf geen slaaf is; Raiders alleen tegen een   |
+ * |                   |          |         |       | andere Raider (die neemt de slaaf over als gevangene)                |
+ * | Bewaak            | ja       | ja      | ja    | de enige order met een leiband: loop erheen, vecht binnen            |
+ * |                   |          |         |       | `guard.leashM` en kom terug. Raiders dekken er hun Kooi mee tegen    |
+ * |                   |          |         |       | een opstand (factions.json slaves.revolt); Dwellers en Garde dekken  |
+ * |                   |          |         |       | er hun verzamelaars op een scrapbron mee. De Garde heeft geen Kooi,  |
+ * |                   |          |         |       | dus voor hem is een scrapbron het enige doel (sim applyGuard).       |
+ * | Verzamel          | ja       | ja      | ja    | plunderaars, bij de Raiders de slaven                                |
+ * | Bouw              | ja       | ja      | ja    | bouwers, de Bouwrobot en de slaaf-bouwer                             |
+ * | Claim             | ja       | ja      | ja    | dezelfde bouwers: de sim zet het claimgebouw van de factie bij het    |
+ * |                   |          |         |       | punt (claimpaal, plunderpost, wachtpost; alle drie `provides claim`) |
+ * | Rolknoppen        | ja       | ja      | ja    | met een voltooide werkplaats (Raiders: een Kooi); Militie nooit voor |
+ * |                   |          |         |       | een slaaf                                                            |
+ */
+
 /** Commandokaart: volgorde is de volgorde op het scherm. Wat er staat hangt af van de selectie (zie appliesTo). */
 export const ACTIONS: readonly ActionDef[] = [
   { id: 'move', label: 'Verplaats', key: 'm', needsSelection: true },
@@ -124,6 +151,8 @@ export const ACTIONS: readonly ActionDef[] = [
   { id: 'guard', label: 'Bewaak', key: 'g', needsSelection: true },
   { id: 'gather', label: 'Verzamel', key: 't', needsSelection: true },
   { id: 'build', label: 'Bouw', key: 'b', needsSelection: true },
+  // Claim (contract 2 Claim): N, want C is de derde held-ability en B is Bouw.
+  { id: 'claim', label: 'Claim', key: 'n', needsSelection: true },
   { id: 'roleScavenger', label: 'Plunderaar', key: '1', needsSelection: true },
   { id: 'roleBuilder', label: 'Bouwer', key: '2', needsSelection: true },
   { id: 'roleMilitia', label: 'Militie', key: '3', needsSelection: true },
@@ -201,6 +230,9 @@ export function appliesTo(
     case 'gather':
       return s.scavengers + s.slaveScavengers > 0;
     case 'build':
+    case 'claim':
+      // Claim is Bouw op een claimpunt: dezelfde bouwers, en elke factie heeft een claimgebouw (claimpaal,
+      // plunderpost, wachtpost). Een slaaf-bouwer mag dit ook buiten de werkstraal van zijn Kooi (sim mayBuildAt).
       return s.builders + s.robotBuilders + s.slaveBuilders > 0;
     case 'roleScavenger':
       return canSwitchRole && (s.builders + s.militia > 0 || s.slaveBuilders > 0);
@@ -292,4 +324,22 @@ export const ACTION_TARGETING: Partial<Record<ActionId, TargetingKind>> = {
   liberate: 'liberate',
   guard: 'guard',
   gather: 'gather',
+  claim: 'claim',
 };
+
+/**
+ * Wat de speler moet aanklikken nadat hij een richtactie koos. De Bewaak-tekst hangt van de selectie af: alleen de
+ * Raiders hebben een Kooi, dus alleen zij kunnen er een bewaken (sim applyGuard).
+ */
+export function targetingHint(kind: TargetingKind, s: SelectionSummary): string | null {
+  switch (kind) {
+    case 'claim':
+      return 'Klik een claimpunt: de bouwer zet er het claimgebouw van je factie neer.';
+    case 'guard':
+      return s.slavers + s.raiderFighters + s.slaveScavengers + s.slaveBuilders > 0
+        ? 'Bewaak: klik een eigen Kooi of een scrapbron.'
+        : 'Bewaak: klik een scrapbron waar je verzamelaars staan.';
+    default:
+      return null;
+  }
+}

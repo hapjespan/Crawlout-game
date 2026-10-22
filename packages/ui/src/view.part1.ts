@@ -18,7 +18,10 @@ export const ACTION_HINT: Partial<Record<string, string>> = {
     'Sla een vijandelijke bewoner neer buiten zijn basis; blijf bij hem staan om hem te vangen (rechtsklik werkt ook)',
   liberate:
     'Raak een vijandelijke slaaf of gevangene aan om hem te bevrijden (rechtsklik werkt ook)',
-  guard: 'Bewaak een kooi of scrapbron: houdt slaven aan het werk',
+  // Bewaak is voor elke factie de enige order met een leiband (loop erheen, vecht in de buurt, keer terug). Alleen de
+  // Raiders hebben er een Kooi bij te bewaken; Dwellers en Garde dekken er hun verzamelaars op een scrapbron mee.
+  guard: 'Bewaak een kooi of scrapbron: je vechters blijven erbij en houden verzamelaars en slaven aan het werk',
+  claim: 'Laat een bouwer het claimgebouw van je factie bij een claimpunt zetten (rechtsklik werkt ook)',
 };
 
 export const TARGETING_TEXT: Record<TargetingKind, string> = {
@@ -29,6 +32,7 @@ export const TARGETING_TEXT: Record<TargetingKind, string> = {
   capture: 'Sla een vijandelijke bewoner neer buiten zijn basis (Esc om te annuleren)',
   liberate: 'Kies een slaaf of gevangene om te bevrijden (Esc om te annuleren)',
   guard: 'Kies een kooi of scrapbron om te bewaken (Esc om te annuleren)',
+  claim: 'Kies een claimpunt om te claimen (Esc om te annuleren)',
 };
 
 function mmss(totalSeconds: number): string {

@@ -8,6 +8,7 @@ export type {
   TargetNode,
   TargetEnemy,
   TargetOwn,
+  TargetClaim,
   TargetResult,
   MinimapBlip,
   MinimapClaim,

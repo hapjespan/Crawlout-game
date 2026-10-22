@@ -107,7 +107,7 @@ describe('Raider commands', () => {
     );
     expect(t.el.querySelector('.co-selection')!.textContent).toContain('Slaaf');
     t.select([unit({ raiderKind: 'slave', role: 'builder', loadoutName: 'Slaaf-bouwer' })]);
-    expect(actions(t.el)).toEqual(['move', 'stop', 'build', 'roleScavenger']);
+    expect(actions(t.el)).toEqual(['move', 'stop', 'build', 'claim', 'roleScavenger']);
     expect(t.el.querySelector('[data-action="roleScavenger"]')!.textContent).toContain('Slaaf');
   });
 
@@ -185,7 +185,7 @@ describe('Bewaak (protocol 0.15.0 Guard, data 0.29.0)', () => {
     const button = t.el.querySelector('[data-action="guard"]')!;
     expect(button.textContent).toContain('Bewaak');
     expect(button.getAttribute('title')).toBe(
-      'Bewaak een kooi of scrapbron: houdt slaven aan het werk',
+      'Bewaak een kooi of scrapbron: je vechters blijven erbij en houden verzamelaars en slaven aan het werk',
     );
     press('g');
     expect(t.targets).toEqual(['guard']);

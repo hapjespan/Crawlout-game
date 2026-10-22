@@ -1,5 +1,6 @@
 # @crawlout/client
 
+- 0.14.2 (commandokaart per factie; @crawlout/ui 0.22.0): in de richtmodus `claim` is een klik op een claimpunt het doel (`completeTargeting({ pointId })`), zodat de knop Claim hetzelfde doet als een rechtsklik op het punt (main.orders.ts). Geen nieuw commando: dit is contract 2 `Claim`, ongewijzigd.
 - 0.14.1 (phase3-final, protocol 0.19.0, sim 0.35.0, data 0.42.0): merge of the hero choice (0.14.0) onto the Garde housing (0.13.1); no code change beyond the merge, protocol references renamed to 0.19.0.
 - 0.14.0 (held-keuze, protocol 0.18.0, sim 0.33.0): menuContent vult drie heldkaarten per factie (game/heroCards.ts: naam, archetype, passief met aura, ability met bereik, duur en cooldown, in het Nederlands); Tegen AI geeft het archetype als `setHero` aan de loopback, de lobby stuurt setHero door. Het oplapkaartje volgt de gekozen held (HeroStatus.heroId); effectteksten kennen nu onderzoekskosten en schade ontvangen. Test: test/heroCards.test.ts.
 - 0.13.1 (data 0.41.0, sim 0.34.0): the build menu passes `beds` per building (the card shows "+6 bedden"); `slaapzaal` is "Slaapzaal" in `BUILDING_NAMES`, and the Garde bed hint now reads "Geen vrije bedden: bouw een slaapzaal" (the cheapest non-HQ bed building, beds.ts unchanged); armour `power` is "krachtpantser" in the inspect panel. Tests: beds.test.ts, inspect.test.ts.

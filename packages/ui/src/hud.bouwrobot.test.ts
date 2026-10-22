@@ -75,11 +75,11 @@ describe('Bouwrobot in the HUD', () => {
     const t = setup();
     mounted = t.handle;
     t.select([unit({})]);
-    expect(actions(t.el)).toEqual(['move', 'stop', 'build']);
+    expect(actions(t.el)).toEqual(['move', 'stop', 'build', 'claim']);
     expect(t.el.querySelector('.co-selection')!.textContent).toContain('Bouwrobot');
     // a human bouwer with him: the role buttons are for the human only
     t.select([unit({}), unit({ id: 2, loadoutName: 'Bouwer', robot: false })]);
-    expect(actions(t.el)).toEqual(['move', 'stop', 'build', 'roleScavenger', 'roleMilitia']);
+    expect(actions(t.el)).toEqual(['move', 'stop', 'build', 'claim', 'roleScavenger', 'roleMilitia']);
     act(() => void (t.el.querySelector('[data-action="roleMilitia"]') as HTMLElement).click());
     expect(t.sent).toEqual([{ type: 'SetRole', payload: { ids: [2], role: 'militia' } }]);
   });
