@@ -61,6 +61,16 @@ describe('validatie', () => {
     const feet = (await violations(await makeHumanoid({ footY: 0.5 }))).join('\n');
     expect(feet).toMatch(/voeten staan op y=0.50/);
   });
+
+  // Het krachtpantser is 2,25 m; de config zegt dat, dus daar wordt op getoetst in plaats van op de 1,8 m van de brief.
+  it('toetst een karakter op de hoogte uit de config in plaats van 1,8 m', async () => {
+    const tall = await new NodeIO().readBinary(await makeHumanoid({ height: 2.25 }));
+    expect(validateAsset(tall).errors.join('\n')).toMatch(
+      /hoogte is 2.25 m, verwacht ongeveer 1.8/,
+    );
+    expect(validateAsset(tall, { height: 2.25 }).errors).toEqual([]);
+    expect(validateAsset(tall, { height: 1.8 }).errors.join('\n')).toMatch(/hoogte is 2.25 m/);
+  });
 });
 
 describe('buis', () => {

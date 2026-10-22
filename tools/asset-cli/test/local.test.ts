@@ -152,6 +152,46 @@ describe('lokale buis', () => {
     ).not.toContain('Door');
   });
 
+  // Een geleverd model met een eigen skelet staat onder delivered/, waar de buis zelf niet kijkt; `source` wijst het aan
+  // zodat het door rig en retarget gaat (geskind en lopend) in plaats van door de starre delivered-buis.
+  it('pakt via "source" een geleverd model met eigen skelet op, op zijn eigen hoogte', async () => {
+    const { local, dist } = await setup();
+    mkdirSync(join(local, 'delivered'));
+    writeFileSync(
+      join(local, 'delivered', 'armor.glb'),
+      await makeHumanoid({ height: 2.25, boneNamePrefix: 'bone_', clips: [] }),
+    );
+    const rigmap = JSON.parse(readFileSync(join(local, 'rigmap.json'), 'utf8'));
+    rigmap.assets.armor = {
+      id: 'garde_body_power_armor',
+      source: 'delivered/armor.glb',
+      fit: { height: 2.25 },
+      rig: 'fan',
+      retarget: {
+        from: '../src/characters/ue_source.glb',
+        rigmap: '../src/rigmap.json',
+        clipmap: '../src/clipmap.json',
+      },
+    };
+    writeFileSync(join(local, 'rigmap.json'), JSON.stringify(rigmap));
+
+    const result = await buildAssets({
+      srcDir: local,
+      distDir: dist,
+      toktx: null,
+      onlyConfigured: true,
+    });
+    expect(result.reports.flatMap((r) => r.errors)).toEqual([]);
+    const manifest = manifestSchema.parse(
+      JSON.parse(readFileSync(join(dist, 'manifest.json'), 'utf8')),
+    );
+    const armor = manifest.assets.find((a) => a.id === 'garde_body_power_armor')!;
+    expect(armor.kind).toBe('character');
+    expect(armor.boneCount).toBe(20);
+    expect(armor.bounds.max[1] - armor.bounds.min[1]).toBeCloseTo(2.25, 2);
+    expect(armor.baked!.clips.map((c) => c.name)).toEqual([...ANIM_NAMES]);
+  });
+
   it('cli --local doet niets zonder lokale map (CI blijft groen)', () => {
     const cli = fileURLToPath(new URL('../src/cli.ts', import.meta.url));
     const dist = join(root, 'dist-local');

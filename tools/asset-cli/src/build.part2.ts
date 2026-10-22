@@ -1,9 +1,9 @@
 // Split from build.ts to stay under the 5,000-token file limit; build.ts re-exports the public surface.
 // Holds: buildAssets.
 import { detectToktx } from './ktx2.js';
-import { join, basename, relative, sep, resolve, dirname } from 'node:path';
+import { join, basename, relative, sep, dirname } from 'node:path';
 import { type Clipmap, EMPTY_CLIPMAP, parseClipmap, resolveClips } from './clipmap.js';
-import { type Rigmap, EMPTY_RIGMAP, parseRigmap } from './rigmap.js';
+import { type Rigmap, EMPTY_RIGMAP, namedSources, parseRigmap } from './rigmap.js';
 import { existsSync, readFileSync, mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import type { VariantsConfig } from './variants.js';
 import { loadVariantsConfig, hexToLinear, buildBuildings } from './buildings.js';
@@ -113,15 +113,9 @@ export async function buildAssets(options: BuildOptions): Promise<BuildResult> {
     palette?: BodyPalette;
   }[] = [];
 
-  // Auto-rig entries name their own source (a static mesh, for example under delivered/); the key is the source id.
   const sources = [
     ...files.map((file) => ({ file, sourceId: toId(file) })),
-    ...Object.entries(rigmap.assets)
-      .filter(([, entry]) => entry.autoRig)
-      .map(([key, entry]) => ({
-        file: resolve(dirname(rigmapSource), entry.autoRig!.from),
-        sourceId: key,
-      })),
+    ...namedSources(rigmap, dirname(rigmapSource)),
   ];
   for (const { file, sourceId } of sources) {
     const source = relative(srcDir, file).split(sep).join('/');
@@ -156,7 +150,8 @@ export async function buildAssets(options: BuildOptions): Promise<BuildResult> {
         configDir: dirname(rigmapSource),
       });
       if (rigged) conform.autoRig = rigged.info;
-      const result = validateAsset(document, { clipmap, assetId: sourceId });
+      const height = rigmap.assets[sourceId]?.fit?.height ?? autoRigConfig?.height;
+      const result = validateAsset(document, { clipmap, assetId: sourceId, height });
       report.errors.push(...result.errors);
       report.warnings.push(...result.warnings);
       if (result.errors.length === 0) {

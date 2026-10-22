@@ -1,5 +1,6 @@
 // Conform-config voor bronassets die niet aan de brief voldoen (assets/src/rigmap.json, optioneel).
 // Een asset zonder entry gaat ongewijzigd naar de validatie.
+import { resolve } from 'node:path';
 import { z } from 'zod';
 import { BUDGETS } from './budgets.js';
 import { bodyPaletteSchema } from './manifest.js';
@@ -19,6 +20,13 @@ export const rigmapSchema = z.object({
       z.object({
         /** Naam uit `rigs`; snoeit en hernoemt de bones van de skin. */
         rig: z.string().optional(),
+        /**
+         * Pad naar de bron-GLB, relatief aan dit bestand, voor een bron die de buis zelf niet oppakt (de geleverde
+         * modellen onder `delivered/`). De sleutel is dan een naam van zichzelf. Een geleverd model dat al een skelet
+         * heeft, gaat zo door rig en retarget in plaats van door de starre delivered-buis. Niet samen met `autoRig`,
+         * dat zijn eigen `from` heeft.
+         */
+        source: z.string().min(1).optional(),
         /** Reduceer een te zware bron tot dit aantal driehoeken (karakters: binnen de LOD0-band van de brief). */
         lod0Triangles: z.number().int().positive().optional(),
         /** Uniforme schaal die in de vertices wordt gebakken (bijvoorbeeld 0.01 voor bronnen in centimeters). */
@@ -115,11 +123,24 @@ export type Rigmap = z.infer<typeof rigmapSchema>;
 export type AssetConform = Rigmap['assets'][string];
 export const EMPTY_RIGMAP: Rigmap = { rigs: {}, assets: {} };
 
+/**
+ * Entries die hun eigen bron aanwijzen (`autoRig.from` of `source`, paden relatief aan `configDir`). De gewone sweep
+ * slaat `delivered/` over, dus zo komt een geleverd model toch de buis in; de sleutel van de entry is de bron-id.
+ */
+export function namedSources(map: Rigmap, configDir: string): { file: string; sourceId: string }[] {
+  return Object.entries(map.assets).flatMap(([sourceId, entry]) => {
+    const from = entry.autoRig?.from ?? entry.source;
+    return from ? [{ file: resolve(configDir, from), sourceId }] : [];
+  });
+}
+
 export function parseRigmap(json: unknown): Rigmap {
   const map = rigmapSchema.parse(json);
   for (const [id, entry] of Object.entries(map.assets)) {
     if (entry.autoRig && (entry.meshes || entry.fit || entry.rig || entry.retarget))
       throw new Error(`asset "${id}": autoRig gaat niet samen met meshes, fit, rig of retarget`);
+    if (entry.autoRig && entry.source)
+      throw new Error(`asset "${id}": autoRig heeft zijn eigen "from"; laat "source" weg`);
     if (entry.rig && !map.rigs[entry.rig])
       throw new Error(`asset "${id}" verwijst naar onbekende rig "${entry.rig}"`);
     const [min, max] = [BUDGETS.characterMinTris[0], BUDGETS.characterMaxTris[0]];

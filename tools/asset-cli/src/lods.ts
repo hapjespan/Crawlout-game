@@ -47,7 +47,13 @@ async function readFresh(source: Uint8Array): Promise<Document> {
   return createIO().readBinary(source);
 }
 
-/** Simplify tot het doel gehaald is; een paar passes met strakker ratio als meshopt er te weinig uit haalt. */
+/**
+ * Simplify tot het doel gehaald is; een paar passes met strakker ratio als meshopt er te weinig uit haalt.
+ *
+ * `simplify` werkt op de mesh zoals die er nu bij ligt, dus een vervolgpass rekent zijn ratio tegen het resultaat van de
+ * vorige, niet tegen de bron. Een ratio die tegen de bron gerekend wordt, haalt er in pass twee veel te veel uit: een
+ * bron van 94.000 driehoeken naar 4000 landde zo op 2145 in plaats van 3800, ver onder de ondergrens van de brief.
+ */
 export async function simplifyToTarget(document: Document, target: number): Promise<void> {
   await MeshoptSimplifier.ready;
   const start = countTriangles(document);
@@ -58,7 +64,8 @@ export async function simplifyToTarget(document: Document, target: number): Prom
     await document.transform(weld(), simplify({ simplifier: MeshoptSimplifier, ratio, error: 1 }));
     const now = countTriangles(document);
     if (now <= target) return;
-    ratio = Math.max(0.01, (ratio * target) / now) * 0.9;
+    // De marge van 0,95 houdt rekening met meshopt dat per primitive naar beneden afrondt.
+    ratio = Math.max(0.01, (target / now) * 0.95);
   }
   // Vastgelopen op attribuutnaden (bijvoorbeeld een atlas met veel UV-eilanden): terug naar de onvereenvoudigde mesh
   // (de herhaalde passes met foutgrens 1 hebben dan al hele delen, zoals een hoofd, weggevouwen) en in één pass over

@@ -213,6 +213,16 @@ describe('simplify met skinning', () => {
     await simplifyToTarget(doc, 5000);
     expect(countTriangles(doc)).toBe(200);
   });
+
+  // Een vervolgpass rekent zijn ratio tegen het resultaat van de vorige pass, niet tegen de bron. Deed hij dat wel, dan
+  // haalde pass twee er veel te veel uit en landde een karakter ver onder de ondergrens van de brief.
+  it.each([500, 1200, 3600])('simplifyToTarget landt dicht onder doel %i', async (target) => {
+    const doc = await io.readBinary(await makeUeSource({ segments: 60, rings: 80 }));
+    await simplifyToTarget(doc, target);
+    const triangles = countTriangles(doc);
+    expect(triangles).toBeLessThanOrEqual(target);
+    expect(triangles).toBeGreaterThan(target * 0.9);
+  });
 });
 
 describe('clips en validatie na conform', () => {

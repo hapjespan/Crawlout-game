@@ -31,10 +31,16 @@ export interface ValidationResult {
   warnings: string[];
 }
 
-/** Valideert een bron-GLB tegen de technische brief (spelfundament sectie 9). */
+/**
+ * Valideert een bron-GLB tegen de technische brief (spelfundament sectie 9).
+ *
+ * `height`: de hoogte waar de config het karakter op gezet heeft (rigmap `fit.height`). Zonder die opgave geldt de 1,8 m
+ * van de brief. Een karakter dat van zichzelf groter is (het krachtpantser van 2,25 m) wordt zo op zijn eigen maat
+ * gecontroleerd in plaats van afgekeurd; de bron die wel op 1,8 m hoort te staan, blijft afgekeurd worden.
+ */
 export function validateAsset(
   document: Document,
-  options: { clipmap?: Clipmap; assetId?: string } = {},
+  options: { clipmap?: Clipmap; assetId?: string; height?: number | undefined } = {},
 ): ValidationResult {
   const errors: string[] = [];
   const warnings: string[] = [];
@@ -73,7 +79,7 @@ export function validateAsset(
       );
 
     const height = bounds.max[1] - bounds.min[1];
-    const target = BUDGETS.characterHeight;
+    const target = options.height ?? BUDGETS.characterHeight;
     if (Math.abs(height - target) > target * BUDGETS.heightTolerance) {
       errors.push(
         `hoogte is ${height.toFixed(2)} m, verwacht ongeveer ${target} m (schaal: 1 unit is 1 meter, transformaties toegepast).`,

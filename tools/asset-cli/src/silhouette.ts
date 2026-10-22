@@ -8,11 +8,14 @@ import { getBounds } from '@gltf-transform/functions';
 import type { Document } from '@gltf-transform/core';
 import { MeshoptDecoder } from 'meshoptimizer';
 import { createIO } from './lods.js';
+import { poseSkinnedDocument } from './pose.js';
 
 export interface Subject {
   label: string;
   /** Path to a .glb. */
   file: string;
+  /** Pose the subject at this moment of one of its clips first (src/pose.ts), to show the walk instead of the bind pose. */
+  clip?: { name: string; phase: number };
 }
 
 interface Tri {
@@ -87,6 +90,7 @@ export async function silhouetteSheet(
   const loaded = [];
   for (const s of subjects) {
     const doc = await io.readBinary(readFileSync(s.file));
+    if (s.clip) poseSkinnedDocument(doc, s.clip.name, s.clip.phase);
     const b = getBounds(doc.getRoot().listScenes()[0]!);
     loaded.push({ ...s, tris: trianglesOf(doc).v, min: b.min, max: b.max });
   }
@@ -124,7 +128,8 @@ export async function silhouetteSheet(
     const midX = (l.min[0]! + l.max[0]!) / 2;
     const tris: Tri[] = l.tris.map((t) => {
       const p = t.map(
-        (v) => [cx + (v[0] - midX) * scale, groundY - (v[1] - l.min[1]!) * scale] as [number, number],
+        (v) =>
+          [cx + (v[0] - midX) * scale, groundY - (v[1] - l.min[1]!) * scale] as [number, number],
       );
       // Flat shade from the facet normal against a light from the front-left-above, plus depth for a little relief.
       const e1 = [t[1]![0] - t[0]![0], t[1]![1] - t[0]![1], t[1]![2] - t[0]![2]];
