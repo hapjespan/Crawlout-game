@@ -235,7 +235,9 @@ export function menuSkinCss(skin: HudSkin): string {
     .filter((name) => name.startsWith('portrait-hero-'))
     .map(
       (name) =>
-        `${s} [data-portrait="hero-${name.slice('portrait-hero-'.length)}"]{background-image:${img(name)};background-size:cover;background-position:center top;background-repeat:no-repeat}`,
+        // The box is a wide strip, the picture a 2:3 portrait, so `cover` crops it hard. 22 percent down lands the
+        // window on the face instead of on the top of the head.
+        `${s} [data-portrait="hero-${name.slice('portrait-hero-'.length)}"]{background-image:${img(name)};background-size:cover;background-position:center 22%;background-repeat:no-repeat}`,
     )
     .join('\n');
   return `

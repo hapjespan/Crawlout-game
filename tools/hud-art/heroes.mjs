@@ -29,10 +29,48 @@ if (!SRC) {
   process.exit(1);
 }
 
-/** Left edge of each column and top edge of each row, from the dark gaps in the sheet. */
-const COLUMN_X = [15, 352, 690];
-const ROW_Y = [16, 515, 1005];
-const CELL = { w: 321, h: 456 };
+/**
+ * Rough windows to look in, one per cell. The exact crop is found inside each by shrink-wrapping to the green frame,
+ * because a hand-measured grid gets it wrong: the first attempt cut 26 px off the bottom of row 0, losing its frame,
+ * and started row 2 seventeen pixels high, taking black in with it. The rows are not evenly spaced either.
+ */
+const COLUMN_WINDOWS = [
+  [8, 345],
+  [345, 684],
+  [684, 1020],
+];
+const ROW_WINDOWS = [
+  [4, 505],
+  [505, 1004],
+  [1010, 1536],
+];
+
+/** A frame pixel: clearly green rather than the near-black gap between the cards. */
+function isFrame(data, width, x, y) {
+  const i = (y * width + x) * 4;
+  const r = data[i];
+  const g = data[i + 1];
+  const b = data[i + 2];
+  return g > 55 && g > r * 1.25 && g > b * 1.25;
+}
+
+/** Tightest box around the green frame inside a window. */
+function frameBox(data, width, height, [x0, x1], [y0, y1]) {
+  let minX = Infinity;
+  let maxX = -1;
+  let minY = Infinity;
+  let maxY = -1;
+  for (let y = y0; y < Math.min(y1, height); y++)
+    for (let x = x0; x < Math.min(x1, width); x++)
+      if (isFrame(data, width, x, y)) {
+        if (x < minX) minX = x;
+        if (x > maxX) maxX = x;
+        if (y < minY) minY = y;
+        if (y > maxY) maxY = y;
+      }
+  if (maxX < 0) throw new Error('geen groen kader gevonden in dit venster');
+  return { left: minX, top: minY, width: maxX - minX + 1, height: maxY - minY + 1 };
+}
 
 /** Row order of the sheet. */
 const FACTIONS = ['dwellers', 'raiders', 'garde'];
@@ -48,17 +86,19 @@ const HEROES = {
 
 mkdirSync(OUT, { recursive: true });
 
+const { data, info } = await sharp(SRC).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+
 const images = {};
 for (let row = 0; row < FACTIONS.length; row++) {
   for (let col = 0; col < ARCHETYPES.length; col++) {
     const hero = HEROES[FACTIONS[row]][ARCHETYPES[col]];
     const file = `portrait-hero-${hero}.png`;
-    await sharp(SRC)
-      .extract({ left: COLUMN_X[col], top: ROW_Y[row], width: CELL.w, height: CELL.h })
-      .png()
-      .toFile(join(OUT, file));
-    images[`portrait-hero-${hero}`] = { file, w: CELL.w, h: CELL.h };
-    console.log(`${file}  (${FACTIONS[row]} ${ARCHETYPES[col]})`);
+    const box = frameBox(data, info.width, info.height, COLUMN_WINDOWS[col], ROW_WINDOWS[row]);
+    await sharp(SRC).extract(box).png().toFile(join(OUT, file));
+    images[`portrait-hero-${hero}`] = { file, w: box.width, h: box.height };
+    console.log(
+      `${file.padEnd(34)} ${box.width}x${box.height} op ${box.left},${box.top}  (${FACTIONS[row]} ${ARCHETYPES[col]})`,
+    );
   }
 }
 
