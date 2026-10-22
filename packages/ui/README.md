@@ -4,7 +4,7 @@ Preact-HUD als overlay op de 3D-scene. De HUD praat alleen via `HudDeps`: comman
 
 ## Sneltoetsen
 
-Toetsen werken niet in een tekstveld en niet met Ctrl, Cmd of Alt.
+Toetsen werken niet in een tekstveld en niet met Alt. Met Ctrl of Cmd doet alleen een cijfer iets (een besturingsgroep bewaren); elke andere toets met een modifier laat de HUD aan de browser.
 
 | Toets      | Actie                                                    | Voorwaarde                                                                             |
 | ---------- | -------------------------------------------------------- | -------------------------------------------------------------------------------------- |
@@ -12,7 +12,9 @@ Toetsen werken niet in een tekstveld en niet met Ctrl, Cmd of Alt.
 | A          | Aanvallen-verplaatsen (targeting)                        | selectie                                                                               |
 | S          | Stop                                                     | selectie                                                                               |
 | T          | Verzamelen (targeting op een node)                       | selectie                                                                               |
-| 1, 2, 3    | Rol plunderaar, bouwer, militie                          | selectie                                                                               |
+| Ctrl+1 … 9 | Selectie bewaren als besturingsgroep                     | eenheden geselecteerd (gebouwen en vijanden gaan er niet in)                           |
+| 1 tot 9    | Besturingsgroep selecteren, camera naar hun midden       | groep met levende eenheden op dat cijfer                                               |
+| 1, 2, 3    | Rol plunderaar, bouwer, militie                          | selectie, en geen besturingsgroep op dat cijfer                                        |
 | B          | Bouwmenu                                                 |                                                                                        |
 | 1 tot 9    | Gebouw kiezen                                            | bouwmenu open                                                                          |
 | K          | Cijfertoetsen van de craftkaarten aan of uit             | bewoners geselecteerd en `getBuildingCards` levert craftkaarten                        |
@@ -29,7 +31,13 @@ Toetsen werken niet in een tekstveld en niet met Ctrl, Cmd of Alt.
 | R, O       | Klaar, host-instellingen                                 | lobby-paneel open                                                                      |
 | Esc        | Annuleren: opgeven-dialoog, targeting, plaatsing, menu's |                                                                                        |
 
-Volgorde bij cijfers: bouwmenu (als open), dan de kaarten (alleen gebouwen geselecteerd, of bewoners na K), anders de rolletoetsen. Een ontbrekende of niet-startbare kaart (vergrendeld, te duur, loopt, klaar) slikt het cijfer wel in, zodat het geen rol wisselt.
+Volgorde bij cijfers: bouwmenu (als open), dan de kaarten (alleen gebouwen geselecteerd, of bewoners na K), dan de besturingsgroep op dat cijfer, anders de rolletoetsen. Een ontbrekende of niet-startbare kaart (vergrendeld, te duur, loopt, klaar) slikt het cijfer wel in, zodat het geen rol wisselt.
+
+### Besturingsgroepen
+
+Ctrl (of Cmd) plus een cijfer bewaart de geselecteerde eigen eenheden als groep 1 tot 9; het cijfer zelf maakt die groep weer de selectie en zet de camera op hun zwaartepunt, shift plus een klik op het plaatje voegt ze bij de selectie. De groepen staan als genummerde plaatjes boven de eenhedenbalk, met het aantal levende eenheden, en lichten amberkleurig op zolang die groep precies de selectie is.
+
+Ze zijn volledig client-state (contract 1: de selectie is van de client, niet van de sim), dus ze gaan nooit het protocol, de snapshot of de hash in. In een groep zitten alleen entity-ids van eigen eenheden die de eenhedenbalk kent; een id draagt zijn generatie (`ENTITY_GEN_BITS`), dus een nieuwe eenheid die de index van een dode overneemt kan nooit in een oude groep opduiken. Dode eenheden vallen er bij elke lezing uit; is een groep leeg, dan verdwijnt het plaatje en doet het cijfer weer wat het daarvoor deed (de rolknoppen 1, 2 en 3). Zolang een cijfer bezet is, laat de commandokaart de sneltoetsbadge van die rolknop weg, zodat ze nooit een toets belooft die iets anders doet.
 
 ### Conflicten met de camera
 

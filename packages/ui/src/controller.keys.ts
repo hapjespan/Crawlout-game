@@ -11,8 +11,19 @@ import {
   isAlarm,
 } from './controller.actions.js';
 import { type HudControllerCore, hasCraftCards, setState } from './controller.core.js';
+import { isControlGroupKey } from './controller.groups.js';
 
 // HudController: hotkeys and the quick buttons of the consoles.
+//
+// THE DIGITS. Four things want 1 to 9, so they are ordered from the most temporary to the most permanent, and every
+// step only claims the key when it can actually do something with it:
+//   1. the build menu, while it is open (a modal list of buildings);
+//   2. the cards of the building panel, while the card keys are live (a building selected, or residents after K);
+//   3. a control group stored on that digit (Ctrl+<digit>);
+//   4. the role buttons Plunderaar, Bouwer and Militie on 1, 2 and 3.
+// So the role keys keep working exactly as before on every digit the player has not claimed as a group, and the key
+// badge on the command card disappears for a digit that is taken (`HudController.actionKeyLabel`), so it never
+// promises a shortcut that now does something else.
 
 function isTypingTarget(t: EventTarget | null): boolean {
   const el = t as HTMLElement | null;
@@ -27,8 +38,17 @@ function isTypingTarget(t: EventTarget | null): boolean {
 
 /** HudController.handleKeyDown. */
 export function handleKeyDown(core: HudControllerCore, e: KeyboardEvent): boolean {
-  if (e.ctrlKey || e.metaKey || e.altKey || isTypingTarget(e.target)) return false;
+  if (isTypingTarget(e.target)) return false;
   const key = e.key.toLowerCase();
+  // Ctrl (or Cmd) plus a digit stores the selection as that control group; any other key with a modifier is the
+  // browser's or the window manager's. The true swallows the browser's own Ctrl+<digit> even when nothing was stored,
+  // so a mistake never jumps to another tab halfway through a match.
+  if (e.ctrlKey || e.metaKey) {
+    if (e.altKey || e.shiftKey || !isControlGroupKey(key)) return false;
+    core.ctl.assignControlGroup(Number(key));
+    return true;
+  }
+  if (e.altKey) return false;
   if (key === 'escape') {
     if (core.state.confirmSurrender) core.ctl.cancelSurrender();
     else if (core.state.targeting) core.ctl.cancelTargeting();
@@ -50,6 +70,10 @@ export function handleKeyDown(core: HudControllerCore, e: KeyboardEvent): boolea
     const card = core.state.cards.find((c) => c.hotkey === key);
     return card ? core.ctl.startCard(card) || true : true;
   }
+  // Besturingsgroep op dit cijfer: selecteer hem en zet de camera erop. Zonder groep valt het cijfer door naar de
+  // rolknoppen (1, 2, 3), die daarmee onveranderd blijven werken.
+  if (isControlGroupKey(key) && core.ctl.hasControlGroup(Number(key)))
+    return core.ctl.recallControlGroup(Number(key)) || true;
   // Perk-keuze bij een level-up: F1, F2, F3 (browser-hulp op F1 wordt onderdrukt).
   const perkIdx = PERK_KEYS.indexOf(key as (typeof PERK_KEYS)[number]);
   if (perkIdx >= 0) {

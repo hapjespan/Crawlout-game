@@ -15,6 +15,7 @@ import {
   HINT_MS,
   appliesTo,
   isAlarm,
+  keyLabel,
   summarize,
   type ActionDef,
   type ActionId,
@@ -37,6 +38,7 @@ import {
 } from './controller.core.js';
 import * as cards from './controller.cards.js';
 import * as commands from './controller.commands.js';
+import * as groups from './controller.groups.js';
 import * as keys from './controller.keys.js';
 import * as select from './controller.select.js';
 
@@ -65,6 +67,8 @@ export {
 export type { ActionDef, ActionId, QuickId, SelectionSummary } from './controller.actions.js';
 export { threatOf } from './controller.core.js';
 export type { HudState } from './controller.core.js';
+export { CONTROL_GROUP_COUNT, controlGroupViews } from './controller.groups.js';
+export type { ControlGroupView } from './controller.groups.js';
 
 /** HUD-logica zonder Preact: state, sneltoetsen en commando-opbouw. De view tekent alleen de state. */
 export class HudController implements HudHandle {
@@ -433,6 +437,37 @@ export class HudController implements HudHandle {
    */
   selectSelected(id: number): boolean {
     return select.selectSelected(this.core, id);
+  }
+
+  /**
+   * Ctrl plus een cijfer: bewaart de geselecteerde eigen eenheden als besturingsgroep `slot` (1 tot 9). Gebouwen en
+   * vijanden gaan er niet in. Geeft false (met een korte melding) als er geen eenheid geselecteerd is.
+   */
+  assignControlGroup(slot: number): boolean {
+    return groups.assignControlGroup(this.core, slot);
+  }
+
+  /**
+   * Het cijfer zelf, of een klik op het plaatje in de HUD: de groep wordt de selectie en de camera gaat naar zijn
+   * zwaartepunt. Met `add` (shift) komen ze bij de selectie en blijft de camera staan. False zonder levende groep.
+   */
+  recallControlGroup(slot: number, add = false): boolean {
+    return groups.recallControlGroup(this.core, slot, add);
+  }
+
+  /** Staat er een groep met levende eenheden op dit cijfer? */
+  hasControlGroup(slot: number): boolean {
+    return groups.hasControlGroup(this.core, slot);
+  }
+
+  /**
+   * Het label van de sneltoetsbadge van een commando, of null als een besturingsgroep dat cijfer heeft overgenomen:
+   * de rolknoppen (1, 2, 3) houden hun toets tot de speler daar een groep op zet.
+   */
+  actionKeyLabel(action: ActionDef): string | null {
+    return /^[1-9]$/.test(action.key) && this.hasControlGroup(Number(action.key))
+      ? null
+      : keyLabel(action.key);
   }
 
   /** Punt (.): de volgende unit zonder taak selecteren en de camera erheen; elke druk gaat een unit verder. */

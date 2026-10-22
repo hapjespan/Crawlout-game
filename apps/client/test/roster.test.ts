@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { ANIM, ENTITY_FLAG } from '@crawlout/protocol';
 import { heroTypeId, unitTypeId } from '@crawlout/data';
 import { loadGameDataFromDir } from '@crawlout/data/node';
-import { activityOf, buildRoster } from '../src/game/roster.js';
+import { LOADOUT_NAMES, activityOf, buildRoster } from '../src/game/roster.js';
 import type { EntityRow } from '../src/game/snapshot.js';
 
 const data = loadGameDataFromDir(fileURLToPath(new URL('../../../data', import.meta.url)));
@@ -59,6 +59,41 @@ describe('buildRoster', () => {
         .filter((l) => l.factionId === faction && l.prereqTech.length === 0 && l.producedAt < 0)
         .map((l) => l.key),
     );
+  });
+});
+
+describe('a loadout that is also a hero body', () => {
+  // Martien, playtest: "niet alle garde poppetjes die ik build komen onder in de navigatie/hud terug". The Garde's
+  // Initiate-wacht is the body of two of its heroes, and the bar used to drop that whole tile, however many you built.
+  const wacht = loadout('initiate_wacht');
+  const garde = wacht.factionId;
+
+  it('keeps its tile as soon as there are units of it, and stays away while there are none', () => {
+    expect(data.heroes.some((hero) => hero.baseLoadoutId === wacht.id)).toBe(true);
+    const roster = buildRoster(data, garde, 0, [
+      row(2, unitTypeId(wacht.id)),
+      row(3, unitTypeId(wacht.id)),
+    ]);
+    const tile = roster.find((g) => g.key === 'initiate_wacht');
+    expect(tile?.naam).toBe('Initiate-wacht');
+    expect(tile?.units.map((u) => u.id)).toEqual([2, 3]);
+    // No units of it: no empty tile either (that is what the hero-body rule is for).
+    expect(buildRoster(data, garde, 0, []).some((g) => g.key === 'initiate_wacht')).toBe(false);
+  });
+
+  it('the hero himself never lands in the tile of his own body loadout', () => {
+    const heroId = data.heroes.findIndex((hero) => hero.baseLoadoutId === wacht.id);
+    const roster = buildRoster(data, garde, 0, [
+      row(2, unitTypeId(wacht.id)),
+      row(5, heroTypeId(heroId)),
+    ]);
+    expect(roster[0]?.key).toBe('hero');
+    expect(roster.find((g) => g.key === 'initiate_wacht')?.units.map((u) => u.id)).toEqual([2]);
+  });
+
+  it('every Garde loadout has a Dutch name, so no tile shows a raw data key', () => {
+    for (const l of data.loadouts.filter((x) => x.factionId === garde))
+      expect(LOADOUT_NAMES[l.key], l.key).toBeDefined();
   });
 });
 

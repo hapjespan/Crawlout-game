@@ -6,7 +6,10 @@ export const HUD_LAYOUT_CONSOLE_CSS = `/* Bottom centre: the unit bar (407 x 134
 .co-roster{position:absolute;left:${u(283)};bottom:0;width:${u(407)};height:${u(134)};padding:${u(36)} ${u(27)} ${u(6)} ${u(20)}}
 .co-roster-title{position:absolute;left:${u(109)};top:${u(4)};width:${u(174)};height:${u(24)};margin:0;display:flex;align-items:center;justify-content:center;font-size:${font(15)};letter-spacing:.03em}
 .co-roster-row{display:flex;flex-direction:column;gap:${u(3)};height:100%;min-height:0;padding:${u(4)} ${u(6)}}
-.co-roster-groups{flex:1;min-height:0;display:flex;gap:${u(3)};align-items:stretch}
+/* The tiles wrap: a faction with many loadouts (the Dwellers have fourteen) would otherwise squeeze fifteen tiles into
+   the 348 units of the well and leave slivers nobody can read. Each tile wants 40 units and never goes under 34, so the
+   well breaks into a second row instead, and the rows share its height. */
+.co-roster-groups{flex:1;min-height:0;display:flex;flex-wrap:wrap;gap:${u(3)};align-items:stretch;align-content:stretch}
 .co-building-buttons{position:absolute;left:${u(20)};bottom:calc(100% - ${u(2)});height:${u(30)};max-width:${u(367)};display:flex;gap:${u(4)};padding:${u(3)} ${u(5)} ${u(2)};min-width:0;pointer-events:auto}
 .co-building-btn{position:relative;flex:0 1 auto;min-width:0;display:flex;align-items:center;gap:${u(4)};padding:0 ${u(6)};font:inherit;cursor:pointer;overflow:hidden}
 .co-building-btn:focus-visible{outline:3px solid #ffd54f;outline-offset:1px}
@@ -16,7 +19,7 @@ export const HUD_LAYOUT_CONSOLE_CSS = `/* Bottom centre: the unit bar (407 x 134
 .co-building-badge{min-width:${u(14)};height:${u(14)};padding:0 ${u(3)};border-radius:2px;background:#ffd54f;color:#1a1a1a;font-size:${font(10)};font-weight:700;line-height:${u(14)};text-align:center}
 .co-building-progress{position:absolute;left:0;right:0;bottom:0;height:${u(3)};background:#2b2f33}
 .co-building-progress>span{display:block;height:100%;background:#42a5f5}
-.co-roster-group{position:relative;flex:1 1 0;min-width:0;max-width:${u(64)};display:flex;flex-direction:column;padding:0;font:inherit;color:inherit;cursor:pointer;overflow:hidden;text-align:left}
+.co-roster-group{position:relative;flex:1 1 ${u(40)};min-width:${u(34)};max-width:${u(64)};display:flex;flex-direction:column;padding:0;font:inherit;color:inherit;cursor:pointer;overflow:hidden;text-align:left}
 .co-roster-group:disabled{opacity:.45;cursor:default}
 .co-tile-portrait{flex:1 1 0;min-height:0;display:block;width:100%}
 .co-tile-label{flex:none;display:block}
@@ -33,6 +36,16 @@ export const HUD_LAYOUT_CONSOLE_CSS = `/* Bottom centre: the unit bar (407 x 134
 .co-roster-list{position:absolute;left:${u(20)};right:${u(27)};bottom:calc(100% + ${u(3)});z-index:1;display:flex;flex-wrap:wrap;gap:3px;max-height:${u(64)};overflow:auto;margin:0;padding:${u(4)};list-style:none}
 .co-roster-list>li{flex:1 1 0;min-width:${px(8)};max-width:${px(72)}}
 .co-roster-has-buildings .co-roster-list{bottom:calc(100% + ${u(32)})}
+/* Control groups: a strip of numbered chips directly above the unit bar, over the buildings strip when there is one.
+   The tray of an opened type moves up by the height of the strip, so the two never cover each other. */
+.co-groups{position:absolute;left:${u(20)};bottom:calc(100% + ${u(2)});max-width:${u(367)};display:flex;gap:${u(3)};margin:0;padding:${u(2)} ${u(4)};list-style:none;pointer-events:auto}
+.co-roster-has-buildings .co-groups{bottom:calc(100% + ${u(30)})}
+.co-roster-has-groups .co-roster-list{bottom:calc(100% + ${u(23)})}
+.co-roster-has-buildings.co-roster-has-groups .co-roster-list{bottom:calc(100% + ${u(51)})}
+.co-group{display:flex;align-items:baseline;gap:${u(3)};min-width:${u(22)};height:${u(16)};padding:0 ${u(4)};font:inherit;color:inherit;line-height:${u(16)};cursor:pointer}
+.co-group-key{font-size:${font(11)};font-weight:700}
+.co-group-count{font-size:${font(10)}}
+.co-group:focus-visible{outline:2px solid #ffd54f;outline-offset:1px}
 .co-roster-unit{position:relative;display:block;width:100%;height:${px(24)};padding:0;overflow:hidden;border:0;border-radius:3px;color:inherit;cursor:pointer}
 .co-roster-unit[data-state=available]{background:#2e9a45}
 .co-roster-unit[data-state=working]{background:#e08a12}

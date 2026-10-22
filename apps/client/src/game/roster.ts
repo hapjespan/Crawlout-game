@@ -33,6 +33,14 @@ export const LOADOUT_NAMES: Record<string, string> = {
   slaver: 'Slaver',
   chemdealer: 'Chem-dealer',
   buggy: 'Buggy',
+  // Garde (data 0.37.0); without these the tiles showed the raw data keys ("initiate_zoeker")
+  initiate_zoeker: 'Initiate-zoeker',
+  initiate_bouwer: 'Initiate-bouwer',
+  initiate_wacht: 'Initiate-wacht',
+  krachtpantser: 'Krachtpantser',
+  plasmaridder: 'Plasmaridder',
+  klerk: 'Klerk',
+  vertibird: 'Vertibird',
 };
 
 /**
@@ -46,6 +54,11 @@ export const LOADOUT_SHORT_NAMES: Record<string, string> = {
   chemdealer: 'Chem',
   slaaf_bouwer: 'Sl-bouw',
   bouwrobot: 'Bouwbot',
+  initiate_zoeker: 'Zoeker',
+  initiate_bouwer: 'Bouwer',
+  initiate_wacht: 'Wacht',
+  krachtpantser: 'Kracht',
+  plasmaridder: 'Plasma',
 };
 
 /** animT is 0..65535 over the clip; a gathering unit's clip is its gather job. */
@@ -100,13 +113,21 @@ export function buildRoster(
     list.push(unit);
     byKey.set(key, list);
   }
-  // A hero's body loadout (warlord_basis) is never a unit of its own: the hero is its unit, so no tile "Warlord 0".
+  // A hero's body loadout gets no empty tile of its own: a body that exists only to dress the hero (warlord_basis)
+  // would otherwise stand in the bar as "Warlord 0". It is only a reason to hide an EMPTY group, never to hide units:
+  // a hero body is often a real, buildable unit as well (the Garde's initiate_wacht, the Dwellers' patrol), and those
+  // used to disappear from the bar altogether however many you built. The hero entity itself is counted above (it has
+  // its own typeId) and never lands in a loadout group, so a tile here never double-counts him.
   const heroBodies = new Set(data.heroes.map((h) => h.baseLoadoutId));
   const groups: RosterGroup[] = hero ? [{ key: 'hero', naam: hero.naam, units: [hero.unit] }] : [];
   for (const l of data.loadouts) {
-    if (l.factionId !== factionId || heroBodies.has(l.id)) continue;
+    if (l.factionId !== factionId) continue;
     const units = (byKey.get(l.key) ?? []).sort((a, b) => a.id - b.id);
-    if (units.length === 0 && (l.prereqTech.length > 0 || l.producedAt >= 0)) continue;
+    if (
+      units.length === 0 &&
+      (heroBodies.has(l.id) || l.prereqTech.length > 0 || l.producedAt >= 0)
+    )
+      continue;
     const short = LOADOUT_SHORT_NAMES[l.key];
     groups.push({
       key: l.key,

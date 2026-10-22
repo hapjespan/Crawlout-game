@@ -3,18 +3,57 @@
 import {
   type HudController,
   type HudState,
+  controlGroupViews,
   unitStateOf,
   ABILITY_KEYS,
   actionLabel,
-  keyLabel,
   PERK_KEYS,
 } from './controller.js';
 import { type ComponentChild, h } from 'preact';
+import type { ControlGroupView } from './controller.js';
 import type { BuildOption, RosterGroup, UnitState } from './types.js';
 import { UNIT_STATE_TEXT, ACTIVITY_TEXT } from './consoles.js';
 import { portraitOfGroup } from './portraits.js';
 import { kindOfTypeId } from '@crawlout/data';
 import { ACTION_HINT, BuildingButtons } from './view.part1.js';
+
+/**
+ * Strookje boven de eenhedenbalk met de bewaarde besturingsgroepen: per groep een plaatje met het cijfer en het aantal
+ * levende eenheden, oplichtend zolang die groep precies de selectie is. Zonder groepen staat er niets.
+ */
+function ControlGroupChips(props: {
+  ctl: HudController;
+  views: readonly ControlGroupView[];
+}): ComponentChild {
+  const { ctl, views } = props;
+  if (views.length === 0) return null;
+  return h(
+    'ul',
+    { class: 'co-groups', 'aria-label': 'Besturingsgroepen' },
+    views.map((g) => {
+      const eenheden = `${g.count} ${g.count === 1 ? 'eenheid' : 'eenheden'}`;
+      return h(
+        'li',
+        { key: g.slot },
+        h(
+          'button',
+          {
+            type: 'button',
+            class: g.active ? 'co-group co-active' : 'co-group',
+            'data-group-slot': String(g.slot),
+            'aria-pressed': g.active,
+            'aria-keyshortcuts': String(g.slot),
+            'aria-label': `Groep ${g.slot}: ${eenheden}${g.active ? ', nu geselecteerd' : ''}. Selecteer ze met toets ${g.slot}.`,
+            title: `Groep ${g.slot}: ${eenheden} (toets ${g.slot}; Ctrl en een cijfer bewaart de selectie)`,
+            onClick: (e: MouseEvent) => ctl.recallControlGroup(g.slot, e.shiftKey),
+          },
+          h('b', { class: 'co-group-key' }, String(g.slot)),
+          h('span', { class: 'co-group-count' }, String(g.count)),
+        ),
+      );
+    }),
+  );
+}
 
 /**
  * Onderbalk naast de selectie: per eenhedentype een knop met aantal en het aantal zonder taak (klik selecteert, de lijst
@@ -25,15 +64,17 @@ export function RosterBar(props: { ctl: HudController; state: HudState }): Compo
   if (state.roster.length === 0 && state.buildingButtons.length === 0) return null;
   const selected = new Set(state.selection.map((s) => s.id));
   const open: RosterGroup | undefined = state.roster.find((g) => g.key === state.rosterOpen);
+  const views = controlGroupViews(state);
+  const classes = ['co-panel', 'co-roster'];
+  if (state.buildingButtons.length > 0) classes.push('co-roster-has-buildings');
+  if (views.length > 0) classes.push('co-roster-has-groups');
   return h(
     'section',
     {
-      class:
-        state.buildingButtons.length > 0
-          ? 'co-panel co-roster co-roster-has-buildings'
-          : 'co-panel co-roster',
+      class: classes.join(' '),
       'aria-label': 'Eenheden per type',
     },
+    h(ControlGroupChips, { ctl, views }),
     open
       ? h(
           'ul',
@@ -192,6 +233,9 @@ export function CommandCard(props: { ctl: HudController; state: HudState }): Com
                 : a.id === 'lobby'
                   ? state.showLobby
                   : state.targeting === a.id;
+            const label = actionLabel(a, ctl.selectionSummary());
+            // Null when a control group has taken this digit: then the button keeps working, without a key badge.
+            const key = ctl.actionKeyLabel(a);
             return h(
               'button',
               {
@@ -199,16 +243,18 @@ export function CommandCard(props: { ctl: HudController; state: HudState }): Com
                 type: 'button',
                 class: 'co-btn',
                 disabled: !ctl.isEnabled(a),
-                'aria-label': `${actionLabel(a, ctl.selectionSummary())} (sneltoets ${keyLabel(a.key)})`,
+                'aria-label': key === null ? label : `${label} (sneltoets ${key})`,
                 title: ACTION_HINT[a.id],
-                'aria-keyshortcuts': a.key === ' ' ? 'Space' : a.key.toUpperCase(),
+                ...(key === null
+                  ? {}
+                  : { 'aria-keyshortcuts': a.key === ' ' ? 'Space' : a.key.toUpperCase() }),
                 'aria-pressed': pressed,
                 'data-action': a.id,
                 onClick: () => ctl.run(a.id),
               },
               h('span', { class: 'co-btn-icon', 'aria-hidden': 'true' }),
-              h('span', { class: 'co-btn-label' }, actionLabel(a, ctl.selectionSummary())),
-              h('span', { class: 'co-key', 'aria-hidden': 'true' }, keyLabel(a.key)),
+              h('span', { class: 'co-btn-label' }, label),
+              key === null ? null : h('span', { class: 'co-key', 'aria-hidden': 'true' }, key),
             );
           }),
         )

@@ -16,6 +16,15 @@ export const HUD_LOOK_CONSOLE_CSS = `/* Unit bar: olive header plate with the ti
 .co-hud .co-roster-unit.co-selected{box-shadow:0 0 0 2px var(--amber-700)}
 .co-hud .co-roster-list{background:linear-gradient(180deg,var(--olive),var(--olive-lo));border:1px solid #14150d;border-radius:3px;box-shadow:0 3px 8px rgba(0,0,0,.55)}
 .co-hud .co-building-buttons{background:linear-gradient(180deg,var(--olive),var(--olive-lo));border:1px solid #14150d;border-bottom:0;border-radius:4px 4px 0 0}
+
+/* Control groups: little glass chips on the same olive plate as the buildings strip; amber while the group is the selection. */
+.co-hud .co-groups{background:linear-gradient(180deg,var(--olive),var(--olive-lo));border:1px solid #14150d;border-bottom:0;border-radius:4px 4px 0 0}
+.co-hud .co-group{font-family:var(--font-term);color:var(--phos-500);text-shadow:0 0 4px var(--phos-glow);
+background:var(--vignette),linear-gradient(180deg,#123a1a,#082410);border:1px solid #0b2a14;border-radius:2px;box-shadow:inset 0 0 6px rgba(0,0,0,.7)}
+.co-hud .co-group:hover{background:var(--vignette),linear-gradient(180deg,#184a22,#0b2e14)}
+.co-hud .co-group-count{color:var(--act-dim)}
+.co-hud .co-group.co-active{color:var(--amber-700);border-color:var(--amber-500);text-shadow:0 0 5px var(--amber-glow);box-shadow:inset 0 0 8px rgba(244,166,42,.3)}
+.co-hud .co-group.co-active .co-group-count{color:var(--amber-700)}
 .co-hud .co-building-btn{font-family:var(--font-ui);color:var(--phos-500);text-shadow:0 0 4px var(--phos-glow);
 background:var(--vignette),linear-gradient(180deg,#123a1a,#082410);border:2px solid #3b3f2f;border-radius:${px(6)};box-shadow:inset 0 0 8px rgba(0,0,0,.7)}
 .co-hud .co-building-btn:hover{background:var(--vignette),linear-gradient(180deg,#184a22,#0b2e14)}

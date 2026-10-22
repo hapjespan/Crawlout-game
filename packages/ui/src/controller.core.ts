@@ -3,6 +3,7 @@ import type { PlayerStatus } from '@crawlout/protocol';
 import { kindOfTypeId } from '@crawlout/data';
 import type { HudController } from './controller.js';
 import { CARD_NOTICE_MS, MAX_TOASTS, TOAST_MS, isAlarm } from './controller.actions.js';
+import { NO_CONTROL_GROUPS, pruneControlGroups } from './controller.groups.js';
 import type { ProjectView } from './project.js';
 import type { SurvivalView } from './survival.js';
 import type {
@@ -107,6 +108,12 @@ export interface HudState {
   buildingButtons: readonly BuildingButton[];
   /** Uitgeklapte groep in de eenhedenbalk (key), of null. */
   rosterOpen: string | null;
+  /**
+   * Besturingsgroepen (ui 0.22.0): per cijfer 1 tot 9 de entity-ids die de speler met Ctrl plus dat cijfer bewaarde,
+   * op index slot-1. Zuivere client-state (contract 1: de selectie is van de client), dus nooit in de snapshot, de
+   * hash of het protocol. Dode eenheden vallen er bij elke lezing uit, zie controller.groups.ts.
+   */
+  controlGroups: readonly (readonly number[])[];
   /** Staat er een voltooide werkplaats? Pas dan kunnen bewoners van rol wisselen (rolknoppen op de commandokaart). */
   canSwitchRole: boolean;
   /** Raiders: tellers voor de bovenbalk, of null zonder Raiders. */
@@ -177,6 +184,7 @@ export function createControllerCore(
       selection: [],
       roster: [],
       rosterOpen: null,
+      controlGroups: NO_CONTROL_GROUPS,
       canSwitchRole: true,
       raider: null,
       enemySlaves: false,
@@ -292,6 +300,7 @@ export function readState(core: HudControllerCore): void {
   ];
   const units = selection.some((s) => !s.enemy && kindOfTypeId(s.typeId).kind !== 'building');
   const cards = readCards(core, selection, buildingIds, units);
+  const roster = d.getRoster?.() ?? [];
   const placement = selection.some((s) => s.role === 'builder') ? core.state.placement : null;
   if (core.state.placement && !placement) d.endPlacement?.();
   // Targeting without a selection makes no sense any more (a hero ability does not need one).
@@ -321,7 +330,9 @@ export function readState(core: HudControllerCore): void {
     craftMenuOpen:
       cards.some((c) => c.kind === 'craft') && units ? core.state.craftMenuOpen : false,
     lobby: core.state.showLobby ? (d.getLobby?.() ?? null) : null,
-    roster: d.getRoster?.() ?? [],
+    roster,
+    // A unit the bar no longer reports is dead: it leaves its control group here, once, for all nine slots.
+    controlGroups: pruneControlGroups(core.state.controlGroups, roster),
     buildingButtons: d.getBuildingButtons?.() ?? [],
     canSwitchRole: d.canSwitchRole?.() ?? true,
     raider: d.getRaiderStats?.() ?? null,
