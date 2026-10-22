@@ -39,6 +39,17 @@ Ik heb nagegaan of het aan één vormsoort ligt: nee. `segments` (en dus `sin`/`
 
 Dat pleit tegen optie 1 — die betekent de trigonometrie in de hele assetpijplijn vervangen, niet één bug zoeken. Mijn voorkeur is **2**: het doel van de test (de fragmenten zijn de bron, niemand heeft met de hand in een `.glb` geknoeid) blijft volledig overeind, terwijl het platformverschil eruit valt. Optie 3 is de goedkope noodoplossing als het snel moet. Maar dit is werkstroom 3 plus de architect, niet iets om half twee 's nachts eenzijdig te beslissen.
 
+## Besluiten van Martien, uitgevoerd (22 oktober, overdag)
+
+1. **Assetvergelijking: optie 2 gekozen.** De vijf vergelijkingen "verse build tegen gecommitte dist" gaan nu via `tools/asset-cli/test/glbMatch.ts`: structuur, accessor-headers en alle integerdata (indices, joints) blijven exact, alleen floats krijgen marge. `glbMatch.test.ts` bewijst dat de test niet leeg geworden is — 1 mm verplaatsing faalt, een ander asset faalt, 1e-9 gaat door. De drie "tweede build geeft dezelfde bytes"-tests blijven byte-exact; zelfde proces en platform, dus daar hoort die lat. Onderweg bleek een kale `NodeIO` de LOD's niet te kunnen lezen (meshopt-compressie); nu gebruikt de vergelijker dezelfde `createIO()` als de buis.
+2. **HUD-label** is `Zonder bed` geworden; het dekt robots, Garde-frames, de Vertibird en beasts.
+3. **Passagiers in de snapshot** staat als sectie 25 besluit 4, met drie opties en de aanbeveling `PlayerStatus.transports` als eigen kennis — dezelfde weg die `slaveGroups` en `camps` al namen, zonder snapshot- of hashwijziging.
+4. **Assetlijstje** voor Martien: `docs/assets-gevraagd.md`.
+
+**Eronder vandaan gekomen: de HUD-tijdtests.** Zodra de assetfix werkte, liep dezelfde job stuk op "onder 2 ms per refresh": een GitHub-runner doet er 4,2 tot 10,3 ms over. Sectie 20 besluit 10 had dit al gesignaleerd en twee uitwegen toegestaan; het stond als "mag" en was nooit gedaan. De letterlijke optie (een drempel die zich aan de machine ijkt) is geprobeerd en **verworpen**: na opwarming optimaliseert de JIT de ijkloop weg, zodat hij JIT-kwaliteit meet in plaats van machinesnelheid, met 50 procent spreiding tussen twee runs op dezelfde machine. In plaats daarvan is de grens gesplitst naar waar het getal voor is (`packages/ui/src/perfBudget.ts`): op een ontwikkelmachine de harde 2 ms uit de brief, in CI een ruime bovengrens die een regressie van een orde van grootte vangt maar niet pretendeert de brief te bewijzen. Dat laatste kunnen alleen Martiens machine en de speeltest. **Dit gaat verder dan besluit 10 letterlijk toestond** — de eerlijke alternatieven zijn een eigen runner of deze tests helemaal uit CI halen.
+
+**Stand van CI op commit `1f637bc`:** `lint, typecheck, build` groen (1m09s), `unit tests` groen (2m15s), `replay` rood op **precies één test** — `s18-rustbelt-garde`, de veteraan van de Garde-AI. De 29 fixtures en de balansbanden zijn groen.
+
 ## Open
 
 1. **Gate 1 is mensenwerk.** Speeltest met 5 tot 8 mensen en een potje op een laptop met geïntegreerde GPU (60 fps, onder 150 draw calls, geen frame boven 20 ms). Zie `docs/gate-1-checklist/01-samenvatting-is-dit-een-gate-1-kandidaat.md`.
@@ -49,10 +60,14 @@ Dat pleit tegen optie 1 — die betekent de trigonometrie in de hele assetpijpli
 
 ## Waar de branches staan
 
-- **`origin/sprint-1` = `537a2dc`**: groen en gepusht, dit is wat PR #1 toont. Suite 2020 groen op dat punt.
-- **lokale `sprint-1`**: drie commits vóór origin, want de Garde-AI-merge zit er nog in. **Niet pushen** zolang de veteranenfixture rood staat.
-- **`garde-ai` = `fd7ebe4`**: hetzelfde werk, bewaard. `git reset --hard origin/sprint-1` op `sprint-1` gooit dus niets weg. Dat heb ik bewust niet zelf gedaan: een harde reset hoort een bewuste keuze van jou te zijn, niet van mij om half twee.
+Op verzoek van Martien (22 oktober: "ik wil al je werk behouden, niets weggooien") is de Garde-AI **niet** teruggedraaid maar meegenomen.
+
+- **`sprint-1` = `1f637bc`**, lokaal en op origin gelijk. Dit is wat PR #1 toont.
+- **`garde-ai` = `fd7ebe4`**: dezelfde Garde-AI-merge, apart bewaard als tweede exemplaar.
+- Lokaal 2028 tests groen, 1 rood (`s18`). Dat ene rode vinkje staat dus ook op de PR, bewust: Martien test de Garde-AI zelf.
 
 ## Eerstvolgende stap
 
-Kies over de Garde-AI (afstemronde of laten liggen tot na de speeltest) en over de assetvergelijking (de vier opties hierboven). Zodra de assetkeuze gemaakt is, is CI groen te krijgen en kan PR #1 verder; de replay-kant is dat al, inclusief alle 29 fixtures op Linux.
+**De Garde-AI is nu het enige dat CI rood houdt.** Zolang dat ene vinkje rood staat, valt een nieuwe regressie op de PR niet op. Dus: testen (Martien) en dan afstemmen of laten liggen.
+
+Daarna ligt alles bij de mens: assets aanleveren (`docs/assets-gevraagd.md`), de speeltest en de laptop met geïntegreerde GPU. Klaar om op te pakken zodra er iemand op zet: `PlayerStatus.transports` uit sectie 25 besluit 4, en de MAG-opruimpunten uit besluit 5.
