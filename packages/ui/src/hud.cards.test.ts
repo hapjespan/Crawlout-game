@@ -3,6 +3,7 @@ import { act } from 'preact/test-utils';
 import type { PlayerStatus } from '@crawlout/protocol';
 import { mountHud } from './index.js';
 import type { BuildingCard, CardState, HudDeps, HudHandle, SelectedEntity } from './index.js';
+import { renderBudgetMs } from './perfBudget.js';
 
 const status: PlayerStatus = {
   playerId: 0,
@@ -316,7 +317,7 @@ describe('prestaties', () => {
       runs.push((performance.now() - t0) / n);
     }
     runs.sort((a, b) => a - b);
-    expect(runs[3] ?? Infinity).toBeLessThan(2);
+    expect(runs[3] ?? Infinity).toBeLessThan(renderBudgetMs());
   });
 });
 

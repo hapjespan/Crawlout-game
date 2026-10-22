@@ -3,6 +3,7 @@ import { act } from 'preact/test-utils';
 import { COMMAND_PAYLOADS, CommandEnvelope } from '@crawlout/protocol';
 import type { CommandType, PlayerStatus } from '@crawlout/protocol';
 import { mountHud } from './index.js';
+import { renderBudgetMs } from './perfBudget.js';
 import type {
   BuildOption,
   HudAlert,
@@ -485,6 +486,6 @@ describe('prestatie', () => {
     }
     times.sort((a, b) => a - b);
     const median = times[Math.floor(n / 2)] ?? Infinity;
-    expect(median).toBeLessThan(2);
+    expect(median).toBeLessThan(renderBudgetMs());
   });
 });

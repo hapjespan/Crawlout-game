@@ -10,6 +10,7 @@ import {
   minimapCellColor,
 } from './minimap.js';
 import type { MinimapData, MinimapFog } from './types.js';
+import { renderBudgetMs } from './perfBudget.js';
 
 const base = (over: Partial<MinimapData> = {}): MinimapData => ({
   w: 4,
@@ -236,7 +237,7 @@ describe('minimap cache', () => {
       runs.push((performance.now() - t0) / 100);
     }
     runs.sort((a, b) => a - b);
-    expect(runs[3] ?? Infinity).toBeLessThan(2);
+    expect(runs[3] ?? Infinity).toBeLessThan(renderBudgetMs());
   });
 });
 
