@@ -28,6 +28,8 @@ interface Option<T extends string> {
   disabled?: boolean;
   /** Spoken label when it differs from the visible text. */
   aria?: string;
+  /** Skin picture for a card, as the `data-portrait` key (`hero-voorman`); nothing is drawn without a skin. */
+  portrait?: string;
 }
 
 /**
@@ -93,6 +95,13 @@ export function RadioGroup<T extends string>(props: {
             if (!o.disabled) props.onChange(o.value);
           },
         },
+        o.portrait
+          ? h('span', {
+              class: 'co-m-choice-portrait',
+              'data-portrait': o.portrait,
+              'aria-hidden': 'true',
+            })
+          : null,
         h('span', { class: 'co-m-choice-name' }, o.label),
         o.tag ? h('span', { class: o.disabled ? 'co-m-soon' : 'co-m-choice-tag' }, o.tag) : null,
         o.text ? h('span', { class: 'co-m-choice-text' }, o.text) : null,
@@ -344,6 +353,7 @@ export function HeroPicker(props: {
         tag: x.role,
         text: `Passief: ${x.passive}. ${x.ability}.`,
         aria: `${x.name}, ${x.role}. Passief: ${x.passive}. Ability ${x.ability}.`,
+        ...(x.key ? { portrait: `hero-${x.key}` } : {}),
       })),
     }),
   );

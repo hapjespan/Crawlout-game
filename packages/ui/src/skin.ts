@@ -226,10 +226,20 @@ ${s} .co-placement-reason{${frame('chip-paper', 5)}padding:0 ${px(5)};background
  */
 export function menuSkinCss(skin: HudSkin): string {
   if (!skinComplete(skin)) return '';
-  const { tiles, url, frame, tile } = skinTools(skin);
+  const { tiles, images, url, frame, tile, img } = skinTools(skin);
   const hazard = tiles['hazard'];
   const s = SCOPE;
+  // Hero portraits on the choice cards (`portrait-hero-<id>`, cut from the sheet by tools/hud-art/heroes.mjs). A hero
+  // without a picture keeps the empty panel from styles.controls.ts, so a half-filled sheet still lays out.
+  const heroPortraits = Object.keys(images)
+    .filter((name) => name.startsWith('portrait-hero-'))
+    .map(
+      (name) =>
+        `${s} [data-portrait="hero-${name.slice('portrait-hero-'.length)}"]{background-image:${img(name)};background-size:cover;background-position:center top;background-repeat:no-repeat}`,
+    )
+    .join('\n');
   return `
+${heroPortraits}
 ${s} .co-m-plate{${frame('frame-plate', m(12))}background:linear-gradient(rgba(10,12,8,.5),rgba(10,12,8,.5)),${tile('plate-rust')} 0 0/${m(385)} auto;background-color:#14170f;padding:${m(18)} ${m(26)};box-shadow:0 3px 8px rgba(0,0,0,.55)}
 ${s} .co-m-titleplate{padding:${m(22)} ${m(60)} ${m(16)}}
 ${s} .co-m-hazard{${hazard ? `background:${url(hazard.file)} 0 0/${m(hazard.w)} 100% repeat-x;border:0;` : ''}}

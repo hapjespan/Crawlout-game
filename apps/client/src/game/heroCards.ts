@@ -26,6 +26,7 @@ export function heroCards(data: GameData, factionId: number): MenuHero[] {
       const archetype = ARCHETYPES[h.archetype] as HeroArchetype;
       return {
         archetype,
+        key: h.key, // picks the skin portrait `portrait-hero-<key>`
         name: h.naam,
         role: ROLES[archetype],
         passive: passiveText(h),

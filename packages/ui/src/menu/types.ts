@@ -20,6 +20,8 @@ export interface MenuFaction {
 /** One hero card of the hero choice. Names and numbers come from the data, the texts are Dutch (the client builds them). */
 export interface MenuHero {
   archetype: HeroArchetype;
+  /** Hero id from the data ("voorman"): picks the skin portrait `portrait-hero-<key>`. Absent with an older client. */
+  key?: string;
   /** "Voorman". */
   name: string;
   /** "Bouwer · economie". */
