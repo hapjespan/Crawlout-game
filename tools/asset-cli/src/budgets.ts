@@ -61,10 +61,15 @@ export const BUDGETS = {
   /** De grond staat op y = 0, tolerantie in meter. */
   buildingGroundTolerance: 0.01,
   /**
-   * Rigide units (kind 'rigid-unit', de robots uit assets/src/robots.json): absolute plafonds per LOD. Ze staan niet
-   * stil maar hebben geen skelet; per type geinstanced, dus lager dan karakters.
+   * Rigide units (kind 'rigid-unit'): absolute plafonds per LOD. Stond op [2000, 800, 300] toen dit alleen de robots
+   * uit assets/src/robots.json waren: geinstanced per type, dus lager dan karakters. Sinds 22 oktober staan er ook
+   * geleverde mensfiguren in (krachtpantser, de Klerk, de held van de Raiders). Die vullen hetzelfde beeld als een
+   * geskind karakter en verdienen dus dezelfde band als `characterMaxTris`. Het oude plafond dwong twee slechte
+   * keuzes af: LOD0 werd op 2000 afgekapt terwijl de bronmodellen tienduizenden driehoeken hebben, en LOD2 van 300
+   * paste niet naast meer dan dertien materiaalgroepen, zodat texturen moesten worden opgeofferd om er onder te
+   * komen. Het plafond is een vangnet; wat elk model echt kost, staat in zijn eigen `lod0Triangles`.
    */
-  rigidUnitMaxTris: [2000, 800, 300] as const,
+  rigidUnitMaxTris: [4000, 1500, 600] as const,
   /** Tolerantie (m) op de zweefhoogte: `hover` tegen de onderkant van de bounds. */
   hoverTolerance: 0.01,
   maxBones: 28,
