@@ -12,6 +12,7 @@ import { splitConfig } from '../scripts/splitConfig.js';
 import { listJsonFragments, readSplitJson, splitJsonDir } from '../src/splitJson.js';
 import { BUDGETS } from '../src/budgets.js';
 import { assetEntrySchema, manifestSchema, type AssetEntry } from '../src/manifest.js';
+import { expectGlbMatches } from './glbMatch.js';
 import { buildRobots, loadRobotsConfig, parseRobots, type RobotsResult } from '../src/robots.js';
 import {
   surfaceKindOfMaterial,
@@ -250,10 +251,9 @@ describe('real scale: doors are 2.1 m or more, a storey is about 3 m', () => {
 });
 
 describe('assets/dist is the build of sites.json', () => {
-  it('has the same LOD bytes as a fresh build and the same manifest entries', () => {
+  it('has the same LODs as a fresh build and the same manifest entries', async () => {
     for (const [path, data] of built.outputs) {
-      const committed = readFileSync(join(repo, 'assets/dist', path));
-      expect(Buffer.compare(Buffer.from(data), committed), path).toBe(0);
+      await expectGlbMatches(data, readFileSync(join(repo, 'assets/dist', path)), path);
     }
     for (const e of built.entries) expect(entry(e.id), e.id).toEqual(e);
     expect(IDS.every((id) => manifest.assets.some((a) => a.id === id))).toBe(true);

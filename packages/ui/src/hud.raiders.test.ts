@@ -377,7 +377,7 @@ describe('Raider roster tile and portraits', () => {
   });
 });
 
-describe('Robots counter', () => {
+describe('Zonder bed counter', () => {
   const producing: PlayerStatus = {
     ...status,
     queue: [{ kind: 'produce', id: 10, unitId: 5, buildingId: 1, progressPermille: 100 }],
@@ -385,11 +385,11 @@ describe('Robots counter', () => {
   it('does not show for the Raiders: a tent producing fighters is no robot production', () => {
     const t = setup({ getStatus: () => producing, getRaiderStats: () => stats() });
     mounted = t.handle;
-    expect(t.el.querySelector('.co-counters')!.textContent).not.toContain('Robots');
+    expect(t.el.querySelector('.co-counters')!.textContent).not.toContain('Zonder bed');
   });
   it('shows for a faction with robots once something is produced', () => {
     const t = setup({ getStatus: () => producing });
     mounted = t.handle;
-    expect(t.el.querySelector('.co-counters')!.textContent).toContain('Robots');
+    expect(t.el.querySelector('.co-counters')!.textContent).toContain('Zonder bed');
   });
 });

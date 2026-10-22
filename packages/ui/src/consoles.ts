@@ -105,11 +105,12 @@ export function ResourceBar(props: {
       h('span', { class: 'co-gauge-needle' }),
     ),
     h(Counter, { kind: 'pop', label: 'Populatie', value: s ? `${s.pop}/${s.popCap}` : '–', full }),
-    // Robots count for pop but not for beds: the sim reports them next to the settlers' pop.
+    // These count for pop but not for beds, so the counter sits between Populatie and Bedden. Robots, Garde frames,
+    // the Vertibird and the beasts all land here, which is why the label is no longer "Robots" (protocol 0.20.0).
     props.robots !== false &&
       s &&
       ((s.noBedPop ?? 0) > 0 || s.queue.some((q) => q.kind === 'produce'))
-      ? h(Counter, { kind: 'robots', label: 'Robots', value: String(s.noBedPop ?? 0) })
+      ? h(Counter, { kind: 'robots', label: 'Zonder bed', value: String(s.noBedPop ?? 0) })
       : null,
     h(Counter, { kind: 'beds', label: 'Bedden', value: fmt(s?.beds) }),
   );

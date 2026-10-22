@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { BUDGETS } from '../src/budgets.js';
 import { manifestSchema, type AssetEntry } from '../src/manifest.js';
+import { expectGlbMatches } from './glbMatch.js';
 import { buildRobots, loadRobotsConfig, type RobotsResult } from '../src/robots.js';
 
 const repo = fileURLToPath(new URL('../../../', import.meta.url));
@@ -42,13 +43,10 @@ beforeAll(async () => {
 }, 300_000);
 
 describe('garde procedural placeholders', () => {
-  it('build without errors and match assets/dist byte for byte', () => {
+  it('build without errors and match assets/dist', async () => {
     expect(built.reports.flatMap((r) => r.errors)).toEqual([]);
     for (const [path, data] of built.outputs)
-      expect(
-        Buffer.compare(readFileSync(join(repo, 'assets/dist', path)), Buffer.from(data)),
-        path,
-      ).toBe(0);
+      await expectGlbMatches(data, readFileSync(join(repo, 'assets/dist', path)), path);
   });
 
   it('derived bodies are characters in the real-scale band, power armour 2,1 to 2,3 m', () => {

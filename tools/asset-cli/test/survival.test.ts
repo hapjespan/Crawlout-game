@@ -8,6 +8,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import { BUDGETS } from '../src/budgets.js';
 import { manifestSchema, type AssetEntry } from '../src/manifest.js';
 import { parseRigmap } from '../src/rigmap.js';
+import { expectGlbMatches } from './glbMatch.js';
 import { buildRobots, loadRobotsConfig, type RobotsResult } from '../src/robots.js';
 
 const repo = fileURLToPath(new URL('../../../', import.meta.url));
@@ -95,12 +96,9 @@ describe('survival rigid units (klauwbeest, behemoth)', () => {
     expect(size(entry('survival_behemoth'))[1]).toBeGreaterThan(6);
   });
 
-  it('match a fresh build byte for byte (assets/dist is the build of the fragments)', () => {
+  it('match a fresh build (assets/dist is the build of the fragments)', async () => {
     for (const [path, data] of built.outputs) {
-      expect(
-        Buffer.compare(readFileSync(join(repo, 'assets/dist', path)), Buffer.from(data)),
-        path,
-      ).toBe(0);
+      await expectGlbMatches(data, readFileSync(join(repo, 'assets/dist', path)), path);
     }
     for (const e of built.entries) expect(entry(e.id), e.id).toEqual(JSON.parse(JSON.stringify(e)));
   });

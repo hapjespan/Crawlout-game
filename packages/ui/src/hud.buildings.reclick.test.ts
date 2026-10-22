@@ -37,11 +37,11 @@ describe('robots in de bovenbalk', () => {
   it('toont de robot-pop naast de pop', () => {
     const t = setup();
     keepMounted(t.handle);
-    expect(q(t.el, '[aria-label="Voorraad en bewoners"]').textContent).not.toContain('Robots');
+    expect(q(t.el, '[aria-label="Voorraad en bewoners"]').textContent).not.toContain('Zonder bed');
     t.model.noBedPop = 4;
     t.tick();
     const text = q(t.el, '[aria-label="Voorraad en bewoners"]').textContent!;
-    expect(text).toContain('Robots');
+    expect(text).toContain('Zonder bed');
     expect(text).toContain('4');
   });
 });

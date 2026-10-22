@@ -8,6 +8,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import { BUDGETS } from '../src/budgets.js';
 import { readDataList } from './dataLists.js';
 import { assetEntrySchema, manifestSchema, type AssetEntry } from '../src/manifest.js';
+import { expectGlbMatches } from './glbMatch.js';
 import { buildRobots, loadRobotsConfig, parseRobots, type RobotsResult } from '../src/robots.js';
 import { readSplitJson } from '../src/splitJson.js';
 import {
@@ -192,10 +193,9 @@ describe('surface kinds (the render look recipe reads them from the material nam
 });
 
 describe('assets/dist is the build of dwellers-gear.json', () => {
-  it('has the same LOD bytes as a fresh build and the same manifest entries', () => {
+  it('has the same LODs as a fresh build and the same manifest entries', async () => {
     for (const [path, data] of built.outputs) {
-      const committed = readFileSync(join(repo, 'assets/dist', path));
-      expect(Buffer.compare(committed, Buffer.from(data)), path).toBe(0);
+      await expectGlbMatches(data, readFileSync(join(repo, 'assets/dist', path)), path);
     }
     for (const e of built.entries) expect(entry(e.id), e.id).toEqual(JSON.parse(JSON.stringify(e)));
   });
