@@ -32,11 +32,20 @@ const clientId = z.string().min(8).max(64);
 // winroute C; alleen dan zet de sim de projectdelen van de map neer (envHash). 'skirmish' heeft de winroutes A en B.
 // mode 'survival' (sim 0.27.0, data 0.33.0; sectie 24 besluit 1): Survival co-op, 1 tot 4 spelers zonder AI-speler, de
 // bouwzones en golven uit data/survival; de winroutes A, B en C gelden niet, de uitkomst staat in PlayerStatus.survival.
+// Moeilijkheidsgraad (protocol 0.21.0, sim 0.37.0, data 0.45.0; besluit fase-0 sectie 26): één vermenigvuldiger op de
+// reactietijd van de scripted AI. `hard` reageert sneller (0,75), `easy` trager (1,5), `normal` ligt op 1,0. Binnen de
+// band van het gekozen niveau loot de sim één keer in start() uit sim.rng, vóór frame 0: elk potje voelt anders en elke
+// client rekent exact dezelfde tegenstander uit seed plus settings. Afwezig = geen niveau en geen loting; de scripts
+// staan dan precies zoals ze in data/ai staan en de envHash blijft zoals hij was (bestaande replays en fixtures).
+export const Difficulty = z.enum(['easy', 'normal', 'hard']);
+export type Difficulty = z.infer<typeof Difficulty>;
+export const DIFFICULTIES = Difficulty.options;
 export const MatchSettings = z
   .object({
     mode: z.enum(['skirmish', 'survival', 'project']),
     delayFrames: uint,
     dominanceMinutes: uint.optional(),
+    difficulty: Difficulty.optional(),
   })
   .strict();
 export type MatchSettings = z.infer<typeof MatchSettings>;

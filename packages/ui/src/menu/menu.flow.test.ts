@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { LobbyPlayer } from '@crawlout/protocol';
 import {
+  DEFAULT_DIFFICULTY,
+  DIFFICULTY_CHOICES,
   GAME_TYPES,
   RANDOM_FACTION,
   cleanRoomCode,
@@ -103,7 +105,20 @@ describe('Tegen AI', () => {
       faction: 'dwellers',
       hero: 'krijger',
       aiFaction: RANDOM_FACTION,
+      // moeilijkheidsgraad (protocol 0.21.0): het middelste niveau zonder keuze
+      difficulty: DEFAULT_DIFFICULTY,
     });
+  });
+
+  it('moeilijkheidsgraad (protocol 0.21.0): drie niveaus, de keuze gaat mee in de startconfig', () => {
+    expect(DIFFICULTY_CHOICES.map((d) => d.id)).toEqual(['easy', 'normal', 'hard']);
+    expect(ai({ type: 'ai/difficulty', id: 'hard' }).state.ai.difficulty).toBe('hard');
+    // een onbekend niveau verandert niets
+    expect(ai({ type: 'ai/difficulty', id: 'brutal' as never }).state.ai.difficulty).toBe(
+      DEFAULT_DIFFICULTY,
+    );
+    const r = ai({ type: 'ai/difficulty', id: 'easy' }, { type: 'ai/start' });
+    expect(r.effect).toMatchObject({ kind: 'startAi', config: { difficulty: 'easy' } });
   });
 
   it('hero choice (protocol 0.19.0): an archetype, kept across a faction change, into the start config', () => {
@@ -152,6 +167,7 @@ describe('Tegen AI', () => {
         faction: 'raiders',
         heroArchetype: 'krijger',
         aiFaction: 'dwellers',
+        difficulty: DEFAULT_DIFFICULTY,
       },
     });
   });

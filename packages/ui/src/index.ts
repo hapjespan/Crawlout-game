@@ -74,7 +74,13 @@ export type {
   PvpConnectConfig,
   PvpForm,
 } from './menu/flow.js';
-export { DEFAULT_HERO, defaultRelayUrl, RANDOM_FACTION } from './menu/flow.js';
+export {
+  DEFAULT_DIFFICULTY,
+  DEFAULT_HERO,
+  DIFFICULTY_CHOICES,
+  defaultRelayUrl,
+  RANDOM_FACTION,
+} from './menu/flow.js';
 export { identifyYou } from './menu/lobbyModel.js';
 export {
   DEFAULT_SETTINGS,

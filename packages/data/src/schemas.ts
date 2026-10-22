@@ -54,6 +54,7 @@ export {
   VisionTuning,
   GuardTuning,
   BaseDefenseTuning,
+  DifficultyTuning,
 } from './schemas.part3.js';
 export {
   SimTuning,

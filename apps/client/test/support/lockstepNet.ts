@@ -14,6 +14,7 @@ import {
   createSim,
   deserialize,
   simConfigFromGameData,
+  simDifficulty,
   simMapFromGrid,
   simPlayersFromLobby,
 } from '@crawlout/sim';
@@ -49,6 +50,8 @@ export function envFromStart(start: Extract<ServerMessage, { kind: 'start' }>): 
       start.settings.mode === 'project' ? { project: data.project } : {},
     ),
     config: simConfigFromGameData(data),
+    // moeilijkheidsgraad (protocol 0.21.0): zoals session.ts hem leest
+    ...((d) => (d === undefined ? {} : { difficulty: d }))(simDifficulty(start.settings.difficulty)),
   };
 }
 

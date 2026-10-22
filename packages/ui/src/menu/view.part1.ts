@@ -3,13 +3,14 @@
 import { type ComponentChild, h } from 'preact';
 import { useRef, useEffect } from 'preact/hooks';
 import type { MenuController } from './controller.js';
-import type { HeroArchetype } from '@crawlout/protocol';
+import type { Difficulty, HeroArchetype } from '@crawlout/protocol';
 import {
   type MenuState,
   RANDOM_FACTION,
   GAME_TYPES,
   type GameTypeId,
   DEFAULT_HERO,
+  DIFFICULTY_CHOICES,
 } from './flow.js';
 import type { MenuContent, MenuFaction } from './types.js';
 import { drawMinimap } from '../minimap.js';
@@ -459,16 +460,31 @@ export function AiScreen(props: {
                   options: aiFactions,
                 }),
               ),
-          h(
-            'div',
-            { class: 'co-m-section' },
-            h(
-              'p',
-              { class: 'co-m-sub', style: 'margin:0' },
-              h('b', { class: 'co-m-inline-label' }, 'Moeilijkheid '),
-              'Standaard (één niveau, een keuze volgt later)',
-            ),
-          ),
+          // Moeilijkheidsgraad (protocol 0.21.0, besluit fase-0 sectie 26): de band waarin de AI speelt. Binnen die
+          // band loot de sim per potje, dus twee potjes op hetzelfde niveau voelen niet hetzelfde.
+          ai.gameType === 'survival'
+            ? null
+            : h(
+                'div',
+                { class: 'co-m-section' },
+                h('h2', null, 'Moeilijkheid'),
+                h(RadioGroup<Difficulty>, {
+                  label: 'Moeilijkheid',
+                  value: ai.difficulty,
+                  variant: 'seg',
+                  onChange: (id) => ctl.dispatch({ type: 'ai/difficulty', id }),
+                  options: DIFFICULTY_CHOICES.map((d) => ({
+                    value: d.id,
+                    label: d.name,
+                    aria: `${d.name}: ${d.blurb}`,
+                  })),
+                }),
+                h(
+                  'p',
+                  { class: 'co-m-sub', style: 'margin:0' },
+                  DIFFICULTY_CHOICES.find((d) => d.id === ai.difficulty)?.blurb ?? '',
+                ),
+              ),
         ),
         h(MapPreview, { content }),
       ),

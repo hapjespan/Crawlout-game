@@ -19,5 +19,5 @@ export {
 } from './fromData.part1.js';
 export type { EffectStatName, ClaimKind } from './fromData.part1.js';
 export { simConfigFromGameData } from './fromData.part2.js';
-export { simMapFromGrid, simPlayersFromLobby } from './fromData.part3.js';
+export { simDifficulty, simMapFromGrid, simPlayersFromLobby } from './fromData.part3.js';
 export type { SimMapSource, SimMapOptions } from './fromData.part3.js';

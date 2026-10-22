@@ -67,6 +67,7 @@ export type {
   SimTuningData,
   GuardTuningData,
   BaseDefenseTuningData,
+  DifficultyTuningData,
   VisionTuningData,
   PlacementTuningData,
   FormationTuningData,
@@ -173,5 +174,23 @@ function convertSimTuning(simRaw: SimTuning): GameData['sim'] {
       standU: metersToUnits(simRaw.guard.standM),
       leashU: metersToUnits(simRaw.guard.leashM),
     },
+    // Difficulty (data 0.45.0): percentages to permille, in the DIFFICULTIES order of the protocol (easy, normal, hard)
+    ...(simRaw.difficulty === undefined
+      ? {}
+      : {
+          difficulty: {
+            levels: [
+              simRaw.difficulty.levels.easy,
+              simRaw.difficulty.levels.normal,
+              simRaw.difficulty.levels.hard,
+            ].map((l) => ({
+              reactionPermille: pctToPermille(l.reactionPct),
+              spreadPermille: pctToPermille(l.spreadPct),
+            })),
+            minBuilders: simRaw.difficulty.minBuilders,
+            minScavengersPerNode: simRaw.difficulty.minScavengersPerNode,
+            minArmy: simRaw.difficulty.minArmy,
+          },
+        }),
   };
 }

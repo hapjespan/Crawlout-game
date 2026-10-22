@@ -60,5 +60,16 @@
     "radiusM": 28,
     "calmS": 5,
     "_comment": "Data 0.36.0 (sim-core, Martien 20 oktober: \"Nee ze schuilen niet maar verdedigen bij een basis aanval ipv direct aanvallen\"; was 0.35.0, 19 oktober: \"als de basis wordt aangevallen dan gaan ze automatisch in de verdedig modus\"; voorstel, ter bevestiging door de architect). Basisverdediging: raakt een vijand (golfeenheid, vijandelijke speler of creep) een gebouw van speler p of een unit van p binnen de basisstraal, dan is de basis van p aangevallen. Basisstraal: in Survival de straal van de bouwzone (het midden van de zone), anders radiusM rond het hoofdgebouw. Zolang er een vijandelijke unit binnen de straal staat (en tot calmS s daarna) stoppen de gewapende units van p binnen de straal zonder taak of met werk (verzamelen, bouwen; vechters en ook gewapende verzamelaars en bouwers) en verdedigen: ze vallen de dichtstbijzijnde vijand binnen de straal aan vanaf hun plek, of lopen net ver genoeg om hem te raken. Ze stormen niet naar de dreiging en jagen niet buiten de straal. Staat er geen vijand meer in de straal, dan lopen ze terug naar hun plek of hun werk. Units zonder wapen (schade 0, de slaven van de Raiders) schuilen bij het dichtstbijzijnde eigen hoofdgebouw of de Kooi. Na calmS gaat iedereen terug naar zijn vorige order. Units met een expliciet bevel (Move, Guard, Attack en dergelijke) blijven ongemoeid. Aan in Survival; skirmish is een schakelaar, voorlopig uit (de skirmish-fixtures houden hun hashes). radiusM 40 en calmS 8: startwaarde, niet gemeten."
+  },
+  "difficulty": {
+    "levels": {
+      "easy": { "reactionPct": 150, "spreadPct": 10 },
+      "normal": { "reactionPct": 100, "spreadPct": 8 },
+      "hard": { "reactionPct": 75, "spreadPct": 8 }
+    },
+    "minBuilders": 1,
+    "minScavengersPerNode": 2,
+    "minArmy": 3,
+    "_comment": "Data 0.45.0 (moeilijkheidsgraad, sim 0.37.0, protocol 0.21.0; voorstel, ter bevestiging door de architect en content; besluit fase-0 sectie 26). De banden van MatchSettings.difficulty. reactionPct is de vermenigvuldiger op de reactietijd van de scripted AI, in procent: hard 75 (reageert sneller), normal 100, easy 150 (reageert trager). spreadPct is de spreiding rond die waarde, in procent van die waarde: de sim loot per potje een keer uit sim.rng in start(), voor frame 0, uniform in [reactie - spreiding, reactie + spreiding] (easy 135 tot 165, normal 92 tot 108, hard 69 tot 81 procent). Units lopen en vechten niet sneller; alleen de klok, de legergroottes en de economie van het script schuiven. Met de getrokken vermenigvuldiger m (promille) schaalt de loader-adapter per AI-script: de kloktijden en de legergroottes maal m (attackTimersS, waveIntervalS, researchFromS, claimFromS, buildOrder[].atS, pushFromS, waveMinArmy, pushMinArmy) en de economie gedeeld door m (scavengersPerNode, builders: een snellere tegenstander heeft meer verzamelaars en bouwers). minBuilders, minScavengersPerNode en minArmy zijn de ondergrenzen na die schaling, zodat easy nooit een AI zonder bouwer of zonder verzamelaar oplevert. Startwaarden, geen balans: de banden zijn nog niet gemeten met tools/replay fairness-report. Afwezige difficulty = geen niveau en geen loting (de scripts staan zoals in data/ai)."
   }
 }

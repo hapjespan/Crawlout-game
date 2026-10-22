@@ -14,6 +14,7 @@ import {
 } from './schemas.part1.js';
 import {
   BaseDefenseTuning,
+  DifficultyTuning,
   FormationTuning,
   GuardTuning,
   PlacementTuning,
@@ -76,6 +77,9 @@ export const SimTuning = z
     // Data 0.29.0 (the Guard command; voorstel, ter bevestiging door de architect)
     guard: GuardTuning,
     baseDefense: BaseDefenseTuning,
+    // Data 0.45.0 (moeilijkheidsgraad, sim 0.37.0, protocol 0.21.0; voorstel, besluit fase-0 sectie 26): de banden per
+    // niveau van MatchSettings.difficulty. Optioneel: data zonder dit blok kent geen niveaus (de AI speelt zijn script).
+    difficulty: DifficultyTuning.optional(),
   })
   .strict()
   .refine((t) => t.pathEntranceMaxCells <= t.pathSectorCells, {

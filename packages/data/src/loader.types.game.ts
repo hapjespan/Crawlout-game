@@ -319,6 +319,20 @@ export interface SimTuningData {
   guard: GuardTuningData;
   /** Base defence (data 0.35.0; voorstel, ter bevestiging door de architect). */
   baseDefense: BaseDefenseTuningData;
+  /**
+   * Difficulty (data 0.45.0, sim 0.37.0, protocol 0.21.0; voorstel, besluit fase-0 sectie 26): the band per level of
+   * MatchSettings.difficulty. Absent = data without levels; a match then plays the scripts as they stand.
+   */
+  difficulty?: DifficultyTuningData;
+}
+
+/** sim.json `difficulty` in permille (data 0.45.0); `levels` is indexed by the protocol's DIFFICULTIES order. */
+export interface DifficultyTuningData {
+  /** Per level easy, normal, hard: the reaction multiplier and its spread, both in permille. */
+  levels: readonly { reactionPermille: number; spreadPermille: number }[];
+  minBuilders: number;
+  minScavengersPerNode: number;
+  minArmy: number;
 }
 
 /** sim.json `baseDefense` in sim units (data 0.35.0). */

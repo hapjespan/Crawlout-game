@@ -1,7 +1,7 @@
 import { MAX_PLAYERS } from '@crawlout/protocol';
 import { validateGarde } from './config.validate.garde.js';
 import { NEUTRAL_FACTION } from './config.types.js';
-import type { SimConfig, SimEnv } from './config.env.js';
+import { DIFFICULTY_COUNT, type SimConfig, type SimEnv } from './config.env.js';
 import {
   I31,
   MAX_FOOTPRINT,
@@ -37,6 +37,7 @@ export function validateEnv(env: SimEnv): void {
   validateAiScripts(config, unitIds, buildingIds);
   validateGarde(config, unitIds, buildingIds); // sim 0.32.0
   validateSurvival(env, unitIds);
+  validateDifficulty(env); // sim 0.37.0
   for (const p of players) {
     req(
       intIn(p.factionId, 0, config.factions.length - 1),
@@ -51,6 +52,31 @@ export function validateEnv(env: SimEnv): void {
         `speler met een held ${p.heroId} buiten zijn factie`,
       );
   }
+}
+
+/**
+ * Difficulty (sim 0.37.0, data 0.45.0; besluit fase-0 sectie 26): the band per level and the level of this env. A level
+ * without a band in the data is a programming error, not a silently ignored setting: both clients have to fall out here
+ * rather than play a different opponent.
+ */
+function validateDifficulty(env: SimEnv): void {
+  const d = env.config.difficulty;
+  if (d !== undefined) {
+    req(d.levels.length === DIFFICULTY_COUNT, `difficulty: ${d.levels.length} niveaus`);
+    for (const l of d.levels) {
+      req(intIn(l.reactionPermille, 1, I31), 'difficulty: reactionPermille');
+      req(intIn(l.spreadPermille, 0, 1000), 'difficulty: spreadPermille');
+    }
+    req(intIn(d.minBuilders, 1, I31), 'difficulty: minBuilders');
+    req(intIn(d.minScavengersPerNode, 1, I31), 'difficulty: minScavengersPerNode');
+    req(intIn(d.minArmy, 1, I31), 'difficulty: minArmy');
+  }
+  if (env.difficulty === undefined) return;
+  req(d !== undefined, 'difficulty: niveau gekozen maar de data kent geen niveaus');
+  req(
+    intIn(env.difficulty, 0, DIFFICULTY_COUNT - 1),
+    `difficulty: onbekend niveau ${env.difficulty}`,
+  );
 }
 
 /** Players, map geometry, spawns, scrap nodes, claim points, dominance and creep camps. */

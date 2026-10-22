@@ -41,7 +41,17 @@ export type {
   SimSurvival,
   SimSurvivalMap,
   SimSurvivalWave,
+  SimDifficultyTuning,
 } from './config.js';
+// Moeilijkheidsgraad (sim 0.37.0, protocol 0.21.0; besluit fase-0 sectie 26)
+export {
+  DIFFICULTY_COUNT,
+  DIFFICULTY_EASY,
+  DIFFICULTY_HARD,
+  DIFFICULTY_NORMAL,
+} from './config.js';
+export { difficultyBand, difficultyOn, scaleAiScripts } from './difficulty.js';
+export { simDifficulty } from './fromData.js';
 export {
   AURA_SIDE_ALLY,
   AURA_SIDE_ENEMY,

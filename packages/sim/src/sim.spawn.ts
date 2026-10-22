@@ -84,4 +84,7 @@ export function rebuildDerived(sim: Sim): void {
   indexClaimPoints(sim);
   indexProjectParts(sim, sim.projectParts);
   sim.vision.rebuild(w);
+  // difficulty (sim 0.37.0): de trekking kwam met de state mee; de geschaalde scripts volgen eruit (afgeleid, nooit
+  // opnieuw geloot — een resync moet precies de tegenstander krijgen waar het potje mee begon)
+  sim.applyDifficultyRoll();
 }

@@ -11,6 +11,7 @@ import type { ProjectState } from './systems/project.js';
 import type { SurvivalState } from './systems/survival.js';
 import type { DefenseState } from './systems/defense.js';
 import type { GardeState } from './systems/garde.js';
+import type { DifficultyState } from './difficulty.js';
 
 // Volledige state als één reeks byte-chunks in vaste volgorde. serialize() plakt ze achter elkaar in één
 // ArrayBuffer; hash() is FNV-1a 32-bit over precies dezelfde bytes. Daardoor geldt per constructie:
@@ -97,6 +98,8 @@ export interface StateParts {
   readonly defense: DefenseState;
   /** The Garde (sim 0.32.0): veteran ranks and fusion cores, only where a Garde player plays (garde.active). */
   readonly garde: GardeState;
+  /** Difficulty (sim 0.37.0): the reaction multiplier rolled in start(), only with a level (difficulty.active). */
+  readonly difficulty: DifficultyState;
 }
 
 /** De chunks na de header, gemaakt op basis van de huidige highWater en freeCount. */
@@ -168,6 +171,9 @@ function bodyChunks(p: StateParts): Uint8Array[] {
     for (const a of [g.cargoType, g.cargoHp, g.cargoRank, g.cargoKills])
       out.push(bytesOf(a, n * MAX_CARGO));
   }
+  // difficulty (sim 0.37.0): the multiplier rolled in start() is state (a resync has to load it, it never recomputes
+  // the roll); only with a level, so every state without one keeps its format and its hash
+  if (p.difficulty.active) out.push(bytesOf(p.difficulty.roll, p.difficulty.roll.length));
   return out;
 }
 

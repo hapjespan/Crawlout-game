@@ -16,7 +16,9 @@ import type {
   SimPlayer,
   SimUnitType,
 } from './config.js';
+import type { SimAiScript } from './config.js';
 import { PERK_WORDS, envHash, validateEnv } from './config.js';
+import { DifficultyState, initDifficulty, scriptsOf, startDifficulty } from './difficulty.js';
 import { NO_ENTITY, World } from './ecs/world.js';
 import { EventBuffer } from './events.js';
 import { FlowFields } from './flowfield.js';
@@ -128,6 +130,10 @@ export class Sim implements SimContext {
   readonly defense = new DefenseState();
   /** The Garde (sim 0.32.0): `active` (derived) when a player plays a faction with Garde rules. */
   readonly garde = new GardeState();
+  /** Difficulty (sim 0.37.0, difficulty.ts): the reaction multiplier of this match, rolled in start() (state). */
+  readonly difficulty = new DifficultyState();
+  /** The AI scripts as this match plays them (derived, difficulty.ts); the AI reads these, never config.aiScripts. */
+  aiScripts: readonly SimAiScript[];
 
   private tickNo = 0;
   private readonly envHashValue: number;
@@ -175,6 +181,8 @@ export class Sim implements SimContext {
     this.defense.active = defenseActive(this);
     this.world.clearOnFree.push(this.defense.mark);
     this.garde.active = gardeOn(env);
+    initDifficulty(env, this.difficulty); // sim 0.37.0; without a level the scripts stay those of the config
+    this.aiScripts = env.config.aiScripts;
     // sim 0.33.0: the higher perk words only with more than 32 perks, so every other state keeps its format and hash
     this.ps.perkWords = env.config.perks.length > 32 ? PERK_WORDS : 1;
     const g = this.garde;
@@ -190,6 +198,7 @@ export class Sim implements SimContext {
       survival: this.survival,
       defense: this.defense,
       garde: this.garde,
+      difficulty: this.difficulty,
     };
   }
 
@@ -213,6 +222,9 @@ export class Sim implements SimContext {
   start(): void {
     if (this.tickNo !== 0 || this.world.highWater !== 0)
       throw new Error('start() alleen op een verse sim');
+    // difficulty (sim 0.37.0, sectie 26): de enige trekking, uit sim.rng, vóór de startopstelling en dus vóór frame 0.
+    // Zonder niveau raakt dit de rng niet, zodat elk bestaand potje zijn hashes houdt.
+    this.aiScripts = startDifficulty(this.config, this.difficulty, this.rng);
     setupStart(this);
     // creep camps (sim 0.20.0): the bandits after the players' start setup
     spawnCreepCamps(this);
@@ -226,6 +238,11 @@ export class Sim implements SimContext {
     // fog of war: the start setup already sees (and explores) its surroundings before frame 0
     this.vision.update(this.world);
     this.hashDirty = true;
+  }
+
+  /** @internal De scripten van deze sim uit de geladen trekking (na deserialize; nooit opnieuw loten). */
+  applyDifficultyRoll(): void {
+    this.aiScripts = scriptsOf(this.config, this.difficulty);
   }
 
   /**
@@ -468,19 +485,4 @@ export class Sim implements SimContext {
   }
 }
 
-/** Maakt een nieuwe sim met startopstelling (tenzij opts.start === false). Valideert de invoer; gooit bij ongeldige invoer. */
-export function createSim(init: SimInit, opts: CreateSimOptions = {}): Sim {
-  if (!isInt(init.seed) || init.seed < 0 || init.seed > 0xffffffff)
-    throw new Error(`SimInit ongeldig: seed ${init.seed}`);
-  const { seed, ...env } = init;
-  const sim = new Sim(env, seed);
-  if (opts.start !== false) sim.start();
-  return sim;
-}
-
-/** Laadt een state uit serialize(). De omgeving (map, config, spelers) moet dezelfde zijn; anders gooit hij. */
-export function deserialize(buf: ArrayBuffer, env: SimEnv): Sim {
-  const sim = new Sim(env, 0);
-  sim.loadState(buf);
-  return sim;
-}
+export { createSim, deserialize } from './sim.factory.js';

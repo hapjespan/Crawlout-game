@@ -10,7 +10,7 @@
 // AI the Raiders; both default to the Dwellers. Over ws and in the loopback alike.
 // Reconnect: a dropped socket is re-joined with the same clientId; the relay sends `start` again and a resync, which
 // loads the peer's state into the worker (`load`), replays the bundles and continues live (net/resync.ts).
-import { convertDominance, type GameData } from '@crawlout/data';
+import type { GameData } from '@crawlout/data';
 import {
   DELAY_FRAMES_DEFAULT,
   HASH_INTERVAL_FRAMES,
@@ -18,6 +18,7 @@ import {
   readSnapshotHeader,
   type CommandPayload,
   type CommandType,
+  type Difficulty,
   type FrameBundle,
   type HeroArchetype,
   type LobbyPlayer,
@@ -25,15 +26,10 @@ import {
   type StallNotice,
 } from '@crawlout/protocol';
 import { LoopbackRelay, type RelayTransport } from '@crawlout/relay/browser';
-import {
-  simConfigFromGameData,
-  simMapFromGrid,
-  simPlayersFromLobby,
-  type SimEnv,
-  type SimInit,
-} from '@crawlout/sim';
+import type { SimEnv } from '@crawlout/sim';
 import type { SimWorkerInbound } from '@crawlout/sim';
 import { modeParam, type SessionEvents, type SessionLobbyRequest } from './sessionLobby.js';
+import { envOfInit, initFromStart } from './sessionEnv.js';
 import SimWorker from '@crawlout/sim/worker?worker';
 import type { SimWorkerOutbound } from '@crawlout/sim';
 import { identifyYou } from '@crawlout/ui';
@@ -68,6 +64,8 @@ export interface SessionOptions {
    * protocol 0.16.0); default `?mode=`, else 'skirmish'.
    */
   mode?: 'skirmish' | 'project' | 'survival';
+  /** Difficulty of the AI (protocol 0.21.0); absent = not sent, so the AI plays its script as data/ai has it. */
+  difficulty?: Difficulty;
 }
 
 export type { SessionLobby, SessionLobbyRequest } from './sessionLobby.js';
@@ -203,34 +201,6 @@ export function startSession(
     }
   };
 
-  /** The sim environment of this match from a start message; the seed travels separately. */
-  const initFromStart = (msg: Extract<ServerMessage, { kind: 'start' }>): SimInit => {
-    const players = msg.players.map((p) => ({
-      playerId: p.playerId,
-      faction: p.faction,
-      ai: p.ai,
-    }));
-    const dominance = convertDominance({
-      pointsRequired: map.dominance.pointsRequired,
-      minutes: msg.settings.dominanceMinutes ?? map.dominance.minutes,
-    });
-    return {
-      seed: msg.seed,
-      players: simPlayersFromLobby(data, players),
-      // win route C (data 0.31.0): the project sites only in the game type Bouwproject; survival co-op (sim 0.27.0):
-      // edges and build zones only in the game type Survival (same as tools/replay env-core)
-      map: simMapFromGrid(
-        { ...map.grid, dominance },
-        msg.settings.mode === 'project'
-          ? { project: data.project }
-          : msg.settings.mode === 'survival'
-            ? { survival: data.survival }
-            : {},
-      ),
-      config: simConfigFromGameData(data),
-    };
-  };
-
   const release = (bundles: readonly FrameBundle[]): void => {
     for (const bundle of bundles) post({ kind: 'bundle', bundle });
   };
@@ -306,8 +276,8 @@ export function startSession(
         you = msg.you;
         roster = msg.players;
         faction = msg.players.find((p) => p.playerId === you)?.faction ?? null;
-        const init = initFromStart(msg);
-        env = { players: init.players, map: init.map, config: init.config };
+        const init = initFromStart(data, map, msg);
+        env = envOfInit(init);
         if (started) {
           // Second start (same seed): this is a reconnect. Keep the worker, hold live bundles until the state arrives.
           awaitingResync = true;
@@ -395,11 +365,18 @@ export function startSession(
     if (options.heroArchetype !== undefined)
       link.send({ kind: 'setHero', heroArchetype: options.heroArchetype });
     // win route C: the game type Bouwproject puts the strip mall into the sim (the host's settings); Survival co-op
-    // too, but without the AI (the scripted AI does not know survival) and solo (the relay's minimum is 1 here)
-    if (gameMode !== 'skirmish')
+    // too, but without the AI (the scripted AI does not know survival) and solo (the relay's minimum is 1 here).
+    // Difficulty (protocol 0.21.0): only when the menu chose one; Survival has no AI player, so no level either.
+    const difficulty = gameMode === 'survival' ? undefined : options.difficulty;
+
+    if (gameMode !== 'skirmish' || difficulty !== undefined)
       link.send({
         kind: 'setSettings',
-        settings: { mode: gameMode, delayFrames: DELAY_FRAMES_DEFAULT },
+        settings: {
+          mode: gameMode,
+          delayFrames: DELAY_FRAMES_DEFAULT,
+          ...(difficulty === undefined ? {} : { difficulty }),
+        },
       });
     if (gameMode !== 'survival') loopback.addAi(aiFaction);
     link.send({ kind: 'ready', ready: true });

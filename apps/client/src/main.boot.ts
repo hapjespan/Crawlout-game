@@ -113,6 +113,8 @@ export async function bootClient(ctx: ClientContext): Promise<void> {
             faction: config.faction,
             aiFaction: config.aiFaction,
             heroArchetype: config.heroArchetype,
+            // moeilijkheidsgraad (protocol 0.21.0): de keuze uit het menu gaat mee in MatchSettings
+            difficulty: config.difficulty,
             mode:
               config.gameType === 'build'
                 ? 'project'

@@ -108,6 +108,31 @@ export interface SimConfig {
     readonly radius: number;
     readonly calmTicks: number;
   };
+  /**
+   * Difficulty (sim.json `difficulty`, data 0.45.0, sim 0.37.0, protocol 0.21.0; voorstel, ter bevestiging door de
+   * architect; besluit fase-0 sectie 26; difficulty.ts): the band per level of SimEnv.difficulty. Absent = data without
+   * levels; an env may then not name a difficulty.
+   */
+  readonly difficulty?: SimDifficultyTuning;
+}
+
+/** Difficulty levels, in the DIFFICULTIES order of the protocol (easy, normal, hard). */
+export const DIFFICULTY_EASY = 0;
+export const DIFFICULTY_NORMAL = 1;
+export const DIFFICULTY_HARD = 2;
+export const DIFFICULTY_COUNT = 3;
+
+/** sim.json `difficulty` in permille (data 0.45.0). */
+export interface SimDifficultyTuning {
+  /** Per level (DIFFICULTY_*): the reaction multiplier and its spread around it, both in permille. */
+  readonly levels: readonly {
+    readonly reactionPermille: number;
+    readonly spreadPermille: number;
+  }[];
+  /** Lower bounds after the scaling, so easy never yields an AI without a builder or without a scavenger. */
+  readonly minBuilders: number;
+  readonly minScavengersPerNode: number;
+  readonly minArmy: number;
 }
 
 /** Building placement margins (sim.json `placement`), in sim units; the rule works in whole cells, rounded up. */
@@ -156,6 +181,12 @@ export interface SimInit {
   readonly players: readonly SimPlayer[];
   readonly map: SimMap;
   readonly config: SimConfig;
+  /**
+   * Difficulty (sim 0.37.0, protocol 0.21.0 MatchSettings.difficulty; besluit fase-0 sectie 26): DIFFICULTY_*. The sim
+   * rolls a reaction multiplier once in start() from sim.rng, within the band of this level, and scales the AI scripts
+   * with it. Absent = no level and no roll: the scripts stand as they come from data/ai and the envHash is unchanged.
+   */
+  readonly difficulty?: number;
 }
 
 /** Alles wat geen state is maar wel nodig is om een geserialiseerde state te laden. */

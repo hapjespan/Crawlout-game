@@ -2,7 +2,7 @@ import { convertDominance } from '@crawlout/data';
 import type { GameData, MapDef } from '@crawlout/data';
 import type { MapGrid } from '@crawlout/map';
 import type { LobbyPlayer, MatchSettings } from '@crawlout/protocol';
-import { simMapFromGrid, simPlayersFromLobby } from '@crawlout/sim';
+import { simDifficulty, simMapFromGrid, simPlayersFromLobby } from '@crawlout/sim';
 import type { SimConfig, SimEnv } from '@crawlout/sim';
 
 // De omgeving van een replay uit geladen data en een geladen map, zonder IO: Node (env.ts) en de browser-bundel
@@ -34,5 +34,7 @@ export function envFrom(
           : {},
     ),
     config,
+    // moeilijkheidsgraad (protocol 0.21.0): het niveau van de replay-invoer; afwezig = de scripts zoals in data/ai
+    ...((d) => (d === undefined ? {} : { difficulty: d }))(simDifficulty(settings.difficulty)),
   };
 }

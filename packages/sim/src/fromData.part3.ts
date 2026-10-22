@@ -1,5 +1,6 @@
 // Split from fromData.ts to stay under the 5,000-token file limit; fromData.ts re-exports the public surface.
-// Holds: SimMapSource, SimMapOptions, simMapFromGrid, simPlayersFromLobby.
+// Holds: SimMapSource, SimMapOptions, simMapFromGrid, simPlayersFromLobby, simDifficulty.
+import { DIFFICULTY_EASY, DIFFICULTY_HARD, DIFFICULTY_NORMAL } from './config.js';
 import type { SimMap, SimPlayer } from './config.js';
 import { ARCHETYPES, type GameData } from '@crawlout/data';
 import { defaultHeroId } from './fromData.part2.js';
@@ -92,6 +93,17 @@ export function simMapFromGrid(grid: SimMapSource, opts: SimMapOptions = {}): Si
     dominance: { pointsRequired: grid.dominance.pointsRequired, ticks: grid.dominance.ticks },
     creepCamps: (grid.creepCamps ?? []).map((c) => ({ x: c.ux, y: c.uy, tier: c.tier })),
   };
+}
+
+/**
+ * MatchSettings.difficulty (protocol 0.21.0) naar SimInit.difficulty (DIFFICULTY_*). Afwezig of onbekend blijft
+ * undefined: zo'n potje speelt de scripts zoals ze in data/ai staan, met de envHash die het altijd had.
+ */
+export function simDifficulty(difficulty?: string): number | undefined {
+  if (difficulty === 'easy') return DIFFICULTY_EASY;
+  if (difficulty === 'normal') return DIFFICULTY_NORMAL;
+  if (difficulty === 'hard') return DIFFICULTY_HARD;
+  return undefined;
 }
 
 /**

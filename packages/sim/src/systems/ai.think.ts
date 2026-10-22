@@ -61,7 +61,8 @@ export function aiSystem(ctx: SimContext, census: Census, scratch: AiScratch): v
       takeCensus(ctx, census);
       counted = true;
     }
-    const script = ctx.config.aiScripts[si]!;
+    // sim 0.37.0: de scripts van dit potje (ctx.aiScripts), dus met de moeilijkheidsgraad erop
+    const script = ctx.aiScripts[si]!;
     // data 0.21.0: a script with a raid plan plays the Raiders (systems/aiRaiders.ts)
     if (script.raidPlan !== null) raiderThink(ctx, census, scratch, p, script, script.raidPlan);
     else think(ctx, census, scratch, p, script);

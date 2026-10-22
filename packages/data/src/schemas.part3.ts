@@ -230,7 +230,37 @@ export const BaseDefenseTuning = z
   })
   .strict();
 
+// Difficulty (data/sim.json `difficulty`, data 0.45.0, sim 0.37.0, protocol 0.21.0; voorstel, ter bevestiging door de
+// architect en content; besluit fase-0 sectie 26): the band per level of MatchSettings.difficulty. reactionPct is the
+// multiplier on the reaction time of the scripted AI (hard 75, normal 100, easy 150); spreadPct is the spread around it
+// in percent of that value, within which the sim rolls once per match from sim.rng in start(), before frame 0.
+const DifficultyLevel = z
+  .object({
+    reactionPct: z.number().positive(),
+    spreadPct: z.number().min(0).max(100),
+  })
+  .strict();
+
+export const DifficultyTuning = z
+  .object({
+    levels: z
+      .object({ easy: DifficultyLevel, normal: DifficultyLevel, hard: DifficultyLevel })
+      .strict(),
+    // Lower bounds after the scaling, so easy never yields an AI without a builder or without a scavenger.
+    minBuilders: z.number().int().min(1),
+    minScavengersPerNode: z.number().int().min(1),
+    minArmy: z.number().int().min(1),
+    _comment: comment,
+  })
+  .strict()
+  .refine((t) => t.levels.hard.reactionPct < t.levels.easy.reactionPct, {
+    message: 'hard reageert sneller dan easy (lagere reactionPct)',
+    path: ['levels'],
+  });
+
 export type AiScript = z.infer<typeof AiScript>;
+
+export type DifficultyTuning = z.infer<typeof DifficultyTuning>;
 
 export type FormationTuning = z.infer<typeof FormationTuning>;
 

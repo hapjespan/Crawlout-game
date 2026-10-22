@@ -1,4 +1,9 @@
-import { HERO_ARCHETYPES, type HeroArchetype, type LobbyPlayer } from '@crawlout/protocol';
+import {
+  HERO_ARCHETYPES,
+  type Difficulty,
+  type HeroArchetype,
+  type LobbyPlayer,
+} from '@crawlout/protocol';
 import { identifyYou, relayErrorText } from './lobbyModel.js';
 
 /**
@@ -48,6 +53,22 @@ export const DEFAULT_HERO: HeroArchetype = 'krijger';
 /** The AI faction choice that picks one at random when the match starts. */
 export const RANDOM_FACTION = 'random';
 
+/** The difficulty without a choice (protocol 0.21.0, besluit fase-0 sectie 26): the middle level. */
+export const DEFAULT_DIFFICULTY: Difficulty = 'normal';
+
+/** The three levels as the menu shows them, in the order of the protocol's DIFFICULTIES (easy, normal, hard). */
+export interface DifficultyInfo {
+  id: Difficulty;
+  name: string;
+  blurb: string;
+}
+
+export const DIFFICULTY_CHOICES: readonly DifficultyInfo[] = [
+  { id: 'easy', name: 'Rustig', blurb: 'De AI reageert traag en bouwt langzaam op.' },
+  { id: 'normal', name: 'Normaal', blurb: 'De AI speelt zijn script op tempo.' },
+  { id: 'hard', name: 'Zwaar', blurb: 'De AI reageert sneller en vordert harder.' },
+];
+
 export interface AiSetup {
   gameType: GameTypeId;
   faction: string;
@@ -55,6 +76,8 @@ export interface AiSetup {
   hero: HeroArchetype;
   /** A faction key, or RANDOM_FACTION. */
   aiFaction: string;
+  /** Difficulty of the AI (protocol 0.21.0): the band it plays in; the sim rolls within that band per match. */
+  difficulty: Difficulty;
 }
 
 export interface AiMatchConfig {
@@ -65,6 +88,8 @@ export interface AiMatchConfig {
   heroArchetype: HeroArchetype;
   /** Always a real faction key here: "willekeurig" is resolved when the match starts. Unused in survival (no AI). */
   aiFaction: string;
+  /** MatchSettings.difficulty of the match. Unused in survival (no AI player). */
+  difficulty: Difficulty;
 }
 
 export interface PvpForm {
@@ -132,6 +157,7 @@ export type MenuAction =
   | { type: 'ai/faction'; key: string }
   | { type: 'ai/hero'; archetype: HeroArchetype }
   | { type: 'ai/aiFaction'; key: string }
+  | { type: 'ai/difficulty'; id: Difficulty }
   | { type: 'ai/start' }
   | { type: 'pvp/form'; patch: Partial<PvpForm> }
   | { type: 'pvp/connect'; create: boolean }
@@ -218,6 +244,7 @@ export function initialMenuState(options: {
       faction: options.factionKey,
       hero: DEFAULT_HERO,
       aiFaction: RANDOM_FACTION,
+      difficulty: DEFAULT_DIFFICULTY,
     },
     pvp: {
       phase: 'form',
@@ -300,6 +327,10 @@ export function reduceMenu(state: MenuState, action: MenuAction, env: MenuEnv): 
       return action.key === RANDOM_FACTION || env.factionKeys.includes(action.key)
         ? done({ ...state, ai: { ...state.ai, aiFaction: action.key } })
         : done(state);
+    case 'ai/difficulty':
+      return DIFFICULTY_CHOICES.some((d) => d.id === action.id)
+        ? done({ ...state, ai: { ...state.ai, difficulty: action.id } })
+        : done(state);
     case 'ai/start': {
       const gameType = state.ai.gameType;
       if (
@@ -313,7 +344,13 @@ export function reduceMenu(state: MenuState, action: MenuAction, env: MenuEnv): 
           : state.ai.aiFaction;
       return done(state, {
         kind: 'startAi',
-        config: { gameType, faction: state.ai.faction, heroArchetype: state.ai.hero, aiFaction },
+        config: {
+          gameType,
+          faction: state.ai.faction,
+          heroArchetype: state.ai.hero,
+          aiFaction,
+          difficulty: state.ai.difficulty,
+        },
       });
     }
     case 'pvp/form':

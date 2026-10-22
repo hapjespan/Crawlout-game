@@ -12,6 +12,7 @@ import {
   type SimPlayer,
   type SimUnitType,
   type SimBuildingType,
+  type SimAiScript,
 } from '../config.js';
 import { type World, C, NO_FIELD, NO_GOAL } from '../ecs/world.js';
 import type { FlowFields } from '../flowfield.js';
@@ -204,6 +205,11 @@ export interface SimContext {
   readonly config: SimConfig;
   readonly players: readonly SimPlayer[];
   readonly playerCount: number;
+  /**
+   * De AI-scripts zoals dit potje ze speelt (afgeleid, sim 0.37.0): config.aiScripts met de getrokken vermenigvuldiger
+   * van de moeilijkheidsgraad erop, of die scripts zelf zonder niveau. De AI leest deze, nooit config.aiScripts.
+   */
+  readonly aiScripts: readonly SimAiScript[];
   readonly ps: PlayerState;
   readonly globals: GlobalState;
   readonly events: EventBuffer;

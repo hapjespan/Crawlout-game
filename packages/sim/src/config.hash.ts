@@ -11,6 +11,7 @@ import { hashAiScripts, hashProgression } from './config.hash.ai.js';
 import { hashSurvival } from './config.survival.env.js';
 import { gatedScripts, hashGarde } from './config.hash.garde.js';
 import { hashHeroChoice } from './config.hash.heroes.js';
+import { difficultyBand, difficultyOn } from './difficulty.js';
 
 /**
  * Hash van de omgeving (config, map, spelers) in vaste veldvolgorde. Gaat de state-header in,
@@ -36,6 +37,19 @@ export function envHash(env: SimEnv): number {
   h = hashGarde(h, env);
   // hero choice (sim 0.33.0): the choice heroes and their perks only when a player plays one, the same
   h = hashHeroChoice(h, env);
+  // difficulty (sim 0.37.0, besluit fase-0 sectie 26): only with a level, so every env without one keeps its hash. The
+  // level and its band belong in the envHash: the AI numbers are already in it, so another level has to give another
+  // hash — two clients with a different `difficulty` must fall out at tick 0 and not drift apart halfway.
+  const band = difficultyBand(c, env.difficulty ?? -1);
+  if (difficultyOn(env) && band !== null)
+    h = hashInts(h, [
+      env.difficulty!,
+      band.lo,
+      band.hi,
+      c.difficulty!.minBuilders,
+      c.difficulty!.minScavengersPerNode,
+      c.difficulty!.minArmy,
+    ]);
   // base defence (sim 0.29.0): only where it is on, so every other env keeps its hash
   if (defenseOn(env)) {
     const d = c.baseDefense;

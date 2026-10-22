@@ -464,6 +464,20 @@ export function simConfigFromGameData(data: GameData): SimConfig {
       radius: t.baseDefense.radiusU,
       calmTicks: t.baseDefense.calmTicks,
     },
+    // difficulty (data 0.45.0, sim 0.37.0): only when the data has the block, so data without levels stays valid
+    ...(t.difficulty === undefined
+      ? {}
+      : {
+          difficulty: {
+            levels: t.difficulty.levels.map((l) => ({
+              reactionPermille: l.reactionPermille,
+              spreadPermille: l.spreadPermille,
+            })),
+            minBuilders: t.difficulty.minBuilders,
+            minScavengersPerNode: t.difficulty.minScavengersPerNode,
+            minArmy: t.difficulty.minArmy,
+          },
+        }),
   };
 }
 

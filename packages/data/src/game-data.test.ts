@@ -264,6 +264,17 @@ describe('sim-tuning', () => {
         radiusU: 7168,
         calmTicks: 100,
       },
+      // data 0.45.0 (moeilijkheidsgraad): procenten naar promille, in de DIFFICULTIES-volgorde easy, normal, hard
+      difficulty: {
+        levels: [
+          { reactionPermille: 1500, spreadPermille: 100 },
+          { reactionPermille: 1000, spreadPermille: 80 },
+          { reactionPermille: 750, spreadPermille: 80 },
+        ],
+        minBuilders: 1,
+        minScavengersPerNode: 2,
+        minArmy: 3,
+      },
     });
   });
 

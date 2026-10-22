@@ -6,6 +6,7 @@ import { PROJECT_FIXTURES } from './fixtures-project.js';
 import { SURVIVAL_FIXTURES } from './fixtures-survival.js';
 import { GARDE_FIXTURES } from './fixtures-garde.js';
 import { HERO_FIXTURES } from './fixtures-heroes.js';
+import { DIFFICULTY_FIXTURES } from './fixtures-difficulty.js';
 import {
   FIXTURES_S4,
   FIXTURES_S6,
@@ -242,4 +243,5 @@ export const FIXTURES: readonly FixtureDef[] = [
   ...SURVIVAL_FIXTURES,
   ...GARDE_FIXTURES,
   ...HERO_FIXTURES,
+  ...DIFFICULTY_FIXTURES,
 ];
