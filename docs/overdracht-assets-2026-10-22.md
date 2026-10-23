@@ -18,6 +18,8 @@ Martien leverde negen GLB's en een sheet met negen heldportretten. Dit is de sta
 5. **Elke materiaalgroep houdt een bodem van ongeveer 22 driehoeken.** Zestien materialen = 356 driehoeken in LOD2, tegen een budget van 300. Daar liep de Klerk op vast.
 6. **Een lokaal asset met dezelfde id overschrijft het procedurele** (`mergeManifests`, lokaal wint). Een held krijgt zijn eigen model via de id `hero_<key>`.
 
+7. **`Prune` sloopt een photogrammetry-scan.** De simplify-vlaggen staan standaard op `['Prune', 'Permissive']`. `Prune` laat losse kleine onderdelen vallen — bedoeld voor de planken en spijlen van een procedureel huisje. Een scan bestáát uit duizenden losse schelpjes, dus bij een krap LOD-budget eet Prune het hele gebouw op: `dweller_building_storage` kwam uit op LOD0 5989 en LOD1/LOD2 van **12** driehoeken, oftewel alleen de teamband. Het gebouw zou op middenafstand verdwijnen. Met alleen `['Permissive']` wordt het 5990 / 2040 / 693 en houden alle drie de LOD's de vorm. Zet `simplify.flags` dus per asset, en wantrouw Prune bij alles wat gescand is.
+
 ## Wat er nu staat, en waarom het niet goed genoeg is
 
 Omgezet: `garde_body_power_armor`, `garde_body_power_armor_heavy`, `garde_body_clerk`, `hero_warlord`, `garde_body_vertibird`, `garde_building_dormitory`.
