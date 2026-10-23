@@ -38,6 +38,13 @@ color:var(--ink);background:linear-gradient(180deg,#232a1d,#161b12);border:1px s
 .co-menu .co-m-choice[aria-disabled=true]{cursor:not-allowed;opacity:.62;border-style:dashed;border-color:#6b6e58}
 /* Hero portrait on a card. Without a skin it stays an empty CRT panel, so the card keeps its shape either way. */
 .co-m-choice-portrait{display:block;width:100%;height:${m(104)};margin-bottom:${m(6)};border:1px solid #05070a;border-radius:2px;background:linear-gradient(180deg,#0f2a14,#071509);box-shadow:inset 0 0 ${m(10)} rgba(0,0,0,.65)}
+/* Hero cards sit beside a map panel on a screen that must not scroll, so the portrait goes next to the name instead
+   of above it and the description runs full width underneath. Saves the height of a portrait per card. */
+.co-menu .co-m-heroes .co-m-choice{display:grid;grid-template-columns:${m(58)} minmax(0,1fr);grid-template-areas:"portrait name" "portrait tag" "text text";column-gap:${m(8)};row-gap:${m(2)};align-items:center}
+.co-menu .co-m-heroes .co-m-choice-portrait{grid-area:portrait;align-self:start;width:${m(58)};height:${m(76)};margin:0}
+.co-menu .co-m-heroes .co-m-choice-name{grid-area:name;align-self:end;font-size:${mf(17)}}
+.co-menu .co-m-heroes .co-m-choice-tag{grid-area:tag;align-self:start}
+.co-menu .co-m-heroes .co-m-choice-text{grid-area:text;margin-top:${m(6)};font-size:${mf(13)};line-height:1.2}
 .co-m-choice-name{font-size:${mf(20)};font-weight:800;letter-spacing:.06em;text-transform:uppercase;line-height:1.1}
 .co-m-choice-tag{font:700 ${mf(12)}/1 var(--font-term);letter-spacing:.14em;text-transform:uppercase;color:var(--phos-500);text-shadow:none}
 .co-menu .co-m-choice[aria-checked=true] .co-m-choice-tag{color:var(--amber-700)}
