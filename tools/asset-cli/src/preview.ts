@@ -5,13 +5,15 @@
 // projection and the same metre grid, plus a z-buffer, because once triangles carry different colours a painter's sort
 // on average depth starts showing through surfaces.
 import { readFileSync } from 'node:fs';
-import { createRequire } from 'node:module';
 import { getBounds } from '@gltf-transform/functions';
 import type { Document, Material } from '@gltf-transform/core';
 import { MeshoptDecoder } from 'meshoptimizer';
 import { createIO } from './lods.js';
 
-const sharp = createRequire(import.meta.url)('sharp') as typeof import('sharp');
+// Same lazy default import as packs.part1.ts: sharp is CommonJS, so the namespace itself is not callable.
+type Sharp = (typeof import('sharp'))['default'];
+let sharpModule: Promise<Sharp> | null = null;
+const loadSharp = (): Promise<Sharp> => (sharpModule ??= import('sharp').then((m) => m.default));
 const io = createIO();
 
 export interface PreviewSubject {
@@ -69,6 +71,7 @@ async function surfaceOf(material: Material | null): Promise<Surface> {
   ];
   const image = material?.getBaseColorTexture()?.getImage();
   if (!image) return { pixels: null, width: 0, height: 0, color };
+  const sharp = await loadSharp();
   const { data, info } = await sharp(Buffer.from(image))
     .ensureAlpha()
     .raw()
