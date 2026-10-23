@@ -27,7 +27,9 @@ describe('budgetten voor kind building', () => {
     const [m0, m1, m2] = BUDGETS.buildingMaxTris;
     expect(m0).toBeGreaterThan(m1);
     expect(m1).toBeGreaterThan(m2);
-    expect(m0).toBeLessThanOrEqual(2500);
+    // Plafond is verhoogd naar 6000 voor photogrammetry-scans (dweller_building_storage, 2,75M driehoeken).
+    // Bestaande variants hebben elk hun eigen lod0Triangles ≤ 2500 en blijven ongewijzigd.
+    expect(m0).toBeLessThanOrEqual(6000);
     for (const [id, variant] of Object.entries(config.variants)) {
       expect(variant.lod0Triangles, id).toBeLessThanOrEqual(m0);
       const [t0, t1, t2] = buildingLodTargets(variant.lod0Triangles);

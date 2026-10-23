@@ -17,8 +17,14 @@ export const BUDGETS = {
    * noemt alleen karakters; gebouwen staan stil en worden per type geinstanced, dus LOD0 mag ongeveer 1500 tot 2500
    * driehoeken hebben bij de grote gebouwen (hoofdgebouw), de kleine blijven er ruim onder via `lod0Triangles` in de
    * config. LOD1 is het werkpaard op middenafstand, LOD2 een silhouet voor de verte.
+   *
+   * Het LOD0-plafond staat op 6000 (was 2500). Aanleiding: `dweller_building_storage` is een photogrammetry-scan van
+   * 2,75 miljoen driehoeken. Bij 2500 krijgt elk van de zes materiaalgroepen gemiddeld 417 driehoeken; de simplifier
+   * reduceert de grote panelen zo ver dat de gebouwvorm in silhouet instort. 6000 geeft ~1000 per groep, genoeg om de
+   * golfplaatwanden en het dak herkenbaar te houden. Alle bestaande gebouwen in assets/src en assets/dist hebben hun
+   * eigen `lod0Triangles` ≤ 2500 en blijven daardoor ongewijzigd: het plafond is een vangnet, niet een doel.
    */
-  buildingMaxTris: [2500, 1000, 300] as const,
+  buildingMaxTris: [6000, 2400, 720] as const,
   /** Verhouding van LOD1 en LOD2 tot het LOD0-doel van een gebouw (`lod0Triangles` in de config), begrensd door het plafond. */
   buildingLodRatios: [1, 0.4, 0.12] as const,
   /**
