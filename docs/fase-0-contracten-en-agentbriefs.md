@@ -40,3 +40,4 @@ Dit document is het werkcontract, gesplitst in één bestand per hoofdsectie in 
 - [24b-contractbesluiten-na-fase-3-ronde-1-en-2-open.md](docs/fase-0/24b-contractbesluiten-na-fase-3-ronde-1-en-2-open.md): 24. Contractbesluiten na fase 2 ronde 3 en fase 3 ronde 1 en 2 (deel b, open punten)
 - [25-contractbesluiten-na-fase-3-ronde-3.md](docs/fase-0/25-contractbesluiten-na-fase-3-ronde-3.md): 25. Contractbesluiten na fase 3 ronde 3 (21 oktober: Garde-ronde B, held-keuze, scope-uitbreiding)
 - [26-moeilijkheidsgraad.md](docs/fase-0/26-moeilijkheidsgraad.md): 26. Moeilijkheidsgraad van de AI (22 oktober, voorstel van sim-core: MatchSettings.difficulty, de banden in data/sim.json, de loting uit sim.rng in start())
+- [27-bewaak-doellijst-en-normal.md](docs/fase-0/27-bewaak-doellijst-en-normal.md): 27. Bewaak-doellijst en `normal` gelijk aan géén niveau (22 oktober, twee besluiten van Martien: Guard op elke eigen claimpost, hoofdgebouw of toren; `normal` loot niet meer)

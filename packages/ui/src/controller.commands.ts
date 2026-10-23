@@ -164,7 +164,8 @@ export function completeTargeting(core: HudControllerCore, target: TargetResult)
     if (!('pointId' in target) || builders.length === 0) return false;
     core.deps.sendCommand('Claim', { ids: builders, pointId: target.pointId });
   } else if (kind === 'guard') {
-    // Bewaak: an own Kooi or a scrap node (the sim checks which); a click on the ground is no target
+    // Bewaak: a scrap node or an own guard post (Kooi, claim post or turret; the sim checks which, applyGuard,
+    // besluit fase-0 sectie 27); a click on the ground is no target
     if ('nodeId' in target) core.deps.sendCommand('Guard', { ids, targetId: target.nodeId });
     else if ('ownId' in target) core.deps.sendCommand('Guard', { ids, targetId: target.ownId });
     else return false;

@@ -19,6 +19,7 @@ export type { WorkReach } from './slaves.part1.js';
 export {
   slaveSystem,
   isOwnKooi,
+  isGuardPost,
   guardGroups,
   slaveGroupStatus,
   bindStartSlave,

@@ -128,19 +128,24 @@ describe('Claim op de commandokaart', () => {
 });
 
 describe('Bewaak hoort bij elke factie, met de uitleg van die factie', () => {
-  it('een Raidervechter leest Kooi of scrapbron, een Garde-wacht alleen scrapbron', () => {
+  // Besluit fase-0 sectie 27 (sim 0.38.0): het doel is een scrapbron of een eigen gebouw met provides kooi, claim of
+  // turret. Alleen de Raiders hebben een Kooi, dus alleen in hun regel staat die; de andere twee lezen hun claimpost.
+  it('een Raidervechter leest zijn Kooi, een Garde-wacht zijn wachtpost en toren', () => {
     const t = setup();
     mounted = t.handle;
     t.select([unit({ id: 4, raiderKind: 'fighter', role: 'militia', loadoutName: 'Rover' })]);
     expect(actions(t.el)).toContain('guard');
     press('g');
-    expect(t.el.querySelector('.co-hint')!.textContent).toContain('eigen Kooi of een scrapbron');
+    const raiderHint = t.el.querySelector('.co-hint')!.textContent!;
+    expect(raiderHint).toContain('eigen Kooi');
+    expect(raiderHint).toContain('scrapbron');
     act(() => t.handle.cancelTargeting());
-    // De Garde heeft geen Kooi (data/buildings/04-garde.json): voor hem is een scrapbron het enige doel.
     t.select([unit({ id: 5, role: 'militia', loadoutName: 'Initiate-wacht' })]);
     expect(actions(t.el)).toContain('guard');
     press('g');
-    expect(t.el.querySelector('.co-hint')!.textContent).toContain('scrapbron');
-    expect(t.el.querySelector('.co-hint')!.textContent).not.toContain('Kooi');
+    const gardeHint = t.el.querySelector('.co-hint')!.textContent!;
+    expect(gardeHint).toContain('wachtpost');
+    expect(gardeHint).toContain('scrapbron');
+    expect(gardeHint).not.toContain('Kooi');
   });
 });

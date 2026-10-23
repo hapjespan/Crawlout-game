@@ -65,7 +65,8 @@ export interface DifficultyInfo {
 
 export const DIFFICULTY_CHOICES: readonly DifficultyInfo[] = [
   { id: 'easy', name: 'Rustig', blurb: 'De AI reageert traag en bouwt langzaam op.' },
-  { id: 'normal', name: 'Normaal', blurb: 'De AI speelt zijn script op tempo.' },
+  // sim 0.38.0, besluit fase-0 sectie 27: normal is de stand zonder niveau, dus hij dobbelt niet
+  { id: 'normal', name: 'Normaal', blurb: 'De AI speelt zijn script precies op tempo, elk potje gelijk.' },
   { id: 'hard', name: 'Zwaar', blurb: 'De AI reageert sneller en vordert harder.' },
 ];
 

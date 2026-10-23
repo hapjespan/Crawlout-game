@@ -35,7 +35,7 @@ import { SLOT_PENDING, SPOT_PENDING } from './formation.js';
 import {
   liberatable,
   wandererFor,
-  isOwnKooi,
+  isGuardPost,
   reachesPoint,
   workReach,
   mayBuildAt,
@@ -191,16 +191,18 @@ const ROLE_MILITIA = ROLES.indexOf('militia');
 const ROLE_ROBOT = ROLES.indexOf('robot');
 
 /**
- * Guard (protocol 0.15.0, sim 0.24.0; voorstel, ter bevestiging door de architect, fase-0 sectie 5): bewaakmodus op een
- * eigen voltooide Kooi (provides kooi, ook het Raiderkamp) of een node met scrap. Alleen vechters: rol militia of robot,
- * met een wapen, niet de held en geen slaaf. De order (ORDER_GUARD, ordT het doel) loopt in systems/orders.ts guard.
+ * Guard (protocol 0.15.0, sim 0.24.0; doellijst verbreed in sim 0.38.0, besluit fase-0 sectie 27): bewaakmodus op een
+ * node met scrap of op een eigen voltooide bewaakpost — een gebouw met provides kooi, claim of turret (`isGuardPost`).
+ * Tot sim 0.38.0 was alleen de Kooi een post, en alleen de Raiders hebben er een; nu heeft elke factie diepte in deze
+ * order. Alleen vechters: rol militia of robot, met een wapen, niet de held en geen slaaf. De order (ORDER_GUARD, ordT
+ * het doel) loopt in systems/orders.ts guard.
  */
 export function applyGuard(ctx: SimContext, p: number, pl: CommandPayload<'Guard'>): boolean {
   const w = ctx.world;
   const t = isInt(pl.targetId) ? w.resolve(pl.targetId) : -1;
   if (t < 0) return false;
   const node = w.has(t, C.resource);
-  if (node ? w.amount[t]! <= 0 : !isOwnKooi(ctx, p, t)) return false;
+  if (node ? w.amount[t]! <= 0 : !isGuardPost(ctx, p, t)) return false;
   let any = false;
   for (const i of ownedWith(ctx, pl.ids, p, UNIT | C.combat)) {
     if (w.has(i, C.hero) || w.slaveState[i] !== SLAVE_NONE || w.damage[i]! <= 0) continue;

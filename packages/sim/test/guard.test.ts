@@ -228,6 +228,52 @@ describe('the Guard command', () => {
     expect(orderOf(sim, scav)).not.toBe(ORDER_GUARD); // a worker is no guard
   });
 
+  // sim 0.38.0, besluit fase-0 sectie 27: Martien, 22 oktober — Bewaak mag ook op een eigen claimpaal, wachtpost of
+  // geschutstoren. Alleen de Raiders hebben een Kooi, dus tot nu toe had alleen zij diepte in deze order.
+  it('takes an own claim post, headquarters or turret too, and refuses an enemy, unfinished or other building', () => {
+    const { sim } = arena();
+    const m = spawn(sim, MILITIA, 1, 60, 50);
+    const hq = sim
+      .entityIds()
+      .find((id) => sim.getUnit(id)!.kind === 'building' && sim.getUnit(id)!.owner === 1)!;
+    const posts = [
+      sim.spawnBuilding(typeByKey('claimpaal'), 1, 66, 50, true),
+      sim.spawnBuilding(typeByKey('turret'), 1, 70, 50, true),
+    ];
+    for (const post of posts) {
+      expect(post).not.toBe(0);
+      now(sim, 1, 'Stop', { ids: [m] });
+      now(sim, 1, 'Guard', { ids: [m], targetId: post });
+      expect(orderOf(sim, m), String(post)).toBe(ORDER_GUARD);
+    }
+    // the headquarters provides claim as well, so it is a post too
+    now(sim, 1, 'Stop', { ids: [m] });
+    now(sim, 1, 'Guard', { ids: [m], targetId: hq });
+    expect(orderOf(sim, m)).toBe(ORDER_GUARD);
+    // not: another player's post, a building site, or a building without kooi, claim or turret
+    const refused = [
+      sim.spawnBuilding(typeByKey('claimpaal'), 0, 74, 50, true),
+      sim.spawnBuilding(typeByKey('claimpaal'), 1, 78, 50, false),
+      sim.spawnBuilding(typeByKey('werkplaats'), 1, 82, 50, true),
+    ];
+    for (const post of refused) {
+      now(sim, 1, 'Stop', { ids: [m] });
+      now(sim, 1, 'Guard', { ids: [m], targetId: post });
+      expect(orderOf(sim, m), String(post)).not.toBe(ORDER_GUARD);
+    }
+  });
+
+  it('a post that stops being one ends the order (the guard post is checked every tick)', () => {
+    const { sim } = arena();
+    const m = spawn(sim, MILITIA, 1, 60, 50);
+    const toren = sim.spawnBuilding(typeByKey('turret'), 1, 62, 50, true);
+    now(sim, 1, 'Guard', { ids: [m], targetId: toren });
+    expect(orderOf(sim, m)).toBe(ORDER_GUARD);
+    sim.world.owner[sim.world.resolve(toren)] = 0; // taken over
+    play(sim, 3);
+    expect(orderOf(sim, m)).toBe(0);
+  });
+
   it('the hero does not take it; a Dweller militie guards a node as well (harmless)', () => {
     const sim = createSim(testInit(1, guardMap(), PLAYERS));
     const hero = sim.playerStatus(0).hero!.entityId;

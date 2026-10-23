@@ -264,11 +264,12 @@ describe('sim-tuning', () => {
         radiusU: 7168,
         calmTicks: 100,
       },
-      // data 0.45.0 (moeilijkheidsgraad): procenten naar promille, in de DIFFICULTIES-volgorde easy, normal, hard
+      // data 0.45.0 (moeilijkheidsgraad): procenten naar promille, in de DIFFICULTIES-volgorde easy, normal, hard.
+      // data 0.46.0 (besluit fase-0 sectie 27): normal staat op 1000 zonder spreiding en de sim loot er niet voor.
       difficulty: {
         levels: [
           { reactionPermille: 1500, spreadPermille: 100 },
-          { reactionPermille: 1000, spreadPermille: 80 },
+          { reactionPermille: 1000, spreadPermille: 0 },
           { reactionPermille: 750, spreadPermille: 80 },
         ],
         minBuilders: 1,

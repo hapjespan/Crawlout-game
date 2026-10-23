@@ -32,7 +32,7 @@ import {
   wandererFor,
   mayBuild,
   liberatable,
-  isOwnKooi,
+  isGuardPost,
   workReach,
   reachesPoint,
 } from './slaves.js';
@@ -276,15 +276,16 @@ export function attack(ctx: SimContext, i: number, o: number): void {
 }
 
 /**
- * The target of a Guard order of unit i (ordT `id`) while it can still be guarded: an own completed Kooi or a node with
- * scrap; else -1 (sim 0.24.0).
+ * The target of a Guard order of unit i (ordT `id`) while it can still be guarded: a node with scrap or an own
+ * completed guard post (provides kooi, claim or turret; sim 0.24.0, widened in sim 0.38.0, fase-0 sectie 27); else -1.
+ * A post that changes owner or is razed ends the order, so the same check runs every tick, not only on the command.
  */
 export function guardPost(ctx: SimContext, i: number, id: number): number {
   const w = ctx.world;
   const t = id === NO_ENTITY ? -1 : w.resolve(id);
   if (t < 0) return -1;
   if (w.has(t, C.resource)) return w.amount[t]! > 0 ? t : -1;
-  return isOwnKooi(ctx, w.owner[i]!, t) ? t : -1;
+  return isGuardPost(ctx, w.owner[i]!, t) ? t : -1;
 }
 
 /** Distance squared from (x, y) to post t: to the footprint edge of a building, to the centre of a node. */

@@ -1,5 +1,5 @@
 import type { SimAiScript } from './config.faction.js';
-import { DIFFICULTY_COUNT, type SimConfig, type SimEnv } from './config.env.js';
+import { DIFFICULTY_COUNT, DIFFICULTY_NORMAL, type SimConfig, type SimEnv } from './config.env.js';
 import { idiv } from './math/int.js';
 import type { Rng } from './rng.js';
 
@@ -12,6 +12,11 @@ import type { Rng } from './rng.js';
  * hem één keer in start(), vóór frame 0, uit sim.rng — nooit uit Math.random of Date. Elke client rekent dus dezelfde
  * tegenstander uit seed plus settings; de trekking staat daarna in de state (serialize), zodat een resync hem meeneemt.
  *
+ * `normal` is sinds sim 0.38.0 (besluit fase-0 sectie 27) precies hetzelfde als géén niveau: geen trekking, geen
+ * geschaalde scripts, geen extra state-chunk en dezelfde envHash. Easy en hard loten wél — daar zit de variatie. Dat
+ * staat hier in `difficultyOn` en nergens anders: elke lezer van die functie (de trekking, de state, de envHash) volgt
+ * vanzelf.
+ *
  * Units lopen en vechten niet sneller. Alleen het script schuift, in drie groepen:
  *   1. de klok: attackTimersTicks, waveIntervalTicks, researchFromTicks, claimFromTicks, buildOrder[].atTick,
  *      pushFromTicks — maal m (groter m = later);
@@ -20,9 +25,14 @@ import type { Rng } from './rng.js';
  * Alles daarbuiten (raidPlan, creeps, project, robots, reserve, training, radii) blijft staan zoals het in data/ai staat.
  */
 
-/** Of dit niveau geldig is voor deze config (data zonder `difficulty`-blok kent geen niveaus). */
+/**
+ * Of dit niveau iets doet in deze config: er is een niveau, de data kent niveaus, en het niveau is niet `normal`.
+ * `normal` is de stand zonder niveau (besluit fase-0 sectie 27), dus hij loot niet en schaalt niet.
+ */
 export const difficultyOn = (env: Pick<SimEnv, 'config' | 'difficulty'>): boolean =>
-  env.difficulty !== undefined && env.config.difficulty !== undefined;
+  env.difficulty !== undefined &&
+  env.difficulty !== DIFFICULTY_NORMAL &&
+  env.config.difficulty !== undefined;
 
 /** De band van een niveau, of null als de config hem niet kent. */
 export function difficultyBand(

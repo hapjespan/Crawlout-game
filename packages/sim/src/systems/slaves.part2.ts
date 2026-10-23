@@ -25,7 +25,7 @@ import {
 import { autoGather } from './orders.js';
 import { applyStats } from '../effects.js';
 import { OWNER_NEUTRAL, type SlaveGroupStatus } from '@crawlout/protocol';
-import { PROVIDES_KOOI } from '../fromData.js';
+import { PROVIDES_CLAIM, PROVIDES_KOOI, PROVIDES_TURRET } from '../fromData.js';
 import { idiv } from '../math/int.js';
 import { isqrt } from '../math/sqrt.js';
 import {
@@ -159,6 +159,23 @@ export function isOwnKooi(ctx: SimContext, p: number, b: number): boolean {
   const bt = ctx.buildingType(w.typeId[b]!);
   return bt !== undefined && bt.cage !== null && (bt.provides & PROVIDES_KOOI) !== 0;
 }
+
+/**
+ * Guard (protocol 0.15.0, sim 0.38.0; besluit fase-0 sectie 27): whether building b is a post player p may guard. An
+ * own completed building that `provides` kooi, claim or turret: the Kooi and the Raiderkamp (the old rule), every
+ * faction's claim post and headquarters (claimpaal, plunderpost, wachtpost, and the hq of each faction, which provides
+ * claim too) and every turret. It lives next to `isOwnKooi` because it generalises it: the Kooi was the only post, and
+ * only the Raiders have one.
+ */
+export function isGuardPost(ctx: SimContext, p: number, b: number): boolean {
+  const w = ctx.world;
+  if (b < 0 || w.alive[b] !== 1 || !w.has(b, C.building) || w.owner[b] !== p) return false;
+  if (w.bstate[b] !== BSTATE_DONE || w.hp[b]! <= 0) return false;
+  const bt = ctx.buildingType(w.typeId[b]!);
+  return bt !== undefined && (bt.provides & GUARD_POST_PROVIDES) !== 0;
+}
+
+const GUARD_POST_PROVIDES = PROVIDES_KOOI | PROVIDES_CLAIM | PROVIDES_TURRET;
 
 /** The node of unit i's current Gather order (an entity with scrap), or -1. */
 function gatherNode(ctx: SimContext, i: number): number {

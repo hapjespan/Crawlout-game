@@ -129,10 +129,12 @@ export interface SelectionSummary {
  * | Bevrijd           | ja       | ja      | ja    | iedereen die loopt en zelf geen slaaf is; Raiders alleen tegen een   |
  * |                   |          |         |       | andere Raider (die neemt de slaaf over als gevangene)                |
  * | Bewaak            | ja       | ja      | ja    | de enige order met een leiband: loop erheen, vecht binnen            |
- * |                   |          |         |       | `guard.leashM` en kom terug. Raiders dekken er hun Kooi mee tegen    |
- * |                   |          |         |       | een opstand (factions.json slaves.revolt); Dwellers en Garde dekken  |
- * |                   |          |         |       | er hun verzamelaars op een scrapbron mee. De Garde heeft geen Kooi,  |
- * |                   |          |         |       | dus voor hem is een scrapbron het enige doel (sim applyGuard).       |
+ * |                   |          |         |       | `guard.leashM` en kom terug. Doel (sim applyGuard, besluit fase-0    |
+ * |                   |          |         |       | sectie 27): een scrapbron met scrap, of een eigen voltooid gebouw    |
+ * |                   |          |         |       | dat `provides` kooi, claim of turret heeft. Raiders dekken er hun    |
+ * |                   |          |         |       | Kooi mee tegen een opstand (factions.json slaves.revolt); elke       |
+ * |                   |          |         |       | factie dekt er haar verzamelaars, haar claimpost (claimpaal,         |
+ * |                   |          |         |       | plunderpost, wachtpost), haar hoofdgebouw en haar torens mee.        |
  * | Verzamel          | ja       | ja      | ja    | plunderaars, bij de Raiders de slaven                                |
  * | Bouw              | ja       | ja      | ja    | bouwers, de Bouwrobot en de slaaf-bouwer                             |
  * | Claim             | ja       | ja      | ja    | dezelfde bouwers: de sim zet het claimgebouw van de factie bij het    |
@@ -329,7 +331,9 @@ export const ACTION_TARGETING: Partial<Record<ActionId, TargetingKind>> = {
 
 /**
  * Wat de speler moet aanklikken nadat hij een richtactie koos. De Bewaak-tekst hangt van de selectie af: alleen de
- * Raiders hebben een Kooi, dus alleen zij kunnen er een bewaken (sim applyGuard).
+ * Raiders hebben een Kooi, dus alleen in hun tekst staat die erbij (sim applyGuard, besluit fase-0 sectie 27). De
+ * andere twee facties noemen hun eigen claimpost en toren; de selectie verraadt de factie niet fijner dan
+ * Raiders-of-niet, dus staan beide namen in dezelfde regel.
  */
 export function targetingHint(kind: TargetingKind, s: SelectionSummary): string | null {
   switch (kind) {
@@ -337,8 +341,8 @@ export function targetingHint(kind: TargetingKind, s: SelectionSummary): string 
       return 'Klik een claimpunt: de bouwer zet er het claimgebouw van je factie neer.';
     case 'guard':
       return s.slavers + s.raiderFighters + s.slaveScavengers + s.slaveBuilders > 0
-        ? 'Bewaak: klik een eigen Kooi of een scrapbron.'
-        : 'Bewaak: klik een scrapbron waar je verzamelaars staan.';
+        ? 'Bewaak: klik een eigen Kooi, plunderpost, Raiderkamp of mitrailleursnest, of een scrapbron.'
+        : 'Bewaak: klik een eigen claimpaal of wachtpost, hoofdgebouw of toren, of een scrapbron.';
     default:
       return null;
   }

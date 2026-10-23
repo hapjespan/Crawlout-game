@@ -15,6 +15,8 @@ import type { SimEnv, SimInit } from '../src/index.js';
 
 // Moeilijkheidsgraad (sim 0.37.0, data 0.45.0, protocol 0.21.0; voorstel, besluit fase-0 sectie 26).
 // De belangrijkste regressietest staat onderaan: een potje zonder niveau rekent exact zoals voorheen.
+// Sim 0.38.0, data 0.46.0 (besluit fase-0 sectie 27): `normal` is precies diezelfde stand — geen trekking,
+// vermenigvuldiger 1,0, dezelfde envHash. Alleen easy en hard loten.
 
 const initWith = (difficulty?: number, seed = 1): SimInit => ({
   ...testInit(seed),
@@ -38,7 +40,7 @@ describe('moeilijkheidsgraad (sim 0.37.0)', () => {
     expect(simDifficulty('brutal')).toBeUndefined();
   });
 
-  it('de banden komen uit de data: hard onder 1000, normal rond 1000, easy erboven', () => {
+  it('de banden komen uit de data: hard onder 1000, normal exact 1000, easy erboven', () => {
     const bands = [DIFFICULTY_EASY, DIFFICULTY_NORMAL, DIFFICULTY_HARD].map(
       (l) => difficultyBand(CONFIG, l)!,
     );
@@ -47,11 +49,9 @@ describe('moeilijkheidsgraad (sim 0.37.0)', () => {
     for (const b of bands) expect(b.lo).toBeLessThanOrEqual(b.hi);
     expect(hard!.hi).toBeLessThan(1000);
     expect(easy!.lo).toBeGreaterThan(1000);
-    expect(normal!.lo).toBeLessThanOrEqual(1000);
-    expect(normal!.hi).toBeGreaterThanOrEqual(1000);
-    // data 0.45.0: hard 0,75, normal 1,0, easy 1,5 met hun spreiding
+    // data 0.45.0: hard 0,75 en easy 1,5 met hun spreiding; data 0.46.0: normal exact 1,0 zonder spreiding
     expect([hard!.lo, hard!.hi]).toEqual([690, 810]);
-    expect([normal!.lo, normal!.hi]).toEqual([920, 1080]);
+    expect([normal!.lo, normal!.hi]).toEqual([1000, 1000]);
     expect([easy!.lo, easy!.hi]).toEqual([1350, 1650]);
   });
 
@@ -123,7 +123,7 @@ describe('moeilijkheidsgraad (sim 0.37.0)', () => {
   it('een andere seed loot (meestal) een andere tegenstand binnen hetzelfde niveau', () => {
     const rolls = new Set<number>();
     for (let seed = 1; seed <= 24; seed++)
-      rolls.add(createSim(initWith(DIFFICULTY_NORMAL, seed)).difficulty.roll[0]!);
+      rolls.add(createSim(initWith(DIFFICULTY_EASY, seed)).difficulty.roll[0]!);
     expect(rolls.size).toBeGreaterThan(1);
   });
 
@@ -132,7 +132,26 @@ describe('moeilijkheidsgraad (sim 0.37.0)', () => {
     const easy = envHash(envWith(initWith(DIFFICULTY_EASY)));
     const normal = envHash(envWith(initWith(DIFFICULTY_NORMAL)));
     const hard = envHash(envWith(initWith(DIFFICULTY_HARD)));
-    expect(new Set([none, easy, normal, hard]).size).toBe(4);
+    // sim 0.38.0: normal is de stand zonder niveau, dus drie verschillende hashes, niet vier
+    expect(normal).toBe(none);
+    expect(new Set([none, easy, hard]).size).toBe(3);
+  });
+
+  // Besluit fase-0 sectie 27 (Martien, 22 oktober): `normal` is géén vierde stand meer.
+  it('normal is identiek aan afwezig: geen trekking, factor 1,0, dezelfde scripts, state en hash', () => {
+    const plain = createSim(initWith(undefined, 5));
+    const normal = createSim(initWith(DIFFICULTY_NORMAL, 5));
+    expect(normal.difficulty.active).toBe(false);
+    expect(normal.difficulty.roll[0]).toBe(0);
+    expect(normal.aiScripts).toBe(CONFIG.aiScripts); // dezelfde objecten, geen kopie
+    expect(normal.rng.state).toBe(plain.rng.state); // geen rng-stap
+    expect(normal.serialize().byteLength).toBe(plain.serialize().byteLength);
+    expect(normal.hash()).toBe(plain.hash());
+    for (let f = 0; f < 60; f++) {
+      plain.applyBundle({ frame: f, commands: [] });
+      normal.applyBundle({ frame: f, commands: [] });
+      expect(normal.tick()).toBe(plain.tick());
+    }
   });
 
   it('de trekking zit in de state: een resync krijgt dezelfde tegenstander', () => {
@@ -161,7 +180,7 @@ describe('moeilijkheidsgraad (sim 0.37.0)', () => {
     expect(plain.difficulty.roll[0]).toBe(0);
     expect(plain.aiScripts).toBe(CONFIG.aiScripts);
     // de trekking van een niveau kost een rng-stap; zonder niveau staat de rng nog op zijn startwaarde
-    const rolled = createSim(initWith(DIFFICULTY_NORMAL));
+    const rolled = createSim(initWith(DIFFICULTY_HARD));
     expect(rolled.rng.state).not.toBe(plain.rng.state);
     // en de state van een potje zonder niveau is korter dan die met (de trekking is de enige extra chunk)
     expect(plain.serialize().byteLength + 4).toBe(rolled.serialize().byteLength);
