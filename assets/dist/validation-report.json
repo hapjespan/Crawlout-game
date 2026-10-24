@@ -75,6 +75,16 @@
         48,
         48
       ],
+      "lodTextureBytes": [
+        9882,
+        4758,
+        2058
+      ],
+      "lodTextureSizes": [
+        2048,
+        1024,
+        512
+      ],
       "sourceBones": 0,
       "bones": 0,
       "prunedBones": [],
@@ -95,6 +105,16 @@
         48,
         48,
         48
+      ],
+      "lodTextureBytes": [
+        9882,
+        4758,
+        2058
+      ],
+      "lodTextureSizes": [
+        2048,
+        1024,
+        512
       ],
       "sourceBones": 0,
       "bones": 0,
@@ -748,12 +768,22 @@
       "kind": "character",
       "sourceTriangles": 13744,
       "lodTriangles": [
-        3598,
-        1348,
-        492
+        13744,
+        6999,
+        2199
+      ],
+      "lodTextureBytes": [
+        0,
+        0,
+        0
+      ],
+      "lodTextureSizes": [
+        2048,
+        1024,
+        512
       ],
       "sourceBones": 53,
-      "bones": 20,
+      "bones": 22,
       "prunedBones": [
         "root",
         "DEF-f_index.01.L",
@@ -785,11 +815,9 @@
         "DEF-f_ring.03.R",
         "DEF-thumb.01.R",
         "DEF-thumb.02.R",
-        "DEF-thumb.03.R",
-        "DEF-toe.L",
-        "DEF-toe.R"
+        "DEF-thumb.03.R"
       ],
-      "channelsDropped": 4554,
+      "channelsDropped": 4278,
       "clipsKept": {
         "Death01": "death",
         "Fixing_Kneeling": "build",
@@ -861,8 +889,8 @@
       ],
       "textureSizes": [
         1024,
-        512,
-        256
+        1024,
+        512
       ]
     },
     {
@@ -883,8 +911,8 @@
       ],
       "textureSizes": [
         1024,
-        512,
-        256
+        1024,
+        512
       ]
     },
     {
@@ -907,8 +935,8 @@
       ],
       "textureSizes": [
         1024,
-        512,
-        256
+        1024,
+        512
       ]
     },
     {
@@ -931,8 +959,8 @@
       ],
       "textureSizes": [
         1024,
-        512,
-        256
+        1024,
+        512
       ]
     },
     {
@@ -955,8 +983,8 @@
       ],
       "textureSizes": [
         1024,
-        512,
-        256
+        1024,
+        512
       ]
     },
     {
@@ -1010,8 +1038,8 @@
       ],
       "textureSizes": [
         1024,
-        512,
-        256
+        1024,
+        512
       ]
     },
     {
@@ -1032,8 +1060,8 @@
       ],
       "textureSizes": [
         1024,
-        512,
-        256
+        1024,
+        512
       ]
     },
     {
@@ -1083,8 +1111,8 @@
       ],
       "textureSizes": [
         1024,
-        512,
-        256
+        1024,
+        512
       ]
     },
     {
@@ -1094,9 +1122,9 @@
       "warnings": [],
       "kind": "rigid-unit",
       "lodTriangles": [
-        1832,
-        732,
-        270
+        5106,
+        2180,
+        1700
       ],
       "materials": [
         "lens",
@@ -1123,9 +1151,9 @@
       "warnings": [],
       "kind": "rigid-unit",
       "lodTriangles": [
-        956,
-        508,
-        200
+        2244,
+        1428,
+        556
       ],
       "materials": [
         "lens",
@@ -1151,9 +1179,9 @@
       "warnings": [],
       "kind": "rigid-unit",
       "lodTriangles": [
-        1946,
-        538,
-        202
+        3786,
+        1160,
+        460
       ],
       "materials": [
         "lens",
@@ -1180,9 +1208,9 @@
       "warnings": [],
       "kind": "rigid-unit",
       "lodTriangles": [
-        1952,
-        486,
-        178
+        3470,
+        1084,
+        468
       ],
       "materials": [
         "lens",
@@ -1409,12 +1437,22 @@
       "kind": "character",
       "sourceTriangles": 13744,
       "lodTriangles": [
-        3598,
-        1349,
-        493
+        13744,
+        6999,
+        2199
+      ],
+      "lodTextureBytes": [
+        0,
+        0,
+        0
+      ],
+      "lodTextureSizes": [
+        2048,
+        1024,
+        512
       ],
       "sourceBones": 53,
-      "bones": 20,
+      "bones": 22,
       "prunedBones": [
         "root",
         "DEF-f_index.01.L",
@@ -1446,11 +1484,9 @@
         "DEF-f_ring.03.R",
         "DEF-thumb.01.R",
         "DEF-thumb.02.R",
-        "DEF-thumb.03.R",
-        "DEF-toe.L",
-        "DEF-toe.R"
+        "DEF-thumb.03.R"
       ],
-      "channelsDropped": 4554,
+      "channelsDropped": 4278,
       "clipsKept": {
         "Death01": "death",
         "Fixing_Kneeling": "build",
@@ -1512,12 +1548,22 @@
       "kind": "character",
       "sourceTriangles": 13744,
       "lodTriangles": [
-        3598,
-        1348,
-        492
+        13744,
+        6999,
+        2199
+      ],
+      "lodTextureBytes": [
+        0,
+        0,
+        0
+      ],
+      "lodTextureSizes": [
+        2048,
+        1024,
+        512
       ],
       "sourceBones": 53,
-      "bones": 20,
+      "bones": 22,
       "prunedBones": [
         "root",
         "DEF-f_index.01.L",
@@ -1549,11 +1595,9 @@
         "DEF-f_ring.03.R",
         "DEF-thumb.01.R",
         "DEF-thumb.02.R",
-        "DEF-thumb.03.R",
-        "DEF-toe.L",
-        "DEF-toe.R"
+        "DEF-thumb.03.R"
       ],
-      "channelsDropped": 4554,
+      "channelsDropped": 4278,
       "clipsKept": {
         "Death01": "death",
         "Fixing_Kneeling": "build",
@@ -1615,12 +1659,22 @@
       "kind": "character",
       "sourceTriangles": 13744,
       "lodTriangles": [
-        3598,
-        1348,
-        493
+        13744,
+        6998,
+        2198
+      ],
+      "lodTextureBytes": [
+        0,
+        0,
+        0
+      ],
+      "lodTextureSizes": [
+        2048,
+        1024,
+        512
       ],
       "sourceBones": 53,
-      "bones": 20,
+      "bones": 22,
       "prunedBones": [
         "root",
         "DEF-f_index.01.L",
@@ -1652,11 +1706,9 @@
         "DEF-f_ring.03.R",
         "DEF-thumb.01.R",
         "DEF-thumb.02.R",
-        "DEF-thumb.03.R",
-        "DEF-toe.L",
-        "DEF-toe.R"
+        "DEF-thumb.03.R"
       ],
-      "channelsDropped": 4554,
+      "channelsDropped": 4278,
       "clipsKept": {
         "Death01": "death",
         "Fixing_Kneeling": "build",
@@ -1718,12 +1770,22 @@
       "kind": "character",
       "sourceTriangles": 13744,
       "lodTriangles": [
-        3598,
-        1348,
-        493
+        13744,
+        6998,
+        2198
+      ],
+      "lodTextureBytes": [
+        0,
+        0,
+        0
+      ],
+      "lodTextureSizes": [
+        2048,
+        1024,
+        512
       ],
       "sourceBones": 53,
-      "bones": 20,
+      "bones": 22,
       "prunedBones": [
         "root",
         "DEF-f_index.01.L",
@@ -1755,11 +1817,9 @@
         "DEF-f_ring.03.R",
         "DEF-thumb.01.R",
         "DEF-thumb.02.R",
-        "DEF-thumb.03.R",
-        "DEF-toe.L",
-        "DEF-toe.R"
+        "DEF-thumb.03.R"
       ],
-      "channelsDropped": 4554,
+      "channelsDropped": 4278,
       "clipsKept": {
         "Death01": "death",
         "Fixing_Kneeling": "build",
@@ -1820,9 +1880,9 @@
       "warnings": [],
       "kind": "rigid-unit",
       "lodTriangles": [
-        376,
-        328,
-        220
+        1000,
+        888,
+        572
       ],
       "materials": [
         "lens_glass",
@@ -2332,6 +2392,16 @@
         3,
         3
       ],
+      "lodTextureBytes": [
+        9882,
+        4758,
+        2058
+      ],
+      "lodTextureSizes": [
+        2048,
+        1024,
+        512
+      ],
       "sourceBones": 0,
       "bones": 0,
       "prunedBones": [],
@@ -2435,9 +2505,9 @@
       "warnings": [],
       "kind": "rigid-unit",
       "lodTriangles": [
-        438,
-        228,
-        172
+        590,
+        464,
+        440
       ],
       "materials": [
         "bone_stone",
@@ -2452,7 +2522,7 @@
       "sizeM": [
         0.32,
         0.77,
-        1.358025
+        1.36346
       ]
     },
     {
@@ -2463,12 +2533,22 @@
       "kind": "character",
       "sourceTriangles": 13744,
       "lodTriangles": [
-        3598,
-        1348,
-        492
+        13744,
+        6999,
+        2199
+      ],
+      "lodTextureBytes": [
+        0,
+        0,
+        0
+      ],
+      "lodTextureSizes": [
+        2048,
+        1024,
+        512
       ],
       "sourceBones": 53,
-      "bones": 20,
+      "bones": 22,
       "prunedBones": [
         "root",
         "DEF-f_index.01.L",
@@ -2500,11 +2580,9 @@
         "DEF-f_ring.03.R",
         "DEF-thumb.01.R",
         "DEF-thumb.02.R",
-        "DEF-thumb.03.R",
-        "DEF-toe.L",
-        "DEF-toe.R"
+        "DEF-thumb.03.R"
       ],
-      "channelsDropped": 4554,
+      "channelsDropped": 4278,
       "clipsKept": {
         "Death01": "death",
         "Fixing_Kneeling": "build",
@@ -2566,12 +2644,22 @@
       "kind": "character",
       "sourceTriangles": 13744,
       "lodTriangles": [
-        3598,
-        1348,
-        492
+        13744,
+        6999,
+        2199
+      ],
+      "lodTextureBytes": [
+        0,
+        0,
+        0
+      ],
+      "lodTextureSizes": [
+        2048,
+        1024,
+        512
       ],
       "sourceBones": 53,
-      "bones": 20,
+      "bones": 22,
       "prunedBones": [
         "root",
         "DEF-f_index.01.L",
@@ -2603,11 +2691,9 @@
         "DEF-f_ring.03.R",
         "DEF-thumb.01.R",
         "DEF-thumb.02.R",
-        "DEF-thumb.03.R",
-        "DEF-toe.L",
-        "DEF-toe.R"
+        "DEF-thumb.03.R"
       ],
-      "channelsDropped": 4554,
+      "channelsDropped": 4278,
       "clipsKept": {
         "Death01": "death",
         "Fixing_Kneeling": "build",
@@ -3050,9 +3136,9 @@
       "warnings": [],
       "kind": "rigid-unit",
       "lodTriangles": [
-        1584,
-        712,
-        264
+        3292,
+        1868,
+        1716
       ],
       "materials": [
         "bone_stone",
@@ -3234,6 +3320,16 @@
         20,
         20,
         20
+      ],
+      "lodTextureBytes": [
+        9882,
+        4758,
+        2058
+      ],
+      "lodTextureSizes": [
+        2048,
+        1024,
+        512
       ],
       "sourceBones": 0,
       "bones": 0,
@@ -3927,6 +4023,16 @@
         16,
         16
       ],
+      "lodTextureBytes": [
+        9882,
+        4758,
+        2058
+      ],
+      "lodTextureSizes": [
+        2048,
+        1024,
+        512
+      ],
       "sourceBones": 0,
       "bones": 0,
       "prunedBones": [],
@@ -3948,6 +4054,16 @@
         16,
         16
       ],
+      "lodTextureBytes": [
+        9882,
+        4758,
+        2058
+      ],
+      "lodTextureSizes": [
+        2048,
+        1024,
+        512
+      ],
       "sourceBones": 0,
       "bones": 0,
       "prunedBones": [],
@@ -3968,6 +4084,16 @@
         16,
         16,
         16
+      ],
+      "lodTextureBytes": [
+        9882,
+        4758,
+        2058
+      ],
+      "lodTextureSizes": [
+        2048,
+        1024,
+        512
       ],
       "sourceBones": 0,
       "bones": 0,
@@ -4206,9 +4332,9 @@
       "warnings": [],
       "kind": "rigid-unit",
       "lodTriangles": [
-        801,
-        384,
-        188
+        1285,
+        1133,
+        877
       ],
       "materials": [
         "bone_stone",
@@ -4224,7 +4350,7 @@
       "sizeM": [
         5.78,
         6.65,
-        2.234327
+        2.250538
       ]
     },
     {
@@ -4235,12 +4361,22 @@
       "kind": "character",
       "sourceTriangles": 13744,
       "lodTriangles": [
-        3598,
-        1349,
-        492
+        13744,
+        6998,
+        2199
+      ],
+      "lodTextureBytes": [
+        0,
+        0,
+        0
+      ],
+      "lodTextureSizes": [
+        2048,
+        1024,
+        512
       ],
       "sourceBones": 53,
-      "bones": 20,
+      "bones": 22,
       "prunedBones": [
         "root",
         "DEF-f_index.01.L",
@@ -4272,11 +4408,9 @@
         "DEF-f_ring.03.R",
         "DEF-thumb.01.R",
         "DEF-thumb.02.R",
-        "DEF-thumb.03.R",
-        "DEF-toe.L",
-        "DEF-toe.R"
+        "DEF-thumb.03.R"
       ],
-      "channelsDropped": 4554,
+      "channelsDropped": 4278,
       "clipsKept": {
         "Death01": "death",
         "Fixing_Kneeling": "build",
@@ -4338,12 +4472,22 @@
       "kind": "character",
       "sourceTriangles": 13744,
       "lodTriangles": [
-        3598,
-        1348,
-        492
+        13744,
+        6998,
+        2198
+      ],
+      "lodTextureBytes": [
+        0,
+        0,
+        0
+      ],
+      "lodTextureSizes": [
+        2048,
+        1024,
+        512
       ],
       "sourceBones": 53,
-      "bones": 20,
+      "bones": 22,
       "prunedBones": [
         "root",
         "DEF-f_index.01.L",
@@ -4375,11 +4519,9 @@
         "DEF-f_ring.03.R",
         "DEF-thumb.01.R",
         "DEF-thumb.02.R",
-        "DEF-thumb.03.R",
-        "DEF-toe.L",
-        "DEF-toe.R"
+        "DEF-thumb.03.R"
       ],
-      "channelsDropped": 4554,
+      "channelsDropped": 4278,
       "clipsKept": {
         "Death01": "death",
         "Fixing_Kneeling": "build",
@@ -4440,9 +4582,9 @@
       "warnings": [],
       "kind": "rigid-unit",
       "lodTriangles": [
-        616,
-        328,
-        230
+        1040,
+        960,
+        872
       ],
       "materials": [
         "bone_stone",
@@ -4464,12 +4606,22 @@
       "kind": "character",
       "sourceTriangles": 13744,
       "lodTriangles": [
-        3598,
-        1349,
-        492
+        13744,
+        6999,
+        2198
+      ],
+      "lodTextureBytes": [
+        0,
+        0,
+        0
+      ],
+      "lodTextureSizes": [
+        2048,
+        1024,
+        512
       ],
       "sourceBones": 53,
-      "bones": 20,
+      "bones": 22,
       "prunedBones": [
         "root",
         "DEF-f_index.01.L",
@@ -4501,11 +4653,9 @@
         "DEF-f_ring.03.R",
         "DEF-thumb.01.R",
         "DEF-thumb.02.R",
-        "DEF-thumb.03.R",
-        "DEF-toe.L",
-        "DEF-toe.R"
+        "DEF-thumb.03.R"
       ],
-      "channelsDropped": 4554,
+      "channelsDropped": 4278,
       "clipsKept": {
         "Death01": "death",
         "Fixing_Kneeling": "build",
@@ -4567,12 +4717,22 @@
       "kind": "character",
       "sourceTriangles": 13744,
       "lodTriangles": [
-        3598,
-        1349,
-        493
+        13744,
+        6998,
+        2197
+      ],
+      "lodTextureBytes": [
+        0,
+        0,
+        0
+      ],
+      "lodTextureSizes": [
+        2048,
+        1024,
+        512
       ],
       "sourceBones": 53,
-      "bones": 20,
+      "bones": 22,
       "prunedBones": [
         "root",
         "DEF-f_index.01.L",
@@ -4604,11 +4764,9 @@
         "DEF-f_ring.03.R",
         "DEF-thumb.01.R",
         "DEF-thumb.02.R",
-        "DEF-thumb.03.R",
-        "DEF-toe.L",
-        "DEF-toe.R"
+        "DEF-thumb.03.R"
       ],
-      "channelsDropped": 4554,
+      "channelsDropped": 4278,
       "clipsKept": {
         "Death01": "death",
         "Fixing_Kneeling": "build",
@@ -5286,6 +5444,16 @@
         34,
         34
       ],
+      "lodTextureBytes": [
+        9882,
+        4758,
+        2058
+      ],
+      "lodTextureSizes": [
+        2048,
+        1024,
+        512
+      ],
       "sourceBones": 0,
       "bones": 0,
       "prunedBones": [],
@@ -5307,6 +5475,16 @@
         34,
         34
       ],
+      "lodTextureBytes": [
+        9882,
+        4758,
+        2058
+      ],
+      "lodTextureSizes": [
+        2048,
+        1024,
+        512
+      ],
       "sourceBones": 0,
       "bones": 0,
       "prunedBones": [],
@@ -5327,6 +5505,16 @@
         52,
         52,
         52
+      ],
+      "lodTextureBytes": [
+        9882,
+        4758,
+        2058
+      ],
+      "lodTextureSizes": [
+        2048,
+        1024,
+        512
       ],
       "sourceBones": 0,
       "bones": 0,

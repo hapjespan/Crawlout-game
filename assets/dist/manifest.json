@@ -535,31 +535,31 @@
       "kind": "character",
       "bounds": {
         "min": [
-          -0.969676,
-          0.002415,
-          -0.162106
+          -0.972227,
+          0.000461,
+          -0.164154
         ],
         "max": [
-          0.97012,
-          1.827399,
-          0.202271
+          0.972227,
+          1.829178,
+          0.205444
         ]
       },
       "lods": [
         {
           "level": 0,
           "path": "dweller_body_human/lod0.glb",
-          "triangles": 3598
+          "triangles": 13744
         },
         {
           "level": 1,
           "path": "dweller_body_human/lod1.glb",
-          "triangles": 1348
+          "triangles": 6999
         },
         {
           "level": 2,
           "path": "dweller_body_human/lod2.glb",
-          "triangles": 492
+          "triangles": 2199
         }
       ],
       "sockets": {
@@ -613,11 +613,11 @@
           "durationSeconds": 1.333333
         }
       ],
-      "boneCount": 20,
+      "boneCount": 22,
       "teamMask": "materialName",
       "baked": {
         "path": "dweller_body_human/dweller_body_human.anim.f32",
-        "width": 80,
+        "width": 88,
         "height": 480,
         "fps": 30,
         "clips": [
@@ -1129,17 +1129,17 @@
         {
           "level": 0,
           "path": "dweller_robot_builder/lod0.glb",
-          "triangles": 1832
+          "triangles": 5106
         },
         {
           "level": 1,
           "path": "dweller_robot_builder/lod1.glb",
-          "triangles": 732
+          "triangles": 2180
         },
         {
           "level": 2,
           "path": "dweller_robot_builder/lod2.glb",
-          "triangles": 270
+          "triangles": 1700
         }
       ],
       "sockets": {},
@@ -1170,17 +1170,17 @@
         {
           "level": 0,
           "path": "dweller_robot_drone/lod0.glb",
-          "triangles": 956
+          "triangles": 2244
         },
         {
           "level": 1,
           "path": "dweller_robot_drone/lod1.glb",
-          "triangles": 508
+          "triangles": 1428
         },
         {
           "level": 2,
           "path": "dweller_robot_drone/lod2.glb",
-          "triangles": 200
+          "triangles": 556
         }
       ],
       "sockets": {},
@@ -1212,17 +1212,17 @@
         {
           "level": 0,
           "path": "dweller_robot_guard/lod0.glb",
-          "triangles": 1946
+          "triangles": 3786
         },
         {
           "level": 1,
           "path": "dweller_robot_guard/lod1.glb",
-          "triangles": 538
+          "triangles": 1160
         },
         {
           "level": 2,
           "path": "dweller_robot_guard/lod2.glb",
-          "triangles": 202
+          "triangles": 460
         }
       ],
       "sockets": {},
@@ -1253,17 +1253,17 @@
         {
           "level": 0,
           "path": "dweller_robot_sentinel/lod0.glb",
-          "triangles": 1952
+          "triangles": 3470
         },
         {
           "level": 1,
           "path": "dweller_robot_sentinel/lod1.glb",
-          "triangles": 486
+          "triangles": 1084
         },
         {
           "level": 2,
           "path": "dweller_robot_sentinel/lod2.glb",
-          "triangles": 178
+          "triangles": 468
         }
       ],
       "sockets": {},
@@ -1576,31 +1576,31 @@
       "kind": "character",
       "bounds": {
         "min": [
-          -0.940586,
-          0.002343,
-          -0.157243
+          -0.94306,
+          0.000448,
+          -0.159229
         ],
         "max": [
-          0.941017,
-          1.772577,
-          0.196202
+          0.94306,
+          1.774303,
+          0.199281
         ]
       },
       "lods": [
         {
           "level": 0,
           "path": "garde_body_clerk/lod0.glb",
-          "triangles": 3598
+          "triangles": 13744
         },
         {
           "level": 1,
           "path": "garde_body_clerk/lod1.glb",
-          "triangles": 1349
+          "triangles": 6999
         },
         {
           "level": 2,
           "path": "garde_body_clerk/lod2.glb",
-          "triangles": 493
+          "triangles": 2199
         }
       ],
       "sockets": {
@@ -1654,11 +1654,11 @@
           "durationSeconds": 1.333333
         }
       ],
-      "boneCount": 20,
+      "boneCount": 22,
       "teamMask": "materialName",
       "baked": {
         "path": "garde_body_clerk/garde_body_clerk.anim.f32",
-        "width": 80,
+        "width": 88,
         "height": 480,
         "fps": 30,
         "clips": [
@@ -1735,31 +1735,31 @@
       "kind": "character",
       "bounds": {
         "min": [
-          -0.969676,
-          0.002415,
-          -0.162106
+          -0.972227,
+          0.000461,
+          -0.164154
         ],
         "max": [
-          0.97012,
-          1.827399,
-          0.202271
+          0.972227,
+          1.829178,
+          0.205444
         ]
       },
       "lods": [
         {
           "level": 0,
           "path": "garde_body_initiate/lod0.glb",
-          "triangles": 3598
+          "triangles": 13744
         },
         {
           "level": 1,
           "path": "garde_body_initiate/lod1.glb",
-          "triangles": 1348
+          "triangles": 6999
         },
         {
           "level": 2,
           "path": "garde_body_initiate/lod2.glb",
-          "triangles": 492
+          "triangles": 2199
         }
       ],
       "sockets": {
@@ -1813,11 +1813,11 @@
           "durationSeconds": 1.333333
         }
       ],
-      "boneCount": 20,
+      "boneCount": 22,
       "teamMask": "materialName",
       "baked": {
         "path": "dweller_body_human/dweller_body_human.anim.f32",
-        "width": 80,
+        "width": 88,
         "height": 480,
         "fps": 30,
         "clips": [
@@ -1894,31 +1894,31 @@
       "kind": "character",
       "bounds": {
         "min": [
-          -1.163611,
-          0.002898,
-          -0.194527
+          -1.166672,
+          0.000554,
+          -0.196985
         ],
         "max": [
-          1.164145,
-          2.192878,
-          0.242725
+          1.166672,
+          2.195014,
+          0.246533
         ]
       },
       "lods": [
         {
           "level": 0,
           "path": "garde_body_power_armor/lod0.glb",
-          "triangles": 3598
+          "triangles": 13744
         },
         {
           "level": 1,
           "path": "garde_body_power_armor/lod1.glb",
-          "triangles": 1348
+          "triangles": 6998
         },
         {
           "level": 2,
           "path": "garde_body_power_armor/lod2.glb",
-          "triangles": 493
+          "triangles": 2198
         }
       ],
       "sockets": {
@@ -1972,11 +1972,11 @@
           "durationSeconds": 1.333333
         }
       ],
-      "boneCount": 20,
+      "boneCount": 22,
       "teamMask": "materialName",
       "baked": {
         "path": "garde_body_power_armor/garde_body_power_armor.anim.f32",
-        "width": 80,
+        "width": 88,
         "height": 480,
         "fps": 30,
         "clips": [
@@ -2053,31 +2053,31 @@
       "kind": "character",
       "bounds": {
         "min": [
-          -1.221792,
-          0.003043,
-          -0.204254
+          -1.225006,
+          0.000581,
+          -0.206834
         ],
         "max": [
-          1.222352,
-          2.302522,
-          0.254861
+          1.225006,
+          2.304764,
+          0.25886
         ]
       },
       "lods": [
         {
           "level": 0,
           "path": "garde_body_power_armor_heavy/lod0.glb",
-          "triangles": 3598
+          "triangles": 13744
         },
         {
           "level": 1,
           "path": "garde_body_power_armor_heavy/lod1.glb",
-          "triangles": 1348
+          "triangles": 6998
         },
         {
           "level": 2,
           "path": "garde_body_power_armor_heavy/lod2.glb",
-          "triangles": 493
+          "triangles": 2198
         }
       ],
       "sockets": {
@@ -2131,11 +2131,11 @@
           "durationSeconds": 1.333333
         }
       ],
-      "boneCount": 20,
+      "boneCount": 22,
       "teamMask": "materialName",
       "baked": {
         "path": "garde_body_power_armor_heavy/garde_body_power_armor_heavy.anim.f32",
-        "width": 80,
+        "width": 88,
         "height": 480,
         "fps": 30,
         "clips": [
@@ -2226,17 +2226,17 @@
         {
           "level": 0,
           "path": "garde_body_vertibird/lod0.glb",
-          "triangles": 376
+          "triangles": 1000
         },
         {
           "level": 1,
           "path": "garde_body_vertibird/lod1.glb",
-          "triangles": 328
+          "triangles": 888
         },
         {
           "level": 2,
           "path": "garde_body_vertibird/lod2.glb",
-          "triangles": 220
+          "triangles": 572
         }
       ],
       "sockets": {},
@@ -2972,7 +2972,7 @@
         "min": [
           -0.16,
           0,
-          -0.643025
+          -0.648461
         ],
         "max": [
           0.16,
@@ -2984,17 +2984,17 @@
         {
           "level": 0,
           "path": "raider_body_hound/lod0.glb",
-          "triangles": 438
+          "triangles": 590
         },
         {
           "level": 1,
           "path": "raider_body_hound/lod1.glb",
-          "triangles": 228
+          "triangles": 464
         },
         {
           "level": 2,
           "path": "raider_body_hound/lod2.glb",
-          "triangles": 172
+          "triangles": 440
         }
       ],
       "sockets": {},
@@ -3011,31 +3011,31 @@
       "kind": "character",
       "bounds": {
         "min": [
-          -0.969676,
-          0.002415,
-          -0.162106
+          -0.972227,
+          0.000461,
+          -0.164154
         ],
         "max": [
-          0.97012,
-          1.827399,
-          0.202271
+          0.972227,
+          1.829178,
+          0.205444
         ]
       },
       "lods": [
         {
           "level": 0,
           "path": "raider_body_human/lod0.glb",
-          "triangles": 3598
+          "triangles": 13744
         },
         {
           "level": 1,
           "path": "raider_body_human/lod1.glb",
-          "triangles": 1348
+          "triangles": 6999
         },
         {
           "level": 2,
           "path": "raider_body_human/lod2.glb",
-          "triangles": 492
+          "triangles": 2199
         }
       ],
       "sockets": {
@@ -3089,11 +3089,11 @@
           "durationSeconds": 1.333333
         }
       ],
-      "boneCount": 20,
+      "boneCount": 22,
       "teamMask": "materialName",
       "baked": {
         "path": "dweller_body_human/dweller_body_human.anim.f32",
-        "width": 80,
+        "width": 88,
         "height": 480,
         "fps": 30,
         "clips": [
@@ -3170,31 +3170,31 @@
       "kind": "character",
       "bounds": {
         "min": [
-          -0.969676,
-          0.002415,
-          -0.162106
+          -0.972227,
+          0.000461,
+          -0.164154
         ],
         "max": [
-          0.97012,
-          1.827399,
-          0.202271
+          0.972227,
+          1.829178,
+          0.205444
         ]
       },
       "lods": [
         {
           "level": 0,
           "path": "raider_body_slave/lod0.glb",
-          "triangles": 3598
+          "triangles": 13744
         },
         {
           "level": 1,
           "path": "raider_body_slave/lod1.glb",
-          "triangles": 1348
+          "triangles": 6999
         },
         {
           "level": 2,
           "path": "raider_body_slave/lod2.glb",
-          "triangles": 492
+          "triangles": 2199
         }
       ],
       "sockets": {
@@ -3248,11 +3248,11 @@
           "durationSeconds": 1.333333
         }
       ],
-      "boneCount": 20,
+      "boneCount": 22,
       "teamMask": "materialName",
       "baked": {
         "path": "dweller_body_human/dweller_body_human.anim.f32",
-        "width": 80,
+        "width": 88,
         "height": 480,
         "fps": 30,
         "clips": [
@@ -3874,17 +3874,17 @@
         {
           "level": 0,
           "path": "raider_vehicle_buggy/lod0.glb",
-          "triangles": 1584
+          "triangles": 3292
         },
         {
           "level": 1,
           "path": "raider_vehicle_buggy/lod1.glb",
-          "triangles": 712
+          "triangles": 1868
         },
         {
           "level": 2,
           "path": "raider_vehicle_buggy/lod2.glb",
-          "triangles": 264
+          "triangles": 1716
         }
       ],
       "sockets": {},
@@ -5027,29 +5027,29 @@
         "min": [
           -3.18,
           0,
-          -0.957481
+          -0.994823
         ],
         "max": [
           2.6,
           6.65,
-          1.276846
+          1.255715
         ]
       },
       "lods": [
         {
           "level": 0,
           "path": "survival_behemoth/lod0.glb",
-          "triangles": 801
+          "triangles": 1285
         },
         {
           "level": 1,
           "path": "survival_behemoth/lod1.glb",
-          "triangles": 384
+          "triangles": 1133
         },
         {
           "level": 2,
           "path": "survival_behemoth/lod2.glb",
-          "triangles": 188
+          "triangles": 877
         }
       ],
       "sockets": {},
@@ -5064,31 +5064,31 @@
       "kind": "character",
       "bounds": {
         "min": [
-          -0.921192,
-          0.002294,
-          -0.154001
+          -0.923616,
+          0.000438,
+          -0.155946
         ],
         "max": [
-          0.921614,
-          1.736029,
-          0.192157
+          0.923616,
+          1.737719,
+          0.195172
         ]
       },
       "lods": [
         {
           "level": 0,
           "path": "survival_ghoul/lod0.glb",
-          "triangles": 3598
+          "triangles": 13744
         },
         {
           "level": 1,
           "path": "survival_ghoul/lod1.glb",
-          "triangles": 1349
+          "triangles": 6998
         },
         {
           "level": 2,
           "path": "survival_ghoul/lod2.glb",
-          "triangles": 492
+          "triangles": 2199
         }
       ],
       "sockets": {
@@ -5142,11 +5142,11 @@
           "durationSeconds": 1.333333
         }
       ],
-      "boneCount": 20,
+      "boneCount": 22,
       "teamMask": "materialName",
       "baked": {
         "path": "survival_ghoul/survival_ghoul.anim.f32",
-        "width": 80,
+        "width": 88,
         "height": 480,
         "fps": 30,
         "clips": [
@@ -5225,31 +5225,31 @@
       "kind": "character",
       "bounds": {
         "min": [
-          -0.872708,
-          0.002174,
-          -0.145896
+          -0.875004,
+          0.000415,
+          -0.147739
         ],
         "max": [
-          0.873108,
-          1.644659,
-          0.182043
+          0.875004,
+          1.64626,
+          0.1849
         ]
       },
       "lods": [
         {
           "level": 0,
           "path": "survival_ghoul_runner/lod0.glb",
-          "triangles": 3598
+          "triangles": 13744
         },
         {
           "level": 1,
           "path": "survival_ghoul_runner/lod1.glb",
-          "triangles": 1348
+          "triangles": 6998
         },
         {
           "level": 2,
           "path": "survival_ghoul_runner/lod2.glb",
-          "triangles": 492
+          "triangles": 2198
         }
       ],
       "sockets": {
@@ -5303,11 +5303,11 @@
           "durationSeconds": 1.333333
         }
       ],
-      "boneCount": 20,
+      "boneCount": 22,
       "teamMask": "materialName",
       "baked": {
         "path": "survival_ghoul_runner/survival_ghoul_runner.anim.f32",
-        "width": 80,
+        "width": 88,
         "height": 480,
         "fps": 30,
         "clips": [
@@ -5400,17 +5400,17 @@
         {
           "level": 0,
           "path": "survival_klauwbeest/lod0.glb",
-          "triangles": 616
+          "triangles": 1040
         },
         {
           "level": 1,
           "path": "survival_klauwbeest/lod1.glb",
-          "triangles": 328
+          "triangles": 960
         },
         {
           "level": 2,
           "path": "survival_klauwbeest/lod2.glb",
-          "triangles": 230
+          "triangles": 872
         }
       ],
       "sockets": {},
@@ -5425,31 +5425,31 @@
       "kind": "character",
       "bounds": {
         "min": [
-          -1.212095,
-          0.003019,
-          -0.202633
+          -1.215284,
+          0.000577,
+          -0.205193
         ],
         "max": [
-          1.212651,
-          2.284248,
-          0.252838
+          1.215284,
+          2.286473,
+          0.256805
         ]
       },
       "lods": [
         {
           "level": 0,
           "path": "survival_mutant/lod0.glb",
-          "triangles": 3598
+          "triangles": 13744
         },
         {
           "level": 1,
           "path": "survival_mutant/lod1.glb",
-          "triangles": 1349
+          "triangles": 6999
         },
         {
           "level": 2,
           "path": "survival_mutant/lod2.glb",
-          "triangles": 492
+          "triangles": 2198
         }
       ],
       "sockets": {
@@ -5503,11 +5503,11 @@
           "durationSeconds": 1.333333
         }
       ],
-      "boneCount": 20,
+      "boneCount": 22,
       "teamMask": "materialName",
       "baked": {
         "path": "survival_mutant/survival_mutant.anim.f32",
-        "width": 80,
+        "width": 88,
         "height": 480,
         "fps": 30,
         "clips": [
@@ -5586,31 +5586,31 @@
       "kind": "character",
       "bounds": {
         "min": [
-          -1.37694,
-          0.003429,
-          -0.230191
+          -1.380562,
+          0.000655,
+          -0.233099
         ],
         "max": [
-          1.377571,
-          2.594906,
-          0.287224
+          1.380562,
+          2.597433,
+          0.291731
         ]
       },
       "lods": [
         {
           "level": 0,
           "path": "survival_mutant_brute/lod0.glb",
-          "triangles": 3598
+          "triangles": 13744
         },
         {
           "level": 1,
           "path": "survival_mutant_brute/lod1.glb",
-          "triangles": 1349
+          "triangles": 6998
         },
         {
           "level": 2,
           "path": "survival_mutant_brute/lod2.glb",
-          "triangles": 493
+          "triangles": 2197
         }
       ],
       "sockets": {
@@ -5664,11 +5664,11 @@
           "durationSeconds": 1.333333
         }
       ],
-      "boneCount": 20,
+      "boneCount": 22,
       "teamMask": "materialName",
       "baked": {
         "path": "survival_mutant_brute/survival_mutant_brute.anim.f32",
-        "width": 80,
+        "width": 88,
         "height": 480,
         "fps": 30,
         "clips": [
