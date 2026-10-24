@@ -153,6 +153,13 @@ export const assetEntrySchema = z
      * Aanwezig bij karakters en props; ontbreekt het, dan geldt 'materialName'. Gebouwen gebruiken `teamMaterials`.
      */
     teamMask: z.enum(['materialName', 'diffuseAlpha', 'none']).optional(),
+    /**
+     * Welke PBR-kaarten naast de diffuse in de LOD-GLB's staan. Elke kaart ligt op het materiaal naast de
+     * `baseColorTexture`, met dezelfde UV-set en dezelfde maat, zodat render per kaartsoort een array-texture kan
+     * bouwen waarin een primitive overal dezelfde laagindex heeft. Een materiaal zonder zo'n kaart krijgt geen laag
+     * (render leest dat als vlak). Ontbreekt het veld of is het leeg, dan is er alleen diffuse.
+     */
+    maps: z.array(z.enum(['normal', 'metallicRoughness', 'occlusion', 'emissive'])).optional(),
     /** Aanwezig voor karakters met animaties; props en karakters zonder clips hebben geen baked. */
     baked: bakedAnimationSchema.optional(),
     /** Alleen props (de pack-props): soort, voor map (plaatsing) en render (schaduw, wind, beweegbaarheid). */

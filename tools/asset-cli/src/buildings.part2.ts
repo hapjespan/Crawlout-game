@@ -100,7 +100,7 @@ export async function generateBuilding(
     }
   }
 
-  return { ...assemble(config, variant, id, accumulators, sources), sourceTriangles };
+  return { ...assemble(config, variant, id, accumulators, sources, level), sourceTriangles };
 }
 
 export interface BuildingLod {
@@ -177,8 +177,14 @@ export function checkBuildingDocument(
 }
 
 /**
- * Algemene regels voor een gebouw-document: geen PBR, een team-materiaal, textuurmaat, UV, tris. Een handheld of
- * ander aanhangsel (robots.ts, `attachments`) heeft geen team-materiaal nodig: `requireTeam: false`.
+ * Algemene regels voor een gebouw-document: het PBR-contract met render, een team-materiaal, textuurmaat, UV, tris.
+ * Een handheld of ander aanhangsel (robots.ts, `attachments`) heeft geen team-materiaal nodig: `requireTeam: false`.
+ *
+ * PBR: de brief eiste tot 23 oktober 2026 hand-painted diffuse zonder PBR (Spelfundament sectie 9, art-regel 1). Die
+ * regel is vervallen; albedo, normal en metallic-roughness zijn nu de set. Wat blijft staan is het contract met render
+ * (structures/textureArray.ts): render bouwt per kaartsoort één DataArrayTexture en adresseert ze met dezelfde
+ * laagindex, dus een normal- of metallic-roughnesskaart hoort op hetzelfde materiaal als de diffuse, op dezelfde
+ * UV-set en in dezelfde maat. Occlusie en emissive leest render niet; die zijn alleen gewicht in de GLB.
  */
 export function validateBuildingDocument(
   document: Document,
@@ -188,23 +194,56 @@ export function validateBuildingDocument(
   const errors: string[] = [];
   const label = `LOD${level}`;
   const root = document.getRoot();
-  const pbr = root
+  const extensions = root
     .listExtensionsUsed()
     .map((e) => e.extensionName)
     .filter((name) => name.startsWith('KHR_materials_') && name !== 'KHR_materials_unlit');
-  if (pbr.length > 0)
-    errors.push(`${label}: PBR-extensies gevonden (${pbr.join(', ')}); de brief eist geen PBR.`);
+  if (extensions.length > 0)
+    errors.push(
+      `${label}: materiaal-extensies gevonden (${extensions.join(', ')}); render leest alleen albedo, normal en metallic-roughness.`,
+    );
   for (const material of root.listMaterials()) {
-    const extra = [
-      material.getNormalTexture() && 'normaal',
+    const unread = [
       material.getOcclusionTexture() && 'occlusie',
       material.getEmissiveTexture() && 'emissive',
-      material.getMetallicRoughnessTexture() && 'metallic-roughness',
     ].filter(Boolean);
-    if (extra.length > 0)
+    if (unread.length > 0)
       errors.push(
-        `${label}: materiaal "${material.getName()}" heeft ${extra.join(', ')}-textuur; alleen diffuse is toegestaan.`,
+        `${label}: materiaal "${material.getName()}" heeft ${unread.join(', ')}-textuur; render leest die niet.`,
       );
+    const base = material.getBaseColorTexture();
+    const baseSize = base?.getSize();
+    for (const map of [
+      {
+        name: 'normal',
+        texture: material.getNormalTexture(),
+        info: material.getNormalTextureInfo(),
+      },
+      {
+        name: 'metallic-roughness',
+        texture: material.getMetallicRoughnessTexture(),
+        info: material.getMetallicRoughnessTextureInfo(),
+      },
+    ]) {
+      if (!map.texture) continue;
+      if (!base || !baseSize) {
+        errors.push(
+          `${label}: materiaal "${material.getName()}" heeft een ${map.name}-kaart zonder diffuse; render legt beide op dezelfde laag.`,
+        );
+        continue;
+      }
+      const size = map.texture.getSize();
+      if (!size || size[0] !== baseSize[0] || size[1] !== baseSize[1])
+        errors.push(
+          `${label}: de ${map.name}-kaart van "${material.getName()}" is ${size ? `${size[0]}x${size[1]}` : 'onleesbaar'}, de diffuse ${baseSize[0]}x${baseSize[1]}; render legt ze op dezelfde laag.`,
+        );
+      if (
+        (map.info?.getTexCoord() ?? 0) !== (material.getBaseColorTextureInfo()?.getTexCoord() ?? 0)
+      )
+        errors.push(
+          `${label}: de ${map.name}-kaart van "${material.getName()}" gebruikt een andere UV-set dan de diffuse.`,
+        );
+    }
   }
   if (requireTeam && !root.listMaterials().some((m) => /team/i.test(m.getName())))
     errors.push(`${label}: geen team-materiaal (naam bevat "team").`);

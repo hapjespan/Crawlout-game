@@ -27,9 +27,9 @@ describe('budgetten voor kind building', () => {
     const [m0, m1, m2] = BUDGETS.buildingMaxTris;
     expect(m0).toBeGreaterThan(m1);
     expect(m1).toBeGreaterThan(m2);
-    // Plafond is verhoogd naar 6000 voor photogrammetry-scans (dweller_building_storage, 2,75M driehoeken).
-    // Bestaande variants hebben elk hun eigen lod0Triangles ≤ 2500 en blijven ongewijzigd.
-    expect(m0).toBeLessThanOrEqual(6000);
+    // Plafond is 23 oktober van 6000 naar 20000 gegaan, mee met characterMaxTris: een gebouw vult meer beeld dan een
+    // unit. Bestaande variants hebben elk hun eigen lod0Triangles ≤ 2500 en blijven ongewijzigd.
+    expect(m0).toBeLessThanOrEqual(20000);
     for (const [id, variant] of Object.entries(config.variants)) {
       expect(variant.lod0Triangles, id).toBeLessThanOrEqual(m0);
       const [t0, t1, t2] = buildingLodTargets(variant.lod0Triangles);
@@ -126,7 +126,10 @@ describe('gebouwen uit de generator', () => {
     }
   });
 
-  it('elke LOD heeft een team-materiaal, geen PBR-extensies en geen andere textures dan diffuse', async () => {
+  // Tot 23 oktober 2026 heette dit "geen PBR-extensies en geen andere textures dan diffuse": de brief verbood PBR.
+  // Die regel is vervallen (Spelfundament sectie 9, art-regel 1). De gegenereerde gebouwen hebben nog steeds alleen een
+  // diffuse, maar de eis is nu het rendercontract: geen materiaal-extensies, en geen kaart die niet op de diffuse ligt.
+  it('elke LOD heeft een team-materiaal, geen materiaal-extensies en voldoet aan het PBR-contract', async () => {
     const io = createIO();
     for (const id of ids) {
       for (const level of [0, 1, 2] as const) {
@@ -152,8 +155,10 @@ describe('gebouwen uit de generator', () => {
     }
   });
 
-  it('textures op 1024, 512 en 256 per LOD (de bron-textures van 1024 blijven op LOD0 op 1024)', async () => {
-    expect(BUDGETS.buildingTextureSizes).toEqual([1024, 512, 256]);
+  // LOD1 stond op 512; de bron-textures zijn 1024, dus dat gooide driekwart van de texels weg op de afstand waar het
+  // gebouw nog groot in beeld staat. LOD1 houdt nu 1024, LOD2 gaat van 256 naar 512.
+  it('textures op 1024, 1024 en 512 per LOD (de bron-textures van 1024 blijven op LOD0 en LOD1 op 1024)', async () => {
+    expect(BUDGETS.buildingTextureSizes).toEqual([1024, 1024, 512]);
     const io = createIO();
     const largest = async (level: number): Promise<number> => {
       const document = await io.readBinary(
@@ -167,8 +172,8 @@ describe('gebouwen uit de generator', () => {
       );
     };
     expect(await largest(0)).toBe(1024);
-    expect(await largest(1)).toBe(512);
-    expect(await largest(2)).toBe(256);
+    expect(await largest(1)).toBe(1024);
+    expect(await largest(2)).toBe(512);
   });
 
   it('is deterministisch: twee runs geven dezelfde bytes', async () => {

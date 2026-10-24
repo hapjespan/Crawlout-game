@@ -53,7 +53,7 @@ export function validateAsset(
   const lod0Max = kind === 'character' ? BUDGETS.characterMaxTris[0] : BUDGETS.propMaxTris[0];
   if (triangles > lod0Max)
     errors.push(
-      `${triangles} driehoeken in LOD0, maximaal ${lod0Max} (brief: 3000 tot 4000 voor karakters; props: zie budgets.ts).`,
+      `${triangles} driehoeken in LOD0, maximaal ${lod0Max} (brief: LOD0 circa 20.000 voor karakters, plafond 24.000; props: zie budgets.ts).`,
     );
 
   for (const size of textureSizes(document)) {

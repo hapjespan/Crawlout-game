@@ -52,12 +52,17 @@ export function checkPropDocument(
       `categorie tree-bare, maar de kaarten zijn ${alpha.hue} graden, verzadiging ${alpha.saturation}: dat is blad (tree-leafy)`,
     );
   const root = lod0.getRoot();
-  const pbr = root
+  // De brief liet tot 23 oktober 2026 geen PBR toe; albedo, normal en metallic-roughness mogen nu wel (validatie in
+  // validateBuildingDocument). Materiaal-extensies blijven geweigerd: render leest ze niet, dus een bron die zijn look
+  // uit KHR_materials_specular of _transmission haalt, ziet er in het spel anders uit dan in de viewer.
+  const extensions = root
     .listExtensionsUsed()
     .map((e) => e.extensionName)
     .filter((name) => name.startsWith('KHR_materials_') && name !== 'KHR_materials_unlit');
-  if (pbr.length > 0)
-    errors.push(`PBR-extensies gevonden (${pbr.join(', ')}); de brief eist geen PBR`);
+  if (extensions.length > 0)
+    errors.push(
+      `materiaal-extensies gevonden (${extensions.join(', ')}); render leest alleen albedo, normal en metallic-roughness`,
+    );
   if (root.listMaterials().length !== 1)
     errors.push(`${root.listMaterials().length} materialen, verwacht 1 (atlas)`);
   const material = root.listMaterials()[0];

@@ -1,6 +1,7 @@
 // Gebouwengenerator: bouwt uit het bron-huisje (assets/src/buildings/base_house.glb) en eenvoudige vormen de acht
 // Dweller-gebouwen, volledig gestuurd door assets/src/buildings/variants.json. Per gebouw en LOD ontstaat een
-// document met effen basiskleur plus diffuse textuur (geen PBR-extensies), een team-materiaal, de footprint exact in x
+// document met effen basiskleur plus diffuse textuur (geen materiaal-extensies; PBR mag sinds 23 oktober 2026, de
+// generator maakt zelf geen kaarten), een team-materiaal, de footprint exact in x
 // en z, het midden op de oorsprong en de grond op y = 0. De LOD-GLB's krijgen meshopt-compressie zoals de rest van de buis.
 
 export {

@@ -322,6 +322,85 @@ describe('delivered models', () => {
     expect(nothing.reports[0]!.errors.join(' ')).toMatch(/geen meshes/);
   });
 
+  // The brief forbade PBR until 23 October 2026 and the pipeline dropped every map at extraction. It now carries the
+  // set that render reads: normal and metallic-roughness on the base colour's UV's, same size, nothing else.
+  it('carries normal and metallic-roughness through, per material and through the atlas, and drops a map that does not line up', async () => {
+    const base = await png([200, 120, 40]);
+    const normal = await png([128, 128, 255]);
+    const mr = await png([255, 200, 30]);
+    const small = await sharp({
+      create: { width: 4, height: 4, channels: 3, background: { r: 128, g: 128, b: 255 } },
+    })
+      .png()
+      .toBuffer()
+      .then((b) => new Uint8Array(b));
+    await writeSource('delivered/pbr.glb', (document) => {
+      const texture = (name: string, image: Uint8Array) =>
+        document.createTexture(name).setImage(image).setMimeType('image/png');
+      // Hull: the full set. Arm: a second diffuse, so the model goes through the atlas. Eye: a normal map of its own
+      // size, which render cannot put on the layer of the diffuse.
+      const hull = document
+        .createMaterial('Hull')
+        .setBaseColorTexture(texture('hull', base))
+        .setNormalTexture(texture('hull_n', normal))
+        .setMetallicRoughnessTexture(texture('hull_mr', mr));
+      const arm = document
+        .createMaterial('Arm')
+        .setBaseColorTexture(texture('arm', mr))
+        .setNormalTexture(texture('arm_n', normal));
+      const eye = document
+        .createMaterial('Eye')
+        .setBaseColorTexture(texture('eye', base))
+        .setNormalTexture(texture('eye_n', small));
+      const scene = document.createScene('s');
+      scene.addChild(box(document, 'Body', [1, 2, 0.5], [-0.5, 0, -0.25], hull));
+      scene.addChild(box(document, 'Arm', [0.3, 0.6, 0.3], [0.6, 0.5, -0.15], arm));
+      scene.addChild(box(document, 'Eye', [0.2, 0.2, 0.2], [-0.1, 2, -0.1], eye));
+    });
+    const asset = {
+      file: 'delivered/pbr.glb',
+      kind: 'rigid-unit',
+      fit: { axis: 'y', meters: 2 },
+      lod0Triangles: 600,
+      extraParts: [
+        { type: 'box', size: [0.5, 0.1, 0.5], position: [0, 1, 0], material: 'team_trim' },
+      ],
+    };
+    const atlased = await buildDelivered(config({ test_pbr: asset }), root, 'test.json');
+    expect(atlased.reports.flatMap((r) => r.errors)).toEqual([]);
+    expect(atlased.entries[0]!.maps).toEqual(['normal', 'metallicRoughness']);
+    const lod0 = await createIO().readBinary(atlased.outputs.get('test_pbr/lod0.glb')!);
+    const merged = lod0
+      .getRoot()
+      .listMaterials()
+      .find((m) => m.getBaseColorTexture())!;
+    expect(merged.getNormalTexture()).not.toBeNull();
+    expect(merged.getMetallicRoughnessTexture()).not.toBeNull();
+    // The maps lie pixel for pixel on the diffuse atlas, so one uv remap serves all three.
+    expect(merged.getNormalTexture()!.getSize()).toEqual(merged.getBaseColorTexture()!.getSize());
+    // glTF multiplies the map by metallicFactor; 0 (what a flat material gets) would kill the metal channel.
+    expect(merged.getMetallicFactor()).toBe(1);
+
+    // Only the Hull: one diffuse, so no atlas, and the maps sit straight on the material.
+    const single = await buildDelivered(
+      config({ test_pbr_one: { ...asset, include: ['Body'] } }),
+      root,
+      'test.json',
+    );
+    expect(single.reports.flatMap((r) => r.errors)).toEqual([]);
+    expect(single.entries[0]!.maps).toEqual(['normal', 'metallicRoughness']);
+    expect(single.details.get('test_pbr_one')!.maps).toEqual(['normal', 'metallicRoughness']);
+
+    // Only the Eye: its normal map is 4x4 next to an 8x8 diffuse, so nothing is emitted instead of a misaligned map.
+    const dropped = await buildDelivered(
+      config({ test_pbr_eye: { ...asset, include: ['Eye'] } }),
+      root,
+      'test.json',
+    );
+    expect(dropped.reports.flatMap((r) => r.errors)).toEqual([]);
+    expect(dropped.entries[0]!.maps).toBeUndefined();
+  });
+
   it('goes through the local pipeline: delivered/ is no asset of its own and the config is optional', async () => {
     await writeRobot();
     writeFileSync(join(root, 'rigmap.json'), JSON.stringify({ rigs: {}, assets: {} }));

@@ -8,6 +8,7 @@ import type { Material, Texture } from '@gltf-transform/core';
 import { createIO } from './lods.js';
 import { ensureSmoothNormals } from './normals.js';
 import { transformFromMatrix4 } from './buildings.js';
+import { alignsWithBase } from './autorig.part2.js';
 
 export const DELIVERED_VERSION = 1 as const;
 
@@ -178,13 +179,31 @@ export function loadDeliveredConfig(path: string): DeliveredConfig {
 
 export type V3 = [number, number, number];
 
+/** One image of a source material, kept as the bytes it had in the source GLB. */
+export interface SourceImage {
+  image: Uint8Array;
+  mimeType: string;
+}
+
+/**
+ * The textures of one output material: the base colour plus the PBR set that rides along on its UV's. Render builds one
+ * DataArrayTexture per map type and keys every type on the same layer index, so normal and metallic-roughness are only
+ * carried when they use the base colour's UV set, transform and size (`alignsWithBase`). A material without them emits
+ * nothing: render reads a missing layer as "no relief, own factors", which beats a placeholder image.
+ */
+export interface SourceTexture extends SourceImage {
+  key: string;
+  normal?: SourceImage;
+  metallicRoughness?: SourceImage;
+}
+
 /** One output material of a model: its meshes merged, with the colour and (when textured) the source texture. */
 export interface Group {
   name: string;
   mesh: Mesh;
   /** Linear rgb. */
   color: V3;
-  texture: { key: string; image: Uint8Array; mimeType: string } | null;
+  texture: SourceTexture | null;
   twoSided: boolean;
   /** LOD0 triangles for a group that is simplified on its own (0: joint). */
   solo: number;
@@ -258,6 +277,31 @@ function materialTexture(material: Material): { texture: Texture; fromEmissive: 
   return null;
 }
 
+/**
+ * The normal and metallic-roughness map of a source material, but only when they ride along on the base colour's UV's
+ * (`alignsWithBase`). Occlusion and emissive are not carried: render reads base colour, normal and metallic-roughness
+ * and nothing else for buildings, rigid units and props, so a fourth map would only be weight in the GLB.
+ */
+function materialMapSet(material: Material): Pick<SourceTexture, 'normal' | 'metallicRoughness'> {
+  const pick = (
+    texture: Texture | null,
+    info: ReturnType<Material['getBaseColorTextureInfo']>,
+  ): SourceImage | undefined => {
+    if (!alignsWithBase(material, info, texture)) return undefined;
+    const image = texture!.getImage();
+    return image ? { image, mimeType: texture!.getMimeType() } : undefined;
+  };
+  const normal = pick(material.getNormalTexture(), material.getNormalTextureInfo());
+  const metallicRoughness = pick(
+    material.getMetallicRoughnessTexture(),
+    material.getMetallicRoughnessTextureInfo(),
+  );
+  return {
+    ...(normal ? { normal } : {}),
+    ...(metallicRoughness ? { metallicRoughness } : {}),
+  };
+}
+
 /** Meshes of the selected nodes with the node transforms in the vertices, per source material. */
 export async function extract(
   file: string,
@@ -310,6 +354,8 @@ export async function extract(
       sourceTriangles += indices.length / 3;
       const factor = material?.getBaseColorFactor() ?? [1, 1, 1, 1];
       const image = found?.texture.getImage();
+      // The PBR set hangs off the base colour; a picture rescued from the emissive slot has no aligned maps.
+      const maps = found && !found.fromEmissive && material ? materialMapSet(material) : {};
       parts.push({
         nodes: nodeChain(node),
         sourceName,
@@ -318,9 +364,15 @@ export async function extract(
         texture:
           found && image && uvs
             ? {
-                key: `${sourceName}:${image.byteLength}`,
+                key: [
+                  sourceName,
+                  image.byteLength,
+                  maps.normal?.image.byteLength ?? 0,
+                  maps.metallicRoughness?.image.byteLength ?? 0,
+                ].join(':'),
                 image,
                 mimeType: found.texture.getMimeType(),
+                ...maps,
               }
             : null,
       });

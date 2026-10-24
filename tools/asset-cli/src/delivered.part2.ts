@@ -13,6 +13,7 @@ import { hexToLinear } from './buildings.js';
 import { BUDGETS } from './budgets.js';
 import { Document, Logger, type Texture } from '@gltf-transform/core';
 import { buildAtlas } from './textures.js';
+import type { MaterialMap } from './inspect.js';
 import { MeshoptSimplifier } from 'meshoptimizer';
 import { boundsOf, resolveAxis, slug } from './delivered.part1.js';
 import type { DeliveredAsset, Extracted, Group, PlacedModel, V3 } from './delivered.part1.js';
@@ -222,16 +223,36 @@ export async function assembleDocument(
   const groups = allGroups.filter((g) => g.mesh.indices.length > 0);
   const textured = groups.filter((g) => g.texture && g.mesh.uvs);
   const textures = new Map<string, Texture>();
-  for (const group of textured) {
-    let texture = textures.get(group.texture!.key);
+  const images = new Map<string, Texture>();
+  const image = (name: string, key: string, source: { image: Uint8Array; mimeType: string }) => {
+    let texture = images.get(key);
     if (!texture) {
-      texture = document
-        .createTexture(`${group.name}_diffuse`)
-        .setImage(group.texture!.image)
-        .setMimeType(group.texture!.mimeType);
-      textures.set(group.texture!.key, texture);
+      texture = document.createTexture(name).setImage(source.image).setMimeType(source.mimeType);
+      images.set(key, texture);
+    }
+    return texture;
+  };
+  for (const group of textured) {
+    const source = group.texture!;
+    let texture = textures.get(source.key);
+    if (!texture) {
+      texture = image(`${group.name}_diffuse`, `base:${source.key}`, source);
+      textures.set(source.key, texture);
     }
     const material = solid(group.name, [1, 1, 1]).setBaseColorTexture(texture);
+    // The PBR set rides along on the base colour's UV's (delivered.part1.ts `materialMapSet`): same uv set, same size,
+    // so render can address all three arrays with one layer index.
+    if (source.normal)
+      material.setNormalTexture(
+        image(`${group.name}_normal`, `normal:${source.key}`, source.normal),
+      );
+    if (source.metallicRoughness) {
+      material.setMetallicRoughnessTexture(
+        image(`${group.name}_mr`, `mr:${source.key}`, source.metallicRoughness),
+      );
+      // glTF multiplies the map by the factors; `solid` sets metallic 0, which would zero the map's metal channel.
+      material.setMetallicFactor(1).setRoughnessFactor(1);
+    }
     add(group.mesh, material);
   }
   if (textures.size >= 2) {
@@ -400,6 +421,8 @@ export interface DeliveredDetails {
   sourceTriangles: number;
   lodTriangles: number[];
   materials: string[];
+  /** PBR maps next to the diffuse that survived into the LOD's (manifest `maps`). */
+  maps?: MaterialMap[];
   /** Real size of LOD0 in meters (w x h x d). */
   sizeM: V3;
   scale: number;

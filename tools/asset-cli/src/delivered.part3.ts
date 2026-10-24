@@ -15,6 +15,7 @@ import {
 import { MeshAccumulator } from './geometry.js';
 import { BUDGETS } from './budgets.js';
 import { getBounds } from '@gltf-transform/functions';
+import { materialMaps } from './inspect.js';
 import type { AssetEntry } from './manifest.js';
 import { extract, slug } from './delivered.part1.js';
 import type { DeliveredConfig, V3 } from './delivered.part1.js';
@@ -122,13 +123,17 @@ export async function buildDelivered(
       if (asset.kind === 'building') {
         neededFootprint = { w: oddCeil(size[0]), h: oddCeil(size[2]) };
         const fp = asset.footprint!;
-        // Too big for the footprint, or its longest side far from the longest side of the footprint.
+        // Too big for the footprint, or so much smaller that the footprint reserves a strip of ground for nothing.
+        // Both bounds follow `oddCeil`, which maps the metres onto the next odd cell count: a footprint of n cells
+        // legitimately holds a model from just over n-2 up to n metres. The old test compared the longest side in
+        // metres against the longest side in cells with a flat 15 procent, which flagged models that fit exactly and
+        // then recommended the footprint they already had (the tent: 5,01 x 4,75 m in 7x5, "nodig: 7x5"), while a
+        // model 0,23 m over its cells stayed silent.
         const over = size[0] > fp.w * 1.05 || size[2] > fp.h * 1.05;
-        const longest = Math.max(size[0], size[2]);
-        const wanted = Math.max(fp.w, fp.h);
-        if (over || Math.abs(longest - wanted) / wanted > 0.15)
+        const under = size[0] <= fp.w - 2 || size[2] <= fp.h - 2;
+        if (over || under)
           report.warnings.push(
-            `echte maat ${size[0].toFixed(2)} x ${size[2].toFixed(2)} m wijkt meer dan 15 procent af van de footprint ${fp.w}x${fp.h} van de data; het model is niet gekrompen of opgerekt. Nodig: ongeveer ${neededFootprint.w}x${neededFootprint.h}.`,
+            `echte maat ${size[0].toFixed(2)} x ${size[2].toFixed(2)} m past niet bij de footprint ${fp.w}x${fp.h} van de data (${over ? 'het model steekt erbuiten' : 'de footprint reserveert een strook grond voor niets'}); het model is niet gekrompen of opgerekt. Nodig: ${neededFootprint.w}x${neededFootprint.h}.`,
           );
       }
       if (report.errors.length > 0) continue;
@@ -138,11 +143,15 @@ export async function buildDelivered(
         .map((m) => m.getName())
         .filter((name) => /team/i.test(name))
         .sort();
+      // Welke kaarten de LOD's halen, staat in het manifest zodat render weet dat er naast de basiskleur-array een
+      // normal- en metallic-roughness-array te bouwen is (dezelfde laagindex).
+      const maps = materialMaps(lods[0]!.document);
       const details: DeliveredDetails = {
         kind: asset.kind,
         sourceTriangles,
         lodTriangles: lods.map((l) => l.triangles),
         materials,
+        ...(maps.length > 0 ? { maps } : {}),
         sizeM: round6(size),
         scale: Math.round(placed.scale * 1e6) / 1e6,
         ...(asset.hover !== undefined ? { hover: asset.hover } : {}),
@@ -163,6 +172,7 @@ export async function buildDelivered(
           sockets: {},
           animations: [],
           boneCount: 0,
+          ...(maps.length > 0 ? { maps } : {}),
           ...(asset.kind === 'prop' ? { teamMask: 'none' as const } : { teamMaterials }),
           ...(asset.kind === 'rigid-unit'
             ? {

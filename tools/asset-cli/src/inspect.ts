@@ -63,6 +63,22 @@ export function textureSizes(document: Document): TextureSize[] {
   return sizes;
 }
 
+export type MaterialMap = 'normal' | 'metallicRoughness' | 'occlusion' | 'emissive';
+
+const MATERIAL_MAPS = ['normal', 'metallicRoughness', 'occlusion', 'emissive'] as const;
+
+/** Welke PBR-kaarten naast de diffuse op de materialen staan (manifest `maps`), in vaste volgorde. */
+export function materialMaps(document: Document): MaterialMap[] {
+  const found = new Set<MaterialMap>();
+  for (const material of document.getRoot().listMaterials()) {
+    if (material.getNormalTexture()) found.add('normal');
+    if (material.getMetallicRoughnessTexture()) found.add('metallicRoughness');
+    if (material.getOcclusionTexture()) found.add('occlusion');
+    if (material.getEmissiveTexture()) found.add('emissive');
+  }
+  return MATERIAL_MAPS.filter((m) => found.has(m));
+}
+
 /** Aantal TEXCOORD-sets dat in gebruik is (max over alle primitives). */
 export function uvSetCount(document: Document): number {
   let max = 0;

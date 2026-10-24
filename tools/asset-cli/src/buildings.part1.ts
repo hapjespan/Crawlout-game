@@ -9,7 +9,6 @@ import {
   componentsInside,
   selectTriangles,
   largestComponents,
-  makeBox,
   makeTransform,
   MeshAccumulator,
   compact,
@@ -22,6 +21,7 @@ import { BUDGETS } from './budgets.js';
 import type { HousePart, VariantPart, VariantsConfig, VariantDef } from './variants.js';
 import {
   makeBevelBox,
+  makeBoxUv,
   makeBoxOpen,
   makeCylinderClean,
   makeCone,
@@ -31,6 +31,8 @@ import {
   makeTube,
   makeSphere,
 } from './shapes.js';
+import { withUv } from './uvmap.js';
+import { surfaceKindOfName, surfaceMaps } from './surfaceTex.js';
 
 /** Een materiaal van het bron-huisje, omgezet van spec-gloss naar basiskleur plus textuur. */
 interface SourceMaterial {
@@ -177,12 +179,20 @@ interface PartMeshes {
   meshes: { material: string; mesh: Mesh }[];
 }
 
-/** The mesh of a shape part in its own frame (foot at the origin), outward winding. */
+/**
+ * The mesh of a shape part in its own frame (foot at the origin), outward winding, with a uv set: its own where the
+ * shape knows better (the round ones), box projection from uvmap.ts otherwise. Every procedural part is textured, so
+ * the generated normal and metallic-roughness maps of surfaceTex.ts have somewhere to land.
+ */
 export function shapeMeshes(part: Exclude<VariantPart, HousePart>): Mesh {
+  return withUv(rawShapeMesh(part));
+}
+
+function rawShapeMesh(part: Exclude<VariantPart, HousePart>): Mesh {
   switch (part.type) {
     case 'box':
       if (part.chamfer) return makeBevelBox(part.size, part.chamfer);
-      return part.open ? makeBoxOpen(part.size) : makeBox(part.size);
+      return part.open ? makeBoxOpen(part.size) : makeBoxUv(part.size);
     case 'cylinder': {
       const top = part.radiusTop ?? part.radius;
       return makeCylinderClean(part.radius, top, part.height, part.segments, part.open ?? false);
@@ -280,17 +290,67 @@ export function placeShape(part: Exclude<VariantPart, HousePart>): Mesh {
   );
 }
 
+/**
+ * Generated tile size per LOD for a flat material (0 = no generated maps). LOD2 stays flat colour: it is the far
+ * silhouette, render reads a material without a map as flat (uvl layer -1, see structures/buildingGeometry.ts), and
+ * three maps per material would be most of a 10 kB LOD2 GLB for relief nobody can resolve at that distance.
+ *
+ * 256 px over the 2 m tile of uvmap.ts is 128 texels/m, inside render's DENSITY_BAND, so uvScaleForDensity leaves
+ * the uv alone and a panel stays the metre it was authored as. At 128 the density falls to 64, render rescales the
+ * uv by 1.56 and the panels shrink to 64 cm: fine at LOD1 distance, wrong up close. The price is that every asset
+ * carries its own copy of the same tile (+12.6 MB over assets/dist); a shared tile file referenced from the
+ * manifest would cut that to one copy, but that is a manifest and render contract change.
+ */
+export const GENERATED_TILE_SIZES = [256, 128, 0] as const;
+
+/**
+ * Hangs the generated tiling maps of the material's surface kind on a flat material: a weathering map on the base
+ * colour (the palette colour stays in baseColorFactor and multiplies through), a normal map and a
+ * metallic-roughness map. All three share one uv set and one size, which is the contract validateBuildingDocument
+ * checks and the one render needs to put them on a single texture-array layer.
+ */
+function addGeneratedMaps(
+  document: Document,
+  material: ReturnType<Document['createMaterial']>,
+  name: string,
+  size: number,
+  cache: Map<string, Texture>,
+): void {
+  const kind = surfaceKindOfName(name);
+  const maps = surfaceMaps(kind, size);
+  const texture = (slot: 'base' | 'normal' | 'mr', image: Uint8Array): Texture => {
+    const key = `${kind}_${slot}`;
+    let found = cache.get(key);
+    if (!found)
+      cache.set(
+        key,
+        (found = document.createTexture(key).setImage(image).setMimeType('image/png')),
+      );
+    return found;
+  };
+  material
+    .setBaseColorTexture(texture('base', maps.base))
+    .setNormalTexture(texture('normal', maps.normal))
+    .setMetallicRoughnessTexture(texture('mr', maps.mr))
+    // The map drives both; the factors must not scale it down (glTF multiplies factor by texture).
+    .setMetallicFactor(1)
+    .setRoughnessFactor(1);
+}
+
 export function assemble(
   config: VariantsConfig,
   variant: VariantDef,
   id: string,
   accumulators: Map<string, MeshAccumulator>,
   sources: Map<string, SourceHouse>,
+  level: 0 | 1 | 2 = 0,
 ): Omit<GeneratedBuilding, 'sourceTriangles'> {
   const document = new Document().setLogger(new Logger(Logger.Verbosity.WARN));
   const buffer = document.createBuffer();
   const mesh = document.createMesh(id);
   const textures = new Map<string, Texture>();
+  const generated = new Map<string, Texture>();
+  const tileSize = GENERATED_TILE_SIZES[level];
 
   // Bronmateriaal per uitvoernaam, voor kleur en textuur; dubbele namen moeten gelijk zijn.
   const sourceByOutput = new Map<string, SourceMaterial>();
@@ -323,6 +383,8 @@ export function assemble(
     if (flat) {
       const color = variant.colors?.[name] ?? flat.color;
       material.setBaseColorFactor([...hexToLinear(color), 1]);
+      if (tileSize > 0 && compacted.uvs)
+        addGeneratedMaps(document, material, name, tileSize, generated);
     } else if (fromSource) {
       const tint = hexToLinear(variant.tints?.[name] ?? '#ffffff');
       material
