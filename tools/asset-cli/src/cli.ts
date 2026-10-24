@@ -2,6 +2,7 @@ import { readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildAssets } from './build.js';
+import { detectKtx2Encoder } from './ktx2.js';
 
 const repoRoot = fileURLToPath(new URL('../../../', import.meta.url));
 
@@ -34,9 +35,15 @@ if (local && !hasGlb(srcDir)) {
 // The delivered models (assets/local/delivered.json, art in assets/local/delivered; both gitignored) only go through the local pipeline.
 // Its default follows --src, so a worktree building the main checkout's assets/local keeps the delivered models.
 const deliveredPath = argValue('--delivered') ?? join(srcDir, 'delivered.json');
+// --ktx2: textures als KTX2/UASTC exporteren. Alleen om te meten; de render-buis leest ze nog niet (tools/asset-cli/src/ktx2.ts).
+const ktx2 = process.argv.includes('--ktx2') ? detectKtx2Encoder()?.bin : undefined;
+if (process.argv.includes('--ktx2') && !ktx2)
+  console.warn('waarschuwing: --ktx2 gevraagd maar geen toktx of basisu op PATH.');
+
 const result = await buildAssets({
   srcDir,
   distDir,
+  ...(ktx2 ? { toktx: ktx2 } : {}),
   ...(local ? { onlyConfigured: true, deliveredPath } : {}),
 });
 

@@ -7,6 +7,7 @@ import { MeshoptDecoder } from 'meshoptimizer';
 import sharp from 'sharp';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { buildAssets } from '../src/build.js';
+import { BUDGETS } from '../src/budgets.js';
 import { manifestSchema } from '../src/manifest.js';
 import { validateAsset } from '../src/validate.js';
 import { createIO } from '../src/lods.js';
@@ -33,8 +34,8 @@ describe('validatie', () => {
     expect(await violations(await makeHumanoid({ withSockets: true }))).toEqual([]);
   });
   it('weigert te veel driehoeken', async () => {
-    const errors = await violations(await makeHumanoid({ segments: 60, rings: 40 }));
-    expect(errors.join('\n')).toMatch(/4800 driehoeken in LOD0, maximaal 4000/);
+    const errors = await violations(await makeHumanoid({ segments: 160, rings: 80 }));
+    expect(errors.join('\n')).toMatch(/25600 driehoeken in LOD0, maximaal 24000/);
   });
   it('weigert meer dan 28 bones', async () => {
     expect((await violations(await makeHumanoid({ extraBones: 10 }))).join('\n')).toMatch(
@@ -84,7 +85,11 @@ describe('buis', () => {
   });
 
   it('bouwt LODs, meshopt en manifest voor humanoid en prop', async () => {
-    writeFileSync(join(src, 'Hero Dummy.glb'), await makeHumanoid({ withSockets: true }));
+    // 19.200 driehoeken: zwaar genoeg dat LOD1 en LOD2 echt reduceren onder de band van 2026-10-23.
+    writeFileSync(
+      join(src, 'Hero Dummy.glb'),
+      await makeHumanoid({ withSockets: true, segments: 120, rings: 80 }),
+    );
     writeFileSync(join(src, 'rock.glb'), await makeProp({ segments: 30, rings: 20 }));
     const result = await buildAssets({ srcDir: src, distDir: dist, toktx: null });
     expect(result.reports.flatMap((r) => r.errors)).toEqual([]);
@@ -96,9 +101,9 @@ describe('buis', () => {
     expect(manifest.assets.map((a) => a.id)).toEqual(['hero_dummy', 'rock']);
     const hero = manifest.assets[0]!;
     expect(hero.kind).toBe('character');
-    expect(hero.lods.map((l) => l.triangles).every((t, i) => t <= [4000, 1500, 600][i]!)).toBe(
-      true,
-    );
+    expect(
+      hero.lods.map((l) => l.triangles).every((t, i) => t <= BUDGETS.characterMaxTris[i]!),
+    ).toBe(true);
     expect(hero.lods[1].triangles).toBeLessThan(hero.lods[0].triangles);
     expect(hero.lods[2].triangles).toBeLessThan(hero.lods[1].triangles);
     expect(hero.sockets.hand).toBeDefined();
@@ -155,7 +160,11 @@ describe('buis', () => {
         .registerDependencies({ 'meshopt.decoder': MeshoptDecoder })
         .readBinary(new Uint8Array(readFileSync(join(dist, lod.path))));
       const image = doc.getRoot().listTextures()[0]!.getImage()!;
+      // ensureAlpha: hier valt elke texel binnen het bereik, dus het masker is overal 1 en de LOD-stap mag de
+      // volledig dekkende alfa laten vallen (WebP doet dat) — hij leest terug als 255, precies wat hij was. Een
+      // masker met echte doorzichtige texels blijft PNG, want WebP wist de rgb eronder (textures.part2.ts).
       const { data, info } = await sharp(Buffer.from(image))
+        .ensureAlpha()
         .raw()
         .toBuffer({ resolveWithObject: true });
       expect(info.channels).toBe(4);
@@ -167,7 +176,7 @@ describe('buis', () => {
     writeFileSync(join(src, 'good.glb'), await makeHumanoid());
     writeFileSync(
       join(src, 'zwaar.glb'),
-      await makeHumanoid({ segments: 60, rings: 40, extraBones: 10 }),
+      await makeHumanoid({ segments: 160, rings: 80, extraBones: 10 }),
     );
     const result = await buildAssets({ srcDir: src, distDir: dist, toktx: null });
     expect(result.ok).toBe(false);
@@ -177,8 +186,19 @@ describe('buis', () => {
     expect(existsSync(join(dist, 'manifest.json'))).toBe(false);
   });
 
-  it('meldt dat KTX2 ontbreekt als toktx niet beschikbaar is', async () => {
+  it('exporteert geen KTX2 zonder expliciete vraag, ook niet met een encoder op PATH', async () => {
+    writeFileSync(join(src, 'plain.glb'), await makeHumanoid());
     const result = await buildAssets({ srcDir: src, distDir: dist, toktx: null });
-    expect(result.notices.join('')).toMatch(/PNG/);
+    expect(result.ok).toBe(true);
+    const manifest = manifestSchema.parse(
+      JSON.parse(readFileSync(join(dist, 'manifest.json'), 'utf8')),
+    );
+    const doc = await new NodeIO()
+      .registerExtensions(ALL_EXTENSIONS)
+      .registerDependencies({ 'meshopt.decoder': MeshoptDecoder })
+      .readBinary(new Uint8Array(readFileSync(join(dist, manifest.assets[0]!.lods[0]!.path))));
+    // De render-buis rastert elke textuur naar een RGBA8-array en leest geen CompressedTexture (ktx2.ts).
+    for (const texture of doc.getRoot().listTextures())
+      expect(texture.getMimeType()).not.toBe('image/ktx2');
   });
 });

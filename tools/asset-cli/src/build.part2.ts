@@ -1,35 +1,38 @@
 // Split from build.ts to stay under the 5,000-token file limit; build.ts re-exports the public surface.
-// Holds: buildAssets.
-import { detectToktx } from './ktx2.js';
+// Holds: buildAssets, the front half of the build (configs lezen, bronnen valideren, de gegenereerde families
+// bouwen). De LOD-stap en het schrijven van dist staan in build.part3.ts.
+import { detectKtx2Encoder } from './ktx2.js';
 import { join, basename, relative, sep, dirname } from 'node:path';
-import { type Clipmap, EMPTY_CLIPMAP, parseClipmap, resolveClips } from './clipmap.js';
+import { type Clipmap, EMPTY_CLIPMAP, parseClipmap } from './clipmap.js';
 import { type Rigmap, EMPTY_RIGMAP, namedSources, parseRigmap } from './rigmap.js';
-import { existsSync, readFileSync, mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import type { VariantsConfig } from './variants.js';
 import { loadVariantsConfig, hexToLinear, buildBuildings } from './buildings.js';
-import { createIO, buildLods, lodMaxTris } from './lods.js';
-import { type ConformInfo, autoRigFromConfig, conformDocument } from './conform.js';
-import { type BodyPalette, type AssetEntry, manifestSchema, MANIFEST_VERSION } from './manifest.js';
-import { maxBoneCount, findSockets, animationIndex } from './inspect.js';
+import { createIO } from './lods.js';
+import { autoRigFromConfig, conformDocument } from './conform.js';
+import { type AssetEntry, manifestSchema, MANIFEST_VERSION } from './manifest.js';
+import { maxBoneCount } from './inspect.js';
 import { validateAsset } from './validate.js';
 import { scaleSkinnedDocument } from './deriveScale.js';
 import { type RobotsResult, buildRobots, loadRobotsConfig } from './robots.js';
 import { splitJsonExists } from './splitJson.js';
 import { buildDelivered, loadDeliveredConfig } from './delivered.js';
 import { type PacksConfig, loadPacksConfig, buildPacks, findPacksDir } from './packs.js';
-import { BUDGETS } from './budgets.js';
-import { bakeAnimations } from './bake.js';
-import { PRESERVED_DIST_ENTRIES, listGlbs, toId } from './build.part1.js';
+import { listGlbs, toId } from './build.part1.js';
 import type { AssetReport, BuildOptions, BuildResult } from './build.part1.js';
+import { type ValidatedAsset, buildAssetLods, writeDist } from './build.part3.js';
 
 /** Leest alle GLB's uit srcDir, valideert, bouwt LODs en schrijft distDir. Bij een schending wordt niets geschreven. */
 export async function buildAssets(options: BuildOptions): Promise<BuildResult> {
   const { srcDir, distDir } = options;
   const notices: string[] = [];
-  const toktx = options.toktx === undefined ? detectToktx() : options.toktx;
-  if (!toktx)
+  // KTX2 staat standaard uit, ook als er een encoder op PATH staat: de render-buis rastert elke textuur naar een
+  // RGBA8 DataArrayTexture en kan een CompressedTexture niet lezen (ktx2.ts legt uit wat het zou kosten). `--ktx2`
+  // zet hem aan voor een meting.
+  const toktx = options.toktx === undefined ? null : (options.toktx ?? null);
+  if (options.toktx === null && detectKtx2Encoder())
     notices.push(
-      'toktx niet gevonden op PATH: textures blijven PNG (geen KTX2). Installeer KTX-Software om KTX2 te krijgen.',
+      'KTX2-encoder gevonden maar niet gebruikt: de render-buis leest alleen ongecomprimeerde textures (zie ktx2.ts).',
     );
 
   const clipmapSource = options.clipmapPath ?? join(srcDir, 'clipmap.json');
@@ -100,18 +103,7 @@ export async function buildAssets(options: BuildOptions): Promise<BuildResult> {
   const io = createIO();
   const reports: AssetReport[] = [];
   const seen = new Map<string, string>();
-  const validated: {
-    id: string;
-    sourceId: string;
-    buffer: Uint8Array;
-    kind: 'character' | 'prop';
-    conform: ConformInfo;
-    sourceBones: number;
-    /** A derived (re-coloured) asset shares the baked animation texture of this asset id. */
-    bakedFrom?: string;
-    /** Clothing palette of a derived body (manifest `palette`). */
-    palette?: BodyPalette;
-  }[] = [];
+  const validated: ValidatedAsset[] = [];
 
   const sources = [
     ...files.map((file) => ({ file, sourceId: toId(file) })),
@@ -342,111 +334,7 @@ export async function buildAssets(options: BuildOptions): Promise<BuildResult> {
     ...delivered.outputs,
     ...(packs?.outputs ?? []),
   ]);
-  const bakedById = new Map<string, AssetEntry['baked']>();
-  for (const asset of validated) {
-    const lods = await buildLods(asset.buffer, asset.kind, { toktx });
-    const sourceDoc = await io.readBinary(asset.buffer);
-    const report = reports.find((r) => r.id === asset.id)!;
-    const maxTris = lodMaxTris(asset.kind);
-    const problems = lods.flatMap((lod) => {
-      const found: string[] = [];
-      if (lod.triangles > maxTris[lod.level] || lod.triangles === 0)
-        found.push(
-          `LOD${lod.level} heeft ${lod.triangles} driehoeken na simplificatie, budget ${maxTris[lod.level]}.`,
-        );
-      // Ondergrens van de brief, alleen waar de buis zelf gereduceerd heeft: een bron mag lichter zijn dan de band.
-      const reduced =
-        lod.level === 0 ? asset.conform.reduced : lod.triangles < (lods[0]?.triangles ?? 0);
-      if (
-        asset.kind === 'character' &&
-        reduced &&
-        lod.triangles < BUDGETS.characterMinTris[lod.level]
-      ) {
-        found.push(
-          `LOD${lod.level} heeft ${lod.triangles} driehoeken na simplificatie, minimaal ${BUDGETS.characterMinTris[lod.level]} (brief).`,
-        );
-      }
-      return found;
-    });
-    if (problems.length > 0) {
-      report.errors.push(...problems);
-      continue;
-    }
-    for (const lod of lods) outputs.set(`${asset.id}/lod${lod.level}.glb`, lod.glb);
-    const validation = validateAsset(sourceDoc, { clipmap, assetId: asset.sourceId });
-    let baked: AssetEntry['baked'];
-    if (asset.bakedFrom) {
-      baked = bakedById.get(asset.bakedFrom);
-      if (!baked) {
-        report.errors.push(`geen gebakken animaties van ${asset.bakedFrom} om te delen.`);
-        continue;
-      }
-    } else if (asset.kind === 'character' && sourceDoc.getRoot().listAnimations().length > 0) {
-      const names = sourceDoc
-        .getRoot()
-        .listAnimations()
-        .map((a, i) => a.getName() || `animation_${i}`);
-      const lod0Doc = await io.readBinary(lods[0]!.glb);
-      const jointNames = (doc: typeof sourceDoc): string =>
-        doc
-          .getRoot()
-          .listSkins()[0]
-          ?.listJoints()
-          .map((j) => j.getName())
-          .join('|') ?? '';
-      if (jointNames(lod0Doc) !== jointNames(sourceDoc)) {
-        report.errors.push(
-          'bone-volgorde van LOD0 wijkt af van de bron-GLB; de texture zou niet bij de mesh passen.',
-        );
-        continue;
-      }
-      const result = bakeAnimations({
-        assetId: asset.id,
-        document: sourceDoc,
-        clips: resolveClips(names, clipmap, asset.sourceId).found,
-      });
-      outputs.set(result.baked.path, result.data);
-      baked = result.baked;
-      bakedById.set(asset.id, baked);
-    }
-    const boneCount = maxBoneCount(sourceDoc);
-    report.details = {
-      kind: asset.kind,
-      sourceTriangles: asset.conform.trianglesBefore,
-      lodTriangles: lods.map((lod) => lod.triangles),
-      sourceBones: asset.sourceBones,
-      bones: boneCount,
-      prunedBones: asset.conform.bones?.pruned ?? [],
-      channelsDropped: asset.conform.bones?.channelsDropped ?? 0,
-      clipsKept: asset.conform.clipsKept,
-      clipsDropped: asset.conform.clipsDropped,
-      extraUvSetsRemoved: asset.conform.extraUvSetsRemoved,
-      scale: asset.conform.scale ?? null,
-      ...(asset.conform.meshesRemoved ? { meshesRemoved: asset.conform.meshesRemoved } : {}),
-      ...(asset.conform.fit ? { fit: asset.conform.fit } : {}),
-      ...(asset.conform.retarget ? { retarget: asset.conform.retarget } : {}),
-      ...(asset.conform.atlas ? { atlas: asset.conform.atlas } : {}),
-      ...(asset.conform.teamMask ? { teamMask: asset.conform.teamMask } : {}),
-      ...(asset.conform.normalsComputed ? { normalsComputed: asset.conform.normalsComputed } : {}),
-      ...(asset.conform.autoRig ? { autoRig: asset.conform.autoRig } : {}),
-    };
-    entries.push({
-      id: asset.id,
-      kind: asset.kind,
-      bounds: validation.bounds,
-      lods: [0, 1, 2].map((level) => ({
-        level,
-        path: `${asset.id}/lod${level}.glb`,
-        triangles: lods[level]?.triangles ?? 0,
-      })) as AssetEntry['lods'],
-      sockets: asset.kind === 'character' ? findSockets(sourceDoc) : {},
-      animations: animationIndex(sourceDoc),
-      boneCount,
-      teamMask: asset.conform.teamMask ? 'diffuseAlpha' : 'materialName',
-      ...(baked ? { baked } : {}),
-      ...(asset.palette ? { palette: asset.palette } : {}),
-    });
-  }
+  await buildAssetLods(validated, { io, clipmap, toktx, reports, entries, outputs });
 
   if (reports.some((r) => r.errors.length > 0))
     return { ok: false, reports, notices, manifest: null };
@@ -455,31 +343,6 @@ export async function buildAssets(options: BuildOptions): Promise<BuildResult> {
     version: MANIFEST_VERSION,
     assets: entries.sort((a, b) => a.id.localeCompare(b.id)),
   });
-  // Validatierapport naast het manifest: deterministisch (geen tijdstempels), assets gesorteerd op id.
-  const validationReport = {
-    version: 1,
-    ok: true,
-    assets: [...reports]
-      .sort((a, b) => a.id.localeCompare(b.id))
-      .map((r) => ({
-        id: r.id,
-        source: r.source,
-        errors: r.errors,
-        warnings: r.warnings,
-        ...r.details,
-      })),
-  };
-  outputs.set('validation-report.json', `${JSON.stringify(validationReport, null, 2)}\n`);
-  // Clear previous output, but keep what other commands own (`terrain` writes assets/dist/terrain).
-  mkdirSync(distDir, { recursive: true });
-  for (const entry of readdirSync(distDir)) {
-    if (!PRESERVED_DIST_ENTRIES.has(entry))
-      rmSync(join(distDir, entry), { recursive: true, force: true });
-  }
-  for (const [path, data] of outputs) {
-    mkdirSync(join(distDir, path, '..'), { recursive: true });
-    writeFileSync(join(distDir, path), data);
-  }
-  writeFileSync(join(distDir, 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`);
+  writeDist(distDir, outputs, reports, manifest);
   return { ok: true, reports, notices, manifest };
 }

@@ -1,12 +1,7 @@
-// Split from textures.ts to stay under the 5,000-token file limit; textures.ts re-exports the public surface.
-// Holds: Sharp, sharpModule, loadSharp, emissiveAsBaseColor, Placement, packSquares, +13 more.
-import {
-  type Document,
-  type Texture,
-  type Primitive,
-  type Accessor,
-  Root,
-} from '@gltf-transform/core';
+// Atlas-bouwstenen: sharp lazy laden, de emissive-als-diffuse-stap, het inpakken van vierkante cellen en het
+// tegelwerk op UV's. textures.part3.ts bouwt de atlas er zelf mee; textures.ts re-exporteert wat publiek is.
+// Holds: loadSharp, emissiveAsBaseColor, packSquares, linearToSrgbByte, surfaceArea, triangleTile, +4 more.
+import { type Document, type Primitive, type Accessor } from '@gltf-transform/core';
 
 type Sharp = (typeof import('sharp'))['default'];
 
@@ -29,13 +24,6 @@ export function emissiveAsBaseColor(document: Document): number {
     changed++;
   }
   return changed;
-}
-
-interface Placement {
-  texture: Texture;
-  x: number;
-  y: number;
-  size: number;
 }
 
 /** Pakt vierkante cellen (macht van 2) in een vierkant van `size`; quadtree, grootste eerst. Null als het niet past. */
@@ -66,10 +54,15 @@ export function packSquares(
   return out;
 }
 
-const pow2 = (n: number): number => 2 ** Math.ceil(Math.log2(Math.max(1, n)));
+/** glTF-factoren zijn lineair, een basiskleurtextuur is sRGB; deze omrekening zet er een texelwaarde van. */
+export function linearToSrgbByte(linear: number): number {
+  const c = Math.min(1, Math.max(0, linear));
+  const s = c <= 0.0031308 ? c * 12.92 : 1.055 * c ** (1 / 2.4) - 0.055;
+  return Math.round(s * 255);
+}
 
 /** Oppervlak in modelruimte van de primitives die een textuur gebruiken (bepaalt wie eerst kleiner moet). */
-function surfaceArea(prims: readonly Primitive[]): number {
+export function surfaceArea(prims: readonly Primitive[]): number {
   let area = 0;
   const a = [0, 0, 0];
   const b = [0, 0, 0];
@@ -96,19 +89,8 @@ function surfaceArea(prims: readonly Primitive[]): number {
   return area;
 }
 
-export interface AtlasInfo {
-  size: number;
-  /** Per bron-textuur (naam of index) de celmaat in de atlas en hoe vaak de textuur in de cel herhaald is (tegelende UV's). */
-  cells: { texture: string; source: number; size: number; repeat: number }[];
-}
-
 /** Een UV-overschrijding tot deze afstand buiten een tegel van 0 tot 1 telt niet als tegelen maar wordt afgeklemd. */
 const UV_TILE_TOLERANCE = 0.03;
-
-/** Meer herhalingen van een textuur in één cel geeft te weinig texels per tegel. */
-const MAX_UV_REPEAT = 8;
-
-const WRAP_CLAMP_TO_EDGE = 33071;
 
 interface TriangleTile {
   /** Tegel (gehele UV-verschuiving) per as. */
@@ -167,7 +149,7 @@ function triangleIndices(prim: Primitive): number[] {
 }
 
 /** Aantal herhalingen dat een textuur in zijn cel nodig heeft, uit de driehoeken die tegelgrenzen overspannen. */
-function requiredRepeat(
+export function requiredRepeat(
   prims: readonly Primitive[],
   clampedAxes: readonly [boolean, boolean],
 ): number {
@@ -192,7 +174,7 @@ function requiredRepeat(
  * `repeat` is het aantal herhalingen van de textuur in de cel; assen met wrap CLAMP_TO_EDGE klemmen per hoekpunt.
  * Alle attributen krijgen nieuwe accessors (de bron kan door andere primitives gedeeld worden).
  */
-function remapPrimitiveToAtlas(
+export function remapPrimitiveToAtlas(
   document: Document,
   prim: Primitive,
   cell: { x: number; y: number; size: number },
@@ -264,192 +246,4 @@ function remapPrimitiveToAtlas(
       .setArray(count > 65535 ? new Uint32Array(indices) : new Uint16Array(indices))
       .setBuffer(buffer),
   );
-}
-
-/**
- * Voegt alle diffuse textures samen tot één vierkante PNG-atlas van maximaal `size`. Elke textuur krijgt een vierkante
- * cel (macht van 2); past het niet, dan halveert de textuur met het kleinste oppervlak per texel eerst.
- *
- * UV's buiten 0 tot 1 gaan zoals de bron ze bedoelde (wrap REPEAT): elke driehoek schuift naar zijn eigen tegel van
- * 0 tot 1, een overschrijding van hooguit 3 procent wordt afgeklemd. Een driehoek die een tegelgrens echt overspant
- * (een tegelende textuur, bijvoorbeeld UV's van 0 tot 3) vraagt dat de textuur in de cel herhaald wordt; de cel bevat
- * dan N x N kopieën en de UV's worden door N gedeeld. Wrap CLAMP_TO_EDGE klemt per hoekpunt. Alle primitives krijgen
- * daarna één materiaal ("atlas").
- */
-export async function buildAtlas(
-  document: Document,
-  size: number,
-  options: { keepAlpha?: boolean } = {},
-): Promise<AtlasInfo> {
-  const sharp = await loadSharp();
-  const root = document.getRoot();
-  const prims = root.listMeshes().flatMap((m) => m.listPrimitives());
-  const usedBy = new Map<Texture, Primitive[]>();
-  const wrap = new Map<Texture, [boolean, boolean]>();
-  for (const prim of prims) {
-    const material = prim.getMaterial();
-    const tex = material?.getBaseColorTexture();
-    if (!tex)
-      throw new Error(
-        `primitive met materiaal "${material?.getName() ?? '-'}" heeft geen diffuse textuur`,
-      );
-    if (!prim.getAttribute('TEXCOORD_0'))
-      throw new Error('primitive zonder TEXCOORD_0 bij het maken van de atlas');
-    usedBy.set(tex, [...(usedBy.get(tex) ?? []), prim]);
-    const info = material!.getBaseColorTextureInfo();
-    wrap.set(tex, [
-      info?.getWrapS() === WRAP_CLAMP_TO_EDGE,
-      info?.getWrapT() === WRAP_CLAMP_TO_EDGE,
-    ]);
-  }
-  const textures = [...usedBy.keys()];
-  const repeats = textures.map((t) => requiredRepeat(usedBy.get(t)!, wrap.get(t)!));
-  textures.forEach((t, i) => {
-    if (repeats[i]! > MAX_UV_REPEAT)
-      throw new Error(
-        `textuur "${t.getName() || t.getURI() || '(naamloos)'}" tegelt ${repeats[i]} keer; meer dan ${MAX_UV_REPEAT} past niet in een atlascel`,
-      );
-  });
-  const meta = await Promise.all(textures.map((t) => sharp(Buffer.from(t.getImage()!)).metadata()));
-  // Een herhaalde textuur krijgt een grotere cel, zodat een tegel zijn eigen resolutie houdt (tot de atlasmaat).
-  const cells = meta.map((m, i) =>
-    Math.min(size, pow2(Math.max(m.width ?? 1, m.height ?? 1) * repeats[i]!)),
-  );
-  const density = textures.map(
-    (t, i) => cells[i]! ** 2 / Math.max(1e-9, surfaceArea(usedBy.get(t)!)),
-  );
-  let placed = packSquares(cells, size);
-  while (!placed) {
-    // Halveer de textuur met de hoogste texeldichtheid (meeste pixels per oppervlak), grootste cellen eerst.
-    let pick = -1;
-    for (let i = 0; i < cells.length; i++)
-      if (
-        cells[i]! > 1 &&
-        (pick < 0 ||
-          cells[i]! > cells[pick]! ||
-          (cells[i] === cells[pick] && density[i]! > density[pick]!))
-      )
-        pick = i;
-    if (pick < 0) throw new Error('textures passen niet in de atlas');
-    cells[pick] = cells[pick]! / 2;
-    density[pick] = density[pick]! / 4;
-    placed = packSquares(cells, size);
-  }
-  const placements: Placement[] = textures.map((texture, i) => ({
-    texture,
-    ...placed![i]!,
-    size: cells[i]!,
-  }));
-  const layers = await Promise.all(
-    placements.map(async (p, i) => {
-      const repeat = repeats[i]!;
-      const source = Buffer.from(p.texture.getImage()!);
-      let input: Buffer;
-      if (repeat === 1) {
-        input = await sharp(source)
-          .resize(p.size, p.size, { fit: 'fill' })
-          .ensureAlpha()
-          .png()
-          .toBuffer();
-      } else {
-        // N x N kopieën van de textuur naast elkaar, dan naar de celmaat.
-        const tile = Math.ceil(p.size / repeat);
-        const one = await sharp(source)
-          .resize(tile, tile, { fit: 'fill' })
-          .ensureAlpha()
-          .png()
-          .toBuffer();
-        const grid = await sharp({
-          create: {
-            width: tile * repeat,
-            height: tile * repeat,
-            channels: 4,
-            background: { r: 0, g: 0, b: 0, alpha: 1 },
-          },
-        })
-          .composite(
-            Array.from({ length: repeat * repeat }, (_, k) => ({
-              input: one,
-              left: (k % repeat) * tile,
-              top: Math.floor(k / repeat) * tile,
-            })),
-          )
-          .png()
-          .toBuffer();
-        input = await sharp(grid).resize(p.size, p.size, { fit: 'fill' }).png().toBuffer();
-      }
-      return { input, left: p.x, top: p.y };
-    }),
-  );
-  // Atlas zo klein mogelijk: de omhullende macht van 2 van wat gebruikt is.
-  const used = pow2(Math.max(...placements.map((p) => Math.max(p.x, p.y) + p.size)));
-  let png: Buffer;
-  if (options.keepAlpha) {
-    // Bladkaarten en gras: de alfa moet in de atlas blijven, dus de cellen worden pixel voor pixel gekopieerd
-    // (composite 'over' op een effen achtergrond zou de transparantie wegwerken).
-    const pixels = Buffer.alloc(used * used * 4);
-    for (let i = 0; i < pixels.length; i += 4) pixels.set([128, 128, 128, 0], i);
-    for (const layer of layers) {
-      const raw = await sharp(layer.input)
-        .ensureAlpha()
-        .raw()
-        .toBuffer({ resolveWithObject: true });
-      for (let row = 0; row < raw.info.height; row++)
-        raw.data.copy(
-          pixels,
-          ((layer.top + row) * used + layer.left) * 4,
-          row * raw.info.width * 4,
-          (row + 1) * raw.info.width * 4,
-        );
-    }
-    png = await sharp(pixels, { raw: { width: used, height: used, channels: 4 } })
-      .png()
-      .toBuffer();
-  } else {
-    png = await sharp({
-      create: {
-        width: used,
-        height: used,
-        channels: 4,
-        background: { r: 128, g: 128, b: 128, alpha: 1 },
-      },
-    })
-      .composite(layers)
-      .png()
-      .toBuffer();
-  }
-  const atlas = document
-    .createTexture('atlas')
-    .setMimeType('image/png')
-    .setImage(new Uint8Array(png));
-  const material = document
-    .createMaterial('atlas')
-    .setBaseColorTexture(atlas)
-    .setBaseColorFactor([1, 1, 1, 1]);
-
-  const oldAccessors = new Set<Accessor>();
-  for (const prim of prims) {
-    for (const semantic of prim.listSemantics()) oldAccessors.add(prim.getAttribute(semantic)!);
-    const idx = prim.getIndices();
-    if (idx) oldAccessors.add(idx);
-  }
-  placements.forEach((p, i) => {
-    for (const prim of usedBy.get(p.texture)!) {
-      remapPrimitiveToAtlas(document, prim, p, used, repeats[i]!, wrap.get(p.texture)!);
-      prim.setMaterial(material);
-    }
-  });
-  for (const accessor of oldAccessors)
-    if (accessor.listParents().every((parent) => parent instanceof Root)) accessor.dispose();
-  for (const m of root.listMaterials()) if (m !== material) m.dispose();
-  for (const t of root.listTextures()) if (t !== atlas) t.dispose();
-  return {
-    size: used,
-    cells: placements.map((p, i) => ({
-      texture: p.texture.getName() || p.texture.getURI() || '(naamloos)',
-      source: textures.indexOf(p.texture),
-      size: p.size,
-      repeat: repeats[i]!,
-    })),
-  };
 }

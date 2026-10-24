@@ -1,7 +1,99 @@
 // Split from textures.ts to stay under the 5,000-token file limit; textures.ts re-exports the public surface.
 // Holds: TeamMaskRule, TeamMaskInfo, hsv, inTeamRange, boneRegion, distanceToTriangle, +1 more.
 import type { Document, Texture } from '@gltf-transform/core';
+import { EXTTextureWebP } from '@gltf-transform/extensions';
 import { loadSharp } from './textures.part1.js';
+import { BUDGETS } from './budgets.js';
+
+/** Welke rol een textuur in zijn materialen speelt; bepaalt de maat en de encodering. */
+type MapRole = 'base' | 'normal' | 'mr' | 'other';
+
+/** Hoogste rol over alle materialen die de textuur gebruiken (een datamap wint van basiskleur). */
+function textureRoles(document: Document): Map<Texture, MapRole> {
+  const roles = new Map<Texture, MapRole>();
+  const note = (texture: Texture | null, role: MapRole): void => {
+    if (!texture) return;
+    const current = roles.get(texture);
+    // normal wint van mr wint van base: een textuur die ergens als normaal dienstdoet mag niet chroma-gesubsampled.
+    const rank = { normal: 3, mr: 2, other: 1, base: 0 } as const;
+    if (current === undefined || rank[role] > rank[current]) roles.set(texture, role);
+  };
+  for (const material of document.getRoot().listMaterials()) {
+    note(material.getBaseColorTexture(), 'base');
+    note(material.getNormalTexture(), 'normal');
+    note(material.getMetallicRoughnessTexture(), 'mr');
+    note(material.getOcclusionTexture(), 'mr');
+    note(material.getEmissiveTexture(), 'base');
+  }
+  for (const texture of document.getRoot().listTextures())
+    if (!roles.has(texture)) roles.set(texture, 'other');
+  return roles;
+}
+
+export interface TextureCompressionInfo {
+  /** Aantal textures dat opnieuw gecodeerd is en de bytes aan beeld voor en na. */
+  textures: number;
+  bytesBefore: number;
+  bytesAfter: number;
+  /** Maximale zijde die voor deze LOD gold. */
+  maxSize: number;
+}
+
+/**
+ * Verkleint elke textuur tot hoogstens `maxSize` per zijde (nooit vergroten, zijdeverhouding blijft) en codeert hem
+ * als WebP. De basiskleur mag lossy met lossless alfa (daar zit het teammasker in); normalen en metallicRoughness
+ * krijgen de hoogste kwaliteit omdat hun kanalen data zijn, geen kleur.
+ *
+ * WebP in plaats van PNG: de props uit `packs.part2.ts` doen dit al (EXT_texture_webp, three's GLTFLoader leest het
+ * zonder extra loader of wasm), en de browser decodeert het naar precies dezelfde RGBA8 als een PNG. KTX2 zou hier
+ * niets winnen: de render-buis rastert elk beeld alsnog naar een RGBA8 `DataArrayTexture`.
+ */
+export async function compressLodTextures(
+  document: Document,
+  level: 0 | 1 | 2,
+  quality: { base: number; normal: number; mr: number } = BUDGETS.characterTextureQuality,
+): Promise<TextureCompressionInfo> {
+  const sharp = await loadSharp();
+  const roles = textureRoles(document);
+  const maxSize = BUDGETS.characterTextureSizes[level];
+  const info: TextureCompressionInfo = {
+    textures: 0,
+    bytesBefore: 0,
+    bytesAfter: 0,
+    maxSize,
+  };
+  let webp = false;
+  for (const texture of document.getRoot().listTextures()) {
+    const image = texture.getImage();
+    if (!image) continue;
+    info.bytesBefore += image.byteLength;
+    const role = roles.get(texture) ?? 'other';
+    const q = role === 'base' ? quality.base : role === 'normal' ? quality.normal : quality.mr;
+    // Halveren per LOD vanaf de eigen zijde, met het plafond van de LOD erboven; nooit onder 16 px.
+    const [w, h] = texture.getSize() ?? [maxSize, maxSize];
+    const edge = Math.max(16, Math.min(maxSize, Math.max(w!, h!) >> level));
+    const resized = await sharp(Buffer.from(image))
+      .resize(edge, edge, { fit: 'inside', withoutEnlargement: true, kernel: 'lanczos3' })
+      .png()
+      .toBuffer();
+    // Een basiskleur met een echt alfakanaal draagt het teammasker (render leest de alfa als masker en de rgb
+    // eronder als kleur). WebP gooit de rgb onder een texel met alfa 0 weg — gemeten: een gemiddelde fout van 87 op
+    // 255 in de doorzichtige helft — dus zo'n kaart blijft PNG. Een volledig dekkende alfa mag wel weg: die leest
+    // terug als 255, precies wat hij was.
+    const masked = role === 'base' && !(await sharp(resized).stats()).isOpaque;
+    const encoded = masked
+      ? resized
+      : await sharp(resized)
+          .webp({ quality: q, alphaQuality: 100, smartSubsample: true, effort: 6 })
+          .toBuffer();
+    texture.setImage(new Uint8Array(encoded)).setMimeType(masked ? 'image/png' : 'image/webp');
+    if (!masked) webp = true;
+    info.bytesAfter += encoded.byteLength;
+    info.textures++;
+  }
+  if (webp) document.createExtension(EXTTextureWebP).setRequired(true);
+  return info;
+}
 
 export interface TeamMaskRule {
   /** Tint in graden [van, tot] (0 tot 360); van groter dan tot loopt over 0 heen. */

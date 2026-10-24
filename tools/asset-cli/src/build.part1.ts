@@ -6,6 +6,7 @@ import type { RobotDetails } from './robots.js';
 import type { PackPropDetails } from './packs.js';
 import type { DeliveredDetails } from './delivered.js';
 import type { AssetManifest } from './manifest.js';
+import type { MaterialMap } from './inspect.js';
 import { readdirSync } from 'node:fs';
 import { join, basename } from 'node:path';
 
@@ -15,7 +16,10 @@ export const PRESERVED_DIST_ENTRIES = new Set(['terrain']);
 export interface BuildOptions {
   srcDir: string;
   distDir: string;
-  /** Overschrijf de toktx-detectie (tests). `null` forceert PNG. */
+  /**
+   * Pad naar een KTX2-encoder. Standaard (`undefined`) geen KTX2: de render-buis leest alleen ongecomprimeerde
+   * textures, zie ktx2.ts. `null` vraagt om de melding dat er wel een encoder op PATH staat; een string forceert hem.
+   */
   toktx?: string | null;
   /** Pad naar de clipmap; standaard `<srcDir>/clipmap.json`. Een ontbrekend bestand betekent: geen koppelingen. */
   clipmapPath?: string;
@@ -64,6 +68,9 @@ export interface AssetDetails {
   kind: 'character' | 'prop';
   sourceTriangles: number;
   lodTriangles: number[];
+  /** Beeldbytes per LOD na de textuurstap (BUDGETS.characterTextureSizes), en de maat die per LOD gold. */
+  lodTextureBytes?: number[];
+  lodTextureSizes?: number[];
   sourceBones: number;
   bones: number;
   prunedBones: string[];
@@ -78,10 +85,13 @@ export interface AssetDetails {
   retarget?: ConformInfo['retarget'];
   atlas?: ConformInfo['atlas'];
   teamMask?: ConformInfo['teamMask'];
+  teamTrim?: ConformInfo['teamTrim'];
   /** Primitives die geen normalen hadden en gladde normalen kregen. */
   normalsComputed?: number;
   /** Auto-rigged from a static mesh (src/autorig.ts). */
   autoRig?: ConformInfo['autoRig'];
+  /** PBR-kaarten naast de diffuse die in de LOD's zitten (manifest `maps`). */
+  maps?: MaterialMap[];
 }
 
 export interface BuildResult {

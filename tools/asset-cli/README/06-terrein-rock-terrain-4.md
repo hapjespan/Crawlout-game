@@ -56,6 +56,6 @@ const field = heightfieldSchema.parse(
 
 `test/sites.test.ts` toetst de acht site-gebouwen (ruine en hersteld van supermarkt, tankstation, garage en watertoren): footprints exact, maten op echte schaal (watertoren 16 tot 20 m), drie LODs binnen het gebouwenbudget, de ruine zonder en het herstelde gebouw met `team_trim`, silhouet van ruine en hersteld binnen 10 procent, deuren van minstens 2,1 m, alle acht in het manifest, `assets/dist` gelijk aan een verse build en het JSON gelijk aan wat `scripts/gen-sites.ts` schrijft.
 
-`test/buildings.test.ts` toetst de gebouwen: config tegen `data/buildings/*.json`, footprint-schaal per LOD, grond, team-materiaal, geen PBR, budgetten, determinisme (twee runs, gelijke bytes), het manifest-schema en de meshgereedschappen.
+`test/buildings.test.ts` toetst de gebouwen: config tegen `data/buildings/*.json`, footprint-schaal per LOD, grond, team-materiaal, het PBR-contract, budgetten, determinisme (twee runs, gelijke bytes), het manifest-schema en de meshgereedschappen.
 
 `npx -y pnpm@9 test` (`test/bake.test.ts` voor de bakker, inclusief roundtrip van een bekende pose; `test/conform.test.ts` voor bone-snoeien, rigmap, simplify met skinning en een smoke-test op de echte UAL-GLB) genereert synthetische GLB's met gltf-transform (geldige humanoid-dummy, te zware en foute varianten) in `test/fixtures.ts`.
