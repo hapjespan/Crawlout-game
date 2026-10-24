@@ -3,8 +3,15 @@
 // three/examples). Paths in the manifest are relative to manifest.json; which asset a unit uses is data
 // (loadout.visuals.meshSlots.body) or one config value, never a path in code.
 import { manifestSchema, type AssetEntry, type AssetManifest } from '@crawlout/asset-cli/manifest';
-import type { Object3D } from 'three/webgpu';
-import { canvasRasterize, type Rasterize } from '../structures/textureArray.js';
+import type { DataArrayTexture, Object3D } from 'three/webgpu';
+import { TextureLayerTable } from '../structures/buildingGeometry.js';
+import {
+  budgetedLayerSize,
+  createLayerTexture,
+  DEFAULT_LAYER_SIZE,
+  imageRasterize,
+  type Rasterize,
+} from '../structures/textureArray.js';
 import type { BakedAnimations } from './bake.js';
 import { applyCharacterFit, bakedAnimationsFromManifest, characterFit } from './bakedManifest.js';
 import {
@@ -36,14 +43,49 @@ export interface LoadedUnitAsset {
   anims: BakedAnimations;
   /** LOD 0, 1, 2 in the unit vertex layout. */
   lods: [UnitGeometryResult, UnitGeometryResult, UnitGeometryResult];
+  /**
+   * The asset's diffuse textures as one array (one layer per source material, shared by the three LODs), sampled
+   * with the geometry's uvl attribute. Null when the asset has no texture at all.
+   */
+  layers: DataArrayTexture | null;
+  /**
+   * The tangent-space normal maps on the very same layer indices, linear, or null when no material has one. A
+   * material without a normal map gets a flat (0.5, 0.5, 1) layer, so one array always covers the whole asset.
+   */
+  normalLayers: DataArrayTexture | null;
+  /**
+   * The glTF metallicRoughness maps (G = roughness, B = metalness) on the same layer indices, linear. Always built
+   * when the asset has layers: a material without the map gets its own roughnessFactor/metallicFactor as a flat
+   * layer, so leather, cloth and metal still answer differently.
+   */
+  mrLayers: DataArrayTexture | null;
+  /** Edge of the array layers in pixels (0 without layers). */
+  layerSize: number;
+  /** Layers whose image could not be rasterized (they are white). */
+  missingLayers: string[];
+  /** How many layers carry a real normal map and a real metallicRoughness map (the rest are the flat fallback). */
+  mapCounts: { normal: number; mr: number };
 }
 
 export interface UnitAssetLoadOptions {
   /** Default: the manifest's teamMask. 'auto' tests the atlas alpha (for manifests without the field). */
   teamMask?: TeamMaskSource;
-  /** Reads atlas pixels for the mask test and the team pivot; default the canvas (null outside a browser). */
+  /**
+   * Reads a texture's pixels for the array layers, the mask test and the team pivot; default WebGL2 with the 2D
+   * canvas as the fallback (null outside a browser). It must keep the rgb under a transparent texel: the team mask
+   * lives in the diffuse alpha, so most of a character's map is alpha 0 and a premultiplying path returns it black.
+   */
   rasterize?: Rasterize;
+  /**
+   * Edge of the array layers in pixels. Default: budgetedLayerSize of the asset's layer count (textureArray.ts), so
+   * an atlased asset keeps 2048 and a 23-material one drops to 512 instead of spending 96 MB per map kind. The edge
+   * never exceeds the largest source image, so the asset-cli stays in charge of what is actually exported.
+   */
+  layerSize?: number;
 }
+
+/** Fallback edge of a character's array layers when the budget is not applied; see UnitAssetLoadOptions.layerSize. */
+export const UNIT_LAYER_SIZE = DEFAULT_LAYER_SIZE;
 
 /** Resolves a manifest path against the manifest's own URL (absolute or relative to the page). */
 export function resolveManifestPath(manifestUrl: string, path: string): string {
@@ -183,13 +225,17 @@ export class UnitAssetLoader {
     const scenes = await Promise.all(
       entry.lods.map((lod, i) => this.io.parseGltf(glbs[i]!, url(lod.path))),
     );
-    // LOD 0 resolves the team mask ('auto' reads its atlas) and measures the team pivot; the lighter LODs follow it.
-    const rasterize = opts.rasterize ?? canvasRasterize;
+    // LOD 0 resolves the team mask ('auto' reads its textures) and measures the team pivot; the lighter LODs follow
+    // it. The three LODs share one layer table keyed on material name, so a part that keeps its material across the
+    // LODs keeps its layer and nothing is uploaded twice.
+    const rasterize = opts.rasterize ?? imageRasterize;
+    const layerTable = new TextureLayerTable();
     const lod0 = unitGeometryFromGltf(scenes[0]!, {
       boneCount: entry.boneCount,
       teamMask,
       rasterize,
       palette: entry.palette,
+      layers: layerTable,
     });
     const rest = scenes.slice(1).map((scene) =>
       unitGeometryFromGltf(scene, {
@@ -197,8 +243,39 @@ export class UnitAssetLoader {
         teamMask: lod0.teamMask,
         rasterize,
         palette: entry.palette,
+        layers: layerTable,
       }),
     );
-    return { id: assetId, entry, anims, lods: [lod0, rest[0]!, rest[1]!] };
+    // Not a flat 1024: the edge follows the layer count under a byte budget, so one merged atlas layer gets the full
+    // 2048 and a model with 23 separate materials lands on 512 instead of 96 MB per map kind (textureArray.ts).
+    const edge = opts.layerSize ?? budgetedLayerSize(layerTable.size);
+    const build = (kind: 'base' | 'normal' | 'mr') =>
+      createLayerTexture(layerTable.layers, rasterize, edge, kind);
+    const built = layerTable.size > 0 ? build('base') : null;
+    if (built) built.texture.name = `crawlout-unit-layers-${assetId}`;
+    // The normal array only exists when at least one material brings a normal map: without one it would be a whole
+    // extra array of flat (0.5, 0.5, 1) texels and a sample per fragment for nothing. The metallicRoughness array is
+    // worth building either way, because its fallback carries the material's own roughness and metalness factors.
+    const hasNormal = layerTable.has('normal');
+    const normal = built && hasNormal ? build('normal') : null;
+    if (normal) normal.texture.name = `crawlout-unit-normal-${assetId}`;
+    const mr = built ? build('mr') : null;
+    if (mr) mr.texture.name = `crawlout-unit-mr-${assetId}`;
+    const counts = {
+      normal: layerTable.layers.filter((l) => l.normalImage).length,
+      mr: layerTable.layers.filter((l) => l.mrImage).length,
+    };
+    return {
+      id: assetId,
+      entry,
+      anims,
+      lods: [lod0, rest[0]!, rest[1]!],
+      layers: built?.texture ?? null,
+      normalLayers: normal?.texture ?? null,
+      mrLayers: mr?.texture ?? null,
+      layerSize: built?.size ?? 0,
+      missingLayers: built?.missing ?? [],
+      mapCounts: counts,
+    };
   }
 }

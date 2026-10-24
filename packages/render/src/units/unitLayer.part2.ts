@@ -133,9 +133,14 @@ export class UnitLayer {
     if (this.rigs.length >= DEFAULT_RIG) throw new Error('too many unit rigs');
     const index = this.rigs.length;
     // GLTFLoader leaves anisotropy at 1: the atlas on a unit's sides, seen 50 to 74 degrees from above, blurred to a
-    // smear in the mip chain. Same level as the terrain albedo.
+    // smear in the mip chain. Same level as the terrain albedo. The layer array (createLayerTexture) comes in at 4.
     const map = src.albedo?.map;
     if (map) map.anisotropy = Math.max(map.anisotropy, UNIT_ATLAS_ANISOTROPY);
+    const layers = src.albedo?.layers;
+    const normalLayers = src.albedo?.normalLayers;
+    const mrLayers = src.albedo?.mrLayers;
+    for (const t of [layers, normalLayers, mrLayers])
+      if (t) t.anisotropy = Math.max(t.anisotropy, UNIT_ATLAS_ANISOTROPY);
     const bundle = createUnitMaterial(
       src.anims,
       { lightDir: this.lightDir, shadow: this.shadow },
@@ -159,7 +164,13 @@ export class UnitLayer {
       this.scene.add(mesh);
       return { mesh, pose, anim };
     });
-    const textures = src.albedo?.map ? [...bundle.textures, src.albedo.map] : bundle.textures;
+    const textures = [
+      ...bundle.textures,
+      ...(src.albedo?.map ? [src.albedo.map] : []),
+      ...(layers ? [layers] : []),
+      ...(normalLayers ? [normalLayers] : []),
+      ...(mrLayers ? [mrLayers] : []),
+    ];
     const lod0 = geometries[0]!;
     if (!lod0.boundingBox) lod0.computeBoundingBox();
     const box = lod0.boundingBox!;

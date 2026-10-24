@@ -103,8 +103,14 @@ export const UNIT_RADIUS = 1.0; // culling sphere around a unit's chest, meters
  */
 export const UNIT_SHADOW_RADIUS = 3.2;
 
-/** Blob strength under a unit when the real shadow is on: a contact darkening, not a second shadow. */
-export const BLOB_WITH_SHADOW = 0.45;
+/**
+ * Blob strength under a unit when the real shadow is on: not a second cast shadow but the ambient occlusion in the
+ * dirt the boots stand in, which the shadow map cannot give (its caster is the sun, and at 40 degrees the shadow
+ * falls two meters away from the feet). It was 0.45, which came out at 19 % black over a mottled terrain and was
+ * invisible from the RTS camera: a unit stood on nothing. The decal's own profile caps it at 0.42, so this is a
+ * ~38 % dark pool, full out to 0.12 m from the pivot and gone by 0.4 m.
+ */
+export const BLOB_WITH_SHADOW = 0.9;
 
 export const SELECTED = ENTITY_FLAG.selected;
 

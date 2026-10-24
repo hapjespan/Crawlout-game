@@ -73,6 +73,12 @@ export function assetConfig(
   localAssets: LocalAssets | null = null,
 ): UnitAssetConfig | undefined {
   const unit = params.get('unit');
+  // ?teammask=none|materialName|diffuseAlpha|auto overrides the manifest for every character: a way to see whether a
+  // model's alpha really carries a team mask or just the opacity the artist painted.
+  const maskParam = params.get('teammask');
+  const teamMask = (['none', 'materialName', 'diffuseAlpha', 'auto'] as const).find(
+    (m) => m === maskParam,
+  );
   const repoUrl = assetFiles[`${ASSET_DIR}manifest.json`];
   const local = localAssets?.localManifests[`${localAssets.LOCAL_DIR}manifest.json`] as
     ManifestLike | undefined;
@@ -82,6 +88,7 @@ export function assetConfig(
       manifestUrl: repoUrl,
       resolveUrl: (path) => assetFiles[ASSET_DIR + path] ?? path,
       ...(unit ? { defaultUnit: unit } : {}),
+      ...(teamMask ? { teamMask } : {}),
     };
   }
   const merged = mergeManifests(
@@ -99,6 +106,7 @@ export function assetConfig(
         ? (localAssets?.localFiles[localAssets.LOCAL_DIR + path.slice(LOCAL_PREFIX.length)] ?? path)
         : (assetFiles[ASSET_DIR + path] ?? path),
     ...(unit ? { defaultUnit: unit } : {}),
+    ...(teamMask ? { teamMask } : {}),
     ...(Object.keys(bind).length > 0 ? { bind } : {}),
   };
 }

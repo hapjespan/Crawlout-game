@@ -40,6 +40,21 @@ export interface ToonLighting {
 export interface UnitAlbedo {
   /** Diffuse atlas, sampled with the uv attribute. */
   map?: Texture | null;
+  /**
+   * Diffuse texture array of a character asset (one layer per source material), sampled with the uvl attribute
+   * (u, v, layer; layer < 0 reads white). Wins over `map`. See units/gltfUnitGeometry.ts.
+   */
+  layers?: Texture | null;
+  /**
+   * Tangent-space normal maps on the same layer indices as `layers`, linear (units/unitAssetLoader.ts). A material
+   * without one has a flat (0.5, 0.5, 1) layer, so the array is either absent or complete.
+   */
+  normalLayers?: Texture | null;
+  /**
+   * glTF metallicRoughness maps (G roughness, B metalness) on the same layer indices, linear. A material without
+   * one has a flat layer holding its own roughnessFactor and metallicFactor.
+   */
+  mrLayers?: Texture | null;
   /** Team mask from the atlas alpha (per texel) on top of the vertex color alpha. */
   maskFromMapAlpha?: boolean;
   /** Mean luminance of the albedo under the team mask (gltfUnitGeometry.ts teamPivot); see teamAlbedo. */
@@ -109,6 +124,7 @@ export function toonLight(
   N: Node<'vec3'>,
   L: Node<'vec3'>,
   shadowFactor?: Node<'float'> | null,
+  ambientScale?: Node<'float'> | null,
 ): Node<'vec3'> {
   const b = TOON_BANDS;
   // The ramp's steps above the dark band, rescaled so dark + direct still reaches 1 on a fully lit face.
@@ -118,7 +134,10 @@ export function toonLight(
   const sun = shadowFactor ? direct.mul(shadowFactor) : direct;
   const up = clamp(N.y.mul(0.5).add(0.5), 0, 1);
   const hemi = mix(vec3(...HEMI_GROUND), vec3(...HEMI_SKY), up);
-  return hemi.mul(AMBIENT_BAND).add(vec3(...SUN_COLOR).mul(sun));
+  // `ambientScale` (look/groundAo.ts) occludes the fill where the ground blocks the sky; the sun keeps its own
+  // occlusion, the shadow map.
+  const fill = ambientScale ? hemi.mul(AMBIENT_BAND).mul(ambientScale) : hemi.mul(AMBIENT_BAND);
+  return fill.add(vec3(...SUN_COLOR).mul(sun));
 }
 
 /**
@@ -129,24 +148,37 @@ export function toonLight(
 export const AMBIENT_BAND = 0.4;
 
 /**
- * Rimlight. The silhouette test runs on the horizontal parts of N and V: the RTS camera looks down 50 to 74 degrees,
- * so in 3D the N.V of a wall that faces the camera is at most cos(pitch) (0.28 to 0.64) and every side surface of a
- * unit or building lit up as rim (the white sheen over coats and walls). In the ground plane a surface facing the
- * camera reads 1 at any pitch and only the screen-space silhouette (beyond ~75 degrees) gets the rim. Surfaces that
- * face mostly up or down (|N.xz| small) get none.
- * The rim adds RIM.floor + RIM.albedo * albedo instead of a fixed white: a dark coat gets a thin light edge, not a
- * white band (0.22 linear on a 0.03 albedo was seven times the lit color). Full on the lit side, RIM.shadeSide on the
- * side away from the light.
+ * Rim and back light. The silhouette test runs on the horizontal parts of N and V: the RTS camera looks down 50 to 74
+ * degrees, so in 3D the N.V of a wall that faces the camera is at most cos(pitch) (0.28 to 0.64) and every side
+ * surface of a unit or building lit up as rim (the white sheen over coats and walls). In the ground plane a surface
+ * facing the camera reads 1 at any pitch and only the screen-space silhouette (beyond ~73 degrees) gets the rim.
+ * Surfaces that face mostly up or down (|N.xz| small) get none.
+ *
+ * What the band adds is RIM.color * RIM.light (a light of its own, pale and cool against the warm haze) plus
+ * RIM.floor + RIM.albedo * albedo (a share of the surface's own colour, so a bright jacket keeps its hue in the
+ * edge). The light term is the part that matters: the Klerk's coat is linear 0.022 and anything multiplied by that
+ * albedo stays invisible, which is exactly why the model sank into the background. It is not a white band either:
+ * the term is narrow (the silhouette only) and ACES rolls it to a mid grey-blue edge.
+ *
+ * It is a back light, so it is strongest where the sun is not: on the side turned away from the sun it is full, on
+ * the sunlit side it drops to RIM.sunSide. That is the side that needed separating - a unit's shaded half against a
+ * grey, foggy wasteland. It is not multiplied by the shadow map either: this light comes from the sky, and the sun's
+ * shadow does not block the sky.
  */
 export const RIM = {
-  from: 0.72,
-  to: 0.92,
+  from: 0.68,
+  to: 0.88,
   /** |N.xz| range over which a surface counts as a side (0: faces straight up or down). */
   sideFrom: 0.25,
   sideTo: 0.6,
   floor: 0.035,
   albedo: 0.45,
-  shadeSide: 0.4,
+  /** Linear rgb of the back light: the pale, cool top of the sky, against the warm dust of the key. */
+  color: [0.58, 0.7, 0.95] as const,
+  /** Brightness of the albedo-independent part of the rim. */
+  light: 0.35,
+  /** What is left of the rim on the sun's own side (1 would be a flat outline all the way round). */
+  sunSide: 0.35,
 } as const;
 
 function smoothstepCpu(a: number, b: number, x: number): number {
@@ -164,6 +196,18 @@ export function silhouetteEdge(n: readonly number[], v: readonly number[]): numb
   );
 }
 
+/** CPU form of the back-light weight for a surface's N.L (1 away from the sun, RIM.sunSide towards it). */
+export function rimBackWeight(ndl: number): number {
+  return 1 - (1 - RIM.sunSide) * smoothstepCpu(0.35, 0.65, ndl * 0.5 + 0.5);
+}
+
+/** CPU form of what the rim adds on a full silhouette, per channel, for an albedo channel value. */
+export function rimAddAt(albedo: number, ndl: number): [number, number, number] {
+  const base = albedo * RIM.albedo + RIM.floor;
+  const w = rimBackWeight(ndl);
+  return [0, 1, 2].map((c) => (base + RIM.color[c]! * RIM.light) * w) as [number, number, number];
+}
+
 export function rimLight(
   N: Node<'vec3'>,
   V: Node<'vec3'>,
@@ -177,12 +221,16 @@ export function rimLight(
   const edge = smoothstep(RIM.from, RIM.to, float(1).sub(facing)).mul(
     smoothstep(RIM.sideFrom, RIM.sideTo, nLen),
   );
-  const lit = mix(
-    float(RIM.shadeSide),
+  const back = mix(
     float(1),
+    float(RIM.sunSide),
     smoothstep(0.35, 0.65, dot(N, L).mul(0.5).add(0.5)),
   );
-  return albedo.mul(RIM.albedo).add(RIM.floor).mul(edge.mul(lit));
+  return albedo
+    .mul(RIM.albedo)
+    .add(RIM.floor)
+    .add(vec3(...RIM.color).mul(RIM.light))
+    .mul(edge.mul(back));
 }
 
 /** Luminance weights (linear Rec. 709). */
@@ -197,6 +245,15 @@ const LUMA = [0.2126, 0.7152, 0.0722] as const;
  * base (a blue jumpsuit masked by hue) is not tinted twice.
  */
 export const TEAM = { min: 0.3, max: 1.6, gain: 0.85 } as const;
+
+/**
+ * The team mask out of a diffuse alpha (manifest `teamMask: diffuseAlpha`). The artist brief says 1 is team colour,
+ * but a hand-painted map has a tail of part-transparent texels around the patch and over the rest of the sheet: on
+ * the Klerk's coat 3.2 % of the texels sit at alpha 1 and another 3.3 % somewhere between, so taking the alpha as the
+ * blend directly painted as much haze over the coat as there was patch. The mask is the alpha through this edge, so
+ * only what the artist meant as team takes the colour and the patch keeps a soft border.
+ */
+export const TEAM_ALPHA = { from: 0.55, to: 0.9 } as const;
 
 /** CPU form of the team shade factor (same constants), for tests and tuning. */
 export function teamShade(luma: number, pivot: number): number {

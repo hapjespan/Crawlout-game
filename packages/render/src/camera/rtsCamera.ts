@@ -64,6 +64,19 @@ export function maxDistanceFor(bounds: RtsCameraBounds | null): number {
   return Math.max(BASE_MAX_DISTANCE, side * MAX_DISTANCE_PER_SIDE);
 }
 
+/** A fixed view for RtsCameraController.park: the point it looks at (meters), the heading and the zoom. */
+export interface ParkedView {
+  x: number;
+  y: number;
+  z: number;
+  /** Heading in radians, as `yaw`. */
+  yaw: number;
+  /** Orbit distance in meters; the zoom minimum does not apply. */
+  distance: number;
+  /** Degrees above the horizon; without it the normal distance curve. */
+  pitchDeg?: number;
+}
+
 export class RtsCameraController {
   /** Ground point the camera looks at, meters. */
   readonly target = { x: 64, y: 0, z: 64 };
@@ -83,6 +96,7 @@ export class RtsCameraController {
   private rotating = false;
   private readonly heightAt: (x: number, z: number) => number;
   private readonly cleanup: (() => void)[] = [];
+  private parked: ParkedView | null = null;
 
   constructor(
     readonly camera: PerspectiveCamera,
@@ -207,6 +221,11 @@ export class RtsCameraController {
     this.keys.delete(e.code);
   }
 
+  /** Terrain height the camera follows at a ground point, meters (0 before a terrain is set). */
+  groundAt(x: number, z: number): number {
+    return this.heightAt(x, z);
+  }
+
   /** Centers the camera on a ground point in meters. */
   focus(x: number, z: number): void {
     this.target.x = x;
@@ -216,6 +235,7 @@ export class RtsCameraController {
 
   /** Advances the camera by dt seconds of input. */
   update(dt: number): void {
+    if (this.parked) return this.apply();
     dt = Math.min(dt, 0.1);
     let px = 0;
     let pz = 0;
@@ -260,6 +280,22 @@ export class RtsCameraController {
     this.apply();
   }
 
+  /**
+   * Parks the camera on a fixed view and keeps it there: the zoom minimum, the pitch curve and the lerp towards the
+   * ground are ignored while it is parked, so the same frame comes back every time. For screenshots of one asset
+   * (render/dev closeup.ts); `park(null)` hands the camera back to the player.
+   */
+  park(view: ParkedView | null): void {
+    this.parked = view;
+    if (!view) return;
+    this.target.x = view.x;
+    this.target.y = view.y;
+    this.target.z = view.z;
+    this.yaw = view.yaw;
+    this.distance = this.targetDistance = view.distance;
+    this.apply();
+  }
+
   private clampTarget(): void {
     const b = this.bounds;
     if (!b) return;
@@ -285,6 +321,7 @@ export class RtsCameraController {
    * on to 74 at the furthest zoom of a large map, so the overview looks down on it.
    */
   pitchDegrees(): number {
+    if (this.parked?.pitchDeg !== undefined) return this.parked.pitchDeg;
     const ref = Math.min(BASE_MAX_DISTANCE, this.maxZoom);
     const start = Math.min(PITCH_CURVE_START, this.minDistance);
     const t = (this.distance - start) / Math.max(1e-6, ref - start);

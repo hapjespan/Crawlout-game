@@ -44,6 +44,14 @@ export interface UnitAssetStatus {
   triangles?: [number, number, number];
   /** Where the team mask came from when ready (an 'auto' request resolved to the atlas alpha or the material names). */
   teamMask?: Exclude<TeamMaskSource, 'auto'>;
+  /**
+   * Diffuse texture layers and their edge in pixels (one layer per source material). The GPU holds
+   * layers * size * size * 4 bytes plus a third for the mip chain, so this is what a character costs in memory:
+   * drop UnitAssetLoadOptions.layerSize when it adds up.
+   */
+  layers?: { count: number; size: number };
+  /** How many of those layers carry a real normal map and a real metallicRoughness map (the rest are flat defaults). */
+  maps?: { normal: number; mr: number };
 }
 
 export interface LoadoutVisuals {
@@ -187,6 +195,9 @@ export class UnitAssetRegistry {
             lods: [lod0.geometry, asset.lods[1].geometry, asset.lods[2].geometry],
             albedo: {
               map: lod0.map,
+              layers: asset.layers,
+              normalLayers: asset.normalLayers,
+              mrLayers: asset.mrLayers,
               maskFromMapAlpha: lod0.teamMask === 'diffuseAlpha',
               teamPivot: lod0.teamPivot,
               gain: this.opts.albedoGain?.(assetId) ?? asset.entry.albedoGain ?? 1,
@@ -202,9 +213,11 @@ export class UnitAssetRegistry {
           status.state = 'ready';
           status.teamMask = lod0.teamMask;
           status.triangles = [lod0.triangles, asset.lods[1].triangles, asset.lods[2].triangles];
-          if (lod0.textureCount > 1)
+          status.layers = { count: lod0.textureCount, size: asset.layerSize };
+          status.maps = asset.mapCounts;
+          if (asset.missingLayers.length > 0)
             this.opts.warn?.(
-              `unit asset "${assetId}": ${lod0.textureCount} diffuse textures, only the first is used (one atlas per draw)`,
+              `unit asset "${assetId}": ${asset.missingLayers.length} diffuse texture(s) could not be read and draw white (${asset.missingLayers.join(', ')})`,
             );
           return rigIndex;
         });

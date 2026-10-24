@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { DataTexture, Scene, Vector3 } from 'three/webgpu';
+import { GROUND_AO, groundOcclusionAt } from '../look/groundAo.js';
 import { createPropMaterial } from '../structures/propMaterial.js';
 import { bakeAnimations } from './bake.js';
 import { createHumanoidGeometry } from './humanoidGeometry.js';
@@ -7,6 +8,8 @@ import { UNIT_ATLAS_ANISOTROPY, UnitLayer } from './unitLayer.js';
 import {
   createUnitMaterial,
   RIM,
+  rimAddAt,
+  rimBackWeight,
   SKY_FILL,
   silhouetteEdge,
   skyFillAt,
@@ -61,12 +64,37 @@ describe('unit shading', () => {
     }
   });
 
-  it('bounds what the rim adds: a thin light edge on a dark coat, never a white band', () => {
-    // Old: a fixed 0.22 linear white, seven times the lit color of a 0.03 albedo.
-    const dark = RIM.floor + RIM.albedo * 0.03;
-    expect(dark).toBeLessThan(0.06);
-    expect(RIM.floor + RIM.albedo * 1).toBeLessThan(0.5);
-    expect(RIM.shadeSide).toBeLessThan(1);
+  it('gives a black coat a rim of its own, cool, and strongest away from the sun', () => {
+    // The Klerk's coat is linear 0.022: a rim made of albedo alone (the former RIM.floor + RIM.albedo * c) is
+    // invisible on it, which is why the model sank into the haze.
+    const coat = 0.022;
+    const fromAlbedo = RIM.floor + RIM.albedo * coat;
+    expect(fromAlbedo).toBeLessThan(0.05);
+    const away = rimAddAt(coat, -1); // silhouette on the side turned away from the sun
+    expect(Math.max(...away)).toBeGreaterThan(8 * coat); // reads as an edge, not as coat
+    expect(away[2]).toBeGreaterThan(away[0]!); // cool against the warm haze
+    // Still bounded: on a white surface the full silhouette stays under 1, so it tone-maps instead of clipping.
+    expect(Math.max(...rimAddAt(1, -1))).toBeLessThan(1);
+    // Back light: the sunlit side keeps only RIM.sunSide of it.
+    const towards = rimAddAt(coat, 1);
+    expect(towards[1]! / away[1]!).toBeCloseTo(RIM.sunSide, 6);
+    expect(RIM.sunSide).toBeLessThan(1);
+    expect(rimBackWeight(0)).toBeCloseTo(1 - (1 - RIM.sunSide) * 0.5, 6);
+  });
+
+  it('occludes the ambient at the ground and lets it back by the knee', () => {
+    expect(groundOcclusionAt(0)).toBeCloseTo(GROUND_AO.floor, 6);
+    expect(groundOcclusionAt(GROUND_AO.height)).toBeCloseTo(1, 6);
+    expect(groundOcclusionAt(10)).toBeCloseTo(1, 6); // clamped, a head is not brighter than full
+    // Boot (5 cm) clearly dark, calf (20 cm) halfway back, and monotone in between.
+    expect(groundOcclusionAt(0.05)).toBeLessThan(0.6);
+    expect(groundOcclusionAt(0.2)).toBeGreaterThan(groundOcclusionAt(0.05));
+    expect(groundOcclusionAt(0.2)).toBeLessThan(0.85);
+    for (let h = 0; h < 0.8; h += 0.05)
+      expect(groundOcclusionAt(h + 0.05)).toBeGreaterThanOrEqual(groundOcclusionAt(h));
+    // It darkens, never brightens: a lit boot may not end up brighter than the same cloth at the waist.
+    expect(GROUND_AO.floor).toBeGreaterThan(0);
+    expect(GROUND_AO.floor).toBeLessThan(1);
   });
 
   it('keeps the texture contrast under the team mask, and the pure team color on a flat base', () => {

@@ -19,24 +19,26 @@ describe('ScreenLod', () => {
     expect(s.pixels(1.8, 42)).toBeCloseTo((1.8 * s.pxPerMeter) / 42, 6);
   });
 
-  it('keeps a unit on LOD 0 at the default RTS distance on a 900 px DPR 2 view, LOD 1 at DPR 1', () => {
+  it('keeps a unit on LOD 0 at the default RTS distance on a DPR 1 view as well as DPR 2', () => {
     expect(lodAt(1800).lod(1.8, 42, UNIT_LOD_PX)).toBe(0);
-    expect(lodAt(900).lod(1.8, 42, UNIT_LOD_PX)).toBe(1);
-    expect(lodAt(1800).lod(1.8, 200, UNIT_LOD_PX)).toBe(2);
+    expect(lodAt(900).lod(1.8, 42, UNIT_LOD_PX)).toBe(0);
+    // The furthest zoom of a large map still has the full mesh at DPR 2; the coarsest LOD is for the overview.
+    expect(lodAt(1800).lod(1.8, 120, UNIT_LOD_PX)).toBe(0);
+    expect(lodAt(1800).lod(1.8, 400, UNIT_LOD_PX)).toBe(2);
   });
 
   it('switches at the documented distances (1800 px, fov 45)', () => {
     const s = lodAt(1800);
-    expect(switchAt(s, 1.8, UNIT_LOD_PX.lod1)).toBeCloseTo(54.3, 0);
-    expect(switchAt(s, 1.8, UNIT_LOD_PX.lod2)).toBeCloseTo(130.4, 0);
-    expect(switchAt(s, 3.8, BUILDING_LOD_PX.lod1)).toBeCloseTo(59, 0);
-    expect(switchAt(s, 5, PROP_LOD_PX.lod1)).toBeCloseTo(90.5, 0);
+    expect(switchAt(s, 1.8, UNIT_LOD_PX.lod1)).toBeCloseTo(130, 0);
+    expect(switchAt(s, 1.8, UNIT_LOD_PX.lod2)).toBeCloseTo(301, 0);
+    expect(switchAt(s, 3.8, BUILDING_LOD_PX.lod1)).toBeCloseTo(142, 0);
+    expect(switchAt(s, 5, PROP_LOD_PX.lod1)).toBeCloseTo(217, 0);
   });
 
   it('gives a bigger object its detail further out, and a narrower fov too', () => {
     const s = lodAt(1800);
-    expect(s.lod(9.2, 120, BUILDING_LOD_PX)).toBe(0);
-    expect(s.lod(1.8, 120, BUILDING_LOD_PX)).toBe(2);
-    expect(lodAt(1800, 20).lod(1.8, 100, UNIT_LOD_PX)).toBe(0);
+    expect(s.lod(9.2, 300, BUILDING_LOD_PX)).toBe(0);
+    expect(s.lod(1.8, 300, BUILDING_LOD_PX)).toBe(2);
+    expect(lodAt(1800, 20).lod(1.8, 300, UNIT_LOD_PX)).toBe(0);
   });
 });

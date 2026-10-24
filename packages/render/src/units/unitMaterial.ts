@@ -11,9 +11,11 @@
 // the team mask from the color alpha or, for 'diffuseAlpha' assets, from the atlas alpha; uv = (-1, -1) marks a
 // primitive without the atlas (reads white). Vertex skinning reads 4 influences, blends two adjacent frames, then
 // rotates by yaw.
-// Shading: 3-step toon ramp (soft band edges) plus a small sky fill, rimlight on the screen silhouette, team color
+// Shading: 3-step toon ramp (soft band edges) plus a small sky fill, a rim/back light on the screen silhouette
+// (unitMaterial.part1.ts RIM: its own pale cool colour, strongest on the side away from the sun), ground contact
+// occlusion on everything ambient (look/groundAo.ts: the terrain blocks the lower sky, so the boots go dark), team color
 // through the team mask (vertex alpha or, per texel, the atlas alpha) relative to the albedo's mean under the mask.
-// No PBR. The base is clothing (cloth surface of look/surfaces.ts): grain and dust at the boots from the shared
+// Normal and metallic-roughness on top of the ramp (look/pbrDetail.ts). The base is clothing (cloth surface of look/surfaces.ts): grain and dust at the boots from the shared
 // weathering, then the shared world grade (look/grade.ts), the team color itself only lightly graded so it stays the
 // one saturated accent on a dusty unit.
 // Hero (typeId 1000 + heroId): the unit layer adds HERO_INSTANCE_FLAG to the flags in iAnim.w. A hero is drawn
@@ -33,6 +35,8 @@ export {
   AMBIENT_BAND,
   RIM,
   silhouetteEdge,
+  rimBackWeight,
+  rimAddAt,
   rimLight,
   TEAM,
   teamShade,

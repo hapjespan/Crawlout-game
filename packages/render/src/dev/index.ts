@@ -21,6 +21,12 @@ export {
   type FoliageWorld,
 } from './foliageAssets.js';
 export {
+  closeup,
+  type CloseupOptions,
+  type CloseupPoint,
+  type CloseupView,
+} from './closeup.js';
+export {
   syntheticRobots,
   SYNTHETIC_ROBOT_TYPE_IDS,
   type SyntheticRobot,

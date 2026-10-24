@@ -33,6 +33,14 @@ export const NO_LAYER = -1;
 interface MaterialLike extends Material {
   color?: Color;
   map?: Texture | null;
+  /** glTF normalTexture; GLTFLoader puts it here. Same uv set and size as `map` (asset-cli contract). */
+  normalMap?: Texture | null;
+  /** glTF metallicRoughnessTexture; GLTFLoader points both of these at the same texture. */
+  roughnessMap?: Texture | null;
+  metalnessMap?: Texture | null;
+  /** glTF roughnessFactor / metallicFactor; the fallback when the material has no metallicRoughnessTexture. */
+  roughness?: number;
+  metalness?: number;
 }
 
 /** Image sources the texture array is built from; the image is whatever the GLB loader produced (ImageBitmap etc.). */
@@ -44,6 +52,26 @@ export interface TextureLayer {
   /** Pixels of `image` (0 when the loader produced no image). */
   width: number;
   height: number;
+  /**
+   * Tangent-space normal map of the same material, or null. It shares the uv set and the dimensions of `image`
+   * (asset-cli contract), so one layer index addresses the base colour, the normal and the metallic-roughness array.
+   */
+  normalImage?: unknown;
+  /** glTF metallicRoughness map (G = roughness, B = metalness), or null. */
+  mrImage?: unknown;
+  /** Material factors; the fill of the metallic-roughness layer when the material has no map for them. */
+  roughness?: number;
+  metalness?: number;
+}
+
+/** Which of a layer's maps `createLayerTexture` builds an array from. */
+export type LayerMapKind = 'base' | 'normal' | 'mr';
+
+/** The image of a layer for one map kind (null when the material has none). */
+export function layerImage(layer: TextureLayer, kind: LayerMapKind): unknown {
+  if (kind === 'normal') return layer.normalImage ?? null;
+  if (kind === 'mr') return layer.mrImage ?? null;
+  return layer.image;
 }
 
 function imageSize(image: unknown): [number, number] {
@@ -65,9 +93,25 @@ export class TextureLayerTable {
     const key = material.name || `texture:${map.uuid}`;
     const image: unknown = map.image ?? null;
     const [width, height] = imageSize(image);
+    // The normal and metallicRoughness maps ride along on the same layer index (same uv set, same size).
+    const normalImage: unknown = material.normalMap?.image ?? null;
+    const mrImage: unknown = (material.roughnessMap ?? material.metalnessMap)?.image ?? null;
+    const roughness = typeof material.roughness === 'number' ? material.roughness : 1;
+    const metalness = typeof material.metalness === 'number' ? material.metalness : 0;
     let index = this.byKey.get(key);
     if (index === undefined) {
-      index = this.layers.push({ key, kind: surfaceKindOfMaterial(key), image, width, height }) - 1;
+      index =
+        this.layers.push({
+          key,
+          kind: surfaceKindOfMaterial(key),
+          image,
+          width,
+          height,
+          normalImage,
+          mrImage,
+          roughness,
+          metalness,
+        }) - 1;
       this.byKey.set(key, index);
     } else {
       const layer = this.layers[index]!;
@@ -75,9 +119,22 @@ export class TextureLayerTable {
         layer.image = image;
         layer.width = width;
         layer.height = height;
+        layer.normalImage = normalImage;
+        layer.mrImage = mrImage;
+        layer.roughness = roughness;
+        layer.metalness = metalness;
+      } else {
+        // A lighter LOD may carry a map the largest one lacks; never drop one that is already there.
+        layer.normalImage ??= normalImage;
+        layer.mrImage ??= mrImage;
       }
     }
     return index;
+  }
+
+  /** True when at least one layer carries a map of this kind. */
+  has(kind: LayerMapKind): boolean {
+    return this.layers.some((l) => layerImage(l, kind) !== null);
   }
 
   get size(): number {

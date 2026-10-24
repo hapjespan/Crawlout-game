@@ -41,6 +41,18 @@ describe('world grade', () => {
     expect(GRADE.saturation).toBeLessThan(1);
   });
 
+  it('scales a dark albedo instead of dragging it towards black', () => {
+    // The Klerk's coat: sRGB (44, 25, 14), the darkest large surface in the game. The old straight-line contrast
+    // (pivot + (c - pivot) * contrast) returned 0.0131 for its red, less than half of it, and the whole coat read
+    // as black whatever its texture said.
+    const coat: [number, number, number] = [0.0265, 0.0097, 0.0048];
+    const line = GRADE.pivot + (coat[0] - GRADE.pivot) * GRADE.contrast;
+    const graded = gradeRgb(coat);
+    expect(line / coat[0]).toBeLessThan(0.55); // what the straight line did
+    expect(graded[0] / coat[0]).toBeGreaterThan(0.75); // what the log curve does
+    expect(graded[0]).toBeLessThan(coat[0]); // still darkened: the grade still adds contrast
+  });
+
   it('never goes negative', () => {
     for (const c of [
       [0, 0, 0],

@@ -29,7 +29,8 @@
 // drones (0.8 m, floating 1.35 m up) and sentinels (3.5 m), drawn by the rigid-unit layer with its procedural animation
 // from the anim fields; the heroes stay humanoid, ?nohero removes them. ?robots=<n> sets the share of drones (0..9 of 10);
 // ?robots=real draws the robots of assets/dist (dweller_robot_guard, _drone, _sentinel) instead of the synthetic ones.
-import { PROVIDES, unitTypeId } from '@crawlout/data';
+// ?unitdebug=normal|mr|albedo|spec|rim|ao dumps one input of the unit shading to the screen (unitMaterial.part2.ts).
+import { PROVIDES } from '@crawlout/data';
 import { MAX_ENTITIES, TICK_MS, UNITS_PER_METER } from '@crawlout/protocol';
 import {
   buildingTypeId,
@@ -38,12 +39,14 @@ import {
   type PlacementPreview,
 } from '@crawlout/render';
 import {
+  closeup,
   createGridTerrain,
   FakeSnapshotSource,
   foliageProps,
   foliagePropSource,
   syntheticRobots,
   SYNTHETIC_ROBOT_TYPE_IDS,
+  type CloseupOptions,
 } from '@crawlout/render/dev';
 import { assetConfig } from '../game/assets.js';
 import { lodPixelsParam } from './lodParams.js';
@@ -56,69 +59,27 @@ import { terrainTextures } from './terrain.js';
 import { albedoLayoutForMap, rockDemoAlbedoLayout, xlDemoAlbedoLayout } from './terrainLayout.js';
 import { xlWorld, type XlWorld } from './xlWorld.js';
 
-const WORLD = 128;
-const PLAYER = 0;
-/** Greybox color of a river bed cell in the XL demo (sRGB bytes), darker and wetter than the sand. */
-const MUD = [104, 94, 76] as const;
-
-function wastelandHeight(x: number, z: number): number {
-  return (
-    1.4 * Math.sin(x * 0.05) * Math.cos(z * 0.043) +
-    0.6 * Math.sin(x * 0.13 + 1.7) * Math.sin(z * 0.11 + 0.4) +
-    0.25 * Math.sin((x + z) * 0.31)
-  );
-}
-
-function wastelandColor(x: number, z: number, y: number): readonly [number, number, number] {
-  const n =
-    0.5 + 0.5 * Math.sin(x * 0.21 + Math.sin(z * 0.17) * 2.1) * Math.cos(z * 0.19 - x * 0.07);
-  const low = Math.max(0, Math.min(1, (y + 2) / 4));
-  const r = 0.46 + 0.16 * n + 0.08 * low;
-  const g = 0.4 + 0.12 * n + 0.06 * low;
-  const b = 0.3 + 0.06 * n;
-  return [r, g, b];
-}
-
-/** Unit typeIds for ?loadouts=: a faction ('raiders', 'dwellers'), 'mix' (both) or comma-separated loadout keys. */
-function loadoutTypes(
-  loadouts: readonly { id: number; key: string; visuals: { meshSlots: Record<string, string> } }[],
-  factionOf: (id: number) => string,
-  spec: string,
-): number[] {
-  const human = (l: (typeof loadouts)[number]): boolean =>
-    /_body_(human|slave)$/.test(l.visuals.meshSlots.body ?? '');
-  const keys = spec.split(',');
-  const pick = loadouts.filter(
-    (l) => human(l) && (spec === 'mix' || keys.includes(l.key) || keys.includes(factionOf(l.id))),
-  );
-  return pick.map((l) => unitTypeId(l.id));
-}
-
-/** Ten unit types in a row with `drones` repair drones, one sentinel and the rest security robots. */
-function robotMix(drones: number): number[] {
-  const { guard, drone, sentinel } = SYNTHETIC_ROBOT_TYPE_IDS;
-  const d = Math.min(9, Math.max(0, drones));
-  return [sentinel, ...Array.from({ length: 9 }, (_, i) => (i < d ? drone : guard))];
-}
-
-function showError(message: string): void {
-  const el = document.getElementById('error');
-  if (!el) return;
-  el.textContent = message;
-  el.style.display = 'grid';
-}
-
-function intParam(params: URLSearchParams, name: string, fallback: number, max: number): number {
-  const raw = params.get(name);
-  const v = raw === null ? fallback : Number(raw);
-  return Number.isFinite(v) ? Math.max(0, Math.min(max, Math.round(v))) : fallback;
-}
+import {
+  MUD,
+  PLAYER,
+  WORLD,
+  intParam,
+  loadoutTypes,
+  robotMix,
+  showError,
+  wastelandColor,
+  wastelandHeight,
+} from './demo.part1.js';
 
 async function main(): Promise<void> {
   const canvas = document.getElementById('view') as HTMLCanvasElement | null;
   const marquee = document.getElementById('marquee') as HTMLDivElement | null;
   if (!canvas || !marquee) return;
   const params = new URLSearchParams(location.search);
+  // ?unitdebug=normal|mr|albedo|spec|rim|ao dumps one input of the unit shading to the screen. It has to be set
+  // before the materials are built, and a reload clears a value typed into the console, so it lives in the url.
+  const unitDebug = params.get('unitdebug');
+  if (unitDebug) (globalThis as { crawloutUnitDebug?: string }).crawloutUnitDebug = unitDebug;
   const count = Math.max(1, intParam(params, 'n', 200, MAX_ENTITIES));
   const data = loadClientGameData();
   const footprint = (typeId: number) =>
@@ -424,6 +385,12 @@ async function main(): Promise<void> {
     crawloutRender: renderer,
     crawloutSource: source,
     crawloutBench: bench,
+    // crawloutCloseup({ index: 0, distance: 6 }): parks the camera on one unit of the fake snapshot, for
+    // before/after shots of an asset (render/dev closeup.ts).
+    crawloutCloseup: (opts: CloseupOptions & { index?: number } = {}) => {
+      const at = source.unitPosition(opts.index ?? 0);
+      return closeup(renderer.cameraControls, { ...(at ? { at } : {}), ...opts });
+    },
   });
   if (params.has('bench'))
     window.setTimeout(() => {

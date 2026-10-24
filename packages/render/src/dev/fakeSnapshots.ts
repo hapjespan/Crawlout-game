@@ -107,6 +107,12 @@ export class FakeSnapshotSource {
     this.placeStructures(opts);
   }
 
+  /** Ground position of unit `i` in meters (the arrays are sim units); null outside the crowd. */
+  unitPosition(i: number): { x: number; z: number } | null {
+    if (i < 0 || i >= this.count) return null;
+    return { x: this.x[i]! / UNITS_PER_METER, z: this.y[i]! / UNITS_PER_METER };
+  }
+
   private rand(): number {
     let s = this.rng;
     s ^= s << 13;

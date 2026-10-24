@@ -15,10 +15,26 @@ export const GRADE = {
   saturation: 0.8,
   /** Rgb multiplier, luminance neutral (0.2126 * 1.05 + 0.7152 + 0.0722 * 0.9 = 1.0): warm, towards dust. */
   tint: [1.05, 1, 0.9] as const,
-  /** Contrast around `pivot` (linear), above 1 pushes darks and lights apart. */
+  /**
+   * Contrast around `pivot`, applied in log space: pivot * (c / pivot) ^ contrast. Above 1 it still pushes darks and
+   * lights apart, but as a ratio instead of a subtraction, so a dark albedo is scaled down, never dragged towards
+   * (or through) zero.
+   *
+   * It used to be the straight line pivot + (c - pivot) * contrast. On a mid tone the two agree to within a
+   * percent, but below the pivot the line falls away much faster than the colour does: the Klerk's coat is sRGB
+   * (44, 25, 14), linear 0.0265 in red, and the line returned 0.0131 - half of it gone before a single light hit
+   * it. The whole coat, 94 % of that character, read as near-black no matter what the texture said. The log form
+   * returns 0.0221 for the same input and keeps the shape of the curve everywhere above it.
+   */
   contrast: 1.1,
   pivot: 0.16,
 } as const;
+
+/** The contrast half of the grade (see GRADE.contrast), one channel, as a number. */
+function contrastCurve(c: number, contrast: number): number {
+  if (c <= 0) return 0;
+  return GRADE.pivot * (c / GRADE.pivot) ** contrast;
+}
 
 /** Share of the grade on the team color (units' masked region, flags): it should stay readable. */
 export const TEAM_GRADE = 0.35;
@@ -34,7 +50,7 @@ export function gradeRgb(
   return [0, 1, 2].map((c) => {
     const saturated = l + (rgb[c]! - l) * sat;
     const tinted = saturated * (1 + (GRADE.tint[c]! - 1) * strength);
-    return Math.max(0, GRADE.pivot + (tinted - GRADE.pivot) * contrast);
+    return contrastCurve(Math.max(0, tinted), contrast);
   }) as [number, number, number];
 }
 
@@ -49,5 +65,6 @@ export function worldGrade(
   const contrast = mix(1, GRADE.contrast, s);
   const saturated = mix(vec3(luma, luma, luma), color, sat);
   const tinted = saturated.mul(mix(vec3(1, 1, 1), vec3(...GRADE.tint), s));
-  return tinted.sub(GRADE.pivot).mul(contrast).add(GRADE.pivot).max(0);
+  // pivot * (c / pivot) ^ contrast; the max keeps pow() off a negative base and pure black at pure black.
+  return tinted.max(0).div(GRADE.pivot).pow(contrast).mul(GRADE.pivot);
 }
