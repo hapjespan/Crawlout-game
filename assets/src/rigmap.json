@@ -1,5 +1,5 @@
 {
-  "_comment": "Conform-config per bron-asset (sleutel = asset-id: bestandsnaam in kleine letters). rigs.<naam>.bones koppelt bronbones aan Mixamo-namen (hoofdletterongevoelig); bones die niet in de map staan (vingers, tenen, *_leaf, root) worden gesnoeid: hun gewichten gaan naar de dichtstbijzijnde behouden voorouder en daarna genormaliseerd, hun animatiekanalen vervallen. assets.<id>: rig (naam uit rigs), lod0Triangles (reduceer een te zware bron naar dit aantal; 3000 tot 4000 voor karakters), scale (uniforme schaal die in de vertices wordt gebakken, bijvoorbeeld 0.01 voor bronnen in centimeters). De bone-volgorde van de skin blijft die van de bron (minus gesnoeide bones).",
+  "_comment": "Conform-config per bron-asset (sleutel = asset-id: bestandsnaam in kleine letters). rigs.<naam>.bones koppelt bronbones aan Mixamo-namen (hoofdletterongevoelig); bones die niet in de map staan (vingers, tenen, *_leaf, root) worden gesnoeid: hun gewichten gaan naar de dichtstbijzijnde behouden voorouder en daarna genormaliseerd, hun animatiekanalen vervallen. assets.<id>: rig (naam uit rigs), lod0Triangles (reduceer een te zware bron naar dit aantal; het werkpunt voor karakters is 20.000, plafond 24.000 uit budgets.ts), scale (uniforme schaal die in de vertices wordt gebakken, bijvoorbeeld 0.01 voor bronnen in centimeters). De bone-volgorde van de skin blijft die van de bron (minus gesnoeide bones).",
   "rigs": {
     "quaternius-ual": {
       "bones": {
@@ -16,6 +16,7 @@
         "DEF-thigh.L": "LeftUpLeg",
         "DEF-shin.L": "LeftLeg",
         "DEF-foot.L": "LeftFoot",
+        "DEF-toe.L": "LeftToeBase",
         "DEF-shoulder.R": "RightShoulder",
         "DEF-upper_arm.R": "RightArm",
         "DEF-forearm.R": "RightForeArm",
@@ -23,6 +24,7 @@
         "DEF-thigh.R": "RightUpLeg",
         "DEF-shin.R": "RightLeg",
         "DEF-foot.R": "RightFoot",
+        "DEF-toe.R": "RightToeBase",
         "pelvis": "Hips",
         "spine_01": "Spine",
         "spine_02": "Spine1",
@@ -49,7 +51,7 @@
   "assets": {
     "dweller_body_human": {
       "rig": "quaternius-ual",
-      "lod0Triangles": 3600,
+      "lod0Triangles": 20000,
       "derive": [
         {
           "id": "raider_body_human",
