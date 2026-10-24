@@ -6394,5 +6394,77 @@
       "teamMask": "none",
       "category": "structure"
     }
-  ]
+  ],
+  "surfaces": {
+    "size": 256,
+    "metersPerTile": 2,
+    "tiles": [
+      {
+        "kind": "cloth",
+        "base": "surfaces/cloth.base.jpg",
+        "normal": "surfaces/cloth.normal.jpg",
+        "mr": "surfaces/cloth.mr.jpg"
+      },
+      {
+        "kind": "concrete",
+        "base": "surfaces/concrete.base.jpg",
+        "normal": "surfaces/concrete.normal.jpg",
+        "mr": "surfaces/concrete.mr.jpg"
+      },
+      {
+        "kind": "foliage",
+        "base": "surfaces/foliage.base.jpg",
+        "normal": "surfaces/foliage.normal.jpg",
+        "mr": "surfaces/foliage.mr.jpg"
+      },
+      {
+        "kind": "leather",
+        "base": "surfaces/leather.base.jpg",
+        "normal": "surfaces/leather.normal.jpg",
+        "mr": "surfaces/leather.mr.jpg"
+      },
+      {
+        "kind": "lens",
+        "base": "surfaces/lens.base.jpg",
+        "normal": "surfaces/lens.normal.jpg",
+        "mr": "surfaces/lens.mr.jpg"
+      },
+      {
+        "kind": "paintedMetal",
+        "base": "surfaces/paintedMetal.base.jpg",
+        "normal": "surfaces/paintedMetal.normal.jpg",
+        "mr": "surfaces/paintedMetal.mr.jpg"
+      },
+      {
+        "kind": "rock",
+        "base": "surfaces/rock.base.jpg",
+        "normal": "surfaces/rock.normal.jpg",
+        "mr": "surfaces/rock.mr.jpg"
+      },
+      {
+        "kind": "roofing",
+        "base": "surfaces/roofing.base.jpg",
+        "normal": "surfaces/roofing.normal.jpg",
+        "mr": "surfaces/roofing.mr.jpg"
+      },
+      {
+        "kind": "rustMetal",
+        "base": "surfaces/rustMetal.base.jpg",
+        "normal": "surfaces/rustMetal.normal.jpg",
+        "mr": "surfaces/rustMetal.mr.jpg"
+      },
+      {
+        "kind": "skin",
+        "base": "surfaces/skin.base.jpg",
+        "normal": "surfaces/skin.normal.jpg",
+        "mr": "surfaces/skin.mr.jpg"
+      },
+      {
+        "kind": "wood",
+        "base": "surfaces/wood.base.jpg",
+        "normal": "surfaces/wood.normal.jpg",
+        "mr": "surfaces/wood.mr.jpg"
+      }
+    ]
+  }
 }

@@ -21,11 +21,12 @@ import { textureCompress, dedup, prune, reorder, getBounds } from '@gltf-transfo
 import { EXTMeshoptCompression } from '@gltf-transform/extensions';
 import { createIO } from './lods.js';
 import { countTriangles, textureSizes } from './inspect.js';
-import type { AssetEntry } from './manifest.js';
+import { SURFACE_EXTRA, SURFACE_KINDS, type AssetEntry } from './manifest.js';
 import { readSplitJson } from './splitJson.js';
 import { join } from 'node:path';
 import {
   assemble,
+  GENERATED_TILE_LEVELS,
   buildingLodTargets,
   loadSourceHouse,
   placeHouse,
@@ -117,10 +118,14 @@ export async function finishBuildingLod(
 ): Promise<BuildingLod> {
   const size = BUDGETS.buildingTextureSizes[level];
   await MeshoptEncoder.ready;
+  // keepAttributes op de LOD's met een gedeelde oppervlaktetegel: zo'n materiaal heeft geen eigen textuur, dus prune
+  // ziet TEXCOORD_0 als ongebruikt en gooit hem weg - precies de UV waarmee render de tegel straks bemonstert.
+  // LOD2 heeft geen tegel en dus ook geen UV nodig; daar blijft prune opruimen.
+  const keepAttributes = GENERATED_TILE_LEVELS[level];
   await document.transform(
     textureCompress({ resize: [size, size], targetFormat: 'jpeg' }),
     dedup(),
-    prune({ keepSolidTextures: true }),
+    prune({ keepSolidTextures: true, keepAttributes }),
     reorder({ encoder: MeshoptEncoder }),
   );
   document
@@ -203,6 +208,23 @@ export function validateBuildingDocument(
       `${label}: materiaal-extensies gevonden (${extensions.join(', ')}); render leest alleen albedo, normal en metallic-roughness.`,
     );
   for (const material of root.listMaterials()) {
+    // Gedeelde oppervlaktetegel (src/surfaceTiles.ts): het materiaal noemt alleen zijn soort en draagt geen kaart.
+    // Render hangt de tegel er zelf op; een eigen kaart ernaast zou die stilletjes overschrijven.
+    const surface = (material.getExtras() as Record<string, unknown> | null)?.[SURFACE_EXTRA];
+    if (surface !== undefined) {
+      if (typeof surface !== 'string' || !(SURFACE_KINDS as readonly string[]).includes(surface))
+        errors.push(
+          `${label}: materiaal "${material.getName()}" heeft extras.${SURFACE_EXTRA} ${JSON.stringify(surface)}, geen bekende oppervlaktesoort.`,
+        );
+      if (
+        material.getBaseColorTexture() ||
+        material.getNormalTexture() ||
+        material.getMetallicRoughnessTexture()
+      )
+        errors.push(
+          `${label}: materiaal "${material.getName()}" gebruikt een gedeelde oppervlaktetegel en heeft daarnaast een eigen kaart.`,
+        );
+    }
     const unread = [
       material.getOcclusionTexture() && 'occlusie',
       material.getEmissiveTexture() && 'emissive',

@@ -13,7 +13,7 @@ import {
   type SourceHouse,
 } from '../src/buildings.js';
 import { createIO } from '../src/lods.js';
-import { manifestSchema } from '../src/manifest.js';
+import { manifestSchema, SURFACE_EXTRA, SURFACE_KINDS } from '../src/manifest.js';
 import { parseVariants, type HousePart, type VariantsConfig } from '../src/variants.js';
 import { config, deepCopy, ids, srcDir } from './buildings.helpers.js';
 
@@ -153,6 +153,40 @@ describe('gebouwen uit de generator', () => {
         }
       }
     }
+  });
+
+  // De gegenereerde reliefkaarten zitten niet meer in het GLB maar in een gedeeld tegelbestand (src/surfaceTiles.ts).
+  // Wat het GLB wel moet houden: de markering en de UV waarmee render de tegel bemonstert. Zonder `keepAttributes`
+  // gooit prune die UV weg zodra het materiaal geen eigen textuur meer heeft, en komt het gebouw vlak binnen.
+  it('markeert effen materialen met extras.surface en houdt hun UV, alleen op LOD0 en LOD1', async () => {
+    const io = createIO();
+    const marked: Record<number, number> = { 0: 0, 1: 0, 2: 0 };
+    for (const id of ids) {
+      for (const level of [0, 1, 2] as const) {
+        const document = await io.readBinary(built.outputs.get(`${id}/lod${level}.glb`)!);
+        for (const material of document.getRoot().listMaterials()) {
+          const kind = (material.getExtras() as Record<string, unknown>)[SURFACE_EXTRA];
+          if (kind === undefined) continue;
+          marked[level]!++;
+          expect(SURFACE_KINDS, `${id} LOD${level} ${material.getName()}`).toContain(kind);
+          // Geen eigen kaart, maar wel de UV: anders valt het materiaal bij render op laag -1 (vlak) terug.
+          expect(material.getBaseColorTexture()).toBeNull();
+          for (const primitive of document
+            .getRoot()
+            .listMeshes()
+            .flatMap((m) => m.listPrimitives()))
+            if (primitive.getMaterial() === material)
+              expect(
+                primitive.getAttribute('TEXCOORD_0'),
+                `${id} LOD${level} ${material.getName()} UV`,
+              ).not.toBeNull();
+        }
+      }
+    }
+    expect(marked[0]).toBeGreaterThan(0);
+    expect(marked[1]).toBeGreaterThan(0);
+    // LOD2 is de verre silhouet: effen kleur, geen tegel en dus ook geen UV die prune moet sparen.
+    expect(marked[2]).toBe(0);
   });
 
   // LOD1 stond op 512; de bron-textures zijn 1024, dus dat gooide driekwart van de texels weg op de afstand waar het

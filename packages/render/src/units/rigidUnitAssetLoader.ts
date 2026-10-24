@@ -13,12 +13,19 @@ import {
   DEFAULT_LAYER_SIZE,
   type Rasterize,
 } from '../structures/textureArray.js';
+import { applySurfaceTiles, type SurfaceTileSet } from '../look/surfaceTiles.js';
 import type { RigidAssetEntry } from './rigidUnitManifest.js';
 
 export interface RigidUnitLoadOptions {
   rasterize?: Rasterize;
   /** Cap on the texture-array layer edge (the GPU's max texture size, or less). Default DEFAULT_LAYER_SIZE. */
   maxLayerSize?: number;
+  /**
+   * The manifest's shared surface tiles (look/surfaceTiles.ts). A rigid unit entry is split off the manifest before
+   * the schema sees it (rigidUnitManifest.ts), so this loader cannot look them up itself: the caller passes them.
+   * Null or absent means the GLBs carry their own maps, which is what an older build does.
+   */
+  surfaces?: SurfaceTileSet | null;
 }
 
 export interface LoadedRigidAsset {
@@ -54,9 +61,11 @@ export async function loadRigidUnitAsset(
     }),
   );
   const table = new TextureLayerTable();
-  const built: BuildingMesh[] = scenes.map((scene) =>
-    buildingGeometryFromGltf(scene, { teamMaterials: entry.teamMaterials, layers: table }),
-  );
+  const built: BuildingMesh[] = scenes.map((scene) => {
+    // Before the layer table: it reads the image size to pick a layer and to rescale the uv for texel density.
+    applySurfaceTiles(scene, opts.surfaces ?? null);
+    return buildingGeometryFromGltf(scene, { teamMaterials: entry.teamMaterials, layers: table });
+  });
   // Identical LODs share one geometry: the same path, or the same triangle count as the LOD before.
   const geos: BufferGeometry[] = [];
   built.forEach((b, i) => {

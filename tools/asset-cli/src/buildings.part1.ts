@@ -32,7 +32,8 @@ import {
   makeSphere,
 } from './shapes.js';
 import { withUv } from './uvmap.js';
-import { surfaceKindOfName, surfaceMaps } from './surfaceTex.js';
+import { surfaceKindOfName } from './surfaceTex.js';
+import { SURFACE_EXTRA } from './manifest.js';
 
 /** Een materiaal van het bron-huisje, omgezet van spec-gloss naar basiskleur plus textuur. */
 interface SourceMaterial {
@@ -291,48 +292,28 @@ export function placeShape(part: Exclude<VariantPart, HousePart>): Mesh {
 }
 
 /**
- * Generated tile size per LOD for a flat material (0 = no generated maps). LOD2 stays flat colour: it is the far
- * silhouette, render reads a material without a map as flat (uvl layer -1, see structures/buildingGeometry.ts), and
- * three maps per material would be most of a 10 kB LOD2 GLB for relief nobody can resolve at that distance.
+ * Which LODs of a flat material get a generated surface (false = flat colour). LOD2 stays flat: it is the far
+ * silhouette, render reads a material without a surface as flat (uvl layer -1, see
+ * structures/buildingGeometry.ts), and relief nobody can resolve at that distance is not worth a layer.
  *
- * 256 px over the 2 m tile of uvmap.ts is 128 texels/m, inside render's DENSITY_BAND, so uvScaleForDensity leaves
- * the uv alone and a panel stays the metre it was authored as. At 128 the density falls to 64, render rescales the
- * uv by 1.56 and the panels shrink to 64 cm: fine at LOD1 distance, wrong up close. The price is that every asset
- * carries its own copy of the same tile (+12.6 MB over assets/dist); a shared tile file referenced from the
- * manifest would cut that to one copy, but that is a manifest and render contract change.
+ * The maps themselves are no longer embedded. They are one shared tile set next to manifest.json
+ * (src/surfaceTiles.ts); a material only says which kind it is, through `extras.surface`.
  */
-export const GENERATED_TILE_SIZES = [256, 128, 0] as const;
+export const GENERATED_TILE_LEVELS = [true, true, false] as const;
 
 /**
- * Hangs the generated tiling maps of the material's surface kind on a flat material: a weathering map on the base
- * colour (the palette colour stays in baseColorFactor and multiplies through), a normal map and a
- * metallic-roughness map. All three share one uv set and one size, which is the contract validateBuildingDocument
- * checks and the one render needs to put them on a single texture-array layer.
+ * Marks a flat material as using the shared surface tile of its kind: glTF `extras.surface = <kind>`, no texture of
+ * its own. Render (packages/render/src/look/surfaceTiles.ts) reads the extra, takes the tile from the manifest
+ * `surfaces` block and hangs the base, normal and metallic-roughness map on the material before it reaches the
+ * texture layer table, so from there on nothing downstream can tell the difference with an embedded copy.
+ *
+ * The colour identity stays in baseColorFactor (the faction palettes in assets/src) and multiplies through the
+ * weathering map. Metallic and roughness factor go to 1 because the tile drives both and glTF multiplies the factor
+ * by the texture.
  */
-function addGeneratedMaps(
-  document: Document,
-  material: ReturnType<Document['createMaterial']>,
-  name: string,
-  size: number,
-  cache: Map<string, Texture>,
-): void {
-  const kind = surfaceKindOfName(name);
-  const maps = surfaceMaps(kind, size);
-  const texture = (slot: 'base' | 'normal' | 'mr', image: Uint8Array): Texture => {
-    const key = `${kind}_${slot}`;
-    let found = cache.get(key);
-    if (!found)
-      cache.set(
-        key,
-        (found = document.createTexture(key).setImage(image).setMimeType('image/png')),
-      );
-    return found;
-  };
+function useSharedSurface(material: ReturnType<Document['createMaterial']>, name: string): void {
   material
-    .setBaseColorTexture(texture('base', maps.base))
-    .setNormalTexture(texture('normal', maps.normal))
-    .setMetallicRoughnessTexture(texture('mr', maps.mr))
-    // The map drives both; the factors must not scale it down (glTF multiplies factor by texture).
+    .setExtras({ ...material.getExtras(), [SURFACE_EXTRA]: surfaceKindOfName(name) })
     .setMetallicFactor(1)
     .setRoughnessFactor(1);
 }
@@ -349,8 +330,7 @@ export function assemble(
   const buffer = document.createBuffer();
   const mesh = document.createMesh(id);
   const textures = new Map<string, Texture>();
-  const generated = new Map<string, Texture>();
-  const tileSize = GENERATED_TILE_SIZES[level];
+  const sharedSurfaces = GENERATED_TILE_LEVELS[level];
 
   // Bronmateriaal per uitvoernaam, voor kleur en textuur; dubbele namen moeten gelijk zijn.
   const sourceByOutput = new Map<string, SourceMaterial>();
@@ -383,8 +363,8 @@ export function assemble(
     if (flat) {
       const color = variant.colors?.[name] ?? flat.color;
       material.setBaseColorFactor([...hexToLinear(color), 1]);
-      if (tileSize > 0 && compacted.uvs)
-        addGeneratedMaps(document, material, name, tileSize, generated);
+      // No uv, no tile: the shared tile addresses TEXCOORD_0 just like the embedded copy did.
+      if (sharedSurfaces && compacted.uvs) useSharedSurface(material, name);
     } else if (fromSource) {
       const tint = hexToLinear(variant.tints?.[name] ?? '#ffffff');
       material

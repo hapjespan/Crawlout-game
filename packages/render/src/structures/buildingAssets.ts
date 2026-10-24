@@ -12,6 +12,7 @@ import {
   type BuildingMesh,
 } from './buildingGeometry.js';
 import type { SurfaceKind } from '../look/surfaces.js';
+import { applySurfaceTiles, surfaceTilesFor } from '../look/surfaceTiles.js';
 import { createLayerTexture, DEFAULT_LAYER_SIZE, type Rasterize } from './textureArray.js';
 
 /** Network and parsing, injectable for tests. */
@@ -111,6 +112,15 @@ export async function loadBuildingAssets(
     return result;
   }
 
+  // The shared surface tiles of this manifest (look/surfaceTiles.ts). A manifest without them is an older build
+  // whose GLBs still carry their own copy; then this is null and nothing below changes.
+  const tiles = await surfaceTilesFor(
+    manifestUrl,
+    manifest,
+    (path) => resolveUrl(manifestUrl, path),
+    io,
+  ).catch(() => null);
+
   const layers = new TextureLayerTable();
   const loaded: {
     entry: AssetEntry;
@@ -143,9 +153,11 @@ export async function loadBuildingAssets(
   for (const item of loaded) {
     const teamMaterials = item.entry.teamMaterials ?? [];
     try {
-      item.lods = item.scenes.map((scene) =>
-        buildingGeometryFromGltf(scene, { teamMaterials, layers }),
-      );
+      item.lods = item.scenes.map((scene) => {
+        // Before the layer table: it reads the image size to pick a layer and to rescale the uv for texel density.
+        applySurfaceTiles(scene, tiles);
+        return buildingGeometryFromGltf(scene, { teamMaterials, layers });
+      });
     } catch (err) {
       fail(item.status, message(err));
       item.lods = [];

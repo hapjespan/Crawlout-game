@@ -23,6 +23,73 @@ export const PROP_CATEGORIES = [
 ] as const;
 export const propCategorySchema = z.enum(PROP_CATEGORIES);
 
+/**
+ * De oppervlaktesoorten van de gegenereerde tegels. Dit is de contractlijst: asset-cli (`surfaceTex.ts`,
+ * `surfaceKindOfName`) en render (`look/surfaces.ts`, `surfaceKindOfMaterial`) moeten dezelfde lijst en dezelfde
+ * ladder houden. Staat hier omdat het manifest het contract is en dit bestand geen Node-imports heeft.
+ */
+export const SURFACE_KINDS = [
+  'wood',
+  'paintedMetal',
+  'rustMetal',
+  'cloth',
+  'leather',
+  'skin',
+  'rock',
+  'foliage',
+  'concrete',
+  'roofing',
+  'lens',
+] as const;
+export const surfaceKindSchema = z.enum(SURFACE_KINDS);
+
+/**
+ * Een gedeelde oppervlaktetegel: de drie kaarten van een oppervlaktesoort, als losse bestanden naast manifest.json.
+ * Alle drie tilen, zijn vierkant en hebben dezelfde maat (`SurfaceTiles.size`), zodat render ze op een laagindex kan
+ * adresseren precies zoals bij een ingebedde kaart.
+ */
+export const surfaceTileSchema = z
+  .object({
+    kind: surfaceKindSchema,
+    /** Grijswaarde-verweringskaart op de basiskleur (sRGB); pad relatief aan de map van manifest.json. */
+    base: z.string().min(1),
+    /** Tangent-space normalkaart (lineair, glTF +Y omhoog). */
+    normal: z.string().min(1),
+    /** glTF metallicRoughness: G = roughness, B = metalness (lineair). */
+    mr: z.string().min(1),
+  })
+  .strict();
+
+/**
+ * De gedeelde oppervlaktetegels van deze build (fase-0 sectie 28). Een materiaal in een LOD-GLB dat zo'n tegel
+ * gebruikt draagt de kaarten niet zelf: het heeft `extras.surface` met de naam van zijn oppervlaktesoort en geen
+ * enkele textuur. Render zoekt de soort hier op, laadt het tegelbestand een keer en hangt het op het materiaal
+ * voordat het de textuurlaagtabel in gaat.
+ *
+ * Ontbreekt dit veld, dan gebruikt geen enkel asset gedeelde tegels en draagt elk materiaal zijn eigen kaarten; dat
+ * is het gedrag van voor deze wijziging en blijft geldig.
+ */
+export const surfaceTilesSchema = z
+  .object({
+    /** Zijde van elke tegel in texels; elke soort en elke kaart heeft dezelfde maat. */
+    size: z.number().int().positive(),
+    /** Hoeveel meter een hele tegel beslaat in de UV van de assets (asset-cli `UV_METERS_PER_TILE`). */
+    metersPerTile: z.number().positive(),
+    /** Hoogstens een regel per soort, gesorteerd op `kind`. */
+    tiles: z.array(surfaceTileSchema).min(1),
+  })
+  .strict()
+  .superRefine((surfaces, ctx) => {
+    const kinds = surfaces.tiles.map((t) => t.kind);
+    if (new Set(kinds).size !== kinds.length)
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'elke oppervlaktesoort hoort een keer',
+      });
+    if ([...kinds].sort().join(',') !== kinds.join(','))
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'tiles staan gesorteerd op kind' });
+  });
+
 /** Allowed `albedoGain` values; render clamps its explicit override to the same range. */
 export const ALBEDO_GAIN_RANGE = [0.5, 2] as const;
 
@@ -251,9 +318,21 @@ export const assetEntrySchema = z
 export const manifestSchema = z.object({
   version: z.literal(MANIFEST_VERSION),
   assets: z.array(assetEntrySchema),
+  /** De gedeelde oppervlaktetegels, als deze build ze schrijft; zie `surfaceTilesSchema`. */
+  surfaces: surfaceTilesSchema.optional(),
 });
 
+/**
+ * Naam van de glTF-material-extra die zegt dat een materiaal een gedeelde tegel gebruikt. De waarde is een
+ * `SurfaceKind`. Drie's GLTFLoader zet material extras op `material.userData`, dus render leest
+ * `material.userData[SURFACE_EXTRA]`. Een materiaal met deze extra heeft zelf geen enkele textuur.
+ */
+export const SURFACE_EXTRA = 'surface' as const;
+
 export type Vec3 = z.infer<typeof vec3>;
+export type SurfaceKind = z.infer<typeof surfaceKindSchema>;
+export type SurfaceTile = z.infer<typeof surfaceTileSchema>;
+export type SurfaceTiles = z.infer<typeof surfaceTilesSchema>;
 export type PropCategory = z.infer<typeof propCategorySchema>;
 export type AssetBounds = z.infer<typeof boundsSchema>;
 export type AssetLod = z.infer<typeof lodSchema>;
