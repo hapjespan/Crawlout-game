@@ -16,7 +16,7 @@ import {
   type SurfaceTileIO,
 } from './surfaceTiles.js';
 import { createGltfIO } from '../units/unitAssetLoader.js';
-import { TextureLayerTable } from '../structures/buildingGeometry.js';
+import { NO_LAYER, TextureLayerTable } from '../structures/buildingGeometry.js';
 
 const DIST = fileURLToPath(new URL('../../../../assets/dist/', import.meta.url));
 
@@ -186,27 +186,37 @@ describe('against assets/dist', () => {
     const url = `dist://${entry.lods[0].path}`;
     const scene = await createGltfIO(distBytes).parseGltf(await distBytes(url), url);
     // The HQ's steel and team band are flat materials with a generated surface; before the tile they have no map.
-    const markedNames: string[] = [];
+    type Marked = Parameters<TextureLayerTable['layerOf']>[0] & {
+      name: string;
+      userData?: Record<string, unknown>;
+    };
+    const marked: Marked[] = [];
     scene.traverse((o) => {
-      const m = (o as { material?: { name: string; userData?: Record<string, unknown> } }).material;
-      if (m?.userData?.[SURFACE_EXTRA]) markedNames.push(m.name);
+      const m = (o as { material?: Marked }).material;
+      if (m?.userData?.[SURFACE_EXTRA]) marked.push(m);
     });
-    expect(markedNames.sort()).toEqual(['metal', 'team_trim']);
+    expect(marked.map((m) => m.name).sort()).toEqual(['metal', 'team_trim']);
     expect(applySurfaceTiles(scene, tiles)).toBe(2);
 
-    // The layer table is the thing that must not see a difference with an embedded copy: every marked material gets
-    // a layer of its own (keyed on the material name), at the tile's size.
+    // The layer table is the thing that must not see a difference with an embedded copy: every marked material has to
+    // reach a layer at the tile's size, with both extra maps on it. Resolve through layerOf rather than by material
+    // name, because that is what the geometry does: two materials of one surface kind are handed the very same tile
+    // images and therefore share a layer (buildingGeometry.ts), which is the whole point of sharing the tile. The HQ's
+    // `metal` and `team_trim` are both paintedMetal, so they land on one layer that carries the first one's name.
     const table = new TextureLayerTable();
     scene.traverse((o) => {
       const m = (o as { material?: Parameters<TextureLayerTable['layerOf']>[0] }).material;
       if (m) table.layerOf(m);
     });
-    const byKey = new Map(table.layers.map((l) => [l.key, l]));
-    for (const name of markedNames) {
-      expect(byKey.get(name), name).toBeDefined();
-      expect(byKey.get(name)!.width).toBe(manifest.surfaces!.size);
-      expect(byKey.get(name)!.normalImage).not.toBeNull();
-      expect(byKey.get(name)!.mrImage).not.toBeNull();
+    for (const m of marked) {
+      const index = table.layerOf(m);
+      expect(index, m.name).not.toBe(NO_LAYER);
+      const layer = table.layers[index]!;
+      expect(layer.width, m.name).toBe(manifest.surfaces!.size);
+      expect(layer.normalImage, m.name).not.toBeNull();
+      expect(layer.mrImage, m.name).not.toBeNull();
     }
+    // Sharing the kind has to mean sharing the layer, or the saving is not real.
+    expect(new Set(marked.map((m) => table.layerOf(m))).size).toBe(1);
   });
 });
