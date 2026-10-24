@@ -30,6 +30,9 @@ import { compose, multiply, type Mat, type Pose } from '../src/math.js';
 const ROOT = resolve(dirname(new URL(import.meta.url).pathname), '../../..');
 // assets/local is gitignored, so a worktree reads it from the main checkout: CRAWLOUT_LOCAL points there.
 const LOCAL = process.env['CRAWLOUT_LOCAL'] ?? `${ROOT}/assets/local`;
+// A re-rigged set can be measured without overwriting the shipped one: CRAWLOUT_RIGGED names the folder to read
+// the bound characters from. Everything else (rigmap, fit, clips) stays identical, so the numbers stay comparable.
+const RIGGED = process.env['CRAWLOUT_RIGGED'] ?? `${LOCAL}/rigged`;
 
 const rigmap = parseRigmap(JSON.parse(readFileSync(`${LOCAL}/rigmap.json`, 'utf8')));
 
@@ -197,10 +200,10 @@ function maxStep(a: readonly number[], loop: boolean): number {
 }
 
 const CHARACTERS: { id: string; file: string }[] = [
-  { id: 'garde_body_clerk', file: `${LOCAL}/rigged/garde_body_clerk.glb` },
-  { id: 'garde_body_power_armor_heavy', file: `${LOCAL}/rigged/garde_body_power_armor_heavy.glb` },
-  { id: 'hero_warlord', file: `${LOCAL}/rigged/hero_warlord.glb` },
-  { id: 'raider_body_human', file: `${LOCAL}/rigged/raider_body_human.glb` },
+  { id: 'garde_body_clerk', file: `${RIGGED}/garde_body_clerk.glb` },
+  { id: 'garde_body_power_armor_heavy', file: `${RIGGED}/garde_body_power_armor_heavy.glb` },
+  { id: 'hero_warlord', file: `${RIGGED}/hero_warlord.glb` },
+  { id: 'raider_body_human', file: `${RIGGED}/raider_body_human.glb` },
 ];
 const CLIPS = ['idle', 'walk', 'run', 'build', 'death'];
 
@@ -219,7 +222,16 @@ for (const character of CHARACTERS) {
       resolve(LOCAL, r.rigmap),
       resolve(LOCAL, r.clipmap),
     );
-    retargetClips(document, source, { ...(r.bones ? { bones: r.bones } : {}), ground });
+    // --lift=<mm> overrules the default root-lift ceiling, --no-relief drops step 5a, so one run can price both.
+    const lift = process.argv.find((a) => a.startsWith('--lift='))?.slice(7);
+    const slope = process.argv.find((a) => a.startsWith('--slope='))?.slice(8);
+    retargetClips(document, source, {
+      ...(r.bones ? { bones: r.bones } : {}),
+      ground,
+      ...(lift === undefined ? {} : { maxLift: Number(lift) / 1000 }),
+      ...(slope === undefined ? {} : { liftSlope: Number(slope) / 1000 }),
+      ...(process.argv.includes('--no-relief') ? { ankleRelief: false } : {}),
+    });
     // --lod: measure on the reduced LOD0 the game actually draws, not on the full-resolution source mesh.
     if (process.argv.includes('--lod') && entry.lod0Triangles !== undefined)
       await simplifyToTarget(document, entry.lod0Triangles);

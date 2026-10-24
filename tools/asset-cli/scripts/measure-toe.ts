@@ -13,13 +13,15 @@ import { compose, multiply, type Mat, type Pose } from '../src/math.js';
 
 const ROOT = resolve(dirname(new URL(import.meta.url).pathname), '../../..');
 const LOCAL = process.env['CRAWLOUT_LOCAL'] ?? `${ROOT}/assets/local`;
+// Same override as measure-bob: CRAWLOUT_RIGGED points at a re-rigged set without overwriting the shipped one.
+const RIGGED = process.env['CRAWLOUT_RIGGED'] ?? `${LOCAL}/rigged`;
 const rigmap = parseRigmap(JSON.parse(readFileSync(`${LOCAL}/rigmap.json`, 'utf8')));
 
 const FILES: Record<string, string> = {
-  garde_body_clerk: `${LOCAL}/rigged/garde_body_clerk.glb`,
-  garde_body_power_armor_heavy: `${LOCAL}/rigged/garde_body_power_armor_heavy.glb`,
-  hero_warlord: `${LOCAL}/rigged/hero_warlord.glb`,
-  raider_body_human: `${LOCAL}/rigged/raider_body_human.glb`,
+  garde_body_clerk: `${RIGGED}/garde_body_clerk.glb`,
+  garde_body_power_armor_heavy: `${RIGGED}/garde_body_power_armor_heavy.glb`,
+  hero_warlord: `${RIGGED}/hero_warlord.glb`,
+  raider_body_human: `${RIGGED}/raider_body_human.glb`,
 };
 
 const restWorld = (node: Node): Mat => {
