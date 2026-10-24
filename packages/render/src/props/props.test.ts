@@ -185,8 +185,8 @@ describe('PropLayer LOD and shadow culling', () => {
 
   it('drops a tree to its lighter LOD at a larger screen size than any other prop (TREE_LOD_PX)', () => {
     expect(TREE_LOD_PX.lod1).toBeGreaterThan(PROP_LOD_PX.lod1);
-    // A 10 m object seen from 100 m is about 217 px tall at the default 1800 px viewport: between the two thresholds.
-    const view = camera(new Vector3(30, 100, 30.01), new Vector3(30, 0, 30));
+    // A 10 m object seen from 240 m is about 91 px tall at the default 1800 px viewport: between the two thresholds.
+    const view = camera(new Vector3(30, 240, 30.01), new Vector3(30, 0, 30));
     const tree = defaults();
     tree.setProps([{ asset: 'treehigh001', x: 30, y: 30, yaw: 0, scale: 1 }]);
     tree.setVisual('treehigh001', lodVisual(10));

@@ -283,8 +283,8 @@ describe('StructureLayer', () => {
       const scaffolds = batch(scene, 'building-scaffolds');
       expect(scaffolds.count).toBe(1);
       expect(instance(scaffolds, 'iScale', 0)[1]).toBeLessThanOrEqual(3 * 1.05 + 1e-6);
-      // 6.4 m across at 424 m: about 33 device px at the default 1800 px viewport, under BUILDING_LOD_PX.lod2.
-      camera.position.set(0, 300, 300);
+      // 6.4 m across at 707 m: about 20 device px at the default 1800 px viewport, under BUILDING_LOD_PX.lod2.
+      camera.position.set(0, 500, 500);
       camera.lookAt(0, 0, 0);
       camera.updateMatrixWorld();
       layer.update(frame, camera, decals);

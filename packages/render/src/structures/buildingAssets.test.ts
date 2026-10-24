@@ -80,7 +80,9 @@ describe('building assets from assets/dist', () => {
     }
     expect(team).toBeGreaterThan(0);
     expect(textured).toBeGreaterThan(0);
-    expect(flat).toBeGreaterThan(0);
+    // Was `flat > 0`: the procedural shape builder emitted `uvs: null`, so part of every building had no layer.
+    // Since surfaceTex generates uv's for all of them, a flat vertex here means the unwrap was skipped.
+    expect(flat).toBe(0);
     expect(outside).toBe(true); // tiling uv's survive
     g.computeBoundingBox();
     expect(g.boundingBox!.min.y).toBeCloseTo(0, 2);
@@ -91,18 +93,28 @@ describe('building assets from assets/dist', () => {
     expect(size.z).toBeGreaterThan(21 * 0.85);
     expect(size.z).toBeLessThanOrEqual(21 * 1.05);
 
-    // One shared array: frame_wood, plank_grey, roof, wall_paint (LOD 1 and 2 reuse the LOD 0 layers).
+    // One shared array: frame_wood, plank_grey, roof, wall_paint, plus metal and team_trim since surfaceTex
+    // gives those two a generated map as well (LOD 1 and 2 reuse the LOD 0 layers).
     expect(set.layers).not.toBeNull();
-    expect(set.layers!.image.depth).toBe(4);
-    expect(rasterized.length).toBe(4);
+    expect(set.layers!.image.depth).toBe(6);
+    expect(rasterized.length).toBe(6);
     expect(byId.get('dweller_building_hq')!.reason).toMatch(/not decoded/);
 
     // Surface kinds: a layer has the kind of its material name, a flat vertex carries its kind in u.
-    expect([...set.layerKinds].sort()).toEqual(['roofing', 'wood', 'wood', 'wood']);
+    expect([...set.layerKinds].sort()).toEqual([
+      'paintedMetal',
+      'paintedMetal',
+      'roofing',
+      'wood',
+      'wood',
+      'wood',
+    ]);
+    // The steel and the team band used to arrive flat and carry their kind in u; both now have a generated map,
+    // so nothing on this building falls back to that path. The fallback itself is covered by textureArray.test.ts.
     const flatKinds = new Set<string>();
     for (let i = 0; i < uvl.count; i++)
       if (uvl.getZ(i) === NO_LAYER) flatKinds.add(surfaceOfIndex(uvl.getX(i)));
-    expect(flatKinds).toContain('paintedMetal'); // the water tower's steel and the team band
+    expect(flatKinds.size).toBe(0);
 
     // The beacon is built from shapes only (no house parts since the real-scale round): the same triangle count on
     // every LOD, so one geometry and one draw. The housing has three different LODs.

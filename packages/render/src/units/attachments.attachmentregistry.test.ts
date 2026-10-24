@@ -332,7 +332,7 @@ describe('UnitLayer attachments', () => {
     const frame = frameOf([{ id: 1, typeId: 2, x: 0, z: 0 }]);
     const gun = mesh(scene, 'units-placeholder-gun');
     const lods: number[] = [];
-    for (const d of [8, 60, 400]) {
+    for (const d of [8, 150, 400]) {
       layer.update(frame, cameraAt(d), decals, 0);
       const lod = layer.lodCounts.findIndex((n) => n > 0);
       lods.push(lod);

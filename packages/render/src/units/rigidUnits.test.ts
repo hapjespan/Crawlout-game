@@ -49,12 +49,12 @@ describe('RigidUnitLayer', () => {
 
   it('picks the LOD from the projected size: a unit far away draws the light mesh', () => {
     const { layer, scene } = robotLayer();
-    // Looking along the ground from 10 m up: a guard (2.2 m) is 151 px tall at 30 m, 48 px at 100 m and 19 px at 250 m.
+    // Looking along the ground from 10 m up: a guard (2.2 m) is 151 px tall at 30 m, 19 px at 250 m and 8 px at 600 m.
     const frame = frameOf([
       { id: 1, typeId: GUARD_TYPE, x: 0, z: -30 },
-      { id: 2, typeId: GUARD_TYPE, x: 0, z: -100 },
-      { id: 3, typeId: GUARD_TYPE, x: 0, z: -250 },
-      { id: 4, typeId: GUARD_TYPE, x: 3, z: -250 },
+      { id: 2, typeId: GUARD_TYPE, x: 0, z: -250 },
+      { id: 3, typeId: GUARD_TYPE, x: 0, z: -600 },
+      { id: 4, typeId: GUARD_TYPE, x: 3, z: -600 },
     ]);
     layer.update(frame, camera([0, 10, 0], [0, 0, -60]), recorder().decals, 0);
     const counts = [0, 1, 2].map((lod) => byName(scene, `rigid-synthetic_guard-lod${lod}`).count);
