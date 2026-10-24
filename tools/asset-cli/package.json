@@ -1,6 +1,6 @@
 {
   "name": "@crawlout/asset-cli",
-  "version": "0.20.1",
+  "version": "0.21.0",
   "private": true,
   "exports": {
     ".": "./src/index.ts",

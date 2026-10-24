@@ -18,6 +18,7 @@ import { type RobotsResult, buildRobots, loadRobotsConfig } from './robots.js';
 import { splitJsonExists } from './splitJson.js';
 import { buildDelivered, loadDeliveredConfig } from './delivered.js';
 import { type PacksConfig, loadPacksConfig, buildPacks, findPacksDir } from './packs.js';
+import { buildSurfaceTiles } from './surfaceTiles.js';
 import { listGlbs, toId } from './build.part1.js';
 import type { AssetReport, BuildOptions, BuildResult } from './build.part1.js';
 import { type ValidatedAsset, buildAssetLods, writeDist } from './build.part3.js';
@@ -339,9 +340,15 @@ export async function buildAssets(options: BuildOptions): Promise<BuildResult> {
   if (reports.some((r) => r.errors.length > 0))
     return { ok: false, reports, notices, manifest: null };
 
+  // The shared surface tiles (src/surfaceTiles.ts): one file set next to manifest.json instead of a copy inside
+  // every GLB whose materials carry `extras.surface`.
+  const { outputs: tileFiles, surfaces } = await buildSurfaceTiles();
+  for (const [path, data] of tileFiles) outputs.set(path, data);
+
   const manifest = manifestSchema.parse({
     version: MANIFEST_VERSION,
     assets: entries.sort((a, b) => a.id.localeCompare(b.id)),
+    surfaces,
   });
   writeDist(distDir, outputs, reports, manifest);
   return { ok: true, reports, notices, manifest };

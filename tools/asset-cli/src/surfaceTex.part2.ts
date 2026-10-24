@@ -38,7 +38,7 @@ const RUST_RGB = [0x70 / 255, 0x4a / 255, 0x34 / 255] as const;
 
 /**
  * How hard the height field bends the normal, per kind: a canvas weave is not a concrete slab. Tuned against the
- * 128 px tile of GENERATED_TILE_SIZES, so a feature has to be a few centimetres wide before it reaches the normal at
+ * 256 px tile of SURFACE_TILE_SIZE, so a feature has to be a few centimetres wide before it reaches the normal at
  * all; everything here is sized in metres over MPT below rather than in texels.
  */
 const RELIEF: Readonly<Record<SurfaceKind, number>> = {

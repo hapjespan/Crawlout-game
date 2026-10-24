@@ -5,27 +5,15 @@
 // building assembler (buildings.part1.ts) is synchronous. A greyscale-or-rgb PNG is a header, one deflate stream and
 // a CRC, so the generator writes it itself and stays deterministic byte for byte.
 import { deflateSync } from 'node:zlib';
+import { SURFACE_KINDS, type SurfaceKind } from './manifest.js';
 
 /**
- * The surface kinds of packages/render/src/look/surfaces.ts. Duplicated on purpose: asset-cli must not depend on the
- * renderer. Keep the list and the ladder in `surfaceKindOfName` equal to `surfaceKindOfMaterial` over there; a drift
- * means a material gets a generated relief that does not match the roughness render gives it.
+ * The surface kinds live in manifest.ts: they are part of the contract with render (a shared tile is named after its
+ * kind). Keep the ladder in `surfaceKindOfName` equal to `surfaceKindOfMaterial` in
+ * packages/render/src/look/surfaces.ts; a drift means a material gets a generated relief that does not match the
+ * roughness render gives it.
  */
-export const SURFACE_KINDS = [
-  'wood',
-  'paintedMetal',
-  'rustMetal',
-  'cloth',
-  'leather',
-  'skin',
-  'rock',
-  'foliage',
-  'concrete',
-  'roofing',
-  'lens',
-] as const;
-
-export type SurfaceKind = (typeof SURFACE_KINDS)[number];
+export { SURFACE_KINDS, type SurfaceKind };
 
 /** Surface kind of a glTF material name; the same ladder (and the same order) as render's surfaceKindOfMaterial. */
 export function surfaceKindOfName(name: string): SurfaceKind {

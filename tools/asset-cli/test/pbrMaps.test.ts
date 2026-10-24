@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { copyMaterial } from '../src/autorig.part2.js';
 import { validateBuildingDocument } from '../src/buildings.js';
 import { materialMaps } from '../src/inspect.js';
+import { SURFACE_EXTRA } from '../src/manifest.js';
 import { addTeamTrim } from '../src/teamTrim.js';
 import { parseRigmap } from '../src/rigmap.js';
 import { makePng } from './fixtures.js';
@@ -122,6 +123,31 @@ describe('de PBR-poort van gebouwen, rigide units en props', () => {
     const doc = textured();
     doc.createExtension(KHRMaterialsSpecular).createSpecular();
     expect(validateBuildingDocument(doc, 0).join(' ')).toMatch(/materiaal-extensies/);
+  });
+
+  // Een materiaal met een gedeelde oppervlaktetegel (src/surfaceTiles.ts) noemt alleen zijn soort; render hangt de
+  // kaarten er zelf op. Een eigen kaart ernaast zou die stil overschrijven, een onbekende soort levert niets op.
+  it('laat een gedeelde oppervlaktetegel toe, zonder eigen kaart', () => {
+    const doc = textured();
+    const m = doc.getRoot().listMaterials()[0]!;
+    m.setBaseColorTexture(null).setNormalTexture(null).setMetallicRoughnessTexture(null);
+    m.setExtras({ [SURFACE_EXTRA]: 'paintedMetal' });
+    expect(validateBuildingDocument(doc, 0)).toEqual([]);
+  });
+
+  it('weigert een gedeelde tegel naast een eigen kaart, en een onbekende soort', () => {
+    const both = textured();
+    both
+      .getRoot()
+      .listMaterials()[0]!
+      .setExtras({ [SURFACE_EXTRA]: 'paintedMetal' });
+    expect(validateBuildingDocument(both, 0).join(' ')).toMatch(/daarnaast een eigen kaart/);
+
+    const unknown = textured();
+    const m = unknown.getRoot().listMaterials()[0]!;
+    m.setBaseColorTexture(null).setNormalTexture(null).setMetallicRoughnessTexture(null);
+    m.setExtras({ [SURFACE_EXTRA]: 'marsepein' });
+    expect(validateBuildingDocument(unknown, 0).join(' ')).toMatch(/geen bekende oppervlaktesoort/);
   });
 });
 
