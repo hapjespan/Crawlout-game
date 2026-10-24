@@ -9,6 +9,7 @@ Dit document is gesplitst in delen; de inhoud staat ongewijzigd in de bestanden 
 - [Geleverde modellen (`src/delivered.ts`, `assets/local/delivered.json`)](tools/asset-cli/README/05-geleverde-modellen-src-delivered-ts-assets-local-d.md): Geleverde modellen (`src/delivered.ts`, `assets/local/delivered.json`); KTX2; Manifest; Clipnamen koppelen (`assets/src/clipmap.json`); Wat render moet doen om te laden; Prop-packs (DJMaesen, `assets/src/packs.json`)
 - [Terrein (Rock Terrain 4)](tools/asset-cli/README/06-terrein-rock-terrain-4.md): Terrein (Rock Terrain 4); Tests
 - [Site-gebouwen (winroute C, Bouwproject: `assets/src/sites.json`)](tools/asset-cli/README/07-site-gebouwen-winroute-c.md): Site-gebouwen (winroute C, Bouwproject: `assets/src/sites.json`)
+- [Grondbeperking op geretargete clips](tools/asset-cli/README/08-grondbeperking-op-geretargete-clips.md): Enkelverlichting, body-lift en de hellingbegrensde lift; Meten
 
 ## Gesplitste configs
 

@@ -2,7 +2,14 @@
 // rustrotatie op de romp) en verschillende beenlengtes. Geen bronassets nodig.
 import { Document, type Node } from '@gltf-transform/core';
 import { describe, expect, it } from 'vitest';
-import { quatFromAxisAngle, quatMultiply, quatRotate, normalize3, sub3 } from '../src/math.js';
+import {
+  multiply,
+  normalize3,
+  quatFromAxisAngle,
+  quatMultiply,
+  quatRotate,
+  sub3,
+} from '../src/math.js';
 import { retargetClips } from '../src/retarget.js';
 
 type Bone = [
@@ -123,6 +130,86 @@ function poseAtEnd(doc: Document): void {
 const pos = (n: Node) => n.getWorldTranslation() as [number, number, number];
 const dir = (a: Node, b: Node) => normalize3(sub3(pos(b), pos(a)));
 
+/**
+ * Hangt een geskinde schil van straal `radius` om `bone` (standaard LeftLeg) aan een rig, zodat het document iets
+ * heeft om de grondbeperking op te meten. Zonder mesh is er geen beperking; met mesh bepaalt de dikte hoe diep hij
+ * zakt. `offset` zet de schil naast het gewricht, zoals een laarspunt voor de enkel staat.
+ */
+function addShell(
+  doc: Document,
+  nodes: Map<string, Node>,
+  radius: number,
+  bone = 'LeftLeg',
+  offset: readonly [number, number, number] = [0, 0, 0],
+): void {
+  const buffer = doc.getRoot().listBuffers()[0]!;
+  const skin = doc.getRoot().listSkins()[0]!;
+  const joints = skin.listJoints();
+  const index = joints.findIndex((j) => j.getName() === bone);
+  const ibm: number[] = [];
+  for (const joint of joints) {
+    const w = joint.getWorldTranslation();
+    ibm.push(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, -w[0], -w[1], -w[2], 1);
+  }
+  skin.setInverseBindMatrices(
+    doc.createAccessor().setType('MAT4').setArray(new Float32Array(ibm)).setBuffer(buffer),
+  );
+  const joint = joints[index]!.getWorldTranslation();
+  const origin = [joint[0] + offset[0], joint[1] + offset[1], joint[2] + offset[2]] as const;
+  const positions: number[] = [];
+  const jointIds: number[] = [];
+  const weights: number[] = [];
+  for (let i = 0; i < 16; i++) {
+    const a = (i / 16) * Math.PI * 2;
+    positions.push(origin[0] + Math.cos(a) * radius, origin[1], origin[2] + Math.sin(a) * radius);
+    jointIds.push(index, 0, 0, 0);
+    weights.push(1, 0, 0, 0);
+  }
+  const prim = doc
+    .createPrimitive()
+    .setAttribute(
+      'POSITION',
+      doc.createAccessor().setType('VEC3').setArray(new Float32Array(positions)).setBuffer(buffer),
+    )
+    .setAttribute(
+      'JOINTS_0',
+      doc.createAccessor().setType('VEC4').setArray(new Uint16Array(jointIds)).setBuffer(buffer),
+    )
+    .setAttribute(
+      'WEIGHTS_0',
+      doc.createAccessor().setType('VEC4').setArray(new Float32Array(weights)).setBuffer(buffer),
+    );
+  doc
+    .getRoot()
+    .listScenes()[0]!
+    .addChild(
+      doc.createNode('shell').setMesh(doc.createMesh('shell').addPrimitive(prim)).setSkin(skin),
+    );
+}
+
+/** Laagste y van de geskinde schil nadat `poseAtEnd` de laatste keyframe heeft gezet. */
+function lowestShellY(doc: Document): number {
+  const skin = doc.getRoot().listSkins()[0]!;
+  const joints = skin.listJoints();
+  const ibm = skin.getInverseBindMatrices()!;
+  const prim = doc.getRoot().listMeshes()[0]!.listPrimitives()[0]!;
+  const position = prim.getAttribute('POSITION')!;
+  const jointAttr = prim.getAttribute('JOINTS_0')!;
+  let lowest = Infinity;
+  const p = [0, 0, 0];
+  const j = [0, 0, 0, 0];
+  for (let v = 0; v < position.getCount(); v++) {
+    position.getElement(v, p);
+    jointAttr.getElement(v, j);
+    const bind = new Float64Array(16);
+    ibm.getElement(j[0]!, bind as unknown as number[]);
+    const world = joints[j[0]!]!.getWorldMatrix() as unknown as number[];
+    const m = multiply(world, bind);
+    lowest = Math.min(lowest, m[1]! * p[0]! + m[5]! * p[1]! + m[9]! * p[2]! + m[13]!);
+  }
+  return lowest;
+}
+
 describe('retargetClips', () => {
   it('neemt een rotatie van de heup over op een doel met dezelfde rustpose', () => {
     const src = rig(SOURCE);
@@ -190,6 +277,116 @@ describe('retargetClips', () => {
     expect(p[0]).toBeCloseTo(0.1, 5);
     expect(p[1]).toBeCloseTo(2 - 0.2, 5);
     expect(p[2]).toBeCloseTo(0.4, 5);
+  });
+
+  it('tilt een clip die door de grond zakt op tot precies het grondvlak', () => {
+    // De bron knielt: LeftLeg een kwartslag naar voren, zodat de schil eromheen rechtop komt te staan en met zijn
+    // straal onder y = 0 duikt. De botten blijven bóven de grond - alleen de massa zakt weg.
+    const src = rig(SOURCE);
+    const tgt = rig(SOURCE);
+    addShell(tgt.doc, tgt.nodes, 0.8);
+    addClip(src.doc, src.nodes, { LeftLeg: quatFromAxisAngle([1, 0, 0], Math.PI / 2) });
+
+    const sunk = rig(SOURCE);
+    addShell(sunk.doc, sunk.nodes, 0.8);
+    retargetClips(sunk.doc, src.doc, { ground: false });
+    poseAtEnd(sunk.doc);
+    const before = lowestShellY(sunk.doc);
+    expect(before).toBeLessThan(-0.1);
+
+    const info = retargetClips(tgt.doc, src.doc);
+    expect(info.groundVertices).toBe(16);
+    expect(info.clips[0]!.penetrationMm).toBeCloseTo(-before * 1000, 3);
+    expect(info.clips[0]!.liftedFraction).toBeGreaterThan(0);
+    poseAtEnd(tgt.doc);
+    expect(lowestShellY(tgt.doc)).toBeCloseTo(0, 6);
+  });
+
+  it('drukt niets omlaag dat al boven de grond zweeft en laat de rotaties met rust', () => {
+    const src = rig(SOURCE);
+    const tgt = rig(SOURCE);
+    addShell(tgt.doc, tgt.nodes, 0.02);
+    // Alleen de arm beweegt; de voeten blijven staan waar ze stonden en de schil blijft ruim boven nul.
+    addClip(src.doc, src.nodes, { LeftArm: quatFromAxisAngle([0, 1, 0], 0.5) });
+    const info = retargetClips(tgt.doc, src.doc);
+    expect(info.clips[0]!.penetrationMm).toBe(0);
+    expect(info.clips[0]!.liftedFraction).toBe(0);
+    // Zonder doordringing blijft de heup exact op zijn rustpositie staan: de beperking tilt alleen op.
+    poseAtEnd(tgt.doc);
+    expect(tgt.nodes.get('Hips')!.getTranslation()).toEqual([0, 1, 0]);
+  });
+
+  it('respecteert groundY en het plafond maxLift', () => {
+    const src = rig(SOURCE);
+    addClip(src.doc, src.nodes, { LeftLeg: quatFromAxisAngle([1, 0, 0], Math.PI / 2) });
+    // Een hoger grondvlak vraagt meer lift; maxLift kapt die af, zodat één losse vertex de hele unit niet wegschiet.
+    const high = rig(SOURCE);
+    addShell(high.doc, high.nodes, 0.8);
+    retargetClips(high.doc, src.doc, { groundY: 0.1 });
+    poseAtEnd(high.doc);
+    expect(lowestShellY(high.doc)).toBeCloseTo(0.1, 6);
+
+    const capped = rig(SOURCE);
+    addShell(capped.doc, capped.nodes, 0.8);
+    const info = retargetClips(capped.doc, src.doc, { maxLift: 0.01 });
+    poseAtEnd(capped.doc);
+    // De gemelde doordringing is de gemeten waarde, de toegepaste correctie is afgekapt op 10 mm.
+    const penetrationMm = info.clips[0]!.penetrationMm ?? 0;
+    expect(penetrationMm).toBeGreaterThan(100);
+    expect(lowestShellY(capped.doc)).toBeCloseTo(-penetrationMm / 1000 + 0.01, 6);
+  });
+
+  it('betaalt een voet die door de grond zakt bij de enkel en laat het lichaam staan', () => {
+    // Een laarspunt 30 cm vóór de enkel; de bron zet de voet met de tenen omlaag, precies zoals een looppas dat doet
+    // en zoals een grote laars er doorheen duwt. Dat is geen lichaam in de grond, dus de heup hoort niet te bewegen.
+    const src = rig(SOURCE);
+    addClip(src.doc, src.nodes, { LeftFoot: quatFromAxisAngle([1, 0, 0], Math.PI / 3) });
+
+    const loose = rig(SOURCE);
+    addShell(loose.doc, loose.nodes, 0.05, 'LeftFoot', [0, 0, 0.3]);
+    retargetClips(loose.doc, src.doc, { ground: false });
+    poseAtEnd(loose.doc);
+    expect(lowestShellY(loose.doc)).toBeLessThan(-0.1);
+
+    const tgt = rig(SOURCE);
+    addShell(tgt.doc, tgt.nodes, 0.05, 'LeftFoot', [0, 0, 0.3]);
+    const info = retargetClips(tgt.doc, src.doc);
+    expect(info.clips[0]!.ankleReliefDegrees).toBeGreaterThan(5);
+    expect(info.clips[0]!.penetrationMm).toBeCloseTo(0, 3);
+    poseAtEnd(tgt.doc);
+    expect(lowestShellY(tgt.doc)).toBeGreaterThan(-1e-6);
+    expect(tgt.nodes.get('Hips')!.getTranslation()[1]).toBeCloseTo(1, 6);
+  });
+
+  it('smeert de lift van een voet uit over de buurframes in plaats van de heup te laten springen', () => {
+    const src = rig(SOURCE);
+    addClip(src.doc, src.nodes, { LeftFoot: quatFromAxisAngle([1, 0, 0], Math.PI / 3) });
+    const tgt = rig(SOURCE);
+    addShell(tgt.doc, tgt.nodes, 0.05, 'LeftFoot', [0, 0, 0.3]);
+    // Zonder enkelverlichting moet de root het alleen doen; de hellingbegrenzing bepaalt dan hoe snel hij mag.
+    const slope = 0.0005;
+    retargetClips(tgt.doc, src.doc, { ankleRelief: false, liftSlope: slope });
+    const channel = tgt.doc
+      .getRoot()
+      .listAnimations()
+      .at(-1)!
+      .listChannels()
+      .find(
+        (c) => c.getTargetPath() === 'translation' && c.getTargetNode()!.getName() === 'Hips',
+      )!;
+    const out = channel.getSampler()!.getOutput()!;
+    let jump = 0;
+    const current = [0, 0, 0];
+    const previous = [0, 0, 0];
+    for (let i = 1; i < out.getCount(); i++) {
+      out.getElement(i - 1, previous);
+      out.getElement(i, current);
+      jump = Math.max(jump, Math.abs(current[1]! - previous[1]!));
+    }
+    expect(jump).toBeLessThanOrEqual(slope + 1e-6);
+    // Het diepste frame komt nog steeds precies op de grond: de begrenzing vertraagt de lift, ze verkleint hem niet.
+    poseAtEnd(tgt.doc);
+    expect(lowestShellY(tgt.doc)).toBeCloseTo(0, 6);
   });
 
   it('volgt een koppeling op andere naam (bones) en zonder uitlijning blijft het een pure rustpose-delta', () => {
