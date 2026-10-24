@@ -50,10 +50,11 @@ Eén gekleed mensmodel met een deugdelijke unwrap lost zes van de tien op. De de
 ## Wat nog openstaat
 
 1. **De shipbare set is leeg.** `assets/dist-local` wordt alleen in dev geladen; een productiebouwsel ziet `assets/dist`, en daar zijn **alle elf karakters hetzelfde Quaternius-poppetje** en hebben 74 van de 129 assets geen enkele textuur. Martien: dev is voorlopig genoeg.
-2. **Stevige modellen zakken 73 tot 258 mm weg** tijdens lopen en bouwen. `rig-from-donor.py` schaalt het standbeeld naar het skelet maar past het skelet niet aan het standbeeld aan. Vraagt botfitting per bot; `autoRig` deed dat via `boneStretch`. Idle is schoon.
-3. **Het krachtpantserframe kreukelt in `build`** — holle struts overspannen botten twee stappen uit elkaar, dus `--split 3` vangt ze niet.
-4. **Geheugen en laadtijd.** De Klerk sleept 23 lagen van 1024 mee, ongeveer 276 MB. Atlas samenvoegen, verkleinen per LOD en KTX2 zijn bewust uitgesteld tot na de kwaliteit. `toktx` staat niet op PATH.
-5. **Leesbaarheid op RTS-afstand.** Een unit is daar nog geen 40 pixels hoog en valt weg tegen het bonte terrein. Bewust geparkeerd.
+2. **Wegzakken tijdens `build`.** Lopen en rennen zijn opgelost: `pruneBones` gooide de teenbotten weg, waardoor een gepantserde laars star om de enkel draaide en de teen altijd het diepste punt was. Bij `build` is het diepste punt de scheen, dus dat is massa en geen botplaatsing, en het vraagt echte voet-grondbeperkingen in `retarget.ts`. Let op: de voor de hand liggende diagnose (knie en enkel te diep) is **gemeten en onjuist** — knie en enkel omlaag duwen maakt het krachtpantser bij build juist slechter, van −256 naar −350 mm.
+3. **Het krachtpantserframe kreukelt in `build`** — holle struts overspannen botten twee stappen uit elkaar, dus `--split 3` vangt ze niet. `POLYINTERP_NEAREST` wijst vanaf een slanke donor de verkeerde lichaamsdelen toe aan een bolle holle schil.
+4. **Nog 48 MB videogeheugen te winnen.** `team_trim` kopieert de atlastexturen, dus `TextureLayerTable` zet een tweede identieke laag van 2048 neer; dedupe op textuuridentiteit halveert 96 naar 48 MB. `layerOf` staat in `buildingGeometry.ts`. De atlas is bovendien per asset opt-in en heeft alleen de Klerk; de andere geleverde lichamen winnen evenveel.
+5. **De gedeelde tegel wordt per asset opgeslagen.** De gegenereerde oppervlaktemaps zijn tegels, maar elk asset draagt zijn eigen kopie: de gewijzigde GLB's gaan van 8,70 naar 21,73 MB. Eén tegelbestand in het manifest lost het op, maar dat raakt het contract tussen manifest en renderer.
+6. **Leesbaarheid op RTS-afstand.** Een unit is daar nog geen 40 pixels hoog en valt weg tegen het bonte terrein. Bewust geparkeerd door Martien.
 
 ## Gereedschap dat er nu is
 
