@@ -10,6 +10,7 @@
 import { unitTypeId } from '@crawlout/data';
 import type { AssetManifest } from '@crawlout/asset-cli/manifest';
 import type { Matrix4, Object3D } from 'three/webgpu';
+import { applySurfaceTiles, surfaceTilesFor } from '../look/surfaceTiles.js';
 import { attachmentGeometryFromGltf, mergeAttachmentLods } from './attachmentGeometry.js';
 import {
   attachmentMatrix,
@@ -246,6 +247,15 @@ export class AttachmentRegistry {
             roots.push(await this.io.parseGltf(await this.io.fetchBytes(url), url));
           }
         }
+        // Generated relief is one shared tile set per manifest (look/surfaceTiles.ts); hang it on before the
+        // geometry builder reads the material's map.
+        const tiles = await surfaceTilesFor(
+          manifestUrl,
+          manifest,
+          (path) => this.opts.resolveUrl(manifestUrl, path),
+          this.io,
+        ).catch(() => null);
+        for (const root of new Set(roots)) applySurfaceTiles(root, tiles);
         return { roots, albedoGain: entry.albedoGain };
       })();
       p.catch(() => this.parsed.delete(assetId));

@@ -5,6 +5,7 @@
 import { manifestSchema, type AssetEntry, type AssetManifest } from '@crawlout/asset-cli/manifest';
 import type { DataArrayTexture, Object3D } from 'three/webgpu';
 import { TextureLayerTable } from '../structures/buildingGeometry.js';
+import { surfaceTilesFor } from '../look/surfaceTiles.js';
 import {
   budgetedLayerSize,
   createLayerTexture,
@@ -187,7 +188,19 @@ export class UnitAssetLoader {
     if (entry === undefined)
       throw new UnitAssetError(`asset "${assetId}" is not a rigid unit in ${manifestUrl}`);
     if (typeof entry === 'string') throw new UnitAssetError(`rigid unit "${assetId}": ${entry}`);
-    return loadRigidUnitAsset(this.io, (path) => this.resolveUrl(manifestUrl, path), entry, opts);
+    const resolve = (path: string): string => this.resolveUrl(manifestUrl, path);
+    // A rigid entry is split off before the schema sees the manifest, so the loader cannot look the shared surface
+    // tiles up itself (look/surfaceTiles.ts); hand them over unless the caller already did.
+    const surfaces =
+      opts.surfaces !== undefined
+        ? opts.surfaces
+        : await surfaceTilesFor(
+            manifestUrl,
+            await this.manifest(manifestUrl),
+            resolve,
+            this.io,
+          ).catch(() => null);
+    return loadRigidUnitAsset(this.io, resolve, entry, { ...opts, surfaces });
   }
 
   /** True when the manifest lists `assetId` as a character with baked clips. */

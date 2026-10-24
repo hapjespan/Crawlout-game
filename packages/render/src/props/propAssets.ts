@@ -10,6 +10,7 @@
 import type { AssetManifest } from '@crawlout/asset-cli/manifest';
 import type { BufferGeometry, Object3D, Texture } from 'three/webgpu';
 import { TextureLayerTable } from '../structures/buildingGeometry.js';
+import { applySurfaceTiles, surfaceTilesFor } from '../look/surfaceTiles.js';
 import { canvasRasterize, createLayerTexture, type Rasterize } from '../structures/textureArray.js';
 import { parsePropCategory, propCategoryOf, type PropCategory } from './propCategory.js';
 import { propFitScale, propKindOf } from './propFit.js';
@@ -161,6 +162,14 @@ export class PropAssetRegistry {
     if (entry.kind !== 'prop')
       throw new Error(`"${assetId}" is a ${entry.kind} in the manifest, not a prop`);
     const { category, forceMask } = foliageFields(entry);
+    // Generated relief comes from one shared tile set per manifest (look/surfaceTiles.ts); a manifest without a
+    // `surfaces` block is an older build whose GLBs carry their own copy and this stays null.
+    const tiles = await surfaceTilesFor(
+      manifestUrl,
+      manifest,
+      (path) => src.resolveUrl(manifestUrl, path),
+      this.io,
+    ).catch(() => null);
     const set = await this.loadOnce(`m|${manifestUrl}|${assetId}`, async () => {
       // Identical LODs (same file or same triangle count as the one before) share one scene and so one draw.
       const roots: Object3D[] = [];
@@ -171,6 +180,8 @@ export class PropAssetRegistry {
           roots.push(roots[i - 1]!);
         else roots.push(await this.glb(src.resolveUrl(manifestUrl, lod.path)));
       }
+      // Before build(): it counts the distinct textures of a scene to decide on the layered layout.
+      for (const root of new Set(roots)) applySurfaceTiles(root, tiles);
       return this.build(roots as [Object3D, Object3D, Object3D], forceMask, category);
     });
     return entry.albedoGain === undefined ? set : { ...set, albedoGain: entry.albedoGain };
