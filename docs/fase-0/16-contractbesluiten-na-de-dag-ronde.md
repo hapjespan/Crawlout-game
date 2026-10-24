@@ -14,6 +14,10 @@ Genomen op 14 oktober 2026 bij de architect-review van de speltest-ronde (branch
 8. Scope: in deze ronde zijn drie wijzigingen buiten de eigenaar om gedaan (packages/protocol door hud en de hoofdsessie, de tabel in sectie 6 door sim-core, packages/data/src/schemas.ts door map). Alle drie inhoudelijk juist en eenmalig aanvaard. De regel blijft (CLAUDE.md, harde regel 1 en 2): een contract- of packagewijziging buiten de eigen werkstroom is een issue aan de eigenaar, ook als het besluit voorspelbaar is.
 9. Gate 1, criterium "renderbuis bewezen met placeholders": de buis is nu echt gelopen (assets/src met de CC0-bronnen, `pnpm assets`, manifest met elf assets, validation-report.json) en de hoofdsessie heeft het echte karakter in teamkleur en de 200 props op Rustbelt in Chrome gezien (render-demo en client). Dat is bewijs op deze machine; op een laptop met geïntegreerde GPU, in Firefox en in WebKit is nog niets gezien. De checklist (docs/gate-1-checklist.md) is daarop bijgewerkt.
 
+**Nagekomen besluit (24 oktober 2026): de art-richting**
+
+10. Besluit 7 hierboven (de shader-gate van 14 oktober) beschrijft props en gebouwen "onder dezelfde toon-ramp". Dat is hoe het die dag besloten is en de tekst blijft staan. De art-richting is op 23 oktober 2026 door Martien herzien: Spelfundament sectie 8 pijler 3 en sectie 9 art-regel 1 tot en met 4 en de technische brief. Albedo, normal en metallic-roughness zijn de set, licht en schaduw komen uit de renderer, contrast komt uit roughness en metalness in plaats van geschilderde waardeverschillen, en de `grade` uit besluit 7 (22 procent naar een warm grijs) blijft alleen een correctie op het palet, geen stijlmiddel. Wat van besluit 7 vervalt, is de aanname dat de toon-ramp de enige belichting is; wat blijft, is de instance-batch, de texture-array en de meetwaarden.
+
 **Open na deze ronde, per werkstroom (mag, geen blokkade voor gate 1)**
 
 1. sim-core: PlayerStatus.queue leveren volgens besluit 2 (balans-branch, met unitId); de punten uit sectie 15 (turretAim en het flags-byte, de AI die wacht op een onbetaalbare tech, events die bij inhalen vervallen) staan nog.

@@ -10,14 +10,14 @@ Elke brief: wat je bouwt, waar het op steunt, en wanneer het klaar is. Alles gel
 
 **render-pipeline (werkstroom 2)**
 
-1. Bouwt: packages/render met WebGPURenderer en WebGL2-fallback, TSL toon-ramp-materiaal met teammasker, instanced skinning via bone-matrix textures, 3 LODs per unit, blob-schaduwen, RTS-camera (pan, zoom, rotatie, randscroll), selectie-highlight, snapshot-interpolatie, NixieFX-koppeling voor 4 effecten (mondingsvuur, inslag, bouwstof, dood).
+1. Bouwt: packages/render met WebGPURenderer en WebGL2-fallback, TSL PBR-materiaal (albedo, normal en metallic-roughness, plus rimlight) met teammasker, instanced skinning via bone-matrix textures, 3 LODs per unit, blob-schaduwen, RTS-camera (pan, zoom, rotatie, randscroll), selectie-highlight, snapshot-interpolatie, NixieFX-koppeling voor 4 effecten (mondingsvuur, inslag, bouwstof, dood).
 2. Steunt op: snapshotformaat uit contract 1, manifest uit asset-cli, placeholder-humanoids en animaties uit de Quaternius Universal Animation Library (CC0), props uit de Gobkit Nature Kit (CC0).
 3. Klaar als: 200 geanimeerde placeholder-units plus 40 gebouwen op 60 fps op een laptop met geïntegreerde GPU, onder 150 draw calls, zonder frame boven 20 ms bij een camera-draai; een Quaternius-asset vervangen door een ander GLB uit het manifest kost nul regels code.
 
 **asset-cli (werkstroom 3)**
 
 1. Bouwt: tools/asset-cli. GLB in; uit: meshopt-GLB, KTX2-textures, 3 LODs via gltfpack, animatieclips gebakken naar bone-matrix textures, manifest.json met ids, boundingboxes en socketposities. Validatierapport per asset tegen de brief uit het Spelfundament (tris, bones, texturemaat, botnamen).
-2. Steunt op: niets in code; wel op de artist-brief als norm en op `ANIM_NAMES` uit protocol voor de clipvolgorde.
+2. Steunt op: niets in code; wel op de artist-brief als norm en op `ANIM_NAMES` uit protocol voor de clipvolgorde. Die norm is op 23 oktober 2026 herzien (Spelfundament sectie 9): albedo, normal en metallic-roughness tot 2048, tris LOD0 circa 20.000 met plafond 24.000. Het oude verbod op PBR is vervallen; de buis schrijft normal en metallic-roughness op hetzelfde materiaal als de albedo, op dezelfde UV-set en in dezelfde maat, en meldt ze in het manifest als `maps`.
 3. Klaar als: alle Quaternius-placeholders en 10 Gobkit-props door de buis lopen met één commando; een asset dat de norm schendt faalt met een leesbare reden; de uitvoer laadt in packages/render zonder handwerk.
 4. Levert in sprint 2 het bone-matrix-formaat uit sectie 12 (besluit sprint 1): de asset-cli schrijft de texture en het manifest, render leest ze. Het manifest is van de asset-cli; het textureformaat van render.
 

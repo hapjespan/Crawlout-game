@@ -15,7 +15,7 @@ Pijlers:
 
 1. three.js WebGPURenderer met WebGL2-fallback. Pin de versie exact in `packages/render/package.json` bij je eerste commit en noteer hem in `packages/render/CHANGELOG.md`.
 2. De renderer leest alleen snapshots (transferable ArrayBuffer volgens `packages/protocol/src/snapshot.ts`) en interpoleert tussen de laatste twee. Nooit sim-state, nooit spelregels.
-3. Eigen TSL toon-ramp-materiaal (2 tot 3 lichtstappen plus rimlight) met teammasker uit het alfakanaal van de diffuse. Geen PBR.
+3. Eigen TSL PBR-materiaal (albedo, normal en metallic-roughness, plus rimlight) met teammasker uit het alfakanaal van de diffuse of uit een `team_trim`-materiaal. Het verbod op PBR uit v0.1 is op 23 oktober 2026 vervallen (Spelfundament sectie 8 pijler 3 en sectie 9 art-regel 1). De toon-ramp blijft: `TOON_BANDS` bandeert het directe licht in drie stappen en de PBR-maps komen daarbovenop voor reliëf en specular. Gestileerd licht op echte materialen, geen fotorealisme.
 4. Instanced skinning: animaties gebakken in bone-matrix textures (uit de asset-cli), per instance alleen animatie-index, tijdoffset en teamkleur. Eén draw call per factie per LOD.
 5. Drie LODs, blob-schaduwen onder units, echte schaduw alleen op gebouwen. three.ez/instanced-mesh voor gebouwen en props.
 6. RTS-camera: pan, zoom, rotatie, randscroll. Selectie-highlight. Vier NixieFX-effecten: mondingsvuur, inslag, bouwstof, dood.

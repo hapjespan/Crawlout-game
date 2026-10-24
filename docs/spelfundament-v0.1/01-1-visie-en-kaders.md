@@ -112,7 +112,7 @@ Deterministische lockstep-simulatie, volledig gescheiden van de three.js-rendere
 
 1. Simulatie: vaste tickrate (voorstel 20 Hz), fixed-point integers, seeded RNG, geen floats en geen Math.sin in de gamelogica, state-hash per tick vanaf de eerste commit. ECS op typed arrays, object pooling, geen garbage per tick.
 2. Pathfinding: flow fields, samen met de sim in een Web Worker. De timer draait in de worker, zodat tab-throttling de lockstep niet stilzet.
-3. Renderer: three.js WebGPURenderer met WebGL2-fallback. Interpoleert tussen sim-snapshots. Eigen TSL toon-ramp-materiaal (2 tot 3 lichtstappen plus rimlight) met teammasker. Instanced skinning via bone-matrix textures. three.ez/instanced-mesh voor gebouwen en props. Blob-schaduwen onder units, echte schaduw alleen op gebouwen. Drie LOD-niveaus.
+3. Renderer: three.js WebGPURenderer met WebGL2-fallback. Interpoleert tussen sim-snapshots. Eigen TSL-materiaal met teammasker, hybride sinds 2026-10-23: het directe licht blijft een toon-ramp van drie stappen (`TOON_BANDS` plus rimlight), daarbovenop komen normal- en metallic-roughness-maps voor oppervlaktereliëf en specular. Gestileerd licht, echte materialen. Zie de art-regels in sectie 9. Instanced skinning via bone-matrix textures. three.ez/instanced-mesh voor gebouwen en props. Blob-schaduwen onder units, echte schaduw alleen op gebouwen. Drie LOD-niveaus.
 4. Netcode: lichte Node WebSocket-relay voor lobby en commando-uitwisseling. Commando-delay 100 tot 200 ms (Age of Empires 2 werkt met 250). Reconnect met state-resync. Replays en desync-detectie komen gratis uit de command-log. Geen authoritative server, geen physics-engine in de sim.
 5. Contracten, fase 0: snapshotformaat sim naar render, commandoprotocol client naar relay, dataschema voor units, gebouwen en tech-tree (JSON). Deze drie staan vast voor de werkstromen parallel gaan.
 6. Prestatiedoel: 200 units op 60 fps op een laptop met geïntegreerde GPU, minder dan 150 draw calls, Stats.js in elke build.
@@ -132,10 +132,10 @@ Placeholders eerst, want de renderbuis is het moeilijke deel. Handwerk kopen we 
 
 **Art-regels**
 
-1. Hand-painted diffuse textures met ingebakken licht en schaduw. Geen PBR.
-2. Silhouet eerst: overdreven proporties, grotere hoofden, handen en wapens.
-3. Drie waardes per unit (licht, midden, donker), hoog contrast in de textuur zelf.
-4. Eén palet per factie, teamkleur via maskerkanaal.
+1. PBR-maps: albedo, normal en metallic-roughness. Licht en schaduw komen uit de renderer, niet uit de textuur. De toon-ramp blijft het directe licht bandereren (zie pijler 3), dus dit is gestileerd licht op echte materialen, geen fotorealisme. (Herzien 2026-10-23. Tot dan gold hand-painted diffuse met ingebakken licht en geen PBR; het verbod stond in `buildings.part2.ts` en `packs.part3.ts` en vervalt met deze regel.)
+2. Silhouet eerst. Een unit is op RTS-afstand nog geen 40 pixels hoog, dus leesbaarheid gaat voor detail: duidelijke omtrek, herkenbare houding, teamkleur die opvalt tegen het terrein. De overdreven cartoonproporties uit v0.1 zijn vervallen met art-regel 1.
+3. Contrast tussen de materialen van een unit: stof, leer en metaal moeten los van elkaar leesbaar zijn via roughness en metalness, niet via geschilderde waardeverschillen.
+4. Eén palet per factie. Teamkleur via het alfakanaal als masker, of via een apart `team_trim`-materiaal wanneer de alfa van een bron geschilderde dekking is in plaats van een masker.
 5. Eén bewoner-body per factie, uitrusting als losse meshes op sockets.
 6. Stijlbreuk voorkomen: elk asset langs de stijlbijbel, ook placeholders die blijven hangen.
 
@@ -143,8 +143,8 @@ Placeholders eerst, want de renderbuis is het moeilijke deel. Handwerk kopen we 
 
 | Onderdeel | Eis                                                                                                                                  |
 | --------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| Tris      | LOD0 3000 tot 4000, LOD1 1200 tot 1500 (werkpaard), LOD2 400 tot 600                                                                 |
-| Textuur   | 1 atlas van 2048 per factie voor body plus uitrusting, 1 diffuse, teammasker in het alfakanaal, geen normal-, roughness- of metalmap |
+| Tris      | LOD0 circa 20.000, LOD1 circa 7.000, LOD2 circa 2.200; plafond 24.000 / 9.000 / 3.000. Gemeten op een reductieladder: voorbij 20.000 is er geen zichtbare winst meer. (Was 3000-4000 / 1200-1500 / 400-600, herzien 2026-10-23.) |
+| Textuur   | Albedo, normal en metallic-roughness, tot 2048 per map. Teammasker in het alfakanaal of een `team_trim`-materiaal. Eén atlas per factie en KTX2 zijn uitgestelde optimalisaties, geen eis aan de bron. |
 | Rig       | Humanoid, maximaal 28 bones, geen vingers, Mixamo-botnamen, T- of A-pose, socket-bones voor hand, rug, hoofd                         |
 | Animaties | idle, walk, run, attack1, attack2, gather, build, death; 30 fps; alles op één gedeeld skelet                                         |
 | Schaal    | 1 unit is 1 meter, poppetje 1,8 m, voeten op y=0, Y omhoog, gezicht naar +Z                                                          |
