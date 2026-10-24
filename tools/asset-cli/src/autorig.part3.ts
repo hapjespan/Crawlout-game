@@ -9,7 +9,8 @@ import {
   invertAffine,
 } from './math.js';
 import type { Document, Node, Texture, Material, Primitive } from '@gltf-transform/core';
-import { computeSmoothNormals } from './normals.js';
+import { computeSmoothNormals, computeTangents } from './normals.js';
+import { cullHiddenSkin, type ClothInfo } from './cloth.js';
 import { prune } from '@gltf-transform/functions';
 import { concat, detectLandmarks, readRig, roleOf, sideOf, vec, weldIds } from './autorig.part1.js';
 import type {
@@ -94,36 +95,45 @@ export function boneMoves(
   });
 }
 
-/** Linear blend skinning of positions and normals by the bone moves. */
+/** Linear blend skinning of positions, normals and tangents by the bone moves. */
 export function repose(
   positions: Float64Array,
   normals: Float64Array,
   skin: Pick<SkinWeights, 'joints' | 'weights'>,
   moves: readonly BoneMove[],
-): { positions: Float64Array; normals: Float64Array } {
+  tangents?: Float64Array,
+): { positions: Float64Array; normals: Float64Array; tangents: Float64Array } {
   const n = positions.length / 3;
   const outP = new Float64Array(n * 3);
   const outN = new Float64Array(n * 3);
+  const outT = new Float64Array(n * 4);
   for (let i = 0; i < n; i++) {
     const v = vec(positions, i);
     const nv = vec(normals, i);
+    const tv: Vec3 = tangents
+      ? [tangents[i * 4]!, tangents[i * 4 + 1]!, tangents[i * 4 + 2]!]
+      : [0, 0, 0];
     const acc: Vec3 = [0, 0, 0];
     const accN: Vec3 = [0, 0, 0];
+    const accT: Vec3 = [0, 0, 0];
     for (let k = 0; k < 4; k++) {
       const w = skin.weights[i * 4 + k]!;
       if (w <= 0) continue;
       const m = moves[skin.joints[i * 4 + k]!]!;
       const moved = movePoint(m, v);
       const turned = quatRotate(m.q, nv);
+      const turnedT = tangents ? quatRotate(m.q, tv) : [0, 0, 0];
       for (let c = 0; c < 3; c++) {
         acc[c]! += w * moved[c]!;
         accN[c]! += w * turned[c]!;
+        accT[c]! += w * turnedT[c]!;
       }
     }
     outP.set(acc, i * 3);
     outN.set(normalize(accN), i * 3);
+    if (tangents) outT.set([...normalize(accT), tangents[i * 4 + 3]!], i * 4);
   }
-  return { positions: outP, normals: outN };
+  return { positions: outP, normals: outN, tangents: outT };
 }
 
 /** All TRIANGLES primitives of the scene in world space (node transforms applied), normals computed when missing. */
@@ -171,11 +181,28 @@ function flattenSource(document: Document): SourcePrimitive[] {
           indices[t + 1] = indices[t + 2]!;
           indices[t + 2] = swap;
         }
+      // The tangent frame travels with the mesh; a mirrored node turns the bitangent around, so w flips with it.
+      const uvs = uv ? Float32Array.from(uv.getArray() as ArrayLike<number>) : null;
+      const source = prim.getAttribute('TANGENT');
+      let tangents: Float64Array | null = null;
+      if (source) {
+        tangents = new Float64Array(count * 4);
+        const t = [0, 0, 0, 0];
+        for (let i = 0; i < count; i++) {
+          source.getElement(i, t);
+          const w = normalize(transformDirection(world, [t[0]!, t[1]!, t[2]!]));
+          tangents.set([w[0], w[1], w[2], det < 0 ? -(t[3] ?? 1) : (t[3] ?? 1)], i * 4);
+        }
+      } else if (uvs) {
+        tangents = computeTangents(positions, normals, uvs, indices);
+      }
       out.push({
         material: prim.getMaterial(),
         positions,
         normals,
-        uvs: uv ? Float32Array.from(uv.getArray() as ArrayLike<number>) : null,
+        tangents,
+        ...(tangents && !source ? { tangentsComputed: true } : {}),
+        uvs,
         indices,
       });
     }
@@ -243,6 +270,18 @@ export async function autoRig(
   );
   const srcLm = detectLandmarks(mesh, weld, structural);
 
+  // The skin layer under the clothes (src/cloth.ts): the weight source and the layer that gets culled where it is
+  // covered. Without a `cloth` option nothing changes and every primitive keeps all its triangles.
+  const bodyNames = new Set((options.cloth?.body ?? []).map((name) => name.toLowerCase()));
+  const isBodyPart = parts.map((part) =>
+    bodyNames.has((part.material?.getName() ?? '').toLowerCase()),
+  );
+  const bodyMask = new Uint8Array(mesh.positions.length / 3);
+  parts.forEach((part, p) => {
+    if (isBodyPart[p])
+      bodyMask.fill(1, raw.offsets[p]!, raw.offsets[p]! + part.positions.length / 3);
+  });
+
   // 3. Embedded skeleton, 4. weights, 5. re-pose.
   const refHeads = bones.map((b) => b.head);
   const srcHeads = embedSkeleton(bones, refLm, srcLm);
@@ -252,9 +291,41 @@ export async function autoRig(
     heat: options.heat,
     attachRadius: options.attachRadius,
     smallPart: 0.1 * height,
+    ...(options.cloth ? { body: bodyMask, cloth: options.cloth } : {}),
   });
   const moves = boneMoves(bones, srcHeads, srcTails, refHeads, refTails);
-  const posed = repose(mesh.positions, raw.normals, skin, moves);
+  const posed = repose(mesh.positions, raw.normals, skin, moves, raw.tangents);
+
+  // 5b. Delete the skin that nothing ever sees. Judged in the source pose, where body and garments were modelled
+  // together; the clothes stay as they are, only the shell underneath goes.
+  const keepTriangles: (Uint8Array | null)[] = parts.map(() => null);
+  let cloth: ClothInfo | undefined;
+  if (options.cloth) {
+    const cover: number[] = [];
+    parts.forEach((part, p) => {
+      if (isBodyPart[p]) return;
+      for (const i of part.indices) cover.push(i + raw.offsets[p]!);
+    });
+    const coverIndices = Uint32Array.from(cover);
+    let before = 0;
+    let kept = 0;
+    parts.forEach((part, p) => {
+      if (!isBodyPart[p]) return;
+      const offset = raw.offsets[p]!;
+      const flags = cullHiddenSkin(
+        mesh.positions,
+        raw.normals,
+        weld,
+        Uint32Array.from(part.indices, (i) => i + offset),
+        coverIndices,
+        { reach: options.cloth!.reach ?? 0.05, margin: options.cloth!.margin ?? 2 },
+      );
+      keepTriangles[p] = flags;
+      before += flags.length;
+      for (const f of flags) kept += f;
+    });
+    cloth = { transferred: skin.transferred, skinTriangles: before, skinKept: kept };
+  }
 
   // 6. Replace the reference mesh: vertices in the skin's bind space (inverse of the bind transform).
   const toLocal = invertAffine(bind);
@@ -263,14 +334,50 @@ export async function autoRig(
   const buffer = skeleton.getRoot().listBuffers()[0] ?? skeleton.createBuffer();
   const textures = new Map<Texture, Texture>();
   const materials = new Map<Material | null, Material>();
+  let tangentPrimitives = 0;
   parts.forEach((part, p) => {
     const from = raw.offsets[p]!;
-    const count = part.positions.length / 3;
+    // Only the triangles that survived the cull, with the vertices they still use renumbered from zero.
+    const flags = keepTriangles[p];
+    const used = new Map<number, number>();
+    const corners: number[] = [];
+    for (let t = 0; t * 3 < part.indices.length; t++) {
+      if (flags && !flags[t]) continue;
+      for (let c = 0; c < 3; c++) {
+        const source = part.indices[t * 3 + c]!;
+        let target = used.get(source);
+        if (target === undefined) {
+          target = used.size;
+          used.set(source, target);
+        }
+        corners.push(target);
+      }
+    }
+    if (corners.length === 0) return;
+    const count = used.size;
     const pos = new Float32Array(count * 3);
     const nrm = new Float32Array(count * 3);
-    for (let i = 0; i < count; i++) {
-      pos.set(transformPoint(toLocal, vec(posed.positions, from + i)), i * 3);
-      nrm.set(normalize(transformDirection(toLocal, vec(posed.normals, from + i))), i * 3);
+    const tan = part.tangents ? new Float32Array(count * 4) : null;
+    const uvs = part.uvs ? new Float32Array(count * 2) : null;
+    const joints = new Uint16Array(count * 4);
+    const weights = new Float32Array(count * 4);
+    for (const [source, target] of used) {
+      const g = from + source;
+      pos.set(transformPoint(toLocal, vec(posed.positions, g)), target * 3);
+      nrm.set(normalize(transformDirection(toLocal, vec(posed.normals, g))), target * 3);
+      if (tan) {
+        const t = normalize(
+          transformDirection(toLocal, [
+            posed.tangents[g * 4]!,
+            posed.tangents[g * 4 + 1]!,
+            posed.tangents[g * 4 + 2]!,
+          ]),
+        );
+        tan.set([t[0], t[1], t[2], posed.tangents[g * 4 + 3]!], target * 4);
+      }
+      if (uvs && part.uvs) uvs.set(part.uvs.subarray(source * 2, source * 2 + 2), target * 2);
+      joints.set(skin.joints.subarray(g * 4, g * 4 + 4), target * 4);
+      weights.set(skin.weights.subarray(g * 4, g * 4 + 4), target * 4);
     }
     const accessor = (
       array: Float32Array | Uint16Array | Uint32Array,
@@ -285,13 +392,17 @@ export async function autoRig(
       .createPrimitive()
       .setAttribute('POSITION', accessor(pos, 'VEC3'))
       .setAttribute('NORMAL', accessor(nrm, 'VEC3'))
-      .setAttribute('JOINTS_0', accessor(skin.joints.slice(from * 4, (from + count) * 4), 'VEC4'))
-      .setAttribute('WEIGHTS_0', accessor(skin.weights.slice(from * 4, (from + count) * 4), 'VEC4'))
+      .setAttribute('JOINTS_0', accessor(joints, 'VEC4'))
+      .setAttribute('WEIGHTS_0', accessor(weights, 'VEC4'))
       .setIndices(
-        accessor(count > 65535 ? part.indices.slice() : Uint16Array.from(part.indices), 'SCALAR'),
+        accessor(count > 65535 ? Uint32Array.from(corners) : Uint16Array.from(corners), 'SCALAR'),
       )
       .setMaterial(material);
-    if (part.uvs) prim.setAttribute('TEXCOORD_0', accessor(part.uvs.slice(), 'VEC2'));
+    if (uvs) prim.setAttribute('TEXCOORD_0', accessor(uvs, 'VEC2'));
+    if (tan) {
+      prim.setAttribute('TANGENT', accessor(tan, 'VEC4'));
+      tangentPrimitives++;
+    }
     body.addPrimitive(prim);
   });
   meshNode.setMesh(body);
@@ -326,5 +437,10 @@ export async function autoRig(
     armAngle: { left: angle(srcLm.left), right: angle(srcLm.right) },
     boneStretch,
     maxInfluences: skin.maxInfluences,
+    tangents: {
+      primitives: tangentPrimitives,
+      computed: parts.filter((part) => part.tangentsComputed).length,
+    },
+    ...(cloth ? { cloth } : {}),
   };
 }

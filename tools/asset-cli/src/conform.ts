@@ -12,6 +12,8 @@ import { countTriangles, hasSkin } from './inspect.js';
 import { createIO, simplifyToTarget } from './lods.js';
 import { ensureSmoothNormals } from './normals.js';
 import { autoRig, type AutoRigInfo } from './autorig.js';
+import { addTeamTrim, type TeamTrimInfo } from './teamTrim.js';
+import { hexToLinear } from './buildings.js';
 import { retargetClips, type RetargetInfo } from './retarget.js';
 import { parseRigmap, type AssetConform, type Rigmap } from './rigmap.js';
 import {
@@ -40,6 +42,8 @@ export interface ConformInfo {
   atlas?: AtlasInfo;
   /** Het teammasker in de alfa van de diffuse (`teamMask`): texels in het masker en in totaal. */
   teamMask?: TeamMaskInfo;
+  /** De band in de spelerskleur (`teamTrim`, src/teamTrim.ts). */
+  teamTrim?: TeamTrimInfo;
   /** Primitives die geen normalen hadden en gladde normalen kregen. */
   normalsComputed?: number;
   /** Auto-rigged from a static mesh (`autoRig`, src/autorig.ts). */
@@ -174,6 +178,7 @@ export async function autoRigFromConfig(
     yawDegrees: config.yawDegrees,
     heat: config.heat,
     attachRadius: config.attachRadius,
+    cloth: config.cloth,
   });
   return { document, info: { from: config.from, skeleton: config.skeleton, ...info } };
 }
@@ -240,6 +245,14 @@ export async function conformDocument(
   if (entry?.lod0Triangles !== undefined && countTriangles(document) > entry.lod0Triangles) {
     await simplifyToTarget(document, entry.lod0Triangles);
     info.reduced = true;
+  }
+  // Na de reductie: de band is een schil over de huid zoals die er na simplificatie bij ligt, dus hij ligt er strak op.
+  if (entry?.teamTrim) {
+    const { color, ...trim } = entry.teamTrim;
+    info.teamTrim = addTeamTrim(document, {
+      ...trim,
+      ...(color ? { color: hexToLinear(color) } : {}),
+    });
   }
   info.trianglesAfter = countTriangles(document);
   return info;

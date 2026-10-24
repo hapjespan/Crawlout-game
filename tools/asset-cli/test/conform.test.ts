@@ -5,6 +5,7 @@ import { Document, NodeIO } from '@gltf-transform/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { pruneBones } from '../src/bones.js';
 import { buildAssets } from '../src/build.js';
+import { BUDGETS } from '../src/budgets.js';
 import { parseClipmap } from '../src/clipmap.js';
 import { conformDocument } from '../src/conform.js';
 import { facingZ, countTriangles } from '../src/inspect.js';
@@ -152,7 +153,10 @@ describe('rigmap', () => {
   it('valideert verwijzingen en de LOD0-band', () => {
     expect(() => parseRigmap({ assets: { a: { rig: 'weg' } } })).toThrow(/onbekende rig/);
     expect(() =>
-      parseRigmap({ rigs: { r: { bones: {} } }, assets: { a: { rig: 'r', lod0Triangles: 9000 } } }),
+      parseRigmap({
+        rigs: { r: { bones: {} } },
+        assets: { a: { rig: 'r', lod0Triangles: 30000 } },
+      }),
     ).toThrow(/LOD0-band/);
     expect(parseRigmap({ assets: { prop: { scale: 0.01 } } }).assets.prop?.scale).toBe(0.01);
   });
@@ -242,11 +246,11 @@ describe('clips en validatie na conform', () => {
   });
 
   it('weigert de bron ongewijzigd zonder rigmap-entry (te veel bones en tris blijven fouten)', async () => {
-    const doc = await io.readBinary(await makeUeSource());
+    const doc = await io.readBinary(await makeUeSource({ segments: 160, rings: 80 }));
     await conformDocument(doc, { assetId: 'ue', rigmap: parseRigmap({}), clipmap });
     const errors = validateAsset(doc, { clipmap, assetId: 'ue' }).errors.join('\n');
     expect(errors).toMatch(/36 bones, maximaal 28/);
-    expect(errors).toMatch(/9600 driehoeken in LOD0/);
+    expect(errors).toMatch(/25600 driehoeken in LOD0/);
   });
 
   it('facingZ ziet of de voeten naar +Z of -Z wijzen', () => {
@@ -288,14 +292,15 @@ describe('buis met conform', () => {
   afterEach(() => rmSync(root, { recursive: true, force: true }));
 
   it('bouwt een zware UE-bron tot een brief-conform karakter en een prop in meters, met validatierapport', async () => {
-    writeFileSync(join(src, 'ue.glb'), await makeUeSource());
+    // 51.200 driehoeken: dezelfde orde als een geleverde bron, zodat de LOD-band van 2026-10-23 echt geraakt wordt.
+    writeFileSync(join(src, 'ue.glb'), await makeUeSource({ segments: 160, rings: 160 }));
     writeFileSync(join(src, 'steen.glb'), await makeProp({ segments: 30, rings: 20 }));
     writeFileSync(join(src, 'clipmap.json'), JSON.stringify({ assets: { ue: UE_CLIPMAP } }));
     writeFileSync(
       join(src, 'rigmap.json'),
       JSON.stringify({
         rigs: { ue: { bones: UE_TO_MIXAMO } },
-        assets: { ue: { rig: 'ue', lod0Triangles: 3600 }, steen: { scale: 0.01 } },
+        assets: { ue: { rig: 'ue', lod0Triangles: 20000 }, steen: { scale: 0.01 } },
       }),
     );
     const result = await buildAssets({ srcDir: src, distDir: dist, toktx: null });
@@ -307,12 +312,10 @@ describe('buis met conform', () => {
     );
     const ue = manifest.assets.find((a) => a.id === 'ue')!;
     expect(ue.boneCount).toBe(20);
-    expect(ue.lods[0].triangles).toBeGreaterThanOrEqual(3000);
-    expect(ue.lods[0].triangles).toBeLessThanOrEqual(4000);
-    expect(ue.lods[1].triangles).toBeGreaterThanOrEqual(1200);
-    expect(ue.lods[1].triangles).toBeLessThanOrEqual(1500);
-    expect(ue.lods[2].triangles).toBeGreaterThanOrEqual(400);
-    expect(ue.lods[2].triangles).toBeLessThanOrEqual(600);
+    ue.lods.forEach((lod, level) => {
+      expect(lod.triangles, `LOD${level}`).toBeGreaterThanOrEqual(BUDGETS.characterMinTris[level]!);
+      expect(lod.triangles, `LOD${level}`).toBeLessThanOrEqual(BUDGETS.characterMaxTris[level]!);
+    });
     expect(ue.baked?.clips.map((c) => c.name)).toEqual([
       'idle',
       'walk',
@@ -353,7 +356,7 @@ describe('buis met conform', () => {
     };
     expect(report.ok).toBe(true);
     const ueReport = report.assets.find((a) => a.id === 'ue')!;
-    expect(ueReport).toMatchObject({ sourceBones: 36, bones: 20, sourceTriangles: 9600 });
+    expect(ueReport).toMatchObject({ sourceBones: 36, bones: 20, sourceTriangles: 51200 });
     expect(ueReport.clipsDropped.sort()).toEqual(['Dance_Loop', 'Roll']);
     expect(report.assets.find((a) => a.id === 'steen')?.scale).toBe(0.01);
     expect(existsSync(join(dist, 'ue/ue.anim.f32'))).toBe(true);
@@ -393,8 +396,10 @@ describe('smoke: het echte Quaternius-bestand', () => {
       const result = validateAsset(doc, { clipmap: realClipmap, assetId: 'dweller_body_human' });
       expect(result.errors).toEqual([]);
       expect(info.bones?.bonesAfter).toBeLessThanOrEqual(28);
-      expect(result.triangles).toBeGreaterThanOrEqual(3000);
-      expect(result.triangles).toBeLessThanOrEqual(4000);
+      // The Quaternius source is 13.744 triangles and `lod0Triangles` in assets/src/rigmap.json is the 20.000
+      // work point of budgets.ts, so nothing is reduced away: the whole source reaches LOD0.
+      expect(result.triangles).toBe(13_744);
+      expect(result.triangles).toBeLessThanOrEqual(BUDGETS.characterMaxTris[0]);
       expect(doc.getRoot().listAnimations().length).toBe(8);
       expect(facingZ(doc)).toBeGreaterThan(0.02);
       expect(Date.now() - started).toBeLessThan(20_000);

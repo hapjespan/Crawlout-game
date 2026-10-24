@@ -74,6 +74,25 @@ export const rigmapSchema = z.object({
             heat: z.number().positive().optional(),
             /** Small loose parts within this distance (m) take the weights of the body under them; default 0.05. */
             attachRadius: z.number().nonnegative().optional(),
+            /**
+             * Clothing over a naked body (src/cloth.ts). `body` names the materials of the skin layer. Every garment
+             * vertex then takes the weights of the skin under it (so a sleeve bends with the arm instead of hanging
+             * stiff on a few anchor points), and the skin that no ray can escape from is deleted (so the body cannot
+             * come through the clothes).
+             */
+            cloth: z
+              .object({
+                body: z.array(z.string().min(1)).min(1),
+                /** A garment vertex within this distance (m) of the skin takes its weights; default 0.09. */
+                transfer: z.number().positive().optional(),
+                /** Laplacian passes over the garment after the transfer; default 4. */
+                smooth: z.number().int().min(0).max(20).optional(),
+                /** Outward search distance (m) for a covering shell; default 0.05. */
+                reach: z.number().positive().optional(),
+                /** Rings of skin triangles kept around every visible one (wrist, neck, ankle); default 2. */
+                margin: z.number().int().min(0).max(8).optional(),
+              })
+              .optional(),
           })
           .optional(),
         /** Een emissive-only kleurtextuur (Sketchfab-unlit) als diffuse gebruiken. */
@@ -103,6 +122,29 @@ export const rigmapSchema = z.object({
           .optional(),
         /** Alle diffuse textures samenvoegen tot één atlas van maximaal deze maat. */
         atlas: z.number().int().positive().optional(),
+        /**
+         * Een losse band in de spelerskleur op een bone (src/teamTrim.ts): de huid rond `bone`, binnen het venster
+         * `from` tot `to` langs die bone, wordt gekopieerd, `offset` m naar buiten gezet en krijgt een eigen materiaal
+         * met "team" in de naam. Voor bronnen waarvan de alfa geverfde dekking is en dus geen masker kan zijn; gaat
+         * niet samen met `teamMask`. Manifest `teamMask` blijft 'materialName'.
+         */
+        teamTrim: z
+          .object({
+            bone: z.string().min(1),
+            towards: z.string().min(1).optional(),
+            /** Venster langs de bone; buiten 0..1 mag, dan ligt de band voor de kop of voorbij de punt. */
+            from: z.number().min(-1).max(2).optional(),
+            to: z.number().min(-1).max(2).optional(),
+            minWeight: z.number().min(0).max(1).optional(),
+            /** Maximale loodrechte afstand tot de botas (m); maakt van een plak een kap om de bone. */
+            radius: z.number().positive().max(1).optional(),
+            /** Minimale y van de hoekpuntnormaal: houdt de band op de bovenkant van een schouder. */
+            minUp: z.number().min(-1).max(1).optional(),
+            offset: z.number().min(0).max(0.05).optional(),
+            name: z.string().regex(/team/i).optional(),
+            color: hexColor.optional(),
+          })
+          .optional(),
         /** Teammasker per texel in de alfa van de diffuse (src/textures.ts applyTeamMaskAlpha); manifest `teamMask` wordt 'diffuseAlpha'. */
         teamMask: z
           .object({
@@ -139,6 +181,8 @@ export function parseRigmap(json: unknown): Rigmap {
   for (const [id, entry] of Object.entries(map.assets)) {
     if (entry.autoRig && (entry.meshes || entry.fit || entry.rig || entry.retarget))
       throw new Error(`asset "${id}": autoRig gaat niet samen met meshes, fit, rig of retarget`);
+    if (entry.teamTrim && entry.teamMask)
+      throw new Error(`asset "${id}": teamTrim en teamMask kunnen niet allebei`);
     if (entry.autoRig && entry.source)
       throw new Error(`asset "${id}": autoRig heeft zijn eigen "from"; laat "source" weg`);
     if (entry.rig && !map.rigs[entry.rig])

@@ -5,6 +5,7 @@ import { MeshoptDecoder, MeshoptEncoder, MeshoptSimplifier } from 'meshoptimizer
 import { BUDGETS } from './budgets.js';
 import { countTriangles } from './inspect.js';
 import { convertTexturesToKtx2 } from './ktx2.js';
+import { compressLodTextures, type TextureCompressionInfo } from './textures.js';
 import type { AssetKind } from './validate.js';
 
 export function createIO(): NodeIO {
@@ -21,6 +22,8 @@ export interface LodOutput {
   level: 0 | 1 | 2;
   glb: Uint8Array;
   triangles: number;
+  /** Wat de textuurstap van deze LOD kostte en opleverde (validation-report `textureBytes`). */
+  textures: TextureCompressionInfo;
 }
 
 export interface BuildLodsOptions {
@@ -59,11 +62,16 @@ export async function simplifyToTarget(document: Document, target: number): Prom
   const start = countTriangles(document);
   if (start <= target) return;
   const original = snapshot(document);
+  const primsAtStart = original.size;
   let ratio = target / start;
   for (let pass = 0; pass < 6; pass++) {
     await document.transform(weld(), simplify({ simplifier: MeshoptSimplifier, ratio, error: 1 }));
     const now = countTriangles(document);
     if (now <= target) return;
+    // Een pass die een primitive helemaal opvouwt, heeft een heel onderdeel (een handschoen, een oog) gewist en dat
+    // komt niet meer terug. Verder stapelen maakt het alleen erger: stoppen en de bron in een keer permissief
+    // reduceren houdt elk onderdeel op zijn eigen aandeel.
+    if (livePrimitives(document).length < primsAtStart) break;
     // De marge van 0,95 houdt rekening met meshopt dat per primitive naar beneden afrondt.
     ratio = Math.max(0.01, (target / now) * 0.95);
   }
@@ -79,35 +87,46 @@ export async function simplifyToTarget(document: Document, target: number): Prom
   }
 }
 
-/** Copies of every primitive's attribute arrays and indices, in document order. */
-function snapshot(
-  document: Document,
-): { attributes: Map<string, ArrayLike<number>>; indices: ArrayLike<number> | null }[] {
+function livePrimitives(document: Document): Primitive[] {
   return document
     .getRoot()
     .listMeshes()
-    .flatMap((m) => m.listPrimitives())
-    .map((prim) => ({
-      attributes: new Map(
-        prim.listSemantics().map((s) => [s, prim.getAttribute(s)!.getArray()!.slice()] as const),
-      ),
-      indices: prim.getIndices()?.getArray()?.slice() ?? null,
-    }));
+    .flatMap((m) => m.listPrimitives());
 }
 
-/** Puts the arrays of `snapshot` back (weld may have merged vertices; the accessors keep their types). */
-function restore(document: Document, saved: ReturnType<typeof snapshot>): void {
-  const prims = document
-    .getRoot()
-    .listMeshes()
-    .flatMap((m) => m.listPrimitives());
-  prims.forEach((prim, i) => {
-    const entry = saved[i];
-    if (!entry) return;
+type Saved = { attributes: Map<string, ArrayLike<number>>; indices: ArrayLike<number> | null };
+
+/**
+ * Copies of every primitive's attribute arrays and indices, **gesleuteld op de primitive zelf**.
+ *
+ * Op volgorde sleutelen was fout: `simplify` gooit een primitive weg zodra die tot nul driehoeken inzakt, dus na een
+ * paar passes is de lijst korter en schuift alles op. `restore` zette dan de hoekpunten van de jas in de primitive van
+ * de laars, met het materiaal en de textuur van de laars. Precies dat gebeurde bij de Klerk: LOD1 en LOD2 waren door
+ * elkaar gehusselde onderdelen met de verkeerde textuur.
+ */
+function snapshot(document: Document): Map<Primitive, Saved> {
+  return new Map(
+    livePrimitives(document).map((prim) => [
+      prim,
+      {
+        attributes: new Map(
+          prim.listSemantics().map((s) => [s, prim.getAttribute(s)!.getArray()!.slice()] as const),
+        ),
+        indices: prim.getIndices()?.getArray()?.slice() ?? null,
+      },
+    ]),
+  );
+}
+
+/** Puts the arrays of `snapshot` back on the same primitive (weld may have merged vertices; the accessors keep their types). */
+function restore(document: Document, saved: Map<Primitive, Saved>): void {
+  for (const prim of livePrimitives(document)) {
+    const entry = saved.get(prim);
+    if (!entry) continue;
     for (const [semantic, array] of entry.attributes)
       prim.getAttribute(semantic)?.setArray(array as Float32Array);
     if (entry.indices) prim.getIndices()?.setArray(entry.indices as Uint32Array);
-  });
+  }
 }
 
 /** Reduceert de indexbuffer van elke primitive tot ongeveer `ratio`; vertices en attributen blijven ongewijzigd. */
@@ -161,6 +180,8 @@ export async function buildLods(
       prune({ keepSolidTextures: true, keepAttributes: true }),
       reorder({ encoder: MeshoptEncoder }),
     );
+    // Textuurmaat per LOD (karakters en props): LOD2 droeg tot nu toe dezelfde kaarten van 1024 als LOD0.
+    const compression = await compressLodTextures(document, level);
     if (options.toktx) convertTexturesToKtx2(document, options.toktx);
     document
       .createExtension(EXTMeshoptCompression)
@@ -170,6 +191,7 @@ export async function buildLods(
       level,
       glb: await io.writeBinary(document),
       triangles: countTriangles(document),
+      textures: compression,
     });
   }
   return outputs;

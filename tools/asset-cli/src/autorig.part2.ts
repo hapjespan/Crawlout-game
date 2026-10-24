@@ -22,6 +22,7 @@ import type {
   TriMesh,
   WeightOptions,
 } from './autorig.part1.js';
+import { transferClothWeights } from './cloth.js';
 
 /** Embeds the reference skeleton in the source: joint positions relative to the landmarks. */
 export function embedSkeleton(bones: readonly RigBone[], ref: Landmarks, src: Landmarks): Vec3[] {
@@ -294,6 +295,25 @@ export function computeSkinWeights(
     solved.push(x);
   }
 
+  // Clothing: a garment vertex looks inward and sees the body, never a bone, so bone heat leaves it nearly unanchored
+  // and the whole garment moves as one stiff shell. It takes the weights of the skin right under it instead.
+  let transferred = 0;
+  if (options.body && options.cloth)
+    transferred = transferClothWeights(
+      p,
+      mesh.indices,
+      options.body,
+      weld,
+      reps,
+      index,
+      edges,
+      solved,
+      {
+        transfer: options.cloth.transfer ?? 0.09,
+        smooth: options.cloth.smooth ?? 4,
+      },
+    );
+
   // Top 4 per vertex, small ones dropped, renormalised.
   const joints = new Uint16Array(n * 4);
   const weights = new Float32Array(n * 4);
@@ -325,6 +345,7 @@ export function computeSkinWeights(
     attached: attachedParts.size,
     components: partSize.size,
     maxInfluences,
+    transferred,
   };
 }
 
@@ -378,6 +399,7 @@ export function referenceMesh(meshNode: Node, bind: Mat): TriMesh {
       material: null,
       positions,
       normals: new Float64Array(count * 3),
+      tangents: null,
       uvs: null,
       indices: idx
         ? Uint32Array.from({ length: idx.getCount() }, (_, k) => idx.getScalar(k))
@@ -403,7 +425,47 @@ function copyTexture(
   return copy;
 }
 
-/** A copy of the material in `target`: base color and emissive (factor and texture), alpha, sides. */
+type Info = ReturnType<Material['getBaseColorTextureInfo']>;
+
+function copyInfo(from: Info, to: Info): void {
+  if (!from || !to) return;
+  to.setWrapS(from.getWrapS())
+    .setWrapT(from.getWrapT())
+    .setMagFilter(from.getMagFilter())
+    .setMinFilter(from.getMinFilter())
+    .setTexCoord(from.getTexCoord());
+}
+
+/**
+ * Whether an extra map lines up with the base colour map: same UV set, same transform and same size. Render stacks the
+ * maps of all primitives into one array texture per map type and keys every type on the same layer index, so a map that
+ * needs its own UV's or its own size cannot ride along. Such a map is dropped instead of shipped misaligned.
+ *
+ * Shared with the delivered-model pipeline (delivered.part1.ts `extract`), so both routes apply one rule.
+ */
+export function alignsWithBase(material: Material, info: Info, texture: Texture | null): boolean {
+  const base = material.getBaseColorTexture();
+  const baseInfo = material.getBaseColorTextureInfo();
+  if (!base || !baseInfo || !info || !texture) return false;
+  if (info.getTexCoord() !== baseInfo.getTexCoord()) return false;
+  const xf = (i: NonNullable<Info>): string => {
+    const t = i.getExtension('KHR_texture_transform') as {
+      getOffset?: () => number[];
+      getScale?: () => number[];
+      getRotation?: () => number;
+      getTexCoord?: () => number | null;
+    } | null;
+    return t
+      ? JSON.stringify([t.getOffset?.(), t.getScale?.(), t.getRotation?.(), t.getTexCoord?.()])
+      : '';
+  };
+  if (xf(info) !== xf(baseInfo)) return false;
+  const [bw, bh] = base.getSize() ?? [0, 0];
+  const [tw, th] = texture.getSize() ?? [0, 0];
+  return bw === tw && bh === th;
+}
+
+/** A copy of the material in `target`: base colour, normal, metallic-roughness, occlusion and emissive, alpha, sides. */
 export function copyMaterial(
   source: Material | null,
   target: Document,
@@ -416,22 +478,49 @@ export function copyMaterial(
     .setEmissiveFactor(source.getEmissiveFactor())
     .setMetallicFactor(source.getMetallicFactor())
     .setRoughnessFactor(source.getRoughnessFactor())
+    .setNormalScale(source.getNormalScale())
+    .setOcclusionStrength(source.getOcclusionStrength())
     .setAlphaMode(source.getAlphaMode())
     .setAlphaCutoff(source.getAlphaCutoff())
     .setDoubleSided(source.getDoubleSided());
   const base = copyTexture(source.getBaseColorTexture(), target, cache);
   if (base) {
     material.setBaseColorTexture(base);
-    const from = source.getBaseColorTextureInfo();
-    const to = material.getBaseColorTextureInfo();
-    if (from && to)
-      to.setWrapS(from.getWrapS())
-        .setWrapT(from.getWrapT())
-        .setMagFilter(from.getMagFilter())
-        .setMinFilter(from.getMinFilter());
+    copyInfo(source.getBaseColorTextureInfo(), material.getBaseColorTextureInfo());
+  }
+  // The PBR set rides along on the base colour's UV's: leather, metal and cloth get their own response and relief.
+  const extras = [
+    {
+      texture: source.getNormalTexture(),
+      info: source.getNormalTextureInfo(),
+      set: (t: Texture) => material.setNormalTexture(t),
+      got: () => material.getNormalTextureInfo(),
+    },
+    {
+      texture: source.getMetallicRoughnessTexture(),
+      info: source.getMetallicRoughnessTextureInfo(),
+      set: (t: Texture) => material.setMetallicRoughnessTexture(t),
+      got: () => material.getMetallicRoughnessTextureInfo(),
+    },
+    {
+      texture: source.getOcclusionTexture(),
+      info: source.getOcclusionTextureInfo(),
+      set: (t: Texture) => material.setOcclusionTexture(t),
+      got: () => material.getOcclusionTextureInfo(),
+    },
+  ] as const;
+  for (const extra of extras) {
+    if (!base || !alignsWithBase(source, extra.info, extra.texture)) continue;
+    const copy = copyTexture(extra.texture, target, cache);
+    if (!copy) continue;
+    extra.set(copy);
+    copyInfo(extra.info, extra.got());
   }
   const emissive = copyTexture(source.getEmissiveTexture(), target, cache);
-  if (emissive) material.setEmissiveTexture(emissive);
+  if (emissive) {
+    material.setEmissiveTexture(emissive);
+    copyInfo(source.getEmissiveTextureInfo(), material.getEmissiveTextureInfo());
+  }
   return material;
 }
 

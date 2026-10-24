@@ -85,6 +85,61 @@ export function computeSmoothNormals(prim: Primitive): Float32Array {
   return out;
 }
 
+/**
+ * Per-vertex VEC4 tangents from the UV gradient (Lengyel's method, averaged per vertex and made orthogonal to the
+ * normal; w is the handedness of the bitangent). For a primitive whose source carries no TANGENT: the renderer then
+ * gets one frame for every surface instead of rebuilding half of them from screen-space derivatives.
+ */
+export function computeTangents(
+  positions: Float64Array,
+  normals: Float64Array,
+  uvs: Float32Array,
+  indices: Uint32Array,
+): Float64Array {
+  const count = positions.length / 3;
+  const tan = new Float64Array(count * 3);
+  const bit = new Float64Array(count * 3);
+  for (let t = 0; t + 2 < indices.length; t += 3) {
+    const [i0, i1, i2] = [indices[t]!, indices[t + 1]!, indices[t + 2]!];
+    const e1 = [0, 1, 2].map((k) => positions[i1 * 3 + k]! - positions[i0 * 3 + k]!);
+    const e2 = [0, 1, 2].map((k) => positions[i2 * 3 + k]! - positions[i0 * 3 + k]!);
+    const u1 = uvs[i1 * 2]! - uvs[i0 * 2]!;
+    const v1 = uvs[i1 * 2 + 1]! - uvs[i0 * 2 + 1]!;
+    const u2 = uvs[i2 * 2]! - uvs[i0 * 2]!;
+    const v2 = uvs[i2 * 2 + 1]! - uvs[i0 * 2 + 1]!;
+    const det = u1 * v2 - u2 * v1;
+    if (Math.abs(det) < 1e-12) continue;
+    const r = 1 / det;
+    for (const i of [i0, i1, i2])
+      for (let k = 0; k < 3; k++) {
+        tan[i * 3 + k]! += (e1[k]! * v2 - e2[k]! * v1) * r;
+        bit[i * 3 + k]! += (e2[k]! * u1 - e1[k]! * u2) * r;
+      }
+  }
+  const out = new Float64Array(count * 4);
+  for (let i = 0; i < count; i++) {
+    const n = [normals[i * 3]!, normals[i * 3 + 1]!, normals[i * 3 + 2]!];
+    const t = [tan[i * 3]!, tan[i * 3 + 1]!, tan[i * 3 + 2]!];
+    const d = n[0]! * t[0]! + n[1]! * t[1]! + n[2]! * t[2]!;
+    const o = t.map((v, k) => v - n[k]! * d);
+    let l = Math.hypot(o[0]!, o[1]!, o[2]!);
+    // A vertex with no usable UV gradient: any direction across the normal will do.
+    if (!(l > 1e-9)) {
+      const a = Math.abs(n[0]!) < 0.9 ? [1, 0, 0] : [0, 1, 0];
+      o[0] = n[1]! * a[2]! - n[2]! * a[1]!;
+      o[1] = n[2]! * a[0]! - n[0]! * a[2]!;
+      o[2] = n[0]! * a[1]! - n[1]! * a[0]!;
+      l = Math.hypot(o[0]!, o[1]!, o[2]!) || 1;
+    }
+    const cx = (n[1]! * o[2]!) / l - (n[2]! * o[1]!) / l;
+    const cy = (n[2]! * o[0]!) / l - (n[0]! * o[2]!) / l;
+    const cz = (n[0]! * o[1]!) / l - (n[1]! * o[0]!) / l;
+    const handed = cx * bit[i * 3]! + cy * bit[i * 3 + 1]! + cz * bit[i * 3 + 2]! < 0 ? -1 : 1;
+    out.set([o[0]! / l, o[1]! / l, o[2]! / l, handed], i * 4);
+  }
+  return out;
+}
+
 /** Geeft elke TRIANGLES-primitive zonder normalen gladde normalen. Geeft het aantal primitives dat er een kreeg. */
 export function ensureSmoothNormals(document: Document): number {
   let fixed = 0;

@@ -3,6 +3,7 @@
 import { type Vec3, type Quat, type Mat, identity, multiply } from './math.js';
 import type { Material, Document, Node } from '@gltf-transform/core';
 import { stripMixamoPrefix } from './inspect.js';
+import type { ClothInfo, ClothOptions } from './cloth.js';
 
 export interface AutoRigOptions {
   /** Height of the body (feet to crown, without small loose parts) after scaling, m. Default 1.8. */
@@ -13,6 +14,8 @@ export interface AutoRigOptions {
   heat?: number | undefined;
   /** Small loose parts within this distance (m, after scaling) of the body take the body's weights. Default 0.05. */
   attachRadius?: number | undefined;
+  /** Treat some materials as the skin under the clothes: weight source and cull candidate (src/cloth.ts). */
+  cloth?: ClothOptions | undefined;
 }
 
 export interface AutoRigInfo {
@@ -34,6 +37,10 @@ export interface AutoRigInfo {
   boneStretch: Record<string, number>;
   /** Largest number of bone influences on one vertex. */
   maxInfluences: number;
+  /** Primitives that carry a TANGENT, and how many of those were computed here because the source had none. */
+  tangents: { primitives: number; computed: number };
+  /** Weight transfer and skin cull of the clothing layers (src/cloth.ts); absent without an `cloth` option. */
+  cloth?: ClothInfo;
 }
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -321,6 +328,8 @@ export interface SkinWeights {
   attached: number;
   components: number;
   maxInfluences: number;
+  /** Garment vertices that took the weights of the skin under them (src/cloth.ts). */
+  transferred: number;
 }
 
 export interface WeightOptions {
@@ -328,6 +337,9 @@ export interface WeightOptions {
   attachRadius?: number | undefined;
   /** Parts whose bounds diagonal is below this (m) count as small loose parts. */
   smallPart?: number | undefined;
+  /** Per vertex 1 when it belongs to the skin layer; garment vertices then take the skin's weights (src/cloth.ts). */
+  body?: Uint8Array | undefined;
+  cloth?: ClothOptions | undefined;
 }
 
 /** Solves (L + diag(h)) x = b by conjugate gradients with a Jacobi preconditioner (L from the CSR graph). */
@@ -404,16 +416,21 @@ export interface SourcePrimitive {
   material: Material | null;
   positions: Float64Array;
   normals: Float64Array;
+  /** VEC4 tangent (xyz plus the handedness w), in the same space as the positions; null without UV's to derive one. */
+  tangents: Float64Array | null;
+  /** Whether those tangents were computed here because the source primitive had no TANGENT. */
+  tangentsComputed?: boolean;
   uvs: Float32Array | null;
   indices: Uint32Array;
 }
 
 export function concat(
   parts: readonly SourcePrimitive[],
-): TriMesh & { normals: Float64Array; offsets: number[] } {
+): TriMesh & { normals: Float64Array; tangents: Float64Array; offsets: number[] } {
   const total = parts.reduce((s, p) => s + p.positions.length / 3, 0);
   const positions = new Float64Array(total * 3);
   const normals = new Float64Array(total * 3);
+  const tangents = new Float64Array(total * 4);
   const indexList: number[] = [];
   const offsets: number[] = [];
   let offset = 0;
@@ -421,10 +438,11 @@ export function concat(
     offsets.push(offset);
     positions.set(part.positions, offset * 3);
     normals.set(part.normals, offset * 3);
+    if (part.tangents) tangents.set(part.tangents, offset * 4);
     for (const i of part.indices) indexList.push(i + offset);
     offset += part.positions.length / 3;
   }
-  return { positions, normals, indices: Uint32Array.from(indexList), offsets };
+  return { positions, normals, tangents, indices: Uint32Array.from(indexList), offsets };
 }
 
 /** Skin, joints in their bind pose (heads in model space) and the bind transform of the skinned mesh. */
