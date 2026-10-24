@@ -4,6 +4,7 @@
 // counter-clockwise seen from outside like glTF wants. No shape numbers live here: every size comes from robots.json.
 
 export {
+  makeBoxUv,
   makeBoxOpen,
   makeCylinderClean,
   makeCone,

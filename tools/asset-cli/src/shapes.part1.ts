@@ -1,21 +1,40 @@
 // Split from shapes.ts to stay under the 5,000-token file limit; shapes.ts re-exports the public surface.
 // Holds: Vec2, Builder, normalize, makeBoxOpen, makeCylinderClean, makeCone, +9 more.
 import { type Vec3, type Mesh, makeBox } from './geometry.js';
+import { boxProjectUv, fillMissingUv, ringU, metresV } from './uvmap.js';
 
 export type Vec2 = readonly [number, number];
 
-/** Collects triangles. `face` fixes the winding against a hint for the outside, so callers need not get it right. */
+/**
+ * Collects triangles. `face` fixes the winding against a hint for the outside, so callers need not get it right.
+ *
+ * UV: a vertex may be given one (the round shapes do: a cylinder side wants its arc length, not a box projection).
+ * A vertex without one is filled in at `build` time by box projection from its own normal (uvmap.ts), which is exact
+ * for a flat-shaded face. A builder where nobody gave a uv returns `uvs: null`, so the caller decides.
+ */
 export class Builder {
   private readonly positions: number[] = [];
   private readonly normals: number[] = [];
+  private readonly uvs: number[] = [];
   private readonly indices: number[] = [];
+  private anyUv = false;
 
   get vertexCount(): number {
     return this.positions.length / 3;
   }
 
-  /** A flat polygon (fan from the first vertex; convex), wound so that its normal points along `outward`. */
-  face(vertices: readonly Vec3[], outward: Vec3): void {
+  private pushUv(uv: Vec2 | undefined): void {
+    if (uv) {
+      this.anyUv = true;
+      this.uvs.push(uv[0], uv[1]);
+    } else this.uvs.push(NaN, NaN);
+  }
+
+  /**
+   * A flat polygon (fan from the first vertex; convex), wound so that its normal points along `outward`. `uvs`, when
+   * given, is one uv per vertex in the order of `vertices` (it follows a winding flip).
+   */
+  face(vertices: readonly Vec3[], outward: Vec3, uvs?: readonly Vec2[]): void {
     const [a, b, c] = vertices as [Vec3, Vec3, Vec3];
     const ux = b[0] - a[0];
     const uy = b[1] - a[1];
@@ -26,22 +45,25 @@ export class Builder {
     let n: Vec3 = [uy * vz - uz * vy, uz * vx - ux * vz, ux * vy - uy * vx];
     if (n[0] * outward[0] + n[1] * outward[1] + n[2] * outward[2] < 0) {
       vertices = [...vertices].reverse();
+      if (uvs) uvs = [...uvs].reverse();
       n = [-n[0], -n[1], -n[2]];
     }
     const len = Math.hypot(n[0], n[1], n[2]);
     if (len < 1e-12) return; // a degenerate face (a collapsed edge)
     const base = this.vertexCount;
-    for (const v of vertices) {
+    vertices.forEach((v, i) => {
       this.positions.push(v[0], v[1], v[2]);
       this.normals.push(n[0] / len, n[1] / len, n[2] / len);
-    }
+      this.pushUv(uvs?.[i]);
+    });
     for (let i = 1; i < vertices.length - 1; i++) this.indices.push(base, base + i, base + i + 1);
   }
 
   /** A smooth-shaded vertex (position and normal given), for the round shapes. */
-  vertex(p: Vec3, n: Vec3): number {
+  vertex(p: Vec3, n: Vec3, uv?: Vec2): number {
     this.positions.push(p[0], p[1], p[2]);
     this.normals.push(n[0], n[1], n[2]);
+    this.pushUv(uv);
     return this.vertexCount - 1;
   }
 
@@ -50,12 +72,13 @@ export class Builder {
   }
 
   build(): Mesh {
-    return {
+    const mesh: Mesh = {
       positions: new Float32Array(this.positions),
       normals: new Float32Array(this.normals),
-      uvs: null,
+      uvs: this.anyUv ? new Float32Array(this.uvs) : null,
       indices: new Uint32Array(this.indices),
     };
+    return this.anyUv ? fillMissingUv(mesh) : mesh;
   }
 }
 
@@ -64,9 +87,14 @@ export const normalize = (v: Vec3): Vec3 => {
   return [v[0] / l, v[1] / l, v[2] / l];
 };
 
+/** Box with the axis-aligned box projection of uvmap.ts as its uv set. */
+export function makeBoxUv(size: Vec3): Mesh {
+  return boxProjectUv(makeBox(size));
+}
+
 /** Box without the bottom face (for parts that sit on a surface): 10 triangles instead of 12. */
 export function makeBoxOpen(size: Vec3): Mesh {
-  const box = makeBox(size);
+  const box = makeBoxUv(size);
   // makeBox emits the faces in the order top, bottom, front, back, right, left: drop face 1 (the bottom).
   const keep = Array.from(box.indices).filter((_, i) => Math.floor(i / 6) !== 1);
   return { ...box, indices: Uint32Array.from(keep) };
@@ -92,11 +120,20 @@ export function makeCylinderClean(
   };
   const bottom: number[] = [];
   const top: number[] = [];
+  // Cylindrical uv on the side: u is the arc length (so the grain does not stretch on a wide drum), v the height.
+  // The ring runs to `segments` inclusive precisely so the seam vertex can carry u = circumference, not u = 0.
+  const slant = Math.hypot(height, radius - radiusTop);
   for (let i = 0; i <= segments; i++) {
     const [c, s] = ring(i);
     const n: Vec3 = [c / len, slope / len, s / len];
-    bottom.push(out.vertex([c * radius, 0, s * radius], n));
-    top.push(out.vertex([c * radiusTop, height, s * radiusTop], n));
+    const t = i / segments;
+    bottom.push(out.vertex([c * radius, 0, s * radius], n, [ringU(t, radius), 0]));
+    top.push(
+      out.vertex([c * radiusTop, height, s * radiusTop], n, [
+        ringU(t, radius),
+        metresV(slant) || metresV(height),
+      ]),
+    );
   }
   for (let i = 0; i < segments; i++) {
     out.triangle(bottom[i]!, top[i + 1]!, bottom[i + 1]!);
@@ -133,13 +170,23 @@ export function makeCone(radius: number, height: number, segments: number, open:
     const a = (i / segments) * Math.PI * 2;
     return [Math.cos(a), Math.sin(a)];
   };
+  const slant = metresV(Math.hypot(height, radius));
   for (let i = 0; i < segments; i++) {
     const [c0, s0] = ring(i);
     const [c1, s1] = ring(i + 1);
     const [cm, sm] = ring(i + 0.5);
-    const a = out.vertex([c0 * radius, 0, s0 * radius], [c0 / len, slope / len, s0 / len]);
-    const b = out.vertex([c1 * radius, 0, s1 * radius], [c1 / len, slope / len, s1 / len]);
-    const apex = out.vertex([0, height, 0], [cm / len, slope / len, sm / len]);
+    const u = (k: number): number => ringU(k / segments, radius);
+    const a = out.vertex(
+      [c0 * radius, 0, s0 * radius],
+      [c0 / len, slope / len, s0 / len],
+      [u(i), 0],
+    );
+    const b = out.vertex(
+      [c1 * radius, 0, s1 * radius],
+      [c1 / len, slope / len, s1 / len],
+      [u(i + 1), 0],
+    );
+    const apex = out.vertex([0, height, 0], [cm / len, slope / len, sm / len], [u(i + 0.5), slant]);
     out.triangle(a, apex, b);
   }
   if (!open)
