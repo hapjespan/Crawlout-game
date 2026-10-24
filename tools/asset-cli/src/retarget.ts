@@ -12,16 +12,17 @@
 //      hangende armen. Bones met geen of meer kinderen erven A van hun ouder; de root heeft A = identiteit.
 //   3. Doel in de wereld: Q_j(t) = D_s(t) * A_j * Q_j,rust; lokaal = Q_ouder(t)^-1 * Q_j(t).
 //   4. Root-translatie (Hips): het verschil met de rustpositie in de wereld, geschaald met beenlengte doel / bron.
-//   5. Grondbeperking: per frame de laagste geskinde vertex van het doel; staat die onder het grondvlak, dan gaat de
-//      root met het verschil omhoog. Stap 1 tot en met 4 nemen de pose van de bron exact over, maar grondcontact is
-//      een eigenschap van het oppervlak om de botten en niet van de botten zelf: de donor is een slank lichaam
-//      waarvan de scheen in `Fixing_Kneeling` op de vloer rust, en diezelfde botpose duwt een veel dikkere
-//      gepantserde scheen er dwars doorheen. Zie `src/ground.ts`.
+//   5. Grondbeperking, in drie trappen, want grondcontact is een eigenschap van het oppervlak om de botten en niet
+//      van de botten zelf. (a) Een voet die onder het grondvlak staat draait om zijn enkel omhoog (`footRelief.ts`).
+//      (b) Staat er daarna nog iets anders dan een voet onder, dan gaat de root dat frame omhoog (`ground.ts`).
+//      (c) Blijft er alleen voet over, dan gaat de root langs een hellingbegrensde curve (`liftCurve.ts`).
 // Doelbones zonder bron houden hun lokale rustpose. Het resultaat zijn gewone glTF-clips (LINEAR, `fps` keyframes per
 // seconde), die daarna als elke andere clip gebakken worden.
 import type { Document, Node } from '@gltf-transform/core';
 import { readTracks, sampleTrack } from './bake.js';
+import { createAnkleRelief } from './footRelief.js';
 import { createGroundSampler } from './ground.js';
+import { DEFAULT_SLOPE, isLoop, rateLimited } from './liftCurve.js';
 import { stripMixamoPrefix } from './inspect.js';
 import {
   compose,
@@ -54,8 +55,12 @@ export interface RetargetOptions {
   ground?: boolean;
   /** Grondvlak in meters; standaard 0. */
   groundY?: number;
-  /** Plafond op de correctie per frame in meters; standaard 0,5. Vangt een losse vertex onder de kaart af. */
+  /** Plafond op de root-lift per frame in meters; standaard 0,5. Vangt een losse vertex onder de kaart af. */
   maxLift?: number;
+  /** Enkelverlichting (stap 5a); standaard aan. Uit laat alleen de root-lift over, zoals voor 0.22.0. */
+  ankleRelief?: boolean;
+  /** Grootste verandering van de lift tussen twee frames, in meters; standaard `DEFAULT_SLOPE` (2 mm). */
+  liftSlope?: number;
 }
 
 export interface RetargetInfo {
@@ -75,6 +80,8 @@ export interface RetargetInfo {
     penetrationMm?: number;
     /** Aandeel frames dat omhoog moest, 0 tot 1. */
     liftedFraction?: number;
+    /** Grootste enkelverlichting (stap 5a) in de clip, in graden; 0 als geen voet omhoog hoefde. */
+    ankleReliefDegrees?: number;
   }[];
   /** Vertices die de grondbeperking bewaakt; afwezig als er niets te meten viel (skelet zonder mesh). */
   groundVertices?: number;
@@ -107,6 +114,9 @@ function worldMatrices(overrides: ReadonlyMap<Node, Pose>): (node: Node) => Mat 
 }
 
 const position = (m: Mat): Vec3 => [m[12]!, m[13]!, m[14]!];
+
+const clamp = (value: number, low: number, high: number): number =>
+  Math.min(Math.max(value, low), Math.max(low, high));
 
 function legLength(byName: ReadonlyMap<string, Node>, world: (n: Node) => Mat): number | null {
   let total = 0;
@@ -204,10 +214,26 @@ export function retargetClips(
   // Grondbeperking: alleen zinvol met een root om aan te tillen en een mesh om te meten.
   const groundY = options.groundY ?? 0;
   const maxLift = options.maxLift ?? 0.5;
+  const slope = options.liftSlope ?? DEFAULT_SLOPE;
   const sampler =
     options.ground === false || !rootJoint
       ? null
       : createGroundSampler(target, targetSkin, rootJoint);
+  const relief =
+    !sampler || options.ankleRelief === false
+      ? null
+      : createAnkleRelief(target, targetSkin, targetByName, worldMatrices);
+  // Alles buiten de voeten. Staat dát onder de grond (de knielende scheen van `build`), dan hoort het lichaam
+  // inderdaad omhoog en mag de lift het frame volgen; een voet alleen mag het lichaam niet meetrekken.
+  const feet = new Set(
+    ['LeftFoot', 'LeftToeBase', 'RightFoot', 'RightToeBase']
+      .map((name) => targetByName.get(name))
+      .filter((node): node is Node => node !== undefined),
+  );
+  const bodySampler =
+    !sampler || !rootJoint || feet.size === 0
+      ? null
+      : createGroundSampler(target, targetSkin, rootJoint, feet);
   const skinJoints = targetSkin.listJoints();
 
   const clips: RetargetInfo['clips'] = [];
@@ -224,8 +250,32 @@ export function retargetClips(
     const rotations = new Map<Node, number[]>();
     const rootTranslations: number[] = [];
     const rootWorld: Vec3[] = [];
+    /** Wat er na de body-lift nog aan voet onder de grond zit; stap 5b maakt er een berijdbare curve van. */
+    const needed: number[] = [];
+    /** Lift voor alles wat geen voet is; die mag het frame wél volgen. */
+    const bodyLift: number[] = [];
+    let toLocal: ((world: Vec3) => Vec3) | null = null;
     let penetration = 0;
     let liftedFrames = 0;
+    let relieved = 0;
+    // De enkelverlichting draait een bot nadat zijn keyframe al geschreven is. Dit zet de nieuwe waarde terug op de
+    // plek van dit frame, met dezelfde tekenkeuze als de hoofdlus, zodat de LINEAR-interpolatie niet omklapt.
+    const rewrite = (bone: Node, value: Quat | undefined): void => {
+      const list = rotations.get(bone);
+      if (!value || !list || list.length < 4) return;
+      let q = value;
+      const previous = list.length - 8;
+      if (
+        previous >= 0 &&
+        list[previous]! * q[0] +
+          list[previous + 1]! * q[1] +
+          list[previous + 2]! * q[2] +
+          list[previous + 3]! * q[3] <
+          0
+      )
+        q = [-q[0], -q[1], -q[2], -q[3]];
+      for (let i = 0; i < 4; i++) list[list.length - 4 + i] = q[i]!;
+    };
 
     for (const time of times) {
       const overrides = new Map<Node, Pose>();
@@ -291,7 +341,7 @@ export function retargetClips(
           restPos[2] + delta[2] * translationScale,
         ];
         const parent = rootJoint.getParentNode();
-        const toLocal = (world: Vec3): Vec3 =>
+        const local = (world: Vec3): Vec3 =>
           parent ? transformPoint(invertAffine(targetRest(parent)), world) : world;
 
         // Stap 5. De root optillen is een starre verschuiving van alles eronder, dus de laagste vertex schuift
@@ -299,25 +349,53 @@ export function retargetClips(
         if (sampler) {
           const rootRest = restPose(rootJoint);
           targetPose.set(rootJoint, {
-            t: toLocal(worldPos),
+            t: local(worldPos),
             r: targetPose.get(rootJoint)?.r ?? rootRest.r,
             s: rootRest.s,
           });
+          // Stap 5a: eerst de enkels, dan pas het hele lichaam. Wat de verlichting draait moet ook in de clip komen.
+          if (relief) {
+            relieved = Math.max(relieved, relief.settle(targetPose, groundY));
+            for (const bone of relief.bones) rewrite(bone, targetPose.get(bone)?.r);
+          }
           const targetNow = worldMatrices(targetPose);
-          const lowest = sampler.lowestY(skinJoints.map((joint) => targetNow(joint)));
+          const world = skinJoints.map((joint) => targetNow(joint));
+          const lowest = sampler.lowestY(world);
           const deep = groundY - lowest;
           if (deep > 0) {
             penetration = Math.max(penetration, deep);
             liftedFrames++;
-            worldPos[1] += Math.min(deep, maxLift);
           }
+          // De body-lift is een starre verschuiving, dus het laagste punt schuift er precies mee op. Staat er iets
+          // anders dan een voet onder de grond, dan beweegt het lichaam toch al en gaat de hele doordringing in één
+          // keer mee; alleen een frame waarin louter een voet eronder zit wacht op de hellingbegrenzing van 5b.
+          const body = bodySampler
+            ? clamp(groundY - bodySampler.lowestY(world), 0, maxLift)
+            : 0;
+          bodyLift.push(body > 0 ? clamp(deep, 0, maxLift) : 0);
+          needed.push(body > 0 ? 0 : clamp(deep, 0, maxLift));
         }
-        rootWorld.push(toLocal(worldPos));
+        rootWorld.push(worldPos);
+        toLocal ??= local;
       }
+    }
+    // Stap 5b. De lift gaat niet frame voor frame omhoog maar langs een hellingbegrensde omhullende: een piek van één
+    // frame wordt door zijn buren meebetaald, zodat de heup niet springt en beide passen evenveel krijgen.
+    if (toLocal) {
+      // Raakt alleen een voet de grond, dan is dit een looppas en moet het lichaam er rustig overheen; raakt ook de
+      // rest het (knielen, vallen), dan is het een actie op de grond en hoort de lift het frame gewoon te volgen.
+      const grounded = bodyLift.some((value) => value > 0);
+      const lift = grounded
+        ? needed.map((value, i) => value + (bodyLift[i] ?? 0))
+        : rateLimited(needed, slope, isLoop(rotations.values()));
+      rootWorld.forEach((p, i) => {
+        p[1] += lift[i] ?? 0;
+      });
     }
     // Een translatiekanaal hoort er alleen te komen als de bron er een had of als de grond eraan getrokken heeft;
     // anders houdt de root zijn rustpose, zoals voorheen.
-    if (rootSource || penetration > 0) for (const p of rootWorld) rootTranslations.push(...p);
+    if (toLocal && (rootSource || penetration > 0))
+      for (const p of rootWorld) rootTranslations.push(...toLocal(p));
 
     const out = target.createAnimation(animation.getName());
     const input = target
@@ -358,6 +436,7 @@ export function retargetClips(
         ? {
             penetrationMm: Math.round(penetration * 1e4) / 10,
             liftedFraction: Math.round((liftedFrames / count) * 1000) / 1000,
+            ...(relief ? { ankleReliefDegrees: Math.round(relieved * 10) / 10 } : {}),
           }
         : {}),
     });
