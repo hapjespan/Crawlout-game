@@ -12,10 +12,16 @@
 //      hangende armen. Bones met geen of meer kinderen erven A van hun ouder; de root heeft A = identiteit.
 //   3. Doel in de wereld: Q_j(t) = D_s(t) * A_j * Q_j,rust; lokaal = Q_ouder(t)^-1 * Q_j(t).
 //   4. Root-translatie (Hips): het verschil met de rustpositie in de wereld, geschaald met beenlengte doel / bron.
+//   5. Grondbeperking: per frame de laagste geskinde vertex van het doel; staat die onder het grondvlak, dan gaat de
+//      root met het verschil omhoog. Stap 1 tot en met 4 nemen de pose van de bron exact over, maar grondcontact is
+//      een eigenschap van het oppervlak om de botten en niet van de botten zelf: de donor is een slank lichaam
+//      waarvan de scheen in `Fixing_Kneeling` op de vloer rust, en diezelfde botpose duwt een veel dikkere
+//      gepantserde scheen er dwars doorheen. Zie `src/ground.ts`.
 // Doelbones zonder bron houden hun lokale rustpose. Het resultaat zijn gewone glTF-clips (LINEAR, `fps` keyframes per
 // seconde), die daarna als elke andere clip gebakken worden.
 import type { Document, Node } from '@gltf-transform/core';
 import { readTracks, sampleTrack } from './bake.js';
+import { createGroundSampler } from './ground.js';
 import { stripMixamoPrefix } from './inspect.js';
 import {
   compose,
@@ -44,6 +50,12 @@ export interface RetargetOptions {
   root?: string;
   /** Alleen deze bronclips (namen); standaard alle. */
   clips?: readonly string[];
+  /** Grondbeperking (stap 5); standaard aan. Uit voor iets dat hoort te zweven. */
+  ground?: boolean;
+  /** Grondvlak in meters; standaard 0. */
+  groundY?: number;
+  /** Plafond op de correctie per frame in meters; standaard 0,5. Vangt een losse vertex onder de kaart af. */
+  maxLift?: number;
 }
 
 export interface RetargetInfo {
@@ -55,7 +67,17 @@ export interface RetargetInfo {
   unusedSource: string[];
   /** Schaal van de root-translatie (beenlengte doel / bron). */
   translationScale: number;
-  clips: { name: string; durationSeconds: number; keyframes: number }[];
+  clips: {
+    name: string;
+    durationSeconds: number;
+    keyframes: number;
+    /** Diepste doordringing vóór de grondbeperking, in mm; 0 als de clip al boven de grond bleef. */
+    penetrationMm?: number;
+    /** Aandeel frames dat omhoog moest, 0 tot 1. */
+    liftedFraction?: number;
+  }[];
+  /** Vertices die de grondbeperking bewaakt; afwezig als er niets te meten viel (skelet zonder mesh). */
+  groundVertices?: number;
 }
 
 const nameOf = (node: Node): string => stripMixamoPrefix(node.getName());
@@ -179,6 +201,15 @@ export function retargetClips(
   const rootJoint = targetByName.get(rootName);
   const rootSource = rootJoint ? sourceOf.get(rootJoint) : undefined;
 
+  // Grondbeperking: alleen zinvol met een root om aan te tillen en een mesh om te meten.
+  const groundY = options.groundY ?? 0;
+  const maxLift = options.maxLift ?? 0.5;
+  const sampler =
+    options.ground === false || !rootJoint
+      ? null
+      : createGroundSampler(target, targetSkin, rootJoint);
+  const skinJoints = targetSkin.listJoints();
+
   const clips: RetargetInfo['clips'] = [];
   const buffer = target.getRoot().listBuffers()[0] ?? target.createBuffer();
   for (const animation of source.getRoot().listAnimations()) {
@@ -192,6 +223,9 @@ export function retargetClips(
     const times = Array.from({ length: count }, (_, k) => (k === count - 1 ? duration : k / fps));
     const rotations = new Map<Node, number[]>();
     const rootTranslations: number[] = [];
+    const rootWorld: Vec3[] = [];
+    let penetration = 0;
+    let liftedFrames = 0;
 
     for (const time of times) {
       const overrides = new Map<Node, Pose>();
@@ -209,6 +243,7 @@ export function retargetClips(
       const sourceNow = worldMatrices(overrides);
 
       // Doel van boven naar beneden: wereldrotaties van ouders eerst.
+      const targetPose = new Map<Node, Pose>();
       const worldRot = new Map<Node, Quat>();
       const rotOf = (node: Node | null): Quat => {
         if (!node) return [0, 0, 0, 1];
@@ -242,22 +277,47 @@ export function retargetClips(
           local = [-local[0], -local[1], -local[2], -local[3]];
         list.push(...local);
         rotations.set(joint, list);
+        const rest = restPose(joint);
+        targetPose.set(joint, { t: rest.t, r: local, s: rest.s });
       }
-      if (rootJoint && rootSource) {
-        const delta = sub3(position(sourceNow(rootSource)), position(sourceRest(rootSource)));
+      if (rootJoint) {
         const restPos = position(targetRest(rootJoint));
+        const delta = rootSource
+          ? sub3(position(sourceNow(rootSource)), position(sourceRest(rootSource)))
+          : ([0, 0, 0] as Vec3);
         const worldPos: Vec3 = [
           restPos[0] + delta[0] * translationScale,
           restPos[1] + delta[1] * translationScale,
           restPos[2] + delta[2] * translationScale,
         ];
         const parent = rootJoint.getParentNode();
-        const local = parent
-          ? transformPoint(invertAffine(targetRest(parent)), worldPos)
-          : worldPos;
-        rootTranslations.push(...local);
+        const toLocal = (world: Vec3): Vec3 =>
+          parent ? transformPoint(invertAffine(targetRest(parent)), world) : world;
+
+        // Stap 5. De root optillen is een starre verschuiving van alles eronder, dus de laagste vertex schuift
+        // precies even ver mee: één meting per frame is genoeg, er is geen iteratie nodig.
+        if (sampler) {
+          const rootRest = restPose(rootJoint);
+          targetPose.set(rootJoint, {
+            t: toLocal(worldPos),
+            r: targetPose.get(rootJoint)?.r ?? rootRest.r,
+            s: rootRest.s,
+          });
+          const targetNow = worldMatrices(targetPose);
+          const lowest = sampler.lowestY(skinJoints.map((joint) => targetNow(joint)));
+          const deep = groundY - lowest;
+          if (deep > 0) {
+            penetration = Math.max(penetration, deep);
+            liftedFrames++;
+            worldPos[1] += Math.min(deep, maxLift);
+          }
+        }
+        rootWorld.push(toLocal(worldPos));
       }
     }
+    // Een translatiekanaal hoort er alleen te komen als de bron er een had of als de grond eraan getrokken heeft;
+    // anders houdt de root zijn rustpose, zoals voorheen.
+    if (rootSource || penetration > 0) for (const p of rootWorld) rootTranslations.push(...p);
 
     const out = target.createAnimation(animation.getName());
     const input = target
@@ -290,7 +350,24 @@ export function retargetClips(
     for (const [joint, values] of rotations) channel(joint, 'rotation', values);
     if (rootJoint && rootTranslations.length > 0)
       channel(rootJoint, 'translation', rootTranslations);
-    clips.push({ name: animation.getName(), durationSeconds: duration, keyframes: count });
+    clips.push({
+      name: animation.getName(),
+      durationSeconds: duration,
+      keyframes: count,
+      ...(sampler
+        ? {
+            penetrationMm: Math.round(penetration * 1e4) / 10,
+            liftedFraction: Math.round((liftedFrames / count) * 1000) / 1000,
+          }
+        : {}),
+    });
   }
-  return { mapping, unmapped, unusedSource, translationScale, clips };
+  return {
+    mapping,
+    unmapped,
+    unusedSource,
+    translationScale,
+    clips,
+    ...(sampler ? { groundVertices: sampler.vertexCount } : {}),
+  };
 }
