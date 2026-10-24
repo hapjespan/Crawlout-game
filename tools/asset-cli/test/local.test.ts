@@ -150,7 +150,9 @@ describe('lokale buis', () => {
         .listMeshes()
         .map((m) => m.getName()),
     ).not.toContain('Door');
-  });
+    // Runs the whole local pipeline off disk: ~930 ms alone, but under the full parallel suite the default 5 s is not
+    // enough headroom and it times out on a loaded machine.
+  }, 30_000);
 
   // Een geleverd model met een eigen skelet staat onder delivered/, waar de buis zelf niet kijkt; `source` wijst het aan
   // zodat het door rig en retarget gaat (geskind en lopend) in plaats van door de starre delivered-buis.
