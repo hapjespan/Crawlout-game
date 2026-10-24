@@ -79,7 +79,11 @@ describe('garde procedural placeholders', () => {
     // data 0.44.0: 8 garde buildings, slaapzaal now has its own mesh (garde_building_dormitory) so all 8 are unique;
     // garde_building_dormitory is a delivered asset (dist-local, not in assets/dist/manifest.json) — skip its footprint check
     // data 0.41.0: 8 with the slaapzaal, which borrowed the barracks mesh until its own asset was delivered
-    const DELIVERED_GARDE_MESHES = new Set(['garde_building_dormitory']);
+    const DELIVERED_GARDE_MESHES = new Set([
+      'garde_building_dormitory',
+      // 24 oct: turret_laser moved to delivered.json (hoge laserpaal, 2x2 base)
+      'garde_building_turret_laser',
+    ]);
     expect(footprints.length).toBe(8);
     const owners = footprints.filter(
       (b, i) => footprints.findIndex((o) => o.visuals.mesh === b.visuals.mesh) === i,

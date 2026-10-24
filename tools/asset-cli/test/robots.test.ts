@@ -33,7 +33,6 @@ const EXPECTED: Record<string, { height: [number, number]; hover?: number }> = {
   dweller_robot_sentinel: { height: [3.3, 3.7] },
   dweller_robot_builder: { height: [1.8, 2.0] },
   dweller_building_robotfactory: { height: [8.5, 10.5] },
-  dweller_building_turret_laser: { height: [2.8, 3.2] },
 };
 
 /** Bounds (b x h x d, m) of the previous primitive placeholders: the upgrade keeps within about 10 percent of them. */
@@ -42,7 +41,6 @@ const PLACEHOLDER_SIZE: Record<string, [number, number, number]> = {
   dweller_robot_drone: [0.875, 0.84, 1.195],
   dweller_robot_sentinel: [3.94, 3.5, 6.4],
   dweller_building_robotfactory: [14.8, 9.6, 12.975],
-  dweller_building_turret_laser: [3.0, 3.17, 3.07],
 };
 /** Triangles of LOD0 of the placeholders; the upgrade has clearly more silhouette detail. */
 const PLACEHOLDER_LOD0_TRIANGLES: Record<string, number> = {
@@ -50,7 +48,6 @@ const PLACEHOLDER_LOD0_TRIANGLES: Record<string, number> = {
   dweller_robot_drone: 434,
   dweller_robot_sentinel: 940,
   dweller_building_robotfactory: 400,
-  dweller_building_turret_laser: 442,
 };
 
 let built: RobotsResult;
@@ -69,7 +66,7 @@ const size = (e: AssetEntry): [number, number, number] => [
 ];
 
 describe('robots.json', () => {
-  it('heeft de zes verwachte ids', () => {
+  it('heeft de vijf verwachte ids (turret_laser nu via delivered.json)', () => {
     expect([...unitIds, ...buildingIds].sort()).toEqual(Object.keys(EXPECTED).sort());
   });
 
@@ -174,7 +171,6 @@ describe('manifest-velden in assets/dist', () => {
       expect(e.bounds.min[1]).toBeCloseTo(0, 2);
     }
     expect(entry('dweller_building_robotfactory').footprint).toEqual({ w: 15, h: 13 });
-    expect(entry('dweller_building_turret_laser').footprint).toEqual({ w: 3, h: 3 });
   });
 
   it('de schuifdeur van de fabriek is 4 m hoog (een poppetje van 1,8 m past ruim), de hal heeft echte schaal', () => {
@@ -225,12 +221,6 @@ describe('manifest-velden in assets/dist', () => {
     }
   });
 
-  it('de lasertoren heeft een andere tint dan de gewone turret', () => {
-    const laser = config.buildings.dweller_building_turret_laser!.colors!.metal!;
-    const plain = config.flatMaterials.metal!.color;
-    expect(laser).not.toBe(plain);
-  });
-
   it('het schema weigert rigid-velden die niet kloppen', () => {
     const drone = structuredClone(entry('dweller_robot_drone'));
     expect(assetEntrySchema.safeParse(drone).success).toBe(true);
@@ -240,9 +230,9 @@ describe('manifest-velden in assets/dist', () => {
     expect(assetEntrySchema.safeParse({ ...drone, boneCount: 3 }).success).toBe(false);
     const guard = structuredClone(entry('dweller_robot_guard'));
     expect(assetEntrySchema.safeParse({ ...guard, footprint: { w: 3, h: 3 } }).success).toBe(false);
-    const building = structuredClone(entry('dweller_building_turret_laser'));
-    expect(assetEntrySchema.safeParse({ ...building, rigid: true }).success).toBe(false);
-    expect(assetEntrySchema.safeParse({ ...building, hover: 1 }).success).toBe(false);
+    const factory = structuredClone(entry('dweller_building_robotfactory'));
+    expect(assetEntrySchema.safeParse({ ...factory, rigid: true }).success).toBe(false);
+    expect(assetEntrySchema.safeParse({ ...factory, hover: 1 }).success).toBe(false);
   });
 });
 
@@ -253,7 +243,6 @@ const REQUIRED_KINDS: Record<string, SurfaceKind[]> = {
   dweller_robot_sentinel: ['paintedMetal', 'rustMetal', 'lens', 'leather'],
   dweller_robot_builder: ['paintedMetal', 'rustMetal', 'lens', 'leather'],
   dweller_building_robotfactory: ['paintedMetal', 'rustMetal', 'lens', 'concrete'],
-  dweller_building_turret_laser: ['paintedMetal', 'rustMetal', 'lens', 'concrete'],
 };
 
 describe('oppervlaksoort per onderdeel (materiaalnaam, zoals render hem leest)', () => {

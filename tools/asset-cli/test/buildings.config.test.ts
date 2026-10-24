@@ -28,6 +28,8 @@ describe('variants.json', () => {
       'dweller_building_broadcast_tower',
       'dweller_building_utility',
       'dweller_building_storage',
+      // 24 oct: turret_laser moved from robots.json to delivered.json (dev-only hoge laserpaal)
+      'dweller_building_turret_laser',
     ]);
     const robots = readSplitJson(join(srcDir, 'robots.json')) as {
       buildings: Record<string, { footprint: { w: number; h: number } }>;
