@@ -53,16 +53,22 @@ function subtreeOf(node: Node): Set<Node> {
  * Builds a sampler over the first skin of `document`, limited to the vertices that a translation of `root` really
  * moves: every joint with weight on them has to sit in `root`'s subtree. Returns null when there is nothing to
  * measure (no skinned primitive, or no vertex that qualifies), so a skeleton-only document simply has no constraint.
+ *
+ * `ignore` drops every vertex that any of those joints has weight on. That is how the root lift tells a body that is
+ * really in the ground from a boot corner that is not: with the ankles ignored the sampler sees the shin of a
+ * kneeling `build` but not the pointed toe of a `walk`, and the two can then be answered differently.
  */
 export function createGroundSampler(
   document: Document,
   skin: Skin,
   root: Node,
+  ignore?: ReadonlySet<Node>,
 ): GroundSampler | null {
   const joints = skin.listJoints();
   const boneCount = joints.length;
   const liftable = subtreeOf(root);
   const canLift = joints.map((joint) => liftable.has(joint));
+  const ignored = joints.map((joint) => ignore?.has(joint) ?? false);
 
   const ibm = skin.getInverseBindMatrices();
   const inverseBind: Float64Array[] = joints.map((_, b) => {
@@ -92,12 +98,14 @@ export function createGroundSampler(
         weightAttr.getElement(i, w);
         let usable = false;
         let movable = true;
+        let dropped = false;
         for (let k = 0; k < 4; k++) {
           if (!(w[k]! > 0)) continue;
           usable = true;
           if (!canLift[j[k]!]) movable = false;
+          if (ignored[j[k]!]) dropped = true;
         }
-        if (!usable) continue;
+        if (!usable || dropped) continue;
         if (!movable) {
           skipped++;
           continue;

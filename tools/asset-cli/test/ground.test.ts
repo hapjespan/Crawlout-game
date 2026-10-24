@@ -142,6 +142,16 @@ describe('createGroundSampler', () => {
     expect(createGroundSampler(doc, skin, skin.listJoints()[0]!)).toBeNull();
   });
 
+  it('laat met ignore elk hoekpunt weg dat aan de genoemde bones hangt', () => {
+    // De hele ring hangt aan Shin, dus die negeren laat niets te meten over. Zo onderscheidt de root-lift een
+    // lichaam dat echt in de grond staat van een voet die er alleen doorheen zwaait.
+    const { doc, skin, nodes } = rig(0.05);
+    expect(createGroundSampler(doc, skin, skin.listJoints()[0]!, new Set())).not.toBeNull();
+    expect(
+      createGroundSampler(doc, skin, skin.listJoints()[0]!, new Set([nodes.get('Shin')!])),
+    ).toBeNull();
+  });
+
   it('geeft null voor een skelet zonder geskinde mesh', () => {
     const doc = new Document();
     doc.createBuffer();
