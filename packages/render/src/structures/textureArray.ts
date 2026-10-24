@@ -227,6 +227,15 @@ export function budgetedLayerSize(
 }
 
 /**
+ * Bytes a set of texture arrays occupies on the GPU: `count * edge^2 * 4` per map kind, before the mip chain (which
+ * adds about a third). This is the only place the VRAM of the arrays is counted, so a measurement and the budget
+ * cannot drift apart; `UnitAssetStatus.layers.bytes` reports it per character.
+ */
+export function layerArrayBytes(count: number, edge: number, kinds = 1): number {
+  return count * edge * edge * 4 * kinds;
+}
+
+/**
  * Fill of a layer whose map of this kind is missing. Base colour: white, so the material shows its flat base color.
  * Normal: (0.5, 0.5, 1) tangent space, i.e. no relief. MetallicRoughness: the material's own roughnessFactor in G and
  * metallicFactor in B (glTF channel order), so a material without the map still answers with its own response.

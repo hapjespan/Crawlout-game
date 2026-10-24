@@ -6,6 +6,7 @@ import { NO_LAYER, TextureLayerTable, type TextureLayer } from './buildingGeomet
 import {
   budgetedLayerSize,
   createLayerTexture,
+  layerArrayBytes,
   MAX_LAYER_SIZE,
   MIN_LAYER_SIZE,
   UNIT_LAYER_BUDGET_BYTES,
@@ -54,6 +55,86 @@ describe('texture layer table', () => {
     expect(table.has('normal')).toBe(true);
     expect(table.layers[0]!.normalImage).not.toBeNull();
     expect(table.layers[1]!.normalImage).toBeNull();
+  });
+
+  it('gives two materials on the same three textures one layer', () => {
+    // The Klerk: the asset-cli's team band is a second material on the body's own atlas textures. Keyed on the name
+    // that was a second 2048 layer of identical pixels, 48 of the asset's 96 MB.
+    const table = new TextureLayerTable();
+    const base = fakeTexture('atlas', 2048);
+    const normal = fakeTexture('atlas-normal', 2048);
+    const mr = fakeTexture('atlas-mr', 2048);
+    const dress = (m: MeshStandardMaterial): MeshStandardMaterial => {
+      m.map = base;
+      m.normalMap = normal;
+      m.roughnessMap = m.metalnessMap = mr;
+      return m;
+    };
+    const atlas = dress(new MeshStandardMaterial({ name: 'atlas' }));
+    const band = dress(new MeshStandardMaterial({ name: 'team_trim' }));
+
+    expect(table.layerOf(atlas)).toBe(0);
+    expect(table.layerOf(band)).toBe(0);
+    expect(table.size).toBe(1);
+    // And the band keeps its own layer when it brings a normal map of its own: one index addresses all three arrays.
+    const own = dress(new MeshStandardMaterial({ name: 'trim_own' }));
+    own.normalMap = fakeTexture('trim-normal', 2048);
+    expect(table.layerOf(own)).toBe(1);
+  });
+
+  it('keeps the LODs of one material on their layer, images and all', () => {
+    // Every LOD is its own GLB, so its textures are other objects: the name is what holds them together, and the
+    // largest image wins. A lighter LOD may still carry a map the largest one lacks.
+    const table = new TextureLayerTable();
+    const lod0 = new MeshStandardMaterial({ name: 'coat' });
+    lod0.map = fakeTexture('coat-512', 512);
+    const lod1 = new MeshStandardMaterial({ name: 'coat' });
+    lod1.map = fakeTexture('coat-256', 256);
+    lod1.normalMap = fakeTexture('coat-normal-256', 256);
+
+    expect(table.layerOf(lod0)).toBe(0);
+    expect(table.layerOf(lod1)).toBe(0);
+    expect(table.size).toBe(1);
+    expect(table.layers[0]!.width).toBe(512);
+    expect(table.layers[0]!.normalImage).not.toBeNull();
+    expect(table.layers[0]!.roughness).toBe(1);
+  });
+
+  it('neutralises factors that two materials sharing a map disagree over', () => {
+    // A factor is baked into the texels of the metallicRoughness layer, so a layer holds one pair. The atlas material
+    // sits at glTF-neutral 1 / 1 because the asset-cli baked the per-cell factors into the map; the band re-asserting
+    // metalness 0 over that whole map would wipe every metal cell in it.
+    const table = new TextureLayerTable();
+    const base = fakeTexture('atlas', 2048);
+    const mr = fakeTexture('atlas-mr', 2048);
+    const atlas = new MeshStandardMaterial({ name: 'atlas', roughness: 1, metalness: 1 });
+    atlas.map = base;
+    atlas.roughnessMap = atlas.metalnessMap = mr;
+    const band = new MeshStandardMaterial({ name: 'team_trim', roughness: 1, metalness: 0 });
+    band.map = base;
+    band.roughnessMap = band.metalnessMap = mr;
+
+    expect(table.layerOf(atlas)).toBe(0);
+    expect(table.layerOf(band)).toBe(0);
+    expect(table.layers[0]!.roughness).toBe(1);
+    expect(table.layers[0]!.metalness).toBe(1);
+  });
+
+  it('keeps the factors both materials agree on', () => {
+    const table = new TextureLayerTable();
+    const base = fakeTexture('hull', 1024);
+    const mr = fakeTexture('hull-mr', 1024);
+    const of = (name: string): MeshStandardMaterial => {
+      const m = new MeshStandardMaterial({ name, roughness: 0.4, metalness: 0.9 });
+      m.map = base;
+      m.roughnessMap = m.metalnessMap = mr;
+      return m;
+    };
+
+    expect(table.layerOf(of('hull'))).toBe(0);
+    expect(table.layerOf(of('hull_trim'))).toBe(0);
+    expect(table.layers[0]!.roughness).toBeCloseTo(0.4);
+    expect(table.layers[0]!.metalness).toBeCloseTo(0.9);
   });
 });
 
@@ -133,5 +214,16 @@ describe('budgetedLayerSize', () => {
 
   it('never goes above the cap the asset-cli exports', () => {
     expect(budgetedLayerSize(1, Number.MAX_SAFE_INTEGER)).toBe(MAX_LAYER_SIZE);
+  });
+});
+
+describe('layerArrayBytes', () => {
+  it('counts what the three arrays of a character cost', () => {
+    const MB = 1024 * 1024;
+    // The Klerk: one atlas layer of 2048 over base colour, normal and metallicRoughness.
+    expect(layerArrayBytes(1, 2048, 3)).toBe(48 * MB);
+    // What it cost while the team band had a second layer of the very same pixels.
+    expect(layerArrayBytes(2, 2048, 3)).toBe(96 * MB);
+    expect(layerArrayBytes(0, 0, 3)).toBe(0);
   });
 });

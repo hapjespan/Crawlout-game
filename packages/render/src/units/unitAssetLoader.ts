@@ -10,6 +10,7 @@ import {
   createLayerTexture,
   DEFAULT_LAYER_SIZE,
   imageRasterize,
+  layerArrayBytes,
   type Rasterize,
 } from '../structures/textureArray.js';
 import type { BakedAnimations } from './bake.js';
@@ -61,6 +62,12 @@ export interface LoadedUnitAsset {
   mrLayers: DataArrayTexture | null;
   /** Edge of the array layers in pixels (0 without layers). */
   layerSize: number;
+  /**
+   * What the arrays of this asset cost on the GPU, before the mip chain: layers * edge^2 * 4 over the arrays that
+   * were actually built (base, and normal and metallicRoughness when they exist). The number to watch when a
+   * character's textures get heavy; see layerArrayBytes.
+   */
+  layerBytes: number;
   /** Layers whose image could not be rasterized (they are white). */
   missingLayers: string[];
   /** How many layers carry a real normal map and a real metallicRoughness map (the rest are the flat fallback). */
@@ -274,6 +281,13 @@ export class UnitAssetLoader {
       normalLayers: normal?.texture ?? null,
       mrLayers: mr?.texture ?? null,
       layerSize: built?.size ?? 0,
+      layerBytes: built
+        ? layerArrayBytes(
+            layerTable.size,
+            built.size,
+            1 + (normal ? 1 : 0) + (mr ? 1 : 0),
+          )
+        : 0,
       missingLayers: built?.missing ?? [],
       mapCounts: counts,
     };

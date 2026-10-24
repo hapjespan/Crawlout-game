@@ -8,6 +8,8 @@
 // Which layer a material samples is decided by a TextureLayerTable shared by all building assets: the asset-cli gives
 // every source texture one material name ("bronmaterialen met dezelfde naam hebben dezelfde textuur"), so the name is
 // the key, and the LODs of one material (512, 256, 128 px) share one layer. The table keeps the largest image per key.
+// Two materials that point at the very same images share one layer whatever they are called, so a band that borrows
+// the body's atlas does not pay for a second copy of it.
 import {
   BufferAttribute,
   BufferGeometry,
@@ -84,7 +86,28 @@ function imageSize(image: unknown): [number, number] {
 /** Material name to texture-array layer, shared by all building assets of one load. */
 export class TextureLayerTable {
   private readonly byKey = new Map<string, number>();
+  /**
+   * Layer by the identity of the three images behind it, so two materials pointing at the same textures are one
+   * layer whatever they are called. The asset-cli's team band is a second material on the body's own atlas textures
+   * (tools/asset-cli/src/teamTrim.ts: "Same texture object, so the GLB does not grow"), and a name-keyed table gave
+   * it a second layer of the very same pixels: 48 of the Klerk's 96 MB.
+   */
+  private readonly byImages = new Map<string, number>();
+  /** Identity number per image object; a Map compares object keys by identity, which is exactly the question. */
+  private readonly imageIds = new Map<unknown, number>();
   readonly layers: TextureLayer[] = [];
+
+  /** Stable number for the image behind a texture (0 without one). Falls back to the source of an undecoded map. */
+  private imageId(texture: Texture | null | undefined): number {
+    const image: unknown = texture?.image ?? texture?.source ?? texture ?? null;
+    if (image === null || image === undefined) return 0;
+    let id = this.imageIds.get(image);
+    if (id === undefined) {
+      id = this.imageIds.size + 1;
+      this.imageIds.set(image, id);
+    }
+    return id;
+  }
 
   /** Layer of a textured material (allocated on first use), or NO_LAYER without a map. */
   layerOf(material: MaterialLike): number {
@@ -94,13 +117,20 @@ export class TextureLayerTable {
     const image: unknown = map.image ?? null;
     const [width, height] = imageSize(image);
     // The normal and metallicRoughness maps ride along on the same layer index (same uv set, same size).
-    const normalImage: unknown = material.normalMap?.image ?? null;
-    const mrImage: unknown = (material.roughnessMap ?? material.metalnessMap)?.image ?? null;
+    const normalMap = material.normalMap ?? null;
+    const mrMap = material.roughnessMap ?? material.metalnessMap ?? null;
+    const normalImage: unknown = normalMap?.image ?? null;
+    const mrImage: unknown = mrMap?.image ?? null;
     const roughness = typeof material.roughness === 'number' ? material.roughness : 1;
     const metalness = typeof material.metalness === 'number' ? material.metalness : 0;
-    let index = this.byKey.get(key);
+    // All three maps have to match: a material that shares the base colour but brings its own normal map is a
+    // different layer, because one layer index addresses all three arrays.
+    const images = `${this.imageId(map)}/${this.imageId(normalMap)}/${this.imageId(mrMap)}`;
+    // The name wins over the identity: the LODs of one material are separate GLBs, so their images are separate
+    // objects, and the name is what keeps them on one layer.
+    const index = this.byKey.get(key) ?? this.byImages.get(images);
     if (index === undefined) {
-      index =
+      const added =
         this.layers.push({
           key,
           kind: surfaceKindOfMaterial(key),
@@ -112,23 +142,35 @@ export class TextureLayerTable {
           roughness,
           metalness,
         }) - 1;
-      this.byKey.set(key, index);
-    } else {
-      const layer = this.layers[index]!;
-      if (width * height > layer.width * layer.height) {
-        layer.image = image;
-        layer.width = width;
-        layer.height = height;
-        layer.normalImage = normalImage;
-        layer.mrImage = mrImage;
-        layer.roughness = roughness;
-        layer.metalness = metalness;
-      } else {
-        // A lighter LOD may carry a map the largest one lacks; never drop one that is already there.
-        layer.normalImage ??= normalImage;
-        layer.mrImage ??= mrImage;
-      }
+      this.byKey.set(key, added);
+      this.byImages.set(images, added);
+      return added;
     }
+    const layer = this.layers[index]!;
+    const agree = layer.roughness === roughness && layer.metalness === metalness;
+    if (width * height > layer.width * layer.height) {
+      layer.image = image;
+      layer.width = width;
+      layer.height = height;
+      layer.normalImage = normalImage;
+      layer.mrImage = mrImage;
+      layer.roughness = roughness;
+      layer.metalness = metalness;
+    } else {
+      // A lighter LOD may carry a map the largest one lacks; never drop one that is already there.
+      layer.normalImage ??= normalImage;
+      layer.mrImage ??= mrImage;
+    }
+    // The factors are baked into the metallicRoughness layer (textureArray.ts), so a layer holds one pair. Materials
+    // that share a map and disagree over the pair fall back to the neutral one: a factor may only be baked into a map
+    // its own material owns, and a shared map carries its factors per texel already (asset-cli textures.part3 bakes
+    // them per atlas cell and leaves the atlas material at 1 / 1). The LODs of one material always agree.
+    if (!agree) {
+      layer.roughness = 1;
+      layer.metalness = 1;
+    }
+    this.byKey.set(key, index);
+    this.byImages.set(images, index);
     return index;
   }
 

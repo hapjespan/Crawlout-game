@@ -93,16 +93,16 @@ describe('building assets from assets/dist', () => {
     expect(size.z).toBeGreaterThan(21 * 0.85);
     expect(size.z).toBeLessThanOrEqual(21 * 1.05);
 
-    // One shared array: frame_wood, plank_grey, roof, wall_paint, plus metal and team_trim since surfaceTex
-    // gives those two a generated map as well (LOD 1 and 2 reuse the LOD 0 layers).
+    // One shared array: frame_wood, plank_grey, roof, wall_paint, plus one layer for metal and team_trim, which
+    // surfaceTex gives a generated map as well - the same texture object for both, so they share a layer (LOD 1 and
+    // 2 reuse the LOD 0 layers).
     expect(set.layers).not.toBeNull();
-    expect(set.layers!.image.depth).toBe(6);
-    expect(rasterized.length).toBe(6);
+    expect(set.layers!.image.depth).toBe(5);
+    expect(rasterized.length).toBe(5);
     expect(byId.get('dweller_building_hq')!.reason).toMatch(/not decoded/);
 
     // Surface kinds: a layer has the kind of its material name, a flat vertex carries its kind in u.
     expect([...set.layerKinds].sort()).toEqual([
-      'paintedMetal',
       'paintedMetal',
       'roofing',
       'wood',
