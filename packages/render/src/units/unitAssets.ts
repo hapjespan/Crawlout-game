@@ -45,11 +45,11 @@ export interface UnitAssetStatus {
   /** Where the team mask came from when ready (an 'auto' request resolved to the atlas alpha or the material names). */
   teamMask?: Exclude<TeamMaskSource, 'auto'>;
   /**
-   * Diffuse texture layers and their edge in pixels (one layer per source material). The GPU holds
-   * layers * size * size * 4 bytes plus a third for the mip chain, so this is what a character costs in memory:
-   * drop UnitAssetLoadOptions.layerSize when it adds up.
+   * Texture layers and their edge in pixels (one layer per distinct set of source images), and `bytes`: what the
+   * arrays that were actually built cost on the GPU, plus about a third for the mip chain. This is what a character
+   * costs in memory; drop UnitAssetLoadOptions.layerSize when it adds up.
    */
-  layers?: { count: number; size: number };
+  layers?: { count: number; size: number; bytes: number };
   /** How many of those layers carry a real normal map and a real metallicRoughness map (the rest are flat defaults). */
   maps?: { normal: number; mr: number };
 }
@@ -213,7 +213,11 @@ export class UnitAssetRegistry {
           status.state = 'ready';
           status.teamMask = lod0.teamMask;
           status.triangles = [lod0.triangles, asset.lods[1].triangles, asset.lods[2].triangles];
-          status.layers = { count: lod0.textureCount, size: asset.layerSize };
+          status.layers = {
+            count: lod0.textureCount,
+            size: asset.layerSize,
+            bytes: asset.layerBytes,
+          };
           status.maps = asset.mapCounts;
           if (asset.missingLayers.length > 0)
             this.opts.warn?.(

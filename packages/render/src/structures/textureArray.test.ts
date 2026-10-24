@@ -6,6 +6,7 @@ import { NO_LAYER, TextureLayerTable, type TextureLayer } from './buildingGeomet
 import {
   budgetedLayerSize,
   createLayerTexture,
+  layerArrayBytes,
   MAX_LAYER_SIZE,
   MIN_LAYER_SIZE,
   UNIT_LAYER_BUDGET_BYTES,
@@ -213,5 +214,16 @@ describe('budgetedLayerSize', () => {
 
   it('never goes above the cap the asset-cli exports', () => {
     expect(budgetedLayerSize(1, Number.MAX_SAFE_INTEGER)).toBe(MAX_LAYER_SIZE);
+  });
+});
+
+describe('layerArrayBytes', () => {
+  it('counts what the three arrays of a character cost', () => {
+    const MB = 1024 * 1024;
+    // The Klerk: one atlas layer of 2048 over base colour, normal and metallicRoughness.
+    expect(layerArrayBytes(1, 2048, 3)).toBe(48 * MB);
+    // What it cost while the team band had a second layer of the very same pixels.
+    expect(layerArrayBytes(2, 2048, 3)).toBe(96 * MB);
+    expect(layerArrayBytes(0, 0, 3)).toBe(0);
   });
 });
