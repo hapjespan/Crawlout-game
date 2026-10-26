@@ -50,6 +50,7 @@ function setup(withDep = true) {
     getStatus: () => status,
     getSelection: () => [],
     beginTargeting: () => undefined,
+    startCard: () => undefined,
     ...(withDep ? { getDominance: () => current } : {}),
   };
   let handle!: HudHandle;

@@ -43,10 +43,6 @@ export class BundleFeed {
   private lastReleased = -1;
   private paused = false;
 
-  get isPaused(): boolean {
-    return this.paused;
-  }
-
   /** Highest frame released to the sim; -1 before the first. */
   get released(): number {
     return this.lastReleased;

@@ -39,6 +39,7 @@ function setup(initial: RosterGroup[]) {
     getStatus: () => status,
     getSelection: () => selection,
     beginTargeting: () => undefined,
+    startCard: () => undefined,
     getRoster: () => roster,
     canSwitchRole: () => true,
     selectUnits: (ids, add) => {

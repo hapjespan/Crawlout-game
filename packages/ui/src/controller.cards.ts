@@ -13,7 +13,7 @@ import type { BuildingCard } from './types.js';
 /** HudController.canStartCard. */
 export function canStartCard(core: HudControllerCore, card: BuildingCard): boolean {
   if (card.state !== 'available' || core.state.confirmSurrender) return false;
-  return card.kind !== 'craft' || selectedIds(core, false).length > 0;
+  return card.kind !== 'craft' || selectedIds(core).length > 0;
 }
 
 /** HudController.cardReason. */
@@ -72,15 +72,7 @@ export function startCard(core: HudControllerCore, card: BuildingCard): boolean 
     return false;
   }
   if (core.state.cardNotice) setState(core, { cardNotice: null });
-  if (core.deps.startCard) core.deps.startCard(card);
-  else if (card.kind === 'research') core.deps.sendCommand('Research', { techId: card.id });
-  else if (card.kind === 'revive') core.deps.sendCommand('Recruit', { buildingId: card.id });
-  else if (card.kind === 'produce' && card.buildingId !== undefined)
-    core.deps.sendCommand('Produce', { buildingId: card.buildingId, loadoutId: card.id });
-  else if (card.kind === 'train' && card.buildingId !== undefined)
-    core.deps.sendCommand('Train', { buildingId: card.buildingId, programId: card.id });
-  else if (card.kind === 'craft')
-    core.deps.sendCommand('Craft', { ids: selectedIds(core, false), loadoutId: card.id });
+  core.deps.startCard(card);
   if (card.kind === 'craft') setState(core, { craftMenuOpen: false });
   return true;
 }

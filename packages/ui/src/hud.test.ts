@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act } from 'preact/test-utils';
 import { COMMAND_PAYLOADS, CommandEnvelope } from '@crawlout/protocol';
 import type { CommandType, PlayerStatus } from '@crawlout/protocol';
+import { BUILDING_TYPE_BASE } from '@crawlout/data';
 import { mountHud } from './index.js';
 import type { HudDeps, HudHandle, NetworkState, SelectedEntity, TargetingKind } from './types.js';
 
@@ -47,6 +48,7 @@ function setup(opts: { selection?: SelectedEntity[]; network?: NetworkState } = 
     getNetwork: () => state.network,
     playerName: (id) => ['Jij', 'Rik'][id] ?? `P${id}`,
     beginTargeting: (k) => void targeting.push(k),
+    startCard: () => undefined,
   };
   const el = document.createElement('div');
   document.body.appendChild(el);
@@ -194,12 +196,20 @@ describe('sneltoetsen', () => {
     expect(t.targeting).toEqual([]);
   });
 
-  it('begrenst ids op MAX_ENTITIES_PER_COMMAND', () => {
-    const t = setup({ selection: Array.from({ length: 80 }, (_, i) => unit(i)) });
+  it("stuurt de hele selectie mee; de client splitst in commando's van 64 ids", () => {
+    const ids = Array.from({ length: 120 }, (_, i) => i);
+    const t = setup({
+      selection: [
+        ...ids.map((i) => unit(i, 'militia')),
+        { ...unit(500), typeId: BUILDING_TYPE_BASE },
+      ],
+    });
     mounted = t.handle;
     press('s');
-    expect((t.sent[0]?.payload as { ids: number[] }).ids).toHaveLength(64);
-    t.sent.forEach(expectValid);
+    press('a');
+    act(() => void t.handle.completeTargeting({ x: 10, y: 20 }));
+    expect(t.sent.map((s) => s.type)).toEqual(['Stop', 'AttackMove']);
+    for (const s of t.sent) expect((s.payload as { ids: number[] }).ids).toEqual(ids);
   });
 
   it('negeert toetsen met modifier en in invoervelden', () => {

@@ -73,7 +73,7 @@ export interface HudDeps {
    */
   getBuildingCards?(selection: readonly SelectedEntity[]): readonly BuildingCard[];
   /** De speler start een kaart (klik of sneltoets). De HUD roept dit alleen aan voor state available; de client stuurt het commando (Research, Craft of Recruit). */
-  startCard?(card: BuildingCard): void;
+  startCard(card: BuildingCard): void;
   /** De speler annuleert een lopende kaart (state running); de client stuurt Cancel op het gebouw. */
   cancelCard?(card: BuildingCard): void;
 

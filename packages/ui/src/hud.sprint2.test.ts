@@ -117,6 +117,7 @@ function setup(
     getStatus: () => state.status,
     getSelection: () => state.selection,
     beginTargeting: (k) => void calls.targeting.push(k),
+    startCard: () => undefined,
     getMinimap: () => minimap,
     focusCamera: (x, y) => void calls.focus.push([x, y]),
     getBuildOptions: () => options,

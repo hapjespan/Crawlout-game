@@ -12,6 +12,18 @@ import { isProjectRuin } from './game/project.js';
 import type { EntityRow } from './game/snapshot.js';
 import type { ClientContext } from './main.context.js';
 
+/** Sends an order; a payload with ids goes out as commands of at most 64 ids each (an empty selection sends nothing). */
+export function sendOrder<T extends CommandType>(
+  send: (type: T, payload: CommandPayload<T>) => void,
+  type: T,
+  payload: CommandPayload<T>,
+): void {
+  if (!('ids' in payload)) return send(type, payload);
+  const ids = payload.ids as number[];
+  for (let i = 0; i < ids.length; i += MAX_ENTITIES_PER_COMMAND)
+    send(type, { ...payload, ids: ids.slice(i, i + MAX_ENTITIES_PER_COMMAND) });
+}
+
 export function wireOrders(ctx: ClientContext): void {
   const { data, renderer, session, loadoutOf, heroOf } = ctx;
 
@@ -45,12 +57,7 @@ export function wireOrders(ctx: ClientContext): void {
     ids: number[],
     extra: Omit<CommandPayload<T>, 'ids'>,
   ): void {
-    for (let i = 0; i < ids.length; i += MAX_ENTITIES_PER_COMMAND) {
-      session.sendCommand(type, {
-        ids: ids.slice(i, i + MAX_ENTITIES_PER_COMMAND),
-        ...extra,
-      } as CommandPayload<T>);
-    }
+    sendOrder((t, p) => session.sendCommand(t, p), type, { ids, ...extra } as CommandPayload<T>);
   }
 
   /** Right click: attack an enemy, gather from a scrap node, claim a point, otherwise move. */

@@ -38,8 +38,15 @@ import { dominanceView } from './game/dominance.js';
 import { nearestRuin, projectMinimap, projectView } from './game/project.js';
 import { survivalView, survivalZones } from './game/survivalStatus.js';
 import { LOADOUT_NAMES, buildRoster } from './game/roster.js';
-import { nodeGuardLines, raiderKindOf, raiderLines, seesEnemySlaves } from './game/raiders.js';
+import {
+  census,
+  nodeGuardLines,
+  raiderKindOf,
+  raiderLines,
+  seesEnemySlaves,
+} from './game/raiders.js';
 import type { ClientContext } from './main.context.js';
+import { sendOrder } from './main.orders.js';
 
 const DEFAULT_YAW = Math.PI * 0.25;
 const DEFAULT_ZOOM_M = 42;
@@ -105,7 +112,8 @@ export function wireHud(ctx: ClientContext): void {
   const deps: HudDeps = {
     sendCommand: <T extends CommandType>(type: T, payload: CommandPayload<T>) => {
       if (type === 'HeroAbility') watchAbilityCast(payload as CommandPayload<'HeroAbility'>);
-      return session.sendCommand(type, payload);
+      // HUD orders carry the whole selection: split them into commands of at most 64 ids, like right click.
+      sendOrder((t, p) => session.sendCommand(t, p), type, payload);
     },
     getStatus: () => ctx.status,
     getSelection: () => {
@@ -162,6 +170,12 @@ export function wireHud(ctx: ClientContext): void {
           },
         ];
       }
+      const factionId = myFaction()?.id;
+      // Counted once per call, not per selected unit (raiderLines needs it only for a faction with slaves).
+      const raiderCensus =
+        factionId !== undefined && data.factions[factionId]?.slaves
+          ? census(data, factionId, session.playerId, own())
+          : null;
       return ownIds.map((id): SelectedEntity => {
         const e = ctx.entities.get(id)!;
         const l = loadoutOf(e.typeId);
@@ -180,16 +194,17 @@ export function wireHud(ctx: ClientContext): void {
         const role = l?.canBuild ? 'builder' : settlerRole;
         const robot = l !== undefined && BODY_TYPES[l.bodyType] === 'robot';
         const raiderKind = raiderKindOf(data, l);
-        const lines = raiderLines(
-          data,
-          myFaction()?.id,
-          session.playerId,
-          e,
-          ctx.entities.values(),
-          TICK_HZ,
-          ctx.status?.techs ?? [],
-          ctx.status?.slaveGroups,
-        );
+        const lines = raiderCensus
+          ? raiderLines(
+              data,
+              factionId,
+              e,
+              raiderCensus,
+              TICK_HZ,
+              ctx.status?.techs ?? [],
+              ctx.status?.slaveGroups,
+            )
+          : [];
         return {
           id,
           typeId: e.typeId,

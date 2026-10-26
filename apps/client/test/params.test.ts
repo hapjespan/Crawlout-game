@@ -36,12 +36,21 @@ describe('getClientId', () => {
     return { map, getItem: (k) => map.get(k) ?? null, setItem: (k, v) => void map.set(k, v) };
   };
 
-  it('generates once and then returns the stored id (a reload reconnects)', () => {
+  it('generates once and then returns the stored id on a reload (a reload reconnects)', () => {
     const store = memory();
     let n = 0;
-    const first = getClientId(store, () => `generated-${n++}`);
-    expect(getClientId(store, () => `generated-${n++}`)).toBe(first);
+    const first = getClientId(store, () => `generated-${n++}`, false);
+    expect(getClientId(store, () => `generated-${n++}`, true)).toBe(first);
     expect(n).toBe(1);
+  });
+
+  it('a duplicated tab (copied sessionStorage, no reload) gets its own id', () => {
+    const store = memory();
+    const first = getClientId(store, () => 'original-tab', false);
+    const copy = memory();
+    copy.map.set('crawlout.clientId', first);
+    expect(getClientId(copy, () => 'duplicate-tab', false)).toBe('duplicate-tab');
+    expect(copy.map.get('crawlout.clientId')).toBe('duplicate-tab');
   });
 
   it('survives a missing or throwing store', () => {
@@ -54,6 +63,6 @@ describe('getClientId', () => {
         throw new Error('blocked');
       },
     };
-    expect(getClientId(broken, () => 'abcdefgh')).toBe('abcdefgh');
+    expect(getClientId(broken, () => 'abcdefgh', true)).toBe('abcdefgh');
   });
 });

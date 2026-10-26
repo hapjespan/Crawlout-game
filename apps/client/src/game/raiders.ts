@@ -61,7 +61,7 @@ export function raiderKindOf(data: GameData, l: LoadoutData | undefined): Raider
 const isCage = (b: BuildingData | undefined, kooi: number): b is BuildingData =>
   b !== undefined && b.cage !== null && b.provides.includes(kooi);
 
-interface Census {
+export interface Census {
   slaves: EntityRow[];
   prisoners: EntityRow[];
   fighters: EntityRow[];
@@ -69,7 +69,8 @@ interface Census {
   tentReady: boolean;
 }
 
-function census(
+/** The player's own slaves, prisoners, fighters and finished cages, in one pass over the entities. */
+export function census(
   data: GameData,
   factionId: number,
   playerId: number,
@@ -228,9 +229,8 @@ export function seesEnemySlaves(
 export function raiderLines(
   data: GameData,
   factionId: number | undefined,
-  playerId: number,
   entity: EntityRow,
-  entities: Iterable<EntityRow>,
+  c: Census,
   tickHz: number,
   researched: readonly number[],
   groups: readonly SlaveGroupStatus[] = [],
@@ -241,12 +241,11 @@ export function raiderLines(
   if (k.kind === 'building') {
     const b = data.buildings[k.index];
     if (!b?.cage || entity.anim === ANIM.build) return [];
-    const stats = raiderStats(data, faction.id, playerId, entities, groups);
-    const cage = stats?.cages.find((x) => x.id === entity.id);
+    const slaves = c.slaves.filter((s) => nearestCage(c, s)?.e.id === entity.id).length;
     const group = groups.find((g) => g.kind === 'kooi' && g.targetId === entity.id);
     const r = faction.slaves.revolt;
     return [
-      `Kooi: ${cage?.slaves ?? 0} van ${b.cage.capacity} slaven, werkstraal ${Math.round(b.cage.workRadiusU / UNITS_PER_METER)} m`,
+      `Kooi: ${slaves} van ${b.cage.capacity} slaven, werkstraal ${Math.round(b.cage.workRadiusU / UNITS_PER_METER)} m`,
       `Gevangenen worden hier na ${Math.round(b.cage.transitionTicks / tickHz)} s slaaf`,
       group ? guardLine(group) : 'Bewakers 0/0 nodig: geen slaven aan het werk',
       `Scrap binnen ${Math.round(r.cageNearU / UNITS_PER_METER)} m: ${r.cageGuards} bewaker op Bewaak (G) houdt de slaven aan het werk`,
@@ -255,7 +254,6 @@ export function raiderLines(
   const l = data.loadouts[k.index];
   if (!l) return [];
   if (l.slave) {
-    const c = census(data, faction.id, playerId, entities);
     const cage = nearestCage(c, entity);
     if (!cage?.b.cage) return ['Geen Kooi: bouw een Kooi om te kunnen werken'];
     return [

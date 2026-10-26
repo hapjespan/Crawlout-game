@@ -1,4 +1,3 @@
-import { MAX_ENTITIES_PER_COMMAND } from '@crawlout/protocol';
 import type { PlayerStatus } from '@crawlout/protocol';
 import { kindOfTypeId } from '@crawlout/data';
 import type { HudController } from './controller.js';
@@ -265,12 +264,11 @@ export function pushAlert(core: HudControllerCore, alert: HudAlert): void {
   setState(core, { toasts });
 }
 
-export function selectedIds(core: HudControllerCore, includeBuildings = true): number[] {
-  const own = core.state.selection.filter((s) => !s.enemy);
-  const sel = includeBuildings
-    ? own
-    : own.filter((s) => kindOfTypeId(s.typeId).kind !== 'building');
-  return sel.slice(0, MAX_ENTITIES_PER_COMMAND).map((s) => s.id);
+/** Own selected units (the sim ignores buildings in unit orders); the client splits them into commands of 64 ids. */
+export function selectedIds(core: HudControllerCore): number[] {
+  return core.state.selection
+    .filter((s) => !s.enemy && kindOfTypeId(s.typeId).kind !== 'building')
+    .map((s) => s.id);
 }
 
 export function stopTargeting(core: HudControllerCore): void {

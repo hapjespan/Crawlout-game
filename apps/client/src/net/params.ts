@@ -46,13 +46,25 @@ function randomId(): string {
   return [...bytes].map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
-/** The clientId lives in sessionStorage: it survives a reload of this tab (reconnect) but not a second tab. */
+/** Was this page load a reload of the tab (not a fresh navigation, a back/forward or a duplicated tab)? */
+function pageWasReloaded(): boolean {
+  const nav = globalThis.performance?.getEntriesByType?.('navigation')[0] as
+    PerformanceNavigationTiming | undefined;
+  return nav?.type === 'reload';
+}
+
+/**
+ * The clientId lives in sessionStorage so a reload of this tab rejoins as the same player (reconnect). "Duplicate tab"
+ * copies sessionStorage too, so the stored id is only reused on a reload; any other load gets (and stores) a new id.
+ * Socket reconnects within a page keep their id in reconnectingTransport and do not come here.
+ */
 export function getClientId(
   store: KeyValueStore | null,
   generate: () => string = randomId,
+  reuse: boolean = pageWasReloaded(),
 ): string {
   try {
-    const existing = store?.getItem(CLIENT_ID_KEY);
+    const existing = reuse ? store?.getItem(CLIENT_ID_KEY) : null;
     if (existing && existing.length >= 8 && existing.length <= 64) return existing;
   } catch {
     // storage blocked: fall through to an in-memory id

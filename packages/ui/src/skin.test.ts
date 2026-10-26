@@ -25,6 +25,7 @@ const deps: HudDeps = {
   getStatus: () => null,
   getSelection: () => [],
   beginTargeting: () => undefined,
+  startCard: () => undefined,
 };
 
 describe('HUD look (committed, bitmap-free)', () => {

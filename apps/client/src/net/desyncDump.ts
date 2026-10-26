@@ -1,12 +1,15 @@
-// Desync dump (contract 2, hash en desync): the client writes its state serialization to IndexedDB under the
-// frame of the desyncEvent, so the cause can be compared afterwards (both players' dumps, same frame key).
+// Desync dump (contract 2, hash en desync): the client writes its state serialization to IndexedDB, keyed by savedAt
+// (two matches desyncing at the same frame must not overwrite each other), with the frame of the desyncEvent inside so
+// both players' dumps can be compared afterwards. Only the last DESYNC_KEEP dumps are kept.
 import type { DesyncEvent } from '@crawlout/protocol';
 
 export const DESYNC_DB = 'crawlout-desync';
 export const DESYNC_STORE = 'dumps';
+const DESYNC_DB_VERSION = 2;
+const DESYNC_KEEP = 5;
 
 export interface DesyncDump {
-  /** Key: the frame of the desyncEvent. */
+  /** The frame of the desyncEvent. */
   frame: number;
   /** Sim.frame of the dumped state; can be a few frames later (the relay stops bundles after a desync, so at most DELAY). */
   simFrame: number;
@@ -14,6 +17,7 @@ export interface DesyncDump {
   hash: number;
   playerId: number;
   hashes: Record<string, number>;
+  /** Key: Date.now() when saved. */
   savedAt: number;
   state: ArrayBuffer;
 }
@@ -43,9 +47,12 @@ function request<T>(req: IDBRequest<T>): Promise<T> {
 }
 
 function openDb(factory: IDBFactory): Promise<IDBDatabase> {
-  const open = factory.open(DESYNC_DB, 1);
+  const open = factory.open(DESYNC_DB, DESYNC_DB_VERSION);
   open.onupgradeneeded = () => {
-    open.result.createObjectStore(DESYNC_STORE, { keyPath: 'frame' });
+    // version 1 keyed by frame: drop it (old dumps go) and key by savedAt
+    if (open.result.objectStoreNames.contains(DESYNC_STORE))
+      open.result.deleteObjectStore(DESYNC_STORE);
+    open.result.createObjectStore(DESYNC_STORE, { keyPath: 'savedAt' });
   };
   return request(open);
 }
@@ -62,22 +69,15 @@ export async function saveDesyncDump(
       tx.onerror = () => reject(tx.error ?? new Error('IndexedDB-transactie mislukt'));
       tx.onabort = () => reject(tx.error ?? new Error('IndexedDB-transactie afgebroken'));
     });
-    tx.objectStore(DESYNC_STORE).put(dump);
+    const store = tx.objectStore(DESYNC_STORE);
+    store.put(dump);
+    // keys come back ascending (oldest savedAt first); delete in the same transaction
+    const keys = store.getAllKeys();
+    keys.onsuccess = () => {
+      for (const key of keys.result.slice(0, Math.max(0, keys.result.length - DESYNC_KEEP)))
+        store.delete(key);
+    };
     await done;
-  } finally {
-    db.close();
-  }
-}
-
-export async function readDesyncDump(
-  frame: number,
-  factory: IDBFactory = indexedDB,
-): Promise<DesyncDump | undefined> {
-  const db = await openDb(factory);
-  try {
-    return (await request(
-      db.transaction(DESYNC_STORE, 'readonly').objectStore(DESYNC_STORE).get(frame),
-    )) as DesyncDump | undefined;
   } finally {
     db.close();
   }

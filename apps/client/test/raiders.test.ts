@@ -5,6 +5,7 @@ import { buildingTypeId, heroTypeId, unitTypeId } from '@crawlout/data';
 import { loadGameDataFromDir } from '@crawlout/data/node';
 import { buildingCards, raiderTechEffects } from '../src/game/cards.js';
 import {
+  census,
   guardLine,
   nodeGuardLines,
   raiderKindOf,
@@ -92,7 +93,7 @@ describe('Raider kinds and selection lines', () => {
   const camp = row(100, house('raiderkamp'), { x: 0, y: 0 });
   const slave = row(1, unit('slaaf'), { x: 256 * 5, y: 0 });
   const lines = (e: EntityRow, own: EntityRow[], techs: number[] = []) =>
-    raiderLines(data, raiders.id, 0, e, own, 20, techs);
+    raiderLines(data, raiders.id, e, census(data, raiders.id, 0, own), 20, techs);
 
   it('names the Kooi a slave is bound to with the work radius', () => {
     expect(lines(slave, [camp, slave])).toEqual(['Kooi: Raiderkamp, werkstraal 45 m']);
@@ -124,7 +125,15 @@ describe('Raider kinds and selection lines', () => {
       nodeIds: [7],
       escapeInTicks: 300,
     };
-    const out = raiderLines(data, raiders.id, 0, camp, own, 20, [], [group]);
+    const out = raiderLines(
+      data,
+      raiders.id,
+      camp,
+      census(data, raiders.id, 0, own),
+      20,
+      [],
+      [group],
+    );
     expect(out[0]).toBe('Kooi: 1 van 8 slaven, werkstraal 45 m');
     expect(out[1]).toContain('na 20 s slaaf');
     expect(out[2]).toBe('Bewakers 0/1 nodig (te weinig: slaven lopen weg)');

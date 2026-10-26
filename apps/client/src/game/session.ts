@@ -2,7 +2,8 @@
 // human plus an AI player (the AI itself runs in the sim); with `?relay=ws://host:8787&room=..&name=..` it is the ws
 // relay. Both speak the same messages, so everything below the transport choice is shared.
 //
-// Lobby over ws: the session joins with a clientId from sessionStorage and sets the map to the one the client loaded.
+// Lobby over ws: the session joins with a clientId from sessionStorage (reused on a reload only, net/params.ts) and
+// sets the map to the one the client loaded.
 // With `lobby: 'auto'` (the URL shortcuts) it also lets the host (`?ai=1`) add one AI and readies up automatically; with
 // `lobby: 'manual'` (the menu's "Speler tegen speler") it only reports the lobby (onLobby, onLink) and leaves faction,
 // AI and ready to the player through `lobbyRequest`. The relay starts once everyone is ready.
@@ -344,6 +345,8 @@ export function startSession(
         return;
       case 'error':
         events.onError(msg.message);
+        // A failed resync (e.g. no peer) leaves the match paused for good: say why on the in-match overlay.
+        if (awaitingResync) events.onConnection?.(`Synchroniseren mislukt: ${msg.message}`);
         return;
       default:
         return;

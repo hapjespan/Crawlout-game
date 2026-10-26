@@ -47,6 +47,7 @@ function setup(over: Partial<HudDeps> = {}, omit: (keyof HudDeps)[] = []) {
     getStatus: () => status,
     getSelection: () => selection,
     beginTargeting: () => undefined,
+    startCard: () => undefined,
     getRoster: () => roster,
     selectUnits: (ids, add) => {
       selects.push({ ids: [...ids], add });

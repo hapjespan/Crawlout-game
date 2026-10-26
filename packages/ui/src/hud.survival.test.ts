@@ -43,6 +43,7 @@ function setup(initial: SurvivalView | null) {
     getStatus: () => status,
     getSelection: () => [],
     beginTargeting: () => undefined,
+    startCard: () => undefined,
     getSurvival: () => current,
   };
   let handle!: HudHandle;

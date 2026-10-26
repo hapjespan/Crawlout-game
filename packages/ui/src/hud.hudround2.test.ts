@@ -75,6 +75,7 @@ function setup(o: Over = {}) {
     getStatus: () => status(state.hero),
     getSelection: () => state.selection,
     beginTargeting: () => undefined,
+    startCard: () => undefined,
     heroName: () => 'Opziener',
     getPerkOptions: () => o.perks ?? [],
     focusCamera: (x, y) => void focus.push([x, y]),

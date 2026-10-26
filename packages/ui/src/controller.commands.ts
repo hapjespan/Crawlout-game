@@ -1,4 +1,3 @@
-import { MAX_ENTITIES_PER_COMMAND } from '@crawlout/protocol';
 import {
   type ActionId,
   ACTIONS,
@@ -39,7 +38,6 @@ export function run(core: HudControllerCore, id: ActionId): boolean {
     // Only settlers switch role: the hero and robots would be ignored by the sim anyway.
     const settlers = core.state.selection
       .filter((s) => !s.enemy && !s.robot && s.role !== null && s.role !== role)
-      .slice(0, MAX_ENTITIES_PER_COMMAND)
       .map((s) => s.id);
     if (settlers.length === 0) return false;
     stopTargeting(core);

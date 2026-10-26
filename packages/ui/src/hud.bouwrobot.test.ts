@@ -42,6 +42,7 @@ function setup(over: Partial<HudDeps> = {}) {
     getStatus: () => status,
     getSelection: () => state.selection,
     beginTargeting: () => {},
+    startCard: () => undefined,
     canSwitchRole: () => true,
     ...over,
   };

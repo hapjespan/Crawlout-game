@@ -17,6 +17,7 @@ import {
   POINT_NODE,
   RECT_CLAIM,
   RECT_DEPOT,
+  footprintOrigin,
   placementReason as simPlacementReason,
   territoryMask,
   type PlacementInput,
@@ -52,14 +53,11 @@ export function wirePlacement(ctx: ClientContext): void {
     const buildings: CellRect[] = [];
     for (const e of ctx.entities.values()) {
       const b = buildingOf(e.typeId);
-      if (b)
-        buildings.push({
-          x0: (e.x >> 8) - (b.footprint.w >> 1),
-          y0: (e.y >> 8) - (b.footprint.h >> 1),
-          w: b.footprint.w,
-          h: b.footprint.h,
-        });
+      if (!b) continue;
+      const { fx, fy } = footprintOrigin(e.x, e.y, b.footprint.w, b.footprint.h);
+      buildings.push({ x0: fx, y0: fy, w: b.footprint.w, h: b.footprint.h });
     }
+    const at = footprintOrigin(cx, cy, w, h);
     return placementIssue(
       {
         gridW: map.grid.w,
@@ -70,7 +68,7 @@ export function wirePlacement(ctx: ClientContext): void {
         scrap: ctx.status?.scrap ?? 0,
         scrapCost: option.scrapCost,
       },
-      { x0: (cx >> 8) - (w >> 1), y0: (cy >> 8) - (h >> 1), w, h },
+      { x0: at.fx, y0: at.fy, w, h },
     );
   }
   /**
@@ -106,7 +104,8 @@ export function wirePlacement(ctx: ClientContext): void {
       const post = b.provides.includes(CLAIM_PROVIDES) && !b.provides.includes(HQ_PROVIDES);
       if (post && e.anim === ANIM.build) continue;
       const { w: bw, h: bh } = b.footprint;
-      src.push((e.x >> 8) - (bw >> 1), (e.y >> 8) - (bh >> 1), bw, bh, post ? claimRange : range);
+      const { fx, fy } = footprintOrigin(e.x, e.y, bw, bh);
+      src.push(fx, fy, bw, bh, post ? claimRange : range);
     }
     const key = src.join(',');
     if (key !== territoryKey || territory === null) {
@@ -124,7 +123,8 @@ export function wirePlacement(ctx: ClientContext): void {
         const { w: bw, h: bh } = b.footprint;
         const flags =
           (isDepot(b) ? RECT_DEPOT : 0) | (b.provides.includes(CLAIM_PROVIDES) ? RECT_CLAIM : 0);
-        rects.push((e.x >> 8) - (bw >> 1), (e.y >> 8) - (bh >> 1), bw, bh, flags);
+        const { fx, fy } = footprintOrigin(e.x, e.y, bw, bh);
+        rects.push(fx, fy, bw, bh, flags);
       } else if (e.typeId === SCRAP_NODE_TYPE_ID) points.push(e.x, e.y, POINT_NODE);
       else if (e.typeId === CLAIM_POINT_TYPE_ID) points.push(e.x, e.y, POINT_CLAIM);
     }
@@ -163,6 +163,7 @@ export function wirePlacement(ctx: ClientContext): void {
     // a building with a distance rule to the own headquarters (the Raiders' Kooi, data 0.21.0, sim 0.18.0)
     const rule = buildingOf(option.typeId)?.placement ?? null;
     const input = placementInputNow();
+    const { fx, fy } = footprintOrigin(cx, cy, w, h);
     return simPlacementReason(
       rule === null
         ? input
@@ -170,8 +171,8 @@ export function wirePlacement(ctx: ClientContext): void {
             ...input,
             hqRange: { hqs: ownHqCentres(), min: rule.minFromHqU, max: rule.maxFromHqU },
           },
-      (cx >> 8) - (w >> 1),
-      (cy >> 8) - (h >> 1),
+      fx,
+      fy,
       w,
       h,
       placeAsOf(option.typeId),
@@ -205,8 +206,7 @@ export function wirePlacement(ctx: ClientContext): void {
         ownSites.push({
           x: e.x,
           y: e.y,
-          fx: (e.x >> 8) - (fw >> 1),
-          fy: (e.y >> 8) - (fh >> 1),
+          ...footprintOrigin(e.x, e.y, fw, fh),
           fw,
           fh,
         });
@@ -242,10 +242,11 @@ export function wirePlacement(ctx: ClientContext): void {
     if (hud) return hud;
     // survival co-op: outside the own build zone (the sim's PLACE_ZONE; its rule is not in the sim placement module)
     const { w, h } = option.footprint;
+    const { fx, fy } = footprintOrigin(cx, cy, w, h);
     const zone = zoneReason(
       session.survivalZones()?.[session.playerId] ?? null,
-      (cx >> 8) - (w >> 1),
-      (cy >> 8) - (h >> 1),
+      fx,
+      fy,
       w,
       h,
       buildingOf(option.typeId)?.provides.includes(CLAIM_PROVIDES) === true,

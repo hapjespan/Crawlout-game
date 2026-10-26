@@ -42,11 +42,6 @@ export function groundOcclusion(height: Node<'float'>): Node<'float'> {
   return float(GROUND_AO.floor).add(pow(t, GROUND_AO.falloff).mul(1 - GROUND_AO.floor));
 }
 
-/** CPU form of the share of the ground occlusion the direct sun takes. */
-export function sunOcclusionAt(height: number): number {
-  return 1 - (1 - groundOcclusionAt(height)) * GROUND_AO.sunShare;
-}
-
 /** The same occlusion weakened to GROUND_AO.sunShare, to multiply into the sun's shadow factor. */
 export function sunGroundOcclusion(ao: Node<'float'>): Node<'float'> {
   return mix(float(1), ao, GROUND_AO.sunShare);

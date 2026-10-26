@@ -102,6 +102,15 @@ function setup(o: Over = {}) {
     getResearchOptions: (ids) => (queries.research.push([...ids]), o.research ?? []),
     getRecruitOptions: (ids) => (queries.recruit.push([...ids]), o.recruit ?? []),
     getCraftOptions: () => o.craft ?? [],
+    // stands in for the client's startCard (main.hud.ts): a card becomes its command
+    startCard: (c) => {
+      if (c.kind === 'research') sent.push({ type: 'Research', payload: { techId: c.id } });
+      else if (c.kind === 'revive') sent.push({ type: 'Recruit', payload: { buildingId: c.id } });
+      else if (c.kind === 'craft') {
+        const ids = state.selection.filter((s) => s.typeId < 1024).map((s) => s.id);
+        sent.push({ type: 'Craft', payload: { ids, loadoutId: c.id } });
+      }
+    },
     ...o.deps,
   };
   for (const k of o.omit ?? []) delete deps[k];

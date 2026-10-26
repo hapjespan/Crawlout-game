@@ -21,7 +21,23 @@ import {
 } from './cards.part1.js';
 import type { CardContext } from './cards.part1.js';
 
-export function buildingCards(ctx: CardContext): BuildingCard[] {
+/** Own finished buildings by building id (index in data.buildings). */
+function finishedByType(own: readonly EntityRow[]): Map<number, EntityRow[]> {
+  const byType = new Map<number, EntityRow[]>();
+  for (const e of own) {
+    const k = kindOfTypeId(e.typeId);
+    if (k.kind !== 'building' || e.anim === ANIM.build) continue;
+    const list = byType.get(k.index);
+    if (list) list.push(e);
+    else byType.set(k.index, [e]);
+  }
+  return byType;
+}
+
+export function buildingCards(
+  ctx: CardContext,
+  finishedTypes: Map<number, EntityRow[]> = finishedByType(ctx.own),
+): BuildingCard[] {
   const { data, factionId, status } = ctx;
   const researched = new Set(status?.techs ?? []);
   const scrap = status?.scrap ?? 0;
@@ -32,11 +48,7 @@ export function buildingCards(ctx: CardContext): BuildingCard[] {
   const busyBuildings = new Set(status?.queue?.filter(occupiesBuilding).map((q) => q.buildingId));
   const tooExpensive = (cost: number): string => `Te duur: nog ${cost - scrap} scrap nodig`;
   /** Own finished buildings of a building id (index in data.buildings). */
-  const finishedOf = (buildingIdx: number): EntityRow[] =>
-    ctx.own.filter((e) => {
-      const k = kindOfTypeId(e.typeId);
-      return k.kind === 'building' && k.index === buildingIdx && finished(e);
-    });
+  const finishedOf = (buildingIdx: number): EntityRow[] => finishedTypes.get(buildingIdx) ?? [];
   const nameOfBuilding = (idx: number): string =>
     buildingName(data.buildings[idx]?.key ?? String(idx));
 
@@ -260,11 +272,11 @@ function reviveProgress(data: GameData, status: PlayerStatus | null): number {
 export function buildingButtons(ctx: CardContext): BuildingButton[] {
   const { data, status } = ctx;
   const groups = new Map<number, BuildingSite[]>();
-  const done = ctx.own
-    .filter((e) => kindOfTypeId(e.typeId).kind === 'building' && e.anim !== ANIM.build)
-    .sort((a, b) => a.id - b.id);
+  // Built once per call: buildingCards would otherwise re-filter ctx.own per card per building (20 Hz).
+  const finishedTypes = finishedByType(ctx.own);
+  const done = [...finishedTypes.values()].flat().sort((a, b) => a.id - b.id);
   for (const e of done) {
-    const cards = buildingCards({ ...ctx, selected: [e] });
+    const cards = buildingCards({ ...ctx, selected: [e] }, finishedTypes);
     const jobs = status?.queue?.filter((q) => q.buildingId === e.id && occupiesBuilding(q)) ?? [];
     if (!cards.some((c) => c.state !== 'done')) continue;
     const reviving = cards.some((c) => c.kind === 'revive' && c.state === 'running');

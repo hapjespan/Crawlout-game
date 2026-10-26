@@ -46,6 +46,7 @@ function setup(over: Partial<HudDeps> = {}) {
     getStatus: () => status,
     getSelection: () => state.selection,
     beginTargeting: (kind) => void targets.push(kind),
+    startCard: () => undefined,
     ...over,
   };
   const el = document.createElement('div');

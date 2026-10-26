@@ -35,16 +35,6 @@ export const SUN_COLOR = [1.14, 1.0, 0.82] as const;
 export const HEMI_SKY = [0.9, 0.98, 1.12] as const;
 export const HEMI_GROUND = [1.06, 0.96, 0.84] as const;
 
-/** CPU form of the hemisphere fill for a normal's y (same mix as the shader). */
-export function hemiAt(ny: number): [number, number, number] {
-  const up = Math.min(1, Math.max(0, ny * 0.5 + 0.5));
-  return [0, 1, 2].map((c) => HEMI_GROUND[c]! * (1 - up) + HEMI_SKY[c]! * up) as [
-    number,
-    number,
-    number,
-  ];
-}
-
 /**
  * Sky gradient (linear rgb): the haze at the horizon, which is also the fog colour, and a pale dusty blue overhead.
  * Below the horizon the sky stays the fog colour, so whatever lies beyond the skirt dissolves into the same haze.
@@ -74,32 +64,3 @@ export const FOG = { start: 1.15, range: 2.4, max: 0.85 } as const;
  * fade is long: there is no border, the land just thins into the haze.
  */
 export const EDGE_FOG = { start: 0, end: 420 } as const;
-
-/** CPU form of the distance fog factor (0 clear, 1 fog colour). */
-export function distanceFog(distance: number, cameraDistance: number): number {
-  const start = cameraDistance * FOG.start;
-  const range = Math.max(1, cameraDistance * FOG.range);
-  return (1 - Math.exp(-Math.max(0, distance - start) / range)) * FOG.max;
-}
-
-/** How far (m) a point lies outside an axis-aligned rectangle, negative inside (distance to the nearest side). */
-export function outsideRect(
-  x: number,
-  z: number,
-  rect: { minX: number; maxX: number; minZ: number; maxZ: number },
-): number {
-  const dx = Math.max(rect.minX - x, x - rect.maxX);
-  const dz = Math.max(rect.minZ - z, z - rect.maxZ);
-  if (dx <= 0 && dz <= 0) return Math.max(dx, dz);
-  return Math.hypot(Math.max(dx, 0), Math.max(dz, 0));
-}
-
-function smoothstep(a: number, b: number, x: number): number {
-  const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
-  return t * t * (3 - 2 * t);
-}
-
-/** CPU form of the edge fog factor. */
-export function edgeFog(outside: number): number {
-  return smoothstep(EDGE_FOG.start, EDGE_FOG.end, outside);
-}

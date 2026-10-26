@@ -59,6 +59,7 @@ function setup(over: Partial<HudDeps> = {}, withLists = true) {
     getStatus: () => status,
     getSelection: () => selection,
     beginTargeting: () => undefined,
+    startCard: () => undefined,
     ...(withLists
       ? {
           getRoster: () => roster,

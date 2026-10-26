@@ -1,4 +1,3 @@
-import { MAX_ENTITIES_PER_COMMAND } from '@crawlout/protocol';
 import { heroIdOfTypeId } from '@crawlout/data';
 import type {
   BuildOption,
@@ -278,7 +277,6 @@ export class HudController implements HudHandle {
   selectedBuilders(): number[] {
     return this.core.state.selection
       .filter((s) => !s.enemy && s.role === 'builder')
-      .slice(0, MAX_ENTITIES_PER_COMMAND)
       .map((s) => s.id);
   }
 
