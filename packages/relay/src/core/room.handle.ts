@@ -66,9 +66,10 @@ export function roomHandle(room: RoomInternals, connId: string, msg: ClientMessa
       if (!room.started || room.halted) return;
       if (msg.report.playerId !== playerId)
         return room.error(connId, 'playerId komt niet overeen met verbinding');
+      // A hash for a frame not yet issued is impossible; accepting it would evict the real pending frames.
+      if (!room.scheduler || msg.report.frame >= room.scheduler.nextFrame) return;
       // Een hash voor frame f is gemeld na uitvoering van f: de client staat dan op frame f + 1.
-      if (room.scheduler)
-        room.sampleLag(playerId, room.scheduler.nextFrame - (msg.report.frame + 1));
+      room.sampleLag(playerId, room.scheduler.nextFrame - (msg.report.frame + 1));
       return room.afterHash(room.comparator.report(msg.report, room.expectedFor));
     }
     case 'resyncRequest':

@@ -125,7 +125,8 @@ describe('Room bundels en hashes', () => {
   });
 
   it('geen desync bij gelijke hashes', () => {
-    const { say, inbox } = setup();
+    const { room, say, inbox } = setup();
+    for (let i = 0; i <= HASH_INTERVAL_FRAMES; i++) room.advance();
     say('a', { kind: 'hash', report: { frame: HASH_INTERVAL_FRAMES, playerId: 0, hash: 9 } });
     say('b', { kind: 'hash', report: { frame: HASH_INTERVAL_FRAMES, playerId: 1, hash: 9 } });
     expect(inbox.get('a')?.some((m) => m.kind === 'desync')).toBe(false);
@@ -133,6 +134,7 @@ describe('Room bundels en hashes', () => {
 
   it('desync bij afwijkende hashes, en het potje stopt', () => {
     const { room, say, inbox } = setup();
+    for (let i = 0; i <= HASH_INTERVAL_FRAMES; i++) room.advance();
     say('a', { kind: 'hash', report: { frame: HASH_INTERVAL_FRAMES, playerId: 0, hash: 1 } });
     expect(inbox.get('a')?.some((m) => m.kind === 'desync')).toBe(false); // wacht op b
     say('b', { kind: 'hash', report: { frame: HASH_INTERVAL_FRAMES, playerId: 1, hash: 2 } });
@@ -144,6 +146,17 @@ describe('Room bundels en hashes', () => {
       });
     }
     expect(room.advance()).toBeNull();
+  });
+
+  it('negeert een hash voor een frame dat nog niet is uitgegeven', () => {
+    const { room, say, inbox } = setup();
+    for (let i = 0; i <= HASH_INTERVAL_FRAMES; i++) room.advance();
+    say('a', { kind: 'hash', report: { frame: 1e9, playerId: 0, hash: 1 } });
+    say('b', { kind: 'hash', report: { frame: 1e9, playerId: 1, hash: 2 } });
+    expect(inbox.get('a')?.some((m) => m.kind === 'desync')).toBe(false);
+    say('a', { kind: 'hash', report: { frame: HASH_INTERVAL_FRAMES, playerId: 0, hash: 1 } });
+    say('b', { kind: 'hash', report: { frame: HASH_INTERVAL_FRAMES, playerId: 1, hash: 2 } });
+    expect(inbox.get('a')?.some((m) => m.kind === 'desync')).toBe(true);
   });
 
   it('hash-vrijgestelde verbinding (AI) hoeft niet te melden', () => {

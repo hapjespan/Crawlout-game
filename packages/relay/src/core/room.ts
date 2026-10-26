@@ -45,39 +45,39 @@ import {
 
 export { RESYNC_HISTORY_FRAMES, RESYNC_TIMEOUT_MS, type RoomOptions } from './room.shared.js';
 
-/** The sibling modules see the room through its internal view (private fields and helpers). */
-const internals = (room: Room): RoomInternals => room as unknown as RoomInternals;
+/** The sibling modules see the room through its internal view; `implements` keeps that view checked by tsc. */
+const internals = (room: Room): RoomInternals => room;
 
 /** Lobby plus lockstep-relay voor één room. Geen timers: de schil roept advance() aan per tick. */
-export class Room {
+export class Room implements RoomInternals {
   readonly roomId: string;
-  private readonly send: RoomOptions['send'];
-  private readonly chooseSeed: () => number;
-  private readonly dataVersion: string;
-  private readonly defaultFaction: string;
-  private readonly minPlayers: number;
-  private readonly now: () => number;
-  private readonly adaptiveDelay: boolean;
-  private settings: Settings;
-  private readonly conns = new Map<string, number>(); // connId -> playerId
-  private readonly connOf = new Map<number, string>(); // playerId -> connId
-  private readonly clientIds = new Map<number, string>();
-  private readonly players = new Map<number, Player>();
-  private readonly hashExempt = new Set<number>();
+  readonly send: RoomOptions['send'];
+  readonly chooseSeed: () => number;
+  readonly dataVersion: string;
+  readonly defaultFaction: string;
+  readonly minPlayers: number;
+  readonly now: () => number;
+  readonly adaptiveDelay: boolean;
+  settings: Settings;
+  readonly conns = new Map<string, number>(); // connId -> playerId
+  readonly connOf = new Map<number, string>(); // playerId -> connId
+  readonly clientIds = new Map<number, string>();
+  readonly players = new Map<number, Player>();
+  readonly hashExempt = new Set<number>();
   /** Vanaf welk frame een speler hashes moet melden; Infinity zolang hij zijn resync nog niet heeft. */
-  private readonly hashFrom = new Map<number, number>();
-  private readonly sampleAfter = new Map<number, number>();
-  private readonly lastFrameOffline = new Map<number, number>();
-  private readonly resyncs = new Map<number, PendingResync>(); // doelspeler -> verzoek
-  private readonly comparator: HashComparator;
-  private readonly delay = new DelayController();
-  private scheduler: FrameScheduler | null = null;
-  private map: string;
-  private started = false;
-  private halted = false;
-  private stallKey = '';
-  private history: FrameBundle[] = [];
-  private readonly recording: FrameBundle[] | null;
+  readonly hashFrom = new Map<number, number>();
+  readonly sampleAfter = new Map<number, number>();
+  readonly lastFrameOffline = new Map<number, number>();
+  readonly resyncs = new Map<number, PendingResync>(); // doelspeler -> verzoek
+  readonly comparator: HashComparator;
+  readonly delay = new DelayController();
+  scheduler: FrameScheduler | null = null;
+  map: string;
+  started = false;
+  halted = false;
+  stallKey = '';
+  history: FrameBundle[] = [];
+  readonly recording: FrameBundle[] | null;
 
   constructor(options: RoomOptions) {
     this.roomId = options.roomId;
@@ -191,88 +191,88 @@ export class Room {
 
   // --- lobby (room.lobby.ts) ---
 
-  private join(connId: string, name: string, clientId: string | undefined): void {
+  join(connId: string, name: string, clientId: string | undefined): void {
     return roomJoin(internals(this), connId, name, clientId);
   }
 
-  private uniqueName(name: string): string {
+  uniqueName(name: string): string {
     return roomUniqueName(internals(this), name);
   }
 
-  private rejoin(connId: string, playerId: number): void {
+  rejoin(connId: string, playerId: number): void {
     return roomRejoin(internals(this), connId, playerId);
   }
 
-  private maybeStart(): void {
+  maybeStart(): void {
     return roomMaybeStart(internals(this));
   }
 
-  private seed = 0;
+  seed = 0;
 
-  private startMessage(playerId: number): StartMessage {
+  startMessage(playerId: number): StartMessage {
     return roomStartMessage(internals(this), playerId);
   }
 
-  private hostId(): number {
+  hostId(): number {
     return roomHostId(internals(this));
   }
 
-  private hostCheck(connId: string, playerId: number): boolean {
+  hostCheck(connId: string, playerId: number): boolean {
     return roomHostCheck(internals(this), connId, playerId);
   }
 
-  private freeSlot(): number {
+  freeSlot(): number {
     return roomFreeSlot(internals(this));
   }
 
-  private unreadyHumans(): void {
+  unreadyHumans(): void {
     return roomUnreadyHumans(internals(this));
   }
 
   // --- hashes en stall (room.sync.ts) ---
 
-  private afterHash(ev: DesyncEvent | null): void {
+  afterHash(ev: DesyncEvent | null): void {
     return roomAfterHash(internals(this), ev);
   }
 
-  private readonly expectedFor = (frame: number): number[] =>
+  readonly expectedFor = (frame: number): number[] =>
     roomExpectedFor(internals(this), frame);
 
-  private checkStall(): void {
+  checkStall(): void {
     return roomCheckStall(internals(this));
   }
 
-  private sampleLag(playerId: number, lagFrames: number): void {
+  sampleLag(playerId: number, lagFrames: number): void {
     return roomSampleLag(internals(this), playerId, lagFrames);
   }
 
   // --- resync (room.sync.ts) ---
 
-  private assignPeer(target: number, tried: Set<number>, lastFrame: number): void {
+  assignPeer(target: number, tried: Set<number>, lastFrame: number): void {
     return roomAssignPeer(internals(this), target, tried, lastFrame);
   }
 
-  private onResyncResponse(connId: string, peerId: number, response: ResyncResponse): void {
+  onResyncResponse(connId: string, peerId: number, response: ResyncResponse): void {
     return roomOnResyncResponse(internals(this), connId, peerId, response);
   }
 
-  private checkResyncTimeouts(): void {
+  checkResyncTimeouts(): void {
     return roomCheckResyncTimeouts(internals(this));
   }
 
-  private sortedPlayers(): Player[] {
+  sortedPlayers(): Player[] {
     return roomSortedPlayers(internals(this));
   }
 
-  private broadcastLobby(): void {
+  broadcastLobby(): void {
     return roomBroadcastLobby(internals(this));
   }
 
-  private broadcast(msg: ServerMessage): void {
+  broadcast(msg: ServerMessage): void {
     for (const connId of this.conns.keys()) this.send(connId, msg);
   }
 
-  private error(connId: string, message: string): void {
+  error(connId: string, message: string): void {
     this.send(connId, { kind: 'error', message });
   }
 }

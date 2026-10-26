@@ -56,9 +56,9 @@ export interface PendingResync {
 }
 
 /**
- * Internal view of a Room instance: its private fields and helper methods, as seen by the sibling modules that
- * implement groups of Room methods (room.lobby.ts, room.sync.ts, room.handle.ts). Mirrors the private members of
- * the Room class one to one; only those modules use it.
+ * Internal view of a Room instance: its fields and helper methods, as seen by the sibling modules that implement
+ * groups of Room methods (room.lobby.ts, room.sync.ts, room.handle.ts). Room implements it, so tsc keeps both in step;
+ * only those modules use it.
  */
 export interface RoomInternals {
   readonly roomId: string;

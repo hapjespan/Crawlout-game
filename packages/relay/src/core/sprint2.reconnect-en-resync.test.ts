@@ -78,6 +78,7 @@ describe('reconnect en resync', () => {
     h.say('b2', { kind: 'hash', report: { frame: f, playerId: 1, hash: 1 } });
     expect(h.of('a', 'desync')).toHaveLength(0);
     // Een afwijkende hash van de teruggekeerde client geeft wel desync.
+    h.run(HASH_INTERVAL_FRAMES);
     h.say('a', { kind: 'hash', report: { frame: f + 20, playerId: 0, hash: 1 } });
     h.say('b2', { kind: 'hash', report: { frame: f + 20, playerId: 1, hash: 2 } });
     expect(h.of('a', 'desync')).toHaveLength(1);
@@ -165,7 +166,7 @@ describe('reconnect en resync', () => {
 describe('stall', () => {
   it('meldt wie ontbreekt na STALL_TIMEOUT_MS, alleen bij wijziging, en wist de melding', () => {
     const h = startTwo();
-    h.run(20);
+    h.run(21);
     h.say('a', { kind: 'hash', report: { frame: 20, playerId: 0, hash: 1 } });
     h.tick(STALL_TIMEOUT_MS - 100);
     h.run(1);
