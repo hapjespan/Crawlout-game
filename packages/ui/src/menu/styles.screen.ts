@@ -2,7 +2,9 @@ import { m, mf } from './units.js';
 
 /** Menu look, part 1 (concatenated in styles.ts): the root, the scene behind, plates, the title and the CRT console. */
 export const MENU_SCREEN_CSS = `
-.co-hud.co-menu,.co-hud.co-m-endroot{--m:max(0.8px,min(calc(100vw / 1280),calc(100vh / 720)))}
+/* the start and match-choice menu is drawn at 70 % of the plain unit; the end screen keeps the full size */
+.co-hud.co-menu{--m:max(0.56px,calc(0.7 * min(calc(100vw / 1280),calc(100vh / 720))))}
+.co-hud.co-m-endroot{--m:max(0.8px,min(calc(100vw / 1280),calc(100vh / 720)))}
 .co-hud.co-menu{position:fixed;inset:0;z-index:30;pointer-events:auto;
 display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:auto;padding:${m(24)};
 font:${mf(16)}/1.3 var(--font-ui);color:var(--ink);overscroll-behavior:contain}
@@ -50,10 +52,10 @@ background:linear-gradient(180deg,#0c2610,#06160a);border:1px solid #05070a;box-
 /* Title: stamped on a rusty plate, amber with a phosphor glow. */
 .co-m-titleplate{display:flex;flex-direction:column;align-items:center;text-align:center;gap:${m(10)};padding:${m(34)} ${m(70)} ${m(26)};overflow:hidden}
 .co-m-titleplate::after{content:"";position:absolute;inset:0;pointer-events:none;border-radius:inherit;background:var(--scanlines),radial-gradient(120% 120% at 50% 40%,rgba(0,0,0,0) 55%,rgba(0,0,0,.5) 100%)}
-.co-m-title{margin:0;font-weight:800;font-size:max(44px,${m(150)});line-height:.95;letter-spacing:.16em;padding-left:.16em;text-transform:uppercase;
+.co-m-title{margin:0;font-weight:800;font-size:max(31px,${m(150)});line-height:.95;letter-spacing:.16em;padding-left:.16em;text-transform:uppercase;
 background:linear-gradient(180deg,#ffe3a0 0%,#f4a62a 48%,#9a6a14 100%);-webkit-background-clip:text;background-clip:text;color:transparent;
 filter:drop-shadow(0 0 ${m(14)} rgba(244,166,42,.5)) drop-shadow(0 ${m(3)} 0 #2a1a04)}
-.co-m-title-small{font-size:max(36px,${m(76)})}
+.co-m-title-small{font-size:max(25px,${m(76)})}
 .co-m-tagline{margin:0;font:700 ${mf(16)}/1.2 var(--font-term);letter-spacing:.34em;padding-left:.34em;text-transform:uppercase;color:var(--phos-500);text-shadow:0 0 6px var(--phos-glow)}
 .co-m-hazard{align-self:stretch;height:${m(12)};background:var(--hazard);border-top:1px solid #05070a;border-bottom:1px solid #05070a;opacity:.9}
 
