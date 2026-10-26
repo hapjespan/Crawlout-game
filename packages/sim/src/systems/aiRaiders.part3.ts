@@ -24,7 +24,8 @@ import { PROVIDES_HQ } from '../fromData.js';
 import { aiRestore, sabotageTarget } from './aiProject.js';
 import { ORDER_NONE } from '../ecs/world.js';
 import { aiCreepRun } from './creeps.js';
-import { build, guardPosts, produce, richBuild, tally } from './aiRaiders.part1.js';
+import { build, guardPosts, produce, tally } from './aiRaiders.part1.js';
+import { richBuild } from './ai.plans.js';
 import {
   attackMove,
   dominanceTarget,

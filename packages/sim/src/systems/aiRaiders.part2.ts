@@ -26,7 +26,14 @@ import { applyCommand } from './commands.js';
 import { PROVIDES_HQ } from '../fromData.js';
 import { idiv } from '../math/int.js';
 import { pointsOf } from './claims.js';
-import { C, SLAVE_NONE, ORDER_NONE, ORDER_ATTACK_MOVE } from '../ecs/world.js';
+import {
+  C,
+  SLAVE_NONE,
+  ORDER_NONE,
+  ORDER_ATTACK_MOVE,
+  ORDER_GUARD,
+  ORDER_MOVE,
+} from '../ecs/world.js';
 import type { Tally } from './aiRaiders.part1.js';
 
 /** Step 6: idle slaves to a node within their reach with room (exclusive first, then the shortest trip). */
@@ -264,8 +271,15 @@ export function harass(
     const i = w.resolve(id);
     return w.hp[i]! * 1000 < w.maxHp[i]! * hr.retreatHpPermille;
   };
+  // already under this order to this point: no new one every tick (it would choose the formation again)
+  const headed = (id: number, type: number, x: number, y: number): boolean => {
+    const o = w.currentOrder(w.resolve(id));
+    return o >= 0 && w.ordType[o] === type && w.ordX[o] === x && w.ordY[o] === y;
+  };
   const home = homePoint(ctx, hq, fields);
-  const back = t.buggies.filter((id) => !t.idleBuggies.includes(id) && hurt(id));
+  const back = t.buggies.filter(
+    (id) => !t.idleBuggies.includes(id) && hurt(id) && !headed(id, ORDER_MOVE, home.x, home.y),
+  );
   if (back.length > 0)
     applyCommand(ctx, {
       playerId: p,
@@ -273,9 +287,16 @@ export function harass(
       type: 'Move',
       payload: { ids: back, x: home.x, y: home.y },
     });
-  const go = t.idleBuggies.filter((id) => !hurt(id));
-  if (go.length === 0 || spot < 0) return;
+  if (spot < 0) return;
   const at = besideNode(ctx, spot);
+  // a buggy that guardPosts sent this tick (step 2) is no longer idle
+  const go = t.idleBuggies.filter(
+    (id) =>
+      !hurt(id) &&
+      w.orderType(w.resolve(id)) !== ORDER_GUARD &&
+      !headed(id, ORDER_ATTACK_MOVE, at.x, at.y),
+  );
+  if (go.length === 0) return;
   attackMove(ctx, p, go, at.x, at.y);
 }
 

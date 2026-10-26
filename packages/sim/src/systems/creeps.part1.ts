@@ -132,17 +132,25 @@ export function spawnCamp(ctx: SimContext, k: number, t: SimCreepTier): void {
   const cy = camp.y >> 8;
   const midX = ctx.map.w << 7;
   const midY = ctx.map.h << 7;
+  let spawned = 0;
   for (let n = 0; n < t.typeIds.length; n++) {
     const ut = ctx.unitType(t.typeIds[n]!);
     const c = nthFreeCellAround(ctx, cx, cy, 1, 1, n);
     if (ut === undefined || c < 0) continue;
     const at = cellCenterOf(ctx.map, c);
     const i = createUnit(ctx, ut, OWNER_NEUTRAL, at.x, at.y, 0);
-    if (i < 0) return;
+    if (i < 0) break; // world full: the camp keeps who spawned
     w.mask[i] = w.mask[i]! & ~C.orders;
     w.creepCamp[i] = k + 1;
     w.creepHome[i] = c;
     face(w, i, midX, midY);
+    spawned++;
+  }
+  // nobody placed (world full, no free cell): stay cleared, the respawn timer (if any) tries again next tick; an idle
+  // camp without bandits would draw the AI's creep runs forever
+  if (spawned === 0) {
+    ctx.creeps.state[k] = CAMP_CLEARED;
+    return;
   }
   ctx.creeps.state[k] = CAMP_IDLE;
   ctx.creeps.timer[k] = 0;

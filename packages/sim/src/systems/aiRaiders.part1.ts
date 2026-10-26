@@ -27,7 +27,7 @@ import {
 } from '../ecs/world.js';
 import { DEPOT_MASK } from './orders.js';
 import { type WorkReach, guardGroups, isOwnKooi } from './slaves.js';
-import { applyCommand, canPlaceType } from './commands.js';
+import { applyCommand } from './commands.js';
 import { idiv, imod } from '../math/int.js';
 import { hasTechs } from '../effects.js';
 import { produceWorkers } from './aiWorkers.js';
@@ -278,26 +278,6 @@ export function build(
     type: 'Build',
     payload: { ids: [builder], typeId: bt.typeId, x: at.x, y: at.y },
   });
-}
-
-/** As richBuild in ai.ts: the first rich build of which there are too few and that can be paid now, or -1. */
-export function richBuild(ctx: SimContext, p: number, script: SimAiScript): number {
-  const w = ctx.world;
-  for (let k = 0; k < script.richBuilds.length; k++) {
-    const tid = script.richBuilds[k]!.typeId;
-    let want = 0;
-    for (let q = 0; q <= k; q++) if (script.richBuilds[q]!.typeId === tid) want++;
-    let have = 0;
-    for (let i = 0; i < w.highWater; i++)
-      if (w.alive[i] === 1 && w.owner[i] === p && w.has(i, C.building) && w.typeId[i] === tid)
-        have++;
-    if (have >= want) continue;
-    const bt = ctx.buildingType(tid);
-    if (bt === undefined || !canPlaceType(ctx, p, tid) || ctx.ps.scrap[p]! < bt.scrapCost)
-      return -1;
-    return k;
-  }
-  return -1;
 }
 
 /**

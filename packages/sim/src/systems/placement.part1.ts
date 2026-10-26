@@ -363,14 +363,15 @@ export function territoryMask(
   return out;
 }
 
-/** Derived per world: the last territory mask per player and the world version it was built for (speed only). */
-const territoryCache = new WeakMap<object, { version: number[]; mask: (Uint8Array | null)[] }>();
+/** Derived per world: the last territory mask per player and the sources it was built from (speed only). */
+const territoryCache = new WeakMap<object, { src: number[][]; mask: Uint8Array[] }>();
 
 /**
  * Player p's territory in the sim's world now (territoryMask): every own building is a source with
  * placement.buildRange, a finished own claim post (provides claim, not hq) one with claimBuildRange; a building site
  * counts too (what is placed is part of the base), a claim post only once it stands. null when buildRange is 0 (no
- * territory rule). Cached per world version (alloc and free of entities), so the AI's site search and a Build share it.
+ * territory rule). Cached per source list, so the AI's site search and a Build share it; the mask depends on nothing else
+ * (an owner change without alloc or free, a project part restored or reverted, must recompute it).
  */
 export function territoryOf(ctx: SimContext, p: number): Uint8Array | null {
   const pl = ctx.config.placement;
@@ -378,7 +379,7 @@ export function territoryOf(ctx: SimContext, p: number): Uint8Array | null {
   const w = ctx.world;
   let c = territoryCache.get(w);
   if (c === undefined) {
-    c = { version: [], mask: [] };
+    c = { src: [], mask: [] };
     territoryCache.set(w, c);
   }
   const idx = ctx.index;
@@ -395,11 +396,11 @@ export function territoryOf(ctx: SimContext, p: number): Uint8Array | null {
     if (post && w.bstate[j] !== BSTATE_DONE) continue;
     src.push(w.fx[j]!, w.fy[j]!, w.fw[j]!, w.fh[j]!, post ? claimRange : range);
   }
-  // the world version (alloc, free) plus the number of sources (a claim post that is finished)
-  const key = w.structVersion * 65536 + src.length;
-  if (c.version[p] === key && c.mask[p] !== undefined) return c.mask[p]!;
+  const last = c.src[p];
+  if (last !== undefined && last.length === src.length && last.every((v, k) => v === src[k]))
+    return c.mask[p]!;
   const mask = territoryMask(ctx.map.w, ctx.map.h, ctx.map.passable, src, idiv(src.length, 5));
-  c.version[p] = key;
+  c.src[p] = src;
   c.mask[p] = mask;
   return mask;
 }

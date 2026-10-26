@@ -84,7 +84,8 @@ function nearestEnemy(ctx: SimContext, i: number, r: number): number {
   let bestB = -1;
   let bestBD = 0;
   for (let j = 0; j < w.highWater; j++) {
-    if (w.alive[j] !== 1 || !isEnemy(w, i, j) || !withinReach(w, i, j, r)) continue;
+    // the distance first: it is cheap and rejects nearly every entity before isEnemy (same result, both are pure)
+    if (w.alive[j] !== 1 || !withinReach(w, i, j, r) || !isEnemy(w, i, j)) continue;
     const dx = w.x[j]! - w.x[i]!;
     const dy = w.y[j]! - w.y[i]!;
     const d = dx * dx + dy * dy;

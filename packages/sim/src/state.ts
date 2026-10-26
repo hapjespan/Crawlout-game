@@ -235,5 +235,46 @@ export function deserializeState(
     off += c.length;
   }
   if (off !== src.length) throw new Error('state: onverwachte bytes na het einde');
+  validateLoaded(p);
   return { tick: h[H.tick]!, rng: h[H.rng]!, envHash: h[H.envHash]! };
+}
+
+/**
+ * A resync loads bytes from the network: the allocator (World.alloc and free are its only writers) must hold, or
+ * alloc hands out a live index or one past the arrays. Every index below highWater is alive (0 or 1, a live one with a
+ * generation) or on the free stack exactly once; an active flow slot targets a rectangle inside the map.
+ */
+function validateLoaded(p: StateParts): void {
+  const { world: w, flow: ff } = p;
+  let live = 0;
+  for (let i = 0; i < w.highWater; i++) {
+    const a = w.alive[i]!;
+    if (a > 1 || (a === 1 && w.gen[i] === 0)) throw new Error(`state: entity ${i} ongeldig`);
+    live += a;
+  }
+  const seen = new Uint8Array(w.highWater);
+  for (let k = 0; k < w.freeCount; k++) {
+    const i = w.freeStack[k]!;
+    if (i < 0 || i >= w.highWater || w.alive[i] !== 0 || seen[i] === 1)
+      throw new Error(`state: vrije lijst ongeldig op ${k}`);
+    seen[i] = 1;
+  }
+  if (live + w.freeCount !== w.highWater)
+    throw new Error('state: levende plus vrije entities ongelijk aan highWater');
+  for (let s = 0; s < MAX_FLOW_FIELDS; s++) {
+    const a = ff.active[s]!;
+    if (a > 1) throw new Error(`state: flow slot ${s} ongeldig`);
+    if (a === 0) continue;
+    const x0 = ff.tx0[s]!;
+    const y0 = ff.ty0[s]!;
+    if (
+      x0 < 0 ||
+      y0 < 0 ||
+      ff.tw[s]! < 1 ||
+      ff.th[s]! < 1 ||
+      x0 + ff.tw[s]! > ff.w ||
+      y0 + ff.th[s]! > ff.h
+    )
+      throw new Error(`state: flow slot ${s} buiten de map`);
+  }
 }
