@@ -306,11 +306,25 @@ function materialMapSet(material: Material): Pick<SourceTexture, 'normal' | 'met
 export async function extract(
   file: string,
   asset: DeliveredAsset,
-): Promise<{ parts: Extracted[]; sourceTriangles: number }> {
+): Promise<{ parts: Extracted[]; sourceTriangles: number; warnings: string[] }> {
   const document = await createIO().readBinary(new Uint8Array(readFileSync(file)));
   ensureSmoothNormals(document);
   const parts: Extracted[] = [];
   let sourceTriangles = 0;
+  const warnings: string[] = [];
+  const nodeNames = new Set(
+    document
+      .getRoot()
+      .listNodes()
+      .map((n) => n.getName()),
+  );
+  for (const [key, names] of [
+    ['include', asset.include],
+    ['exclude', asset.exclude],
+  ] as const)
+    for (const name of names ?? [])
+      if (!nodeNames.has(name)) warnings.push(`${key}: node "${name}" komt niet in de bron voor.`);
+  const noUv = new Set<string>();
   for (const node of document.getRoot().listNodes()) {
     const mesh = node.getMesh();
     if (!mesh) continue;
@@ -335,6 +349,12 @@ export async function extract(
         normals.set(normal.getElement(i, e), i * 3);
       }
       const found = material ? materialTexture(material) : null;
+      if (found && !uv && !noUv.has(sourceName)) {
+        noUv.add(sourceName);
+        warnings.push(
+          `materiaal "${sourceName}" heeft een textuur maar de mesh geen TEXCOORD_0: wordt vlak.`,
+        );
+      }
       let uvs: Float32Array | null = null;
       if (uv && found) {
         uvs = new Float32Array(count * 2);
@@ -379,7 +399,7 @@ export async function extract(
     }
   }
   if (parts.length === 0) throw new Error(`geen meshes gevonden in ${file} met include/exclude`);
-  return { parts, sourceTriangles };
+  return { parts, sourceTriangles, warnings };
 }
 
 export function resolveAxis(

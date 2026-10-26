@@ -315,12 +315,25 @@ export const assetEntrySchema = z
     }
   });
 
-export const manifestSchema = z.object({
-  version: z.literal(MANIFEST_VERSION),
-  assets: z.array(assetEntrySchema),
-  /** De gedeelde oppervlaktetegels, als deze build ze schrijft; zie `surfaceTilesSchema`. */
-  surfaces: surfaceTilesSchema.optional(),
-});
+export const manifestSchema = z
+  .object({
+    version: z.literal(MANIFEST_VERSION),
+    assets: z.array(assetEntrySchema),
+    /** De gedeelde oppervlaktetegels, als deze build ze schrijft; zie `surfaceTilesSchema`. */
+    surfaces: surfaceTilesSchema.optional(),
+  })
+  .superRefine((manifest, ctx) => {
+    const ids = new Set<string>();
+    for (const [index, entry] of manifest.assets.entries()) {
+      if (ids.has(entry.id))
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['assets', index, 'id'],
+          message: `asset-id "${entry.id}" komt twee keer voor`,
+        });
+      ids.add(entry.id);
+    }
+  });
 
 /**
  * Naam van de glTF-material-extra die zegt dat een materiaal een gedeelde tegel gebruikt. De waarde is een

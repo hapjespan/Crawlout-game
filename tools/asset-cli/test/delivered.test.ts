@@ -259,6 +259,42 @@ describe('delivered models', () => {
     expect(result.entries[0]!.teamMaterials).toBeUndefined();
   });
 
+  it('warns about configured names that match nothing', async () => {
+    await writeRobot();
+    const result = await buildDelivered(
+      config({
+        test_robot: {
+          file: 'delivered/robot.glb',
+          kind: 'rigid-unit',
+          fit: { axis: 'y', meters: 2 },
+          lod0Triangles: 300,
+          include: ['Body', 'Hed'],
+          exclude: ['Nope'],
+          partRotate: [{ nodes: ['Bdy'], rotate: [0, 90, 0] }],
+          materials: { Hul: {}, 'node:Hed': {}, Hull: {} },
+          extraParts: [
+            { type: 'box', size: [0.5, 0.1, 0.5], position: [0, 1, 0], material: 'team_trim' },
+          ],
+        },
+      }),
+      root,
+      'test.json',
+    );
+    const report = result.reports[0]!;
+    expect(report.errors).toEqual([]);
+    const text = report.warnings.join('\n');
+    for (const typo of [
+      'include: node "Hed"',
+      'exclude: node "Nope"',
+      'node "Bdy"',
+      '"Hul"',
+      '"node:Hed"',
+    ])
+      expect(text).toContain(typo);
+    expect(text).not.toContain('"Hull"');
+    expect(text).not.toContain('"Body"');
+  });
+
   it('keeps a building at its real size and advises the footprint it needs', async () => {
     await writeRobot();
     const result = await buildDelivered(

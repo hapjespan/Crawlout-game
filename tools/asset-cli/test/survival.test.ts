@@ -31,11 +31,11 @@ const UNIT_SIZE: Record<string, { h: [number, number]; w: [number, number]; d: [
     survival_behemoth: { h: [6.0, 7.0], w: [4.2, 6.5], d: [1.8, 3.2] },
   };
 /** Delivered humanoids: rigged on the Klerk skeleton, each one its own rigmap entry with a `fit.height`. */
-const BODIES: Record<string, { h: [number, number] }> = {
-  survival_ghoul: { h: [1.6, 1.85] },
-  survival_ghoul_runner: { h: [1.5, 1.8] },
-  survival_mutant: { h: [2.0, 2.4] },
-  survival_mutant_brute: { h: [2.3, 2.6] },
+const BODIES: Record<string, { scale: number; h: [number, number] }> = {
+  survival_ghoul: { scale: 0.95, h: [1.6, 1.85] },
+  survival_ghoul_runner: { scale: 0.9, h: [1.5, 1.8] },
+  survival_mutant: { scale: 1.25, h: [2.0, 2.4] },
+  survival_mutant_brute: { scale: 1.42, h: [2.3, 2.6] },
 };
 
 let built: RobotsResult;

@@ -32,6 +32,10 @@ export function placeModel(
       : typeof asset.rotate[0] === 'number'
         ? [asset.rotate as V3]
         : (asset.rotate as V3[]);
+  for (const r of asset.partRotate ?? [])
+    for (const name of r.nodes)
+      if (!parts.some((part) => part.nodes.includes(name)))
+        warnings.push(`partRotate: node "${name}" komt in geen onderdeel voor.`);
   // Per-part turns first, in the source's own space: about the hub, before the whole model is squared up.
   const partTurns = (asset.partRotate ?? []).map((r) => {
     const p = r.pivot ?? ([0, 0, 0] as V3);
@@ -83,9 +87,12 @@ export function placeModel(
     string,
     { acc: MeshAccumulator; textured: boolean } & Omit<Group, 'mesh'>
   >();
+  const usedKeys = new Set<string>();
   for (const part of turned) {
     const nodeKey = part.nodes.find((n) => `node:${n}` in asset.materials);
-    const rule = asset.materials[nodeKey ? `node:${nodeKey}` : part.sourceName] ?? {};
+    const ruleKey = nodeKey ? `node:${nodeKey}` : part.sourceName;
+    usedKeys.add(ruleKey);
+    const rule = asset.materials[ruleKey] ?? {};
     if (rule.drop) continue;
     const textured = part.texture !== null && !rule.flat;
     // The surface keyword in the name picks the render look; a textured name also carries the asset id because render
@@ -115,6 +122,8 @@ export function placeModel(
       );
     entry.acc.add(textured ? part.mesh : { ...part.mesh, uvs: null });
   }
+  for (const key of Object.keys(asset.materials))
+    if (!usedKeys.has(key)) warnings.push(`materials: "${key}" komt in geen onderdeel voor.`);
   if (byName.size === 0) throw new Error('alle materialen zijn weggelaten (drop)');
   const groups: Group[] = [...byName.values()]
     .map((e) => ({

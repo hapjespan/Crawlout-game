@@ -84,6 +84,14 @@ describe('buis', () => {
     ).toEqual([]);
   });
 
+  it('weigert een manifest met een dubbele asset-id', async () => {
+    writeFileSync(join(src, 'rock.glb'), await makeProp({ segments: 30, rings: 20 }));
+    await buildAssets({ srcDir: src, distDir: dist, toktx: null });
+    const manifest = JSON.parse(readFileSync(join(dist, 'manifest.json'), 'utf8'));
+    manifest.assets.push(manifest.assets[0]);
+    expect(() => manifestSchema.parse(manifest)).toThrow(/twee keer/);
+  });
+
   it('bouwt LODs, meshopt en manifest voor humanoid en prop', async () => {
     // 19.200 driehoeken: zwaar genoeg dat LOD1 en LOD2 echt reduceren onder de band van 2026-10-23.
     writeFileSync(

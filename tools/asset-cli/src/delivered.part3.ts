@@ -55,7 +55,8 @@ export async function buildDelivered(
     result.reports.push(report);
     try {
       const file = join(srcDir, asset.file);
-      const { parts, sourceTriangles } = await extract(file, asset);
+      const { parts, sourceTriangles, warnings } = await extract(file, asset);
+      report.warnings.push(...warnings);
       const placed = placeModel(parts, asset, sourceTriangles, id);
       report.warnings.push(...placed.warnings);
       const extra = expandParts(asset.extraParts as VariantPart[]).map((part) => ({

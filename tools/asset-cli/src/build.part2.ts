@@ -199,6 +199,7 @@ export async function buildAssets(options: BuildOptions): Promise<BuildResult> {
     const clash = seen.get(report.id);
     if (clash)
       report.errors.push(`id "${report.id}" is al in gebruik door ${clash}; hernoem de variant.`);
+    else seen.set(report.id, report.source);
     reports.push(report);
   }
 
