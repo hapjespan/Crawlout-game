@@ -1,6 +1,6 @@
 // Review sheets for the 17 new assets: silhouette (without texture) and textured preview.
 // Weapons shown alone and also beside the Klerk at the right scale.
-import { writeFileSync, mkdirSync } from 'node:fs';
+import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { silhouetteSheet, type Subject } from '../src/silhouette.js';
 import { previewSheet, type PreviewSubject } from '../src/preview.js';
