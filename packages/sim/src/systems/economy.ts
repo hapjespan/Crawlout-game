@@ -260,7 +260,8 @@ function growth(ctx: SimContext, census: Census, p: number): void {
   const t =
     builderType !== 0 && needsBuilder(ctx, p) ? (ctx.unitType(builderType) ?? settler) : settler;
   const u = createUnit(ctx, t, p, at.x, at.y, 0);
-  if (u >= 0) autoGather(ctx, u);
+  if (u < 0) return;
+  autoGather(ctx, u);
   census.settlers[p] = census.settlers[p]! + 1;
-  census.pop[p] = census.pop[p]! + settler.popCost;
+  census.pop[p] = census.pop[p]! + t.popCost;
 }

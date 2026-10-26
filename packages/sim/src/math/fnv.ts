@@ -17,14 +17,3 @@ export function fnv1aInt(h: number, v: number): number {
   x = Math.imul(x ^ ((v >>> 24) & 0xff), FNV_PRIME);
   return x >>> 0;
 }
-
-/** Een string als UTF-16 code units (2 bytes per unit, little-endian) in de hash. */
-export function fnv1aString(h: number, s: string): number {
-  let x = h | 0;
-  for (let i = 0; i < s.length; i++) {
-    const c = s.charCodeAt(i);
-    x = Math.imul(x ^ (c & 0xff), FNV_PRIME);
-    x = Math.imul(x ^ (c >>> 8), FNV_PRIME);
-  }
-  return x >>> 0;
-}

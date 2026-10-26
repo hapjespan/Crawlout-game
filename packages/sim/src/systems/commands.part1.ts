@@ -121,7 +121,7 @@ function refundCraft(ctx: SimContext, i: number): void {
  * Nieuwe order die de huidige vervangt. Een bevel heft een eerdere Stop op (`buildHold`); de onthouden bouwplaats
  * (`resumeSite`) blijft staan, zodat een bouwer na bijvoorbeeld een Move zonder taak weer verder bouwt.
  */
-function replaceOrder(
+export function replaceOrder(
   ctx: SimContext,
   i: number,
   type: number,

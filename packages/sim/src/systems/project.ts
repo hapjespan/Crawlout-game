@@ -63,12 +63,6 @@ const partOf = (ctx: SimContext, i: number): SimProjectPart | undefined => {
   return kind < 0 ? undefined : ctx.config.project!.parts[kind];
 };
 
-/** Whether part i is a ruin (neutral, the ruin type). */
-export function isRuin(ctx: SimContext, i: number): boolean {
-  const pt = partOf(ctx, i);
-  return pt !== undefined && ctx.world.typeId[i] === pt.ruinTypeId;
-}
-
 /** Start setup (after the creep camps): every site of the map as a ruin, in map order. */
 export function spawnProjectSites(ctx: SimContext, out: number[]): void {
   out.length = 0;

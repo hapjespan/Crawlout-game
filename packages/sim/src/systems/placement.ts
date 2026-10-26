@@ -30,3 +30,4 @@ export {
 export type { PlacementReason, PlacementInput } from './placement.part1.js';
 export { placementInput, placementReasonAt, CLAIM_TIERS, claimSiteIn } from './placement.part2.js';
 export type { ClaimSite } from './placement.part2.js';
+export { footprintOrigin } from '../entities.js';

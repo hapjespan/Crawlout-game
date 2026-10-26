@@ -179,7 +179,9 @@ export function heroSystem(ctx: SimContext, census: Census): void {
     if (c < 0) continue;
     ps.heroRevives[p] = ps.heroRevives[p]! + 1;
     const at = cellCenterOf(ctx.map, c);
+    // up first: createHero scales the hero with it
     if (createHero(ctx, p, at.x, at.y) >= 0) refreshPlayer(ctx, p);
+    else ps.heroRevives[p] = ps.heroRevives[p]! - 1; // world full: retry next tick
   }
 }
 

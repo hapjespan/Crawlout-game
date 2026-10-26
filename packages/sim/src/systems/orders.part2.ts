@@ -72,9 +72,17 @@ export function craftSiteMask(ctx: SimContext, typeId: number): number {
 
 function craft(ctx: SimContext, i: number): void {
   const w = ctx.world;
-  if (w.phase[i] !== PHASE_GO) return; // betalen en omscholen in systeem 6
+  const waiting = w.phase[i] === PHASE_WORK;
+  if (w.phase[i] !== PHASE_GO && !waiting) return; // betalen en omscholen in systeem 6
   const mask = craftSiteMask(ctx, w.ordX[w.currentOrder(i)]!);
   const ws = nearestReachableBuilding(ctx, w.owner[i]!, w.x[i]!, w.y[i]!, mask);
+  // waiting for scrap at the workshop: with no reachable workshop left (razed) it must not pay in system 6. Only then:
+  // separation and crowds push a waiting settler well out of interactRange (measured up to ~100 units) while it stays.
+  // shortcut: a razed workshop with another one elsewhere is not seen, upgrade by remembering the workshop (state change)
+  if (waiting) {
+    if (ws >= 0) return;
+    w.phase[i] = PHASE_GO;
+  }
   if (ws < 0) {
     if (w.mvOn[i] === 1) stopMoving(ctx, i); // geen bereikbare werkplaats: wachten
     return;

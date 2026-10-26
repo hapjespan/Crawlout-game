@@ -6,6 +6,7 @@ import { createUnit } from '../entities.js';
 import { BODY_HUMAN } from '../fromData.js';
 import { isInt } from '../math/int.js';
 import type { Census } from './census.js';
+import { replaceOrder } from './commands.part1.js';
 import type { SimContext } from './common.js';
 import {
   cellCenterOf,
@@ -57,11 +58,7 @@ export function applyLoad(ctx: SimContext, p: number, pl: CommandPayload<'Load'>
     const i = isInt(id) ? w.resolve(id) : -1;
     if (i === t || !boardable(ctx, p, i)) continue;
     stopMoving(ctx, i);
-    ctx.defense.mark[i] = 0;
-    w.clearOrders(i);
-    w.target[i] = NO_ENTITY;
-    w.buildHold[i] = 0;
-    w.pushOrder(i, ORDER_LOAD, 0, 0, w.idOf(t));
+    replaceOrder(ctx, i, ORDER_LOAD, 0, 0, w.idOf(t)); // refunds a paid retraining, like every other order
     any = true;
   }
   return any;
