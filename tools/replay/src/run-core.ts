@@ -61,6 +61,9 @@ export function runReplayIn(r: Replay, env: SimEnv, opts: RunOptions = {}): Repl
 
 /** Vergelijkt de hashes van een run met de opgeslagen hashes van de replay. */
 export function compareRun(r: Replay, run: ReplayRun): ReplayCheck {
+  // A fixture without hashes guards nothing (rule 6), so it fails instead of passing vacuously.
+  if (r.hashes.length === 0)
+    return { ok: false, frames: run.lastFrame + 1, checked: 0, mismatch: null };
   for (const e of r.hashes) {
     const actual = run.hashes[e.frame];
     if (actual !== e.hash)

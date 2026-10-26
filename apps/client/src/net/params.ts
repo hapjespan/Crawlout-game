@@ -56,6 +56,8 @@ function pageWasReloaded(): boolean {
 /**
  * The clientId lives in sessionStorage so a reload of this tab rejoins as the same player (reconnect). "Duplicate tab"
  * copies sessionStorage too, so the stored id is only reused on a reload; any other load gets (and stores) a new id.
+ * Limit: rejoining a running match therefore only works with a reload (F5); Enter in the address bar or Back gets a
+ * new id and cannot take the old slot back.
  * Socket reconnects within a page keep their id in reconnectingTransport and do not come here.
  */
 export function getClientId(

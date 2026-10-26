@@ -203,6 +203,11 @@ export function generateMap(spec: MapSpec, io?: GenIo): GeneratedMap {
   const { w, h } = spec;
   const passable = new Uint8Array(w * h).fill(OPEN);
   const heights = new Int16Array(w * h);
+  // An Int16Array wraps silently: a peak above ~128 m would turn into a pit, so fail loudly instead.
+  const i16 = (v: number): number => {
+    if (v < -32768 || v > 32767) throw new Error(`hoogte ${v} past niet in i16 (max ~128 m)`);
+    return v;
+  };
 
   const terrainMode = spec.terrain !== undefined;
   let water: Uint8Array | undefined;
@@ -236,7 +241,7 @@ export function generateMap(spec: MapSpec, io?: GenIo): GeneratedMap {
     passable.set(passabilityFromSlope(cm, w, spec.terrain));
     if (water !== undefined)
       for (let i = 0; i < water.length; i++) if (water[i] === WATER_DEEP) passable[i] = BLOCKED;
-    for (let i = 0; i < cm.length; i++) heights[i] = Math.round((cm[i] as number) * 2.56); // cm -> 1/256 m
+    for (let i = 0; i < cm.length; i++) heights[i] = i16(Math.round((cm[i] as number) * 2.56)); // cm -> 1/256 m
   } else {
     // Basisreliëf, puntsymmetrisch gemaakt door te middelen met het gespiegelde punt.
     const amplitude = spec.groundAmplitude ?? 0;
@@ -267,8 +272,8 @@ export function generateMap(spec: MapSpec, io?: GenIo): GeneratedMap {
       for (let x = Math.max(0, r.x0); x <= Math.min(w - 1, r.x1); x++) {
         const i = y * w + x;
         passable[i] = BLOCKED;
-        if (!terrainMode) heights[i] = height;
-        else if (raised[i] === 0) heights[i] = (heights[i] as number) + height;
+        if (!terrainMode) heights[i] = i16(height);
+        else if (raised[i] === 0) heights[i] = i16((heights[i] as number) + height);
         raised[i] = 1;
       }
     }
@@ -289,7 +294,7 @@ export function generateMap(spec: MapSpec, io?: GenIo): GeneratedMap {
       for (let y = r.y0; y <= r.y1; y++)
         for (let x = r.x0; x <= r.x1; x++) {
           passable[y * w + x] = BLOCKED;
-          if (!terrainMode) heights[y * w + x] = edge;
+          if (!terrainMode) heights[y * w + x] = i16(edge);
         }
     };
     closeEdge({ x0: 0, y0: 0, x1: w - 1, y1: b - 1 });

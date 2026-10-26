@@ -31,9 +31,11 @@ for (const f of files) {
       );
     } else {
       failed++;
-      const m = res.mismatch!;
+      const m = res.mismatch;
       console.error(
-        `replay: FOUT ${f}: frame ${m.frame} verwacht ${hex(m.expected)}, kreeg ${hex(m.actual)}${plain.ok ? ' (na serialize/deserialize)' : ''}`,
+        m === null
+          ? `replay: FOUT ${f}: de fixture heeft geen hashes en bewaakt niets`
+          : `replay: FOUT ${f}: frame ${m.frame} verwacht ${hex(m.expected)}, kreeg ${hex(m.actual)}${plain.ok ? ' (na serialize/deserialize)' : ''}`,
       );
     }
   } catch (e) {
