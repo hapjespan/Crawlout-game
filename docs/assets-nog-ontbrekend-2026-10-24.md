@@ -10,7 +10,7 @@ Deze drie zijn de laatste openstaande van de 10 "characters" uit de overdracht v
 
 | Id | Nu | Specs | Opmerking |
 |---|---|---|---|
-| `garde_body_initiate` | Quaternius-mannequin, ingeklapte UV (nul UV-oppervlak) | 1,8 m · 3–4k tris · gerigd op mens-skelet | de wacht van de Garde, draagt het Initiate-tenue |
+| ~~`garde_body_initiate`~~ | **opgelost 27 oktober**: Klerk-model zonder rugzak en tassen, lichte canvasjas (rigmap `dropMaterials` + `recolor`, asset-cli 0.25.0) | — | een eigen model blijft welkom, maar is niet meer nodig |
 | `raider_body_slave` | idem | 1,8 m · 3–4k tris · gerigd | de slaaf-eenheid van de Raiders |
 | `survival_behemoth` | doosjesstapel zonder vorm | **6–7 m** · 6–8k tris · gerigd (vier poten, dus eigen beestenskelet) | reus, vier van de maat van een mens |
 

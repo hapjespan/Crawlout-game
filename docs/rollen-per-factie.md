@@ -55,7 +55,7 @@ Zes Raider-vechters delen één body. De slaaf heeft al een eigen model. Een twe
 | vertibird | militia | `garde_body_vertibird` | vertibird gun | **nieuw model** |
 | **held** Paladin-Commander (krijger) · Kwartiermeester (bouwer) · Archivaris (tacticus) | | | |
 
-Drie Initiate-rollen delen één body. Verder is de Garde nu het best voorziene van de drie.
+Drie Initiate-rollen delen één body. Die body is sinds 27 oktober het Klerk-model zonder rugzak en tassen, met een lichte canvasjas (licht figuur tegenover de donkere Klerk). Verder is de Garde nu het best voorziene van de drie.
 
 ## Wat ontbreekt, op volgorde van nut
 
