@@ -79,6 +79,8 @@ export interface RendererState {
   /** The ground map changed: the vegetation is scattered again on the next frame. */
   vegetationDirty: boolean;
   passable: { w: number; h: number; data: ArrayLike<number> } | null;
+  /** Objectives the vegetation keeps clear (setVegetation keepClear), world x and z. */
+  keepClear: readonly { x: number; z: number }[];
   /** The props setProps was given, and the grove trees the vegetation adds to them. */
   mapProps: readonly RenderProp[];
   propSource: PropSourceOptions;
@@ -114,6 +116,7 @@ export function newRendererState(): RendererState {
     groundMap: null,
     vegetationDirty: false,
     passable: null,
+    keepClear: [],
     mapProps: [],
     propSource: {},
     groveProps: [],

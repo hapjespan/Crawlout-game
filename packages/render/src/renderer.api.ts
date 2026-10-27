@@ -150,6 +150,7 @@ export function buildRendererApi(c: FrameStage): CrawloutRenderer {
     },
     setVegetation(input) {
       state.passable = input ? { w: input.w, h: input.h, data: input.passable } : null;
+      state.keepClear = (input?.keepClear ?? []).map((p) => ({ x: p.x, z: p.y }));
       state.vegetationDirty = true;
     },
     propAssets: () => [...state.propStatuses.values()].map((st) => ({ ...st })),

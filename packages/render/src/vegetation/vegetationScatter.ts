@@ -9,6 +9,10 @@
 //   reeds   in clumps along the bank on both sides of the waterline, never near a ford
 //   trees   groves on and right against impassable ground (needs the passability grid), spaced from each other and
 //           from the map's own trees, so the forest strips read as copses instead of lines
+// Crossings and objectives stay open: no trees, shrubs or reeds on or around a ford (shallow water) or a land bridge
+// (land with water close on two opposite sides), nor around a keepClear point (claim points: the flags the dominance
+// is about), so a flag and the way over the river read at every zoom. The cliffs that frame a land bridge are
+// impassable, which is what drew the groves onto it before.
 import { distanceField, type GroundMap } from '../terrain/groundMap.js';
 import { fractalNoise, hash2 } from '../terrain/noiseTexture.js';
 import { WATER_CELL } from '../water/waterMask.js';
@@ -37,6 +41,8 @@ export interface ScatterInput {
   passable?: { w: number; h: number; data: ArrayLike<number> } | null;
   /** Trees already standing (the map's props), world x and z: groves keep their distance. */
   trees?: readonly { x: number; z: number }[];
+  /** Objectives (claim points), world x and z: no trees within OBJECTIVE_TREE_CLEAR_M, no shrubs within OBJECTIVE_SHRUB_CLEAR_M. */
+  keepClear?: readonly { x: number; z: number }[];
   seed?: number;
 }
 
@@ -63,6 +69,13 @@ export const GROVE_CELL_M = 7;
 export const TREE_SPACING_M = 3.4;
 /** Fords stay open: no reeds or shrubs within this distance (m) of shallow water. */
 export const FORD_CLEAR_M = 6;
+/** Trees stay this far (m) from a ford or a land bridge, shrubs and reeds FORD_CLEAR_M. */
+export const CROSSING_TREE_CLEAR_M = 12;
+/** Land with water within this distance (m) on two opposite sides is a land bridge. */
+export const BRIDGE_PROBE_M = 9;
+/** Clear radius (m) around an objective: trees (a 10 m crown hides a flag from 8 m in front of it), and shrubs. */
+export const OBJECTIVE_TREE_CLEAR_M = 16;
+export const OBJECTIVE_SHRUB_CLEAR_M = 7;
 /** Most grove trees a map gets. */
 export const MAX_GROVE_TREES = 420;
 
@@ -127,12 +140,20 @@ export function scatterVegetation(input: ScatterInput): ScatterResult {
   const land = water.map((v) => 1 - v);
   const toWater = distanceField(water, w, h);
   const toLand = distanceField(land, w, h);
-  const toFord = distanceField(shallow, w, h);
+  const cell = (cellX + cellZ) / 2;
+  const crossing = landBridges(water, toWater, w, h, cell);
+  for (let k = 0; k < crossing.length; k++) if (shallow[k]) crossing[k] = 1;
+  const toCrossing = distanceField(crossing, w, h);
+  const objective = new Uint8Array(w * h);
+  for (const p of input.keepClear ?? []) objective[texel(p.x, p.z)] = 1;
+  const toObjective = distanceField(objective, w, h);
+  /** Whether a texel lies at least crossingM from a crossing and objectiveM from an objective. */
+  const open = (k: number, crossingM: number, objectiveM: number): boolean =>
+    toCrossing[k]! * cell >= crossingM && toObjective[k]! * cell >= objectiveM;
   const blocked = input.passable
     ? resample(input.passable, g, (v) => v !== 1, false).map((v, k) => (water[k] ? 0 : v))
     : null;
   const toBlocked = blocked ? distanceField(blocked, w, h) : null;
-  const cell = (cellX + cellZ) / 2;
 
   const out: Record<Species, number[]> = Object.fromEntries(SPECIES.map((s) => [s, []])) as never;
   const push = (
@@ -209,7 +230,7 @@ export function scatterVegetation(input: ScatterInput): ScatterResult {
 
   // Shrubs, in clumps of one to three.
   grid(SHRUB_CELL_M, 2, (x, z, k, n) => {
-    if (water[k] || toFord[k]! * cell < FORD_CLEAR_M || slope[k]! > 0.9) return;
+    if (water[k] || !open(k, FORD_CLEAR_M, OBJECTIVE_SHRUB_CLEAR_M) || slope[k]! > 0.9) return;
     const moist = field(k, 0);
     const edge = toBlocked ? smooth(5, 1, toBlocked[k]! * cell) : 0;
     const shore = smooth(0.3, 0.7, moist) * (1 - smooth(0.88, 1, moist));
@@ -226,7 +247,7 @@ export function scatterVegetation(input: ScatterInput): ScatterResult {
       const px = x + Math.cos(a) * r;
       const pz = z + Math.sin(a) * r;
       const pk = texel(px, pz);
-      if (water[pk]) continue;
+      if (water[pk] || !open(pk, FORD_CLEAR_M, OBJECTIVE_SHRUB_CLEAR_M)) continue;
       const pick = hash2(m, 13, seed);
       const species: Species =
         moist > 0.45 && pick < 0.45 ? 'shrubTall' : pick < 0.55 ? 'shrubRound' : 'shrubLow';
@@ -245,7 +266,7 @@ export function scatterVegetation(input: ScatterInput): ScatterResult {
 
   // Reeds along the bank, both sides of the waterline.
   grid(REED_CELL_M, 3, (x, z, k, n) => {
-    if (toFord[k]! * cell < FORD_CLEAR_M) return;
+    if (!open(k, FORD_CLEAR_M, OBJECTIVE_SHRUB_CLEAR_M)) return;
     const bank = water[k]
       ? smooth(1.4, 0.3, toLand[k]! * cell)
       : smooth(2.4, 0.6, toWater[k]! * cell);
@@ -290,6 +311,7 @@ export function scatterVegetation(input: ScatterInput): ScatterResult {
         const pk = texel(px, pz);
         if (water[pk] || toBlocked![pk]! * cell > 1.5 || slope[pk]! > 1.2 || !free(px, pz))
           continue;
+        if (!open(pk, CROSSING_TREE_CLEAR_M, OBJECTIVE_TREE_CLEAR_M)) continue;
         const moist = field(pk, 0);
         const dry = smooth(0.55, 0.85, field(pk, 2));
         const pick = hash2(m, 23, seed);
@@ -314,4 +336,48 @@ export function scatterVegetation(input: ScatterInput): ScatterResult {
     SPECIES.map((s) => [s, Float32Array.from(out[s])]),
   ) as Record<Species, Float32Array>;
   return { instances, trees };
+}
+
+/**
+ * Land bridges: land texels with water within BRIDGE_PROBE_M on two opposite sides (of eight directions), the strip
+ * of ground a river is crossed on. Only texels that close to water are probed.
+ */
+function landBridges(
+  water: Uint8Array,
+  toWater: Float32Array,
+  w: number,
+  h: number,
+  cell: number,
+): Uint8Array {
+  const out = new Uint8Array(w * h);
+  const steps = Math.ceil(BRIDGE_PROBE_M / cell);
+  const dirs = [
+    [1, 0],
+    [Math.SQRT1_2, Math.SQRT1_2],
+    [0, 1],
+    [-Math.SQRT1_2, Math.SQRT1_2],
+    [-1, 0],
+    [-Math.SQRT1_2, -Math.SQRT1_2],
+    [0, -1],
+    [Math.SQRT1_2, -Math.SQRT1_2],
+  ] as const;
+  for (let j = 0; j < h; j++)
+    for (let i = 0; i < w; i++) {
+      const k = j * w + i;
+      if (water[k] || toWater[k]! > steps) continue;
+      let hits = 0;
+      dirs.forEach(([dx, dy], d) => {
+        for (let s = 1; s <= steps; s++) {
+          const x = Math.round(i + dx * s);
+          const y = Math.round(j + dy * s);
+          if (x < 0 || y < 0 || x >= w || y >= h) return;
+          if (water[y * w + x]) {
+            hits |= 1 << d;
+            return;
+          }
+        }
+      });
+      if (hits & (hits >> 4) & 0xf) out[k] = 1;
+    }
+  return out;
 }

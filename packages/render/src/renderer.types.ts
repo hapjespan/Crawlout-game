@@ -230,9 +230,17 @@ export interface CrawloutRenderer {
   /**
    * The map's passability (1 passable, row 0 at the terrain's min z, the terrain's extent): the vegetation keeps
    * shrubs to the edges of impassable ground and grows groves of trees on it, added to the props of setProps. Render
-   * only. Null drops the groves.
+   * only. Null drops the groves. `keepClear`: objectives (claim points; x and y in map meters, y is world z) that keep
+   * a clear radius without trees or shrubs, so their flags read at every zoom.
    */
-  setVegetation(input: { w: number; h: number; passable: ArrayLike<number> } | null): void;
+  setVegetation(
+    input: {
+      w: number;
+      h: number;
+      passable: ArrayLike<number>;
+      keepClear?: readonly { x: number; y: number }[];
+    } | null,
+  ): void;
   /** Status of every prop asset of the current props. */
   propAssets(): PropAssetStatus[];
   /** Turns the wind sway of foliage (trees with leaves, grass, plants) on or off; no recompile. */

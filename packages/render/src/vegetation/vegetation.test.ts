@@ -2,7 +2,15 @@ import { describe, expect, it } from 'vitest';
 import { buildGroundMap } from '../terrain/groundMap.js';
 import { WATER_CELL } from '../water/waterMask.js';
 import { grassTuft, reedClump, shrub, weed } from './vegetationMeshes.js';
-import { INSTANCE_STRIDE, scatterVegetation, SPECIES } from './vegetationScatter.js';
+import {
+  CROSSING_TREE_CLEAR_M,
+  FORD_CLEAR_M,
+  INSTANCE_STRIDE,
+  OBJECTIVE_SHRUB_CLEAR_M,
+  OBJECTIVE_TREE_CLEAR_M,
+  scatterVegetation,
+  SPECIES,
+} from './vegetationScatter.js';
 
 // 160 m square: a river along x = 10..13, an impassable ridge strip along x = 100..103, flat elsewhere.
 const N = 160;
@@ -76,6 +84,53 @@ describe('vegetation scatter', () => {
 
   it('has no groves without a passability grid', () => {
     expect(scatterVegetation({ ground, heightAt, water }).trees).toEqual([]);
+  });
+
+  it('keeps trees and shrubs off an objective', () => {
+    const flag = { x: 101.5, z: 80 };
+    const r = scatterVegetation({ ground, heightAt, water, passable, keepClear: [flag] });
+    expect(r.trees.length).toBeGreaterThan(0);
+    for (const t of r.trees)
+      expect(Math.hypot(t.x - flag.x, t.z - flag.z)).toBeGreaterThan(OBJECTIVE_TREE_CLEAR_M - 1);
+    for (const s of ['shrubRound', 'shrubLow', 'shrubTall', 'reed'] as const)
+      for (const [x, z] of points(r.instances[s]))
+        expect(Math.hypot(x - flag.x, z - flag.z)).toBeGreaterThan(OBJECTIVE_SHRUB_CLEAR_M - 2);
+  });
+});
+
+describe('vegetation at a land bridge', () => {
+  // The river (x = 10..13) is broken by a land bridge at z = 76..82, framed by impassable cliffs at x = 4..20 along z = 20..140.
+  const bridged = {
+    w: N,
+    h: N,
+    data: water.data.map((v, i) => {
+      const z = Math.floor(i / N);
+      return z >= 76 && z < 82 ? WATER_CELL.land : v;
+    }),
+  };
+  const cliffs = {
+    w: N,
+    h: N,
+    data: passable.data.map((v, i) => {
+      const x = i % N;
+      const z = Math.floor(i / N);
+      return (x >= 4 && x < 10) || (x > 13 && x <= 20) ? (z >= 20 && z < 140 ? 0 : v) : v;
+    }),
+  };
+  const r = scatterVegetation({ ground, heightAt, water: bridged, passable: cliffs });
+
+  it('grows no trees on or around the bridge, though its cliffs are impassable', () => {
+    for (const t of r.trees)
+      expect(Math.hypot(t.x - 11.5, t.z - 79)).toBeGreaterThan(CROSSING_TREE_CLEAR_M - 1);
+    for (const s of ['shrubRound', 'shrubLow', 'shrubTall', 'reed'] as const)
+      for (const [x, z] of points(r.instances[s]))
+        expect(Math.hypot(x - 11.5, z - 79)).toBeGreaterThan(FORD_CLEAR_M - 2);
+  });
+
+  it('still grows groves along the rest of the cliffs', () => {
+    expect(r.trees.some((t) => t.x < 24 && Math.abs(t.z - 79) > CROSSING_TREE_CLEAR_M + 2)).toBe(
+      true,
+    );
   });
 });
 

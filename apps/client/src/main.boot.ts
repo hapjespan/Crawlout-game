@@ -1,6 +1,7 @@
 // Client entry, stage 1 (see main.ts): page elements, options, the menu with its splash, then the heavy loading (game
 // data, map, renderer, terrain, props, water) while the splash shows the progress.
 import { createRenderer, type CrawloutRenderer } from '@crawlout/render';
+import { UNITS_PER_METER } from '@crawlout/protocol';
 import {
   defaultRelayUrl,
   effectiveParams,
@@ -191,7 +192,15 @@ export async function bootClient(ctx: ClientContext): Promise<void> {
   const propsLoaded = renderer.setProps(map.props, propSource());
   const water = loadClientMapWater(SLICE_MAP);
   if (water) renderer.setWater(water);
-  renderer.setVegetation({ w: map.grid.w, h: map.grid.h, passable: map.grid.passable });
+  renderer.setVegetation({
+    w: map.grid.w,
+    h: map.grid.h,
+    passable: map.grid.passable,
+    keepClear: map.grid.claimPoints.map((c) => ({
+      x: c.ux / UNITS_PER_METER,
+      y: c.uy / UNITS_PER_METER,
+    })),
+  });
   const minimapStatic = minimapLayers(map.grid.w, map.grid.h, map.grid.passable, map.props, water);
   const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true;
   let ambient: AmbientCamera | null = null;

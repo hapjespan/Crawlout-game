@@ -179,6 +179,7 @@ export function setupFrame(c: TerrainStage) {
       heightAt: (x, z) => terrain.heightAt(x, z),
       water: state.waterMask,
       passable: state.passable,
+      keepClear: state.keepClear,
       trees: state.mapProps
         .filter((p) => p.asset.startsWith('tree'))
         .map((p) => ({ x: p.x, z: p.y })),
