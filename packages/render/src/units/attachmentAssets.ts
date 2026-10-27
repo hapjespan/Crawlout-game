@@ -15,7 +15,7 @@ import { attachmentGeometryFromGltf, mergeAttachmentLods } from './attachmentGeo
 import {
   attachmentMatrix,
   attachmentsOfLoadout,
-  boneIndexOf,
+  slotBoneIndex,
   SLOT_SPECS,
   type AttachmentSlot,
   type BodySockets,
@@ -268,7 +268,7 @@ export class AttachmentRegistry {
     const manifestUrl = this.opts.manifestUrl;
     if (!manifestUrl) return this.skip(info, want, 'no manifest');
     const spec = SLOT_SPECS[want.slot];
-    const bone = boneIndexOf(info.boneNames, spec.bone);
+    const bone = slotBoneIndex(info.boneNames, want.slot);
     if (bone < 0) return this.skip(info, want, `body has no bone ${spec.bone}`);
     const matrix: Matrix4 | null = attachmentMatrix(want.slot, info.sockets);
     if (!matrix) return this.skip(info, want, `body has no ${spec.socket} socket`);

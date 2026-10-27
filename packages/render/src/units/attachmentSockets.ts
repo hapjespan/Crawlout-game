@@ -30,6 +30,11 @@ export interface SlotSpec {
   anchor: AttachmentAnchor;
   /** Mixamo name of the bone the attachment is skinned to (the asset-cli conforms every character to these names). */
   bone: string;
+  /**
+   * Bones tried in order when the body lacks `bone`: a rig with fewer spine bones (the Dweller fan art has only Spine).
+   * The same order the asset-cli uses to find the back socket (inspect.ts findSockets), so socket and bone agree.
+   */
+  fallback?: readonly string[];
   /** The manifest socket that holds the anchor's origin; null: the body space itself. */
   socket: keyof BodySockets | null;
 }
@@ -37,9 +42,9 @@ export interface SlotSpec {
 export const SLOT_SPECS: Readonly<Record<AttachmentSlot, SlotSpec>> = {
   weapon: { anchor: 'grip', bone: 'RightHand', socket: 'hand' },
   tool: { anchor: 'grip', bone: 'RightHand', socket: 'hand' },
-  gear_back: { anchor: 'back', bone: 'Spine2', socket: 'back' },
+  gear_back: { anchor: 'back', bone: 'Spine2', fallback: ['Spine1', 'Spine'], socket: 'back' },
   gear_head: { anchor: 'head', bone: 'Head', socket: 'head' },
-  armor: { anchor: 'body', bone: 'Spine2', socket: null },
+  armor: { anchor: 'body', bone: 'Spine2', fallback: ['Spine1', 'Spine'], socket: null },
 };
 
 /**
@@ -97,4 +102,14 @@ export function attachmentMatrix(
 /** Index of a bone in the baked order, or -1. */
 export function boneIndexOf(boneNames: readonly string[], bone: string): number {
   return boneNames.indexOf(bone);
+}
+
+/** Index of the bone a slot is skinned to: its own bone, else the first fallback the body has, or -1. */
+export function slotBoneIndex(boneNames: readonly string[], slot: AttachmentSlot): number {
+  const spec = SLOT_SPECS[slot];
+  for (const bone of [spec.bone, ...(spec.fallback ?? [])]) {
+    const i = boneNames.indexOf(bone);
+    if (i >= 0) return i;
+  }
+  return -1;
 }

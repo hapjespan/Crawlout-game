@@ -144,7 +144,10 @@ export function findSockets(document: Document): AssetSockets {
     return [round6(t[0]), round6(t[1]), round6(t[2])];
   };
   const hand = toVec(findJoint(document, [/socket[_-]?hand/i, /^RightHand$/]));
-  const back = toVec(findJoint(document, [/socket[_-]?(back|rug)/i, /^Spine2$/, /^Spine1$/]));
+  // Same order as render's slot fallback (attachmentSockets.ts): a rig with one spine bone still gets a back socket.
+  const back = toVec(
+    findJoint(document, [/socket[_-]?(back|rug)/i, /^Spine2$/, /^Spine1$/, /^Spine$/]),
+  );
   const head = toVec(findJoint(document, [/socket[_-]?head/i, /^Head$/]));
   const sockets: AssetSockets = {};
   if (hand) sockets.hand = hand;

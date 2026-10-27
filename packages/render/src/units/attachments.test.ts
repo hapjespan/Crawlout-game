@@ -5,6 +5,7 @@ import {
   ATTACHMENT_SLOTS,
   SLOT_SPECS,
   boneIndexOf,
+  slotBoneIndex,
   attachmentMatrix,
   GRIP_OFFSET,
   GRIP_ROTATION,
@@ -50,6 +51,16 @@ describe('slot mapping', () => {
   it('finds a bone in the baked order', () => {
     expect(boneIndexOf(['Hips', 'Spine', 'RightHand'], 'RightHand')).toBe(2);
     expect(boneIndexOf(['Hips'], 'Head')).toBe(-1);
+  });
+
+  it('falls back to the spine bone a body has for back gear and armor, never for the hand', () => {
+    const full = ['Hips', 'Spine', 'Spine1', 'Spine2', 'RightHand'];
+    expect(slotBoneIndex(full, 'gear_back')).toBe(3);
+    // The Dweller fan art: one spine bone, so the bag and the armor ride on Spine.
+    const one = ['Hips', 'Spine', 'Head', 'RightHand'];
+    expect(slotBoneIndex(one, 'gear_back')).toBe(1);
+    expect(slotBoneIndex(one, 'armor')).toBe(1);
+    expect(slotBoneIndex(['Hips', 'Spine'], 'weapon')).toBe(-1);
   });
 });
 
