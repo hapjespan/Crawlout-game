@@ -20,7 +20,8 @@
 // an opaque material stays single-sided and has no discard. The same alpha test runs in the shadow pass
 // (maskShadowNode), so a tree's shadow has leaves, not cards. `wind` sways vertices along the wind by the square of
 // their height in the model, with iTint.w as the per-instance phase (props/propWind.ts); it lives in positionNode, which
-// the shadow pass uses too, so the shadow sways with the tree.
+// the shadow pass uses too, so the shadow sways with the tree. `occlusion` dithers an instance away while it stands
+// between the camera and a unit (occlusion/occlusionField.ts), in the colour only: its shadow stays whole.
 import {
   DoubleSide,
   MeshBasicNodeMaterial,
@@ -50,6 +51,7 @@ import {
   texture,
   uniform,
   uniformArray,
+  vec2,
   vec3,
   vec4,
   vertexStage,
@@ -66,6 +68,7 @@ import {
 import { teamPalette } from '../palette.js';
 import { WIND_DIRECTION } from '../props/propWind.js';
 import type { SunShadowTerm } from '../shadows/sunShadow.js';
+import { occlusionDiscard, type OcclusionSampler } from '../occlusion/occlusionField.js';
 import { rimLight, skyFill, teamAlbedo, toonLight } from '../units/unitMaterial.js';
 
 export interface PropMaterialOptions {
@@ -102,6 +105,8 @@ export interface PropMaterialOptions {
   crown?: number;
   /** Light wind sway (propWind.ts); iTint.w of each instance is its phase. */
   wind?: PropWindOptions;
+  /** Occlusion fade (occlusion/occlusionField.ts): dithers the instance away while it hides a unit. */
+  occlusion?: OcclusionSampler;
 }
 
 export interface PropWindOptions {
@@ -283,7 +288,15 @@ export function createPropMaterial(opts: PropMaterialOptions): MeshBasicNodeMate
 
   const m = new MeshBasicNodeMaterial();
   m.positionNode = worldPos;
-  const out = vec4(albedo.mul(skyFill(N).add(shade)).add(rim).add(spec), 1);
+  const lit = vec4(albedo.mul(skyFill(N).add(shade)).add(rim).add(spec), 1);
+  // Occlusion fade: in the color only, so the shadow pass (maskShadowNode, colorNode.a) keeps the full shadow.
+  const fade = opts.occlusion?.(vec2(iPos.x, iPos.z));
+  const out = fade
+    ? Fn(() => {
+        occlusionDiscard(fade);
+        return lit;
+      })()
+    : lit;
   // A shadow caster must not sample its own shadow map in the shadow pass: three's shadow pass reads colorNode.a,
   // so a material that receives the shadow puts its color in fragmentNode instead.
   if (opts.alphaMask && texelAlpha) {

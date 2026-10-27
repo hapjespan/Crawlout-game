@@ -16,6 +16,7 @@ import {
   cos,
   distance,
   float,
+  Fn,
   mix,
   normalize,
   sin,
@@ -30,6 +31,7 @@ import { worldGrade } from '../look/grade.js';
 import { WIND_DIRECTION } from '../props/propWind.js';
 import type { SunShadowTerm } from '../shadows/sunShadow.js';
 import { toonLight } from '../units/unitMaterial.js';
+import { occlusionDiscard, type OcclusionSampler } from '../occlusion/occlusionField.js';
 
 export interface VegetationMaterialOptions {
   name: string;
@@ -44,6 +46,8 @@ export interface VegetationMaterialOptions {
   windStrength: Node<'float'>;
   /** Camera distances (m) between which the plant sinks away. */
   fade: readonly [number, number];
+  /** Occlusion fade (occlusion/occlusionField.ts) for the tall species: dithered away while it hides a unit. */
+  occlusion?: OcclusionSampler | null;
 }
 
 /** Share of the world grade, as on the terrain (terrainMaterial TERRAIN_GRADE). */
@@ -95,7 +99,14 @@ export function createVegetationMaterial(opts: VegetationMaterialOptions): MeshB
 
   const m = new MeshBasicNodeMaterial();
   m.positionNode = worldPos;
-  const out = vec4(albedo.mul(shade), 1);
+  const lit = vec4(albedo.mul(shade), 1);
+  const hide = opts.occlusion?.(vPos.xz);
+  const out = hide
+    ? Fn(() => {
+        occlusionDiscard(hide);
+        return lit;
+      })()
+    : lit;
   // As propMaterial.ts: a material that receives the shadow puts its colour in fragmentNode (the shadow pass reads colorNode).
   if (opts.shadow) {
     m.fragmentNode = out;

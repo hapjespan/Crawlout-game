@@ -25,7 +25,7 @@ export function buildRendererApi(c: FrameStage): CrawloutRenderer {
   const { applyGroundMap } = c;
   const { fogOfWar, structures, canvas, camera, frame, rigid, terrain, meter, scene } = c;
   const { profiler, water, units, gpu, resizeObserver, overlay, decals, additive, smoke } = c;
-  const { sun, skirt, zones, vegetation } = c;
+  const { sun, skirt, zones, vegetation, occlusion } = c;
   const raycaster = new Raycaster();
   const ndc = new Vector2();
   const groundPlane = new Plane(new Vector3(0, 1, 0), 0);
@@ -249,6 +249,7 @@ export function buildRendererApi(c: FrameStage): CrawloutRenderer {
       state.buildingLayers?.dispose();
       props.dispose();
       vegetation.dispose();
+      occlusion.dispose();
       propRegistry.dispose();
       decals.dispose();
       additive.dispose();

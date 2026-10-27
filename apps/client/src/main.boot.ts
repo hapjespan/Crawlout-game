@@ -181,6 +181,7 @@ export async function bootClient(ctx: ClientContext): Promise<void> {
       ...(assets ? { assets } : {}),
       ...(textures ? { terrainTextures: textures } : {}),
       vegetation: params.get('vegetation') !== '0',
+      occlusionFade: params.get('occlusion') !== '0',
     });
   } catch (err) {
     menu?.hide();

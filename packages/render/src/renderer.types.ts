@@ -83,6 +83,8 @@ export interface CreateRendererOptions {
    * along impassable ground once setVegetation gives the passability. Default true; false draws the bare ground.
    */
   vegetation?: boolean;
+  /** Trees, tall shrubs and tall props dither away while they hide a unit or a claim flag (occlusion/). Default true. */
+  occlusionFade?: boolean;
   /**
    * Prop budget: most props drawn at once (default 3000), full density within thinDistance (default 160 m), at least
    * minDensity of a far chunk before the cap (default 0.15), most blob shadows (default 768).

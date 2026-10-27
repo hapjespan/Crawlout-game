@@ -9,6 +9,7 @@ import { forceDrawable } from './perf/warmDraw.js';
 import { PropAssetRegistry } from './props/propAssets.js';
 import { PropLayer } from './props/propLayer.js';
 import { windOf } from './props/propWind.js';
+import { isTree, type PropCategory } from './props/propCategory.js';
 import {
   buildingMeshes,
   loadBuildingAssets,
@@ -22,6 +23,7 @@ import { resolveManifestPath, UnitAssetLoader, createGltfIO } from './units/unit
 import { UnitAssetRegistry } from './units/unitAssets.js';
 import { DEFAULT_LIGHT_DIR } from './units/unitLayer.js';
 import { VegetationLayer } from './vegetation/vegetationLayer.js';
+import { OcclusionField, type OcclusionSampler } from './occlusion/occlusionField.js';
 import { AttachmentRegistry } from './units/attachmentAssets.js';
 import { RigidUnitRegistry } from './units/rigidUnitAssets.js';
 import { AbilityZones } from './vfx/abilityZones.js';
@@ -129,6 +131,14 @@ export function setupAssets(c: SceneStage) {
     },
   });
   const windStrength = uniform(opts.props?.wind === false ? 0 : 1);
+  // Trees and tall structures give way to the units behind them, plants as the low occluders.
+  const occlusion = new OcclusionField();
+  const occlusionOf = (category: PropCategory): OcclusionSampler | undefined =>
+    isTree(category) || category === 'structure'
+      ? occlusion.sampler(0)
+      : category === 'plant'
+        ? occlusion.sampler(1)
+        : undefined;
   const props = new PropLayer(scene, {
     ...opts.props,
     maxBlobs: propBlobs,
@@ -139,6 +149,7 @@ export function setupAssets(c: SceneStage) {
     heightAt: (x, z) => terrain.heightAt(x, z),
     material: ({ map, layers, mask, category, height }) => {
       const wind = windOf(category);
+      const fade = occlusionOf(category);
       return createPropMaterial({
         lightDir: DEFAULT_LIGHT_DIR,
         name: mask ? 'crawlout-prop-toon-mask' : 'crawlout-prop-toon',
@@ -151,6 +162,7 @@ export function setupAssets(c: SceneStage) {
         ...(wind && height > 1e-4
           ? { wind: { ...wind, height, time, strength: windStrength } }
           : {}),
+        ...(fade ? { occlusion: fade } : {}),
       });
     },
   });
@@ -161,6 +173,7 @@ export function setupAssets(c: SceneStage) {
     windStrength,
     heightAt: (x, z) => terrain.heightAt(x, z),
     castShadows: shadowsOn,
+    occlusion: occlusion.sampler(1),
   });
   const propRegistry = new PropAssetRegistry({
     manifest: (url) => loader.manifest(url),
@@ -254,6 +267,7 @@ export function setupAssets(c: SceneStage) {
     windStrength,
     props,
     vegetation,
+    occlusion,
     propRegistry,
     loadBuildings,
     additive,

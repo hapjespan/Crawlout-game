@@ -15,6 +15,7 @@ import {
   type Scene,
 } from 'three/webgpu';
 import type { SunShadowTerm } from '../shadows/sunShadow.js';
+import type { OcclusionSampler } from '../occlusion/occlusionField.js';
 import { createVegetationMaterial } from './vegetationMaterial.js';
 import { grassTuft, reedClump, shrub, weed } from './vegetationMeshes.js';
 import { INSTANCE_STRIDE, SPECIES, type ScatterResult, type Species } from './vegetationScatter.js';
@@ -32,6 +33,8 @@ interface SpeciesSpec {
   wind: { amplitude: number; speed: number };
   fade: [number, number];
   castShadow: boolean;
+  /** Tall enough to hide a unit: fades while it does (occlusion/occlusionField.ts, the low channel). */
+  occluder?: boolean;
 }
 
 /** The look of each species: the palettes sit in the ground's (terrain/groundSplat.ts GROUND_PALETTE). */
@@ -77,6 +80,7 @@ export const SPECIES_SPEC: Record<Species, SpeciesSpec> = {
     wind: { amplitude: 0.04, speed: 1.3 },
     fade: [260, 340],
     castShadow: true,
+    occluder: true,
   },
   reed: {
     geometry: () => reedClump(17),
@@ -84,6 +88,7 @@ export const SPECIES_SPEC: Record<Species, SpeciesSpec> = {
     wind: { amplitude: 0.1, speed: 1.7 },
     fade: [200, 280],
     castShadow: true,
+    occluder: true,
   },
 };
 
@@ -112,6 +117,8 @@ export interface VegetationLayerOptions {
   heightAt: (x: number, z: number) => number;
   /** Whether shrubs and reeds cast the sun's shadow. */
   castShadows?: boolean;
+  /** Fade of a low occluder at its origin (OcclusionField.sampler(1)): tall shrubs and reeds give way to units. */
+  occlusion?: OcclusionSampler | null;
 }
 
 export class VegetationLayer {
@@ -215,6 +222,7 @@ export class VegetationLayer {
         time: this.opts.time,
         windStrength: this.opts.windStrength,
         fade: spec.fade,
+        occlusion: spec.occluder ? (this.opts.occlusion ?? null) : null,
       });
       this.materials.set(species, m);
     }

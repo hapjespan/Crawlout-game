@@ -51,7 +51,7 @@ function createOverlay(
 /** Stage 4: water, grass mask and setTerrain, which lays down the default flat terrain. */
 export function setupTerrain(c: AssetStage) {
   const { opts, state, terrain, water, decals, props, atmosphere, skirt, controls, camera } = c;
-  const { scheduleWarmUp } = c;
+  const { scheduleWarmUp, occlusion } = c;
   /** Lays the water mask over the current terrain: bed, surface, then everything that reads heights. */
   const applyWater = (): void => {
     const hf = terrain.heightField;
@@ -145,6 +145,7 @@ export function setupTerrain(c: AssetStage) {
     const hf = terrain.heightField;
     const bounds = hf ? { minX: hf.minX, maxX: hf.maxX, minZ: hf.minZ, maxZ: hf.maxZ } : null;
     atmosphere.setBounds(bounds);
+    occlusion.setBounds(bounds);
     skirt.set(bounds, (x, z) => terrain.heightAt(x, z));
     if (hf) {
       controls.bounds = { minX: hf.minX, maxX: hf.maxX, minZ: hf.minZ, maxZ: hf.maxZ };
@@ -163,7 +164,7 @@ export type TerrainStage = ReturnType<typeof setupTerrain>;
 export function setupFrame(c: TerrainStage) {
   const { opts, state, canvas, capacity, backend, gpu, scene, camera, time, clock, sun } = c;
   const { terrain, screen, decals, zones, units, rigid, structures, footprints, props } = c;
-  const { additive, smoke, atmosphere, fogOfWar, controls, vegetation } = c;
+  const { additive, smoke, atmosphere, fogOfWar, controls, vegetation, occlusion } = c;
   let vegetationSignature = '';
   /** Scatters the vegetation over the current ground map (once per change, from the frame loop). */
   const applyVegetation = (): void => {
@@ -291,6 +292,7 @@ export function setupFrame(c: TerrainStage) {
     units.update(frame, camera, decals);
     rigid.update(frame, camera, decals, t);
     structures.update(frame, camera, decals);
+    if (opts.occlusionFade !== false) occlusion.update(frame, camera.position, Math.min(dt, 0.1));
     const preview = state.preview;
     if (preview) {
       const f = footprints.get(preview.typeId);
