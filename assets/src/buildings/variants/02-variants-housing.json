@@ -1,0 +1,799 @@
+{
+  "variants": {
+    "dweller_building_housing": {
+      "footprint": {
+        "w": 13,
+        "h": 19
+      },
+      "lod0Triangles": 2500,
+      "note": "het bronhuis op wereldschaal (12,1 x 18,6 m, 10,0 m hoog, deur 2,11 m) op een erf van 13 x 19 m, met een vlaggenmast van 7 m in de hoek",
+      "parts": [
+        {
+          "type": "house",
+          "source": "house",
+          "position": [
+            0,
+            0,
+            0
+          ],
+          "maxLod": 1
+        },
+        {
+          "type": "house",
+          "source": "house",
+          "position": [
+            0,
+            0,
+            0
+          ],
+          "select": {
+            "materials": [
+              "Material.004"
+            ],
+            "components": 2
+          },
+          "minLod": 2
+        },
+        {
+          "type": "box",
+          "size": [
+            7.35,
+            4.08,
+            13.965
+          ],
+          "material": "wall_proxy",
+          "position": [
+            -0.774,
+            0,
+            1.89
+          ],
+          "minLod": 2
+        },
+        {
+          "type": "box",
+          "size": [
+            10.29,
+            1.336,
+            18.204
+          ],
+          "material": "wall_proxy",
+          "position": [
+            -0.921,
+            0,
+            -0.082
+          ],
+          "minLod": 2
+        },
+        {
+          "type": "cylinder",
+          "radius": 0.08,
+          "height": 7,
+          "segments": 6,
+          "material": "metal",
+          "position": [
+            -6.0,
+            0,
+            -9.4
+          ],
+          "radiusTop": 0.06
+        },
+        {
+          "type": "box",
+          "size": [
+            1.4,
+            0.9,
+            0.05
+          ],
+          "material": "team_trim",
+          "position": [
+            -5.25,
+            5.9,
+            -9.4
+          ]
+        }
+      ]
+    },
+    "dweller_building_hq": {
+      "footprint": {
+        "w": 21,
+        "h": 21
+      },
+      "lod0Triangles": 2400,
+      "note": "het bronhuis op wereldschaal met een extra verdieping eronder (de begane grond van de bron, 2,9 m; samen 12,9 m hoog) en een watertoren van 11 m met de teamvlag, op een erf van 21 x 21 m",
+      "parts": [
+        {
+          "type": "house",
+          "source": "house",
+          "position": [
+            -4.4,
+            0,
+            0
+          ],
+          "select": {
+            "yTo": 0.423
+          },
+          "maxLod": 1,
+          "weight": 0.6
+        },
+        {
+          "type": "house",
+          "source": "house",
+          "position": [
+            -4.4,
+            2.891,
+            0
+          ],
+          "select": {
+            "materials": [
+              "Material.001",
+              "Material.003",
+              "Material.004",
+              "Material.006",
+              "Material.007"
+            ]
+          },
+          "maxLod": 1
+        },
+        {
+          "type": "house",
+          "source": "house",
+          "position": [
+            -4.4,
+            2.891,
+            0
+          ],
+          "select": {
+            "materials": [
+              "Material.004"
+            ],
+            "components": 2
+          },
+          "minLod": 2
+        },
+        {
+          "type": "box",
+          "size": [
+            7.35,
+            6.971,
+            13.965
+          ],
+          "material": "wall_proxy",
+          "position": [
+            -5.174,
+            0,
+            1.89
+          ],
+          "minLod": 2
+        },
+        {
+          "type": "box",
+          "size": [
+            10.29,
+            4.227,
+            18.204
+          ],
+          "material": "wall_proxy",
+          "position": [
+            -5.321,
+            0,
+            -0.082
+          ],
+          "minLod": 2
+        },
+        {
+          "type": "box",
+          "size": [
+            0.25,
+            6.2,
+            0.25
+          ],
+          "material": "metal",
+          "position": [
+            5.1,
+            0,
+            -5.9
+          ],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "size": [
+            0.25,
+            6.2,
+            0.25
+          ],
+          "material": "metal",
+          "position": [
+            5.1,
+            0,
+            -3.1
+          ],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "size": [
+            0.25,
+            6.2,
+            0.25
+          ],
+          "material": "metal",
+          "position": [
+            7.9,
+            0,
+            -5.9
+          ],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "size": [
+            0.25,
+            6.2,
+            0.25
+          ],
+          "material": "metal",
+          "position": [
+            7.9,
+            0,
+            -3.1
+          ],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "size": [
+            3.2,
+            6.2,
+            3.2
+          ],
+          "material": "wall_proxy",
+          "position": [
+            6.5,
+            0,
+            -4.5
+          ],
+          "minLod": 2
+        },
+        {
+          "type": "cylinder",
+          "radius": 2.1,
+          "height": 3.4,
+          "segments": 12,
+          "material": "metal",
+          "position": [
+            6.5,
+            6.2,
+            -4.5
+          ]
+        },
+        {
+          "type": "cylinder",
+          "radius": 2.14,
+          "height": 0.5,
+          "segments": 12,
+          "material": "team_trim",
+          "position": [
+            6.5,
+            7.4,
+            -4.5
+          ]
+        },
+        {
+          "type": "cone",
+          "radius": 2.3,
+          "height": 1.3,
+          "segments": 12,
+          "material": "metal",
+          "position": [
+            6.5,
+            9.6,
+            -4.5
+          ]
+        },
+        {
+          "type": "cylinder",
+          "radius": 0.06,
+          "height": 2.2,
+          "segments": 6,
+          "material": "metal",
+          "position": [
+            6.5,
+            10.9,
+            -4.5
+          ]
+        },
+        {
+          "type": "box",
+          "size": [
+            1.6,
+            1.0,
+            0.05
+          ],
+          "material": "team_trim",
+          "position": [
+            7.35,
+            12.0,
+            -4.5
+          ]
+        }
+      ]
+    },
+    "dweller_building_workshop": {
+      "footprint": {
+        "w": 21,
+        "h": 19
+      },
+      "lod0Triangles": 1900,
+      "note": "breed en laag: de begane grond van het bronhuis op wereldschaal (18,6 x 12,1 m, een kwartslag gedraaid) met een plat dak en een afdak van 4 m aan de achterkant, op een erf van 21 x 19 m; 4,6 m hoog met schoorsteen 6 m",
+      "parts": [
+        {
+          "type": "house",
+          "source": "house",
+          "position": [
+            0,
+            0,
+            -2.6
+          ],
+          "rotation": [
+            0,
+            90,
+            0
+          ],
+          "select": {
+            "yTo": 0.423
+          },
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "size": [
+            13.965,
+            4.08,
+            7.35
+          ],
+          "material": "wall_proxy",
+          "position": [
+            1.89,
+            0,
+            -1.826
+          ],
+          "minLod": 2
+        },
+        {
+          "type": "box",
+          "size": [
+            18.204,
+            1.336,
+            10.29
+          ],
+          "material": "wall_proxy",
+          "position": [
+            -0.082,
+            0,
+            -1.679
+          ],
+          "minLod": 2
+        },
+        {
+          "type": "box",
+          "size": [
+            15.0,
+            0.3,
+            8.4
+          ],
+          "material": "metal",
+          "position": [
+            1.89,
+            4.15,
+            -1.826
+          ]
+        },
+        {
+          "type": "box",
+          "size": [
+            15.0,
+            0.35,
+            0.08
+          ],
+          "material": "team_trim",
+          "position": [
+            1.89,
+            4.1,
+            2.38
+          ]
+        },
+        {
+          "type": "box",
+          "size": [
+            16,
+            0.15,
+            4.6
+          ],
+          "material": "metal",
+          "position": [
+            0,
+            3.2,
+            5.9
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "type": "box",
+          "size": [
+            0.2,
+            3.2,
+            0.2
+          ],
+          "material": "metal",
+          "position": [
+            -7.8,
+            0,
+            8.6
+          ],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "size": [
+            0.2,
+            3.2,
+            0.2
+          ],
+          "material": "metal",
+          "position": [
+            0,
+            0,
+            8.6
+          ],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "size": [
+            0.2,
+            3.2,
+            0.2
+          ],
+          "material": "metal",
+          "position": [
+            7.8,
+            0,
+            8.6
+          ],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "size": [
+            2.2,
+            1.0,
+            1.2
+          ],
+          "material": "metal",
+          "position": [
+            -4,
+            0,
+            6.5
+          ],
+          "maxLod": 1
+        },
+        {
+          "type": "cylinder",
+          "radius": 0.35,
+          "height": 1.8,
+          "segments": 8,
+          "material": "metal",
+          "position": [
+            -3.5,
+            4.45,
+            -1.8
+          ],
+          "radiusTop": 0.28
+        }
+      ]
+    },
+    "dweller_building_lab": {
+      "footprint": {
+        "w": 17,
+        "h": 19
+      },
+      "lod0Triangles": 2000,
+      "tints": {
+        "wall_paint": "#a8e8e0",
+        "roof": "#b8c8ff",
+        "frame_wood": "#d0f0ec"
+      },
+      "colors": {
+        "wall_proxy": "#9ccfc8"
+      },
+      "note": "het bronhuis op wereldschaal op een betonnen plaat van 17 x 19 m, met een schotel van 3,6 m op een mast van 6 m naast het huis",
+      "parts": [
+        {
+          "type": "house",
+          "source": "house",
+          "position": [
+            -2.4,
+            0,
+            0
+          ],
+          "maxLod": 1
+        },
+        {
+          "type": "house",
+          "source": "house",
+          "position": [
+            -2.4,
+            0,
+            0
+          ],
+          "select": {
+            "materials": [
+              "Material.004"
+            ],
+            "components": 2
+          },
+          "minLod": 2
+        },
+        {
+          "type": "box",
+          "size": [
+            7.35,
+            4.08,
+            13.965
+          ],
+          "material": "wall_proxy",
+          "position": [
+            -3.174,
+            0,
+            1.89
+          ],
+          "minLod": 2
+        },
+        {
+          "type": "box",
+          "size": [
+            10.29,
+            1.336,
+            18.204
+          ],
+          "material": "wall_proxy",
+          "position": [
+            -3.321,
+            0,
+            -0.082
+          ],
+          "minLod": 2
+        },
+        {
+          "type": "box",
+          "size": [
+            1.2,
+            0.6,
+            1.2
+          ],
+          "material": "metal",
+          "position": [
+            6.2,
+            0,
+            -6.2
+          ]
+        },
+        {
+          "type": "cylinder",
+          "radius": 0.18,
+          "height": 5.4,
+          "segments": 8,
+          "material": "metal",
+          "position": [
+            6.2,
+            0.6,
+            -6.2
+          ],
+          "radiusTop": 0.14
+        },
+        {
+          "type": "cylinder",
+          "radius": 0.25,
+          "height": 1.6,
+          "segments": 8,
+          "material": "metal",
+          "position": [
+            6.2,
+            5.6,
+            -6.2
+          ],
+          "radiusTop": 1.8,
+          "rotation": [
+            0,
+            0,
+            35
+          ]
+        },
+        {
+          "type": "cylinder",
+          "radius": 0.04,
+          "height": 1.2,
+          "segments": 6,
+          "material": "metal",
+          "position": [
+            6.2,
+            6.2,
+            -6.2
+          ],
+          "rotation": [
+            0,
+            0,
+            35
+          ]
+        },
+        {
+          "type": "box",
+          "size": [
+            1.6,
+            0.5,
+            0.05
+          ],
+          "material": "team_trim",
+          "position": [
+            6.2,
+            2.2,
+            -5.55
+          ]
+        }
+      ]
+    },
+    "dweller_building_training": {
+      "footprint": {
+        "w": 21,
+        "h": 19
+      },
+      "lod0Triangles": 2000,
+      "tints": {
+        "wall_paint": "#e0ecb8",
+        "roof": "#d0dca8"
+      },
+      "colors": {
+        "wall_proxy": "#cfd8a8"
+      },
+      "note": "het bronhuis op wereldschaal met een omheind oefenterrein van 8 x 19 m (hek 1,15 m, oefenpoppen 1,7 m) aan de trapkant, op een erf van 21 x 19 m",
+      "parts": [
+        {
+          "type": "house",
+          "source": "house",
+          "position": [
+            -4.4,
+            0,
+            0
+          ],
+          "maxLod": 1
+        },
+        {
+          "type": "house",
+          "source": "house",
+          "position": [
+            -4.4,
+            0,
+            0
+          ],
+          "select": {
+            "materials": [
+              "Material.004"
+            ],
+            "components": 2
+          },
+          "minLod": 2
+        },
+        {
+          "type": "box",
+          "size": [
+            7.35,
+            4.08,
+            13.965
+          ],
+          "material": "wall_proxy",
+          "position": [
+            -5.174,
+            0,
+            1.89
+          ],
+          "minLod": 2
+        },
+        {
+          "type": "box",
+          "size": [
+            10.29,
+            1.336,
+            18.204
+          ],
+          "material": "wall_proxy",
+          "position": [
+            -5.321,
+            0,
+            -0.082
+          ],
+          "minLod": 2
+        },
+        {
+          "type": "box",
+          "size": [
+            8.25,
+            0.08,
+            0.08
+          ],
+          "material": "metal",
+          "position": [
+            6.225,
+            1.0,
+            -9.35
+          ],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "size": [
+            8.25,
+            0.08,
+            0.08
+          ],
+          "material": "metal",
+          "position": [
+            6.225,
+            1.0,
+            9.35
+          ],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "size": [
+            0.08,
+            0.08,
+            18.7
+          ],
+          "material": "metal",
+          "position": [
+            10.35,
+            1.0,
+            0
+          ],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "size": [
+            0.14,
+            1.15,
+            0.14
+          ],
+          "material": "metal",
+          "position": [
+            2.2,
+            0,
+            -9.35
+          ],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "size": [
+            0.14,
+            1.15,
+            0.14
+          ],
+          "material": "metal",
+          "position": [
+            2.2,
+            0,
+            9.35
+          ],
+          "maxLod": 1
+        }
+      ]
+    }
+  }
+}

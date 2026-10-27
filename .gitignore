@@ -1,0 +1,18 @@
+node_modules/
+dist/
+.vite/
+coverage/
+*.log
+.DS_Store
+.env
+.env.*
+.claude/agent-memory-local/
+.claude/settings.local.json
+.claude/worktrees/
+
+# Local-only assets (fan art outside the own IP); never committed
+assets/local/
+assets/dist-local/
+
+# Large third-party source packs (CC-BY); only the processed assets/dist output is committed
+assets/src/packs/

@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "sources": {
+    "house": {
+      "file": "buildings/base_house.glb",
+      "attribution": "Low poly House by winwoods (CC-BY-4.0), zie assets/src/licenses/low-poly-house-CC-BY-4.0.txt",
+      "metersPerUnit": 0.0245,
+      "door": {
+        "floorY": 58.0,
+        "lintelY": 144.3,
+        "at": [
+          149,
+          29
+        ]
+      },
+      "keep": {
+        "min": [
+          -218,
+          -10,
+          -432
+        ],
+        "max": [
+          281,
+          420,
+          331
+        ]
+      },
+      "note": "Wereldschaal: de deuropening (zijgevel, +x, achter de trap) loopt van de vloer op y 58,0 tot de bovendorpel op 144,3 bron-eenheden, dus 86,3 eenheden. 0,0245 m per eenheid geeft een deur van 2,11 m, een verdieping van 2,9 m en een huis van 12,1 x 18,6 m en 10,0 m hoog (met veranda en trap). De bron is dus geen centimeters (dan was de deur 0,86 m). keep laat een losse plank op de grond en een touw buiten het dak weg."
+    }
+  },
+  "sourceMaterials": {
+    "Material.001": {
+      "name": "wall_paint"
+    },
+    "Material.003": {
+      "name": "wall_paint"
+    },
+    "lambert1": {
+      "name": "wall_paint",
+      "color": "#ffffff"
+    },
+    "Material.004": {
+      "name": "roof"
+    },
+    "Material.006": {
+      "name": "plank_grey"
+    },
+    "Material.007": {
+      "name": "frame_wood"
+    }
+  },
+  "flatMaterials": {
+    "metal": {
+      "color": "#8a867c"
+    },
+    "team_trim": {
+      "color": "#e7e7e7",
+      "note": "masker voor de spelerskleur; render herkent de naam (bevat team)"
+    },
+    "wall_proxy": {
+      "color": "#a9987c",
+      "note": "vervangt huis (muren en dek) op LOD2; zie parts met minLod 2"
+    }
+  }
+}

@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="utf-8" />
+    <title>asset-cli Raiderpreview</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        background: #222a2e;
+      }
+      #wrap {
+        position: relative;
+        display: inline-block;
+      }
+      .label {
+        position: absolute;
+        transform: translateX(-50%);
+        color: #e8e2d6;
+        font: 11px/1.25 monospace;
+        text-align: center;
+        white-space: nowrap;
+        pointer-events: none;
+      }
+      .label b {
+        color: #ffd84a;
+        font-weight: normal;
+      }
+      .rowtitle {
+        position: absolute;
+        left: 8px;
+        color: #b9c4c9;
+        font: 12px monospace;
+        pointer-events: none;
+      }
+      .guide {
+        position: absolute;
+        left: 0;
+        right: 0;
+        border-top: 1px dashed rgba(255, 216, 74, 0.55);
+        color: #ffd84a;
+        font: 11px monospace;
+        text-align: right;
+        pointer-events: none;
+      }
+    </style>
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "/node_modules/.pnpm/three@0.186.1/node_modules/three/build/three.module.js",
+          "three/addons/": "/node_modules/.pnpm/three@0.186.1/node_modules/three/examples/jsm/"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <div id="wrap"><canvas id="c"></canvas></div>
+    <script type="module">
+      // Overzicht van de Raider-assets (geen onderdeel van de buis): gebouwen, buggy, hond en de poppetjes met hun wapens en
+      // gear, elk op echte schaal naast een poppetje van 1,8 m en een Dweller-huis (dweller_building_housing), met het
+      // team-materiaal in een teamkleur en de footprint als rechthoek op de grond.
+      // Query: manifest=<pad> ref=<pad naar het manifest met poppetje en Dweller-huis> lod=0|1|2 w=<px> az=<graden>
+      //        el=<graden> team=<rrggbb> only=<id,id,...> (kaarten) loadouts=1 (rij met bewapende poppetjes) norefs=1
+      import * as THREE from 'three';
+      import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+      import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
+
+      const q = new URLSearchParams(location.search);
+      const lod = Number(q.get('lod') ?? 0);
+      const W = Number(q.get('w') ?? 2000);
+      const az = (Number(q.get('az') ?? 35) * Math.PI) / 180;
+      const el = (Number(q.get('el') ?? 20) * Math.PI) / 180;
+      const team = new THREE.Color(`#${q.get('team') ?? 'c8301c'}`);
+      const only = q.get('only') ? q.get('only').split(',') : null;
+      const loadoutsRow = q.get('loadouts') === '1';
+
+      const loadManifest = async (url) => {
+        const manifest = await (await fetch(url)).json();
+        return {
+          dir: url.slice(0, url.lastIndexOf('/') + 1),
+          byId: new Map(manifest.assets.map((a) => [a.id, a])),
+        };
+      };
+      const main = await loadManifest(q.get('manifest') ?? '/assets/dist/manifest.json');
+      const ref = await loadManifest(q.get('ref') ?? '/assets/dist/manifest.json');
+      const find = (id) => {
+        if (main.byId.has(id)) return { a: main.byId.get(id), dir: main.dir };
+        if (ref.byId.has(id)) return { a: ref.byId.get(id), dir: ref.dir };
+        throw new Error(`geen asset ${id}`);
+      };
+      const sizeOf = (a) => a.bounds.max.map((v, i) => v - a.bounds.min[i]);
+      const humanoidId = main.byId.has('raider_body_human')
+        ? 'raider_body_human'
+        : 'dweller_body_human';
+
+      const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
+      const load = async (id) => {
+        const { a, dir } = find(id);
+        const gltf = await loader.loadAsync(dir + a.lods[lod].path);
+        gltf.scene.traverse((o) => {
+          if (o.isMesh && /team|M_Main/i.test(o.material.name)) {
+            o.material = o.material.clone();
+            o.material.color.copy(team);
+          }
+        });
+        return { a, scene: gltf.scene };
+      };
+
+      // Items per row: { id, kind: 'asset' | 'loadout', ...}
+      const refs =
+        q.get('norefs') === '1' ? [] : [{ id: humanoidId }, { id: 'dweller_building_housing' }];
+      const rows = [];
+      if (loadoutsRow) {
+        const slots = [
+          ['slaaf', { tool: 'raider_tool_shovel' }],
+          ['slaaf_bouwer', { tool: 'raider_tool_hammer' }],
+          ['plunderaar', { weapon: 'raider_weapon_pipe_gun' }],
+          ['plunderaar staal', { weapon: 'raider_weapon_pipe_gun', armor: 'raider_armor_steel' }],
+          ['knuppelaar', { weapon: 'raider_weapon_spiked_club' }],
+          ['molotovgooier', { weapon: 'raider_weapon_molotov' }],
+          ['slaver', { weapon: 'raider_weapon_net_whip', gear_back: 'raider_gear_shackles' }],
+          [
+            'chemdealer',
+            { weapon: 'raider_weapon_chem_sprayer', gear_back: 'raider_gear_chem_tank' },
+          ],
+          [
+            'warlord',
+            {
+              weapon: 'raider_weapon_scrap_revolver',
+              gear_head: 'raider_gear_warlord_helm',
+              armor: 'raider_armor_steel',
+            },
+          ],
+        ];
+        rows.push({
+          title:
+            'poppetjes met wapens en gear (wapen naast de heup gehouden; render zet het op de hand-socket)',
+          items: slots.map(([name, slot]) => ({ kind: 'loadout', name, slot })),
+          maxScale: 170,
+          humanoid: true,
+        });
+      } else {
+        const ids =
+          only ??
+          [...main.byId.keys()].filter((id) => /^raider_(building|vehicle|body_hound)/.test(id));
+        const buildings = ids.filter((id) => main.byId.get(id)?.kind === 'building');
+        const units = ids.filter((id) => main.byId.get(id)?.kind === 'rigid-unit');
+        const small = buildings.filter(
+          (id) => Math.max(...sizeOf(main.byId.get(id)).slice(0, 3)) < 10,
+        );
+        const big = buildings.filter((id) => !small.includes(id));
+        if (units.length)
+          rows.push({
+            title: 'rigide units',
+            items: [
+              ...refs.filter((r) => r.id === humanoidId),
+              { id: 'dweller_robot_guard' },
+              ...units.map((id) => ({ id })),
+            ],
+            maxScale: 150,
+          });
+        if (small.length)
+          rows.push({
+            title: 'kleine gebouwen',
+            items: [...refs, ...small.map((id) => ({ id }))],
+            maxScale: 90,
+          });
+        if (big.length)
+          rows.push({
+            title: 'grote gebouwen',
+            items: [...refs, ...big.map((id) => ({ id }))],
+            maxScale: 38,
+          });
+      }
+
+      const GAP = 1.0;
+      const projected = (a) => {
+        const [sx, , sz] = sizeOf(a);
+        return Math.abs(sx * Math.cos(az)) + Math.abs(sz * Math.sin(az));
+      };
+      for (const row of rows) {
+        let x = 0;
+        row.layout = [];
+        for (const item of row.items) {
+          if (item.kind === 'loadout') {
+            const w = 1.4;
+            row.layout.push({ item, x: x + w / 2, w });
+            x += w + GAP * 0.4;
+          } else {
+            const { a } = find(item.id);
+            const w = Math.max(projected(a), 0.5);
+            row.layout.push({ item, a, x: x + w / 2, w });
+            x += w + GAP;
+          }
+        }
+        row.totalW = Math.max(x, 1);
+        row.maxH = Math.max(1.9, ...row.layout.filter((l) => l.a).map((l) => l.a.bounds.max[1]));
+        row.maxD = Math.max(
+          1,
+          ...row.layout.filter((l) => l.a).map((l) => Math.hypot(sizeOf(l.a)[0], sizeOf(l.a)[2])),
+        );
+        row.scale = Math.min(row.maxScale, (W - 20) / row.totalW);
+        row.h = Math.ceil((row.maxH * Math.cos(el) + row.maxD * Math.sin(el)) * row.scale + 100);
+      }
+      const H = rows.reduce((s, r) => s + r.h, 0);
+
+      const canvas = document.getElementById('c');
+      const renderer = new THREE.WebGLRenderer({
+        canvas,
+        antialias: true,
+        preserveDrawingBuffer: true,
+      });
+      renderer.setPixelRatio(1);
+      renderer.setSize(W, H);
+      renderer.setScissorTest(true);
+      const wrap = document.getElementById('wrap');
+
+      const attach = (parent, prop, position, rotationY = 0) => {
+        const holder = new THREE.Group();
+        holder.add(prop);
+        holder.position.set(...position);
+        holder.rotation.y = rotationY;
+        parent.add(holder);
+      };
+
+      let rowTop = 0;
+      const info = [];
+      for (const row of rows) {
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x56604f);
+        scene.add(new THREE.HemisphereLight(0xfff2dc, 0x4a4030, 1.9));
+        const sun = new THREE.DirectionalLight(0xfff0d0, 2.2);
+        sun.position.set(-6, 10, 8);
+        scene.add(sun);
+        const ground = new THREE.Mesh(
+          new THREE.PlaneGeometry(row.totalW + 60, 120),
+          new THREE.MeshStandardMaterial({ color: 0x3f4a38 }),
+        );
+        ground.rotation.x = -Math.PI / 2;
+        ground.position.set(row.totalW / 2, -0.01, 0);
+        scene.add(ground);
+        const labels = [];
+        for (const slot of row.layout) {
+          const holder = new THREE.Group();
+          holder.position.set(slot.x, 0, 0);
+          holder.rotation.y = az;
+          scene.add(holder);
+          if (slot.item.kind === 'loadout') {
+            const body = await load(humanoidId);
+            holder.add(body.scene);
+            const hand = body.a.sockets.hand ?? [-0.74, 1.44, -0.065];
+            const back = body.a.sockets.back ?? [0, 1.31, 0];
+            const head = body.a.sockets.head ?? [0, 1.57, 0];
+            const s = slot.item.slot;
+            // Weapons and tools: grip beside the hip, forward (+Z), as the arm hangs in the animations.
+            for (const key of ['tool', 'weapon'])
+              if (s[key]) attach(holder, (await load(s[key])).scene, [-0.3, 1.0, 0.12]);
+            if (s.gear_back) attach(holder, (await load(s.gear_back)).scene, back);
+            if (s.gear_head) attach(holder, (await load(s.gear_head)).scene, head);
+            if (s.armor) attach(holder, (await load(s.armor)).scene, [0, 0, 0]);
+            void hand;
+            labels.push({
+              x: slot.x,
+              html: `<b>${slot.item.name}</b><br>${Object.values(s).join('<br>')}`,
+            });
+            continue;
+          }
+          const { scene: obj, a } = await load(slot.item.id);
+          holder.add(obj);
+          if (a.footprint) {
+            const { w, h } = a.footprint;
+            const rect = new THREE.LineLoop(
+              new THREE.BufferGeometry().setFromPoints([
+                new THREE.Vector3(-w / 2, 0.02, -h / 2),
+                new THREE.Vector3(w / 2, 0.02, -h / 2),
+                new THREE.Vector3(w / 2, 0.02, h / 2),
+                new THREE.Vector3(-w / 2, 0.02, h / 2),
+              ]),
+              new THREE.LineBasicMaterial({ color: 0xffd84a }),
+            );
+            holder.add(rect);
+          }
+          const [sw, sh, sd] = sizeOf(a);
+          info.push(
+            `${a.id} ${a.kind} ${sw.toFixed(2)} x ${sh.toFixed(2)} x ${sd.toFixed(2)} tris ${a.lods[lod].triangles}`,
+          );
+          labels.push({
+            x: slot.x,
+            html: `<b>${a.id}</b><br>${sw.toFixed(1)} x ${sh.toFixed(1)} x ${sd.toFixed(1)} m, ${a.lods[lod].triangles} tris${a.footprint ? `<br>footprint ${a.footprint.w} x ${a.footprint.h}` : ''}`,
+          });
+        }
+        const camH = row.h / row.scale;
+        const camera = new THREE.OrthographicCamera(0, W / row.scale, camH, 0, 0.1, 600);
+        const groundPx = 70 + 0.5 * row.maxD * Math.sin(el) * row.scale;
+        const yBottom = -groundPx / row.scale / Math.cos(el);
+        camera.position.set(0, yBottom + Math.sin(el) * 200, Math.cos(el) * 200);
+        camera.rotation.set(-el, 0, 0);
+        camera.updateProjectionMatrix();
+        renderer.setViewport(0, H - rowTop - row.h, W, row.h);
+        renderer.setScissor(0, H - rowTop - row.h, W, row.h);
+        renderer.render(scene, camera);
+
+        const groundY = rowTop + row.h - groundPx;
+        const title = document.createElement('div');
+        title.className = 'rowtitle';
+        title.style.top = `${rowTop + 4}px`;
+        title.textContent = `${row.title}, ${row.scale.toFixed(0)} px per meter, LOD${lod}, team-materiaal ingekleurd`;
+        wrap.appendChild(title);
+        const guide = document.createElement('div');
+        guide.className = 'guide';
+        guide.style.top = `${groundY - 1.8 * row.scale * Math.cos(el)}px`;
+        guide.textContent = '1,8 m';
+        wrap.appendChild(guide);
+        for (const l of labels) {
+          const label = document.createElement('div');
+          label.className = 'label';
+          label.style.left = `${l.x * row.scale}px`;
+          label.style.top = `${rowTop + row.h - 52}px`;
+          label.innerHTML = l.html;
+          wrap.appendChild(label);
+        }
+        rowTop += row.h;
+      }
+      document.title = 'ready';
+      window.__info = info;
+      window.__ready = true;
+    </script>
+  </body>
+</html>

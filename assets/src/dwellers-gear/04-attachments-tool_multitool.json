@@ -1,0 +1,657 @@
+{
+  "attachments": {
+    "dweller_tool_multitool": {
+      "anchor": "grip",
+      "heightM": [
+        0.06,
+        0.2
+      ],
+      "widthM": [
+        0.06,
+        0.16
+      ],
+      "depthM": [
+        0.3,
+        0.5
+      ],
+      "note": "multitool van de technicus, ongeveer 0,4 m: rubberen handvat, blauwgrijze kop met sleutelbek, schroevendraaier en een blauwe statuslamp; oorsprong = greep, kop naar +Z",
+      "lod0Triangles": 300,
+      "parts": [
+        {
+          "type": "cylinder",
+          "material": "rubber_grip",
+          "radius": 0.024,
+          "height": 0.22,
+          "segments": 8,
+          "position": [
+            0,
+            0,
+            -0.14
+          ],
+          "rotation": [
+            90,
+            0,
+            0
+          ],
+          "maxLod": 0
+        },
+        {
+          "type": "cylinder",
+          "material": "rubber_grip",
+          "radius": 0.024,
+          "height": 0.22,
+          "segments": 6,
+          "position": [
+            0,
+            0,
+            -0.14
+          ],
+          "rotation": [
+            90,
+            0,
+            0
+          ],
+          "minLod": 1,
+          "maxLod": 1
+        },
+        {
+          "type": "cylinder",
+          "material": "rubber_grip",
+          "radius": 0.024,
+          "height": 0.22,
+          "segments": 4,
+          "position": [
+            0,
+            0,
+            -0.14
+          ],
+          "rotation": [
+            90,
+            0,
+            0
+          ],
+          "minLod": 2
+        },
+        {
+          "type": "box",
+          "material": "metal_vault",
+          "size": [
+            0.06,
+            0.07,
+            0.14
+          ],
+          "position": [
+            0,
+            -0.035,
+            0.08
+          ],
+          "chamfer": 0.008
+        },
+        {
+          "type": "box",
+          "material": "metal_vault_yellow",
+          "size": [
+            0.062,
+            0.015,
+            0.1
+          ],
+          "position": [
+            0,
+            0.0,
+            0.08
+          ],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "material": "steel_bare",
+          "size": [
+            0.016,
+            0.035,
+            0.08
+          ],
+          "position": [
+            0.04,
+            -0.017,
+            0.22
+          ],
+          "mirror": true,
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "material": "steel_bare",
+          "size": [
+            0.14,
+            0.02,
+            0.03
+          ],
+          "position": [
+            0,
+            -0.01,
+            0.27
+          ],
+          "maxLod": 1
+        },
+        {
+          "type": "cylinder",
+          "material": "steel_bare",
+          "radius": 0.007,
+          "height": 0.14,
+          "segments": 6,
+          "position": [
+            0,
+            0.02,
+            0.12
+          ],
+          "rotation": [
+            90,
+            0,
+            0
+          ],
+          "maxLod": 0
+        },
+        {
+          "type": "cylinder",
+          "material": "steel_bare",
+          "radius": 0.007,
+          "height": 0.14,
+          "segments": 4,
+          "position": [
+            0,
+            0.02,
+            0.12
+          ],
+          "rotation": [
+            90,
+            0,
+            0
+          ],
+          "minLod": 1,
+          "maxLod": 1
+        },
+        {
+          "type": "cylinder",
+          "material": "steel_bare",
+          "radius": 0.007,
+          "height": 0.14,
+          "segments": 3,
+          "position": [
+            0,
+            0.02,
+            0.12
+          ],
+          "rotation": [
+            90,
+            0,
+            0
+          ],
+          "minLod": 2
+        },
+        {
+          "type": "box",
+          "material": "metal_vault_dark",
+          "size": [
+            0.04,
+            0.02,
+            0.05
+          ],
+          "position": [
+            0,
+            0.035,
+            0.1
+          ],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "lens_blue",
+          "size": [
+            0.02,
+            0.012,
+            0.016
+          ],
+          "position": [
+            0,
+            0.0,
+            0.153
+          ],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "material": "metal_vault_dark",
+          "size": [
+            0.02,
+            0.02,
+            0.04
+          ],
+          "position": [
+            0,
+            -0.03,
+            -0.02
+          ],
+          "maxLod": 0
+        }
+      ]
+    },
+    "dweller_tool_hammer": {
+      "anchor": "grip",
+      "heightM": [
+        0.05,
+        0.14
+      ],
+      "widthM": [
+        0.15,
+        0.3
+      ],
+      "depthM": [
+        0.45,
+        0.7
+      ],
+      "note": "bouwhamer van de bouwer, ongeveer 0,55 m: stalen schacht met rubberen greep, blokkop van ruw staal met gele band; oorsprong = greep, kop naar +Z",
+      "lod0Triangles": 300,
+      "parts": [
+        {
+          "type": "cylinder",
+          "material": "metal_vault_dark",
+          "radius": 0.019,
+          "height": 0.46,
+          "segments": 8,
+          "position": [
+            0,
+            0,
+            -0.14
+          ],
+          "rotation": [
+            90,
+            0,
+            0
+          ],
+          "maxLod": 0
+        },
+        {
+          "type": "cylinder",
+          "material": "metal_vault_dark",
+          "radius": 0.019,
+          "height": 0.46,
+          "segments": 6,
+          "position": [
+            0,
+            0,
+            -0.14
+          ],
+          "rotation": [
+            90,
+            0,
+            0
+          ],
+          "minLod": 1,
+          "maxLod": 1
+        },
+        {
+          "type": "cylinder",
+          "material": "metal_vault_dark",
+          "radius": 0.019,
+          "height": 0.46,
+          "segments": 4,
+          "position": [
+            0,
+            0,
+            -0.14
+          ],
+          "rotation": [
+            90,
+            0,
+            0
+          ],
+          "minLod": 2
+        },
+        {
+          "type": "cylinder",
+          "material": "rubber_grip",
+          "radius": 0.025,
+          "height": 0.2,
+          "segments": 8,
+          "position": [
+            0,
+            0,
+            -0.13
+          ],
+          "rotation": [
+            90,
+            0,
+            0
+          ],
+          "maxLod": 0
+        },
+        {
+          "type": "cylinder",
+          "material": "rubber_grip",
+          "radius": 0.025,
+          "height": 0.2,
+          "segments": 6,
+          "position": [
+            0,
+            0,
+            -0.13
+          ],
+          "rotation": [
+            90,
+            0,
+            0
+          ],
+          "minLod": 1,
+          "maxLod": 1
+        },
+        {
+          "type": "cylinder",
+          "material": "rubber_grip",
+          "radius": 0.025,
+          "height": 0.2,
+          "segments": 4,
+          "position": [
+            0,
+            0,
+            -0.13
+          ],
+          "rotation": [
+            90,
+            0,
+            0
+          ],
+          "minLod": 2
+        },
+        {
+          "type": "box",
+          "material": "steel_bare",
+          "size": [
+            0.2,
+            0.07,
+            0.07
+          ],
+          "position": [
+            0,
+            -0.035,
+            0.34
+          ],
+          "chamfer": 0.008,
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "material": "metal_vault",
+          "size": [
+            0.05,
+            0.085,
+            0.085
+          ],
+          "position": [
+            0.12,
+            -0.0425,
+            0.34
+          ],
+          "mirror": true
+        },
+        {
+          "type": "box",
+          "material": "metal_vault_yellow",
+          "size": [
+            0.045,
+            0.09,
+            0.09
+          ],
+          "position": [
+            0.0,
+            -0.045,
+            0.34
+          ],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "material": "metal_vault_dark",
+          "size": [
+            0.03,
+            0.03,
+            0.05
+          ],
+          "position": [
+            0,
+            0.0,
+            0.26
+          ],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "steel_bare",
+          "size": [
+            0.2,
+            0.07,
+            0.07
+          ],
+          "position": [
+            0,
+            -0.035,
+            0.34
+          ],
+          "minLod": 2
+        }
+      ]
+    },
+    "dweller_tool_scrapbag": {
+      "anchor": "grip",
+      "heightM": [
+        0.5,
+        0.95
+      ],
+      "widthM": [
+        0.25,
+        0.45
+      ],
+      "depthM": [
+        0.15,
+        0.35
+      ],
+      "note": "schroottas van de scavenger, ongeveer 0,5 m hoog: grijze canvas tas aan een rubberen riem onder de hand, gele gesp, blik en een koevoet die uit de tas steekt; oorsprong = greep, de tas hangt eronder",
+      "lod0Triangles": 300,
+      "parts": [
+        {
+          "type": "box",
+          "material": "rubber_grip",
+          "size": [
+            0.03,
+            0.14,
+            0.03
+          ],
+          "position": [
+            0,
+            -0.14,
+            0
+          ],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "material": "canvas_grey",
+          "size": [
+            0.3,
+            0.3,
+            0.14
+          ],
+          "position": [
+            0,
+            -0.45,
+            0
+          ],
+          "chamfer": 0.02
+        },
+        {
+          "type": "box",
+          "material": "canvas_grey",
+          "size": [
+            0.31,
+            0.11,
+            0.15
+          ],
+          "position": [
+            0,
+            -0.26,
+            0
+          ],
+          "chamfer": 0.015,
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "material": "metal_vault_yellow",
+          "size": [
+            0.06,
+            0.07,
+            0.01
+          ],
+          "position": [
+            0,
+            -0.3,
+            0.078
+          ],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "material": "rubber_grip",
+          "size": [
+            0.2,
+            0.025,
+            0.152
+          ],
+          "position": [
+            0,
+            -0.33,
+            0
+          ],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "metal_vault_dark",
+          "size": [
+            0.06,
+            0.08,
+            0.04
+          ],
+          "position": [
+            0.1,
+            -0.42,
+            0.09
+          ],
+          "maxLod": 0
+        },
+        {
+          "type": "cylinder",
+          "material": "metal_vault",
+          "radius": 0.03,
+          "height": 0.08,
+          "segments": 8,
+          "position": [
+            -0.08,
+            -0.43,
+            0.1
+          ],
+          "maxLod": 0
+        },
+        {
+          "type": "cylinder",
+          "material": "steel_bare",
+          "radius": 0.012,
+          "height": 0.52,
+          "segments": 6,
+          "position": [
+            0.06,
+            -0.3,
+            -0.02
+          ],
+          "rotation": [
+            0,
+            0,
+            -8
+          ],
+          "maxLod": 0
+        },
+        {
+          "type": "cylinder",
+          "material": "steel_bare",
+          "radius": 0.012,
+          "height": 0.52,
+          "segments": 5,
+          "position": [
+            0.06,
+            -0.3,
+            -0.02
+          ],
+          "rotation": [
+            0,
+            0,
+            -8
+          ],
+          "minLod": 1,
+          "maxLod": 1
+        },
+        {
+          "type": "cylinder",
+          "material": "steel_bare",
+          "radius": 0.012,
+          "height": 0.52,
+          "segments": 4,
+          "position": [
+            0.06,
+            -0.3,
+            -0.02
+          ],
+          "rotation": [
+            0,
+            0,
+            -8
+          ],
+          "minLod": 2
+        },
+        {
+          "type": "box",
+          "material": "steel_bare",
+          "size": [
+            0.04,
+            0.012,
+            0.06
+          ],
+          "position": [
+            -0.0,
+            0.21,
+            -0.02
+          ],
+          "rotation": [
+            0,
+            0,
+            -8
+          ],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "metal_vault_yellow",
+          "size": [
+            0.05,
+            0.05,
+            0.05
+          ],
+          "position": [
+            0.0,
+            -0.45,
+            0.0
+          ],
+          "minLod": 2
+        }
+      ]
+    }
+  }
+}

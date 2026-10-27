@@ -1,0 +1,66 @@
+{
+  "_comment": "Winroute C, Bouwproject (data 0.31.0; voorstel, ter bevestiging door content en de architect; ontwerp in docs/winroute-c-winkelcentrum.md): een oud winkelcentrum met vier soorten delen. Elk deel staat als neutrale ruine op de map (maps/*.json projectSites, op Rustbelt twee gespiegelde vleugels bij de landbrug). Bouwers herstellen een ruine met Build erop: restoreScrap meteen, restoreS bouwwerk (meer bouwers gaan sneller). Een hersteld deel is van wie het herstelde, geeft zijn effecten (zoals een onderzochte tech), bedden en zicht, en is een doelwit: op 0 hp valt het terug tot ruine. Wie van elke soort een hersteld deel houdt, loopt de openbare countdown van countdownS; een treffer op een van zijn delen zet hem pauseAfterHitS stil, het verlies van zijn laatste deel van een soort zet hem op nul. Startwaarden, gemeten AI tegen AI over de seedsets (zie de CHANGELOG van data 0.31.0).",
+  "countdownS": 300,
+  "pauseAfterHitS": 10,
+  "parts": [
+    {
+      "id": "site_supermarket",
+      "naam": "Supermarkt",
+      "hp": 1400,
+      "armorType": "heavy",
+      "restoreScrap": 260,
+      "restoreS": 70,
+      "footprint": { "w": 25, "h": 15 },
+      "beds": 5,
+      "effects": [],
+      "visuals": { "ruin": "site_supermarket_ruin", "restored": "site_supermarket_restored" },
+      "_comment": "Het anker van het centrum, 25 x 15 m. Voedsel: 5 bedden voor wie hem houdt (zoals een woning). Het duurste en sterkste deel."
+    },
+    {
+      "id": "site_gas_station",
+      "naam": "Benzinestation",
+      "hp": 800,
+      "armorType": "medium",
+      "restoreScrap": 180,
+      "restoreS": 45,
+      "footprint": { "w": 15, "h": 11 },
+      "beds": 0,
+      "effects": [
+        { "stat": "speedPct", "target": "beveiligingsrobot", "delta": 15 },
+        { "stat": "speedPct", "target": "reparatiedrone", "delta": 15 },
+        { "stat": "speedPct", "target": "sentinel", "delta": 15 },
+        { "stat": "speedPct", "target": "bouwrobot", "delta": 15 },
+        { "stat": "speedPct", "target": "buggy", "delta": 15 }
+      ],
+      "visuals": { "ruin": "site_gas_station_ruin", "restored": "site_gas_station_restored" },
+      "_comment": "Luifel van 15 x 10 m met pompen en een kiosk. Brandstof: robots en voertuigen 15 procent sneller."
+    },
+    {
+      "id": "site_garage",
+      "naam": "Garage",
+      "hp": 1000,
+      "armorType": "medium",
+      "restoreScrap": 220,
+      "restoreS": 55,
+      "footprint": { "w": 13, "h": 11 },
+      "beds": 0,
+      "effects": [{ "stat": "buildTimePct", "target": "alle", "delta": -15 }],
+      "visuals": { "ruin": "site_garage_ruin", "restored": "site_garage_restored" },
+      "_comment": "Werkplaats van 12 x 10 m met twee roldeuren. Gereedschap: bouwen en herstellen 15 procent sneller."
+    },
+    {
+      "id": "site_water_tower",
+      "naam": "Watertoren",
+      "hp": 700,
+      "armorType": "medium",
+      "restoreScrap": 150,
+      "restoreS": 40,
+      "footprint": { "w": 7, "h": 7 },
+      "beds": 0,
+      "sightM": 40,
+      "effects": [],
+      "visuals": { "ruin": "site_water_tower_ruin", "restored": "site_water_tower_restored" },
+      "_comment": "Toren van 18 m op een voet van 6 x 6 m. Uitkijkpost: ziet 40 m voorbij de voet (een gebouw ziet er standaard 10)."
+    }
+  ]
+}

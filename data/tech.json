@@ -1,0 +1,329 @@
+[
+  {
+    "id": "raffinage",
+    "faction": "dwellers",
+    "scrapCost": 125,
+    "researchS": 30,
+    "building": "lab",
+    "prereqTech": [],
+    "effects": [{ "stat": "gatherRatePct", "target": "scavenger", "delta": 20 }],
+    "_comment": "Balans speltest 14 oktober voor scrapCost (alle techs 25 procent duurder, zodat onderzoek een echte uitgave is), de rest startwaarde. Raffinage: meer scrap per bewoner (+20 procent scavenger-opbrengst). Economie-upgrade van de Dwellers, 125 scrap (was 100) en 30 s. Stat-suffix Pct = procent, M = meter, S = seconde; anders een ruw geheel getal."
+  },
+  {
+    "id": "geweerrek",
+    "faction": "dwellers",
+    "scrapCost": 100,
+    "researchS": 25,
+    "building": "werkplaats",
+    "prereqTech": [],
+    "effects": [],
+    "_comment": "Balans speltest 14 oktober voor scrapCost, de rest startwaarde. Geweerrek: ontgrendelt patrol en turret (die verwijzen ernaar via prereqTech). Geen stat-effect. 100 scrap (was 80), 25 s in de werkplaats."
+  },
+  {
+    "id": "composiet_pantser",
+    "faction": "dwellers",
+    "scrapCost": 150,
+    "researchS": 35,
+    "building": "werkplaats",
+    "prereqTech": ["geweerrek"],
+    "effects": [
+      { "stat": "hpPct", "target": "militie", "delta": 15 },
+      { "stat": "hpPct", "target": "patrol", "delta": 15 },
+      { "stat": "hpPct", "target": "geweer_leer", "delta": 15 },
+      { "stat": "hpPct", "target": "shotgun_leer", "delta": 15 },
+      { "stat": "hpPct", "target": "shotgun_composiet", "delta": 15 },
+      { "stat": "hpPct", "target": "slagwapen_leer", "delta": 15 },
+      { "stat": "hpPct", "target": "slagwapen_composiet", "delta": 15 }
+    ],
+    "_comment": "Balans speltest 14 oktober voor scrapCost, de rest startwaarde. Composiet-pantser: +15 procent hp voor militie en patrol. Vraagt geweerrek. 150 scrap (was 120), 35 s. Data 0.16.0: geldt voor elke militia-loadout van de Dwellers (ook de nieuwe tiers geweer_leer, shotgun_*, slagwapen_*), en is de prereqTech van de composiet-loadouts shotgun_composiet en slagwapen_composiet (patrol blijft alleen geweerrek vragen)."
+  },
+  {
+    "id": "lasergeleiding",
+    "faction": "dwellers",
+    "scrapCost": 190,
+    "researchS": 40,
+    "building": "lab",
+    "prereqTech": ["raffinage"],
+    "effects": [
+      { "stat": "damagePct", "target": "turret", "delta": 20 },
+      { "stat": "rangeM", "target": "turret", "delta": 1 },
+      { "stat": "damagePct", "target": "turret_laser", "delta": 20 },
+      { "stat": "rangeM", "target": "turret_laser", "delta": 1 }
+    ],
+    "_comment": "Balans speltest 14 oktober voor scrapCost, de rest startwaarde. Lasergeleiding: turrets +20 procent schade en +1 m bereik (lasers die schalen met lab-upgrades). 190 scrap (was 150), 40 s. Data 0.16.0: geldt ook voor de laserturret (target turret_laser). Prereq van lasertechniek, turret_schade, turret_bereik en sentinel_protocol."
+  },
+  {
+    "id": "snelle_voeten",
+    "faction": "dwellers",
+    "scrapCost": 110,
+    "researchS": 25,
+    "building": "werkplaats",
+    "prereqTech": [],
+    "effects": [
+      { "stat": "speedPct", "target": "militie", "delta": 10 },
+      { "stat": "speedPct", "target": "patrol", "delta": 10 },
+      { "stat": "speedPct", "target": "geweer_leer", "delta": 10 },
+      { "stat": "speedPct", "target": "shotgun_leer", "delta": 10 },
+      { "stat": "speedPct", "target": "shotgun_composiet", "delta": 10 },
+      { "stat": "speedPct", "target": "slagwapen_leer", "delta": 10 },
+      { "stat": "speedPct", "target": "slagwapen_composiet", "delta": 10 }
+    ],
+    "_comment": "Balans speltest 14 oktober voor scrapCost, de rest startwaarde. Snelle voeten: +10 procent snelheid voor militie en patrol (Dwellers zijn snel). 110 scrap (was 90), 25 s. Data 0.16.0: geldt voor elke militia-loadout van de Dwellers, ook de nieuwe tiers."
+  },
+  {
+    "id": "bouwrobots",
+    "faction": "dwellers",
+    "scrapCost": 140,
+    "researchS": 30,
+    "building": "lab",
+    "prereqTech": ["raffinage"],
+    "effects": [
+      { "stat": "buildTimePct", "target": "bouwer", "delta": -20 },
+      { "stat": "buildTimePct", "target": "bouwrobot", "delta": -20 }
+    ],
+    "_comment": "Balans speltest 14 oktober voor scrapCost, de rest startwaarde. Bouwrobots: bouwen 20 procent sneller (negatieve delta = sneller). 140 scrap (was 110), 30 s. Data 0.26.0 (voorstel, ter bevestiging door de architect): ook voor de bouwrobot, zodat hij even snel bouwt als een bouwer."
+  },
+  {
+    "id": "robotica",
+    "faction": "dwellers",
+    "scrapCost": 180,
+    "researchS": 40,
+    "building": "lab",
+    "prereqTech": ["raffinage"],
+    "effects": [],
+    "_comment": "startwaarde, geen balans. Robotica (data 0.16.0): ontgrendelt de robottak van de Dwellers. Geen stat-effect; de prereqTech van het gebouw robotfabriek, de loadouts beveiligingsrobot en reparatiedrone (via de Robotfabriek) en het loadout technicus (omscholen in de werkplaats). 180 scrap en 40 s in het lab, vraagt raffinage."
+  },
+  {
+    "id": "sentinel_protocol",
+    "faction": "dwellers",
+    "scrapCost": 320,
+    "researchS": 70,
+    "building": "lab",
+    "prereqTech": ["robotica", "lasergeleiding"],
+    "effects": [],
+    "_comment": "startwaarde, geen balans. Sentinel-protocol (data 0.16.0): de late tech voor de belegeringsrobot. Geen stat-effect; de prereqTech van het loadout sentinel. Duur en lang (320 scrap, 70 s) en vraagt robotica en lasergeleiding, dus de Sentinel komt pas laat in het potje."
+  },
+  {
+    "id": "lasertechniek",
+    "faction": "dwellers",
+    "scrapCost": 200,
+    "researchS": 45,
+    "building": "lab",
+    "prereqTech": ["lasergeleiding"],
+    "effects": [],
+    "_comment": "startwaarde, geen balans. Lasertechniek (data 0.16.0): ontgrendelt de laserturret (tier 2). Geen stat-effect; de prereqTech van het gebouw turret_laser. 200 scrap en 45 s in het lab, vraagt lasergeleiding."
+  },
+  {
+    "id": "turret_schade",
+    "faction": "dwellers",
+    "scrapCost": 170,
+    "researchS": 35,
+    "building": "lab",
+    "prereqTech": ["lasergeleiding"],
+    "effects": [
+      { "stat": "damagePct", "target": "turret", "delta": 15 },
+      { "stat": "damagePct", "target": "turret_laser", "delta": 15 }
+    ],
+    "_comment": "startwaarde, geen balans. Turretschade (data 0.16.0): turrets en laserturrets +15 procent schade. Turret-upgrade via het lab (Spelfundament 4), stapelt met lasergeleiding. 170 scrap en 35 s, vraagt lasergeleiding."
+  },
+  {
+    "id": "turret_bereik",
+    "faction": "dwellers",
+    "scrapCost": 150,
+    "researchS": 35,
+    "building": "lab",
+    "prereqTech": ["lasergeleiding"],
+    "effects": [
+      { "stat": "rangeM", "target": "turret", "delta": 2 },
+      { "stat": "rangeM", "target": "turret_laser", "delta": 2 }
+    ],
+    "_comment": "startwaarde, geen balans. Turretbereik (data 0.16.0): turrets en laserturrets +2 m bereik. Turret-upgrade via het lab, stapelt met lasergeleiding. 150 scrap en 35 s, vraagt lasergeleiding."
+  },
+  {
+    "id": "turret_netwerk",
+    "faction": "dwellers",
+    "scrapCost": 220,
+    "researchS": 45,
+    "building": "lab",
+    "prereqTech": ["lasertechniek"],
+    "effects": [],
+    "_comment": "startwaarde, geen balans. Turretnetwerk (data 0.16.0): activeert de netwerkbonus van turrets en laserturrets. Geen stat-effect: de bonus staat in buildings.json (veld network, requiresTech turret_netwerk: radiusM, damagePctPerTurret en maxDamagePct). 220 scrap en 45 s in het lab, vraagt lasertechniek."
+  },
+  {
+    "id": "shotgun_ontwerp",
+    "faction": "dwellers",
+    "scrapCost": 110,
+    "researchS": 25,
+    "building": "werkplaats",
+    "prereqTech": [],
+    "effects": [],
+    "_comment": "startwaarde, geen balans. Shotgun-ontwerp (data 0.16.0): ontgrendelt de loadouts shotgun_leer en shotgun_composiet (de laatste vraagt ook composiet_pantser). Geen stat-effect. 110 scrap en 25 s in de werkplaats."
+  },
+  {
+    "id": "slagwapen_ontwerp",
+    "faction": "dwellers",
+    "scrapCost": 90,
+    "researchS": 20,
+    "building": "werkplaats",
+    "prereqTech": [],
+    "effects": [],
+    "_comment": "startwaarde, geen balans. Slagwapen-ontwerp (data 0.16.0): ontgrendelt de loadouts slagwapen_leer en slagwapen_composiet (de laatste vraagt ook composiet_pantser). Geen stat-effect. 90 scrap en 20 s in de werkplaats."
+  },
+  {
+    "id": "staalplaten",
+    "faction": "raiders",
+    "scrapCost": 120,
+    "researchS": 30,
+    "building": "plundermarkt",
+    "prereqTech": [],
+    "effects": [
+      { "stat": "hpPct", "target": "plunderaar", "delta": 10 },
+      { "stat": "hpPct", "target": "knuppelaar", "delta": 10 },
+      { "stat": "hpPct", "target": "molotovgooier", "delta": 10 },
+      { "stat": "hpPct", "target": "slaver", "delta": 10 }
+    ],
+    "_comment": "startwaarde, geen balans. Staalplaten (het \"staal\" van Spelfundament 4): autodeuren en pijpen als pantser. Ontgrendelt plunderaar_staal (dat verwijst ernaar via prereqTech) en geeft de lichte en middelzware Raiders 10 procent meer hp (plunderaar, knuppelaar, molotovgooier, slaver; plunderaar_staal heeft het pantser al). 120 scrap en 30 s in de plundermarkt. Eerste weaponstech: de Raiders hebben geen tech nodig om te beginnen (plunderaar, knuppelaar en slaver zijn er vanaf tick 0)."
+  },
+  {
+    "id": "molotovs",
+    "faction": "raiders",
+    "scrapCost": 100,
+    "researchS": 25,
+    "building": "plundermarkt",
+    "prereqTech": [],
+    "effects": [],
+    "_comment": "startwaarde, geen balans. Molotovs: ontgrendelt de molotovgooier (die verwijst ernaar via prereqTech). Geen stat-effect. 100 scrap en 25 s in de plundermarkt. Vuur is de tegenhanger van de Dweller-lichte units en van gebouwen met licht pantser; het raakt robots en heavy nauwelijks."
+  },
+  {
+    "id": "slavenboeien",
+    "faction": "raiders",
+    "scrapCost": 110,
+    "researchS": 25,
+    "building": "plundermarkt",
+    "prereqTech": [],
+    "effects": [
+      { "stat": "gatherRatePct", "target": "slaaf", "delta": 20 },
+      { "stat": "buildTimePct", "target": "slaaf_bouwer", "delta": -20 }
+    ],
+    "_comment": "startwaarde, geen balans. Slavenboeien: slaven werken harder (de slavendrijver heeft een zweep): +20 procent scrap per rit voor de slaaf en 20 procent snellere bouw voor de slaaf_bouwer. 110 scrap en 25 s in de plundermarkt. De economische tegenhanger van raffinage bij de Dwellers; het vraagt wel slaven, dus roven."
+  },
+  {
+    "id": "afpersing",
+    "faction": "raiders",
+    "scrapCost": 160,
+    "researchS": 35,
+    "building": "plundermarkt",
+    "prereqTech": ["slavenboeien"],
+    "effects": [],
+    "_comment": "startwaarde, geen balans. Afpersing: meer buit en meer tribute. Geen stat-effect; de bonus staat in factions.json: plunder.bonusTech (25 procent meer buit uit gesloopte gebouwen en vrachten) en tribute.bonusTech (50 procent meer tribute per bezet punt). 160 scrap en 35 s in de plundermarkt, achter slavenboeien. Dit is de late-schaal van de Raiders: geen late schaal zonder loot (Spelfundament 4), dus de loot-tech kost iets."
+  },
+  {
+    "id": "wapenslijpen",
+    "faction": "raiders",
+    "scrapCost": 140,
+    "researchS": 30,
+    "building": "plundermarkt",
+    "prereqTech": [],
+    "effects": [
+      { "stat": "damagePct", "target": "plunderaar", "delta": 10 },
+      { "stat": "damagePct", "target": "plunderaar_staal", "delta": 10 },
+      { "stat": "damagePct", "target": "knuppelaar", "delta": 10 },
+      { "stat": "damagePct", "target": "molotovgooier", "delta": 10 },
+      { "stat": "damagePct", "target": "hond", "delta": 10 }
+    ],
+    "_comment": "startwaarde, geen balans. Wapenslijpen: scherpere pijpen en spijkers: +10 procent schade voor plunderaar, plunderaar_staal, knuppelaar, molotovgooier en hond. 140 scrap en 30 s in de plundermarkt. Stapelt met de perks en met Psycho. De slaver en de dealer zijn bewust uitgesloten (geen vechters)."
+  },
+  {
+    "id": "chemie",
+    "faction": "raiders",
+    "scrapCost": 150,
+    "researchS": 35,
+    "building": "chemlab",
+    "prereqTech": [],
+    "effects": [],
+    "_comment": "startwaarde, geen balans. Chemie: ontgrendelt de Chem-dealer (die verwijst ernaar via prereqTech) en opent de chem-onderzoeken psycho en jet. Geen stat-effect. 150 scrap en 35 s in de chemlab. Het SPECIAL-kanaal van de Raiders (Spelfundament 4 en 5): wat de Dwellers trainen, koken de Raiders."
+  },
+  {
+    "id": "psycho",
+    "faction": "raiders",
+    "scrapCost": 130,
+    "researchS": 30,
+    "building": "chemlab",
+    "prereqTech": ["chemie"],
+    "effects": [],
+    "_comment": "startwaarde, geen balans. Psycho: ontgrendelt de chem psycho (factions.json chems requiresTech): schade omhoog met een crash erna. Geen stat-effect (de effecten staan op de chem). 130 scrap en 30 s in de chemlab, achter chemie. Geen verslaving (Spelfundament 6): alleen een crash."
+  },
+  {
+    "id": "jet",
+    "faction": "raiders",
+    "scrapCost": 130,
+    "researchS": 30,
+    "building": "chemlab",
+    "prereqTech": ["chemie"],
+    "effects": [],
+    "_comment": "startwaarde, geen balans. Jet: ontgrendelt de chem jet: snelheid omhoog met een crash erna. 130 scrap en 30 s in de chemlab, achter chemie. Jet is de chem voor een overval of een vlucht; de crash maakt een mislukte overval dodelijk."
+  },
+  {
+    "id": "zuivere_stoffen",
+    "faction": "raiders",
+    "scrapCost": 170,
+    "researchS": 40,
+    "building": "chemlab",
+    "prereqTech": ["psycho", "jet"],
+    "effects": [],
+    "_comment": "startwaarde, geen balans. Zuivere stoffen: verfijnde chems. Geen stat-effect; chems[].refined in factions.json: elke chem werkt 30 procent langer en de crash duurt 30 procent korter. 170 scrap en 40 s in de chemlab, achter psycho en jet. De duurste chem-tech, bedoeld voor een Raider die mid-game nog rijk is."
+  },
+  {
+    "id": "buggy_chassis",
+    "faction": "raiders",
+    "scrapCost": 160,
+    "researchS": 35,
+    "building": "plundermarkt",
+    "prereqTech": [],
+    "effects": [],
+    "_comment": "startwaarde, geen balans. Buggy-chassis: ontgrendelt de autosloperij (buildings.json prereqTech) en de Buggy (loadouts.json prereqTech). Geen stat-effect. 160 scrap en 35 s in de plundermarkt. Het is bewust het eerste onderzoek van de AI: harass met buggies is de vroege agressie vóór de turrets."
+  },
+  {
+    "id": "nitro",
+    "faction": "raiders",
+    "scrapCost": 140,
+    "researchS": 30,
+    "building": "autosloperij",
+    "prereqTech": ["buggy_chassis"],
+    "effects": [
+      { "stat": "speedPct", "target": "buggy", "delta": 15 },
+      { "stat": "rangeM", "target": "buggy", "delta": 1 }
+    ],
+    "_comment": "startwaarde, geen balans. Nitro: de Buggy 15 procent sneller en 1 m meer bereik (10 m, dus nog altijd onder de 12 m van een turret). 140 scrap en 30 s in de autosloperij, achter buggy_chassis."
+  },
+  {
+    "id": "honden_africhten",
+    "faction": "raiders",
+    "scrapCost": 90,
+    "researchS": 20,
+    "building": "plundermarkt",
+    "prereqTech": [],
+    "effects": [],
+    "_comment": "startwaarde, geen balans. Honden africhten: ontgrendelt de hond (die verwijst ernaar via prereqTech). Geen stat-effect. 90 scrap en 20 s in de plundermarkt."
+  },
+  {
+    "id": "hondenvoer",
+    "faction": "raiders",
+    "scrapCost": 80,
+    "researchS": 20,
+    "building": "plundermarkt",
+    "prereqTech": ["honden_africhten"],
+    "effects": [{ "stat": "hpPct", "target": "hond", "delta": 25 }],
+    "_comment": "startwaarde, geen balans. Hondenvoer: honden 25 procent meer hp (50 in plaats van 40). 80 scrap en 20 s in de plundermarkt, achter honden_africhten. Hoopt op het feit dat niemand navraagt wat erin zit."
+  },
+  {
+    "id": "schootsvelden",
+    "faction": "raiders",
+    "scrapCost": 100,
+    "researchS": 25,
+    "building": "plundermarkt",
+    "prereqTech": [],
+    "effects": [],
+    "_comment": "startwaarde, geen balans. Schootsvelden: ontgrendelt het mitrailleursnest (buildings.json prereqTech). Geen stat-effect. 100 scrap en 25 s in de plundermarkt. De Raiders verdedigen zich dus pas na een eigen keuze: tot die tijd is er geen turret en is de aanval de verdediging."
+  }
+]

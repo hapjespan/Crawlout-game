@@ -1,0 +1,3 @@
+#!/bin/sh
+# Blocks commits that stage agent-authored files over 5,000 tokens (bytes/4). See tools/hooks/token-limit.mjs.
+exec node "$(git rev-parse --show-toplevel)/tools/hooks/token-limit.mjs"

@@ -1,13 +1,34 @@
 {
   "name": "@crawlout/replay",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "private": true,
   "type": "module",
   "scripts": {
     "replay": "node --import tsx src/index.ts fixtures",
-    "replay:browsers": "echo 'actief vanaf sprint 2 (Playwright)' && exit 0",
+    "record": "node --import tsx src/record.ts fixtures",
+    "replay:browsers": "node --import tsx src/browsers.ts fixtures",
+    "hud-clicks": "node --import tsx src/hud-clicks.ts",
+    "hud-raiders": "node --import tsx src/hud-raiders.ts",
+    "hud-project": "node --import tsx src/hud-project.ts",
+    "hud-shots": "node --import tsx src/hud-shots.ts",
+    "menu-shots": "node --import tsx src/menu-shots.ts",
+    "menu-smoke": "node --import tsx src/menu-smoke.ts",
+    "playtest": "node --import tsx src/playtest.ts",
+    "survival-playtest": "node --import tsx src/survival-playtest.ts",
+    "balance": "node --import tsx src/balance-report.ts",
+    "fairness": "node --import tsx src/fairness-report.ts",
+    "mirror": "node --import tsx src/mirror-report.ts",
     "test": "vitest run"
   },
-  "dependencies": { "@crawlout/protocol": "workspace:*", "@crawlout/data": "workspace:*", "@crawlout/sim": "workspace:*" },
-  "devDependencies": { "tsx": "^4.0.0" }
+  "dependencies": {
+    "@crawlout/data": "workspace:*",
+    "@crawlout/map": "workspace:*",
+    "@crawlout/protocol": "workspace:*",
+    "@crawlout/sim": "workspace:*"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.0",
+    "esbuild": "0.28.2",
+    "tsx": "^4.0.0"
+  }
 }

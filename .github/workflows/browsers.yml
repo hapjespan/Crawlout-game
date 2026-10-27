@@ -1,0 +1,25 @@
+name: browser-hash-matrix
+on:
+  schedule:
+    - cron: '0 3 * * 1'
+  workflow_dispatch:
+jobs:
+  hashes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Playwright-browsers installeren
+        run: pnpm --filter @crawlout/replay exec playwright install --with-deps chromium firefox webkit
+      - name: Replay-set in Chromium, Firefox en WebKit
+        run: pnpm --filter @crawlout/replay run replay:browsers
+        env:
+          REPLAY_BROWSERS_STRICT: '1'

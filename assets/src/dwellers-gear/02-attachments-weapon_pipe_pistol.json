@@ -1,0 +1,604 @@
+{
+  "attachments": {
+    "dweller_weapon_rifle": {
+      "anchor": "grip",
+      "heightM": [
+        0.15,
+        0.3
+      ],
+      "widthM": [
+        0.04,
+        0.1
+      ],
+      "depthM": [
+        0.95,
+        1.15
+      ],
+      "note": "geweer van de geweerschutter, ongeveer 1,05 m: blauwgrijze kast met gele band, lange loop, kolf, kleine richtkijker met blauwe lens; oorsprong = greep, loop naar +Z",
+      "lod0Triangles": 300,
+      "parts": [
+        {
+          "type": "box",
+          "material": "metal_vault",
+          "size": [
+            0.05,
+            0.09,
+            0.34
+          ],
+          "position": [
+            0,
+            -0.03,
+            0.1
+          ],
+          "chamfer": 0.008
+        },
+        {
+          "type": "cylinder",
+          "material": "metal_vault_dark",
+          "radius": 0.014,
+          "height": 0.5,
+          "segments": 8,
+          "position": [
+            0,
+            0.025,
+            0.25
+          ],
+          "rotation": [
+            90,
+            0,
+            0
+          ],
+          "maxLod": 0
+        },
+        {
+          "type": "cylinder",
+          "material": "metal_vault_dark",
+          "radius": 0.014,
+          "height": 0.5,
+          "segments": 6,
+          "position": [
+            0,
+            0.025,
+            0.25
+          ],
+          "rotation": [
+            90,
+            0,
+            0
+          ],
+          "minLod": 1,
+          "maxLod": 1
+        },
+        {
+          "type": "cylinder",
+          "material": "metal_vault_dark",
+          "radius": 0.014,
+          "height": 0.5,
+          "segments": 4,
+          "position": [
+            0,
+            0.025,
+            0.25
+          ],
+          "rotation": [
+            90,
+            0,
+            0
+          ],
+          "minLod": 2
+        },
+        {
+          "type": "cylinder",
+          "material": "metal_vault_yellow",
+          "radius": 0.019,
+          "height": 0.025,
+          "segments": 8,
+          "position": [
+            0,
+            0.025,
+            0.7
+          ],
+          "rotation": [
+            90,
+            0,
+            0
+          ],
+          "maxLod": 0
+        },
+        {
+          "type": "cylinder",
+          "material": "metal_vault_yellow",
+          "radius": 0.019,
+          "height": 0.025,
+          "segments": 6,
+          "position": [
+            0,
+            0.025,
+            0.7
+          ],
+          "rotation": [
+            90,
+            0,
+            0
+          ],
+          "minLod": 1,
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "material": "metal_vault_light",
+          "size": [
+            0.052,
+            0.058,
+            0.26
+          ],
+          "position": [
+            0,
+            -0.005,
+            0.42
+          ],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "material": "metal_vault",
+          "size": [
+            0.042,
+            0.11,
+            0.3
+          ],
+          "position": [
+            0,
+            -0.07,
+            -0.2
+          ]
+        },
+        {
+          "type": "box",
+          "material": "rubber_grip",
+          "size": [
+            0.048,
+            0.1,
+            0.02
+          ],
+          "position": [
+            0,
+            -0.06,
+            -0.345
+          ],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "rubber_grip",
+          "size": [
+            0.034,
+            0.115,
+            0.04
+          ],
+          "position": [
+            0,
+            -0.115,
+            -0.015
+          ]
+        },
+        {
+          "type": "box",
+          "material": "metal_vault_dark",
+          "size": [
+            0.032,
+            0.12,
+            0.05
+          ],
+          "position": [
+            0,
+            -0.15,
+            0.13
+          ],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "material": "metal_vault_yellow",
+          "size": [
+            0.052,
+            0.02,
+            0.1
+          ],
+          "position": [
+            0,
+            0.0,
+            -0.06
+          ],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "material": "metal_vault_dark",
+          "size": [
+            0.03,
+            0.03,
+            0.05
+          ],
+          "position": [
+            0,
+            0.06,
+            0.1
+          ],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "metal_vault_dark",
+          "size": [
+            0.03,
+            0.03,
+            0.05
+          ],
+          "position": [
+            0,
+            0.06,
+            0.2
+          ],
+          "maxLod": 0
+        },
+        {
+          "type": "cylinder",
+          "material": "metal_vault_dark",
+          "radius": 0.022,
+          "height": 0.2,
+          "segments": 8,
+          "position": [
+            0,
+            0.105,
+            0.09
+          ],
+          "rotation": [
+            90,
+            0,
+            0
+          ],
+          "maxLod": 0
+        },
+        {
+          "type": "cylinder",
+          "material": "metal_vault_dark",
+          "radius": 0.022,
+          "height": 0.2,
+          "segments": 6,
+          "position": [
+            0,
+            0.105,
+            0.09
+          ],
+          "rotation": [
+            90,
+            0,
+            0
+          ],
+          "minLod": 1,
+          "maxLod": 1
+        },
+        {
+          "type": "cylinder",
+          "material": "lens_blue",
+          "radius": 0.017,
+          "height": 0.01,
+          "segments": 8,
+          "position": [
+            0,
+            0.105,
+            0.29
+          ],
+          "rotation": [
+            90,
+            0,
+            0
+          ],
+          "maxLod": 0
+        },
+        {
+          "type": "cylinder",
+          "material": "lens_blue",
+          "radius": 0.017,
+          "height": 0.01,
+          "segments": 6,
+          "position": [
+            0,
+            0.105,
+            0.29
+          ],
+          "rotation": [
+            90,
+            0,
+            0
+          ],
+          "minLod": 1,
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "material": "metal_vault_yellow",
+          "size": [
+            0.03,
+            0.01,
+            0.05
+          ],
+          "position": [
+            0,
+            0.076,
+            0.0
+          ],
+          "maxLod": 0
+        }
+      ]
+    },
+    "dweller_weapon_patrol_rifle": {
+      "anchor": "grip",
+      "heightM": [
+        0.15,
+        0.32
+      ],
+      "widthM": [
+        0.04,
+        0.11
+      ],
+      "depthM": [
+        1.0,
+        1.2
+      ],
+      "note": "patrolgeweer, ongeveer 1,1 m: zwaarder dan het geweer, composiet kast, handguard met voorgreep, draagbalk met optiek, vuurdemper met gele band; oorsprong = greep, loop naar +Z",
+      "lod0Triangles": 300,
+      "parts": [
+        {
+          "type": "box",
+          "material": "composite_metal",
+          "size": [
+            0.055,
+            0.1,
+            0.36
+          ],
+          "position": [
+            0,
+            -0.035,
+            0.1
+          ],
+          "chamfer": 0.01
+        },
+        {
+          "type": "cylinder",
+          "material": "metal_vault_dark",
+          "radius": 0.015,
+          "height": 0.5,
+          "segments": 8,
+          "position": [
+            0,
+            0.025,
+            0.3
+          ],
+          "rotation": [
+            90,
+            0,
+            0
+          ],
+          "maxLod": 0
+        },
+        {
+          "type": "cylinder",
+          "material": "metal_vault_dark",
+          "radius": 0.015,
+          "height": 0.5,
+          "segments": 6,
+          "position": [
+            0,
+            0.025,
+            0.3
+          ],
+          "rotation": [
+            90,
+            0,
+            0
+          ],
+          "minLod": 1,
+          "maxLod": 1
+        },
+        {
+          "type": "cylinder",
+          "material": "metal_vault_dark",
+          "radius": 0.015,
+          "height": 0.5,
+          "segments": 4,
+          "position": [
+            0,
+            0.025,
+            0.3
+          ],
+          "rotation": [
+            90,
+            0,
+            0
+          ],
+          "minLod": 2
+        },
+        {
+          "type": "cylinder",
+          "material": "metal_vault_dark",
+          "radius": 0.021,
+          "height": 0.08,
+          "segments": 8,
+          "position": [
+            0,
+            0.025,
+            0.74
+          ],
+          "rotation": [
+            90,
+            0,
+            0
+          ],
+          "maxLod": 0
+        },
+        {
+          "type": "cylinder",
+          "material": "metal_vault_dark",
+          "radius": 0.021,
+          "height": 0.08,
+          "segments": 6,
+          "position": [
+            0,
+            0.025,
+            0.74
+          ],
+          "rotation": [
+            90,
+            0,
+            0
+          ],
+          "minLod": 1,
+          "maxLod": 1
+        },
+        {
+          "type": "cylinder",
+          "material": "metal_vault_yellow",
+          "radius": 0.023,
+          "height": 0.02,
+          "segments": 8,
+          "position": [
+            0,
+            0.025,
+            0.72
+          ],
+          "rotation": [
+            90,
+            0,
+            0
+          ],
+          "maxLod": 0
+        },
+        {
+          "type": "cylinder",
+          "material": "metal_vault_yellow",
+          "radius": 0.023,
+          "height": 0.02,
+          "segments": 6,
+          "position": [
+            0,
+            0.025,
+            0.72
+          ],
+          "rotation": [
+            90,
+            0,
+            0
+          ],
+          "minLod": 1,
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "material": "metal_vault_light",
+          "size": [
+            0.06,
+            0.07,
+            0.3
+          ],
+          "position": [
+            0,
+            -0.01,
+            0.46
+          ],
+          "chamfer": 0.008,
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "material": "rubber_grip",
+          "size": [
+            0.034,
+            0.08,
+            0.036
+          ],
+          "position": [
+            0,
+            -0.1,
+            0.52
+          ],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "material": "metal_vault",
+          "size": [
+            0.045,
+            0.12,
+            0.28
+          ],
+          "position": [
+            0,
+            -0.075,
+            -0.2
+          ]
+        },
+        {
+          "type": "box",
+          "material": "rubber_grip",
+          "size": [
+            0.05,
+            0.12,
+            0.02
+          ],
+          "position": [
+            0,
+            -0.07,
+            -0.35
+          ],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "rubber_grip",
+          "size": [
+            0.034,
+            0.115,
+            0.04
+          ],
+          "position": [
+            0,
+            -0.115,
+            -0.015
+          ]
+        },
+        {
+          "type": "box",
+          "material": "metal_vault_dark",
+          "size": [
+            0.034,
+            0.13,
+            0.05
+          ],
+          "position": [
+            0,
+            -0.16,
+            0.14
+          ],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "material": "metal_vault_yellow",
+          "size": [
+            0.057,
+            0.02,
+            0.12
+          ],
+          "position": [
+            0,
+            0.065,
+            0.1
+          ],
+          "maxLod": 1
+        }
+      ]
+    }
+  }
+}

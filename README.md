@@ -19,5 +19,6 @@ Browser-RTS in three.js. Werktitel. Zie `CLAUDE.md` voor de werkafspraken en `do
 - `packages/map`: terrein, passability, maps
 - `apps/client`: Vite-app die alles samenbrengt
 - `tools/asset-cli`: GLB naar meshopt, KTX2, LODs, animatietextures, manifest
+- `tools/blender`: headless Blender-stappen vóór de asset-buis (een statisch beeld op een bestaand skelet binden)
 - `tools/replay`: headless replay-runner voor determinisme-tests
 - `docs/`: Spelfundament en fase-0-contracten

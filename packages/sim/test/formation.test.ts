@@ -1,0 +1,136 @@
+import { describe, expect, it } from 'vitest';
+import { createSim } from '../src/index.js';
+import type { Sim, UnitView } from '../src/index.js';
+import { cellCenter, createOpenMap } from '../src/testing.js';
+import { CONFIG, bundle, cmd, emptySim, spawnBlock, testInit } from './helpers.js';
+
+// Group-order spreading (systems/formation.ts): a group Move gives every unit its own slot, workers sent to a node
+// together each get their own spot on the ring around it.
+
+/** ecs/world.ts PHASE_WORK: at work at the node. */
+const PHASE_WORK = 1;
+const R = CONFIG.unitTypes[0]!.radius;
+const SPACING = 2 * R + CONFIG.formation.gap;
+
+function units(sim: Sim, ids: readonly number[]): UnitView[] {
+  return ids.map((id) => sim.getUnit(id)!);
+}
+
+function minPairDistance(us: readonly UnitView[]): number {
+  let m = Infinity;
+  for (let a = 0; a < us.length; a++)
+    for (let b = a + 1; b < us.length; b++)
+      m = Math.min(m, Math.hypot(us[a]!.x - us[b]!.x, us[a]!.y - us[b]!.y));
+  return m;
+}
+
+describe('formation', () => {
+  it('a group Move spreads the units over their own slots and they stand still there', () => {
+    const sim = emptySim(3, createOpenMap(96, 96));
+    const ids = spawnBlock(sim, 0, 10, 10, 16, 4);
+    const t = cellCenter(60, 50);
+    sim.applyBundle(bundle(0, [cmd(0, 0, 'Move', { ids, x: t.x, y: t.y })]));
+    for (let f = 0; f < 800; f++) sim.tick();
+    const end = units(sim, ids);
+    for (const u of end) {
+      expect(u.moving).toBe(false);
+      expect(Math.hypot(u.x - t.x, u.y - t.y)).toBeLessThan(4 * 256);
+    }
+    // nobody on top of another: neighbours about one slot spacing apart, not clumped on one point
+    expect(minPairDistance(end)).toBeGreaterThan(SPACING - 2 * CONFIG.arriveRadius);
+    // no jitter: another 100 ticks change nothing
+    for (let f = 0; f < 100; f++) sim.tick();
+    expect(units(sim, ids).map((u) => [u.x, u.y])).toEqual(end.map((u) => [u.x, u.y]));
+  });
+
+  it('ranks face the move direction: the front of the group arrives in front', () => {
+    const sim = emptySim(3, createOpenMap(96, 96));
+    // a column of 8 walking east: the two leading units end up in the front (east) rank
+    const ids = spawnBlock(sim, 0, 10, 40, 8, 1);
+    const t = cellCenter(60, 44);
+    sim.applyBundle(bundle(0, [cmd(0, 0, 'Move', { ids, x: t.x, y: t.y })]));
+    for (let f = 0; f < 800; f++) sim.tick();
+    const end = units(sim, ids);
+    const xs = end.map((u) => u.x);
+    expect(new Set(end.map((u) => `${u.x >> 6},${u.y >> 6}`)).size).toBe(8);
+    expect(Math.max(...xs) - Math.min(...xs)).toBeGreaterThan(SPACING / 2); // more than one rank
+    expect(end.every((u) => !u.moving)).toBe(true);
+  });
+
+  it('a repeated Move to the same point does not reshuffle a group that is already there', () => {
+    const sim = emptySim(3, createOpenMap(96, 96));
+    const ids = spawnBlock(sim, 0, 10, 10, 12, 4);
+    const t = cellCenter(50, 50);
+    sim.applyBundle(bundle(0, [cmd(0, 0, 'Move', { ids, x: t.x, y: t.y })]));
+    for (let f = 0; f < 700; f++) sim.tick();
+    sim.applyBundle(bundle(700, [cmd(700, 0, 'Move', { ids, x: t.x, y: t.y })]));
+    for (let f = 0; f < 5; f++) sim.tick();
+    const before = units(sim, ids).map((u) => [u.x, u.y]);
+    sim.applyBundle(bundle(705, [cmd(705, 0, 'Move', { ids, x: t.x, y: t.y })]));
+    for (let f = 0; f < 300; f++) sim.tick();
+    const after = units(sim, ids);
+    for (let k = 0; k < ids.length; k++)
+      expect(Math.hypot(after[k]!.x - before[k]![0]!, after[k]!.y - before[k]![1]!)).toBeLessThan(
+        SPACING,
+      );
+  });
+
+  it('workers sent to a node together take their own spots around it', () => {
+    // ring spots are off in data 0.15.0 (gatherRingM 0); here with a ring of 1,25 m
+    const init = testInit(3, createOpenMap(96, 96));
+    const sim = createSim({
+      ...init,
+      config: { ...CONFIG, formation: { ...CONFIG.formation, gatherRing: 320 } },
+    });
+    const node = sim
+      .entityIds()
+      .map((id) => sim.getUnit(id)!)
+      .find((u) => u.kind === 'scrapNode')!;
+    const ids = spawnBlock(sim, 0, (node.x >> 8) - 12, (node.y >> 8) - 2, 5, 5);
+    sim.applyBundle(bundle(0, [cmd(0, 0, 'Gather', { ids, nodeId: node.id })]));
+    let spread = 0;
+    for (let f = 0; f < 400; f++) {
+      sim.tick();
+      const working = units(sim, ids).filter((u) => u.phase === PHASE_WORK);
+      if (working.length === ids.length) {
+        spread = minPairDistance(working);
+        break;
+      }
+    }
+    expect(spread).toBeGreaterThan(SPACING - 2 * CONFIG.arriveRadius);
+  });
+
+  it('a building between a unit and its slot, placed after the order: it re-paths round it, or arrives if the slot is gone', () => {
+    // On the new Rustbelt (data 0.20.0) a unit of the AI's army at the middle point stood 2600 frames against a claim
+    // post that both players had built next to the point after the slots were chosen (and in the balance round a
+    // patrol 110 s against the post at cell 192,191): moving, but no progress.
+    const post = CONFIG.buildingTypes.find((b) => b.footprintW === 1 && b.footprintH === 1)!;
+    const run = (cover: boolean) => {
+      const sim = emptySim(5, createOpenMap(64, 64));
+      const ids = spawnBlock(sim, 0, 20, 31, 2, 1);
+      const t = cellCenter(30, 32);
+      sim.applyBundle(bundle(0, [cmd(0, 0, 'Move', { ids, x: t.x, y: t.y })]));
+      sim.tick();
+      sim.tick();
+      // a wall of posts across the straight line, with a way round it (rows 16 to 40, the map is 64 high)
+      for (let y = 16; y <= 40; y++) sim.spawnBuilding(post.typeId, 0, 25, y);
+      // and, in the second run, posts over the cells of the slots themselves
+      if (cover)
+        for (let y = 28; y <= 36; y++)
+          for (let x = 27; x <= 33; x++) sim.spawnBuilding(post.typeId, 0, x, y);
+      for (let f = 0; f < 1200; f++) sim.tick();
+      return units(sim, ids);
+    };
+    // re-path: round the wall to the slot
+    for (const u of run(false)) {
+      expect(u.moving).toBe(false);
+      expect(u.order).toBe(0);
+      expect(u.x).toBeGreaterThan(26 * 256);
+    }
+    // the slot is gone: arrived, standing still, no walking on the spot
+    for (const u of run(true)) {
+      expect(u.moving).toBe(false);
+      expect(u.order).toBe(0);
+    }
+  });
+});

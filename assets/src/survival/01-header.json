@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "flatMaterials": {
+    "hide_leather": {"color":"#5d4d3e","note":"hide of the klauwbeest, grey-brown (name contains leather)"},
+    "hide_leather_dark": {"color":"#3a2f28","note":"dark hide: paws, snout, tail"},
+    "bone_stone": {"color":"#cdbf9f","note":"horns, claws, teeth; name contains stone: chalky surface"},
+    "skin_leather_green": {"color":"#6c7a56","note":"behemoth skin, sickly green (name contains leather)"},
+    "skin_leather_dark": {"color":"#4a5638","note":"behemoth skin in shade: feet, shoulders, brow"},
+    "canvas_rag": {"color":"#7a6a4c","note":"loincloth rag (name contains canvas: cloth)"},
+    "club_wood": {"color":"#5a4632","note":"club wood; no keyword: the wood fallback of the look recipe"},
+    "rust_metal": {"color":"#7a4b34","note":"rusty metal: club head and studs; name contains rust"},
+    "rust_dark": {"color":"#55372b","note":"dark rust: club band"},
+    "lens_red": {"color":"#d4452f","note":"eyes of the behemoth"},
+    "lens_amber": {"color":"#e0a23a","note":"eyes of the klauwbeest"},
+    "opening": {"color":"#12110f","note":"dark mouth"}
+  },
+  "buildings": {}
+}

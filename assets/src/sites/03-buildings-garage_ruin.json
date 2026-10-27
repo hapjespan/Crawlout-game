@@ -1,0 +1,516 @@
+{
+  "buildings": {
+    "site_garage_ruin": {
+      "parts": [
+        {
+          "type": "prism",
+          "material": "rust_roof",
+          "profile": [
+            [-5.7, 5.2],
+            [5.7, 5.2],
+            [0, 6.2]
+          ],
+          "height": 3.3,
+          "axis": "x",
+          "position": [-5.05, 0, 0]
+        },
+        {
+          "type": "prism",
+          "material": "rust_roof",
+          "profile": [
+            [-5.7, 5.2],
+            [5.7, 5.2],
+            [0, 6.2]
+          ],
+          "height": 2.4,
+          "axis": "x",
+          "position": [1.8, 0, 0]
+        },
+        {
+          "type": "tube",
+          "material": "rust_dark",
+          "points": [
+            [0, 0, 0],
+            [0, 1, 5.5],
+            [0, 0, 11]
+          ],
+          "radius": 0.08,
+          "sides": 3,
+          "position": [-3, 5.2, -5.5],
+          "maxLod": 1
+        },
+        {
+          "type": "tube",
+          "material": "rust_dark",
+          "points": [
+            [0, 0, 0],
+            [0, 1, 5.5],
+            [0, 0, 11]
+          ],
+          "radius": 0.08,
+          "sides": 3,
+          "position": [-1.9, 5.2, -5.5],
+          "maxLod": 1
+        },
+        {
+          "type": "tube",
+          "material": "rust_dark",
+          "points": [
+            [0, 0, 0],
+            [0, 1, 5.5],
+            [0, 0, 11]
+          ],
+          "radius": 0.08,
+          "sides": 3,
+          "position": [-0.8, 5.2, -5.5],
+          "maxLod": 1
+        },
+        {
+          "type": "tube",
+          "material": "rust_dark",
+          "points": [
+            [0, 0, 0],
+            [0, 1, 5.5],
+            [0, 0, 11]
+          ],
+          "radius": 0.08,
+          "sides": 3,
+          "position": [0.3, 5.2, -5.5],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "material": "rust_roof",
+          "size": [3, 0.12, 6],
+          "position": [-1.576, 1.11, -1.802],
+          "rotation": [0, 5, 24],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "material": "rust_roof",
+          "size": [2.2, 0.12, 4],
+          "position": [-2.188, 1.127, 2.615],
+          "rotation": [-18, 20, 6],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "concrete_ruin",
+          "size": [3.7, 3.2, 0.25],
+          "open": true,
+          "position": [4.65, 0, 0.625]
+        },
+        {
+          "type": "box",
+          "material": "concrete_ruin",
+          "size": [0.25, 3.2, 5],
+          "open": true,
+          "position": [6.375, 0, 3],
+          "maxLod": 1
+        },
+        {
+          "type": "prism",
+          "material": "concrete_ruin",
+          "profile": [
+            [2.8, 0],
+            [6.5, 0],
+            [6.5, 3.2],
+            [5.7, 3.2],
+            [5.4, 1.9],
+            [4.4, 2.5],
+            [3.9, 1],
+            [2.8, 1.6]
+          ],
+          "height": 0.25,
+          "axis": "z",
+          "position": [0, 0, 5.375]
+        },
+        {
+          "type": "box",
+          "material": "opening",
+          "size": [1, 2.2, 0.06],
+          "position": [5.8, 0, 5.53],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "material": "roof_tar",
+          "size": [3.8, 0.2, 2.25],
+          "position": [4.7, 3.2, 1.475]
+        },
+        {
+          "type": "box",
+          "material": "roof_tar",
+          "size": [3.8, 0.2, 3.05],
+          "position": [4.65, 2.597, 3.912],
+          "rotation": [24, 0, 0],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "material": "rust_dark",
+          "size": [1.8, 0.6, 4],
+          "position": [4.658, 0.597, -2.791],
+          "rotation": [0, 12, 7],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "material": "rust_metal",
+          "size": [1.6, 0.55, 2],
+          "position": [4.608, 1.193, -2.678],
+          "rotation": [0, 12, 7],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "material": "rust_dark",
+          "size": [0.6, 0.12, 1.2],
+          "position": [3.414, 0.093, -0.712],
+          "rotation": [0, 40, 18],
+          "maxLod": 1
+        },
+        {
+          "type": "cylinder",
+          "material": "rubber",
+          "radius": 0.4,
+          "height": 0.2,
+          "segments": 8,
+          "position": [6, 0, -4.6],
+          "maxLod": 1
+        },
+        {
+          "type": "cylinder",
+          "material": "rubber",
+          "radius": 0.4,
+          "height": 0.2,
+          "segments": 8,
+          "position": [6, 0.2, -4.6],
+          "maxLod": 0
+        },
+        {
+          "type": "cylinder",
+          "material": "rubber",
+          "radius": 0.4,
+          "height": 0.2,
+          "segments": 8,
+          "position": [6, 0.4, -4.6],
+          "maxLod": 0
+        },
+        {
+          "type": "cylinder",
+          "material": "rust_dark",
+          "radius": 0.3,
+          "height": 0.9,
+          "segments": 8,
+          "position": [6, 0, -3.4],
+          "maxLod": 0
+        },
+        {
+          "type": "cylinder",
+          "material": "rust_metal",
+          "radius": 0.3,
+          "height": 0.9,
+          "segments": 8,
+          "position": [6, 0, -2.7],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "concrete_dark",
+          "size": [1.436, 0.565, 1.226],
+          "position": [0.906, 0.299, -3.145],
+          "rotation": [-11.102, 2.924, -14.885]
+        },
+        {
+          "type": "box",
+          "material": "rust_dark",
+          "size": [0.839, 0.483, 0.846],
+          "position": [2.152, 0.427, -4.296],
+          "rotation": [-6.593, 112.438, 24.353],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "material": "concrete_ruin",
+          "size": [0.866, 0.466, 0.828],
+          "position": [0.981, 0.472, -4.07],
+          "rotation": [-15.637, 148.63, -6.016],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "material": "concrete_dark",
+          "size": [0.616, 0.402, 0.529],
+          "position": [2.429, 0.19, -3.772],
+          "rotation": [18.332, 43.009, -10.823],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "material": "rust_dark",
+          "size": [0.838, 0.45, 0.455],
+          "position": [0.74, 0.094, -4.766],
+          "rotation": [3.006, 96.902, 6.751],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "concrete_ruin",
+          "size": [0.861, 0.427, 0.321],
+          "position": [1.946, 0.338, -3.709],
+          "rotation": [-23.828, 74.202, 23.432],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "concrete_dark",
+          "size": [0.944, 0.47, 0.639],
+          "position": [-0.428, 0.24, -4.136],
+          "rotation": [21.859, 124.142, 12.782],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "rust_dark",
+          "size": [0.508, 0.278, 0.422],
+          "position": [1.753, 0.16, -4.602],
+          "rotation": [21.829, 114.455, -2.806],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "concrete_ruin",
+          "size": [0.553, 0.296, 0.315],
+          "position": [1.191, 0.123, -4.621],
+          "rotation": [-7.277, 39.486, 18.315],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "concrete_dark",
+          "size": [0.476, 0.254, 0.427],
+          "position": [0.934, 0.162, -4.586],
+          "rotation": [-6.71, 144.566, -22.751],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "rust_dark",
+          "size": [0.564, 0.338, 0.614],
+          "position": [2.019, 0.197, -4.47],
+          "rotation": [18.963, 152.831, -14.345],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "concrete_ruin",
+          "size": [0.934, 0.401, 0.708],
+          "position": [-0.578, 0.169, -3.583],
+          "rotation": [-8.458, 126.097, -14.639],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "concrete_dark",
+          "size": [0.332, 0.376, 0.579],
+          "position": [-1.555, 0.264, 2.704],
+          "rotation": [-12.476, 33.964, -15.193],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "material": "rust_dark",
+          "size": [0.296, 0.308, 0.399],
+          "position": [-3.365, 0.11, 0.568],
+          "rotation": [-19.597, 39.204, 16.245],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "material": "concrete_dark",
+          "size": [0.353, 0.304, 0.683],
+          "position": [-0.83, 0.228, 3.734],
+          "rotation": [-22.611, 42.209, 9.071],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "rust_dark",
+          "size": [0.689, 0.336, 0.357],
+          "position": [-1.685, 0.241, 3.403],
+          "rotation": [-3.68, 92.817, -22.398],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "concrete_dark",
+          "size": [0.565, 0.292, 0.263],
+          "position": [1.082, 0.081, 2.135],
+          "rotation": [-13.217, 45.604, -9.307],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "rust_dark",
+          "size": [0.642, 0.223, 0.376],
+          "position": [-0.674, 0.314, 2.528],
+          "rotation": [-8.435, 131.426, 3.696],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "concrete_dark",
+          "size": [0.555, 0.313, 0.351],
+          "position": [0.276, 0.059, 2.469],
+          "rotation": [8.949, 81.665, -2.002],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "rust_dark",
+          "size": [0.358, 0.424, 0.699],
+          "position": [-2.386, 0.106, 0.292],
+          "rotation": [-14.085, 123.386, 2.022],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "concrete_dark",
+          "size": [0.53, 0.459, 0.532],
+          "position": [0.761, 0.128, 1.866],
+          "rotation": [5.85, 56.619, 15.105],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "rust_dark",
+          "size": [0.644, 0.393, 0.483],
+          "position": [-1.821, 0.196, 1.45],
+          "rotation": [-0.418, 115.772, -8.734],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "concrete_dark",
+          "size": [0.537, 0.211, 0.226],
+          "position": [4.901, 0.228, 3.608],
+          "rotation": [10.922, 40.177, -23.886],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "material": "concrete_ruin",
+          "size": [0.505, 0.191, 0.486],
+          "position": [4.502, 0.218, 3.149],
+          "rotation": [-9.768, 133.764, 23.453],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "concrete_dark",
+          "size": [0.593, 0.237, 0.338],
+          "position": [4.758, 0.195, 3.102],
+          "rotation": [-22.415, 158.052, 18.339],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "concrete_ruin",
+          "size": [0.452, 0.35, 0.384],
+          "position": [6.029, 0.118, 2.972],
+          "rotation": [20.639, 0.926, 5.763],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "concrete_dark",
+          "size": [0.317, 0.268, 0.337],
+          "position": [5.546, 0.196, 2.992],
+          "rotation": [9.523, 15.757, -19.709],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "concrete_ruin",
+          "size": [0.305, 0.237, 0.311],
+          "position": [5.839, 0.147, 3.489],
+          "rotation": [-23.811, 138.188, -10.996],
+          "maxLod": 0
+        }
+      ]
+    },
+    "site_gas_station_restored": {
+      "footprint": {
+        "w": 15,
+        "h": 11
+      },
+      "lod0Triangles": 2400,
+      "heightM": [5, 7],
+      "note": "Tankstation, hersteld: luifel van 14,6 x 10 m op vier pilaren van 5 m met teamfascia rondom, twee pompeilanden met elk twee pompen, lampen onder de luifel, kleine kiosk (deur 1,0 x 2,2 m) met teamband onder het +x-uiteinde",
+      "parts": [
+        {
+          "type": "box",
+          "material": "metal_light",
+          "size": [0.55, 4.8, 0.55],
+          "open": true,
+          "position": [-5.2, 0, -3.2]
+        },
+        {
+          "type": "box",
+          "material": "metal_hazard",
+          "size": [0.72, 0.6, 0.72],
+          "open": true,
+          "position": [-5.2, 0, -3.2],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "material": "metal_light",
+          "size": [0.55, 4.8, 0.55],
+          "open": true,
+          "position": [-5.2, 0, 3.2]
+        },
+        {
+          "type": "box",
+          "material": "metal_hazard",
+          "size": [0.72, 0.6, 0.72],
+          "open": true,
+          "position": [-5.2, 0, 3.2],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "material": "metal_light",
+          "size": [0.55, 4.8, 0.55],
+          "open": true,
+          "position": [5.2, 0, -3.2]
+        },
+        {
+          "type": "box",
+          "material": "metal_hazard",
+          "size": [0.72, 0.6, 0.72],
+          "open": true,
+          "position": [5.2, 0, -3.2],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "material": "metal_light",
+          "size": [0.55, 4.8, 0.55],
+          "open": true,
+          "position": [5.2, 0, 3.2]
+        },
+        {
+          "type": "box",
+          "material": "metal_hazard",
+          "size": [0.72, 0.6, 0.72],
+          "open": true,
+          "position": [5.2, 0, 3.2],
+          "maxLod": 1
+        }
+      ]
+    }
+  }
+}

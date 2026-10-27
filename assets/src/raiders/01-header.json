@@ -1,0 +1,118 @@
+{
+  "version": 1,
+  "flatMaterials": {
+    "scrap_metal": {
+      "color": "#857b6e",
+      "note": "scrap-metal patchwork, grey-brown painted plate; name contains metal (render: painted metal)"
+    },
+    "scrap_metal_dark": {
+      "color": "#4a443e",
+      "note": "dark scrap plate, chains, spikes"
+    },
+    "scrap_metal_black": {
+      "color": "#2b2927",
+      "note": "Raider black plate (bumpers, trim bands)"
+    },
+    "scrap_metal_red": {
+      "color": "#8c3228",
+      "note": "Raider red plate, faded blood-red paint"
+    },
+    "scrap_metal_hazard": {
+      "color": "#a8872a",
+      "note": "hazard-yellow patches (chemlab, garage)"
+    },
+    "rust_metal": {
+      "color": "#7a4b34",
+      "note": "rusty plate; name contains rust"
+    },
+    "rust_dark": {
+      "color": "#55372b",
+      "note": "dark rust (flares, hubs)"
+    },
+    "rust_roof": {
+      "color": "#6f4636",
+      "note": "rusty corrugated roof sheet; name contains rust"
+    },
+    "tyre_rubber": {
+      "color": "#2c2b29",
+      "note": "tyres (render: leather-like dark matte)"
+    },
+    "canvas_tent": {
+      "color": "#8f8264",
+      "note": "dusty canvas (name contains canvas: cloth)"
+    },
+    "canvas_dark": {
+      "color": "#4a4338",
+      "note": "dirty canvas, rope, sandbags in shade"
+    },
+    "canvas_red": {
+      "color": "#7d2f26",
+      "note": "red canvas banners and stall awnings"
+    },
+    "canvas_black": {
+      "color": "#2f2c29",
+      "note": "black canvas awnings"
+    },
+    "sandbag_canvas": {
+      "color": "#8a7a58",
+      "note": "sandbags"
+    },
+    "wood_plank": {
+      "color": "#6e5a44",
+      "note": "weathered planks, handles; no keyword: the wood fallback of the look recipe"
+    },
+    "wood_dark": {
+      "color": "#4a3a2c",
+      "note": "dark wood, grips and posts"
+    },
+    "leather_dark": {
+      "color": "#3d2f24",
+      "note": "dark leather straps, hose (name contains leather)"
+    },
+    "leather_tan": {
+      "color": "#6a5240",
+      "note": "hound coat (name contains leather)"
+    },
+    "bone_stone": {
+      "color": "#cdbf9f",
+      "note": "bone of the skulls; name contains stone: chalky concrete surface"
+    },
+    "concrete": {
+      "color": "#7c776d",
+      "note": "bunker walls and slabs"
+    },
+    "concrete_soot": {
+      "color": "#46423e",
+      "note": "scorched concrete (chemlab)"
+    },
+    "tank_toxic": {
+      "color": "#6d8a3c",
+      "note": "toxic green drums and tanks (name contains tank: painted metal)"
+    },
+    "tank_yellow": {
+      "color": "#b39a2e",
+      "note": "yellow bands, drums and nozzles"
+    },
+    "lens_amber": {
+      "color": "#e0a23a",
+      "note": "fire, lamps, windows"
+    },
+    "lens_red": {
+      "color": "#d4452f",
+      "note": "eyes, beacon tips"
+    },
+    "lens_glass": {
+      "color": "#4f7a5a",
+      "note": "glass: bottles, flasks, lab windows (name contains lens)"
+    },
+    "opening": {
+      "color": "#12110f",
+      "note": "dark openings: doors, eye sockets, tyre centres"
+    },
+    "team_trim": {
+      "color": "#e7e7e7",
+      "note": "masker voor de spelerskleur; render herkent de naam (bevat team)"
+    }
+  },
+  "units": {}
+}

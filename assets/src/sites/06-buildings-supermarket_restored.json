@@ -1,0 +1,564 @@
+{
+  "buildings": {
+    "site_supermarket_restored": {
+      "parts": [
+        {
+          "type": "box",
+          "material": "metal_dark",
+          "size": [0.14, 2.9, 0.22],
+          "position": [4.75, 0.7, 6.33],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "material": "metal_dark",
+          "size": [0.14, 2.9, 0.22],
+          "position": [7.125, 0.7, 6.33],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "material": "metal_dark",
+          "size": [0.14, 2.9, 0.22],
+          "position": [9.5, 0.7, 6.33],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "material": "metal_dark",
+          "size": [19, 0.15, 0.22],
+          "position": [0, 3.45, 6.33],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "material": "opening",
+          "size": [2.8, 2.4, 0.08],
+          "position": [0, 0.7, 6.42]
+        },
+        {
+          "type": "box",
+          "material": "metal_dark",
+          "size": [0.15, 2.55, 0.18],
+          "position": [-1.475, 0.7, 6.39],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "material": "metal_dark",
+          "size": [0.15, 2.55, 0.18],
+          "position": [1.475, 0.7, 6.39],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "material": "metal_dark",
+          "size": [3.1, 0.15, 0.18],
+          "position": [0, 3.1, 6.39],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "material": "metal_light",
+          "size": [20, 0.25, 1],
+          "position": [0, 3.45, 7]
+        },
+        {
+          "type": "box",
+          "material": "team_trim",
+          "size": [20.2, 0.55, 0.12],
+          "position": [0, 3.3, 7.48]
+        },
+        {
+          "type": "box",
+          "material": "metal_dark",
+          "size": [0.2, 3.45, 0.2],
+          "position": [-9.9, 0, 7.4],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "material": "metal_dark",
+          "size": [0.2, 3.45, 0.2],
+          "position": [-3.3, 0, 7.4],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "material": "metal_dark",
+          "size": [0.2, 3.45, 0.2],
+          "position": [3.3, 0, 7.4],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "material": "metal_dark",
+          "size": [0.2, 3.45, 0.2],
+          "position": [9.9, 0, 7.4],
+          "maxLod": 1
+        },
+        {
+          "type": "cylinder",
+          "material": "metal_hazard",
+          "radius": 0.12,
+          "height": 0.9,
+          "segments": 6,
+          "position": [-4.2, 0, 7.35],
+          "maxLod": 0
+        },
+        {
+          "type": "cylinder",
+          "material": "metal_hazard",
+          "radius": 0.12,
+          "height": 0.9,
+          "segments": 6,
+          "position": [-1.4, 0, 7.35],
+          "maxLod": 0
+        },
+        {
+          "type": "cylinder",
+          "material": "metal_hazard",
+          "radius": 0.12,
+          "height": 0.9,
+          "segments": 6,
+          "position": [1.4, 0, 7.35],
+          "maxLod": 0
+        },
+        {
+          "type": "cylinder",
+          "material": "metal_hazard",
+          "radius": 0.12,
+          "height": 0.9,
+          "segments": 6,
+          "position": [4.2, 0, 7.35],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "roof_tar",
+          "size": [25, 0.3, 12],
+          "position": [0, 5, 0.5]
+        },
+        {
+          "type": "box",
+          "material": "concrete",
+          "size": [25, 0.6, 0.3],
+          "position": [0, 5.3, -5.35],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "material": "concrete",
+          "size": [25, 0.6, 0.3],
+          "position": [0, 5.3, 6.35],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "material": "concrete",
+          "size": [0.3, 0.6, 11.4],
+          "position": [-12.35, 5.3, 0.5],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "material": "concrete",
+          "size": [0.3, 0.6, 11.4],
+          "position": [12.35, 5.3, 0.5],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "material": "metal_light",
+          "size": [2.2, 0.9, 1.5],
+          "position": [-7.5, 5.3, -1.5],
+          "maxLod": 1
+        },
+        {
+          "type": "cylinder",
+          "material": "metal_dark",
+          "radius": 0.45,
+          "height": 0.1,
+          "segments": 8,
+          "position": [-7.6, 6.2, -1.5],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "metal_light",
+          "size": [2.2, 0.9, 1.5],
+          "position": [-2.5, 5.3, -3],
+          "maxLod": 1
+        },
+        {
+          "type": "cylinder",
+          "material": "metal_dark",
+          "radius": 0.45,
+          "height": 0.1,
+          "segments": 8,
+          "position": [-2.6, 6.2, -3],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "metal_light",
+          "size": [2.2, 0.9, 1.5],
+          "position": [6, 5.3, -1.8],
+          "maxLod": 1
+        },
+        {
+          "type": "cylinder",
+          "material": "metal_dark",
+          "radius": 0.45,
+          "height": 0.1,
+          "segments": 8,
+          "position": [5.9, 6.2, -1.8],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "lens_glass",
+          "size": [3, 0.3, 1.8],
+          "position": [-7.5, 5.3, 2.9],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "material": "lens_glass",
+          "size": [3, 0.3, 1.8],
+          "position": [0, 5.3, 2.9],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "material": "lens_glass",
+          "size": [3, 0.3, 1.8],
+          "position": [7.5, 5.3, 2.9],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "material": "metal_dark",
+          "size": [0.24, 1.55, 0.24],
+          "position": [-6.2, 5.9, 6.3]
+        },
+        {
+          "type": "box",
+          "material": "metal_dark",
+          "size": [0.24, 1.55, 0.24],
+          "position": [6.2, 5.9, 6.3]
+        },
+        {
+          "type": "box",
+          "material": "metal_dark",
+          "size": [12.64, 0.22, 0.24],
+          "position": [0, 7.3, 6.3],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "material": "team_trim",
+          "size": [12.16, 1.15, 0.12],
+          "position": [0, 6.1, 6.3]
+        },
+        {
+          "type": "tube",
+          "material": "metal_dark",
+          "points": [
+            [0, 0, 0],
+            [0, -1.1, -1.5]
+          ],
+          "radius": 0.05,
+          "sides": 3,
+          "position": [-6.2, 7, 6.3],
+          "maxLod": 0
+        },
+        {
+          "type": "tube",
+          "material": "metal_dark",
+          "points": [
+            [0, 0, 0],
+            [0, -1.1, -1.5]
+          ],
+          "radius": 0.05,
+          "sides": 3,
+          "position": [6.2, 7, 6.3],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "concrete",
+          "size": [6.4, 1.2, 2],
+          "open": true,
+          "position": [8, 0, -6.5]
+        },
+        {
+          "type": "box",
+          "material": "rubber",
+          "size": [0.5, 0.5, 0.08],
+          "position": [5.45, 0.4, -7.54],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "material": "rubber",
+          "size": [0.5, 0.5, 0.08],
+          "position": [10.55, 0.4, -7.54],
+          "maxLod": 1
+        },
+        {
+          "type": "prism",
+          "material": "concrete",
+          "profile": [
+            [0, 0],
+            [1.3, 0],
+            [0, 1.2]
+          ],
+          "height": 1.8,
+          "axis": "z",
+          "position": [11.2, 0, -6.55],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "material": "metal_light",
+          "size": [3.4, 3, 0.1],
+          "position": [8, 1.2, -5.55]
+        },
+        {
+          "type": "box",
+          "material": "metal_dark",
+          "size": [3.4, 0.05, 0.04],
+          "position": [8, 1.5, -5.62],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "metal_dark",
+          "size": [3.4, 0.05, 0.04],
+          "position": [8, 2.1, -5.62],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "metal_dark",
+          "size": [3.4, 0.05, 0.04],
+          "position": [8, 2.7, -5.62],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "metal_dark",
+          "size": [3.4, 0.05, 0.04],
+          "position": [8, 3.3, -5.62],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "metal_dark",
+          "size": [3.4, 0.05, 0.04],
+          "position": [8, 3.9, -5.62],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "metal_light",
+          "size": [7.2, 0.2, 2],
+          "position": [8, 4.6, -6.5],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "material": "metal_dark",
+          "size": [0.2, 3.4, 0.2],
+          "position": [4.8, 1.2, -7.35],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "material": "metal_dark",
+          "size": [0.2, 3.4, 0.2],
+          "position": [11.2, 1.2, -7.35],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "material": "opening",
+          "size": [1.2, 2.2, 0.1],
+          "position": [-4.5, 0.35, -5.53],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "material": "metal_dark",
+          "size": [1.5, 2.35, 0.06],
+          "position": [-4.5, 0.35, -5.57],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "material": "concrete_dark",
+          "size": [0.5, 4.65, 0.12],
+          "position": [-10, 0.35, -5.56],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "concrete_dark",
+          "size": [0.5, 4.65, 0.12],
+          "position": [-5, 0.35, -5.56],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "concrete_dark",
+          "size": [0.5, 4.65, 0.12],
+          "position": [0, 0.35, -5.56],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "concrete_dark",
+          "size": [0.5, 4.65, 0.12],
+          "position": [5, 0.35, -5.56],
+          "maxLod": 0
+        },
+        {
+          "type": "box",
+          "material": "concrete_dark",
+          "size": [0.5, 4.65, 0.12],
+          "position": [10, 0.35, -5.56],
+          "maxLod": 0
+        }
+      ]
+    },
+    "site_supermarket_ruin": {
+      "footprint": {
+        "w": 25,
+        "h": 15
+      },
+      "lod0Triangles": 2400,
+      "heightM": [5.5, 8],
+      "teamless": true,
+      "note": "Supermarkt, ruine: grote doos van 5 m met parapet, een ingestorte achterhoek, bijna geen glas meer in de winkelpui, twee dakpanelen weg of naar binnen gevallen, doorhangende luifel, verbogen reclameframe, puin; laadperron achter. Roest, geen teamkleur",
+      "parts": [
+        {
+          "type": "box",
+          "material": "concrete_dark",
+          "size": [25, 0.35, 12],
+          "open": true,
+          "position": [0, 0, 0.5],
+          "maxLod": 1
+        },
+        {
+          "type": "prism",
+          "material": "concrete_ruin",
+          "profile": [
+            [-12.5, 0.35],
+            [12.5, 0.35],
+            [12.5, 5],
+            [-5.5, 5],
+            [-6.3, 3.9],
+            [-7.6, 4.4],
+            [-8.4, 2.7],
+            [-9.8, 3.2],
+            [-10.6, 1.6],
+            [-12.5, 2]
+          ],
+          "height": 0.35,
+          "axis": "z",
+          "position": [0, 0, -5.325]
+        },
+        {
+          "type": "prism",
+          "material": "concrete_ruin",
+          "profile": [
+            [-5.15, 0.35],
+            [6.15, 0.35],
+            [6.15, 5],
+            [0.5, 5],
+            [-0.4, 3.6],
+            [-1.6, 4],
+            [-2.4, 2.2],
+            [-4, 2.7],
+            [-5.15, 1.2]
+          ],
+          "height": 0.35,
+          "axis": "x",
+          "position": [-12.325, 0, 0]
+        },
+        {
+          "type": "box",
+          "material": "concrete_ruin",
+          "size": [0.35, 4.65, 11.3],
+          "open": true,
+          "position": [12.325, 0.35, 0.5]
+        },
+        {
+          "type": "box",
+          "material": "concrete_ruin",
+          "size": [3, 4.65, 0.35],
+          "open": true,
+          "position": [-11, 0.35, 6.325]
+        },
+        {
+          "type": "box",
+          "material": "concrete_ruin",
+          "size": [3, 4.65, 0.35],
+          "open": true,
+          "position": [11, 0.35, 6.325]
+        },
+        {
+          "type": "box",
+          "material": "concrete_ruin",
+          "size": [11, 1.4, 0.35],
+          "open": true,
+          "position": [-4, 3.6, 6.325]
+        },
+        {
+          "type": "box",
+          "material": "concrete_ruin",
+          "size": [3.7, 0.8, 0.35],
+          "open": true,
+          "position": [3.35, 4.2, 6.325],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "material": "concrete_ruin",
+          "size": [4.2, 1, 0.35],
+          "position": [7.179, 3.515, 6.325],
+          "rotation": [0, 0, -14],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "material": "concrete_dark",
+          "size": [19, 0.25, 0.45],
+          "position": [0, 0.35, 6.325],
+          "maxLod": 1
+        },
+        {
+          "type": "box",
+          "material": "opening",
+          "size": [19, 3, 0.1],
+          "position": [0, 0.6, 6.05]
+        },
+        {
+          "type": "prism",
+          "material": "lens_glass",
+          "profile": [
+            [-9.3, 0.7],
+            [-7.7, 1],
+            [-8.02, 1.9],
+            [-8.98, 1.72]
+          ],
+          "height": 0.05,
+          "axis": "z",
+          "position": [0, 0, 6.32],
+          "maxLod": 1
+        }
+      ]
+    }
+  }
+}

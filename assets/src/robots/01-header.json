@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "flatMaterials": {
+    "metal": {"color":"#8a867c","note":"painted metal (body panels); the render look reads the surface kind from the name"},
+    "metal_dark": {"color":"#56534c","note":"painted metal, dark (frames, housings, joints)"},
+    "metal_light": {"color":"#a29d8e","note":"painted metal, light (armour plates, domes)"},
+    "metal_hazard": {"color":"#b89a2e","note":"painted metal, hazard yellow (bumpers, door feet)"},
+    "rust_metal": {"color":"#7a4b34","note":"rusty metal (undercarriage, wheels, exhaust, roof sheets); name contains rust"},
+    "rust_dark": {"color":"#55372b","note":"rusty metal, dark (flares, hooks)"},
+    "rust_roof": {"color":"#6f4636","note":"rusty corrugated roof sheet; name contains rust"},
+    "rubber": {"color":"#2e2d2b","note":"tracks, cables, vents (render: leather-like dark matte)"},
+    "concrete": {"color":"#9a958a","note":"plinth, dock, chimney"},
+    "team_trim": {"color":"#e7e7e7","note":"masker voor de spelerskleur; render herkent de naam (bevat team)"},
+    "lens": {"color":"#3fd0e0","note":"lens or laser barrel; flat colour, no emissive (the brief asks for no PBR)"},
+    "lens_glass": {"color":"#417077","note":"skylights: dark glass (name contains lens)"},
+    "lens_red": {"color":"#d4452f","note":"sensor visor of the guard, antenna tips"},
+    "lens_amber": {"color":"#e0a23a","note":"warning lights, windows, glow rings"},
+    "opening": {"color":"#12110f","note":"dark door opening of the factory hall"}
+  }
+}

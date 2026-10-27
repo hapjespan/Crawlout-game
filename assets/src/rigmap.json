@@ -1,0 +1,236 @@
+{
+  "_comment": "Conform-config per bron-asset (sleutel = asset-id: bestandsnaam in kleine letters). rigs.<naam>.bones koppelt bronbones aan Mixamo-namen (hoofdletterongevoelig); bones die niet in de map staan (vingers, tenen, *_leaf, root) worden gesnoeid: hun gewichten gaan naar de dichtstbijzijnde behouden voorouder en daarna genormaliseerd, hun animatiekanalen vervallen. assets.<id>: rig (naam uit rigs), lod0Triangles (reduceer een te zware bron naar dit aantal; het werkpunt voor karakters is 20.000, plafond 24.000 uit budgets.ts), scale (uniforme schaal die in de vertices wordt gebakken, bijvoorbeeld 0.01 voor bronnen in centimeters). De bone-volgorde van de skin blijft die van de bron (minus gesnoeide bones).",
+  "rigs": {
+    "quaternius-ual": {
+      "bones": {
+        "DEF-hips": "Hips",
+        "DEF-spine.001": "Spine",
+        "DEF-spine.002": "Spine1",
+        "DEF-spine.003": "Spine2",
+        "DEF-neck": "Neck",
+        "DEF-head": "Head",
+        "DEF-shoulder.L": "LeftShoulder",
+        "DEF-upper_arm.L": "LeftArm",
+        "DEF-forearm.L": "LeftForeArm",
+        "DEF-hand.L": "LeftHand",
+        "DEF-thigh.L": "LeftUpLeg",
+        "DEF-shin.L": "LeftLeg",
+        "DEF-foot.L": "LeftFoot",
+        "DEF-toe.L": "LeftToeBase",
+        "DEF-shoulder.R": "RightShoulder",
+        "DEF-upper_arm.R": "RightArm",
+        "DEF-forearm.R": "RightForeArm",
+        "DEF-hand.R": "RightHand",
+        "DEF-thigh.R": "RightUpLeg",
+        "DEF-shin.R": "RightLeg",
+        "DEF-foot.R": "RightFoot",
+        "DEF-toe.R": "RightToeBase",
+        "pelvis": "Hips",
+        "spine_01": "Spine",
+        "spine_02": "Spine1",
+        "spine_03": "Spine2",
+        "neck_01": "Neck",
+        "head": "Head",
+        "clavicle_l": "LeftShoulder",
+        "upperarm_l": "LeftArm",
+        "lowerarm_l": "LeftForeArm",
+        "hand_l": "LeftHand",
+        "thigh_l": "LeftUpLeg",
+        "calf_l": "LeftLeg",
+        "foot_l": "LeftFoot",
+        "clavicle_r": "RightShoulder",
+        "upperarm_r": "RightArm",
+        "lowerarm_r": "RightForeArm",
+        "hand_r": "RightHand",
+        "thigh_r": "RightUpLeg",
+        "calf_r": "RightLeg",
+        "foot_r": "RightFoot"
+      }
+    }
+  },
+  "assets": {
+    "dweller_body_human": {
+      "rig": "quaternius-ual",
+      "lod0Triangles": 20000,
+      "derive": [
+        {
+          "id": "raider_body_human",
+          "colors": { "M_Main": "#8f3a2c", "M_Joints": "#2b2523" },
+          "palette": {
+            "jacket": "#5e3d28",
+            "patchTop": "#8f3a2c",
+            "patchLeg": "#3a312c",
+            "belt": "#1d1917",
+            "trousers": "#2e2621",
+            "boots": "#1b1715",
+            "skin": "#9a6a52"
+          }
+        },
+        {
+          "id": "raider_body_slave",
+          "colors": { "M_Main": "#b9ad92", "M_Joints": "#6b5e4d" },
+          "palette": {
+            "jacket": "#b6aa8f",
+            "patchTop": "#9c8f78",
+            "patchLeg": "#a09580",
+            "belt": "#7a6b52",
+            "trousers": "#a89d84",
+            "boots": "#85765f",
+            "skin": "#a07a62",
+            "teamZone": "band",
+            "farTeam": 0
+          }
+        },
+        {
+          "id": "survival_ghoul",
+          "scale": 0.95,
+          "colors": { "M_Main": "#5d6652", "M_Joints": "#2f342a" },
+          "palette": {
+            "jacket": "#5d6652",
+            "patchTop": "#4b5342",
+            "patchLeg": "#3b4034",
+            "belt": "#292a23",
+            "trousers": "#434839",
+            "boots": "#2a2b24",
+            "skin": "#7f8c70",
+            "teamZone": "band",
+            "farTeam": 0
+          }
+        },
+        {
+          "id": "survival_ghoul_runner",
+          "scale": 0.9,
+          "colors": { "M_Main": "#6c7660", "M_Joints": "#363b2e" },
+          "palette": {
+            "jacket": "#6c7660",
+            "patchTop": "#59634d",
+            "patchLeg": "#444a3a",
+            "belt": "#2d2e26",
+            "trousers": "#4e5441",
+            "boots": "#2c2d26",
+            "skin": "#8c9a7c",
+            "teamZone": "band",
+            "farTeam": 0
+          }
+        },
+        {
+          "id": "survival_mutant",
+          "scale": 1.25,
+          "colors": { "M_Main": "#8a9a3c", "M_Joints": "#4a5320" },
+          "palette": {
+            "jacket": "#8a9a3c",
+            "patchTop": "#a3a444",
+            "patchLeg": "#5f6a2a",
+            "belt": "#3a3d1c",
+            "trousers": "#68732f",
+            "boots": "#383b1d",
+            "skin": "#a3ae4a",
+            "teamZone": "band",
+            "farTeam": 0
+          }
+        },
+        {
+          "id": "survival_mutant_brute",
+          "scale": 1.42,
+          "colors": { "M_Main": "#7c8a2e", "M_Joints": "#3f4719" },
+          "palette": {
+            "jacket": "#7c8a2e",
+            "patchTop": "#b0a63a",
+            "patchLeg": "#566024",
+            "belt": "#33361a",
+            "trousers": "#5f6a29",
+            "boots": "#323518",
+            "skin": "#9aa63f",
+            "teamZone": "band",
+            "farTeam": 0
+          }
+        },
+        {
+          "id": "garde_body_initiate",
+          "colors": { "M_Main": "#6f767c", "M_Joints": "#3a2a24" },
+          "palette": {
+            "jacket": "#6f767c",
+            "patchTop": "#7a2d26",
+            "patchLeg": "#4b5158",
+            "belt": "#3a2a22",
+            "trousers": "#4b5158",
+            "boots": "#2b2523",
+            "skin": "#b08a6e"
+          }
+        },
+        {
+          "id": "garde_body_clerk",
+          "scale": 0.97,
+          "colors": { "M_Main": "#5a3f2c", "M_Joints": "#2b2018" },
+          "palette": {
+            "jacket": "#5a3f2c",
+            "patchTop": "#7a2d26",
+            "patchLeg": "#46362a",
+            "belt": "#2b2018",
+            "trousers": "#46362a",
+            "boots": "#2b2523",
+            "skin": "#b08a6e"
+          }
+        },
+        {
+          "id": "garde_body_power_armor",
+          "scale": 1.2,
+          "colors": { "M_Main": "#8a9096", "M_Joints": "#3a2a24" },
+          "palette": {
+            "jacket": "#8a9096",
+            "patchTop": "#7a2d26",
+            "patchLeg": "#6b7278",
+            "belt": "#3a2a22",
+            "trousers": "#6b7278",
+            "boots": "#4b5158",
+            "skin": "#8a9096"
+          }
+        },
+        {
+          "id": "garde_body_power_armor_heavy",
+          "scale": 1.26,
+          "colors": { "M_Main": "#7c838a", "M_Joints": "#2f2420" },
+          "palette": {
+            "jacket": "#7c838a",
+            "patchTop": "#7a2d26",
+            "patchLeg": "#5d646a",
+            "belt": "#3a2a22",
+            "trousers": "#5d646a",
+            "boots": "#3f444a",
+            "skin": "#7c838a"
+          }
+        }
+      ]
+    },
+    "bush001": {
+      "scale": 0.01
+    },
+    "bush002": {
+      "scale": 0.01
+    },
+    "grass001": {
+      "scale": 0.01
+    },
+    "reed001": {
+      "scale": 0.01
+    },
+    "rock001": {
+      "scale": 0.01
+    },
+    "rock002": {
+      "scale": 0.01
+    },
+    "rock003": {
+      "scale": 0.01
+    },
+    "treehigh001": {
+      "scale": 0.01
+    },
+    "treelow001": {
+      "scale": 0.01
+    },
+    "treemed001": {
+      "scale": 0.01
+    }
+  }
+}

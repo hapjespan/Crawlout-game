@@ -1,0 +1,5 @@
+"Rock Terrain 4" by Lassi Kaukonen (https://sketchfab.com/thesidekick)
+Source: https://sketchfab.com/3d-models/rock-terrain-4-3a0e4dec66154901bf905384622183dd
+License: CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+Used as the source for the Rustbelt terrain: a sampled heightfield (made point-symmetric) and its rock textures.
+The 47 MB source stays out of git (assets/local); derived data is committed.
