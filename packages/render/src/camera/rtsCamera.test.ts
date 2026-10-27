@@ -206,4 +206,17 @@ describe('RtsCameraController closest zoom', () => {
     expect(cam.pitchDegrees()).toBeLessThan(54);
     cam.dispose();
   });
+
+  it('portrait view: fixed low pitch and a closer zoom, and null brings the RTS curve back', () => {
+    const cam = new RtsCameraController(new PerspectiveCamera(), fakeDom());
+    cam.setPortraitView({ pitchDeg: 12, minDistance: 3 });
+    cam.zoomTo(5, true);
+    expect(cam.distance).toBe(5);
+    expect(cam.pitchDegrees()).toBe(12);
+    cam.setPortraitView(null);
+    cam.zoomTo(5, true);
+    expect(cam.distance).toBe(DEFAULT_MIN_DISTANCE);
+    expect(cam.pitchDegrees()).toBeGreaterThan(50);
+    cam.dispose();
+  });
 });

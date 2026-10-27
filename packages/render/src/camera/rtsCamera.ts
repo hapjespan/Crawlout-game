@@ -77,6 +77,16 @@ export interface ParkedView {
   pitchDeg?: number;
 }
 
+/**
+ * A free, low view for RtsCameraController.setPortraitView: a fixed pitch instead of the distance curve, a closer zoom
+ * minimum, and a look point `lift` meters above the ground. Pan and zoom keep working (unlike park).
+ */
+export interface PortraitView {
+  pitchDeg: number;
+  minDistance: number;
+  lift?: number;
+}
+
 export class RtsCameraController {
   /** Ground point the camera looks at, meters. */
   readonly target = { x: 64, y: 0, z: 64 };
@@ -97,6 +107,7 @@ export class RtsCameraController {
   private readonly heightAt: (x: number, z: number) => number;
   private readonly cleanup: (() => void)[] = [];
   private parked: ParkedView | null = null;
+  private portrait: PortraitView | null = null;
 
   constructor(
     readonly camera: PerspectiveCamera,
@@ -145,9 +156,13 @@ export class RtsCameraController {
     const steps = e.deltaMode === 1 ? e.deltaY / 3 : e.deltaY / 100;
     this.targetDistance = MathUtils.clamp(
       this.targetDistance * Math.pow(1.12, steps),
-      this.minDistance,
+      this.zoomMin(),
       this.maxZoom,
     );
+  }
+
+  private zoomMin(): number {
+    return this.portrait?.minDistance ?? this.minDistance;
   }
 
   /** The area the target stays in, meters; also sets the zoom-out limit unless maxDistance was given. */
@@ -172,7 +187,7 @@ export class RtsCameraController {
 
   /** Zooms to a distance (clamped); `immediate` skips the easing. */
   zoomTo(distance: number, immediate = false): void {
-    this.targetDistance = MathUtils.clamp(distance, this.minDistance, this.maxZoom);
+    this.targetDistance = MathUtils.clamp(distance, this.zoomMin(), this.maxZoom);
     if (immediate) {
       this.distance = this.targetDistance;
       this.apply();
@@ -275,7 +290,7 @@ export class RtsCameraController {
     }
 
     this.distance += (this.targetDistance - this.distance) * (1 - Math.exp(-dt * 12));
-    const ground = this.heightAt(this.target.x, this.target.z);
+    const ground = this.heightAt(this.target.x, this.target.z) + (this.portrait?.lift ?? 0);
     this.target.y += (ground - this.target.y) * (1 - Math.exp(-dt * 8));
     this.apply();
   }
@@ -294,6 +309,12 @@ export class RtsCameraController {
     this.yaw = view.yaw;
     this.distance = this.targetDistance = view.distance;
     this.apply();
+  }
+
+  /** Switches to a low, free view (dev showcase: models seen from the side) or, with null, back to the RTS curve. */
+  setPortraitView(view: PortraitView | null): void {
+    this.portrait = view;
+    this.zoomTo(this.targetDistance);
   }
 
   private clampTarget(): void {
@@ -322,6 +343,7 @@ export class RtsCameraController {
    */
   pitchDegrees(): number {
     if (this.parked?.pitchDeg !== undefined) return this.parked.pitchDeg;
+    if (this.portrait) return this.portrait.pitchDeg;
     const ref = Math.min(BASE_MAX_DISTANCE, this.maxZoom);
     const start = Math.min(PITCH_CURVE_START, this.minDistance);
     const t = (this.distance - start) / Math.max(1e-6, ref - start);

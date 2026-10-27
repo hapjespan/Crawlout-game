@@ -187,7 +187,7 @@ export function setupScene(g: GpuStage) {
   const fogOfWar = createFogOfWar();
   const atmosphere = createAtmosphere(fogOfWar);
   scene.backgroundNode = atmosphere.backgroundNode;
-  scene.fogNode = atmosphere.fogNode;
+  if (opts.fog !== false) scene.fogNode = atmosphere.fogNode;
   const camera = new PerspectiveCamera(45, 1, 0.5, 800);
   const time = uniform(0);
   const clockStart = performance.now();

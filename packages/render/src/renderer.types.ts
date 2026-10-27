@@ -106,6 +106,8 @@ export interface CreateRendererOptions {
    * variant does not hitch. Default true; false only to measure what it saves.
    */
   warmDraw?: boolean;
+  /** Distance and map-edge haze, with the fog of war riding in it. Default true; false for the dev showcase. */
+  fog?: boolean;
   /**
    * Brightness factor on the albedo per asset id (units, buildings and props from the manifest), for art that reads
    * too dark or too light under the toon ramp next to the rest. 1 (or absent) keeps the art as it is; values are
