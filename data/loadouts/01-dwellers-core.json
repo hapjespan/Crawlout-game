@@ -18,7 +18,7 @@
     "gatherS": 13,
     "popCost": 1,
     "prereqTech": [],
-    "visuals": { "meshSlots": { "body": "dweller_body_human", "tool": "dweller_tool_scrapbag" } },
+    "visuals": { "meshSlots": { "body": "dweller_body_human", "gear_back": "dweller_tool_scrapbag" } },
     "_comment": "Balans speltest 14 oktober voor gatherAmount en gatherS, de rest startwaarde. Scavenger: basis-bewoner met zijn gereedschap, 60 hp (richtwaarde contract 3). Gratis en direct, want elke bewoner begint als scavenger. Haalt 6 scrap per rit van 13 s (was 10 per 6 s, de richtwaarde uit contract 3): met het lopen ongeveer 20 scrap per minuut per plunderaar in plaats van 55. Zo is Rustbelt (11.000 scrap in nodes) bij AI tegen AI pas rond minuut 25 leeg in plaats van rond minuut 13, en loopt ongebruikte scrap niet op (Martien had in de speltest ruim 3000 over). Zwak gevecht: 3 melee-schade per 1,5 s op 1,5 m. Sneller dan strijders (3,5 m/s) zodat pendelen naar nodes snel gaat."
   },
   {
