@@ -1,5 +1,6 @@
 # @crawlout/client
 
+- 0.14.9 (render-demo: Vertibird en showcase): `?vertibird` maakt een op de tien eenheden een Garde-Vertibird, ook samen met `?loadouts=` of `?robots`; het rigide lichaam, de zweefhoogte en de rotors komen uit het manifest via `setGameData`, zoals in het spel. `?showcase` (`render/showcase.ts`) zet elke loadout (met helden, robots, rigide eenheden en de Vertibird, inclusief wapens en uitrusting) en elk gebouwtype één keer naast elkaar, per factie, op vlakke grond zonder props, begroeiing of nevel, in idle (`?hold=walk` enz. werkt), met de id eronder; de camera kijkt laag van voren (render 0.32.0 `setPortraitView`), pannen en zoomen blijven, G springt tussen eenheden en gebouwen, `?showcase=buildings` begint bij de gebouwen. Test: test/showcase.test.ts.
 - 0.14.8 (occlusion-fade): `?occlusion=0` zet het wegditheren van bomen en struiken voor units uit (render 0.31.0).
 - 0.14.7 (vrije vlaggen): de client geeft de claimpunten als `keepClear` aan `renderer.setVegetation`, zodat er geen bomen of struiken bij de vlaggen groeien (render 0.30.2).
 - 0.14.6 (grondbegroeiing): de client geeft de begaanbaarheid van de map aan `renderer.setVegetation`, zodat de renderer struiken langs onbegaanbare grond en bosjes erop kan zetten (render 0.30.0); `?vegetation=0` tekent de kale grond.

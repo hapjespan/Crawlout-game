@@ -1,7 +1,7 @@
 // Constants and small helpers of the render demo (terrain shape and colour, loadout mix, url parsing).
 // The demo itself is demo.ts.
 import { unitTypeId } from '@crawlout/data';
-import { SYNTHETIC_ROBOT_TYPE_IDS } from '@crawlout/render/dev';
+import { FAKE_UNIT_TYPE_ID, SYNTHETIC_ROBOT_TYPE_IDS } from '@crawlout/render/dev';
 
 export const WORLD = 128;
 export const PLAYER = 0;
@@ -41,7 +41,9 @@ export function loadoutTypes(
   const keys = spec.split(',');
   const byKey = loadouts.filter((l) => keys.includes(l.key));
   if (byKey.length > 0) return byKey.map((l) => unitTypeId(l.id));
-  const pick = loadouts.filter((l) => human(l) && (spec === 'mix' || keys.includes(factionOf(l.id))));
+  const pick = loadouts.filter(
+    (l) => human(l) && (spec === 'mix' || keys.includes(factionOf(l.id))),
+  );
   return pick.map((l) => unitTypeId(l.id));
 }
 
@@ -52,6 +54,17 @@ export function robotMix(drones: number): number[] {
   return [sentinel, ...Array.from({ length: 9 }, (_, i) => (i < d ? drone : guard))];
 }
 
+/** ?vertibird: `base` (the plain unit when empty) padded to nine types plus the Vertibird, so one unit in ten flies. */
+export function withVertibird(
+  base: readonly number[],
+  loadouts: readonly { id: number; key: string }[],
+): number[] {
+  const vertibird = loadouts.find((l) => l.key === 'vertibird');
+  const mix = base.length > 0 ? base : [FAKE_UNIT_TYPE_ID];
+  const padded = Array.from({ length: Math.max(9, mix.length) }, (_, i) => mix[i % mix.length]!);
+  return vertibird ? [...padded, unitTypeId(vertibird.id)] : padded;
+}
+
 export function showError(message: string): void {
   const el = document.getElementById('error');
   if (!el) return;
@@ -59,9 +72,13 @@ export function showError(message: string): void {
   el.style.display = 'grid';
 }
 
-export function intParam(params: URLSearchParams, name: string, fallback: number, max: number): number {
+export function intParam(
+  params: URLSearchParams,
+  name: string,
+  fallback: number,
+  max: number,
+): number {
   const raw = params.get(name);
   const v = raw === null ? fallback : Number(raw);
   return Number.isFinite(v) ? Math.max(0, Math.min(max, Math.round(v))) : fallback;
 }
-

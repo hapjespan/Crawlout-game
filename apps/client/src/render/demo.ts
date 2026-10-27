@@ -30,6 +30,11 @@
 // from the anim fields; the heroes stay humanoid, ?nohero removes them. ?robots=<n> sets the share of drones (0..9 of 10);
 // ?robots=real draws the robots of assets/dist (dweller_robot_guard, _drone, _sentinel) instead of the synthetic ones.
 // ?unitdebug=normal|mr|albedo|spec|rim|ao dumps one input of the unit shading to the screen (unitMaterial.part2.ts).
+// ?vertibird makes one unit in ten a Garde Vertibird (rigid body, hover height and rotors from the manifest, loaded
+// through setGameData as in the game), on top of ?loadouts= or ?robots; ?loadouts=vertibird draws only Vertibirds.
+// ?showcase (showcase.ts): every loadout, hero and building once in rows per faction, flat ground, no props or fog,
+// idle (?hold= picks another clip), labels, a low front camera; G jumps between units and buildings, and
+// ?showcase=buildings starts at the buildings.
 import { PROVIDES } from '@crawlout/data';
 import { MAX_ENTITIES, TICK_MS, UNITS_PER_METER } from '@crawlout/protocol';
 import {
@@ -58,6 +63,7 @@ import { shadowOption } from './shadows.js';
 import { terrainTextures } from './terrain.js';
 import { albedoLayoutForMap, rockDemoAlbedoLayout, xlDemoAlbedoLayout } from './terrainLayout.js';
 import { xlWorld, type XlWorld } from './xlWorld.js';
+import { runShowcase } from './showcase.js';
 
 import {
   MUD,
@@ -67,6 +73,7 @@ import {
   loadoutTypes,
   robotMix,
   showError,
+  withVertibird,
   wastelandColor,
   wastelandHeight,
 } from './demo.part1.js';
@@ -104,6 +111,8 @@ async function main(): Promise<void> {
     ...(assets ? { assets } : {}),
     buildingAssets: params.get('buildings') !== 'ph',
     warmDraw: params.get('warmdraw') !== '0',
+    fog: !params.has('showcase'),
+    vegetation: !params.has('showcase'),
     ...(lodPixelsParam(params) ? { lodPixels: lodPixelsParam(params)! } : {}),
     ...(detail !== null ? { terrainDetail: { subdivide: Number(detail) } } : {}),
     ...(terrainChunks ? { terrainChunks } : {}),
@@ -145,6 +154,7 @@ async function main(): Promise<void> {
     backendEl.textContent =
       (renderer.backend === 'webgpu' ? 'WebGPU' : 'WebGL2-fallback') + precision;
   }
+  if (params.has('showcase')) return runShowcase(renderer, data, params);
   const xl: XlWorld | null = params.has('xl')
     ? xlWorld(rockTerrainHeights() ?? { n: WORLD, heights: new Float32Array(WORLD * WORLD) })
     : null;
@@ -248,6 +258,16 @@ async function main(): Promise<void> {
   const hold = (['walk', 'run', 'idle', 'attack1', 'attack2'] as const).find(
     (h) => h === holdParam,
   );
+  const baseTypes = robots
+    ? robotMix(params.get('robots') ? intParam(params, 'robots', 4, 9) : 4)
+    : loadoutSpec
+      ? loadoutTypes(
+          data.loadouts,
+          (id) => data.factions[data.loadouts[id]!.factionId]?.key ?? '',
+          loadoutSpec,
+        )
+      : [];
+  const unitTypes = params.has('vertibird') ? withVertibird(baseTypes, data.loadouts) : baseTypes;
   const source = new FakeSnapshotSource({
     count,
     players: 4,
@@ -258,17 +278,7 @@ async function main(): Promise<void> {
     scrapNodes: intParam(params, 'nodes', 8, 64),
     claims: intParam(params, 'claims', 3, 32),
     combat: params.get('combat') !== '0',
-    ...(robots
-      ? { unitTypes: robotMix(params.get('robots') ? intParam(params, 'robots', 4, 9) : 4) }
-      : loadoutSpec
-        ? {
-            unitTypes: loadoutTypes(
-              data.loadouts,
-              (id) => data.factions[data.loadouts[id]!.factionId]?.key ?? '',
-              loadoutSpec,
-            ),
-          }
-        : {}),
+    unitTypes,
     ...(hold ? { hold } : {}),
     ...(data.heroes.length > 0 && !params.has('nohero') ? { heroId: 0 } : {}),
     turrets: data.buildings
