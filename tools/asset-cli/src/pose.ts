@@ -23,19 +23,20 @@ function durationOf(animation: Animation): number {
 }
 
 /**
- * Poses the first skin of `document` at `phase` (0 to 1) of the clip named `clip` and bakes it into the positions.
+ * Poses the first skin of `document` at `phase` (0 to 1) of the clip named `clip` and bakes it into the positions;
+ * `clip` null bakes the rest pose (joint world * inverse bind, what a glTF viewer shows without animation).
  * Throws when the clip or the skin is missing. The document is changed in place.
  */
-export function poseSkinnedDocument(document: Document, clip: string, phase: number): void {
+export function poseSkinnedDocument(document: Document, clip: string | null, phase: number): void {
   const root = document.getRoot();
   const skin = root.listSkins()[0];
   if (!skin) throw new Error(`pose: ${document.getRoot().getName() || 'document'} heeft geen skin`);
-  const animation = root.listAnimations().find((a) => a.getName() === clip);
-  if (!animation) throw new Error(`pose: clip "${clip}" staat niet in het document`);
+  const animation = clip === null ? null : root.listAnimations().find((a) => a.getName() === clip);
+  if (animation === undefined) throw new Error(`pose: clip "${clip}" staat niet in het document`);
 
-  const time = phase * durationOf(animation);
+  const time = animation ? phase * durationOf(animation) : 0;
   const overrides = new Map<Node, Pose>();
-  for (const track of readTracks(animation)) {
+  for (const track of animation ? readTracks(animation) : []) {
     let pose = overrides.get(track.node);
     if (!pose) {
       const rest = restPose(track.node);

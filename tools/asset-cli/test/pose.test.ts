@@ -79,4 +79,16 @@ describe('poseSkinnedDocument', () => {
     const prop = await io.readBinary(await makeProp());
     expect(() => poseSkinnedDocument(prop, 'walk', 0)).toThrow(/skin/);
   });
+
+  it('bakes the rest pose with clip null, whatever the clips say', async () => {
+    const bytes = await makeHumanoid({ segments: 6, rings: 6 });
+    const posed = async (clip: string | null, phase: number): Promise<Float32Array> => {
+      const doc = await io.readBinary(bytes);
+      animateHips(doc);
+      poseSkinnedDocument(doc, clip, phase);
+      return positionsOf(doc).slice();
+    };
+    const rest = await posed('walk', 0); // the hips start unturned, so phase 0 is the rest pose
+    for (const [i, v] of (await posed(null, 1)).entries()) expect(v).toBeCloseTo(rest[i]!, 5);
+  });
 });
