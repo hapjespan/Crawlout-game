@@ -395,6 +395,14 @@ export class TerrainLayer {
     this.look.setGrassMask(map, rect);
   }
 
+  /** Ground map (groundMap.ts) over the given world rectangle; null removes it. The caller keeps ownership. */
+  setGroundMap(
+    map: Texture | null,
+    rect?: { minX: number; minZ: number; sizeX: number; sizeZ: number },
+  ): void {
+    this.look.setGroundMap(map, rect);
+  }
+
   /** Rock and ground tints, sRGB hex (#rrggbb). */
   setTints(rockTint: string, groundTint: string): void {
     this.look.setTints(rockTint, groundTint);

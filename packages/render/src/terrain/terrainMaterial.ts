@@ -1,4 +1,4 @@
-// Terrain material (TSL): the albedo of terrain.json as the real color of the ground, toon-ramp light. No PBR.
+// Terrain material (TSL): the layered ground (or, on the cheaper path, the albedo of terrain.json), toon-ramp light. No PBR.
 // Built for readability at RTS distance: the photo color is lifted to a fixed mean brightness, a little desaturated
 // and warmed towards the wasteland palette, so units (team color plus rim) and buildings (real shadow) still stand
 // out against it.
@@ -16,11 +16,11 @@
 //             adds its brightness variation along the wall.
 //   grain   = a fine rotated sample (7.7 m) adds texture near the camera (fades out from 25 to 90 m), where the
 //             albedo (16 px per meter at 2048) is magnified.
-//   detail  = a generated tiling texture (detailTexture.ts) sampled at two scales near the camera: grit, pebbles and cracks
-//             as brightness and as a bent shading normal (smooth light delta, no extra banding), fading out with
-//             distance; rock on steep slopes (stronger relief, cooler), dust on the flat (warmer, softer); at tens of
-//             meters a macro variation of brightness and hue keeps large flat areas from being one colour. Off with
-//             `detailLayer: false` (the cheaper ?detail=1 path).
+//   ground  = by default the albedo is not the photo but the layered ground (groundSplat.ts): turf, dirt, gravel and
+//             rock as generated tiling textures at 128 texels per meter, chosen per pixel by slope, ridges, moisture
+//             and cover (the ground map, groundMap.ts) and by the layers' own heights, with a relief bump as a light
+//             delta. The photo (Rock Terrain 4) held only about 4 texels per meter of real detail and its mirrored
+//             tiles drew star patterns over the map; it stays for the cheaper `detailLayer: false` path (?detail=1).
 //   beyond the map (the skirt, terrainSkirt.ts): the albedo mirrors there, which reads as a kaleidoscope. The sample
 //             position is domain-warped by smooth value noise that grows from zero at the edge (no seam), the photo's
 //             contrast fades towards a generic dust colour with the distance, and a macro brightness/hue noise
@@ -38,10 +38,6 @@ export {
   ALBEDO_DESATURATE,
   GRASS_TINT,
   GRASS_TINT_STRENGTH,
-  DETAIL_FINE_TILE,
-  DETAIL_COARSE_TILE,
-  DETAIL_FINE_FADE,
-  DETAIL_COARSE_FADE,
   EDGE_WARP_RAMP,
   EDGE_WARP_AMPLITUDE,
   EDGE_WARP_WAVELENGTH,

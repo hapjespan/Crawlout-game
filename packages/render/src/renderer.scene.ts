@@ -38,6 +38,7 @@ import { RigidUnitLayer } from './units/rigidUnitLayer.js';
 import type { AbilityLookup } from './vfx/abilityZones.js';
 import { WaterLayer } from './water/waterLayer.js';
 import type { WaterMask } from './water/waterMask.js';
+import type { GrassMask } from './terrain/grassMask.js';
 import type {
   CreateRendererOptions,
   PlacementPreview,
@@ -70,6 +71,8 @@ export interface RendererState {
   waterMask: WaterMask | null;
   waterInfo: WaterInfo | null;
   grassTexture: DataTexture | null;
+  grassMask: GrassMask | null;
+  groundTexture: DataTexture | null;
   grassProps: readonly RenderProp[];
   preview: PlacementPreview | null;
   last: number;
@@ -94,6 +97,8 @@ export function newRendererState(): RendererState {
     waterMask: null,
     waterInfo: null,
     grassTexture: null,
+    grassMask: null,
+    groundTexture: null,
     grassProps: [],
     preview: null,
     last: 0,

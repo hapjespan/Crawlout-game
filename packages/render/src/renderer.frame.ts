@@ -13,6 +13,7 @@ import {
 } from './snapshot/interpolate.js';
 import { propCategoryOf } from './props/propCategory.js';
 import { buildGrassMask } from './terrain/grassMask.js';
+import { buildGroundMap, createGroundMapTexture } from './terrain/groundMap.js';
 import { createGridTerrain, type TerrainGeometry } from './terrain/heightField.js';
 import type { PlatformSpec } from './terrain/terrainPlatforms.js';
 import type { EffectContext } from './vfx/effects.js';
@@ -94,6 +95,7 @@ export function setupTerrain(c: AssetStage) {
       : null;
     state.grassTexture?.dispose();
     state.grassTexture = null;
+    state.grassMask = mask;
     if (!mask) {
       terrain.setGrassMask(null);
       return;
@@ -106,10 +108,29 @@ export function setupTerrain(c: AssetStage) {
     grassTexture.needsUpdate = true;
     terrain.setGrassMask(grassTexture, mask);
   };
+  // The ground map (terrain/groundMap.ts): moisture, cover, ridges, from the heights, the water and the grass mask.
+  const applyGroundMap = (): void => {
+    const hf = terrain.heightField;
+    state.groundTexture?.dispose();
+    state.groundTexture = null;
+    if (!hf) {
+      terrain.setGroundMap(null);
+      return;
+    }
+    const map = buildGroundMap({
+      bounds: hf,
+      heightAt: (x, z) => terrain.heightAt(x, z),
+      water: state.waterMask,
+      grass: state.grassMask,
+    });
+    state.groundTexture = createGroundMapTexture(map);
+    terrain.setGroundMap(state.groundTexture, map);
+  };
   const setTerrain = (geometry: TerrainGeometry, terrainOpts: SetTerrainOptions = {}): void => {
     terrain.set(geometry, terrainOpts.albedoLayout ?? null);
     if (state.waterMask) applyWater();
     if (state.grassProps.length > 0) applyGrassMask();
+    applyGroundMap();
     afterHeights();
     scheduleWarmUp();
     const hf = terrain.heightField;
@@ -125,7 +146,7 @@ export function setupTerrain(c: AssetStage) {
     }
   };
   setTerrain(createGridTerrain(128, 128, 4));
-  return { ...c, applyWater, afterHeights, applyGrassMask, setTerrain };
+  return { ...c, applyWater, afterHeights, applyGrassMask, applyGroundMap, setTerrain };
 }
 export type TerrainStage = ReturnType<typeof setupTerrain>;
 

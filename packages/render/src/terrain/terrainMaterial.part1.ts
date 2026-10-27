@@ -17,7 +17,7 @@ export interface TerrainMaterialOptions {
   lightDir: Vector3;
   /** The sun's shadow (shadows/sunShadow.ts), received by the terrain. */
   shadow?: SunShadowTerm | null | undefined;
-  /** Close-up detail layer (generated tiling texture, detailTexture.ts). Default true; false is the cheaper path. */
+  /** The layered ground (groundSplat.ts). Default true; false is the cheaper path (photo albedo or tints). */
   detailLayer?: boolean;
 }
 
@@ -70,47 +70,10 @@ export const GRASS_TINT = [0.78, 1.12, 0.66] as const;
 
 export const GRASS_TINT_STRENGTH = 0.85;
 
-/** Detail layer: tile edges of the generated texture (m) at its two scales, rotated against the map's axes. */
-export const DETAIL_FINE_TILE = 3.4;
-
-export const DETAIL_COARSE_TILE = 15;
-
-/** Macro variation: the same tile stretched over tens of meters, two scales. */
-export const DETAIL_MACRO_TILE_A = 151;
-
-export const DETAIL_MACRO_TILE_B = 47;
-
-/** Distances (m) over which the fine detail fades out (full below the first) and the coarse detail. */
-export const DETAIL_FINE_FADE = [30, 100] as const;
-
-export const DETAIL_COARSE_FADE = [70, 260] as const;
-
-/** Grit brightness per unit of the texture's R deviation, on rock (steep) and on dust (flat). */
-export const DETAIL_GRIT_ROCK = 1.2;
-
-export const DETAIL_GRIT_DUST = 0.9;
-
-/** Share of the texture's relief that bends the shading normal, on rock and on dust, and how strongly the bend lights. */
-export const DETAIL_NORMAL_ROCK = 1.5;
-
-export const DETAIL_NORMAL_DUST = 0.8;
-
-export const DETAIL_LIGHT_GAIN = 0.4;
-
-/** Macro: brightness spread, and how far the warm/cool hue shift goes. */
-export const DETAIL_MACRO_BRIGHTNESS = 0.3;
-
-export const DETAIL_MACRO_HUE = 0.55;
-
-/** Colours the macro value mixes between (multipliers on the albedo): dry warm dust and cooler grey stone. */
+/** Colours the macro value beyond the map mixes between (multipliers on the albedo): dry warm dust and cooler grey stone. */
 export const DETAIL_WARM = [1.07, 1.0, 0.86] as const;
 
 export const DETAIL_COOL = [0.93, 0.98, 1.05] as const;
-
-/** Dust drifts into the flat: its multiplier on the albedo, and the share of flat ground it covers at most. */
-export const DETAIL_DUST = [1.16, 1.09, 0.92] as const;
-
-export const DETAIL_DUST_SHARE = 0.55;
 
 /** Beyond the map edge (m outside): the warp of the albedo's sample position grows over WARP_RAMP to WARP_AMPLITUDE meters at wavelength WARP_WAVELENGTH. */
 export const EDGE_WARP_RAMP = 70;
@@ -160,6 +123,11 @@ export interface TerrainMaterialBundle {
   setTints(rockTint: string, groundTint: string): void;
   /** Grass density mask (grassMask.ts) that tints the ground green under grass; null for none. The caller keeps the texture. */
   setGrassMask(
+    map: Texture | null,
+    rect?: { minX: number; minZ: number; sizeX: number; sizeZ: number },
+  ): void;
+  /** Ground map (groundMap.ts) over the given world rectangle; null for none. The caller keeps the texture. */
+  setGroundMap(
     map: Texture | null,
     rect?: { minX: number; minZ: number; sizeX: number; sizeZ: number },
   ): void;

@@ -21,6 +21,7 @@ export function buildRendererApi(c: FrameStage): CrawloutRenderer {
   const { setTerrain, applyWater, afterHeights, scheduleWarmUp, setTerrainTextures } = c;
   const { footprints, attachments, unitAssets, rigidUnits, loadBuildings, props } = c;
   const { assetConfig, resolveAssetPath, propRegistry, gainOf, applyGrassMask, windStrength } = c;
+  const { applyGroundMap } = c;
   const { fogOfWar, structures, canvas, camera, frame, rigid, terrain, meter, scene } = c;
   const { profiler, water, units, gpu, resizeObserver, overlay, decals, additive, smoke } = c;
   const { sun, skirt, zones } = c;
@@ -53,6 +54,7 @@ export function buildRendererApi(c: FrameStage): CrawloutRenderer {
     setWater(mask) {
       state.waterMask = mask ? parseWaterMask(mask) : null;
       applyWater();
+      applyGroundMap();
       afterHeights();
       scheduleWarmUp();
       return state.waterInfo ? { ...state.waterInfo } : null;
@@ -133,7 +135,10 @@ export function buildRendererApi(c: FrameStage): CrawloutRenderer {
             console.warn(`[render] prop "${assetId}": ${status.reason}`);
         }),
       );
-      if (generation === state.propGeneration) applyGrassMask();
+      if (generation === state.propGeneration) {
+        applyGrassMask();
+        applyGroundMap();
+      }
       scheduleWarmUp();
       return [...current.values()].map((st) => ({ ...st }));
     },
@@ -243,6 +248,7 @@ export function buildRendererApi(c: FrameStage): CrawloutRenderer {
       water.dispose();
       state.terrainTexture?.dispose();
       state.grassTexture?.dispose();
+      state.groundTexture?.dispose();
       interp.clear();
       zones.clear();
       gpu.dispose();
