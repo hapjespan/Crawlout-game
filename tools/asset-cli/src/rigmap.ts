@@ -36,6 +36,12 @@ export const rigmapSchema = z.object({
           .string()
           .regex(/^[a-z0-9_]+$/)
           .optional(),
+        /** Primitives with these material names are removed (a plainer variant: no backpack); src/materialEdit.ts. */
+        dropMaterials: z.array(z.string().min(1)).min(1).optional(),
+        /** Diffuse texture of a material moved to this mean colour, `contrast` scales its wear (default 1). */
+        recolor: z
+          .record(z.object({ color: hexColor, contrast: z.number().min(0).max(2).optional() }))
+          .optional(),
         /** Alleen deze meshes (exacte namen) blijven over; de rest van de scène vervalt. */
         meshes: z.array(z.string().min(1)).min(1).optional(),
         /** Karakter opnieuw binden in de node-pose, draaien om +Y, schalen naar `height` m, voeten op y = 0. */

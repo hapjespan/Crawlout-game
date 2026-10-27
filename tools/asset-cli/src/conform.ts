@@ -10,6 +10,7 @@ import { parseClipmap, resolveClips, type Clipmap } from './clipmap.js';
 import { extractMeshes, fitCharacter, mergeSkinnedPrimitives, type FitInfo } from './fit.js';
 import { countTriangles, hasSkin } from './inspect.js';
 import { createIO, simplifyToTarget } from './lods.js';
+import { dropMaterials, recolorMaterials } from './materialEdit.js';
 import { ensureSmoothNormals } from './normals.js';
 import { autoRig, type AutoRigInfo } from './autorig.js';
 import { addTeamTrim, type TeamTrimInfo } from './teamTrim.js';
@@ -201,6 +202,8 @@ export async function conformDocument(
   if (entry?.meshes) {
     info.meshesRemoved = await extractMeshes(document, entry.meshes);
   }
+  if (entry?.dropMaterials) dropMaterials(document, entry.dropMaterials);
+  if (entry?.recolor) await recolorMaterials(document, entry.recolor);
   // Normalen vóór de fit: die draait ze mee met de vertices.
   const normalsComputed = ensureSmoothNormals(document);
   if (normalsComputed > 0) info.normalsComputed = normalsComputed;
