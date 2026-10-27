@@ -14,6 +14,7 @@ import {
 import { propCategoryOf } from './props/propCategory.js';
 import { buildGrassMask } from './terrain/grassMask.js';
 import { buildGroundMap, createGroundMapTexture } from './terrain/groundMap.js';
+import { scatterVegetation } from './vegetation/vegetationScatter.js';
 import { createGridTerrain, type TerrainGeometry } from './terrain/heightField.js';
 import type { PlatformSpec } from './terrain/terrainPlatforms.js';
 import type { EffectContext } from './vfx/effects.js';
@@ -31,6 +32,9 @@ const PREVIEW_VALID: DecalStyle = {
   color: DECAL_COLOR.valid,
 };
 const PREVIEW_INVALID: DecalStyle = { ...PREVIEW_VALID, color: DECAL_COLOR.invalid };
+
+/** How far the ground map reaches past the map edge (m): the skirt beyond it continues the ground. */
+const GROUND_MARGIN_M = 128;
 
 /** Most milliseconds of a frame the foundations may take (terrain.setPlatforms); the rest waits for the next frame. */
 const PLATFORM_BUDGET_MS = 3;
@@ -115,6 +119,8 @@ export function setupTerrain(c: AssetStage) {
     state.groundTexture = null;
     if (!hf) {
       terrain.setGroundMap(null);
+      state.groundMap = null;
+      state.vegetationDirty = true;
       return;
     }
     const map = buildGroundMap({
@@ -122,8 +128,11 @@ export function setupTerrain(c: AssetStage) {
       heightAt: (x, z) => terrain.heightAt(x, z),
       water: state.waterMask,
       grass: state.grassMask,
+      margin: GROUND_MARGIN_M,
     });
     state.groundTexture = createGroundMapTexture(map);
+    state.groundMap = map;
+    state.vegetationDirty = true;
     terrain.setGroundMap(state.groundTexture, map);
   };
   const setTerrain = (geometry: TerrainGeometry, terrainOpts: SetTerrainOptions = {}): void => {
@@ -154,7 +163,51 @@ export type TerrainStage = ReturnType<typeof setupTerrain>;
 export function setupFrame(c: TerrainStage) {
   const { opts, state, canvas, capacity, backend, gpu, scene, camera, time, clock, sun } = c;
   const { terrain, screen, decals, zones, units, rigid, structures, footprints, props } = c;
-  const { additive, smoke, atmosphere, fogOfWar, controls } = c;
+  const { additive, smoke, atmosphere, fogOfWar, controls, vegetation } = c;
+  let vegetationSignature = '';
+  /** Scatters the vegetation over the current ground map (once per change, from the frame loop). */
+  const applyVegetation = (): void => {
+    state.vegetationDirty = false;
+    const map = state.groundMap;
+    if (!map || opts.vegetation === false) {
+      vegetationSignature = '';
+      vegetation.set(null);
+      return;
+    }
+    const result = scatterVegetation({
+      ground: map,
+      heightAt: (x, z) => terrain.heightAt(x, z),
+      water: state.waterMask,
+      passable: state.passable,
+      trees: state.mapProps
+        .filter((p) => p.asset.startsWith('tree'))
+        .map((p) => ({ x: p.x, z: p.y })),
+    });
+    // The ground map is rebuilt after every props load; an unchanged scatter keeps the meshes it already has.
+    const signature = Object.values(result.instances)
+      .map((d) => `${d.length}:${d.reduce((sum, v) => sum + v, 0)}`)
+      .join('|');
+    if (signature !== vegetationSignature) {
+      vegetationSignature = signature;
+      vegetation.set(result);
+    }
+    const groves = result.trees.map((t) => ({
+      asset: t.asset,
+      x: t.x,
+      y: t.z,
+      yaw: t.yaw,
+      scale: t.scale,
+    }));
+    const same =
+      groves.length === state.groveProps.length &&
+      groves.every(
+        (g, i) => g.asset === state.groveProps[i]!.asset && g.x === state.groveProps[i]!.x,
+      );
+    if (!same) {
+      state.groveProps = groves;
+      state.reloadProps?.();
+    }
+  };
   const platformList: PlatformSpec[] = [];
   const interp = new SnapshotInterpolator();
   const frame = createInterpolatedFrame(capacity);
@@ -223,7 +276,12 @@ export function setupFrame(c: TerrainStage) {
     );
     profiler.count('platformRelayout', relayout ? 1 : 0);
     profiler.count('warmDraws', state.warmDraws);
-    if (relayout) props.relayout();
+    if (relayout) {
+      props.relayout();
+      vegetation.setClearings(platformList);
+    }
+    if (state.vegetationDirty) applyVegetation();
+    vegetation.update(camera);
     profiler.mark('platforms');
     for (let i = 0; i < frame.count; i++) frame.y[i] = terrain.heightAt(frame.x[i]!, frame.z[i]!);
     profiler.mark('heights');

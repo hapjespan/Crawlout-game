@@ -15,6 +15,7 @@ import { abilitiesFromGameData } from './vfx/abilityZones.js';
 import { parseWaterMask } from './water/waterMask.js';
 import type { FrameStage } from './renderer.frame.js';
 import type { CrawloutRenderer, PickResult } from './renderer.types.js';
+import type { PropAssetStatus } from './props/propAssets.js';
 
 export function buildRendererApi(c: FrameStage): CrawloutRenderer {
   const { state, backend, precision, controls, interp, clock, effects, effectContext } = c;
@@ -24,7 +25,7 @@ export function buildRendererApi(c: FrameStage): CrawloutRenderer {
   const { applyGroundMap } = c;
   const { fogOfWar, structures, canvas, camera, frame, rigid, terrain, meter, scene } = c;
   const { profiler, water, units, gpu, resizeObserver, overlay, decals, additive, smoke } = c;
-  const { sun, skirt, zones } = c;
+  const { sun, skirt, zones, vegetation } = c;
   const raycaster = new Raycaster();
   const ndc = new Vector2();
   const groundPlane = new Plane(new Vector3(0, 1, 0), 0);
@@ -34,6 +35,60 @@ export function buildRendererApi(c: FrameStage): CrawloutRenderer {
     rigid.pickShape(frame.typeId[i]!, out);
   const pickShape = (i: number, out: PickShape): PickShape | null =>
     rigidShape(i, out) ?? structures.pickShape(frame.typeId[i]!, out);
+
+  /** Loads the map's props and the vegetation's grove trees (setProps, and again when the groves change). */
+  const loadProps = async (): Promise<PropAssetStatus[]> => {
+    const source = state.propSource;
+    const list = [...state.mapProps, ...state.groveProps];
+    const generation = ++state.propGeneration;
+    props.setProps(list);
+    state.grassProps = state.mapProps;
+    const src: ResolvedSource = {
+      manifestUrl:
+        source.manifestUrl === null ? undefined : (source.manifestUrl ?? assetConfig?.manifestUrl),
+      resolveUrl: source.resolveUrl
+        ? (_manifestUrl, path) => source.resolveUrl!(path)
+        : resolveAssetPath,
+      sourceUrl: source.sourceUrl,
+      placeholders: source.placeholders ?? true,
+      heights: source.heights,
+      categories: source.categories,
+    };
+    state.propStatuses = new Map(
+      props
+        .assetIds()
+        .map((assetId) => [
+          assetId,
+          { assetId, instances: props.instanceCount(assetId), state: 'loading', origin: 'none' },
+        ]),
+    );
+    const current = state.propStatuses;
+    await Promise.all(
+      props.assetIds().map(async (assetId) => {
+        const r = await propRegistry.resolve(assetId, src);
+        if (generation !== state.propGeneration) return;
+        const g = gainOf(assetId);
+        props.setVisual(assetId, r.visual && g !== undefined ? { ...r.visual, gain: g } : r.visual);
+        const status = current.get(assetId)!;
+        status.state = 'ready';
+        status.origin = r.origin;
+        if (r.reasons.length > 0) status.reason = r.reasons.join('; ');
+        if (r.triangles) status.triangles = r.triangles;
+        if (r.visual?.category) status.category = r.visual.category;
+        if (r.visual?.mask) status.mask = true;
+        if (r.visual) status.height = Math.round(r.visual.height * r.visual.fit * 100) / 100;
+        if (r.origin !== 'manifest' && r.reasons.some((m) => !m.startsWith('not in')))
+          console.warn(`[render] prop "${assetId}": ${status.reason}`);
+      }),
+    );
+    if (generation === state.propGeneration) {
+      applyGrassMask();
+      applyGroundMap();
+    }
+    scheduleWarmUp();
+    return [...current.values()].map((st) => ({ ...st }));
+  };
+  state.reloadProps = () => void loadProps();
 
   return {
     backend,
@@ -88,59 +143,14 @@ export function buildRendererApi(c: FrameStage): CrawloutRenderer {
     rigidUnitAssets: () => rigidUnits.statuses(),
     buildingAssets: () =>
       state.buildingStatuses.map((st) => ({ ...st, buildingIds: [...st.buildingIds] })),
-    async setProps(list, source = {}) {
-      const generation = ++state.propGeneration;
-      props.setProps(list);
-      state.grassProps = list;
-      const src: ResolvedSource = {
-        manifestUrl:
-          source.manifestUrl === null
-            ? undefined
-            : (source.manifestUrl ?? assetConfig?.manifestUrl),
-        resolveUrl: source.resolveUrl
-          ? (_manifestUrl, path) => source.resolveUrl!(path)
-          : resolveAssetPath,
-        sourceUrl: source.sourceUrl,
-        placeholders: source.placeholders ?? true,
-        heights: source.heights,
-        categories: source.categories,
-      };
-      state.propStatuses = new Map(
-        props
-          .assetIds()
-          .map((assetId) => [
-            assetId,
-            { assetId, instances: props.instanceCount(assetId), state: 'loading', origin: 'none' },
-          ]),
-      );
-      const current = state.propStatuses;
-      await Promise.all(
-        props.assetIds().map(async (assetId) => {
-          const r = await propRegistry.resolve(assetId, src);
-          if (generation !== state.propGeneration) return;
-          const g = gainOf(assetId);
-          props.setVisual(
-            assetId,
-            r.visual && g !== undefined ? { ...r.visual, gain: g } : r.visual,
-          );
-          const status = current.get(assetId)!;
-          status.state = 'ready';
-          status.origin = r.origin;
-          if (r.reasons.length > 0) status.reason = r.reasons.join('; ');
-          if (r.triangles) status.triangles = r.triangles;
-          if (r.visual?.category) status.category = r.visual.category;
-          if (r.visual?.mask) status.mask = true;
-          if (r.visual) status.height = Math.round(r.visual.height * r.visual.fit * 100) / 100;
-          if (r.origin !== 'manifest' && r.reasons.some((m) => !m.startsWith('not in')))
-            console.warn(`[render] prop "${assetId}": ${status.reason}`);
-        }),
-      );
-      if (generation === state.propGeneration) {
-        applyGrassMask();
-        applyGroundMap();
-      }
-      scheduleWarmUp();
-      return [...current.values()].map((st) => ({ ...st }));
+    setProps(list, source = {}) {
+      state.mapProps = list;
+      state.propSource = source;
+      return loadProps();
+    },
+    setVegetation(input) {
+      state.passable = input ? { w: input.w, h: input.h, data: input.passable } : null;
+      state.vegetationDirty = true;
     },
     propAssets: () => [...state.propStatuses.values()].map((st) => ({ ...st })),
     setPropWind(enabled) {
@@ -220,6 +230,7 @@ export function buildRendererApi(c: FrameStage): CrawloutRenderer {
       rigidVisible: rigid.visibleCount,
       rigidTotal: rigid.totalCount,
       rigidDraws: rigid.drawCount,
+      vegetation: vegetation.counts(),
     }),
     dispose() {
       clearTimeout(state.warmTimer);
@@ -236,6 +247,7 @@ export function buildRendererApi(c: FrameStage): CrawloutRenderer {
       structures.dispose();
       state.buildingLayers?.dispose();
       props.dispose();
+      vegetation.dispose();
       propRegistry.dispose();
       decals.dispose();
       additive.dispose();

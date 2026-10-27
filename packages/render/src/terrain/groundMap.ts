@@ -24,7 +24,12 @@ export const RIDGE_SPAN_M = 1.6;
 export interface GroundMapInput {
   bounds: { minX: number; minZ: number; maxX: number; maxZ: number };
   heightAt: (x: number, z: number) => number;
-  /** Water cells (non-zero = water) over the same bounds, row 0 at minZ. */
+  /**
+   * Meters the map reaches past `bounds` on every side (the skirt beyond the map edge reads it too, so the ground
+   * there continues instead of smearing the edge texels outward). Default 0.
+   */
+  margin?: number;
+  /** Water cells (non-zero = water) over `bounds`, row 0 at minZ. */
   water?: { w: number; h: number; data: ArrayLike<number> } | null;
   /** Grass density (0..255) over its own rectangle (grassMask.ts). */
   grass?: {
@@ -46,6 +51,8 @@ export interface GroundMap {
   minZ: number;
   sizeX: number;
   sizeZ: number;
+  /** The map's own rectangle inside (bounds without the margin): where the water and passability grids lie. */
+  inner: { minX: number; minZ: number; sizeX: number; sizeZ: number };
   /** w * h * 4 bytes (moisture, cover, ridge, macro), row 0 at minZ. */
   data: Uint8Array;
 }
@@ -107,7 +114,20 @@ const smooth = (a: number, b: number, x: number): number => {
 };
 
 export function buildGroundMap(input: GroundMapInput, cell = GROUND_CELL_M): GroundMap {
-  const { bounds, heightAt, water, grass } = input;
+  const { heightAt, water, grass } = input;
+  const margin = input.margin ?? 0;
+  const inner = {
+    minX: input.bounds.minX,
+    minZ: input.bounds.minZ,
+    sizeX: input.bounds.maxX - input.bounds.minX,
+    sizeZ: input.bounds.maxZ - input.bounds.minZ,
+  };
+  const bounds = {
+    minX: input.bounds.minX - margin,
+    minZ: input.bounds.minZ - margin,
+    maxX: input.bounds.maxX + margin,
+    maxZ: input.bounds.maxZ + margin,
+  };
   const seed = input.seed ?? 3;
   const sizeX = bounds.maxX - bounds.minX;
   const sizeZ = bounds.maxZ - bounds.minZ;
@@ -127,8 +147,9 @@ export function buildGroundMap(input: GroundMapInput, cell = GROUND_CELL_M): Gro
   if (water && water.w > 0 && water.h > 0)
     for (let j = 0; j < h; j++)
       for (let i = 0; i < w; i++) {
-        const wi = Math.min(water.w - 1, Math.floor(((i + 0.5) / w) * water.w));
-        const wj = Math.min(water.h - 1, Math.floor(((j + 0.5) / h) * water.h));
+        const wi = Math.floor(((xOf(i) - inner.minX) / inner.sizeX) * water.w);
+        const wj = Math.floor(((zOf(j) - inner.minZ) / inner.sizeZ) * water.h);
+        if (wi < 0 || wj < 0 || wi >= water.w || wj >= water.h) continue;
         if (water.data[wj * water.w + wi]) wet[j * w + i] = 1;
       }
   const toWater = distanceField(wet, w, h);
@@ -177,7 +198,7 @@ export function buildGroundMap(input: GroundMapInput, cell = GROUND_CELL_M): Gro
       data[k * 4 + 2] = to8(ridge);
       data[k * 4 + 3] = to8(fractalNoise(u, v, macroCells, 3, seed + 17));
     }
-  return { w, h, minX: bounds.minX, minZ: bounds.minZ, sizeX, sizeZ, data };
+  return { w, h, minX: bounds.minX, minZ: bounds.minZ, sizeX, sizeZ, inner, data };
 }
 
 /** The ground map as a GPU texture: bilinear, clamped (the skirt beyond the map reads the edge). */

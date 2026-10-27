@@ -24,6 +24,7 @@ import { TONE_EXPOSURE, TONE_MAPPING } from './lighting/lightRig.js';
 import { defaultShadowQuality, SunShadow, type ShadowQuality } from './shadows/sunShadow.js';
 import type { PropAssetStatus } from './props/propAssets.js';
 import type { RenderProp } from './props/propLayer.js';
+import type { PropSourceOptions } from './props/propAssets.js';
 import type { BuildingAssetStatus } from './structures/buildingAssets.js';
 import { TerrainLayer } from './terrain/terrainLayer.js';
 import { TerrainSkirt } from './terrain/terrainSkirt.js';
@@ -39,6 +40,7 @@ import type { AbilityLookup } from './vfx/abilityZones.js';
 import { WaterLayer } from './water/waterLayer.js';
 import type { WaterMask } from './water/waterMask.js';
 import type { GrassMask } from './terrain/grassMask.js';
+import type { GroundMap } from './terrain/groundMap.js';
 import type {
   CreateRendererOptions,
   PlacementPreview,
@@ -73,6 +75,16 @@ export interface RendererState {
   grassTexture: DataTexture | null;
   grassMask: GrassMask | null;
   groundTexture: DataTexture | null;
+  groundMap: GroundMap | null;
+  /** The ground map changed: the vegetation is scattered again on the next frame. */
+  vegetationDirty: boolean;
+  passable: { w: number; h: number; data: ArrayLike<number> } | null;
+  /** The props setProps was given, and the grove trees the vegetation adds to them. */
+  mapProps: readonly RenderProp[];
+  propSource: PropSourceOptions;
+  groveProps: readonly RenderProp[];
+  /** Loads mapProps and groveProps again (set by the API stage). */
+  reloadProps: (() => void) | null;
   grassProps: readonly RenderProp[];
   preview: PlacementPreview | null;
   last: number;
@@ -99,6 +111,13 @@ export function newRendererState(): RendererState {
     grassTexture: null,
     grassMask: null,
     groundTexture: null,
+    groundMap: null,
+    vegetationDirty: false,
+    passable: null,
+    mapProps: [],
+    propSource: {},
+    groveProps: [],
+    reloadProps: null,
     grassProps: [],
     preview: null,
     last: 0,

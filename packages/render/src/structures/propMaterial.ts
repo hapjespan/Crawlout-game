@@ -43,6 +43,8 @@ import {
   min,
   mix,
   normalize,
+  length,
+  smoothstep,
   select,
   sin,
   texture,
@@ -92,6 +94,12 @@ export interface PropMaterialOptions {
    * drawing. Needs `map` or `layers`: the alpha comes from the texture. Default false: opaque, single-sided.
    */
   alphaMask?: boolean;
+  /**
+   * A leafy crown of this model height (m): the leaf cards are lit by the crown's round shape (a normal out from its
+   * centre, CROWN_NORMAL of it) and darken towards the inside and the underside, so a tree reads as a volume with a lit
+   * and a shaded side instead of a flat sheet of equally bright leaves.
+   */
+  crown?: number;
   /** Light wind sway (propWind.ts); iTint.w of each instance is its phase. */
   wind?: PropWindOptions;
 }
@@ -113,6 +121,11 @@ export interface PropWindOptions {
 
 /** Weathering strength on a photographed fragment (it carries its own wear): dirt and dust only, softly. */
 const TEXTURED_WEATHER = 0.3;
+
+/** Crown shading (opts.crown): centre height as a share of the model, share of the round normal, inner brightness. */
+const CROWN_CENTER = 0.62;
+const CROWN_NORMAL = 0.7;
+const CROWN_INNER = 0.45;
 
 /** Rim on structures and props relative to units (unitMaterial.ts RIM): they should not compete with the units. */
 const PROP_RIM = 0.7;
@@ -230,7 +243,19 @@ export function createPropMaterial(opts: PropMaterialOptions): MeshBasicNodeMate
   pivot = pivot.mul(max(dot(base, luma), 1e-4).div(rawLuma));
   const faceN = normalize(worldNrm);
   // Two-sided foliage: a back face is lit by its flipped normal.
-  const N = opts.alphaMask ? faceN.mul(faceDirection) : faceN;
+  let N: Node<'vec3'> = opts.alphaMask ? faceN.mul(faceDirection) : faceN;
+  let crownShade: Node<'float'> = float(1);
+  if (opts.crown) {
+    const center = vec3(0, opts.crown * CROWN_CENTER, 0);
+    const out = position.sub(center);
+    const crownN = normalize(vertexStage(rotY(out.div(max(length(out), 1e-3)))));
+    N = normalize(mix(N, crownN, CROWN_NORMAL));
+    const r = vertexStage(length(out).div(opts.crown * 0.5));
+    const lift = vertexStage(position.y.div(opts.crown));
+    crownShade = mix(float(CROWN_INNER), float(1), smoothstep(0.15, 0.85, r)).mul(
+      mix(float(0.75), float(1), smoothstep(0.25, 0.8, lift)),
+    );
+  }
   const strength = opts.weather ?? (opts.alphaMask ? 0 : 1);
   if (strength > 0) {
     const height = position.y.mul(iScale.y);
@@ -244,13 +269,17 @@ export function createPropMaterial(opts: PropMaterialOptions): MeshBasicNodeMate
       team: color.w,
     });
   }
-  let albedo = teamAlbedo(base, team, color.w, max(pivot, 1e-3));
+  let albedo = teamAlbedo(base.mul(crownShade), team, color.w, max(pivot, 1e-3));
   albedo = worldGrade(albedo, mix(float(1), float(TEAM_GRADE), color.w));
   albedo = metalDiffuse(albedo, surface);
   const shade = toonLight(N, light, opts.shadow?.factor);
   const V = normalize(cameraPosition.sub(vWorldPos));
-  const rim = rimLight(N, V, light, albedo).mul(PROP_RIM);
-  const spec = toonSpecular(N, V, light, surface, albedo, opts.shadow?.factor ?? 1);
+  // A crown's round normal faces the sun over its whole top and the camera along its whole edge: a specular lobe or the
+  // pale rim light there turns the leaves white and blue, so a crown gets neither.
+  const rim = opts.crown ? vec3(0, 0, 0) : rimLight(N, V, light, albedo).mul(PROP_RIM);
+  const spec = opts.crown
+    ? vec3(0, 0, 0)
+    : toonSpecular(N, V, light, surface, albedo, opts.shadow?.factor ?? 1);
 
   const m = new MeshBasicNodeMaterial();
   m.positionNode = worldPos;

@@ -21,6 +21,7 @@ import { StructureLayer } from './structures/structureLayer.js';
 import { resolveManifestPath, UnitAssetLoader, createGltfIO } from './units/unitAssetLoader.js';
 import { UnitAssetRegistry } from './units/unitAssets.js';
 import { DEFAULT_LIGHT_DIR } from './units/unitLayer.js';
+import { VegetationLayer } from './vegetation/vegetationLayer.js';
 import { AttachmentRegistry } from './units/attachmentAssets.js';
 import { RigidUnitRegistry } from './units/rigidUnitAssets.js';
 import { AbilityZones } from './vfx/abilityZones.js';
@@ -146,11 +147,20 @@ export function setupAssets(c: SceneStage) {
         layers,
         surface: surfaceKindOfCategory(category),
         alphaMask: mask,
+        ...(mask && category === 'tree-leafy' && height > 1e-4 ? { crown: height } : {}),
         ...(wind && height > 1e-4
           ? { wind: { ...wind, height, time, strength: windStrength } }
           : {}),
       });
     },
+  });
+  const vegetation = new VegetationLayer(scene, {
+    lightDir: DEFAULT_LIGHT_DIR,
+    shadow: sun,
+    time,
+    windStrength,
+    heightAt: (x, z) => terrain.heightAt(x, z),
+    castShadows: shadowsOn,
   });
   const propRegistry = new PropAssetRegistry({
     manifest: (url) => loader.manifest(url),
@@ -243,6 +253,7 @@ export function setupAssets(c: SceneStage) {
     structures,
     windStrength,
     props,
+    vegetation,
     propRegistry,
     loadBuildings,
     additive,

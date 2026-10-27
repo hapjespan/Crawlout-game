@@ -179,6 +179,7 @@ export async function bootClient(ctx: ClientContext): Promise<void> {
       camera: { panKeys: { KeyA: null, KeyS: null } },
       ...(assets ? { assets } : {}),
       ...(textures ? { terrainTextures: textures } : {}),
+      vegetation: params.get('vegetation') !== '0',
     });
   } catch (err) {
     menu?.hide();
@@ -190,6 +191,7 @@ export async function bootClient(ctx: ClientContext): Promise<void> {
   const propsLoaded = renderer.setProps(map.props, propSource());
   const water = loadClientMapWater(SLICE_MAP);
   if (water) renderer.setWater(water);
+  renderer.setVegetation({ w: map.grid.w, h: map.grid.h, passable: map.grid.passable });
   const minimapStatic = minimapLayers(map.grid.w, map.grid.h, map.grid.passable, map.props, water);
   const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true;
   let ambient: AmbientCamera | null = null;

@@ -79,6 +79,11 @@ export interface CreateRendererOptions {
   /** Levels, bed and flow of the water (water/waterMask.ts). */
   water?: WaterOptions;
   /**
+   * Ground vegetation (vegetation/): grass, weeds, shrubs and reeds grown from the ground map, and groves of trees
+   * along impassable ground once setVegetation gives the passability. Default true; false draws the bare ground.
+   */
+  vegetation?: boolean;
+  /**
    * Prop budget: most props drawn at once (default 3000), full density within thinDistance (default 160 m), at least
    * minDensity of a far chunk before the cap (default 0.15), most blob shadows (default 768).
    */
@@ -156,6 +161,8 @@ export interface LayerStats {
   rigidVisible: number;
   rigidTotal: number;
   rigidDraws: number;
+  /** Ground vegetation instances drawn now, by species (vegetation/vegetationLayer.ts). */
+  vegetation: Record<string, number>;
 }
 
 export interface CrawloutRenderer {
@@ -220,6 +227,12 @@ export interface CrawloutRenderer {
    * per asset once everything is loaded; never rejects. An empty list removes all props.
    */
   setProps(props: readonly RenderProp[], source?: PropSourceOptions): Promise<PropAssetStatus[]>;
+  /**
+   * The map's passability (1 passable, row 0 at the terrain's min z, the terrain's extent): the vegetation keeps
+   * shrubs to the edges of impassable ground and grows groves of trees on it, added to the props of setProps. Render
+   * only. Null drops the groves.
+   */
+  setVegetation(input: { w: number; h: number; passable: ArrayLike<number> } | null): void;
   /** Status of every prop asset of the current props. */
   propAssets(): PropAssetStatus[];
   /** Turns the wind sway of foliage (trees with leaves, grass, plants) on or off; no recompile. */

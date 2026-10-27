@@ -110,7 +110,7 @@ export const SURFACES: Readonly<Record<SurfaceKind, SurfaceRecipe>> = {
   },
   // Dry leaves and grass (a leaf reflects 0.05 to 0.2 in the visible), olive rather than green.
   foliage: {
-    tint: 0x6b6a3a,
+    tint: 0x5f6a3a,
     albedo: [0.04, 0.22],
     roughness: 0.75,
     metalness: 0,
