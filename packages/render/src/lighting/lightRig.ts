@@ -39,7 +39,7 @@ export const HEMI_GROUND = [1.06, 0.96, 0.84] as const;
  * Sky gradient (linear rgb): the haze at the horizon, which is also the fog colour, and a pale dusty blue overhead.
  * Below the horizon the sky stays the fog colour, so whatever lies beyond the skirt dissolves into the same haze.
  */
-export const SKY_HORIZON = [0.34, 0.29, 0.225] as const;
+export const SKY_HORIZON = [0.33, 0.305, 0.255] as const;
 export const SKY_ZENITH = [0.2, 0.27, 0.36] as const;
 export const FOG_COLOR = SKY_HORIZON;
 

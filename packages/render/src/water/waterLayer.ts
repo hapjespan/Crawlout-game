@@ -6,7 +6,7 @@
 //           (flow mapping), so the river visibly runs downstream without stretching;
 //   light   two toon bands from the ripple normal, hard-edged sun glints, a little sky at grazing angles;
 //   foam    a broken band where the water gets shallow at the shore, and soft, thin, drifting light streaks over the fords (no opaque blobs);
-//   alpha   the bed shows through near the shore, deep water is nearly opaque.
+//   alpha   the bed shows through near the shore and the edge fades out over the bank, deep water is nearly opaque.
 // Per vertex: position on the level, attribute wInfo = (depth in meters, ford share 0..1, flow x, flow z in m/s).
 import {
   BufferAttribute,
@@ -52,10 +52,13 @@ export interface WaterLayerOptions {
 /** Flow-map cycle, seconds: each ripple layer slides for one cycle, then fades out while the other takes over. */
 const CYCLE = 2.2;
 /** Linear colors. */
-const DEEP = [0.035, 0.085, 0.085] as const;
-const SHALLOW = [0.2, 0.25, 0.17] as const;
+const DEEP = [0.038, 0.075, 0.068] as const;
+const SHALLOW = [0.18, 0.2, 0.13] as const;
 const SKY = [0.45, 0.53, 0.55] as const;
 const FOAM = [0.78, 0.8, 0.74] as const;
+/** Strength of the broken foam band at the shoreline (0..1), and the depth (m) over which the edge fades in. */
+const SHORE_FOAM = 0.45;
+const SHORE_FADE_M = 0.14;
 /** Ford streaks: drift speed along the flow, m/s, and the most they lighten the water (0..1). */
 const FORD_STREAK_SPEED = 1.1;
 const FORD_FOAM_MAX = 0.5;
@@ -230,14 +233,17 @@ export function createWaterMaterial(opts: WaterLayerOptions): MeshBasicNodeMater
     .mul(FORD_FOAM_MAX)
     .mul(float(1).sub(smoothstep(60, 200, length(toEye)).mul(0.6)))
     .mul(smoothstep(0.0, 0.03, depth));
-  const foam = shoreFoam.mul(smoothstep(0.0, 0.02, depth));
+  const foam = shoreFoam.mul(smoothstep(0.0, 0.02, depth)).mul(SHORE_FOAM);
   const lit = base.add(vec3(glint, glint, glint.mul(0.95)));
   const color = mix(
     mix(lit, vec3(...FOAM), foam),
     mix(lit, vec3(...FOAM), fordFoam.mul(0.5)),
     float(1).sub(foam),
   );
-  const alpha = max(mix(float(0.5), float(0.92), smoothstep(0.0, 0.75, depth)), foam);
+  // The edge fades to nothing where the water thins out over the bank, so the shore is wet ground, not a cut line.
+  const alpha = max(mix(float(0.5), float(0.92), smoothstep(0.0, 0.75, depth)), foam).mul(
+    smoothstep(0.0, SHORE_FADE_M, depth),
+  );
 
   const m = new MeshBasicNodeMaterial();
   m.transparent = true;
